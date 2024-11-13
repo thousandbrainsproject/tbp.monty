@@ -17,7 +17,7 @@ jobs:
   build_sphinx_monty:
     name: build-sphinx-monty
     runs-on:
-      group: tbp
+      group: tbp.monty
     needs:
       - check_dependencies_monty # Don't run if dependency check fails
       - check_license_monty # Don't run if license check fails
@@ -59,7 +59,7 @@ jobs:
   build_wheel_monty:
     name: build-wheel-monty
     runs-on:
-      group: tbp
+      group: tbp.monty
     needs:
       - install_monty # Needed for the cache key
       - should_run_monty
@@ -96,7 +96,7 @@ jobs:
   check_dependencies_monty:
     name: check-dependencies-monty
     runs-on:
-      group: tbp
+      group: tbp.monty
     needs:
       - install_monty
       - should_run_monty
@@ -146,7 +146,7 @@ jobs:
   check_style_monty:
     name: check-style-monty
     runs-on:
-      group: tbp
+      group: tbp.monty
     needs:
       - install_monty
       - should_run_monty
@@ -176,7 +176,7 @@ jobs:
   check_types_monty:
     name: check-types-monty
     runs-on:
-      group: tbp
+      group: tbp.monty
     needs:
       - install_monty
       - should_run_monty
@@ -206,7 +206,7 @@ jobs:
   install_monty:
     name: install-monty
     runs-on:
-      group: tbp
+      group: tbp.monty
     needs:
       - check_license_monty # Don't run if license check fails
       - should_run_monty
@@ -337,7 +337,7 @@ jobs:
   test_monty:
     name: test-monty
     runs-on:
-      group: tbp
+      group: tbp.monty
     timeout-minutes: 120
     needs:
       - check_dependencies_monty # Don't run if dependency check fails
