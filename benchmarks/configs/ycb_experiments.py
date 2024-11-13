@@ -22,7 +22,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PatchAndViewSOTAMontyConfig,
     SurfaceAndViewMontyConfig,
     SurfaceAndViewSOTAMontyConfig,
-    get_possible_3d_rotations,
+    get_cube_face_and_corner_views_rotations,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderMultiObjectArgs,
@@ -93,8 +93,7 @@ and docs/overview/benchmark-experiments.md
 """
 
 
-tested_degrees = np.linspace(0, 360, 5)[:-1]  # gives 32 combinations
-test_rotations_all = get_possible_3d_rotations(tested_degrees)
+test_rotations_all = get_cube_face_and_corner_views_rotations()
 test_rotations_3 = [[0, 0, 0], [90, 0, 180], [90, 180, 270]]
 
 monty_models_dir = os.getenv("MONTY_MODELS")

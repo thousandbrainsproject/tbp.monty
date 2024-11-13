@@ -21,7 +21,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PatchAndViewMontyConfig,
     PretrainLoggingConfig,
     SurfaceAndViewMontyConfig,
-    get_possible_3d_rotations,
+    get_cube_face_and_corner_views_rotations,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
@@ -53,9 +53,9 @@ from tbp.monty.frameworks.models.sensor_modules import (
     HabitatSurfacePatchSM,
 )
 
-# FOR SUPERVISED PRETRAINING
-train_degrees = np.linspace(0, 360, 5)[:-1]  # gives 32 combinations
-train_rotations_all = get_possible_3d_rotations(train_degrees)
+# FOR SUPERVISED PRETRAINING: 14 rotations that correspond to the 6 cube faces
+# and 8 cube corners.
+train_rotations_all = get_cube_face_and_corner_views_rotations()
 
 monty_models_dir = os.getenv("MONTY_MODELS")
 
