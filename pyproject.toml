@@ -1,0 +1,350 @@
+[build-system]
+requires = ['setuptools >= 71.0.0']
+build-backend = 'setuptools.build_meta'
+
+[project]
+authors = [
+    { name = 'Numenta' }
+]
+classifiers = [
+    'Environment :: Console',
+    'License :: Other/Proprietary License',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python :: 3',
+]
+dependencies = [
+    'importlib_resources',
+    'matplotlib',
+    'numpy',
+    'pandas',
+    'pillow',
+    'scikit-image',
+    'scikit-learn==1.3.2',
+    'scipy',
+    'sympy',
+    'torch-geometric',
+    'tqdm',
+    'wandb',
+]
+description = 'Numenta Monty'
+dynamic = ['version']
+license = { file = 'LICENSE' }
+name = 'tbp.monty'
+readme = 'README.md'
+requires-python = '>=3.7, <4'
+
+[project.optional-dependencies]
+analysis = [
+    'ipython',
+    'seaborn',
+]
+build = [
+    'build'
+]
+dev = [
+    # Check for undeclared dependencies
+    'deptry',
+
+    # Python static type checker
+    'mypy==1.11.2',
+
+    # Testing, code style, etc...
+    'pytest==7.1.1',
+    'pytest-xdist==2.5.0',
+    'pytest-cov==3.0.0',
+
+    # Python linter and formatter
+    'ruff==0.7.1',
+]
+generate_api_docs_tool = [
+    'docutils>=0.17',
+    'sphinx',
+    'sphinx-autobuild',
+    'myst-parser',
+    'pydata_sphinx_theme'
+]
+github_readme_sync_tool = [
+    'requests',
+    'pyyaml',
+    'python-dotenv',
+    'colorama',
+    'markdown2',
+    'python-slugify'
+]
+print_version_tool = [
+    'semver'
+]
+real_robots = [
+    'gym',
+    'opencv-python',
+    'real_robots'
+]
+
+[project.urls]
+Homepage = 'https://thousandbrainsproject.com'
+Documentation = 'https://thousandbrainsproject.readme.io/docs'
+Repository = 'https://github.com/thousandbrainsproject.tbp.monty'
+Issues = 'https://github.com/thousandbrainsproject/tbp.monty/issues'
+
+[tool.deptry]
+experimental_namespace_package = true # recognize tbp.monty as a namespace package
+ignore = ['DEP002']
+known_first_party = [
+    'attr', # transitive dependency bundled with habitat-sim
+    'habitat_sim', # imported via conda (habitat-sim)
+    'magnum', # transitive dependency bundled with habitat-sim
+    'quaternion', # imported via conda (quaternion)
+    'tools',
+    'torch', # imported via conda (pytorch)
+    'torchvision', # imported via conda (torchvision)
+]
+
+[tool.deptry.package_module_name_map]
+ipython = 'IPython'
+'python-dotenv' = 'dotenv'
+'python-slugify' = 'slugify'
+
+[tool.pytest.ini_options]
+minversion = '6.0'
+addopts = '-ra -n auto'
+testpaths = [
+    'tests/unit',
+]
+filterwarnings = [
+    'ignore:.*:DeprecationWarning'
+]
+junit_family = 'xunit1'
+
+[tool.autoimport.common_statements]
+"np" = 'import numpy as np'
+"nn" = 'import torch.nn as nn'
+"pd" = 'import panda as pd'
+"qt" = 'import quaternion as qt'
+"mn" = 'import magnum as mn'
+
+[tool.distutils.bdist_wheel]
+universal = true
+
+[tool.coverage.run]
+branch = true
+parallel = true
+dynamic_context = 'test_function'
+source = [
+    'src'
+]
+
+[tool.coverage.report]
+skip_empty = true
+sort = 'Cover'
+
+[tool.coverage.html]
+show_contexts = true
+
+[tool.mypy]
+warn_unused_configs = true
+# TODO: This effectively disables mypy, don't ignore once types are added
+ignore_errors = true
+# TODO: Remove global ignore and handle missing type stubs
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+
+[tool.ruff.format]
+indent-style = "space"
+line-ending = "auto"
+quote-style = "double"
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint]
+preview = true
+explicit-preview-rules = true # comment this out to check all preview rules
+select = [
+    "ALL",
+    # Explicitly opt-in to preview rules
+    "CPY001", # CPY001: Missing copyright notice at top of file
+    "DOC201", # DOC201: return is not documented in docstring
+    "DOC202", # DOC202: Docstring should not have a returns section because the function doesn't return anything
+    "DOC402", # DOC402: yield is not documented in docstring
+    "DOC403", # DOC403: Docstring has a "Yields" section but the function doesn't yield anything
+    "DOC501", # DOC501: Raised exception {id} missing from docstring
+    "DOC502", # DOC502: Raised exception is not explicitly raised: {id}
+    "E261", # E261: Insert at least two spaces before an inline comment
+    "E262", # E262: Inline comment should start with '# '
+    "E265", # E265: Block comment should start with '# '
+]
+# NOTE: Unless stated otherwise, each of the below ignore rules is open to discussion
+#       and could be addressed to improve code quality. You are welcome to submit a
+#       pull request to address any of the below. For rules that require extensive
+#       changes, you may want to open an issue to discuss the change first.
+ignore = [
+    ###
+    # Original inherited flake8 ignores
+    "C4", # C4XX: ignore all Flake8 comprehensions
+    "D1", # D1XX: Missing Docstrings
+    "E203", # E203: whitespace before ':'
+    "ERA001", # ERA001: Found commented out code
+    "F541", # F541: f-string is missing placeholders
+    "FIX001", # FIX001: Line contains FIXME, consider resolving the issue
+    "FIX002", # FIX002: Line contains TODO, consider resolving the issue
+    "N812", # N812: lowercase imported as non lowercase. Allow "import torch.nn.functional as F"
+    "T201", # T201: print found
+    "T203", # T203: pprint found
+    ###
+    # TODO: flake8=6.1.0 upgrade introduced errors ignored below, resolve these
+    "E721", # E721: do not compare types, use 'isinstance()'
+    "B026", # B026: find argument unpacking after keyword argument
+    "B018", # B018: Found useless expression
+    ###
+    # TODO: ruff=0.7.1 migration introduced errors ignored below, resolve these
+    "ANN001", # ANN001: Missing type annotation for function argument
+    "ANN002", # ANN002: Missing type annotation for `*args`
+    "ANN003", # ANN003: Missing type annotation for `**kwargs`
+    "ANN101", # ANN101: Missing type annotation for `self` in method
+    "ANN102", # ANN102: Missing type annotation for `cls` in classmethod
+    "ANN201", # ANN201: Missing return type annotation for public function
+    "ANN202", # ANN202: Missing return type annotation for private function
+    "ANN204", # ANN204: Missing return type annotation for special method
+    "ANN206", # ANN206: Missing return type annotation for classmethod
+    "ANN401", # ANN401: Dynamically typed expressions (typing.Any) are disallowed in {name}
+    # TODO: Address ARG002 right away
+    "ARG002", # ARG002: Unused method argument
+    "BLE001", # BLE001: Do not catch blind exception: `Exception`
+    "C901", # C901: {name} is too complex ({complexity} > {max_complexity})
+    "COM812", # COM812: Trailing comma missing
+    "COM819", # COM819: Trailing comma prohibited
+    "DTZ005", # DTZ005: `datetime.datetime.now()` called without a `tz` argument
+    "EM101", # EM101: Exception must not use a string literal, assign to variable first
+    "EM102", # EM102: Exception must not use an f-string literal, assign to variable first
+    "EM103", # EM103: Exception must not use a `.format()` string directly, assign to variable first
+    "F403", # F403: from {name} import * used; unable to detect undefined names
+    "F841", # F841: Local variable {name} is assigned to but never used
+    "FA100", # FA100: Add `from __future__ import annotations` to simplify
+    "FBT001", # FBT001: Boolean-typed positional argument in function definition
+    "FBT002", # FBT002: Boolean default positional argument in function definition
+    "FBT003", # FBT003: Boolean positional value in function call
+    "FLY002", # FLY002: Consider {expression} instead of string join
+    "G003", # G003: Logging statement uses `+`
+    "G004", # G004: Logging statement uses f-string
+    "G010", # G010: Logging statement uses `warn` instead of `warning`
+    "INP001", # INP001: File {filename} is part of an implicit namespace package. Add an __init__.py.
+    "ISC001", # ISC001: Implicitly concatenated string literals on one line
+    "ISC003", # ISC003: Explicitly concatenated string should be implicitly concatenated
+    "N804", # N804: First argument of a class method should be named `cls`
+    "NPY002", # NPY002: Replace legacy `np.random.normal` call with `np.random.Generator`
+    "NPY201", # NPY201: `np.infty` will be removed in NumPy 2.0. Use `numpy.inf` instead.
+    "PD002", # PD002: `inplace=True` should be avoided; it has inconsistent behavior
+    "PD901", # PD901: Avoid using the generic variable name `df` for DataFrames
+    "PERF102", # PERF102: When using only the values of a dict use the `values()` method
+    "PERF203", # PERF203: `try`-`except` within a loop incurs performance overhead
+    "PERF401", # PERF401: Use a list comprehension to create a transformed list
+    "PERF402", # PERF402: Use `list` or `list.copy` to create a copy of a list
+    "PIE790", # PIE790: Unnecessary pass statement
+    "PIE794", # PIE794: Class field {name} is defined multiple times
+    "PIE807", # PIE807: Prefer `list` over useless lambda
+    "PIE808", # PIE808: Unnecessary `start` argument in `range`
+    "PIE810", # PIE810: Call `endswith` once with a `tuple`
+    "PLE0302", # PLE0302: The special method `__getitem__` expects 2 parameters, 1 was given
+    "PLR0402", # PLR0402: Use from {module} import {name} in lieu of alias
+    "PLE0605", # PLE0605: Invalid format for `__all__`, must be `tuple` or `list`
+    "PLR0911", # PLR0911: Too many return statements
+    "PLR0912", # PLR0912: Too many branches
+    "PLR0913", # PLR0913: Too many arguments in function definition
+    "PLR0915", # PLR0915: Too many statements
+    "PLR1704", # PLR1704: Redefining argument with the local name
+    "PLR1711", # PLR1711: Useless `return` statement at end of function
+    "PLR1714", # PLR1714: Consider merging multiple comparisons: {expression}. Use a set if the elements are hashable.
+    "PLR1730", # PLR1730: Replace `if` statement with {replacement}
+    "PLR2004", # PLR2004: Magic value used in comparison, consider replacing {value} with a constant variable
+    "PLR5501", # PLR5501: Use `elif` instead of `else` then `if`, to reduce indentation
+    "PLW0127", # PLW0127: Self-assignment of variable
+    "PLW2901", # PLW2901: Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
+    "PT009", # PT009: Use a regular `assert` instead of unittest-style `assertEqual`
+    "PT018", # PT018: Assertion should be broken down into multiple parts
+    "PT027", # PT027: Use `pytest.raises` instead of unittest-style `assertRaises`
+    "PTH100", # PTH100: `os.path.abspath()` should be replaced by `Path.resolve()`
+    "PTH103", # PTH103: `os.makedirs()` should be replaced by `Path.mkdir(parents=True)`
+    "PTH104", # PTH104: `os.rename()` should be replaced by `Path.rename()`
+    "PTH107", # PTH107: `os.remove()` should be replaced by `Path.unlink()`
+    "PTH110", # PTH110: `os.path.exists()` should be replaced by `Path.exists()`
+    "PTH111", # PTH111: `os.path.expanduser()` should be replaced by `Path.expanduser()`
+    "PTH112", # PTH112: `os.path.isdir()` should be replaced by `Path.is_dir()`
+    "PTH113", # PTH113: `os.path.isfile()` should be replaced by `Path.is_file()`
+    "PTH118", # PTH118: `os.path.join()` should be replaced by `Path` with `/` operator
+    "PTH119", # PTH119: `os.path.basename()` should be replaced by `Path.name`
+    "PTH120", # PTH120: `os.path.dirname()` should be replaced by `Path.parent`
+    "PTH123", # PTH123: `open()` should be replaced by `Path.open()`
+    "RET501", # RET501: Do not explicitly `return None` in function if it is the only possible return value
+    "RET503", # RET503: Missing explicit `return` at the end of function able to return non-`None` value
+    "RET504", # RET504: Unnecessary assignment to {name} before return statement
+    "RET505", # RET505: Unnecessary {branch} after return statement
+    "RET506", # RET506: Unnecessary `else` after `raise` statement
+    "RET508", # RET508: Unnecessary `else` after `break` statement
+    "RSE102", # RSE102: Unnecessary parentheses on raised exception
+    "RUF005", # RUF005: Consider {expression} instead of concatenation
+    "RUF009", # RUF009: Do not perform function call `os.path.expanduser` in dataclass defaults
+    "RUF010", # RUF010: Use explicit conversion flag
+    "RUF012", # RUF012: Mutable class attributes should be annotated with `typing.ClassVar`
+    "RUF013", # RUF013: PEP 484 prohibits implicit `Optional`
+    "RUF015", # RUF015: Prefer next({iterable}) over single element slice
+    "RUF019", # RUF019: Unnecessary key check before dictionary access
+    "S101", # S101: Use of `assert` detected
+    "S104", # S104: Possible binding to all interfaces
+    "S113", # S113: Probable use of `requests` call without timeout
+    "S301", # S301: `pickle` and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue
+    "S311", # S311: Standard pseudo-random generators are not suitable for cryptographic purposes
+    "S605", # S605: Starting a process with a shell, possible injection detected
+    "SIM101", # SIM101: Multiple `isinstance` calls for `objects`, merge into a single call
+    "SIM102", # SIM102: Use a single `if` statement instead of nested `if` statements
+    "SIM103", # SIM103: Return the condition {condition} directly
+    "SIM105", # SIM105: Use `contextlib.suppress(SystemExit)` instead of `try`-`except`-`pass`
+    "SIM108", # SIM108: Use ternary operator {contents} instead of if-else-block
+    "SIM113", # SIM113: Use enumerate() for index variable {index} in for loop
+    "SIM114", # SIM114: Combine `if` branches using logical `or` operator
+    "SIM117", # SIM117: Use a single `with` statement with multiple contexts instead of nested `with` statements
+    "SIM118", # SIM118: Use `key in dict` instead of `key in dict.keys()`
+    "SIM201", # SIM201: Use {left} != {right} instead of not {left} == {right}
+    "SIM300", # SIM300: Yoda condition detected
+    "SIM401", # SIM401: Use {contents} instead of an if block
+    "SIM910", # SIM910: Use {expected} instead of {actual}
+    "SLF001", # SLF001: Private member accessed: {access}
+    "SLOT001", # SLOT001: Subclasses of `tuple` should define `__slots__`
+    "TCH001", # TCH001: Move application import {} into a type-checking block
+    "TCH002", # TCH002: Move third-party import {} into a type-checking block
+    "TD001", # TD001: Invalid TODO tag: `FIXME`
+    "TD002", # TD002: Missing author in TODO; try: `# TODO(<author_name>): ...` or `# TODO @<author_name>: ...`
+    "TD003", # TD003: Missing issue link on the line following this TODO
+    "TD004", # TD004: Missing colon in TODO
+    "TD005", # TD005: Missing issue description after `TODO`
+    "TRY002", # TRY002: Create your own exception
+    "TRY003", # TRY003: Avoid specifying long messages outside the exception class
+    "TRY004", # TRY004: Prefer `TypeError` exception for invalid type
+    "TRY400", # TRY400: Use `logging.exception` instead of `logging.error`
+    "UP005", # UP005: `assertEquals` is deprecated, use `assertEqual`
+    "UP006", # UP006: Use `type` instead of `Type` for type annotation
+    "UP008", # UP008: Use `super()` instead of `super(__class__, self)`
+    "UP015", # UP015: Unnecessary open mode parameters
+    "UP018", # UP018: Unnecessary `int` call (rewrite as a literal)
+    "UP030", # UP030: Use implicit references for positional format fields
+    "UP031", # UP031: Use format specifiers instead of percent format
+    "UP032", # UP032: Use f-string instead of `format` call
+    "UP034", # UP034: Avoid extraneous parentheses
+]
+
+[tool.ruff.lint.flake8-copyright]
+author = "Numenta"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 18
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = true
+
+[tool.setuptools.package-data]
+# habitat-sim resources
+'tbp.monty.simulators.resources' = ['*.json', '*.yml', '*.txt']

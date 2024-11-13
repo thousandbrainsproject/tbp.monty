@@ -1,0 +1,47 @@
+name: Feature Request
+description: Submit a proposal or request for a new feature.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    attributes:
+      label: Your proposal or request for the feature
+      description: |
+        Please provide a clear and concise description of the feature you are proposing or requesting. 
+        
+        Please outline the motivation for your proposal and how it would benefit the project.
+
+        Is your request related to a problem? Please describe, e.g., "When I do X, I run into Y, so I'd like to see Z."
+
+        Is your request related to another issue? Please provide the issue number or link.
+
+        If relevant and able, please provide an example of what using the feature would look like.
+      
+        When pasting code, it is helpful to wrap it in triple backticks (```) for formatting. For example:
+
+        ```python
+        import tbp.monty as monty
+        ...
+        ```
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Alternatives
+      description: |
+        Have you considered any alternative solutions or features? If so, please describe.
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Additional context
+      description: |
+        Add any other context or screenshots about the feature request.
+    validations:
+      required: false
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for your feature request 🥳!
+
+        Please note that this is a request and not a guarantee that the feature will be implemented. The maintainers will review the request and provide feedback. 
+        If you are interested in contributing to the project, please consider [opening a pull request](https://thousandbrainsproject.readme.io/docs/contributing-pull-requests) with your proposed changes.

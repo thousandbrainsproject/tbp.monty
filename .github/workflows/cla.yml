@@ -1,0 +1,24 @@
+name: CLA
+
+on:
+  pull_request_target:
+    branches:
+      - main
+
+jobs:
+
+  verify_cla:
+    name: verify-cla
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    steps:
+      - name: "Verify CLA"
+        uses: thousandbrainsproject/cla-assistant@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TBP_BOT_TOKEN_SECRET: ${{ secrets.TBP_BOT_TOKEN_SECRET }}
+        with:
+          pull-request-author: ${{ github.event.pull_request.user.login }}
+          pull-request-number: ${{ github.event.pull_request.number }}
+          repo-owner: thousandbrainsproject
+          repo-name: tbp.monty

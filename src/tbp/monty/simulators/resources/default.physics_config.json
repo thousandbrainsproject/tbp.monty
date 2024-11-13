@@ -1,0 +1,10 @@
+{
+    "physics_simulator": "bullet",
+    "timestep": 0.01666666667,
+    "gravity": [0, 0, 0],
+    "friction_coefficient": 0.4,
+    "restitution_coefficient": 0.1,
+    "rigid object paths":[
+        "objects"
+    ]
+}

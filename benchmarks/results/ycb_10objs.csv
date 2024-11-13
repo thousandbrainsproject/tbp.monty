@@ -1,0 +1,13 @@
+Experiment,% Correct,% Used MLH,Num Matching Steps,Rotation Error (radians),Run Time,Episode Run Time (s)
+base_config_10distinctobj_dist_agent,99.06%,4.38%,36,0.23,25m,33s
+base_config_10distinctobj_surf_agent,99.38%,0.00%,28,0.16,15m,29s
+randrot_noise_10distinctobj_dist_agent,97.00%,1.00%,39,0.36,7m,50s
+randrot_noise_10distinctobj_dist_on_distm,97.00%,4.00%,39,0.26,8m,46s
+randrot_noise_10distinctobj_surf_agent,100.00%,0.00%,29,0.42,7m,49s
+randrot_10distinctobj_surf_agent,100.00%,0.00%,28,0.34,5m,28s
+randrot_noise_10distinctobj_5lms_dist_agent,100.00%,3.00%,54,1.03,25m,139s
+base_10simobj_surf_agent,93.44%,9.69%,79,0.33,32m,77s
+randrot_noise_10simobj_dist_agent,85.00%,35.00%,202,0.66,28m,224s
+randrot_noise_10simobj_surf_agent,92.00%,35.00%,184,0.52,37m,313s
+randomrot_rawnoise_10distinctobj_surf_agent,70.00%,75.00%,16,1.8,21m,24s
+base_10multi_distinctobj_dist_agent,68.13%,53.75%,24,0.76,2h56m,2s

@@ -1,0 +1,4 @@
+Experiment,%Correct - 1st Epoch,% Correct - >1st Epoch,Mean Objects per Graph,Mean Graphs per Object,Run Time,Episode Run Time (s)
+surf_agent_unsupervised_10distinctobj,80%,92%,1.22,1.1,17m,10s
+surf_agent_unsupervised_10distinctobj_noise,80%,71.11%,1.05,2.22,106m,64s
+surf_agent_unsupervised_10simobj,20%,67.78%,2.63,2.1,32m,19s

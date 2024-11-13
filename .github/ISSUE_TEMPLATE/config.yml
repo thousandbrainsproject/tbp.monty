@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Research and Theory
+    url: https://thousandbrains.discourse.group/c/5
+    about: Ask questions about the code, data, or research.
+  - name: Monty Code
+    url: https://thousandbrains.discourse.group/c/6
+    about: Ask questions about using the Monty software or data.

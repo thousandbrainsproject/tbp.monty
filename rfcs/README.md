@@ -1,0 +1,2 @@
+# Requests for Comments (RFC)
+This folder contains all past RFCs that have been approved. RFCs are a structured way to propose changes and receive feedback on them before spending a lot of time on implementing a feature. It is encouraged to create an RFC before implementing a major change. For more details on RFCs and the RFC process, see https://thousandbrainsproject.readme.io/docs/request-for-comments-rfc.

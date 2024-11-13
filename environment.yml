@@ -1,0 +1,33 @@
+# This file may be used to create an environment using:
+#
+# ## Miniconda or Anaconda
+# $ conda env create --file environment.yml
+# $ conda activate tbp.monty
+#
+# platform: osx-64
+name: tbp.monty
+channels:
+  - aihabitat
+  - pytorch
+  - pyg
+  - defaults
+  - conda-forge
+
+dependencies:
+  - python=3.8
+  - cmake>=3.14.0
+  - pyg::pyg
+  - wget
+
+  - aihabitat::habitat-sim=0.2.2
+  - pytorch::pytorch=1.11.0
+  - pyg::pytorch-sparse
+  - pyg::pytorch-scatter
+  - conda-forge::quaternion=2023.0.3 # later versions missing np.long
+  - pytorch::torchvision
+  - aihabitat::withbullet
+
+  - pip
+  - pip:
+      - -e .[dev]
+

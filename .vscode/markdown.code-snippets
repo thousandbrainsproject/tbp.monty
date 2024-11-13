@@ -1,0 +1,53 @@
+/*
+A list of snippets that you can insert into your markdown files that correspond to readme.com flavored markdown items.
+*/
+{
+	"warn": {
+		"scope": "markdown",
+		"prefix": "warn",
+		"body": [
+			"> [!WARNING] $1\n"
+		],
+		"description": "documentation warning box"
+	},
+	"info": {
+		"scope": "markdown",
+		"prefix": "info",
+		"body": [
+			"> [!NOTE] $1\n"
+		],
+		"description": "documentation info box"
+	},
+	"error": {
+		"scope": "markdown",
+		"prefix": "error",
+		"body": [
+			"> [!CAUTION] $1\n"
+		],
+		"description": "documentation error box"
+	},
+	"good": {
+		"scope": "markdown",
+		"prefix": "good",
+		"body": [
+			"> [!TIP] $1\n"
+		],
+		"description": "documentation good box"
+	},
+	"tabbed-code-block": {
+		"scope": "markdown",
+		"prefix": "tabbed-code-block",
+		"body": [
+			"```intel\n$1\n```\n```apple silicon\n$2\n```\n"
+		],
+		"description": "documentation tabbed code block"
+	},
+	"image": {
+		"scope": "markdown",
+		"prefix": "image",
+		"body": [
+			"![${1:alt text}]($2)\n"
+		],
+		"description": "documentation image"
+	},
+}

@@ -1,0 +1,8 @@
+---
+title: Short-Term Goals
+---
+Our goal in the near term is to continue building a sensorimotor learning framework based on the principles listed above with a general set of abilities for modeling and interacting with the world. We want to understand and flesh out some of the key issues and mechanisms of learning in such a modular, sensorimotor setup. Two key issues we will focus on next are learning compositional objects using hierarchy, and using learned object models to enable sophisticated ('model-based') action policies.
+
+In the current stage of building up the Monty framework, we are focusing on the two basic components; learning modules and sensor modules, and the communication between them. In the initial implementation, many components are deliberately _not_ biologically constrained, and/or simplified, so as to support visualizing, debugging, and understanding the system as a whole. For example, object models are currently based on explicit graphs in 3D Cartesian space. In the future, these elements may be substituted with more powerful, albeit more inscrutable neural components.
+
+Another goal for the coming months is to open-source and communicate our progress and achievements so far. We want to make it easy for others to join the project and contribute to the Platform. We will provide access to the simple SDK and examples to get started. We also want to spread the ideas of the Thousand Brains Theory and the corresponding architecture to a wider audience. We aim to do this by writing blog posts, releasing videos, open-sourcing our code, publishing papers, and creating a community around the project.

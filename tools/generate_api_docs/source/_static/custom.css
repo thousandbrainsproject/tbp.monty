@@ -1,0 +1,12 @@
+html {
+    --pst-font-size-base: 14px;
+    --pst-sidebar-secondary: 20rem;
+}
+
+.navbar-nav {
+   font-size:0.8rem
+}
+
+.bd-main {
+    min-width: inherit;
+}

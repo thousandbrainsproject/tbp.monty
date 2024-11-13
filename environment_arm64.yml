@@ -1,0 +1,38 @@
+# This file may be used to create an environment using:
+#
+# ## Miniconda
+# $ conda env create --file environment_arm64.yml --subdir=osx-64
+# $ conda activate tbp.monty
+# $ conda config --env --set subdir osx-64
+#
+# ## Anaconda (omit --subdir=osx-64)
+# $ conda env create --file environment_arm64.yml
+# $ conda activate tbp.monty
+#
+# platform: osx-arm64
+name: tbp.monty
+channels:
+  - aihabitat
+  - pytorch
+  - pyg
+  - defaults
+  - conda-forge
+
+dependencies:
+  - python=3.8
+  - cmake>=3.14.0
+  - pyg::pyg
+  - wget
+
+  - aihabitat::habitat-sim=0.2.2
+  - mkl<2022 # prevents Intel errors when osx-64 environment is running on osx-arm64 platform
+  - pytorch::pytorch=1.11.0
+  - pyg::pytorch-sparse
+  - pyg::pytorch-scatter
+  - conda-forge::quaternion=2023.0.3 # later versions missing np.long
+  - pytorch::torchvision
+  - aihabitat::withbullet
+
+  - pip
+  - pip:
+      - -e .[dev]

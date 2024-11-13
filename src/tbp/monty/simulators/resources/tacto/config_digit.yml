@@ -1,0 +1,59 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
+
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+sensor:
+  name: "digit" 
+  # By default:
+  # - Sensor (camera) is placed towards x-axis
+  # - Sensor origin is the same as .stl/.obj origin
+  
+  camera:
+    cam0:
+        position: [0, 0, 0.015] # Camera position
+        orientation: [90, 0, -90] # Euler angles, "xyz", in degrees; e.g. [0, 0, 0]: towards negative z-axis; [90, 0, -90]: towards x-axis
+        yfov: 60 # Vertical field of view in degrees
+        znear: 0.001 # Distance to the near clipping plane, in meters
+        lightIDList: [0, 1, 2] # Select light ID list for rendering (OpenGL has max limit of 8 lights)
+  
+  gel:
+    origin: [0.022, 0, 0.015] # Center coordinate of the gel, in meters
+    width: 0.02 # Width of the gel, y-axis, in meters
+    height: 0.03 # Height of the gel, z-axis, in meters
+    curvature: True  # Model the gel as curve? True/False
+    curvatureMax: 0.005  # Deformation of the gel due to convexity
+    R: 0.1 # Radius of curved gel
+    countW: 100 # Number of samples for horizontal direction; higher the finer details
+  
+  lights:
+    # Light position & properties. 
+    spot: False # pyrender.SpotLight if True else pyrender.PointLight
+
+    origin: [0.005, 0, 0.015] # center of the light plane, in meters
+
+    # Light position can be expressed in:
+    # - polar coordinates: r and theta. (in y-z plane), and x coordinate of the plane
+    # - cartesian coordinates: xyz
+    # Only one of the xyz or rtheta is required.
+    polar: True # True: apply polar coordinates; False: apply cartesian coordinates;    
+    # xyz: # cartesian coordinates
+    coords: [[0, 0.01732, 0.01], [0, -0.01732, 0.01], [0, 0, -0.02]]
+    # xrtheta: # polar coordinates in y-z plane
+    xs: [0, 0, 0] # x coordinate of the y-z plane
+    rs: [0.02, 0.02, 0.02] # r in polar coordinates
+    thetas: [30, 150, 270] # theta in polar coordinates, in degrees
+    
+    colors: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] # R G B color
+    intensities: [1, 1, 1] # light intensity
+
+  noise: # Gaussian noise calibrated on output [0, 255]
+    # color:
+    mean: 0 
+    std: 7
+
+  force:
+    enable: True # flag for enable force feedback. When enabled, the larger normal force is, the closer object is adjusted to the sensor.
+    range_force: [0, 100] # dynamic range of forces used to simulate the elastomer deformation
+    max_deformation: 0.005 # max pose depth adjustment, in meters
+
