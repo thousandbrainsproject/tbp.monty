@@ -20,7 +20,7 @@ Next, you need to **clone the repository onto your device**. To do that, open th
 ![](../figures/how-to-use-monty/clone.png)
 
 > [!NOTE]
-> If you want the same setup as we use at Numenta by default, clone the repository at `${HOME}/tbp/`. If you don't have an `nta` folder in your home directory yet you can run `cd ~; mkdir tbp; cd tbp` to create it. It's not required to clone the code in this folder but it is the path we assume in our tutorials.
+> If you want the same setup as we use at Numenta by default, clone the repository at `${HOME}/tbp/`. If you don't have an `tbp` folder in your home directory yet you can run `cd ~; mkdir tbp; cd tbp` to create it. It's not required to clone the code in this folder but it is the path we assume in our tutorials.
 
 ## 1.2 Make Sure Your Local Copy is Up-To-Date
 
