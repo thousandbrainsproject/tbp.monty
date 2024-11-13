@@ -53,14 +53,13 @@ from tbp.monty.frameworks.models.sensor_modules import (
     HabitatSurfacePatchSM,
 )
 
-# FOR SUPERVISED PRETRAINING: 14 rotations that correspond to the 6 cube faces
-# and 8 cube corners.
+# FOR SUPERVISED PRETRAINING: 14 unique rotations that give good views of the object.
 train_rotations_all = get_cube_face_and_corner_views_rotations()
 
 monty_models_dir = os.getenv("MONTY_MODELS")
 
 fe_pretrain_dir = os.path.expanduser(
-    os.path.join(monty_models_dir, "pretrained_ycb_v8")
+    os.path.join(monty_models_dir, "pretrained_ycb_v9")
 )
 
 pre_surf_agent_visual_training_model_path = os.path.join(
