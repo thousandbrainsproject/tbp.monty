@@ -110,7 +110,7 @@ If you did not save the pre-trained models in the `~/tbp/results/monty/pretraine
 export MONTY_MODELS=/path/to/your/pretrained/models/dir
 ```
 
-This path should point to the `pretrained_models` folder that contains the`pretrained_ycb_v8`folders.
+This path should point to the `pretrained_models` folder that contains the`pretrained_ycb_v9`folders.
 
 ### MONTY_LOGS
 

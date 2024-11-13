@@ -95,7 +95,7 @@ The following results are obtained from experiments on the entire YCB dataset (7
   Since the distant agent policy is less efficient in how it explores a given view (random walk of saccades), we take more steps to converge with the distant agent or sometimes do not resolve the object at all (this is when we reach a time-out and use the MLH). If we have to take more steps for each episode, the runtime also increases.
 
 - Why is the run time for 77 objects longer than for 10?  
-  For one, we run more episodes per epoch (77 instead of 10) so each epoch will take longer. However, in the current benchmark, we test with fewer rotations (only 3 epochs instead of 32 or 10 epochs in the shorter experiments). Therefore the main factor here is that the number of evidence updates we need to perform at each step scales linearly with the number of objects an LM has in its memory. Additionally, we need to take more steps to distinguish 77 objects than to distinguish 10 (especially if they are distinct).
+  For one, we run more episodes per epoch (77 instead of 10) so each epoch will take longer. However, in the current benchmark, we test with fewer rotations (only 3 epochs instead of 14 or 10 epochs in the shorter experiments). Therefore the main factor here is that the number of evidence updates we need to perform at each step scales linearly with the number of objects an LM has in its memory. Additionally, we need to take more steps to distinguish 77 objects than to distinguish 10 (especially if they are distinct).
 
 # Monty-Meets-World
 
