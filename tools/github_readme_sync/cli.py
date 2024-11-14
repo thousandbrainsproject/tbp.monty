@@ -78,6 +78,12 @@ def main():
         help="List of directories to exclude from link checking",
     )
 
+    # Delete version command
+    delete_parser = subparsers.add_parser(
+        "delete", help="Delete a specific version from ReadMe"
+    )
+    delete_parser.add_argument("version", help="The version to delete")
+
     args = parser.parse_args()
 
     initialize()
@@ -98,6 +104,11 @@ def main():
     elif args.command == "check-external":
         check_readme_api_key()
         check_external(args.folder, args.ignore, ReadMe(args.version))
+
+    elif args.command == "delete":
+        check_readme_api_key()
+        rdme = ReadMe(args.version)
+        rdme.delete_version()
 
 
 def check_readme_api_key():

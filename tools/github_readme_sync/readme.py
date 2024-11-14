@@ -272,6 +272,10 @@ class ReadMe:
 
         return regex_images.sub(replace_image, markdown_text)
 
+    def delete_version(self):
+        delete(f"{PREFIX}/version/v{self.version}")
+        logging.info(f"{GREEN}Successfully deleted version {self.version}{RESET}")
+
     def convert_cloudinary_videos(self, markdown_text: str) -> str:
         def replace_video(match):
             title, full_url, cloud_id, version, filename = match.groups()
