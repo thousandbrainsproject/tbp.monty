@@ -1194,7 +1194,7 @@ def get_cube_face_and_corner_views_rotations() -> List[np.ndarray]:
     If we imagine an object enclosed in an invisible cube, then we can form 6 unique
     views of the object by looking through the cube faces. To get even better coverage
     of the object, we can also look at the object from each corners of the cube. The
-    rotations returned here rotating the object 14 ways to obtain such views.
+    rotations returned here rotate the object 14 ways to obtain such views.
 
     Returns:
         List of 3d rotations.
