@@ -28,7 +28,7 @@ dependencies = [
 ]
 description = 'Numenta Monty'
 dynamic = ['version']
-license = { file = 'LICENSE' }
+license = { file = 'LICENSE.md' }
 name = 'tbp.monty'
 readme = 'README.md'
 requires-python = '>=3.7, <4'

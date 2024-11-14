@@ -60,4 +60,4 @@ TODO: Replace this placeholder with a citation of arxiv paper.
 
 # License
 
-The MIT License. See the [LICENSE](LICENSE) for details.
+The MIT License. See the [LICENSE.md](LICENSE.md) for details.

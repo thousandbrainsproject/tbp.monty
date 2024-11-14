@@ -300,7 +300,7 @@ jobs:
                [[ $changed_file != tools/* ]] &&
                [[ $changed_file != CODE_OF_CONDUCT.md ]] &&
                [[ $changed_file != CONTRIBUTING.md ]] &&
-               [[ $changed_file != LICENSE ]] &&
+               [[ $changed_file != LICENSE.md ]] &&
                [[ $changed_file != MAINTAINERS.md ]] &&
                [[ $changed_file != README.md ]]; then
               echo "should_run_monty=true" >> $GITHUB_OUTPUT
@@ -322,7 +322,7 @@ jobs:
                [[ $changed_file != tools/* ]] &&
                [[ $changed_file != CODE_OF_CONDUCT.md ]] &&
                [[ $changed_file != CONTRIBUTING.md ]] &&
-               [[ $changed_file != LICENSE ]] &&
+               [[ $changed_file != LICENSE.md ]] &&
                [[ $changed_file != MAINTAINERS.md ]] &&
                [[ $changed_file != README.md ]]; then
               echo "should_run_monty=true" >> $GITHUB_OUTPUT
