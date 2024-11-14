@@ -138,7 +138,7 @@ only_surf_agent_training_10obj.update(
         do_eval=False,
     ),
     monty_config=SurfaceAndViewMontyConfig(
-        monty_args=MontyFeatureGraphArgs(num_exploratory_steps=500),
+        monty_args=MontyFeatureGraphArgs(num_exploratory_steps=1000),
         learning_module_configs=dict(
             learning_module_0=dict(
                 learning_module_class=DisplacementGraphLM,
@@ -250,7 +250,7 @@ only_surf_agent_training_numenta_lab_obj.update(
 supervised_pre_training_5lms = copy.deepcopy(supervised_pre_training_base)
 supervised_pre_training_5lms.update(
     monty_config=FiveLMMontyConfig(
-        monty_args=MontyArgs(num_exploratory_steps=200),
+        monty_args=MontyArgs(num_exploratory_steps=500),
         motor_system_config=MotorSystemConfigNaiveScanSpiral(
             motor_system_args=make_naive_scan_policy_config(step_size=5)
         ),
