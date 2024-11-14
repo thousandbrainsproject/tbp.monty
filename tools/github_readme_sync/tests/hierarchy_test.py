@@ -13,6 +13,7 @@ import socketserver
 import tempfile
 import threading
 import unittest
+from pathlib import Path
 
 from tools.github_readme_sync.hierarchy import (
     CATEGORY_PREFIX,
@@ -21,6 +22,7 @@ from tools.github_readme_sync.hierarchy import (
     INDENTATION_UNIT,
     check_external,
     check_hierarchy_file,
+    check_links,
     create_hierarchy_file,
     extract_links,
 )
@@ -232,6 +234,21 @@ class TestHierarchyFile(unittest.TestCase):
             '[Link with "quotes"](https://a.com/quotes)',
             ["https://a.com/quotes"],
         )
+
+    def test_check_links_ignores_external(self):
+        """Test that check_links ignores external links (http/https/mailto)."""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
+            f.write("""
+            [External Link](https://example.com/page.md)
+            [Another External](http://test.com/doc.md)
+            [Email Link](mailto:test@example.md)
+            """)
+            temp_path = f.name
+
+        try:
+            self.assertEqual(check_links(temp_path), [])
+        finally:
+            Path(temp_path).unlink()
 
 
 if __name__ == "__main__":

@@ -149,7 +149,6 @@ def check_links(path):
     errors = []
 
     for match in md_link_matches:
-        # Ignore external links
         if match[1].startswith(("http://", "https://", "mailto:")):
             continue
         path_to_check = os.path.join(current_dir, match[1].split("#")[0])
