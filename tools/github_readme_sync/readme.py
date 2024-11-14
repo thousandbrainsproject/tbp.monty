@@ -230,11 +230,11 @@ class ReadMe:
 
     def convert_note_tags(self, body: str) -> str:
         conversions = {
-            r">\s*\[!NOTE\]\s*": "> 📘 ",
-            r">\s*\[!TIP\]\s*": "> 👍 ",
-            r">\s*\[!IMPORTANT\]\s*": "> 📘 ",
-            r">\s*\[!WARNING\]\s*": "> 🚧 ",
-            r">\s*\[!CAUTION\]\s*": "> ❗️ ",
+            r"\[!NOTE\]": "📘",
+            r"\[!TIP\]": "👍",
+            r"\[!IMPORTANT\]": "📘",
+            r"\[!WARNING\]": "🚧",
+            r"\[!CAUTION\]": "❗️",
         }
 
         for old, new in conversions.items():
