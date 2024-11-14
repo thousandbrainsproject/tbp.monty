@@ -429,7 +429,24 @@ This is a test document.""",
             str(context.exception), "IMAGE_PATH environment variable not set"
         )
 
-    def test_convert_note_tags(self):
+    def test_convert_note_tags_with_link(self):
+        input_text = """
+        > [!NOTE]
+        > You can find our code at https://github.com/thousandbrainsproject/tbp.monty
+        >
+        > This is our open-source repository. We call it **Monty** after
+        """
+
+        expected_output = """
+        > 📘
+        > You can find our code at https://github.com/thousandbrainsproject/tbp.monty
+        >
+        > This is our open-source repository. We call it **Monty** after
+        """
+
+        self.assertEqual(
+            self.readme.convert_note_tags(input_text).strip(), expected_output.strip()
+        )
         input_text = """
         > [!NOTE]    This is a note.
         >   [!TIP]    Here's a tip.
@@ -439,10 +456,10 @@ This is a test document.""",
         """
 
         expected_output = """
-        > 📘 This is a note.
-        > 👍 Here's a tip.
-        > 📘 This is important.
-        > 🚧 This is a warning.
+        > 📘    This is a note.
+        >   👍    Here's a tip.
+        > 📘  This is important.
+        >     🚧 This is a warning.
         > ❗️ Be cautious!
         """
 

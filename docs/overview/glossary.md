@@ -1,6 +1,6 @@
 ---
 title: Glossary
-description: This section aims to provide concise definitions of terms commonly used at Numenta and in the Monty project.
+description: This section aims to provide concise definitions of terms commonly used at the Thousand Brains Project and in Monty.
 ---
 # Dendrites
 
