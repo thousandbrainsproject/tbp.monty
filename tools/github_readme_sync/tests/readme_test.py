@@ -434,14 +434,14 @@ This is a test document.""",
         > [!NOTE]
         > You can find our code at https://github.com/thousandbrainsproject/tbp.monty
         >
-        > This is our open-source repository. We call it **Monty** after Vernon Mountcastle, who proposed cortical columns as a repeating functional unit across the neocortex.
+        > This is our open-source repository. We call it **Monty** after
         """
 
         expected_output = """
         > 📘
         > You can find our code at https://github.com/thousandbrainsproject/tbp.monty
         >
-        > This is our open-source repository. We call it **Monty** after Vernon Mountcastle, who proposed cortical columns as a repeating functional unit across the neocortex.
+        > This is our open-source repository. We call it **Monty** after
         """
 
         self.assertEqual(
