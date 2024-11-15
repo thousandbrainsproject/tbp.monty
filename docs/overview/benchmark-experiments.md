@@ -63,7 +63,7 @@ Note that all benchmark experiments were performed with the total least-squares 
 
 ## Longer Experiments with all 77 YCB Objects
 
-The following results are obtained from experiments on the entire YCB dataset (77 objects). Since this means having 77 instead of 10 objects in memory, having to disambiguate between them, and running 77 episodes instead of 10 per epoch, these runs take significantly longer. Due to that we only test 3 known rotations ([0, 0, 0], [90, 0, 180], [90, 180, 270]) for the `base` configs and 3 random rotations for the `randrot` configs. The 5LM experiment is currently just run with 1 epoch (1 random rotation per object) but might be extended to 3. The 5LM experiment is run on 48 CPUs instead of 16.
+The following results are obtained from experiments on the entire YCB dataset (77 objects). Since this means having 77 instead of 10 objects in memory, having to disambiguate between them, and running 77 episodes instead of 10 per epoch, these runs take significantly longer. Due to that we only test 3 known rotations ([0, 0, 0], [0, 90, 0], [0, 180, 0]) for the `base` configs and 3 random rotations for the `randrot` configs. The 5LM experiment is currently just run with 1 epoch (1 random rotation per object) but might be extended to 3. The 5LM experiment is run on 48 CPUs instead of 16.
 
 ![](../figures/overview/ycb_objects_0_0_0_vert.png)
 
