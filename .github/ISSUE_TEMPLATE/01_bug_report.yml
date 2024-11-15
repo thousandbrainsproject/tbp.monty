@@ -15,7 +15,7 @@ body:
         Please provide a clear and concise description of what the bug is. A helpful format is "What I did, what I expected, and what happened instead."
 
         If relevant and able, please provide a minimal code snippet or steps to reproduce the bug.
-        
+
         When pasting code or errors, it is helpful to wrap it in triple backticks (```) for formatting. For example:
 
         ```python
@@ -24,21 +24,8 @@ body:
         ```
 
         If the code is too long, please use a public gist and link it in the issue: https://gist.github.com.
-      placeholder: |
-        ## What I did
-
-        ## What I expected
-
-        ## What happened instead
     validations:
       required: true
-  - type: textarea
-    attributes:
-      label: Environment
-      description: |
-        TODO: Provide an environment reporting utility.
-    validations:
-      required: false
   - type: markdown
     attributes:
       value: |

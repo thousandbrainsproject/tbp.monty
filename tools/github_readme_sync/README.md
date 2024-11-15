@@ -36,7 +36,7 @@ export IMAGE_PATH=thousandbrainsproject/tbp.monty/refs/heads/main/docs/figures
 ```
 > python -m tools.github_readme_sync.cli -h
 
-usage: cli.py [-h] {export,check,upload,check-external} ...
+usage: cli.py [-h] {export,check,upload,check-external,delete} ...
 
 CLI tool to manage exporting, checking, and uploading docs.
 
@@ -46,6 +46,7 @@ positional arguments:
     check               Check the hierarchy.md file and ensure all docs exist
     upload              Upload the docs in the folder to ReadMe under the specified version
     check-external      Check external links in all markdown files from the specified directory
+    delete              Delete a specific version from ReadMe
 
 optional arguments:
   -h, --help            show this help message and exit
