@@ -15,7 +15,3 @@ class DependenciesTest(unittest.TestCase):
         import torch_geometric
         import torch_geometric.data
         import torch_geometric.typing  # noqa: F401
-
-    def test_torch_sparse(self):
-        import torch_sparse  # noqa: F401
-        from torch_sparse import SparseTensor  # noqa: F401

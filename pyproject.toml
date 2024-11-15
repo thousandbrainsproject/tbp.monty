@@ -87,6 +87,7 @@ Repository = 'https://github.com/thousandbrainsproject.tbp.monty'
 Issues = 'https://github.com/thousandbrainsproject/tbp.monty/issues'
 
 [tool.deptry]
+exclude= ['venv', '\.venv', '\.direnv', '\.git', 'setup\.py']
 experimental_namespace_package = true # recognize tbp.monty as a namespace package
 ignore = ['DEP002']
 known_first_party = [
@@ -94,6 +95,7 @@ known_first_party = [
     'habitat_sim', # imported via conda (habitat-sim)
     'magnum', # transitive dependency bundled with habitat-sim
     'quaternion', # imported via conda (quaternion)
+    'tests',
     'tools',
     'torch', # imported via conda (pytorch)
     'torchvision', # imported via conda (torchvision)

@@ -148,7 +148,6 @@ autodoc_mock_imports = [
     "habitat_sim",
     "magnum",
     "matplotlib",
-    "numba",
     "numpy",
     "pandas",
     "quaternion",
@@ -157,7 +156,6 @@ autodoc_mock_imports = [
     "sklearn",
     "torch",
     "torch_geometric",
-    "torch_sparse",
     "torchvision",
 ]
 # If true, the current module name will be prepended to all description
@@ -180,7 +178,6 @@ intersphinx_mapping = {
     "pillow": ("https://pillow.readthedocs.io/en/stable/", None),
     "python": ("https://docs.python.org/3", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
-    "torch_sparse": ("https://pytorch.org/docs/stable/", None),
     "torch_geometric": ("https://pytorch-geometric.readthedocs.io/en/latest/", None),
     "torchvision": ("https://pytorch.org/vision/stable/", None),
 }
