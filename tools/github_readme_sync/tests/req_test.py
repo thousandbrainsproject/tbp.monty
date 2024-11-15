@@ -11,6 +11,7 @@ import os
 import unittest
 from unittest.mock import MagicMock, patch
 
+from tools.github_readme_sync.readme import ReadMe
 from tools.github_readme_sync.req import delete, get, post, put
 
 
@@ -155,6 +156,23 @@ class TestReq(unittest.TestCase):
         result = delete(url)
 
         self.assertFalse(result)
+        mock_delete.assert_called_once_with(
+            url, headers={"Authorization": "Basic test_api_key"}
+        )
+
+    @patch("requests.delete")
+    def test_delete_version(self, mock_delete):
+        mock_response = MagicMock()
+        mock_response.status_code = 204
+        mock_delete.return_value = mock_response
+
+        url = "https://dash.readme.com/api/v1/version/v1.0.0"
+
+        rdme = ReadMe("1.0.0")
+        with self.assertLogs() as log:
+            rdme.delete_version()
+
+        self.assertIn("Successfully deleted version 1.0.0", log.output[0])
         mock_delete.assert_called_once_with(
             url, headers={"Authorization": "Basic test_api_key"}
         )

@@ -230,11 +230,11 @@ class ReadMe:
 
     def convert_note_tags(self, body: str) -> str:
         conversions = {
-            r">\s*\[!NOTE\]\s*": "> 📘 ",
-            r">\s*\[!TIP\]\s*": "> 👍 ",
-            r">\s*\[!IMPORTANT\]\s*": "> 📘 ",
-            r">\s*\[!WARNING\]\s*": "> 🚧 ",
-            r">\s*\[!CAUTION\]\s*": "> ❗️ ",
+            r"\[!NOTE\]": "📘",
+            r"\[!TIP\]": "👍",
+            r"\[!IMPORTANT\]": "📘",
+            r"\[!WARNING\]": "🚧",
+            r"\[!CAUTION\]": "❗️",
         }
 
         for old, new in conversions.items():
@@ -271,6 +271,10 @@ class ReadMe:
                 )
 
         return regex_images.sub(replace_image, markdown_text)
+
+    def delete_version(self):
+        delete(f"{PREFIX}/version/v{self.version}")
+        logging.info(f"{GREEN}Successfully deleted version {self.version}{RESET}")
 
     def convert_cloudinary_videos(self, markdown_text: str) -> str:
         def replace_video(match):

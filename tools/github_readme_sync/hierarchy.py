@@ -149,6 +149,8 @@ def check_links(path):
     errors = []
 
     for match in md_link_matches:
+        if match[1].startswith(("http://", "https://", "mailto:")):
+            continue
         path_to_check = os.path.join(current_dir, match[1].split("#")[0])
         path_to_check = os.path.normpath(path_to_check)
         if any(placeholder in match[1] for placeholder in IGNORE_DOCS):
