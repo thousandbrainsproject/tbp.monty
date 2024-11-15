@@ -52,12 +52,12 @@ Note that all benchmark experiments were performed with the total least-squares 
 | randrot_noise_10distinctobj_dist_agent      | 99.00%    | 7.00%      | 51                 | 0.50                     | 10m      | 56s                  |
 | randrot_noise_10distinctobj_dist_on_distm   | 99.00%    | 1.00%      | 35                 | 0.26                     | 7m       | 48s                  |
 | randrot_noise_10distinctobj_surf_agent      | 100.00%   | 1.00%      | 29                 | 0.36                     | 7m       | 49s                  |
-| randrot_10distinctobj_surf_agent            | 100.00%   | 0.00%      | 29                 | 0.36                     | 7m       | 49s                  |
+| randrot_10distinctobj_surf_agent            | 100.00%   | 0.00%      | 29                 | 0.37                     | 4m       | 29s                  |
 | randrot_noise_10distinctobj_5lms_dist_agent | 100.00%   | 3.00%      | 52                 | 0.88                     | 21m      | 139s                 |
 | base_10simobj_surf_agent                    | 95.00%    | 10.00%     | 84                 | 0.21                     | 14m      | 76s                  |
 | randrot_noise_10simobj_dist_agent           | 81.00%    | 38.00%     | 193                | 0.52                     | 26m      | 206s                 |
-| randrot_noise_10simobj_surf_agent           | 90.00%    | 35.00%     | 178                | 0.45                     | 34m      | 293s                 |
-| randomrot_rawnoise_10distinctobj_surf_agent | 65.00%    | 77.00%     | 16                 | 1.60                     | 21m      | 23s                  |
+| randrot_noise_10simobj_surf_agent           | 90.00%    | 35.00%     | 178                | 0.45                     | 34m      | 294s                 |
+| randomrot_rawnoise_10distinctobj_surf_agent | 65.00%    | 77.00%     | 16                 | 1.60                     | 22m      | 24s                  |
 | base_10multi_distinctobj_dist_agent         | 68.13%    | 53.75%     | 24                 | 0.76                     | 2h56m    | 2s                   |
 
 # Longer Runs with all YCB Objects
