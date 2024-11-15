@@ -100,8 +100,8 @@ test_rotations_all = get_cube_face_and_corner_views_rotations()
 # runs with all 77 YCB objects.
 test_rotations_3 = test_rotations_all[:3]
 
-# monty_models_dir = os.getenv("MONTY_MODELS")
-monty_models_dir = os.path.expanduser("~/tbp/results/monty/pretrained_models")
+monty_models_dir = os.getenv("MONTY_MODELS")
+
 # v6 : Using TLS for point-normal estimation
 # v7 : Updated for State class support + using new feature names like pose_vectors
 # v8 : Using separate graph per input channel
