@@ -143,6 +143,7 @@ toc_maxdepth = 5
 autodoc_member_order = "groupwise"
 autodoc_inherit_docstrings = True
 autodoc_mock_imports = [
+    "PIL",
     "gym",
     "habitat_sim",
     "magnum",
@@ -151,6 +152,8 @@ autodoc_mock_imports = [
     "pandas",
     "quaternion",
     "scipy",
+    "skimage",
+    "sklearn",
     "torch",
     "torch_geometric",
     "torchvision",
