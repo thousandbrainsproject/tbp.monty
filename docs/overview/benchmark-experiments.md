@@ -71,9 +71,9 @@ The following results are obtained from experiments on the entire YCB dataset (7
 
 | Experiment                          | % Correct | % Used MLH | Num Matching Steps | Rotation Error (radians) | Run Time | Episode Run Time (s) |
 |-------------------------------------|-----------|------------|--------------------|--------------------------|----------|----------------------|
-| base_77obj_dist_agent               | 96.54%    | 12.55%     | 91                 | 0.28                     | 1h42m    | 317s                 |
-| base_77obj_surf_agent               | 98.27%    | 6.01%      | 58                 | 0.15                     | 46m      | 138s                 |
-| randrot_noise_77obj_dist_agent      | 87.01%    | 28.57%     | 155                | 0.64                     | 2h13m    | 475s                 |
+| base_77obj_dist_agent               | 93.51%    | 14.29%     | 90                 | 0.31                     | 1h37m    | 295s                 |
+| base_77obj_surf_agent               | 98.27%    | 5.63%      | 57                 | 0.21                     | 46m      | 141s                 |
+| randrot_noise_77obj_dist_agent      | 87.01%    | 28.57%     | 155                | 0.64                     | 2h14m    | 479s                 |
 | randrot_noise_77obj_surf_agent      | 94.93%    | 19.48%     | 102                | 0.62                     | 1h23m    | 304s                 |
 | randrot_noise_77obj_5lms_dist_agent | 93.51%    | 3.90%      | 71                 | 0.92                     | 54m      | 1398s                |
 
