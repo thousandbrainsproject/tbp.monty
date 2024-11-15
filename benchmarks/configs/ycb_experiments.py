@@ -140,11 +140,6 @@ model_path_5lms_77obj = os.path.join(
     "supervised_pre_training_5lms_all_objects/pretrained/",
 )
 
-model_path_numenta_lab_obj = os.path.join(
-    fe_pretrain_dir,
-    "surf_agent_1lm_numenta_lab_obj/pretrained/",
-)
-
 # NOTE: maybe lower once we have better policies
 # Is not really nescessary for good performance but makes sure we don't just overfit
 # on the first few points.
