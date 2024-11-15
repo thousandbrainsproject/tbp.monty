@@ -44,6 +44,9 @@ Configs with `rawnoise` in the name test with noisy raw sensor input where Gauss
 Note that all benchmark experiments were performed with the total least-squares regression implementation for computing the point-normals, and the distance-weighted quadratic regression for the principal curvatures (with their default parameters).
 
 ## Shorter Experiments with 10 Objects
+
+The following results are obtained from experiments using the 10-object subsets of the YCB dataset described above. `base` configs test with all 14 known rotations (10 objects * 14 rotations each = 140 episodes), and `randrot` configs test with 10 random rotations (10 objects * 10 rotation each = 100 episodes). All experiments were run on 16 CPUs with parallelization except for `base_10multi_distinctobj_dist_agent`; this experiment must be run without parallelization.
+
 ### Results
 
 | Experiment                                  | % Correct | % Used MLH | Num Matching Steps | Rotation Error (radians) | Run Time | Episode Run Time (s) |
