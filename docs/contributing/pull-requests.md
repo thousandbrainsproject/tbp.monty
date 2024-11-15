@@ -7,7 +7,7 @@ Monty uses Github Pull Requests to integrate code changes.
 
 ## Contributor License Agreement
 
-Before we can accept your contribution, you must sign the Contributor License Agreement (CLA). You can [sign the CLA now](TODO OSS) or wait until you submit your Pull Request.
+Before we can accept your contribution, you must sign the Contributor License Agreement (CLA). You can [view and sign the CLA now](https://na4.documents.adobe.com/public/esignWidget?wid=CBFCIBAA3AAABLblqZhA-C5ccSQcDGY-PiamH4HnZdj5p2I1oDc8FiBJ_23pReFeauFhfcIkC1XfzxC2qnBQ*) or wait until you submit your Pull Request.
 
 See the [Contributor License Agreement](pull-requests/contributor-license-agreement.md) page for more on the CLA.
 
