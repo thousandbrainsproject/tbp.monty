@@ -21,8 +21,6 @@ dependencies:
 
   - aihabitat::habitat-sim=0.2.2
   - pytorch::pytorch=1.11.0
-  - pyg::pytorch-sparse
-  - pyg::pytorch-scatter
   - conda-forge::quaternion=2023.0.3 # later versions missing np.long
   - pytorch::torchvision
   - aihabitat::withbullet
