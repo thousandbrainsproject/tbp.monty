@@ -62,7 +62,7 @@ The following results are obtained from experiments using the 10-object subsets 
 | randrot_noise_10simobj_dist_agent           | 81.00%    | 38.00%     | 193                | 0.52                     | 26m      | 206s                 |
 | randrot_noise_10simobj_surf_agent           | 90.00%    | 35.00%     | 178                | 0.45                     | 34m      | 294s                 |
 | randomrot_rawnoise_10distinctobj_surf_agent | 65.00%    | 77.00%     | 16                 | 1.60                     | 22m      | 24s                  |
-| base_10multi_distinctobj_dist_agent         | 68.13%    | 53.75%     | 24                 | 0.76                     | 2h56m    | 2s                   |
+| base_10multi_distinctobj_dist_agent         | 74.29%    | 37.14%     | 27                 | 0.64                     | 1h9m     | 2s                   |
 
 ## Longer Experiments with all 77 YCB Objects
 
@@ -138,7 +138,7 @@ TODO OSS: Link to monty_lab project folder of monty meets world.
 | dark_world_image_on_scanned_model           | 31.25%    | 70.83%     | 435                | 2.03                       | 11m      | 13s                  |
 | bright_world_image_on_scanned_model         | 54.17%    | 87.50%     | 464                | 2.15                       | 12m      | 15s                  |
 | hand_intrusion_world_image_on_scanned_model | 37.50%    | 58.33%     | 366                | 1.96                       | 8m       | 9s                   |
-| multi_object_world_image_on_scanned_model   | 37.50%    | 37.50%     | 279                | 1.88                       | 7m       | 9s                   |
+| multi_object_world_image_on_scanned_model   | 37.50%    | 41.67%     | 325                | 1.93                       | 8m       | 9s                   |
 
 **Note that rotation errors are meaningless since no ground truth rotation is provided**
 
