@@ -417,7 +417,7 @@ class MontyExperiment:
 
     def post_step(self, step, observation):
         """Hook for anything you want to do after a step."""
-        self.logger_handler.pre_step(self.logger_args)
+        self.logger_handler.post_step(self.logger_args)
 
     def run_episode(self):
         """Run one episode until model.is_done."""
