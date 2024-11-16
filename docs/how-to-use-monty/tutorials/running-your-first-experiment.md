@@ -3,10 +3,6 @@ title: Running Your First Experiment
 ---
 Let's try to set up a first experiment config for a simplified toy experiment and run it. We will then walk step-by-step through what happened.
 
-> 🚧 TODO: Maybe make this one of the benchmark experiments or make the analysis based on this config?
->
-> At least make it a graph matching demo (maybe just 1-2 objects).
-
 # Setting up the Experiment Config
 
 To go along, copy this code into a file (for example called `first_experiment.py`). Save this file in the `benchmarks/configs/` folder.
@@ -75,9 +71,9 @@ python run.py -e first_experiment
 
 # What Just Happened?
 
-Now that you have run your first experiment, let's unpack what happened. This first section involves a lot of text, but rest assured, once you grok this first experiment, the rest of the tutorial will be much more interactive and will focus on running expeirments and using tooling. This first experiment is virtually the simplest one possible, but it is designed to familiarize you with all the pieces and parts of the experimental workflow to give you a good foundation for further experimentation.
+Now that you have run your first experiment, let's unpack what happened. This first section involves a lot of text, but rest assured, once you grok this first experiment, the rest of the tutorials will be much more interactive and will focus on running experiments and using tooling. This first experiment is virtually the simplest one possible, but it is designed to familiarize you with all the pieces and parts of the experimental workflow to give you a good foundation for further experimentation.
 
-Experiments are implemented as Python classes with methods like `train` and `evaluate`. In essence, `run.py` loads a config, and calls `train` and `evaluate` methods if the config says to run them. **Notice that `first_experiment` has `do_eval` set to `False`, so `run.py` will only run the `train` method.**
+Experiments are implemented as Python classes with methods like `train` and `evaluate`. In essence, `run.py` loads a config and calls `train` and `evaluate` methods if the config says to run them. **Notice that `first_experiment` has `do_eval` set to `False`, so `run.py` will only run the `train` method.**
 
 ## Experiment Structure: Epochs, Episodes, and Steps
 
@@ -85,31 +81,27 @@ One epoch will run training (or evaluation) on all the specified objects.  An ep
 
 If you examine the `MontyExperiment` class, you will also notice that there are related methods like `{pre,post}_epoch`, and `{pre,post}_episode`. **With inheritance or mixin classes, you can use these methods to customize what happens before during and after each epoch, or episode. **Also notice that each method contains calls to a logger. Logger classes can also be customized to log specific information at each control point. Finally, we save a model with the `save_state_dict` method at the end of each epoch. All told, the sequence of method calls goes something like
 
-- train (loop over epochs)
-  - pre_train logging
-  - run_epoch (loop over episodes)
-    - pre_epoch
-      - pre_epoch logging
-    - run_episode (loop over steps)
-      - pre_episode
-        - pre_episode logging
-      - model.step()
-      - post_episode
-        - post_episode logging
-    - post_epoch
-      - save_state_dict
-      - post_epoch logging
-  - post_train logging
+- `MontyExperiment.train` (loops over epochs)
+  - Do pre-train logging.
+  - `MontyExperiment.run_epoch` (loops over episodes)
+    - `MontyExperiment.pre_epoch`
+      - Do pre-epoch logging.
+    - `MontyExperiment.run_episode` (loops over steps)
+      - `MontyExperiment.pre_episode`
+        - Do pre-episode logging.
+      - `Monty.step`
+      - `MontyExperiment.post_episode`
+        - Do post-episode logging
+    - `MontyExperiment.post_epoch`
+      - `MontyExperiment.save_state_dict`.
+      - Do post-epoch logging.
+  - Do post-train logging.
 
 and **this is exactly the procedure that was executed when you ran `python run.py -e first_experiment`.**
 
-> 🚧 TODO: Make a nicer looking version of this
->
-> Make this look more "cody" instead of bullet points.
-
 ## Model
 
-The model is specified in the `monty_config` field of the `first_experiment` config, as `SingleCameraMontyConfig` which is in turn defined within `src/tbp/monty/frameworks/config_utils/config_args.py`. Yes, that's a config within a config. The reason for nesting configs is that the model is an ensemble of LearningModules (LMs), and SensorModules (SMs), each of which could potentially have their own configuration as well. For more details on configuring custom learning or sensor modules see [this guide](../customizing-monty.md).
+The model is specified in the `monty_config` field of the `first_experiment` config as a `SingleCameraMontyConfig` which is in turn defined within `src/tbp/monty/frameworks/config_utils/config_args.py`. Yes, that's a config within a config. The reason for nesting configs is that the model is an ensemble of LearningModules (LMs), and SensorModules (SMs), each of which could potentially have their own configuration as well. For more details on configuring custom learning or sensor modules see [this guide](../customizing-monty.md).
 
 For now, we will start with the simplest vesion of this complex system. The `SingleCameraMontyConfig` dataclass has fields `learning_module_configs` and `sensor_module_configs` where each key is the name of an LM (or SM resp.), and each value is the full config for that model component. **Our first model has only one LM and one SM**. Note that the `sm_to_agent_dict` field of the model config maps each SM to an "agent" (i.e. a moveable part), and only a single agent is specified, meaning that our model has one moveable part with one sensor attached to it. In particular, it has an RGBD camera attached to it.
 
@@ -124,10 +116,6 @@ You can, of course, customize step types and when to switch between step types b
 **In this particular experiment, `n_train_epochs` was set to 1, and `max_train_steps` was set to 1. This means a single epoch was run, with one matching step per episode**. In the next section, we go up a level from the model step to understand episodes and epochs.
 
 ## Data{set, loader}
-
-> 🚧 TODO: Update this Section after Refactor
->
-> We are planning to refactor dataset and dataloader to become one class and have a name that expresses the iteractiveness more.
 
 In the config for first_experiment, there is a comment that marks the start of data configuration. Now we turn our attention to everything below that line, as this is where episode specifics are defined.
 
@@ -150,7 +138,7 @@ That was a lot of text, so let's review what all went into this experiment.
 - The epoch looped over a list of objects of length 1 - so a single episode was run
 - The max steps was set to 1, so all told, we took one single step on one single object
 - Our model had a single agent with a single RGBD camera attached to it
-- During model.step, `matching_step` was called and one SM received one observation from the environment
+- During `model.step`, `matching_step` was called and one SM received one observation from the environment
 - The `decide_location_for_movement` method was called
 - We saved our model at the end of the epoch
 
