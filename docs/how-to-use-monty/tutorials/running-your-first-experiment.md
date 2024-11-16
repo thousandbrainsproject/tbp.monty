@@ -1,7 +1,8 @@
 ---
 title: Running Your First Experiment
 ---
-Let's try to set up a first experiment config for a simplified toy experiment and run it. We will then walk step-by-step through what happened.
+# Introduction
+In this tutorial we will introduce the basic mechanics of Monty experiment configs, how to run them, and what happens during the execution of a Monty experiment. Since we will focus mainly on the execution of an experiment, we'll configure and run the simplest possible experiment and walk through it step-by-step.
 
 # Setting up the Experiment Config
 
