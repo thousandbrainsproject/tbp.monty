@@ -12,7 +12,7 @@ Our model will have one surface agent connected to one sensor module connected t
 > [!NOTE]
 > **Don't have the YCB Dataset Downloaded?**
 >
-> You can find instructions for downloading the YCB dataset [here](../getting-started.md#41-download-the-ycb-dataset). Alternatively, you can run these experiments using the built-in Habitat primitives, such as `capsule3DSolid` and `cubeSolid`. Simply replace the `object_names` parameter in the `train_dataloader_args`.
+> You can find instructions for downloading the YCB dataset [here](../getting-started.md#41-download-the-ycb-dataset). Alternatively, you can run these experiments using the builtin Habitat primitives, such as `capsule3DSolid` and `cubeSolid`. Simply change the items in the  `object_names` list.
 >
 
 
