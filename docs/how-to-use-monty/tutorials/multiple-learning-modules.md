@@ -9,7 +9,7 @@ In this tutorial, we will show how Monty can be used to learn and recognize obje
 > [!NOTE]
 > **Don't have the YCB Dataset Downloaded?**
 >
-> You can find instructions for downloading the YCB dataset [here](../getting-started.md#41-download-the-ycb-dataset). Alternatively, you can run these experiments using the builtin Habitat primitives, such as `capsule3DSolid` and `cubeSolid`. Simply replace the `object_names` parameter in the `train_dataloader_args`.
+> You can find instructions for downloading the YCB dataset [here](../getting-started.md#41-download-the-ycb-dataset). Alternatively, you can run these experiments using the builtin Habitat primitives, such as `capsule3DSolid` and `cubeSolid`. Simply change the items in the  `object_names` list.
 >
 
 # Setting up and Running a Multi-LM Pretraining Experiment
@@ -29,6 +29,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
     MotorSystemConfigNaiveScanSpiral,
     PretrainLoggingConfig,
+    get_cube_face_and_corner_views_rotations,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
@@ -53,22 +54,7 @@ model_name = "dist_agent_5lm_2obj"
 
 # Specify the objects to train on and 14 unique object poses.
 object_names = ["mug", "banana"]
-train_rotations = [
-    np.array([0, 0, 0]),
-    np.array([0, 90, 0]),
-    np.array([0, 180, 0]),
-    np.array([0, 270, 0]),
-    np.array([90, 0, 0]),
-    np.array([90, 180, 0]),
-    np.array([35, 45, 0]),
-    np.array([325, 45, 0]),
-    np.array([35, 315, 0]),
-    np.array([325, 315, 0]),
-    np.array([35, 135, 0]),
-    np.array([325, 135, 0]),
-    np.array([35, 225, 0]),
-    np.array([325, 225, 0]),
-]
+train_rotations = get_cube_face_and_corner_views_rotations()
 
 # The config dictionary for the pretraining experiment.
 dist_agent_5lm_2obj_train = dict(
@@ -156,34 +142,6 @@ Then navigate to the `benchmarks/` folder in a terminal, and call the `run.py` s
 cd benchmarks
 python run.py -e dist_agent_5lm_2obj_train
 ```
-## Visualizing Learned Object Models (Optional)
-During pretraining, each learning module learns its own object models independently of the other LMs. To visualize the models learned by each LM, create and a script with the code below. The location and name of the script is unimportant so long as it can find and import monty. 
-```python
-import os
-import matplotlib.pyplot as plt
-import torch
-from tbp.monty.frameworks.utils.plot_utils import plot_graph
-
-# Get path to pretrained model
-project_dir = os.path.expanduser("~/tbp/results/monty/projects")
-model_name = "dist_agent_5lm_2obj"
-model_path = os.path.join(project_dir, model_name, "pretrained/model.pt")
-state_dict = torch.load(model_path)
-
-fig = plt.figure(figsize=(8, 3))
-for lm_id in range(5):
-    ax = fig.add_subplot(1, 5, lm_id + 1, projection="3d")
-    graph = state_dict["lm_dict"][lm_id]["graph_memory"]["mug"][f"patch_{lm_id}"]
-    plot_graph(graph, ax=ax)
-    ax.view_init(-65, 0, 0)
-    ax.set_title(f"LM {lm_id}")
-fig.suptitle("Mug Object Models")
-fig.tight_layout()
-plt.show()
-```
-After running the script, you should see the following:
-![](../../figures/how-to-use-monty/multi_lm_mug_object_models.png)
-There are minor differences in the object models due to the different views each sensor module relayed to its respective learning modules, but each should contain a fairly complete representation of the mug.
 
 # Setting up and Running a Multi-LM Evaluation Experiment
 
@@ -191,7 +149,6 @@ We will now specify an experiment config to perform inference.
 To follow along, create a file called `multi_lm_eval.py` in the `benchmarks/configs/` directory and paste the following code snippets into it.
 
 ```python
-
 import copy
 import os
 
@@ -291,7 +248,6 @@ for i in range(5):
 ```
 Now we can create the final complete config dictionary.
 ```python
-
 # The config dictionary for the pretraining experiment.
 dist_agent_5lm_2obj_eval = dict(
     #  Specify monty experiment class and its args.
@@ -331,7 +287,6 @@ dist_agent_5lm_2obj_eval = dict(
         object_init_sampler=PredefinedObjectInitializer(rotations=test_rotations),
     ),
 )
-
 ```
 Finally, add the following lines to the bottom of the file.
 
@@ -363,3 +318,32 @@ Like in our benchmark experiments, here we have `min_lms_match` set to `3`. Sett
 Lastly, note that `num_steps` is not the same for all learning modules in an episode. This is because one or more of the sensors can sometimes be aimed off to the side of an object. In this case, the off-object sensor module won't relay information downstream, and so its corresponding learning module will skip a step. (See [here](../../how-monty-works/experiment.md#) for more information about steps.) For example, we see that LM_1 in episode 1 only takes 8 steps while the others take 20-30. Since the sensor module connected to LM_1 was positioned higher than the others, we can surmise that that sensor modules were aimed relatively high on the object, thereby causing the sensor module connected to LM_1 to be off-object for many of the steps.
 
 Now you've seen how to set up and run a multi-LM models for both pretraining and evaluation. At present, Monty only supports distant agents with multi-LM models because the current infrastructure doesn't support multiple independently moving agents. We plan to support multiple surface-agent systems in the future.
+
+# Visualizing Learned Object Models (Optional)
+During pretraining, each learning module learns its own object models independently of the other LMs. To visualize the models learned by each LM, create and a script with the code below. The location and name of the script is unimportant so long as it can find and import monty. 
+```python
+import os
+import matplotlib.pyplot as plt
+import torch
+from tbp.monty.frameworks.utils.plot_utils import plot_graph
+
+# Get path to pretrained model
+project_dir = os.path.expanduser("~/tbp/results/monty/projects")
+model_name = "dist_agent_5lm_2obj"
+model_path = os.path.join(project_dir, model_name, "pretrained/model.pt")
+state_dict = torch.load(model_path)
+
+fig = plt.figure(figsize=(8, 3))
+for lm_id in range(5):
+    ax = fig.add_subplot(1, 5, lm_id + 1, projection="3d")
+    graph = state_dict["lm_dict"][lm_id]["graph_memory"]["mug"][f"patch_{lm_id}"]
+    plot_graph(graph, ax=ax)
+    ax.view_init(-65, 0, 0)
+    ax.set_title(f"LM {lm_id}")
+fig.suptitle("Mug Object Models")
+fig.tight_layout()
+plt.show()
+```
+After running the script, you should see the following:
+![](../../figures/how-to-use-monty/multi_lm_mug_object_models.png)
+There are minor differences in the object models due to the different views each sensor module relayed to its respective learning modules, but each should contain a fairly complete representation of the mug.
