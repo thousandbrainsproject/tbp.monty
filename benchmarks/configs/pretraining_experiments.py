@@ -21,7 +21,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PatchAndViewMontyConfig,
     PretrainLoggingConfig,
     SurfaceAndViewMontyConfig,
-    get_possible_3d_rotations,
+    get_cube_face_and_corner_views_rotations,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
@@ -53,14 +53,13 @@ from tbp.monty.frameworks.models.sensor_modules import (
     HabitatSurfacePatchSM,
 )
 
-# FOR SUPERVISED PRETRAINING
-train_degrees = np.linspace(0, 360, 5)[:-1]  # gives 32 combinations
-train_rotations_all = get_possible_3d_rotations(train_degrees)
+# FOR SUPERVISED PRETRAINING: 14 unique rotations that give good views of the object.
+train_rotations_all = get_cube_face_and_corner_views_rotations()
 
 monty_models_dir = os.getenv("MONTY_MODELS")
 
 fe_pretrain_dir = os.path.expanduser(
-    os.path.join(monty_models_dir, "pretrained_ycb_v8")
+    os.path.join(monty_models_dir, "pretrained_ycb_v9")
 )
 
 pre_surf_agent_visual_training_model_path = os.path.join(
@@ -139,7 +138,7 @@ only_surf_agent_training_10obj.update(
         do_eval=False,
     ),
     monty_config=SurfaceAndViewMontyConfig(
-        monty_args=MontyFeatureGraphArgs(num_exploratory_steps=500),
+        monty_args=MontyFeatureGraphArgs(num_exploratory_steps=1000),
         learning_module_configs=dict(
             learning_module_0=dict(
                 learning_module_class=DisplacementGraphLM,
@@ -251,7 +250,7 @@ only_surf_agent_training_numenta_lab_obj.update(
 supervised_pre_training_5lms = copy.deepcopy(supervised_pre_training_base)
 supervised_pre_training_5lms.update(
     monty_config=FiveLMMontyConfig(
-        monty_args=MontyArgs(num_exploratory_steps=200),
+        monty_args=MontyArgs(num_exploratory_steps=500),
         motor_system_config=MotorSystemConfigNaiveScanSpiral(
             motor_system_args=make_naive_scan_policy_config(step_size=5)
         ),

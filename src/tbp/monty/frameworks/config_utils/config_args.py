@@ -1186,3 +1186,32 @@ def get_possible_3d_rotations(degrees, displacement=0):
             dual_poses.append(list(dual_pose))
 
     return unique_poses
+
+
+def get_cube_face_and_corner_views_rotations() -> List[np.ndarray]:
+    """Get 14 rotations that correspond to the 6 cube faces and 8 cube corners.
+
+    If we imagine an object enclosed in an invisible cube, then we can form 6 unique
+    views of the object by looking through the cube faces. To get even better coverage
+    of the object, we can also look at the object from each corners of the cube. The
+    rotations returned here rotate the object 14 ways to obtain such views.
+
+    Returns:
+        List of 3d rotations.
+    """
+    return [
+        np.array([0, 0, 0]),
+        np.array([0, 90, 0]),
+        np.array([0, 180, 0]),
+        np.array([0, 270, 0]),
+        np.array([90, 0, 0]),
+        np.array([90, 180, 0]),
+        np.array([35, 45, 0]),
+        np.array([325, 45, 0]),
+        np.array([35, 315, 0]),
+        np.array([325, 315, 0]),
+        np.array([35, 135, 0]),
+        np.array([325, 135, 0]),
+        np.array([35, 225, 0]),
+        np.array([325, 225, 0]),
+    ]

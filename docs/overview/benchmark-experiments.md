@@ -44,26 +44,29 @@ Configs with `rawnoise` in the name test with noisy raw sensor input where Gauss
 Note that all benchmark experiments were performed with the total least-squares regression implementation for computing the point-normals, and the distance-weighted quadratic regression for the principal curvatures (with their default parameters).
 
 ## Shorter Experiments with 10 Objects
+
+The following results are obtained from experiments using the 10-object subsets of the YCB dataset described above. `base` configs test with all 14 known rotations (10 objects * 14 rotations each = 140 episodes), and `randrot` configs test with 10 random rotations (10 objects * 10 rotation each = 100 episodes). All experiments were run on 16 CPUs with parallelization except for `base_10multi_distinctobj_dist_agent`; this experiment must be run without parallelization.
+
 ### Results
 
 | Experiment                                  | % Correct | % Used MLH | Num Matching Steps | Rotation Error (radians) | Run Time | Episode Run Time (s) |
 |---------------------------------------------|-----------|------------|--------------------|--------------------------|----------|----------------------|
-| base_config_10distinctobj_dist_agent        | 99.06%    | 4.38%      | 36                 | 0.23                     | 25m      | 33s                  |
-| base_config_10distinctobj_surf_agent        | 99.38%    | 0.00%      | 28                 | 0.16                     | 15m      | 29s                  |
-| randrot_noise_10distinctobj_dist_agent      | 97.00%    | 1.00%      | 39                 | 0.36                     | 7m       | 50s                  |
-| randrot_noise_10distinctobj_dist_on_distm   | 97.00%    | 4.00%      | 39                 | 0.26                     | 8m       | 46s                  |
-| randrot_noise_10distinctobj_surf_agent      | 100.00%   | 0.00%      | 29                 | 0.42                     | 7m       | 49s                  |
-| randrot_10distinctobj_surf_agent            | 100.00%   | 0.00%      | 28                 | 0.34                     | 5m       | 28s                  |
-| randrot_noise_10distinctobj_5lms_dist_agent | 100.00%   | 3.00%      | 54                 | 1.03                     | 25m      | 139s                 |
-| base_10simobj_surf_agent                    | 93.44%    | 9.69%      | 79                 | 0.33                     | 32m      | 77s                  |
-| randrot_noise_10simobj_dist_agent           | 85.00%    | 35.00%     | 202                | 0.66                     | 28m      | 224s                 |
-| randrot_noise_10simobj_surf_agent           | 92.00%    | 35.00%     | 184                | 0.52                     | 37m      | 313s                 |
-| randomrot_rawnoise_10distinctobj_surf_agent | 70.00%    | 75.00%     | 16                 | 1.8                      | 21m      | 24s                  |
-| base_10multi_distinctobj_dist_agent         | 68.13%    | 53.75%     | 24                 | 0.76                     | 2h56m    | 2s                   |
+| base_config_10distinctobj_dist_agent        | 98.57%    | 5.71%      | 36                 | 0.31                     | 12m      | 31s                  |
+| base_config_10distinctobj_surf_agent        | 100.00%   | 0.00%      | 28                 | 0.17                     | 6m       | 27s                  |
+| randrot_noise_10distinctobj_dist_agent      | 99.00%    | 7.00%      | 51                 | 0.50                     | 10m      | 56s                  |
+| randrot_noise_10distinctobj_dist_on_distm   | 99.00%    | 1.00%      | 35                 | 0.26                     | 7m       | 48s                  |
+| randrot_noise_10distinctobj_surf_agent      | 100.00%   | 1.00%      | 29                 | 0.36                     | 7m       | 49s                  |
+| randrot_10distinctobj_surf_agent            | 100.00%   | 0.00%      | 29                 | 0.37                     | 4m       | 29s                  |
+| randrot_noise_10distinctobj_5lms_dist_agent | 100.00%   | 3.00%      | 52                 | 0.88                     | 21m      | 139s                 |
+| base_10simobj_surf_agent                    | 95.00%    | 10.00%     | 84                 | 0.21                     | 14m      | 76s                  |
+| randrot_noise_10simobj_dist_agent           | 81.00%    | 38.00%     | 193                | 0.52                     | 26m      | 206s                 |
+| randrot_noise_10simobj_surf_agent           | 90.00%    | 35.00%     | 178                | 0.45                     | 34m      | 294s                 |
+| randomrot_rawnoise_10distinctobj_surf_agent | 65.00%    | 77.00%     | 16                 | 1.60                     | 22m      | 24s                  |
+| base_10multi_distinctobj_dist_agent         | 74.29%    | 37.14%     | 27                 | 0.64                     | 1h9m     | 2s                   |
 
 ## Longer Experiments with all 77 YCB Objects
 
-The following results are obtained from experiments on the entire YCB dataset (77 objects). Since this means having 77 instead of 10 objects in memory, having to disambiguate between them, and running 77 episodes instead of 10 per epoch, these runs take significantly longer. Due to that we only test 3 known rotations ([0, 0, 0], [90, 0, 180], [90, 180, 270]) for the `base` configs and 3 random rotations for the `randrot` configs. The 5LM experiment is currently just run with 1 epoch (1 random rotation per object) but might be extended to 3. The 5LM experiment is run on 48 CPUs instead of 16.
+The following results are obtained from experiments on the entire YCB dataset (77 objects). Since this means having 77 instead of 10 objects in memory, having to disambiguate between them, and running 77 episodes instead of 10 per epoch, these runs take significantly longer. Due to that we only test 3 known rotations ([0, 0, 0], [0, 90, 0], [0, 180, 0]) for the `base` configs and 3 random rotations for the `randrot` configs. The 5LM experiment is currently just run with 1 epoch (1 random rotation per object) but might be extended to 3. The 5LM experiment is run on 48 CPUs instead of 16.
 
 ![](../figures/overview/ycb_objects_0_0_0_vert.png)
 
@@ -72,11 +75,11 @@ The following results are obtained from experiments on the entire YCB dataset (7
 
 | Experiment                          | % Correct | % Used MLH | Num Matching Steps | Rotation Error (radians) | Run Time | Episode Run Time (s) |
 |-------------------------------------|-----------|------------|--------------------|--------------------------|----------|----------------------|
-| base_77obj_dist_agent               | 95.24%    | 11.26%     | 90                 | 0.25                     | 1h35m    | 289s                 |
-| base_77obj_surf_agent               | 97.40%    | 6.06%      | 64                 | 0.15                     | 51m      | 151s                 |
-| randrot_noise_77obj_dist_agent      | 85.28%    | 31.17%     | 172                | 0.64                     | 2h31m    | 539s                 |
-| randrot_noise_77obj_surf_agent      | 96.54%    | 20.78%     | 113                | 0.52                     | 1h31m    | 336s                 |
-| randrot_noise_77obj_5lms_dist_agent | 93.51%    | 1.30%      | 64                 | 1.00                     | 51m      | 507s                 |
+| base_77obj_dist_agent               | 93.51%    | 14.29%     | 90                 | 0.31                     | 1h37m    | 295s                 |
+| base_77obj_surf_agent               | 98.27%    | 5.63%      | 57                 | 0.21                     | 46m      | 141s                 |
+| randrot_noise_77obj_dist_agent      | 87.01%    | 28.57%     | 155                | 0.64                     | 2h14m    | 479s                 |
+| randrot_noise_77obj_surf_agent      | 94.93%    | 19.48%     | 102                | 0.62                     | 1h23m    | 304s                 |
+| randrot_noise_77obj_5lms_dist_agent | 93.51%    | 3.90%      | 71                 | 0.92                     | 54m      | 1398s                |
 
 ### Explanation of Some of the Results
 
@@ -114,7 +117,6 @@ An object is classified as detected correctly if the detected object ID is in th
 
 To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning can, by definition, not be parallelized accross epochs. Therefore these experiments were run without multiprocessing on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
 
-
 # Monty-Meets-World
 
 The following experiments evaluate a Monty model on real-world images derived from the RGBD camera of an iPad/iPhone device. The models that the Monty system leverages are based on photogrammetry scans of the same objects in the real world, and Monty learns on these in the simulated Habitat environment; this approach is taken because currently, we cannot track the movements of the iPad through space, and so Monty cannot leverage its typical sensorimotor learning to build the internal models.
@@ -131,12 +133,12 @@ TODO OSS: Link to monty_lab project folder of monty meets world.
 
 | Experiment                                  | % Correct | % Used MLH | Num Matching Steps | [Rotation Error (radians)] | Run Time | Episode Run Time (s) |
 |---------------------------------------------|-----------|------------|--------------------|----------------------------|----------|----------------------|
-| randrot_noise_sim_on_scan_monty_world       | 87.50%    | 85.83%     | 445                | 0.68                       | 1h1m     | 28s                  |
-| world_image_on_scanned_model                | 70.83%    | 75%        | 432                | 1.86                       | 11m      | 14s                  |
-| dark_world_image_on_scanned_model           | 35.42%    | 79.17%     | 437                | 2.3                        | 11m      | 13s                  |
-| bright_world_image_on_scanned_model         | 43.75%    | 83.33%     | 445                | 2.04                       | 13m      | 15s                  |
-| hand_intrusion_world_image_on_scanned_model | 43.75%    | 58.33%     | 356                | 1.9                        | 8m       | 10s                  |
-| multi_object_world_image_on_scanned_model   | 37.50%    | 37.50%     | 279                | 1.88                       | 7m       | 9s                   |
+| randrot_noise_sim_on_scan_monty_world       | 85.83%    | 87.50%     | 437                | 0.91                       | 1h5m     | 29s                  |
+| world_image_on_scanned_model                | 66.67%    | 83.33%     | 454                | 2.10                       | 12m      | 14s                  |
+| dark_world_image_on_scanned_model           | 31.25%    | 70.83%     | 435                | 2.03                       | 11m      | 13s                  |
+| bright_world_image_on_scanned_model         | 54.17%    | 87.50%     | 464                | 2.15                       | 12m      | 15s                  |
+| hand_intrusion_world_image_on_scanned_model | 37.50%    | 58.33%     | 366                | 1.96                       | 8m       | 9s                   |
+| multi_object_world_image_on_scanned_model   | 37.50%    | 41.67%     | 325                | 1.93                       | 8m       | 9s                   |
 
 **Note that rotation errors are meaningless since no ground truth rotation is provided**
 

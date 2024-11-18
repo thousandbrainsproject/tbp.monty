@@ -27,8 +27,6 @@ dependencies:
   - aihabitat::habitat-sim=0.2.2
   - mkl<2022 # prevents Intel errors when osx-64 environment is running on osx-arm64 platform
   - pytorch::pytorch=1.11.0
-  - pyg::pytorch-sparse
-  - pyg::pytorch-scatter
   - conda-forge::quaternion=2023.0.3 # later versions missing np.long
   - pytorch::torchvision
   - aihabitat::withbullet
