@@ -103,7 +103,7 @@ Training
 # If you don't have the YCB dataset, replace with names from habitat (e.g.,
 # 'capsule3DSolid', 'cubeSolid', etc.).
 object_names = ["mug", "banana"]
-# Get predefined object rotations that give good views of the object from many angles.
+# Get predefined object rotations that give good views of the object from 14 angles.
 train_rotations = get_cube_face_and_corner_views_rotations()
 ```
 The function `get_cube_face_and_corner_views_rotations()` is used in our pretraining
