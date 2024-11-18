@@ -11,7 +11,7 @@
   - [cortical-messaging-protocol](overview/architecture-overview/cortical-messaging-protocol.md)
   - [other-aspects](overview/architecture-overview/other-aspects.md)
   - [bringing-it-together](overview/architecture-overview/bringing-it-together.md)
-- [application-criteria-current-capabilities](overview/application-criteria-current-capabilities.md)
+- [application-criteria](overview/application-criteria.md)
 - [benchmark-experiments](overview/benchmark-experiments.md)
   - [results-from-alternative-implementations](overview/benchmark-experiments/results-from-alternative-implementations.md)
 - [faq-thousand-brains-project](overview/faq-thousand-brains-project.md)

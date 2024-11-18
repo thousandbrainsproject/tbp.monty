@@ -31,7 +31,7 @@ Before contributing, please sign our Contributor License Agreement (CLA). You ca
 This is not production-ready code. It is an **early beta version** that is under active
 development. This early beta version is functional but evolving. Expect frequent changes as we develop core features.
 
-You can find a list of the systems **current capabilities and application criteria** [here](https://thousandbrainsproject.readme.io/docs/application-criteria-current-capabilities).
+You can find a list of the systems **current capabilities and application criteria** [here](https://thousandbrainsproject.readme.io/docs/application-criteria).
 
 You can find our **project road map** and details on the next features we are working on [here](https://thousandbrainsproject.readme.io/docs/project-roadmap).
 

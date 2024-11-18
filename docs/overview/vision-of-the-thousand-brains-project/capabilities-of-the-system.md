@@ -7,6 +7,8 @@ Even though we cannot predict the ultimate use cases of the system, we want to t
 
 Following is a list of capabilities that we are always thinking about when designing and implementing the system. We are not looking for point solutions for each of these problems but a general algorithm that can solve them all. It is by no means a comprehensive list but should give an idea of the scope of the system.
 
+### Capabilities That our System Already has (At Least to a Certain Extend):
+
 - Recognizing objects independent of their location and orientation in the world.
 
 - Determining the location and orientation of an object relative to the observer, or to another object in the world.
@@ -19,6 +21,8 @@ Following is a list of capabilities that we are always thinking about when desig
 
 - Recognizing objects when they are partially occluded by other objects.
 
+### Further Capabilities That we are Currently Working on are:
+
 - Learning categories of objects and generalizing to new instances of a category.
 
 - Learning and recognizing compositional objects, including novel combinations of their parts.
@@ -30,6 +34,9 @@ Following is a list of capabilities that we are always thinking about when desig
 - Modeling and recognizing object states and behaviors (e.g. if a stapler is open or closed; whether a person is walking or running, and how their body evolves over time under these conditions).
 
 - Using learned models to alter the world and achieve goals, including goals that require decomposition into simpler tasks. The highest-level, overarching goals can be set externally.
+
+### Capabilities That the System Should Eventually Also Have
+(These will generalize from the same principles that the previous capabilities are built upon):
 
 - Generalizing modeling to abstract concepts derived from concrete models.
 

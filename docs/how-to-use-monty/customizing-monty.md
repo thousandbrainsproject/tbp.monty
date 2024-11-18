@@ -5,6 +5,7 @@ For more info on contributing custom modules, see [Ways to Contribute to Code](.
 
 Monty is designed as a modular framework where a user can easily swap out different implementations of the basic Monty components. For instance you should be able to switch out the type of learning module used without changing the sensor modules, environment, or motor system. The basic components of Monty are defined as abstract classes [`abstract_monty_classes.py`](../../src/tbp/monty/frameworks/models/abstract_monty_classes.py). To implement your own custom version of one of these classes, simply subclass from the abstract class or one of its existing subclasses. 
 
+![Each of the classes in this diagram can be subclasses and customized. The idea is that you can easily switch out different versions of each of these classes while keeping all the rest constant.](../figures/how-monty-works/monty_classes.png)
 
 ## Customizing a Class - Example: Learning Module
 

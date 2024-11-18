@@ -8,6 +8,8 @@ We aim to build a **general-purpose system** that is not optimized for one speci
 
 The most natural application is **robotics**, with physical sensors and actuators. However, the system should also be able to generalize to **more abstract sensorimotor setups, such as navigating the web or conceptual space**. As another example, **reading and producing language** can be framed as a sensorimotor task where the sensor moves through the sentence space, and action outputs could produce the letters of the alphabet in a meaningful sequence. Due to the messaging protocol between the sensor and learning module, the system can **effortlessly integrate multiple modalities** and even **ground language in physical models learned through other senses like vision or touch**.
 
+For more details, see [Application Criteria](application-criteria.md) and [Capabilities of the System](./vision-of-the-thousand-brains-project/capabilities-of-the-system.md).
+
 # What is Special about This Project?
 
 Much of today's AI is based on learning from giant datasets by training ANNs on vast clusters of GPUs. This not only burns a lot of energy and requires a large dataset, but it is also fundamentally different from how humans learn. We know that there is a more efficient way of learning; we do it every day with our brain, which uses about as much energy as a light bulb. So why not use what we know about the brain to make AI more efficient and robust?
@@ -54,7 +56,7 @@ We are also planning to host a series of **invited speakers** again, so please l
 
 # How is the Thousand Brains Project Funded?
 
-The Thousand Brains project is **partially funded by the Gates Foundation**. We are providing the Gates Foundation with regular updates on our progress, and they are facilitating exchanges with related research groups and potential applications, especially in global health. **We hope that our technology will have a big impact on AI and global health applications and will make them more available in low-income countries**.
+The Thousand Brains project and our research **continues to be funded by Jeff Hawkins** and now **also in part by the Gates Foundation**.  Our funding is focused on fundamental research into this new technology but will also facilitate exchanges with related research groups and potential applications.
 
 # What are Numenta’s Goals for the Thousand Brains Project?
 
