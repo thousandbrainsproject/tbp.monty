@@ -346,7 +346,7 @@ jobs:
     name: test-monty
     runs-on:
       group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-16core
+      labels: tbp-linux-x64-ubuntu2204-8core
     timeout-minutes: 120
     needs:
       - check_dependencies_monty # Don't run if dependency check fails
