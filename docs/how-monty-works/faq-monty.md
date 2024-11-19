@@ -1,25 +1,25 @@
 ---
 title: FAQ - Monty
-description: Frequently asked questions about the Thousand Brains Theory, Monty / thousand-brains systems, and the underlying algorithms.
+description: Frequently asked questions about the Thousand Brains Theory, Monty, thousand-brains systems, and the underlying algorithms.
 ---
 
 Below are responses to some of the frequently asked questions we have encountered. However, this is not an exhaustive list, so if you have a question, please reach out to us and the rest of the community at our [Discourse page](https://thousandbrains.discourse.group/). We will also update this page with new questions as they come up.
 
 # General
 
-## What is the difference between the Thousand Brains Theory, Monty, and thousand-brains systems?
+## What is the Difference Between the Thousand Brains Theory, Monty, and Thousand-Brains Systems?
 
 We use these terms fairly interchangeably (particularly in our meetings), however the [Thousand Brains Theory](https://www.frontiersin.org/journals/neural-circuits/articles/10.3389/fncir.2018.00121/full) (TBT) is the underlying theory of how the neocortex works. Thousand-brains systems are artificial intelligence systems designed to operate according to the principles of the TBT. Finally, Monty is the name of the first system that implements the TBT (i.e. the first thousand-brains system), and is made available in our open-source code.
 
 # Neuroscience Theory
 
-## What is the relationship of the Thousand Brains Theory to the Free Energy Principle?
+## What is the Relationship of the Thousand Brains Theory to the Free Energy Principle?
 
 The Free-Energy Principle and Bayesian theories of the brain are interesting and broadly compatible with the principles of the Thousand Brains Theory (TBT). While they can be useful for neuroscience research, our view is that Bayesian approaches are often too broad and require problematic assumptions (such as modeling noise as Gaussian) for building practical, intelligent systems. While the concept of the neocortex as a system that predicts the nature of the of world is common to the Free-Energy Principle and the Thousand Brains Theory (as well as much older ideas going back to Hermann von Helmholtz), we want to emphasize the key elements that set the TBT apart, such as the use of a modular architecture with reference frames, where each module builds representations of entire objects.
 
-## What does it mean to say that cortical columns in the brain model whole objects? Does the TBT claim there are models of coffee mugs in V1 (early visual cortex)?
+## What Does it Mean to Say That Cortical Columns in the Brain Model Whole Objects? Does the TBT Claim There are Models of Coffee Mugs in V1?
 
-One important prediction of the Thousand Brains Theory is that the intricate columnar structure found throughout brain regions, including early sensory areas like V1, supports computations much more complex than extracting simple features for recognizing objects.
+One important prediction of the Thousand Brains Theory is that the intricate columnar structure found throughout brain regions, including primary sensory areas like V1 (early visual cortex), supports computations much more complex than extracting simple features for recognizing objects.
 
 To recap a simple version of the model (i.e. simplified to exclude top-down feedback or motor outputs):
 We assume the simple features that are often detected experimentally in areas like V1 correspond to the feature input (layer 4) in a cortical column. Each column then integrates movement in L6, and uses features-at-locations to build a more stable representation of a larger object in L3 (i.e. larger than the receptive field of neurons in L4). L3’s lateral connections then support "voting", enabling columns to inform each-other’s predictions. Some arguments supporting this model are:
@@ -32,13 +32,13 @@ We use a coffee mug as an illustrative example, because a single patch of skin o
 
 It is also important to note that compositionality and hierarchy is still very important even if columns model whole objects. For example, a car can be made up of wheels, doors, seats, etc., which are distinct objects. Instead, we argue that a single column can do a surprising amount, more than what would be predicted by artificial neural network (ANN) style architectures.
 
-## Why is there no Hierarchical Temporal Memory (HTM) or grid-cells in this version of Monty?
+## Why is There no Hierarchical Temporal Memory (HTM) or Grid-Cells in This Version of Monty?
 
 We are focused on ensuring that the first generation of thousand-brain systems are interpretable and easy to iterate upon. Being able to conceptually understand what is happening in the Monty system, visualize it, debug it, and propose new algorithms in intuitive terms is something we believe to be extremely valuable for fast progress. As such, we have focused on the core principles of the TBT, but have not yet included lower-level neuroscience components such as HTM or grid-cells. In the future, we will consider adding these elements where a clear case for a comparative advantage exists.
 
 # Alternative Approaches to Intelligence
 
-## What is the relationship of the Thousand Brains Theory to robotics algorithms that use maps, such as particle filters and Simultaneous Localization and Mapping (SLAM)?
+## What is the Relationship of the Thousand Brains Theory to Robotics Algorithms That Use Maps, Such as Particle Filters and Simultaneous Localization and Mapping (SLAM)?
 
 There are deep connections between the Thousand Brains Theory and SLAM, or related methods like particle filters. This relationship was discussed, for example, in [Numenta’s 2019 paper by Lewis et al](https://www.frontiersin.org/journals/neural-circuits/articles/10.3389/fncir.2019.00022/full), in a discussion of grid-cells:
 
@@ -59,19 +59,19 @@ Furthermore, Monty's evidence-based learning-module has clear similarities to pa
 
 So in some ways, you can think of the Thousand-Brains Project as leveraging concepts similar to SLAM or particle filters to model all structures in the world (including abstract spaces), rather than just environments. However, it is also more than this. For example, the capabilities of the system to model the world and move in it magnify due to the processing of many, semi-independent modeling units, and the ways in which these units interact.
 
-## What is the relationship of the Thousand Brains Theory to swarm intelligence?
+## What is the Relationship of the Thousand Brains Theory to Swarm Intelligence?
 
 There are interesting similarities between swarm intelligence and the Thousand Brains Theory. In particular, thousand-brains systems leverage many semi-independent computational units, where each one of these is a full sensorimotor system. As such, the TBT is a recognition of the centrality of distributed, sensorimotor processing to intelligence. However, the bandwidth and complexity of the coordination is much greater in the cortex and thousand-brains systems than what could occur in natural biological swarms.
 
 It might be helpful to think of the difference between prokaryotic organisms that may cooperate to some degree (such as bacteria creating a protective biofilm), vs. the complex abilities of eukaryotic organisms, where cells cooperate, specialize, and communicate in a much richer way. This distinction underlies the capabilities of swarming animals such as bees, which, while impressive, do not match the intelligence of mammals. In the long-term, we imagine that Monty systems can use communicating agents of various complexity, number and independence as required.
 
-## Why doesn't Monty make use of deep learning?
+## Why Does Monty Not Make Use of Deep Learning?
 
 Deep learning is a powerful technology - we use large-language models ourselves on a daily basis, and systems such as AlphaFold are an amazing opportunity for biological research. However, we believe that there are many core assumptions in deep learning that are inconsistent with the operating principles of the brain. It is often tempting when implementing a component in an intelligent system to reach for a deep learning solution. However, we have made most conceptual progress when we have set aside the black box of deep learning and worked from basic principles of known neuroscience and the problems that brains must solve.
 
 As such, there may come a time where we leverage deep learning components, particularly for more "sub-cortical" processing such as low-level feature extraction, and model-free motor policies (see below), however we will avoid this until they prove themselves to be absolutely essential. 
 
-## What is the relationship of the Thousand Brains Theory to reinforcement learning, including deep reinforcement learning?
+## What is the Relationship of the Thousand Brains Theory to Reinforcement Learning, Including Deep Reinforcement Learning?
 
 Reinforcement learning (RL) can be divided into two kinds, model-free and model-based. Model-free RL can be used by the brain, for example, to help you proficiently and unconsciously ride a bicycle by making fine adjustments in your actions in response to feedback. Current deep reinforcement learning algorithms are very good at this ([Mnih et al, 2015](https://www.nature.com/articles/nature14236)). However, when you learned to ride a bicycle, you likely watched your parents give a demonstration, listened to their explanation, and had an understanding of the bicycle's shape and the concept of peddling before you even started moving on it. Without these deliberate, guided actions, it could take thousands of years of random movement in the vicinity of the bicycle until you figured out how to ride it, as positive feedback (the bicycle is moving forward) is rare.
 
@@ -81,7 +81,7 @@ While this remains an active area of research in deep-reinforcement learning ([H
 
 In the long term, there may be a role for something like deep-reinforcement learning to support the model-free, sub-cortical processing of thousand-brains systems. However the key open problem, and the one that we believe the TBT will be central to, is unlocking the model-based learning of the cortex.
 
-## Can't deep learning systems like generative pre-trained transformers (GPTs) and diffusion-models learn "world models"?
+## Can't Deep Learning Systems Like Generative Pre-Trained Transformers (GPTs) and Diffusion-Models Learn "World Models"?
 
 We believe that there is limited evidence that deep learning systems, including these generative architectures, can learn sufficiently powerful "world models" for true machine intelligence. For example, representations of objects in deep learning systems tend to be highly entangled and divorced of concepts such as cause-and-effect (see e.g. [Brooks, Peebles et al, 2024](https://openai.com/index/video-generation-models-as-world-simulators/)), in comparison to the object-centric representations that are core to how humans represent the world even from an extremely young age ([Spelke, 1990](https://www.harvardlds.org/wp-content/uploads/2017/01/Spelke1990-1.pdf)). Representations are also often limited in structure, manifesting in the tendency of deep learning systems to classify objects based on texture more than shape ([Gavrikov et al, 2024](https://arxiv.org/html/2403.09193v1)), an entrenched vulnerability to adversarial examples ([Szegedy et al, 2013](https://arxiv.org/abs/1312.6199)), the tendency to hallucinate information, and the idiosyncrasies of generated images (such as inconsistent number of fingers on hands), when compared to the simpler, but much more structured drawings of children.
 
