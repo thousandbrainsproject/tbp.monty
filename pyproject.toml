@@ -82,7 +82,7 @@ real_robots = [
 ]
 
 [project.urls]
-Homepage = 'https://thousandbrainsproject.com'
+Homepage = 'https://thousandbrainsproject.org'
 Documentation = 'https://thousandbrainsproject.readme.io/docs'
 Repository = 'https://github.com/thousandbrainsproject.tbp.monty'
 Issues = 'https://github.com/thousandbrainsproject/tbp.monty/issues'
