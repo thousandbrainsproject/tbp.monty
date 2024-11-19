@@ -2,7 +2,6 @@
 title: Motor System Improvements
 description: Improvements we would like to add to the motor system.
 ---
-We have a guide on [customizing the motor system](../contributing/ways-to-contribute-to-code/contributing-motor-systems.md) here.
 
 These are the things we would like to implement:
 
