@@ -25,6 +25,8 @@ We still require the PyTorch library since we use it for certain things, such as
 
 Another reason we discourage using PyTorch is to add a barrier for deep-learning to creep into Monty. Although we don't have a fundamental issue with contributors using deep learning, we worry that it will be the first thing someone's mind goes to when solving a problem (when you have a hammer...). We want contributors to think intentionally about whether deep-learning is the best solution for what they want to solve. Monty relies on very different principles than those most ML practitioners are used to, and so it is useful to think outside of the mental framework of deep-learning. More importantly, evidence that the brain can perform the long-range weight transport required by deep-learning's cornerstone algorithm - back-propagation - is extremely scarce. We are developing a system that, like the mammalian brain, should be able to use _local_ learning signals to rapidly update representations, while also remaining robust under conditions of continual learning. As a general rule therefore, please avoid Pytorch, and the algorithm that it is usually leveraged to support - back-propagation! 
 
+You can read more about our views on deep learning in Monty in our [FAQ](../how-monty-works/faq-monty.md#why-does-monty-not-make-use-of-deep-learning).
+
 ## Source Code Copyright and License Header
 
 All source code files must have a copyright and license header. The header must be placed at the top of the file, on the first line, before any other code. For example, in Python:
