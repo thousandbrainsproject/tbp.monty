@@ -51,20 +51,15 @@ There are interesting similarities between swarm intelligence and the Thousand B
 
 It might be helpful to think of the difference between prokaryotic organisms that may cooperate to some degree (such as bacteria creating a protective biofilm), vs. the complex abilities of eukaryotic organisms, where cells cooperate, specialize, and communicate in a much richer way. This distinction likely underlies the capabilities of swarming animals such as bees, which while impressive, do not match the intelligence of mammals. In the long-term, we imagine that Monty systems can use communicating agents of various complexity, number and independence as required.
 
-# Why are there no grid-cells or Hierarchical Temporal Memory (HTM) in this version of Monty?
+# Why is there Hierarchical Temporal Memory (HTM) or grid-cells in this version of Monty?
 
-TODO
-
-
-?Make the neural research roadmap public --> can turn into a PDF; should make sure it is sufficiently up to date and polished
-
+We are focused on ensuring that the first generation of thousand-brain systems are interpretable and easy to iterate upon. Being able to conceptually understand what is happening in the Monty system, visualize it, debug it, and propose new algorithms in intuitive terms is something we believe to be extremely valuable to fast progress. As such, we have focused on the core principles of the TBT, but have not yet included lower-level neuroscience componenets such as HTM or grid-cells. In the future, we will consider adding these elements where a clear case for a comparative advantage exists.
 
 # Why doesn't Monty make use of deep learning?
 
 Deep-learning is a powerful technology - we use large-language models ourselves on a daily basis, and systems such as AlphaFold are an amazing opportunity for biological research. However, we believe that there are many core assumptions in deep-learning that are inconsistent with the operating principles of the brain. It is often tempting when implementing a component in an intelligent system to reach for a deep-learning solution. However, we have made most conceptual progress when we have set aside the black box of deep-learning and worked from basic principles of known neuroscience and the problems that brains must solve.
 
 As such, there may come a time where we leverage deep-learning componenets, particularly for more "sub-cortical" processing such as low-level feature extraction, and model-free motor policies (see below), however we will avoid these until they prove themselves to be absolutely essential. 
-
 
 # What is the relationship of Monty to reinforcement learning, including deep reinforcement learning?
 
@@ -79,18 +74,11 @@ In the long term, there may be a role for something like deep-reinforcement lear
 
 # Can't modern deep-learning systems like generative pre-trained transformers (GPTs) and diffusion-models learn "world models"?
 
-We believe that there is limited evidence that deep-learning systems, including these generative architectures, can learn sufficiently powerful "world models" for true machine intelligence. For example, representations of objects in deep-learning systems tend to be highly entangled (ref slot attention; ref Sora failure), rather than the object-centric representations that are core to how humans represent the world even from an extremely young age (ref bio). Representations are also often limited in structure, manifesting in the tendancy of deep-learning systems to classify objects based on texture more than shape (ref recent), vulnerability to adversarial examples, hallucinating information, and the idiosynchrasies of generated images (such as inconsistent number of fingers on hands), when compared to the simpler, but much more structured drawings of children.
+We believe that there is limited evidence that deep-learning systems, including these generative architectures, can learn sufficiently powerful "world models" for true machine intelligence. For example, representations of objects in deep-learning systems tend to be highly entangled and divorced of concepts such as cause-and-effect (ref slot attention; ref Sora failure), in comparison to the object-centric representations that are core to how humans represent the world even from an extremely young age (ref bio). Representations are also often limited in structure, manifesting in the tendancy of deep-learning systems to classify objects based on texture more than shape (ref recent), a vulnerability to adversarial examples (ref), the hallucinations of information (ref), and the idiosynchrasies of generated images (such as inconsistent number of fingers on hands), when compared to the simpler, but much more structured drawings of children.
 
-Instead, these systems appear to learn complex input-output mappings, which are capable of some degree of interpolation between observed points, but limited generalization beyond the training data. This makes them useful for many tasks, but requires training on enormous amounts of training, and limits their ability to solve benchmarks such as ARC-AGI (ref). This dependence on input-output mappings means that even approaches such as searching over the space of possible outputs (e.g. o1-preview), are more akin to searching over a space of learned "type-1" actions (ref type 1 vs type 2 thinking pape), rather than the true "type-2", model-based planning that is a marker of deep intelligence.
+*refs in blog post likely useful
 
-
-# What about Sutton's bitter lesson? Most progress in AI was made just by scaling up existing methods right?
-
-Evolution also discovered scale, but it's not everything.
-
-Scaling of number of LMs vs. amount of body to model is clearly important, see e.g. primates and dolphins vs. whales. 
-
-Does this mean scale doesn't matter - no, but matters what scaling. Also data shouldn't be key. Scaling this has given an illusion of generalisation
+Instead, these systems appear to learn complex input-output mappings, which are capable of some degree of interpolation between observed points, but limited generalization beyond the training data. This makes them useful for many tasks, but requires training on enormous amounts of data, and limits their ability to solve benchmarks such as ARC-AGI (ref), or more importantly, make themselves very useful when physically embodied. This dependence on input-output mappings means that even approaches such as searching over the space of possible outputs (e.g. the recent o1 models (ref)), are more akin to searching over a space of learned "type-1" actions (ref type 1 vs type 2 thinking pape), rather than the true "type-2", model-based planning that is a marker of intelligence.
 
 
 Pass through Grammarly
