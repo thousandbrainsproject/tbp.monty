@@ -1157,12 +1157,8 @@ def get_possible_3d_rotations(
     degrees: Iterable[Number],
     displacement: Number = 0,
 ) -> List[np.ndarray]:
-    """Get list of unique 3d rotations that tile the space. Used for configs.
+    """Get list of 24 unique 3d rotations that tile the space. Used for configs.
 
-    :param degrees: List of degrees to sample from.
-    :param displacement: Additional offset (in degrees) to apply to all rotations;
-        useful if want to e.g. tile a similar space at training and evaluation, but
-        slightly offset between these settings
     Args:
         degrees (Iterable[Number]): Sequence of degrees to sample from.
         displacement (Number): Additional offset (in degrees) to apply to all rotations;
