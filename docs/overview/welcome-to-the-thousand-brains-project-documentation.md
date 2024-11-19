@@ -2,19 +2,18 @@
 title: Welcome to the Thousand Brains Project Documentation!
 ---
 
-![An open-source, sensorimotor learning system following the principles of the neocortex](../figures/overview/logo.png)
+![](../figures/overview/logo.png)
 
+Welcome to the Thousand Brains Project, an open-source framework for sensorimotor learning systems that follow the same principles as the human brain.
 
-This documentation details the first implementation of a sensorimotor learning system from the Thousand Brains Project. We lovingly call it Monty after Vernon Mountcastle, who proposed cortical columns as a repeating functional unit across the neocortex.
+This documentation outlines the current features, and future vision, of our platform for building next-generation AI and robotics applications using neocortical algorithms. In addition, we describe the details of Monty, the first implementation of a thousand-brains system. Named in honor of Vernon Mountcastle, who argued that the power of the mammalian brain lies in its re-use of cortical columns as the primary computational unit, Monty represents a fundamentally new way of building AI systems.
 
-This is an open-source project by Numenta, partially funded by the Gates Foundation.
-
-The Monty project incoporates a lot of new concepts and ideas and will require considerable learning on the part of contributors who want to make significant code contributions or to use the code to solve real-world problems.  With that in mind, we've tried to make the project easy to comprehend and get started with.  To understand the fundamental principles of the project, these are some resources that we recommend:
+The Monty project incorporates a lot of new concepts and ideas and will require considerable learning on the part of contributors who want to make significant code contributions or to use the code to solve real-world problems.  With that in mind, we've tried to make the project easy to comprehend and get started with.  To understand the fundamental principles of the project, these are some resources that we recommend:
 
 1. 🧠 [Vision of the Thousand Brains Project](./vision-of-the-thousand-brains-project.md) which describes the **guiding principles** of the project.
 2. 🎥 [YouTube Videos](https://www.youtube.com/@thousandbrainsproject) that contain in depth descriptions of the project and the principles that guide it.  The **Quick Start playlist** is the fastest way to learn the basics.
-3. 💬 [Discourse Forum](https://thousandbrains.discourse.group/) which is a community forum for discussing the project and a great place for beginners to **get answers to questions**.
-4. 📚 [Tutorials](../how-to-use-monty/tutorials.md) which are step-by-step guides for using Monty.
+3. 📚 [Tutorials](../how-to-use-monty/tutorials.md) which are step-by-step guides for using Monty.
+4. 💬 [Discourse Forum](https://thousandbrains.discourse.group/) which is a community forum for discussing the project and a great place for beginners to **get answers to questions**.
 
 # Section Overview
 
@@ -33,10 +32,6 @@ The documentation is broken into six main sections:
 # Our Level of Community Engagement
 
 We are excited to have you here!  Our intention for making the project open-source is to foster a community of researchers and developers interested in contributing to the project and to allow all of humanity to benefit from these advances in AI.  The Thousand Brains Project team is quite small, and we have a limited amount of time, so please be patient with our responses and know that we'll do our best to get back to you as soon as possible.  That said, here's a list of [ways you can contribute to the project](../contributing/ways-to-contribute-to-code.md).
-
-# How to Cite this Project
-
-> 🚧 TODO: Create this section
 
 
 -----------------------------------
