@@ -28,9 +28,7 @@ It is also important to note that compositionality and hierarchy is still very i
 
 # What is the relationship of the Thousand Brains Theory to robotics algorithms that use maps, such as particle filters and Simultaneous Localization and Mapping (SLAM)?
 
-There are deep connections between the Thousand Brains Theory and SLAM, or related methods like particle filters.
-
-This relationship was discussed, for example, in [Numenta’s 2019 paper by Lewis et al](https://www.frontiersin.org/journals/neural-circuits/articles/10.3389/fncir.2019.00022/full), in a discussion of grid-cells:
+There are deep connections between the Thousand Brains Theory and SLAM, or related methods like particle filters. This relationship was discussed, for example, in [Numenta’s 2019 paper by Lewis et al](https://www.frontiersin.org/journals/neural-circuits/articles/10.3389/fncir.2019.00022/full), in a discussion of grid-cells:
 
 “To combine information from multiple sensory observations,
 the rat could use each observation to recall the set of all
