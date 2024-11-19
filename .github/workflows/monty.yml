@@ -18,7 +18,7 @@ jobs:
     name: build-sphinx-monty
     runs-on:
       group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-16core
+      labels: tbp-linux-x64-ubuntu2204-2core
     needs:
       - check_dependencies_monty # Don't run if dependency check fails
       - check_license_monty # Don't run if license check fails
@@ -61,7 +61,7 @@ jobs:
     name: build-wheel-monty
     runs-on:
       group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-16core
+      labels: tbp-linux-x64-ubuntu2204-2core
     needs:
       - install_monty # Needed for the cache key
       - should_run_monty
@@ -99,7 +99,7 @@ jobs:
     name: check-dependencies-monty
     runs-on:
       group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-16core
+      labels: tbp-linux-x64-ubuntu2204-2core
     needs:
       - install_monty
       - should_run_monty
@@ -150,7 +150,7 @@ jobs:
     name: check-style-monty
     runs-on:
       group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-16core
+      labels: tbp-linux-x64-ubuntu2204-2core
     needs:
       - install_monty
       - should_run_monty
@@ -181,7 +181,7 @@ jobs:
     name: check-types-monty
     runs-on:
       group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-16core
+      labels: tbp-linux-x64-ubuntu2204-2core
     needs:
       - install_monty
       - should_run_monty
@@ -212,7 +212,7 @@ jobs:
     name: install-monty
     runs-on:
       group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-16core
+      labels: tbp-linux-x64-ubuntu2204-2core
     needs:
       - check_license_monty # Don't run if license check fails
       - should_run_monty
@@ -346,7 +346,7 @@ jobs:
     name: test-monty
     runs-on:
       group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-16core
+      labels: tbp-linux-x64-ubuntu2204-8core
     timeout-minutes: 120
     needs:
       - check_dependencies_monty # Don't run if dependency check fails

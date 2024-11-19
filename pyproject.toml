@@ -7,10 +7,13 @@ authors = [
     { name = 'Numenta' }
 ]
 classifiers = [
+    'Development Status :: 3 - Alpha', # Update to Beta when we start using semver
     'Environment :: Console',
-    'License :: Other/Proprietary License',
+    'Intended Audience :: Science/Research',
+    'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Programming Language :: Python :: 3',
+    'Topic :: Scientific/Engineering :: Artificial Intelligence'
 ]
 dependencies = [
     'importlib_resources',
@@ -81,7 +84,7 @@ real_robots = [
 ]
 
 [project.urls]
-Homepage = 'https://thousandbrainsproject.com'
+Homepage = 'https://thousandbrainsproject.org'
 Documentation = 'https://thousandbrainsproject.readme.io/docs'
 Repository = 'https://github.com/thousandbrainsproject.tbp.monty'
 Issues = 'https://github.com/thousandbrainsproject/tbp.monty/issues'
