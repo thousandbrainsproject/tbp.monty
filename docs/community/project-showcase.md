@@ -10,4 +10,18 @@ Please make sure your project is well documented, including a README on how to r
 This is the first real-world demo of Monty the TBP team came up with. We used the iPad camera to take an image of an object. Monty then moves a small patch over this image and tries to recognize the object.
 
 TODO OSS: link to monty_lab project folder.
-TODO OSS: link you YouTube video of the first demo.
+
+# Monty's First Live Demo in the Real World
+
+[block:embed]
+{
+  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2FKcE004QbuSw%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DKcE004QbuSw&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2FKcE004QbuSw%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"640\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
+  "url": "https://www.youtube.com/watch?v=KcE004QbuSw",
+  "title": "2023/03 - Monty's First Live Demo in the Real World",
+  "favicon": "https://www.youtube.com/favicon.ico",
+  "image": "https://i.ytimg.com/vi/KcE004QbuSw/hqdefault.jpg",
+  "provider": "https://www.youtube.com/",
+  "href": "https://www.youtube.com/watch?v=KcE004QbuSw",
+  "typeOfEmbed": "youtube"
+}
+[/block]

@@ -88,7 +88,7 @@ For example, the following markdown creates the image below:
 ![caption text](../figures/docs-only-example.png)
 ```
 
-<div style="text-align:center"><img src="https://files.readme.io/5b9d5a186a651f0ddc17022c3a95e65400991aa56a6d8523abefabd4db1dc6c4-touch_vs_vision.png" /><caption>caption text</caption></div>
+<div style="text-align:center"><img width="300px" src="https://files.readme.io/5b9d5a186a651f0ddc17022c3a95e65400991aa56a6d8523abefabd4db1dc6c4-touch_vs_vision.png" /><caption>caption text</caption></div>
 
 > [!WARNING] 
 > Caption text is only visible on readme.com

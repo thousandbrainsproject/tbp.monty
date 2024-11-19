@@ -43,7 +43,7 @@ python benchmarks/run.py -e randrot_10distinctobj_surf_agent
 
 If you are using a wandb logger (used by default in the benchmark experiment configs), you can view the experiment results in the wandb dashboard. If you go into the "Runs" tab (selected on the left), you should see the summary statistics in the columns starting with "overall/".
 
-![](../figures/how-to-use-monty/wandb_dashborad_expl.png)
+![](../figures/originals/wandb_dashborad_expl_orig.png)
 
 
 If you are not using wandb, you can also calculate the statistics from the saved .csv file.

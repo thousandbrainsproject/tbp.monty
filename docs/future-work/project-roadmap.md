@@ -6,7 +6,7 @@ description: An overview of tasks we plan to work on or would welcome contributi
 
 We have a high-level overview table of tasks on our roadmap [here](https://docs.google.com/spreadsheets/d/10b0FR9YdFYqfhIiGMpZsjmN2OAbNAjp4m_hLBCV161I/edit?usp=sharing).
 
-![Screenshot of our overview sheet. For an up-to-date view, just go to the sheet https://docs.google.com/spreadsheets/d/10b0FR9YdFYqfhIiGMpZsjmN2OAbNAjp4m_hLBCV161I/edit?usp=sharing](../figures/future-work/monty_tasks.png)
+![Screenshot of our overview sheet. For an up-to-date view, just go to the sheet https://docs.google.com/spreadsheets/d/10b0FR9YdFYqfhIiGMpZsjmN2OAbNAjp4m_hLBCV161I/edit?usp=sharing](../figures/originals/monty_tasks_orig.png)
 
 
 

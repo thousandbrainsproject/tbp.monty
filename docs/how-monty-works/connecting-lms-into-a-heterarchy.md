@@ -9,7 +9,7 @@ First of all, there can be **skip connections**. A low-level LM or even an SM ca
 
 Second, we have several other channels of communication in Monty that do not implement a hierarchical forward pass of information (see figure below). An LM can receive **top-down input** from higher-level LMs (LMs that model objects which are composed of object parts modeled in the receiving LM) as biasing context. Another top-down input to the LM is the goal state, used for modeling hierarchical action policies. Finally, the LM receives **lateral inputs from votes** and **recurrently updates its internal representations**.
 
-![](../figures/how-monty-works/overview_diagram.png)
+![](../figures/originals/overview_diagram_orig.png)
 
 
 Lastly, each LM can send motor outputs directly to the motor system. Contrary to the idea that sensory input is processed through a series of hierarchical steps until it reaches the motor area which then produces action plans, we look at each LM as a complete sensorimotor system. Motor output is not exclusive to the end of the hierarchy, but rather occurs at every level of sensory processing.

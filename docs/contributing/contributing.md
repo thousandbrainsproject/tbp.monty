@@ -1,8 +1,6 @@
 ---
 title: Ways to Contribute
 ---
-![](../figures/contributing/logo.png)
-
 
 Welcome, and thank you for your interest in contributing to Monty!
 

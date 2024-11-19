@@ -190,7 +190,7 @@ for step in range(eval_stats['monty_matching_steps'][episode]):
 
 The above code should create an image like the one shown below for each step in the experiment and save it in a folder called `stepwise_examples` inside the logs folder of this experiment.
 
-![](../figures/how-to-use-monty/0_4.png)
+![](../figures/originals/0_4_orig.png)
 
 
 ### Plotting Results (CSV)
@@ -224,17 +224,17 @@ Obviously, there are tons of options for visualizing the logged data. The code a
 
 When logging into Wandb, you can track your experiment results at <https://wandb.ai/home> . When you navigate to your project (by default called "Monty") you should see all your experiments in the Wandb dashboard. If you click on one of the runs, you should see something like this:
 
-![](../figures/how-to-use-monty/wandb_stats_expl.png)
+![](../figures/originals/wandb_stats_expl_orig.png)
 
 
 If you are using the `BasicWandbTableStatsHandler`, you will also see a table like this:
 
-![](../figures/how-to-use-monty/wandb_table_expl.png)
+![](../figures/originals/wandb_table_expl_orig.png)
 
 
 You can then create all kinds of plots from this data. A convenient way of doing this is using wandb reports but you can also create custom plots within the dashboard or download the data and plot it with any software of your choice.
 
-![Example plot created from the table logged to wandb using a wandb report. This plot shows which objects were detected (y) given the target object (x). These results are from an experiment testing modality transfer (learning with a vision sensor and then recognizing with touch).](../figures/how-to-use-monty/wandb_confusion_mtrx.png)
+![Example plot created from the table logged to wandb using a wandb report. This plot shows which objects were detected (y) given the target object (x). These results are from an experiment testing modality transfer (learning with a vision sensor and then recognizing with touch).](../figures/originals/wandb_confusion_mtrx_orig.png)
 
 
 ![Another example of a wandb plot (standard bar plot).](../figures/how-to-use-monty/wandb_bar_plt.png)

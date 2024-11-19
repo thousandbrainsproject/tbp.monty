@@ -115,12 +115,12 @@ To enable this, the policy is informed by the principal curvature information av
 
 - Note that in the future, we may wish to sometimes _intentionally_ return to previous locations when we have noisy self-movement information, so as to correct our estimated path-integration.
 
-![The core decision policy for the curvature-informed surface agent (plain English). Note purple boxes represent terminal states (after which we begin again at New Step).](../figures/how-monty-works/curve_pol_words.png)
+![The core decision policy for the curvature-informed surface agent (plain English). Note purple boxes represent terminal states (after which we begin again at New Step).](../figures/originals/curve_pol_words_orig.png)
 
 
 In the figure below, two examples of the policy in action are shown.
 
-![Two samples of the curvature-informed surface policy being used during inference. Blue segments represents a standard step, white represents following minimal principal curvature, black following maximal, and green taking an avoidance step. Note in particular how in (b), as the agent moves over the rim of the cup, it realizes it will revisit a previous location, and so takes an avoidance step (green) to bring it in a new direction. Further note that even when principal curvature might be evident to the human eye, the model may not be receiving a valid PC-input due to noise on the surface of the mesh. Finally, the end point shows the sensed orientation of the current feature (blue detected point-normal, red and orange detected principal curvatures).](../figures/how-monty-works/curve_pol_example.png)
+![Two samples of the curvature-informed surface policy being used during inference. Blue segments represents a standard step, white represents following minimal principal curvature, black following maximal, and green taking an avoidance step. Note in particular how in (b), as the agent moves over the rim of the cup, it realizes it will revisit a previous location, and so takes an avoidance step (green) to bring it in a new direction. Further note that even when principal curvature might be evident to the human eye, the model may not be receiving a valid PC-input due to noise on the surface of the mesh. Finally, the end point shows the sensed orientation of the current feature (blue detected point-normal, red and orange detected principal curvatures).](../figures/originals/curve_pol_example_orig.png)
 
 
 ## Hypothesis-Driven Policy Details
@@ -147,7 +147,7 @@ In addition to being able to compare the top two most likely objects in such a w
 
 The above conditions can support performing a hypothesis-driven jump, but in addition, it is first necessary that we have taken a sufficient number of steps since our last hypothesis-driven jump, to reduce the probability of continuously jumping over the object, potentially to similar locations. In practice, this minimum number of steps is small however (e.g. 5 steps).
 
-![An example showing where the agent is in the external world (left and right plots; agent "finger" represented with ball-and-pole, where the pole points in the direction the agent is facing), as well as its internal model of the hypothesis spaces (center, green-ish-blue). Based on its current location (on the handle of the spoon) and estimated poses of the two most likely objects (spoon and knife), the model overlays these, and the graph-mismatch technique proposes testing a part of the head of the spoon (red-spot, center). In the final panel, we see the agent after jumping to this point.](../figures/how-monty-works/hyp_driven_example.png)
+![An example showing where the agent is in the external world (left and right plots; agent "finger" represented with ball-and-pole, where the pole points in the direction the agent is facing), as well as its internal model of the hypothesis spaces (center, green-ish-blue). Based on its current location (on the handle of the spoon) and estimated poses of the two most likely objects (spoon and knife), the model overlays these, and the graph-mismatch technique proposes testing a part of the head of the spoon (red-spot, center). In the final panel, we see the agent after jumping to this point.](../figures/originals/hyp_driven_example_orig.png)
 
 
 ## Long Term Policy View

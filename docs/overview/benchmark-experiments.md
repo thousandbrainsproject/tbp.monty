@@ -10,22 +10,22 @@ We split up the experiments into a short benchmark test suite and a long one. Th
 
 When building the graph we add a new point if it differs in location by more than 1cm from other points already learned, or its features are different from physically nearby learned points (a difference of 0.1 for hue and 1 for log curvature). Experiments using these models have `10distobj` in their name.
 
-![](../figures/overview/current_models_surf_agent_distinct.png)
+![](../figures/originals/current_models_surf_agent_distinct_orig.png)
 
 
 To be able to test the ability to distinguish similar objects (for example by using more sophisticated policies) we also have a test set of 10 similar objects (shown below) learned in the same way. Experiments using these models have `10simobj` in their name.
 
-![](../figures/overview/current_models_surf_agent_similar.png)
+![](../figures/originals/current_models_surf_agent_similar_orig.png)
 
 
 For experiments with multiple sensors and learning modules we currently only have a setup with the distant agent so we also have to train the models with the distant agent. These models have less even coverage of points since we just see the objects from several fixed viewpoints and can't move as freely around the object as we can with the surface agent. This is why these models have a few missing areas where parts of the object were never visible during training. In the 5LM experiments, each LM has learned slightly different models, depending on their sensor parameters. The image below shows the models learned in one LM. Results with one LM for comparability are given in the experiment marked with `dist_on_distm` (i.e. distant agent evaluated on distant-agent trained models). 
 
-![](../figures/overview/current_models_dist_agent_distinct.png)
+![](../figures/originals/current_models_dist_agent_distinct_orig.png)
 
 
 Configs with `multi` in the name have additional distractor objects, in addition to the primary target object. These experiments are designed to evaluate the model's ability to stay on an object until it is recognized. As a result, these are currently setup so that the agent should always begin on a "primary" target object, and recognition of this object is the primary metric that we evaluate. In addition however, there is a "step-wise" target, which is whatever object an LM's sensor is currently viewing; the ultimate MLH or converged ID of an LM is therefore also compared to the step-wise target that the LM was observing at the time. To make recognition of the primary target relatively challenging, distractor objects are added as close as possible along the horizontal axis, while ensuring that i) the objects do not clip into each other, and ii) that an initial view of the primary target is achieved at the start of the episode. Note these experiments cannot currently be run with multi-processing (the -m flag), as the Object Initializer classes need to be updated. Example multi-object environments are shown below. 
 
-![](../figures/overview/multi_obj_environments.png)
+![](../figures/originals/multi_obj_environments_orig.png)
 
 
 Configs with `_dist_agent` in the name use the distant agent for inference (by default they still use the models learned with the surface agent). This means that the sensor is fixed in one location and can only tilt up, down, left and right following a random walk. When using the model-based hypothesis-testing policy, the agent can also "jump" to new locations in space. Configs with `surf_agent` in the name use the surface agent for inference which can freely move around the entire object. Both the surface and the distant agent can execute model-based actions using the hypothesis testing policy. For more details, see our documentation on [policies](../how-monty-works/policy.md).
@@ -36,7 +36,7 @@ Configs with `randrot` in their name test each object in 10 random, new rotation
 
 Configs with `noise` in their name test with noisy sensor modules where we add Gaussian noise to the sensed locations (0.002), point-normals (2), curvature directions (2), log curvatures (0.1), pose_fully_defined (0.01), and hue (0.1). Numbers in brackets are the standard deviations used for sampling the noisy observations. Note that the learned models were acquired without sensor noise. The image below should visualize how much location noise we get during inference but the LM still contains the noiseless models shown above.
 
-![](../figures/overview/graph_noise_002.png)
+![](../figures/originals/graph_noise_002_orig.png)
 
 
 Configs with `rawnoise` in the name test with noisy raw sensor input where Gaussian noise is applied directly to the depth image which is used for location, point normal, and curvature estimation. Here we use a standard deviation of 0.001. This allows us to test the noise robustness of the sensor module compared to testing the noise robustness of the learning module in the `noise` experiments.
@@ -68,7 +68,7 @@ The following results are obtained from experiments using the 10-object subsets 
 
 The following results are obtained from experiments on the entire YCB dataset (77 objects). Since this means having 77 instead of 10 objects in memory, having to disambiguate between them, and running 77 episodes instead of 10 per epoch, these runs take significantly longer. Due to that we only test 3 known rotations ([0, 0, 0], [0, 90, 0], [0, 180, 0]) for the `base` configs and 3 random rotations for the `randrot` configs. The 5LM experiment is currently just run with 1 epoch (1 random rotation per object) but might be extended to 3. The 5LM experiment is run on 48 CPUs instead of 16.
 
-![](../figures/overview/ycb_objects_0_0_0_vert.png)
+![](../figures/originals/ycb_objects_0_0_0_vert_orig.png)
 
 
 ### Results
