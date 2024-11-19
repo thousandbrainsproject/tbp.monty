@@ -24,7 +24,7 @@ Consider a learning module actively sensing a single object environment (e.g., a
 
 These relative evidence scores are then linearly mapped to the desired bit overlap range (e.g., [-8,0] -> [0,41] where 41 would be the number of on bits in each SDR and, therefore, the maximum overlap). Each episode populates a single row of the target overlaps matrix because it estimates the pairwise similarity of all objects with respect to the sensed object (i.e., most-likely object).
 
-![A simplified example of extracting evidence scores and populating the target overlaps matrix. **(Left)**: A single episode of Monty sensing and recognizing a fork. Evidence for all other objects relative to the evidence for the fork is calculated and mapped to target overlaps. **(Right)**: Results from three episodes populating all three rows of the target overlap matrix. ](../../figures/how-monty-works/screenshot_2024_08_16_at_9.46.27_am.png)
+![A simplified example of extracting evidence scores and populating the target overlaps matrix. **(Left)**: A single episode of Monty sensing and recognizing a fork. Evidence for all other objects relative to the evidence for the fork is calculated and mapped to target overlaps. **(Right)**: Results from three episodes populating all three rows of the target overlap matrix. ](../../figures/how-monty-works/evidence_scores.png)
 
 
 It is important to note that since the hypothesis space already considers all possible locations and orientations of the objects, we do not have to align (i.e., translate or rotate) the graphs for comparison; this is already performed while initializing the hypotheses space. For simplicity, we only show a single best hypothesis on the objects in the figure above, but matching considers all existing hypotheses. _Similarity estimation is a byproduct of evidence matching and comes at virtually no extra computational cost._
@@ -49,7 +49,7 @@ The goal is to _create_ object SDRs with target overlaps; therefore, we first ra
 
 In this step, we quantify the error in overlap bits between the randomly initialized representations and the target overlaps. The error is calculated from the difference between the current and target overlaps. The error matrix is the same size as the overlap matrices, with values indicating whether two representations need to become more or less similar (i.e., the sign of the error) and by how much (i.e., the magnitude of the error).
 
-![To calculate the overlap error, we subtract current overlaps from target overlaps. (Do we need this figure? Probably not.)](../../figures/how-monty-works/screenshot_2024_08_16_at_9.44.25_am.png)
+![To calculate the overlap error, we subtract current overlaps from target overlaps. (Do we need this figure? Probably not.)](../../figures/how-monty-works/overlap_error.png)
 
 
 ## Optimizing the Representations
