@@ -127,7 +127,7 @@ The dataset itself consists of 12 objects, with some representing multiple insta
 
 Finally, note that the world_image experimental runs **do not support running with multi-processing, so you cannot use the run_parallel.py script** when running these. This is because an appropriate object_init_sampler has yet to be defined for this experimental setup. All experiments are run with 16 CPUs for benchmarking purposes.
 
-TODO OSS: Link to monty_lab project folder of monty meets world.
+See the [monty_lab project folder](https://github.com/thousandbrainsproject/monty_lab/tree/main/monty_meets_world) for the code.
 
 ### Results
 
