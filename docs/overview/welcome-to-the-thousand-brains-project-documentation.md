@@ -33,10 +33,6 @@ The documentation is broken into six main sections:
 
 We are excited to have you here!  Our intention for making the project open-source is to foster a community of researchers and developers interested in contributing to the project and to allow all of humanity to benefit from these advances in AI.  The Thousand Brains Project team is quite small, and we have a limited amount of time, so please be patient with our responses and know that we'll do our best to get back to you as soon as possible.  That said, here's a list of [ways you can contribute to the project](../contributing/ways-to-contribute-to-code.md).
 
-# How to Cite this Project
-
-> 🚧 TODO: Create this section
-
 
 -----------------------------------
 
