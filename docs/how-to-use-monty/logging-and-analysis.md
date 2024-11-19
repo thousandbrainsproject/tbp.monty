@@ -99,7 +99,7 @@ print_unsupervised_stats(train_stats, epoch_len=10)
 
 When loading the `lm_models` (either using the `load_stats` function or `torch.load`) you get a dictionary of object graphs. Object graphs are represented as `torch_geometric.data` class instances with properties `x, pos, norm, feature_mapping` where `x` stores the features at each point in the graph, `pos` the locations, `norm` the point normal and `feature_mapping` is a dictionary that encodes which indices in `x` correspond to which features.
 
-There are a range of graph plotting utils in the `plot_utils.py` file. Additionally, you can find some more examples of how to plot graphs and how to use the functions in `GraphVisualizations.ipynb`, `EvidenceLM.ipynb`, and `MultiLMViz.ipynb` in the monty_lab repository (TODO OSS: Add link). Below is just one illustrative example of how you can quickly plot an object graph after loading it as shown above.
+There are a range of graph plotting utils in the `plot_utils.py` file. Additionally, you can find some more examples of how to plot graphs and how to use the functions in `GraphVisualizations.ipynb`, `EvidenceLM.ipynb`, and `MultiLMViz.ipynb` in the [monty_lab repository](https://github.com/thousandbrainsproject/monty_lab). Below is just one illustrative example of how you can quickly plot an object graph after loading it as shown above.
 
 ```python Pretrained Models
 import matplotlib.pyplot as plt
