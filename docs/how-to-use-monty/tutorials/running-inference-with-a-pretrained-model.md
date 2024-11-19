@@ -3,7 +3,7 @@ title: Running Inference with a Pretrained Model
 ---
 # Introduction
 
-This tutorial is a follow-up of our tutorial on [pretraining a model](pretraining-a-model.md). Here we will load the pretraining data into model and perform object recognition under noisy conditions and under several arbitrary object rotations.
+This tutorial is a follow-up of our tutorial on [pretraining a model](pretraining-a-model.md). Here we will load the pretraining data into the model and perform object recognition under noisy conditions and several arbitrary object rotations.
 
 > [!NOTE]
 > The [first part](pretraining-a-model.md) of this tutorial must be completed for the code in this tutorial to run.
@@ -45,7 +45,7 @@ from tbp.monty.frameworks.models.sensor_modules import (
 Basic setup
 -----------
 """
-# Specify directory where an output directory will be created.
+# Specify the directory where an output directory will be created.
 project_dir = os.path.expanduser("~/tbp/results/monty/projects")
 
 # Specify the model name. This needs to be the same name as used for pretraining.
@@ -60,7 +60,7 @@ run_name = "eval"
 ```
 Now we specify that we want to test the model on "mug" and "banana", and that we want the objects to be rotated a few different ways.
 ```python
-# Specify object to test and the rotations in which they should be tested.
+# Specify objects to test and the rotations in which they'll be presented.
 object_names = ["mug", "banana"]
 test_rotations = [
     np.array([0.0, 15.0, 30.0]),
@@ -125,7 +125,7 @@ sensor_module_configs = dict(
     sensor_module_1=sensor_module_1,
 )
 ```
-There are two main differences between this config and the pretraining sensor module config. First, we are adding some noise to the sensor patch, so we define noise parameters and add them to `sensory_module_0`'s dictionary. Second, we're using the `FeatureChangeSM` class instead of `HabitatSurfacePatchSM`. `FeatureChangeSM` is more efficient when graph matching since it only sends an observation to the learning module if the features have changed significantly. Note that `FeatureChangeSM` can be used with either a surface or distant agent, for which `surf_agent_sm` should be appropriately set.
+There are two main differences between this config and the pretraining sensor module config. First, we are adding some noise to the sensor patch, so we define noise parameters and add them to `sensor_module_0`'s dictionary. Second, we're using the `FeatureChangeSM` class instead of `HabitatSurfacePatchSM`. `FeatureChangeSM` is more efficient when graph matching since it only sends an observation to the learning module if the features have changed significantly. Note that `FeatureChangeSM` can be used with either a surface or distant agent, for which `surf_agent_sm` should be appropriately set.
 
 For the learning module, we specify
 
@@ -139,7 +139,7 @@ tolerances = {
     }
 }
 
-# Features where weight is not specified default weight to 1.
+# Features where weight is not specified default to 1.
 feature_weights = {
     "patch": {
         # Weighting saturation and value less since these might change under different
@@ -155,15 +155,15 @@ learning_module_0 = dict(
         max_match_distance=0.01,  # =1cm
         tolerances=tolerances,
         feature_weights=feature_weights,
-        # Most likely hypothesis needs to have 20% more evidence than the others to be considered
-        # certain enough to trigger a terminal condition (match).
+        # Most likely hypothesis needs to have 20% more evidence than the others to 
+        # be considered certain enough to trigger a terminal condition (match).
         x_percent_threshold=20,
         # Look at features associated with (at most) the 10 closest learned points.
         max_nneighbors=10,
         # Update all hypotheses with evidence > x_percent_threshold (faster)
         evidence_update_threshold="x_percent_threshold",
-        # Config for goal state generator of LM which is used for model-based action suggestions,
-        # such as hypothesis-testing actions.
+        # Config for goal state generator of LM which is used for model-based action
+        # suggestions, such as hypothesis-testing actions.
         gsg_class=EvidenceGoalStateGenerator,
         gsg_args=dict(
             # Tolerance(s) when determining goal-state success
@@ -248,3 +248,5 @@ cd benchmarks
 python run.py -e surf_agent_2obj_eval
 ```
 Once the run is complete, you can inspect the inference logs located in `~/tbp/results/monty/projects/surf_agent_1lm_2obj/eval`. Since `EvalLoggingConfig` includes a CSV-logger, you should be able to open `eval_stats.csv` and find 6 rows (one for each episode) detailing whether the object was correctly identified, the number of steps required in an episode, etc.
+
+You now know how to pretrain a model and use it to perform inference. In our next tutorial, we will demonstrate how to use Monty for [unsupervised continual learning](unsupervised-continual-learning.md).

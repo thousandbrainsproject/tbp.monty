@@ -4,7 +4,7 @@ title: Request For Comments (RFC)
 > [!NOTE]
 > This page is about contributing RFCs
 >
-> For existing RFCs, see the [`rfcs` folder](./rfcs).
+> For existing RFCs, see the [`rfcs` folder](https://github.com/thousandbrainsproject/tbp.monty/tree/main/rfcs).
 >
 > For RFCs in progress, see issues with `rfc:proposal` label.
 
@@ -39,7 +39,7 @@ Some changes do not require an RFC:
 
 # Before Creating an RFC
 
-A hastily proposed RFC can hurt its chances of acceptance. Low-quality proposals, proposals for previously rejected features, or those that don't fit into the near-term roadmap may be quickly rejected, which can demotivate the unprepared contributor. Laying some groundwork ahead of the RFC can make the process smoother.  Please have a look at some of our past RFCs to see their scope. [`rfcs` folder](./rfcs).
+A hastily proposed RFC can hurt its chances of acceptance. Low-quality proposals, proposals for previously rejected features, or those that don't fit into the near-term roadmap may be quickly rejected, which can demotivate the unprepared contributor. Laying some groundwork ahead of the RFC can make the process smoother.  Please have a look at some of our past RFCs to see their scope. [`rfcs` folder](https://github.com/thousandbrainsproject/tbp.monty/tree/main/rfcs).
 
 Although there is no single way to prepare for submitting an RFC, it is generally a good idea to pursue feedback from other project developers beforehand to ascertain that the RFC may be desirable; having a consistent impact on the project requires concerted effort toward consensus-building.
 

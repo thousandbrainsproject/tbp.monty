@@ -12,7 +12,7 @@ Our model will have one surface agent connected to one sensor module connected t
 > [!NOTE]
 > **Don't have the YCB Dataset Downloaded?**
 >
-> You can find instructions for downloading the YCB dataset [here](../getting-started.md#41-download-the-ycb-dataset). Alternatively, you can run these experiments using the built-in Habitat primitives, such as `capsule3DSolid` and `cubeSolid`. Simply replace the `object_names` parameter in the `train_dataloader_args`.
+> You can find instructions for downloading the YCB dataset [here](../getting-started.md#41-download-the-ycb-dataset). Alternatively, you can run these experiments using the built-in Habitat primitives, such as `capsule3DSolid` and `cubeSolid`. Simply change the items in the  `object_names` list.
 >
 
 
@@ -56,7 +56,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
     MotorSystemConfigCurvatureInformedSurface,
     PatchAndViewMontyConfig,
     PretrainLoggingConfig,
-    get_possible_3d_rotations,
+    get_cube_face_and_corner_views_rotations,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
@@ -83,8 +83,6 @@ project_dir = os.path.expanduser("~/tbp/results/monty/projects")
 
 # Specify a name for the model.
 model_name = "surf_agent_1lm_2obj"
-
-
 ```
 
 > [!NOTE]
@@ -94,7 +92,7 @@ model_name = "surf_agent_1lm_2obj"
 >
 > Inference logs will be saved at `~/tbp/results/monty/projects/surf_agent_1lm_2obj/eval`.
 
-Next, we specify which objects the model will train on in the dataset, including the rotations in which the objects will be presented. The following code defines 32 unique rotations in `train_rotations` which means that both the mug and the banana will be shown 32 times, each time in a different rotation. During each of the overall 64 episodes, the sensors will move over the respective object and collect multiple observations to update the model of the object.
+Next, we specify which objects the model will train on in the dataset, including the rotations in which the objects will be presented. The following code specifies two object ("mug" and "banana") and 14 unique rotations, which means that both the mug and the banana will be shown 14 times, each time in a different rotation. During each of the overall 28 episodes, the sensors will move over the respective object and collect multiple observations to update the model of the object.
 
 ```python
 """
@@ -105,13 +103,22 @@ Training
 # If you don't have the YCB dataset, replace with names from habitat (e.g.,
 # 'capsule3DSolid', 'cubeSolid', etc.).
 object_names = ["mug", "banana"]
-# We also define a list of rotations in which each object will presented. Here we sample
-# all possible x, y, z, combinations in 90-degree intervals ([  0,  90, 180, 270])
-train_degrees = np.arange(0, 360, 90)
-train_rotations = get_possible_3d_rotations(train_degrees)
+# Get predefined object rotations that give good views of the object from 14 angles.
+train_rotations = get_cube_face_and_corner_views_rotations()
 ```
+The function `get_cube_face_and_corner_views_rotations()` is used in our pretraining
+and many of our benchmark experiments since the rotations it returns provide a good set
+of views from all around the object. Its name comes from picturing an imaginary cube
+surrounding an object. If we look at the object from each of the cube's faces, we
+get 6 unique views that typically cover most of the object's surface. We can also look
+at the object from each of the cube's 8 corners which provides an extra set of views 
+that help fill in any gaps. The 14 rotations provided by 
+`get_cube_face_and_corner_views_rotations` will rotate the object as if an observer 
+were looking at the object from each of the cube's faces and corners like so:
 
-Now, we define the entire nested dictionary that specifies one complete Monty experiment:
+![learned_models](../../figures/how-to-use-monty/cube_face_and_corner_views_spam.png)
+
+Now we define the entire nested dictionary that specifies one complete Monty experiment:
 
 ```python
 # The config dictionary for the pretraining experiment.
@@ -219,6 +226,7 @@ Finally, add the following lines to the bottom of the file:
 CONFIGS = dict(
     surf_agent_2obj_train=surf_agent_2obj_train,
 )
+
 ```
 Next, you will need to add the following lines to the `benchmarks/configs/__init__.py` file:
 

@@ -22,17 +22,16 @@ import numpy as np
 
 from tbp.monty.frameworks.config_utils.config_args import (
     CSVLoggingConfig,
-    MontyRunArgs,
+    MontyArgs,
     SurfaceAndViewMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
+    ExperimentArgs,
     RandomRotationObjectInitializer,
-    RunArgs,
     SurfaceViewFinderMountHabitatDatasetArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
-from tbp.monty.frameworks.environments.ycb import DISTINCT_OBJECTS
 from tbp.monty.frameworks.experiments import (
     MontyObjectRecognitionExperiment,
 )
@@ -78,7 +77,7 @@ learning_module_0 = dict(
         x_percent_threshold=20,
         # Thresholds to use for when two points are considered different enough to
         # both be stored in memory.
-        graph_delta_ths=dict(
+        graph_delta_thresholds=dict(
             patch=dict(
                 distance=0.01,
                 pose_vectors=[np.pi / 8, np.pi * 2, np.pi * 2],
@@ -90,25 +89,25 @@ learning_module_0 = dict(
         # for the current object in order to converge; while we can also set min_steps
         # for the experiment, this puts a more stringent requirement that we've had
         # many steps that have contributed evidence.
-        object_evidence_th=100,
+        object_evidence_threshold=100,
         # Symmetry evidence (indicating possibly symmetry in rotations) increments a lot
         # after 100 steps and easily reaches the default required evidence. The below
         # parameter value partially addresses this, altough we note these are temporary
         # fixes and we intend to implement a more principled approach in the future.
-        required_symmetry_evidence=20,  
-        max_nn=5,
+        required_symmetry_evidence=20,
+        max_nneighbors=5,
     ),
 )
 learning_module_configs = dict(learning_module_0=learning_module_0)
 ```
 Now we define the full experiment config which will include our learning module config.
 ```python
-# The config dictionary for the continual learning experiment.
+# The config dictionary for the unsupervised learning experiment.
 surf_agent_2obj_unsupervised = dict(
     # Set up unsupervised experiment.
     experiment_class=MontyObjectRecognitionExperiment,
-    run_args=RunArgs(
-        # Not running eval here. The only difference between training and evaluation 
+    experiment_args=ExperimentArgs(
+        # Not running eval here. The only difference between training and evaluation
         # is that during evaluation, no models are updated.
         do_eval=False,
         n_train_epochs=3,
@@ -124,10 +123,10 @@ surf_agent_2obj_unsupervised = dict(
     # sensor modules (1 habitat surface patch, one logging view finder), motor system,
     # and connectivity matrices given by `SurfaceAndViewMontyConfig`.
     monty_config=SurfaceAndViewMontyConfig(
-        # Take 1000 exploratory steps after recognizing the object to collect more 
+        # Take 1000 exploratory steps after recognizing the object to collect more
         # information about it. Require at least 100 steps before recognizing an object
         # to avoid early misclassifications when we have few objects in memory.
-        run_args=MontyRunArgs(num_exploratory_steps=1000, min_train_steps=100),
+        monty_args=MontyArgs(num_exploratory_steps=1000, min_train_steps=100),
         learning_module_configs=learning_module_configs,
     ),
     # Set up the environment and agent.
@@ -146,11 +145,11 @@ surf_agent_2obj_unsupervised = dict(
     ),
 )
 ```
-If you have read our previous tutorials on [pretraining](pretraining-a-model.md) or [running inference with a pretrained model](running-inference-with-a-pretrained-model.md), you may spot a few differences in this setup. For pretraining, we used the `MontySupervisedObjectPretrainingExperiment` class which also performs training (and not evaluation). While that was a training-only setup, it is different from our unsupervised continual learning config since it supplies object labels to learning modules. For running inference with a pretrained model, we used the `MontyObjectRecognitionExperiment` class but specified that we only wanted to perform evaluation (i.e., `do_train=False` and `do_eval=True`). In contrast, here we used the `MontyObjectRecognitionExperiment` with arguments `do_train=True` and `do_eval=False`. This combination of experiment class and `do_train`/`do_eval` arguments is specific to continual learning. We have also increased `min_training_steps`, `object_evidence_th`, and `required_symmetry_evidence` to avoid early misclassification when there are fewer objects in memory.
+If you have read our previous tutorials on [pretraining](pretraining-a-model.md) or [running inference with a pretrained model](running-inference-with-a-pretrained-model.md), you may spot a few differences in this setup. For pretraining, we used the `MontySupervisedObjectPretrainingExperiment` class which also performs training (and not evaluation). While that was a training-only setup, it is different from our unsupervised continual learning config since it supplies object labels to learning modules. For running inference with a pretrained model, we used the `MontyObjectRecognitionExperiment` class but specified that we only wanted to perform evaluation (i.e., `do_train=False` and `do_eval=True`). In contrast, here we used the `MontyObjectRecognitionExperiment` with arguments `do_train=True` and `do_eval=False`. This combination of experiment class and `do_train`/`do_eval` arguments is specific to unsupervised continual learning. We have also increased `min_training_steps`, `object_evidence_threshold`, and `required_symmetry_evidence` to avoid early misclassification when there are fewer objects in memory.
 
 Besides these crucial changes, we have also made a few minor adjustments to simplify the rest of the the configs. First, we did not explicitly define our sensor module or motor system configs. This is because we are using `SurfaceAndViewMontyConfig`'s default sensor modules, motor system, and matrices that define connectivity between agents, sensors, and learning modules. Second, we are using a `RandomRotationObjectInitializer` which randomly rotates an object at the beginning of each episode rather than rotating an object by a specific user-defined rotation. Third, we are using the `CSVLoggingConfig`. This is equivalent to setting up a base `LoggingConfig` and specifying that we only want a `BasicCSVStatsHandler`, but it's a bit more succint. Monty has many config classes provided for this kind of convenience.
 
-# Running the Continual Learning Experiment
+# Running the Unsupervised Continual Learning Experiment
 
 Finally, add the following lines to the bottom of the file:
 
@@ -185,7 +184,7 @@ In all subsequent episodes, Monty correctly identified the objects as indicated 
 
 Note that Monty receives minimal information about when a new epoch has started, with the only indication of this being that evidence scores are reset to 0 (an assumption which we intend to relax in the future). If a new object was introduced in the second or third epoch it should again detect no_match and learn a new model for this object. Also note that for logging purposes we save which object was sensed during each episode and what model was updated or associated with this object. Monty has no access to this information. It can happen that multiple objects are merged into one object or that multiple models are learned for one object. This is tracked in `mean_objects_per_graph` and `mean_graphs_per_object` in the .csv statistics as well as in `possible_match_sources` for each model to calculate whether the performance was `correct` or 'confused'.
 
-We can visualize how models are acquired and refined by plotting an object's model after different epochs. To do so, create a script and paste in the following code. The name and location of the script is arbitrary, but we called it `continual_learning_analysis.py` and placed it at `~/monty_scripts`.
+We can visualize how models are acquired and refined by plotting an object's model after different epochs. To do so, create a script and paste in the following code. The name and location of the script is arbitrary, but we called it `unsupervised_learning_analysis.py` and placed it at `~/monty_scripts`.
 ```python
 import os
 
@@ -228,3 +227,4 @@ After running this script, you should see a plot with three views of the bowl ob
 
 After Monty's first pass (epoch 0), Monty's internal model of the bowl is somewhat incomplete. As Monty continues to encounter the bowl in subsequent epochs, the model becomes further refined by new observations. In this way, Monty learns about new and existing object continuously without the need for supervision or distinct training periods. To update existing models, the detected pose is used to transform new observations into the existing models reference frame. For more details on how learning modules operate in this mode, see our documentation on [how learning modules work](../../how-monty-works/how-learning-modules-work.md).
 
+Thus far we have demonstrated how to build models that use a single sensor module connected to one learning module. In the [next tutorial](multiple-learning-modules.md), we will demonstrate how to configure multiple sensors and connect them to multiple learning modules to perform faster inference.

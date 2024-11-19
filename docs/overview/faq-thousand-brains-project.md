@@ -56,7 +56,7 @@ We are also planning to host a series of **invited speakers** again, so please l
 
 # How is the Thousand Brains Project Funded?
 
-The Thousand Brains project is **partially funded by the Gates Foundation**. We are providing the Gates Foundation with regular updates on our progress, and they are facilitating exchanges with related research groups and potential applications, especially in global health. **We hope that our technology will have a big impact on AI and global health applications and will make them more available in low-income countries**.
+The Thousand Brains project and our research **continues to be funded by Jeff Hawkins** and now **also in part by the Gates Foundation**.  Our funding is focused on fundamental research into this new technology but will also facilitate exchanges with related research groups and potential applications.
 
 # What are Numenta’s Goals for the Thousand Brains Project?
 

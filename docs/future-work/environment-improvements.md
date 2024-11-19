@@ -2,7 +2,6 @@
 title: Environment Improvements
 description: New environments and benchmark experiments we would like to add.
 ---
-We have a guide on [contributing new environments and benchmarks](../contributing/ways-to-contribute-to-code/contributing-benchmarks.md) here.
 
 These are the things we would like to implement:
 

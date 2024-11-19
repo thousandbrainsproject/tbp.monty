@@ -33,7 +33,7 @@ You can find the researchers, developers, and users of Monty on the [Thousand Br
 
 # Test our Approach
 
-The vision of this project is to implement a generally intelligent system that can solve a wide variety of sensorimotor tasks (at a minimum, any task the neocortex can solve/humans can perform with ease). To evaluate this, we are continually looking for test beds in which we can assess the system's capabilities. If you have an idea of how to test an important capability or you have an existing benchmark on which you want to compare our algorithm, please consider contributing these. See the [Contributing Benchmarks](ways-to-contribute-to-code/contributing-benchmarks.md) guide on how to do this.
+The vision of this project is to implement a generally intelligent system that can solve a wide variety of sensorimotor tasks (at a minimum, any task the neocortex can solve/humans can perform with ease). To evaluate this, we are continually looking for test beds in which we can assess the system's capabilities. If you have an idea of how to test an important capability or you have an existing benchmark on which you want to compare our algorithm, please consider contributing these. 
 
 # Report an Issue
 
