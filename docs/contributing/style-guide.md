@@ -13,7 +13,7 @@ To quickly check if your code is formatted correctly, run `ruff check` in the `t
 
 We use [Ruff](https://docs.astral.sh/ruff/) to check proper code formatting with a **line length of 88**.
 
-A convenient way to ensure your code is formatted correctly is using the [ruff formatter](https://docs.astral.sh/ruff/formatter/). If you use VSCode, you can get the [Ruff VSCode extension](https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff) extension and set it to format on save (modified lines only) so your code always looks nice and matches our style requirements.
+A convenient way to ensure your code is formatted correctly is using the [ruff formatter](https://docs.astral.sh/ruff/formatter/). If you use VSCode, you can get the [Ruff VSCode extension](https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff) and set it to format on save (modified lines only) so your code always looks nice and matches our style requirements.
 
 ## Code Docstrings
 
