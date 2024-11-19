@@ -22,11 +22,7 @@ The training mode is split into two phases that alternate: The matching phase an
 
 # Specific Implementations
 
-The details of specific implementations, approaches, results, and problems are too much for this overview document. They will therefore be written out in separate documents and linked here. For more details just talk to the person listed below.
-
-- [Graph learning (using explicit 3D models)](https://www.overleaf.com/6437721771jccycdnsskvd): TODO Viviane
-
-> 🚧 TODO: this link is behind a login on Overleaf
+The details of specific graph LM implementations, approaches, results, and problems are too much for this overview document. They are written out in a separate document [here](https://www.overleaf.com/read/qxchttxzpfnd#ea9111). Other approaches that we tried but discontinued can be found in our [monty_lab repository](https://github.com/thousandbrainsproject/monty_lab).
 
 | List of all learning module classes | Description                                                                                                                                                                                                                                                                                                                                                 |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
