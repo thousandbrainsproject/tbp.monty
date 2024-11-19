@@ -6,7 +6,7 @@ title: Welcome to the Thousand Brains Project Documentation!
 
 Welcome to the Thousand Brains Project, an open-source framework for sensorimotor learning systems that follow the same principles as the human brain.
 
-This documentation outlines the current features, and future vision, of our platform for building next-generation AI and robotics applications using neocortical algorithms. In addition, we describe the details of Monty, the first implementation of a thousand-brains system. Named in honor of Vernon Mountcastle, who argued that the power of the mammalian brain lies in its re-use of cortical columns as the primary computational unit, Monty represents a fundamentally new way of building AI systems."
+This documentation outlines the current features, and future vision, of our platform for building next-generation AI and robotics applications using neocortical algorithms. In addition, we describe the details of Monty, the first implementation of a thousand-brains system. Named in honor of Vernon Mountcastle, who argued that the power of the mammalian brain lies in its re-use of cortical columns as the primary computational unit, Monty represents a fundamentally new way of building AI systems.
 
 The Monty project incoporates a lot of new concepts and ideas and will require considerable learning on the part of contributors who want to make significant code contributions or to use the code to solve real-world problems.  With that in mind, we've tried to make the project easy to comprehend and get started with.  To understand the fundamental principles of the project, these are some resources that we recommend:
 
