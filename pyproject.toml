@@ -7,11 +7,13 @@ authors = [
     { name = 'Numenta' }
 ]
 classifiers = [
+    'Development Status :: 3 - Alpha', # Update to Beta when we start using semver
     'Environment :: Console',
     'Intended Audience :: Science/Research',
     'License :: OSI Approved :: MIT License',
     'Operating System :: OS Independent',
     'Programming Language :: Python :: 3',
+    'Topic :: Scientific/Engineering :: Artificial Intelligence'
 ]
 dependencies = [
     'importlib_resources',
