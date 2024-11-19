@@ -51,39 +51,37 @@ There are interesting similarities between swarm intelligence and the Thousand B
 
 It might be helpful to think of the difference between prokaryotic organisms that may cooperate to some degree (such as bacteria creating a protective biofilm), vs. the complex abilities of eukaryotic organisms, where cells cooperate, specialize, and communicate in a much richer way. This distinction likely underlies the capabilities of swarming animals such as bees, which while impressive, do not match the intelligence of mammals. In the long-term, we imagine that Monty systems can use communicating agents of various complexity, number and independence as required.
 
-# What is the relationship of Monty to reinforcement learning, including deep reinforcement learning?
+# Why are there no grid-cells or Hierarchical Temporal Memory (HTM) in this version of Monty?
 
-- world models, model free and model-based
+TODO
 
-deep-RL sample efficiency; model-based challenging
 
-Tolman and mice; learning to ride a bike
-
-Can compare to dreamer based architecture, alphago (a success but not practical, recent deepmind playing a bunch of games, doom game, and O1 preview. Is alphazero any different?
+?Make the neural research roadmap public --> can turn into a PDF; should make sure it is sufficiently up to date and polished
 
 
 # Why doesn't Monty make use of deep learning?
 
-Why don't you use deep learning for various components: their may come a day when we use it, clearly powerful for many use cases. However we have found we have made the most conceptual progress when we set aside the black box of dnns and try to develop a system based on first principles? Could eventually be for subcortical, where current deep RL more resembles biology
+Deep-learning is a powerful technology - we use large-language models ourselves on a daily basis, and systems such as AlphaFold are an amazing opportunity for biological research. However, we believe that there are many core assumptions in deep-learning that are inconsistent with the operating principles of the brain. It is often tempting when implementing a component in an intelligent system to reach for a deep-learning solution. However, we have made most conceptual progress when we have set aside the black box of deep-learning and worked from basic principles of known neuroscience and the problems that brains must solve.
 
-See TODOist
-
-May use for more sub-cortical processing, e.g. model-free policies or some sensory feature extraction.
-
-Highlight that representations are object-centric at every layer of abstraction (ref slot attention in contrast)
-- also continual leanring; structured representations (shape-based, no adversarial examples - see blog post).
-
-?Add some references
+As such, there may come a time where we leverage deep-learning componenets, particularly for more "sub-cortical" processing such as low-level feature extraction, and model-free motor policies (see below), however we will avoid these until they prove themselves to be absolutely essential. 
 
 
-# Connecion to GPT-o models and GPT models generally
-- unsupervised learning
-- use of search and therefore "type 2 thinking"
+# What is the relationship of Monty to reinforcement learning, including deep reinforcement learning?
+
+Reinforcement learning can be divided into two kinds, model-free and model-based. Model-free learning is used by the brain, for example, to help you balance on a bicycle by making fine adjustments in your actions in response to feedback. Current deep reinforcement learning algorithms are very good at this (refs, e.g. Break-out, and also Andrew Ng controlling helicopter). However, when you learnt to ride a bicycle, you watched your parent demonstrate how to do it, listened to their explanation, and had an understanding of the bicycle's shape and the concept of peddling before you even started moving on it. Without these deliberate, guided actions, it could take thousands of years of random movement in the vicinity of the bicycle until you figured out how to ride it, as positive feedback (the bicycle is moving forward) is rare.
+
+All of these deliberate, guided actions you took as a child were "model-based", i.e. dependent on models of the world. These models are learned in an unsupervised manner, without reward signals. Mammals are very good at this, as demonstrated by [Tolman's classic experiments with rats in the 1940s](https://psycnet.apa.org/record/1949-00103-001). However, how to learn and then leverage these models in deep reinforcement learning is still a major challenge. For example, part of DeepMind's success with [AlphaZero (Silver et al, 2018)](https://www.science.org/doi/10.1126/science.aar6404) was the use of explicit models of the game-board states. However, for most things in the world, these models cannot be added to a system like the known structure of a Go-board, but need to be learned in an unsupervised manner.
+
+While this remains an active area of research in deep-reinforcement learning ([Hafner et al, 2023](https://arxiv.org/pdf/2301.04104)), we believe that the combination of 3D, structured reference frames with sensorimotor loops will be key to solving this problem. In particular, thousand brains systems learn (as the name implies) thousands of semi-independent models of objects through unsupervised, sensorimotor exploration. These models can then be used to decompose complex tasks, where any given learning module can propose a desired "goal-state" based on the models that it knows about. This enables tasks of arbitrary complexity to be planned and executed, while constraining the information that a single module needs to learn about the world. In addition, the use of explicit reference frames increases the speed at which learning takes place, and enables following arbitrary sequences of actions. Like Tolman's rats, this is similar to how you can navigate around a room depending on what obstacles there are, such as an office chair that has been moved, without needing to learn it as a specific sequence of movements.
+
+In the long term, there may be a role for something like deep-reinforcement learning to support the model-free, sub-cortical processing of thousand-brains systems. However the key open problem, and the one which we believe the TBT will be central to, is unlocking model-based learning in the cortex.
 
 
-# Why are there no grid-cells or Hierarchical Temporal Memory (HTM) in this version of Monty?
+# Can't modern deep-learning systems like generative pre-trained transformers (GPTs) and diffusion-models learn "world models"?
 
-?Make the neural research roadmap public --> can turn into a PDF; should make sure it looks good enough; e.g. Jeff hasn't reviewed it yet
+We believe that there is limited evidence that deep-learning systems, including these generative architectures, can learn sufficiently powerful "world models" for true machine intelligence. For example, representations of objects in deep-learning systems tend to be highly entangled (ref slot attention; ref Sora failure), rather than the object-centric representations that are core to how humans represent the world even from an extremely young age (ref bio). Representations are also often limited in structure, manifesting in the tendancy of deep-learning systems to classify objects based on texture more than shape (ref recent), vulnerability to adversarial examples, hallucinating information, and the idiosynchrasies of generated images (such as inconsistent number of fingers on hands), when compared to the simpler, but much more structured drawings of children.
+
+Instead, these systems appear to learn complex input-output mappings, which are capable of some degree of interpolation between observed points, but limited generalization beyond the training data. This makes them useful for many tasks, but requires training on enormous amounts of training, and limits their ability to solve benchmarks such as ARC-AGI (ref). This dependence on input-output mappings means that even approaches such as searching over the space of possible outputs (e.g. o1-preview), are more akin to searching over a space of learned "type-1" actions (ref type 1 vs type 2 thinking pape), rather than the true "type-2", model-based planning that is a marker of deep intelligence.
 
 
 # What about Sutton's bitter lesson? Most progress in AI was made just by scaling up existing methods right?
@@ -93,3 +91,6 @@ Evolution also discovered scale, but it's not everything.
 Scaling of number of LMs vs. amount of body to model is clearly important, see e.g. primates and dolphins vs. whales. 
 
 Does this mean scale doesn't matter - no, but matters what scaling. Also data shouldn't be key. Scaling this has given an illusion of generalisation
+
+
+Pass through Grammarly
