@@ -5,15 +5,19 @@ title: Style Guide
 
 We follow the [PEP8](https://peps.python.org/pep-0008/) Python style guide.
 
+Additional style guidelines are enforced by [Ruff](https://docs.astral.sh/ruff/) and configured in [pyproject.toml](https://github.com/thousandbrainsproject/tbp.monty/blob/main/pyproject.toml).
+
+To quickly check if your code is formatted correctly, run `ruff check` in the `tbp.monty` directory.
+
 ## Code Formatting
 
-We use **ruff** to check proper code formatting with a **line length of 88**.
+We use [Ruff](https://docs.astral.sh/ruff/) to check proper code formatting with a **line length of 88**.
 
-A convenient way to ensure your code is formatted correctly is using the ruff formatter. If you use VSCode, you can get the ruff formatter extension and set it to format on save (modified lines only) so your code always looks nice and matches our style requirements.
+A convenient way to ensure your code is formatted correctly is using the [ruff formatter](https://docs.astral.sh/ruff/formatter/). If you use VSCode, you can get the [Ruff VSCode extension](https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff) and set it to format on save (modified lines only) so your code always looks nice and matches our style requirements.
 
 ## Code Docstrings
 
-Doc strings should begin with a one-line summary, which ends with a period. For more details, see [PEP 257](https://peps.python.org/pep-0257/) docstring guide.
+We adopted the Google Style for docstrings. For more details, see the [Google Python Style Guide - 3.8 Comments and Docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings).
 
 ## Libraries
 
