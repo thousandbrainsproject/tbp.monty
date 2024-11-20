@@ -43,3 +43,19 @@ Following is a list of capabilities that we are always thinking about when desig
 - Modeling language and associating it with grounded models of the world.
 
 - Modeling other entities ('Theory of Mind').
+
+### Video Walkthrough of Monty's Capabilities
+Finally, here is a video that walks through all the systems current capabilities (including hard data) and our current thoughts and plans for future capabilities.
+
+[block:embed]
+{
+  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2FyJBhZkkZ-XM%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DyJBhZkkZ-XM&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2FyJBhZkkZ-XM%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
+  "url": "https://www.youtube.com/watch?v=yJBhZkkZ-XM",
+  "title": "2024/01 - Current Capabilities of the first TBP Implementation, Monty",
+  "favicon": "https://www.youtube.com/favicon.ico",
+  "image": "https://i.ytimg.com/vi/yJBhZkkZ-XM/hqdefault.jpg",
+  "provider": "https://www.youtube.com/",
+  "href": "https://www.youtube.com/watch?v=yJBhZkkZ-XM",
+  "typeOfEmbed": "youtube"
+}
+[/block]
