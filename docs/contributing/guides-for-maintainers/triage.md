@@ -1,7 +1,8 @@
 ---
 title: Triage
 ---
-> 📘 For Maintainers
+> [!NOTE]
+> **For Maintainers**
 
 The philosophy behind triage is to check issues for validity and accept them into the various **Maintainer** workflows. Triage is not intended to engage in lengthy discussions on Issues or review Pull Requests. These are separate activities.
 
@@ -13,17 +14,20 @@ The typical triage outcomes are:
 
 # Issue Triage
 
-> 📘 Triage link (is issue, is open, is not triaged)
-> 
+> [!NOTE]
+> Triage link (is issue, is open, is not triaged)
+>
 > <https://github.com/thousandbrainsproject/tbp.monty/issues?q=is:issue+is:open+-label:triaged>
 
 The desired cadence for Issue Triage is at least once per business day.
 
 A **Maintainer** will check the Issue for validity.
 
-There are no priorities or severities applied to Issues.
+Do not assign priorities or severities to Issues (see: [RFC 2 PR and Issue Review](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0002_pr_and_issue_review.md#issue)).
 
-Do not fix bugs during triage.
+Do not assign **Maintainers** to Issues. Issues remain unassigned so that anyone can work on them (see: [RFC 2 PR and Issue Review](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0002_pr_and_issue_review.md#feature-requests-1)).
+
+Do not reproduce or fix bugs during triage.
 
 ## Title
 
@@ -53,8 +57,9 @@ Multiple labels can be assigned to an Issue.
 
 # Pull Request Triage
 
-> 📘 Triage link (is pull request, is open, is not a draft, is not triaged)
-> 
+> [!NOTE]
+> Triage link (is pull request, is open, is not a draft, is not triaged)
+>
 > <https://github.com/thousandbrainsproject/tbp.monty/pulls?q=is%3Apr+is%3Aopen+-label%3Atriaged+draft%3Afalse>
 
 The desired cadence for Pull Request Triage is at least once per business day.
