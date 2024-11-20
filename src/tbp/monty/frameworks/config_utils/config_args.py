@@ -9,11 +9,13 @@
 
 import os
 from dataclasses import dataclass, field
-from itertools import permutations
-from typing import Callable, Dict, List, Optional, Union
+from itertools import product
+from numbers import Number
+from typing import Callable, Dict, Iterable, List, Optional, Union
 
 import numpy as np
 import wandb
+from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.action_samplers import (
     ConstantSampler,
@@ -1151,39 +1153,37 @@ class FiveLMMontySOTAConfig(FiveLMMontyConfig):
     )
 
 
-def get_possible_3d_rotations(degrees, displacement=0):
-    """Get list of 3d rotations that tile the space. Used for configs.
+def get_possible_3d_rotations(
+    degrees: Iterable[Number],
+    displacement: Number = 0,
+) -> List[np.ndarray]:
+    """Get list of 24 unique 3d rotations that tile the space. Used for configs.
 
     Args:
-        degrees: List of degrees to sample from.
-        displacement: Additional offset (in degrees) to apply to all rotations;
-            useful if want to e.g. tile a similar space at training and evaluation,
-            but slightly offset between these settings
+        degrees (Iterable[Number]): Sequence of degrees to sample from.
+        displacement (Number): Additional offset (in degrees) to apply to all rotations;
+            useful if want to e.g. tile a similar space at training and evaluation, but
+            slightly offset between these settings.
 
     Returns:
-        List of 3d rotations that tile the space.
+        List[np.ndarray]: List of unique 3D rotations in euler angles (degrees).
+
     """
-    all_degrees = np.hstack([degrees, degrees, degrees])
-    all_poses = list(permutations(all_degrees, 3))
-    all_poses = np.unique(all_poses, axis=0)
-    all_poses = (all_poses + displacement) % 360
+    # Generate all possible 3D rotations (non-unique)
+    all_poses = [np.array(p) for p in product(degrees, degrees, degrees)]
 
-    # Make sure we remove poses that are equivalent (in euler angles (a, b, c) ==
-    # (a + 180, -b + 180, c + 180) -> permutations used above will generate duplicates)
-    unique_poses = []
-    dual_poses = []
+    # Apply displacement, and get poses modulo 360.
+    all_poses = [(p + displacement) % 360 for p in all_poses]
+
+    # Remove equivalent rotations
+    unique_poses, dual_quats = [], []
     for pose in all_poses:
-        dual_pose = np.array(
-            [
-                (pose[0] + 180) % 360,
-                (-pose[1] + 180) % 360,
-                (pose[2] + 180) % 360,
-            ]
-        )
-
-        if list(pose) not in dual_poses:
+        quat = Rotation.from_euler("xyz", pose, degrees=True).as_quat()
+        if not any(np.allclose(quat, q) for q in dual_quats):
+            # Store unique pose and the two equivalent quaternions.
             unique_poses.append(pose)
-            dual_poses.append(list(dual_pose))
+            dual_quats.append(quat)
+            dual_quats.append(-quat)
 
     return unique_poses
 
