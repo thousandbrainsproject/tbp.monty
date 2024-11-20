@@ -258,11 +258,7 @@ def is_readme_url(url):
 
 
 def is_external_url(url):
-    return url.startswith(("http://", "https://")) and not (
-        # TODO remove these when they are no longer private
-        url.startswith("https://github.com/thousandbrainsproject/tbp.monty")
-        or url.startswith("https://thousandbrains.discourse.group/")
-    )
+    return url.startswith(("http://", "https://"))
 
 
 def check_readme_link(url, rdme):
