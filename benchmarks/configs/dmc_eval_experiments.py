@@ -747,6 +747,7 @@ dist_on_touch["monty_config"].learning_module_configs["learning_module_0"] = (
     get_dist_evidence_lm_config(color=False)
 )
 
+# Trained on touch agent. Have to remove hsv feature from sensors and learning modules.
 surf_on_touch = copy.deepcopy(surf_agent_1lm)
 surf_on_touch["experiment_args"].model_name_or_path = str(
     PRETRAIN_DIR / "touch_agent_1lm/pretrained"
