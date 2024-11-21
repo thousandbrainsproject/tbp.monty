@@ -1,16 +1,29 @@
 # This file may be used to create an environment using:
 #
 # ## Miniconda
-# $ conda env create --file environment_arm64.yml --subdir=osx-64
-# $ conda activate tbp.monty
-# $ conda config --env --set subdir osx-64
-# 
-# If `conda activate` fails, run:
-# $ source ${miniconda_dir}/base/bin/activate base
+#     $ conda env create --file environment_arm64.yml --subdir=osx-64
+# If you are using the zsh shell, run:
+#     $ conda init zsh
+# Or, if you are using a different shell, run:
+#     $ conda init
+# After init, if you do not want conda to change your global shell when
+# you open a new terminal, run:
+#     $ conda config --set auto_activate_base false
+# Finally, activate the environment with:
+#     $ conda activate tbp.monty
+#     $ conda config --env --set subdir osx-64
 #
 # ## Anaconda (omit --subdir=osx-64)
-# $ conda env create --file environment_arm64.yml
-# $ conda activate tbp.monty
+#     $ conda env create --file environment_arm64.yml
+# If you are using the zsh shell, run:
+#     $ conda init zsh
+# Or, if you are using a different shell, run:
+#     $ conda init
+# After init, if you do not want conda to change your global shell when
+# you open a new terminal, run:
+#     $ conda config --set auto_activate_base false
+# Finally, activate the environment with:
+#     $ conda activate tbp.monty
 #
 # platform: osx-arm64
 name: tbp.monty
