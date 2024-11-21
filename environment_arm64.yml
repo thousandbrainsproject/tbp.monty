@@ -4,6 +4,9 @@
 # $ conda env create --file environment_arm64.yml --subdir=osx-64
 # $ conda activate tbp.monty
 # $ conda config --env --set subdir osx-64
+# 
+# If `conda activate` fails, run:
+# $ source ${miniconda_dir}/base/bin/activate base
 #
 # ## Anaconda (omit --subdir=osx-64)
 # $ conda env create --file environment_arm64.yml
