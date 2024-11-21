@@ -38,9 +38,9 @@ We are excited to have you here!  Our intention for making the project open-sour
 
 # Resources
 
-<a href="https://github.com/thousandbrainsproject/tbp.monty"><img src="../figures/documentation/github.png" alt="GitHub" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> GitHub Repository</a>
-<a href="https://thousandbrains.discourse.group/"><img src="../figures/documentation/discourse.png" alt="Forum" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> Community Forum</a>
-<a href="https://www.youtube.com/@thousandbrainsproject"><img src="../figures/documentation/youtube.png" alt="YouTube" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> YouTube Channel</a>
-<a href="https://x.com/1000brainsproj"><img src="../figures/documentation/twitter.png" alt="Twitter" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> Twitter/X Profile</a>
-<a href="https://thousandbrains.org/"><img src="../figures/documentation/website.png" alt="Website" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> Official Website</a>
-<a href="https://www.linkedin.com/showcase/thousand-brains-project"><img src="../figures/documentation/linkedin.png" alt="LinkedIn" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> LinkedIn Page</a>
+<a href="https://github.com/thousandbrainsproject/tbp.monty"><img src="../figures/overview/github.png" alt="GitHub" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> GitHub Repository</a>
+<a href="https://thousandbrains.discourse.group/"><img src="../figures/overview/discourse.png" alt="Forum" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> Community Forum</a>
+<a href="https://www.youtube.com/@thousandbrainsproject"><img src="../figures/overview/youtube.png" alt="YouTube" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> YouTube Channel</a>
+<a href="https://x.com/1000brainsproj"><img src="../figures/overview/twitter.png" alt="Twitter" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> Twitter/X Profile</a>
+<a href="https://thousandbrains.org/"><img src="../figures/overview/website.png" alt="Website" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> Official Website</a>
+<a href="https://www.linkedin.com/showcase/thousand-brains-project"><img src="../figures/overview/linkedin.png" alt="LinkedIn" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> LinkedIn Page</a>
