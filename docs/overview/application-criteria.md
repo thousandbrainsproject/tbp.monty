@@ -1,5 +1,5 @@
 ---
-title: Application Criteria & Current Capabilities
+title: Application Criteria
 description: What can you use Monty for?
 ---
 # Requirements
