@@ -123,7 +123,33 @@ The following experiments evaluate a Monty model on real-world images derived fr
 
 These experiments have been designed to evaluate Monty's robustness to real-world data, and in this particular case, its ability to generalize from simulation to the real-world. In the world_image experiments, the model is evaluated on the aforementioned iPad extracted images, while in the randrot_noise_sim_on_scan_monty_world experiment, we evaluate the model in simulation at inference time, albeit with some noise added and with the distant agent fixed to a single location (i.e., no hypothesis-testing policy). This enables a reasonable evaluation of the sim-to-real change in performance. Furthermore, the world_image experiments are intended to capture a variety of possible adversarial settings.
 
-The dataset itself consists of 12 objects, with some representing multiple instances of similar objects (e.g. the Numenta mug vs the terracotta mug, or the hot sauce bottle vs the cocktail bitters bottle). Each one of the world_image datasets contains 4 different views of each of these objects, for a total of 48 views for each dataset, or 240 views across all 5 real-world settings. The experimental conditions are i) standard (no adversarial modifications), ii) dark (low-lighting), iii) bright, iv) hand intrusion (a hand is significantly encircling and thereby occluding parts of the object), and v) multi-object (the first 2/4 images are the object paired with a similar object next to it, and the latter 2/4 images are the object paired with a structurally different object). 
+The dataset itself consists of 12 objects, with some representing multiple instances of similar objects (e.g. the Numenta mug vs the terracotta mug, or the hot sauce bottle vs the cocktail bitters bottle). Each one of the world_image datasets contains 4 different views of each of these objects, for a total of 48 views for each dataset, or 240 views across all 5 real-world settings. The experimental conditions are i) standard (no adversarial modifications), ii) dark (low-lighting), iii) bright, iv) hand intrusion (a hand is significantly encircling and thereby occluding parts of the object), and v) multi-object (the first 2/4 images are the object paired with a similar object next to it, and the latter 2/4 images are the object paired with a structurally different object).
+
+You can download the data:
+
+| Dataset | Archive Format | Download Link |
+| --- | --- | --- |
+| worldimages | tgz | [worldimages.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.tgz) |
+| worldimages | zip | [worldimages.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.zip) |
+
+Unpack the archive in the `~/tbp/data/` folder. For example:
+
+```plaintext tgz
+mkdir -p ~/tbp/data/
+
+cd ~/tbp/data/
+
+curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.tgz | tar -xzf -
+```
+```plaintext zip
+mkdir -p ~/tbp/data/
+
+cd ~/tbp/data/
+
+curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.zip
+
+unzip worldimages.zip
+```
 
 Finally, note that the world_image experimental runs **do not support running with multi-processing, so you cannot use the run_parallel.py script** when running these. This is because an appropriate object_init_sampler has yet to be defined for this experimental setup. All experiments are run with 16 CPUs for benchmarking purposes.
 
