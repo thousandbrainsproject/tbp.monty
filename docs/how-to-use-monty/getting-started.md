@@ -35,14 +35,11 @@ You can also update your code using the terminal by calling `git fetch upstream;
 
 # 2. Set up Your Environment
 
-> [!NOTE]
-> The Easiest Way to Set Up this Environment is With Conda
->
-> For instructions on how to install conda (Miniconda or Anaconda) on your machine see <https://conda.io/projects/conda/en/latest/user-guide/install/index.html>.
+Monty requires Conda to install its dependencies. For instructions on how to install Conda (Miniconda or Anaconda) on your machine see <https://conda.io/projects/conda/en/latest/user-guide/install/index.html>.
 
-The most straightforward way to set up an environment to run the Monty code is to use conda. Simply **use the conda commands below**. Make sure to `cd` into the tbp.monty root directory before running these commands.
+To setup Monty, **use the conda commands below**. Make sure to `cd` into the tbp.monty root directory before running these commands.
 
-Note that the commands are slightly different depending on whether you are setting up the environment on an Intel or ARM64 architecture and whether you are using Miniconda or the full Anaconda distribution.
+Note that the commands are slightly different depending on whether you are setting up the environment on an Intel or ARM64 architecture, whether you are using Miniconda or the full Anaconda distribution, and whether you are using the zsh shell or another shell.
 
 ## Miniconda
 
@@ -97,7 +94,7 @@ conda activate tbp.monty
 ```
 
 > [!NOTE]
-> By default, conda will activate the base environment when you open a new terminal. If you do not want conda to change your global shell when you open a new terminal, run:
+> By default, Conda will activate the base environment when you open a new terminal. If you do not want Conda to change your global shell when you open a new terminal, run:
 > ```shell
 > conda config --set auto_activate_base false
 > ```
