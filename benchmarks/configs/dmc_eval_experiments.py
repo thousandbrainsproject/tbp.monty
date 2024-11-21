@@ -42,8 +42,8 @@ Some differences between these configs and benchmarks:
  - Experiments have 14 epochs, so each object is viewed from 14 angles regardless of
    whether objects are in standard or random rotations.
 
-On style: Unlike `benchmarks.py`, this prefers functions to return configs over copying
-and modifying them (for the most part). For example, we have the functions
+On style: Unlike `ycb_experiments.py`, this often prefers functions to return configs
+over copying and modifying them (for the most part). For example, we have the functions
 `get_fc_dist_patch_config()` and `get_fc_surf_patch_config()` which return
 default feature-chang esensor module configs.
 
