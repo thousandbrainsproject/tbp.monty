@@ -1,4 +1,3 @@
-# %%
 # ------------------------------------------------------------------------------
 # Copyright (C) 2023 Numenta Inc. All rights reserved.
 #
@@ -110,9 +109,11 @@ from tbp.monty.frameworks.config_utils.config_args import (
     MotorSystemConfigInformedGoalStateDriven,
     NineLMMontyConfig,
     ParallelEvidenceLMLoggingConfig,
+    PatchAndViewMontyConfig,
     SurfaceAndViewMontyConfig,
     TenLMMontyConfig,
     TwoLMMontyConfig,
+    get_cube_face_and_corner_views_rotations,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
@@ -145,6 +146,7 @@ from tbp.monty.frameworks.models.sensor_modules import (
 # Specify defaults here
 
 # - Logging
+PYTHON_LOG_LEVEL = "DEBUG"
 LOG_WANDB = True
 WANDB_GROUP = "dmc"
 LOG_REPRODUCE_EPISODES = False
@@ -168,23 +170,8 @@ if not monty_logs_dir:
 OUTPUT_DIR = Path(monty_logs_dir).expanduser() / OUTPUT_DIR_STEM
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# - Define training rotations. Views from enclosing cube faces plus its corners.
-ROTATIONS_14 = [
-    np.array([0, 0, 0]),
-    np.array([0, 90, 0]),
-    np.array([0, 180, 0]),
-    np.array([0, 270, 0]),
-    np.array([90, 0, 0]),
-    np.array([90, 180, 0]),
-    np.array([35, 45, 0]),
-    np.array([325, 45, 0]),
-    np.array([35, 315, 0]),
-    np.array([325, 315, 0]),
-    np.array([35, 135, 0]),
-    np.array([325, 135, 0]),
-    np.array([35, 225, 0]),
-    np.array([325, 225, 0]),
-]
+# - Define testing rotations. Views from enclosing cube faces plus its corners.
+TEST_ROTATIONS = get_cube_face_and_corner_views_rotations()
 
 # - Noise settings
 DEFAULT_NOISE_PARAMS = dict(
@@ -565,9 +552,10 @@ def make_10distinctobj_variant(template: dict) -> dict:
     """Make 10 distinct object variants for a given config.
 
     Returns:
-        dict: Copy of `template` config that trains on DISTINCT_OBJECTS dataset.
+        dict: Copy of `template` config that evaluates on DISTINCT_OBJECTS dataset.
             The logging config's `run_name` is appended with "_10distinctobj",
-            and the experiment's model path is updated to point to the new model.
+            and the experiment's model path is updated to point to the model trained
+            on the DISTINCT_OBJECTS dataset.
 
     """
     config = copy.deepcopy(template)
@@ -594,16 +582,13 @@ dist_agent_1lm = dict(
     experiment_class=MontyObjectRecognitionExperiment,
     experiment_args=EvalExperimentArgs(
         model_name_or_path=str(PRETRAIN_DIR / "dist_agent_1lm/pretrained"),
-        n_eval_epochs=len(ROTATIONS_14),
+        n_eval_epochs=len(TEST_ROTATIONS),
         max_total_steps=MAX_TOTAL_STEPS,
         max_eval_steps=MAX_EVAL_STEPS,
     ),
-    logging_config=ParallelEvidenceLMLoggingConfig(
-        output_dir=OUTPUT_DIR,
-        run_name="dist_agent_1lm",
-        wandb_group=WANDB_GROUP,
-    ),
-    monty_config=SurfaceAndViewMontyConfig(
+    logging_config=ParallelEvidenceLMLoggingConfig(run_name="dist_agent_1lm"),
+    monty_config=PatchAndViewMontyConfig(
+        monty_class=MontyForEvidenceGraphMatching,
         monty_args=MontyArgs(min_eval_steps=MIN_EVAL_STEPS),
         sensor_module_configs=dict(
             sensor_module_0=get_fc_dist_patch_config(),
@@ -620,7 +605,7 @@ dist_agent_1lm = dict(
     eval_dataloader_class=ED.InformedEnvironmentDataLoader,
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=SHUFFLED_YCB_OBJECTS,
-        object_init_sampler=PredefinedObjectInitializer(rotations=ROTATIONS_14),
+        object_init_sampler=PredefinedObjectInitializer(rotations=TEST_ROTATIONS),
     ),
 )
 
@@ -628,16 +613,13 @@ surf_agent_1lm = dict(
     experiment_class=MontyObjectRecognitionExperiment,
     experiment_args=EvalExperimentArgs(
         model_name_or_path=str(PRETRAIN_DIR / "surf_agent_1lm/pretrained"),
-        n_eval_epochs=len(ROTATIONS_14),
+        n_eval_epochs=len(TEST_ROTATIONS),
         max_total_steps=MAX_TOTAL_STEPS,
         max_eval_steps=MAX_EVAL_STEPS,
     ),
-    logging_config=ParallelEvidenceLMLoggingConfig(
-        output_dir=OUTPUT_DIR,
-        run_name="surf_agent_1lm",
-        wandb_group=WANDB_GROUP,
-    ),
+    logging_config=ParallelEvidenceLMLoggingConfig(run_name="surf_agent_1lm"),
     monty_config=SurfaceAndViewMontyConfig(
+        monty_class=MontyForEvidenceGraphMatching,
         monty_args=MontyArgs(min_eval_steps=MIN_EVAL_STEPS),
         sensor_module_configs=dict(
             sensor_module_0=get_fc_surf_patch_config(),
@@ -654,7 +636,7 @@ surf_agent_1lm = dict(
     eval_dataloader_class=ED.InformedEnvironmentDataLoader,
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=SHUFFLED_YCB_OBJECTS,
-        object_init_sampler=PredefinedObjectInitializer(rotations=ROTATIONS_14),
+        object_init_sampler=PredefinedObjectInitializer(rotations=TEST_ROTATIONS),
     ),
 )
 
@@ -662,16 +644,13 @@ touch_agent_1lm = dict(
     experiment_class=MontyObjectRecognitionExperiment,
     experiment_args=EvalExperimentArgs(
         model_name_or_path=str(PRETRAIN_DIR / "touch_agent_1lm/pretrained"),
-        n_eval_epochs=len(ROTATIONS_14),
+        n_eval_epochs=len(TEST_ROTATIONS),
         max_total_steps=MAX_TOTAL_STEPS,
         max_eval_steps=MAX_EVAL_STEPS,
     ),
-    logging_config=ParallelEvidenceLMLoggingConfig(
-        output_dir=OUTPUT_DIR,
-        run_name="touch_agent_1lm",
-        wandb_group=WANDB_GROUP,
-    ),
+    logging_config=ParallelEvidenceLMLoggingConfig(run_name="touch_agent_1lm"),
     monty_config=SurfaceAndViewMontyConfig(
+        monty_class=MontyForEvidenceGraphMatching,
         monty_args=MontyArgs(min_eval_steps=MIN_EVAL_STEPS),
         sensor_module_configs=dict(
             sensor_module_0=get_fc_surf_patch_config(color=False),
@@ -687,7 +666,7 @@ touch_agent_1lm = dict(
     eval_dataloader_class=ED.InformedEnvironmentDataLoader,
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=SHUFFLED_YCB_OBJECTS,
-        object_init_sampler=PredefinedObjectInitializer(rotations=ROTATIONS_14),
+        object_init_sampler=PredefinedObjectInitializer(rotations=TEST_ROTATIONS),
     ),
 )
 
@@ -816,16 +795,12 @@ dist_agent_2lm = dict(
     experiment_class=MontyObjectRecognitionExperiment,
     experiment_args=EvalExperimentArgs(
         model_name_or_path=str(PRETRAIN_DIR / "dist_agent_2lm/pretrained"),
-        n_eval_epochs=len(ROTATIONS_14),
+        n_eval_epochs=len(TEST_ROTATIONS),
         max_total_steps=MAX_TOTAL_STEPS,
         max_eval_steps=MAX_EVAL_STEPS,
         min_lms_match=1,
     ),
-    logging_config=ParallelEvidenceLMLoggingConfig(
-        output_dir=OUTPUT_DIR,
-        run_name="dist_agent_2lm",
-        wandb_group=WANDB_GROUP,
-    ),
+    logging_config=ParallelEvidenceLMLoggingConfig(run_name="dist_agent_2lm"),
     monty_config=TwoLMMontyConfig(
         monty_class=MontyForEvidenceGraphMatching,
         monty_args=MontyArgs(min_eval_steps=MIN_EVAL_STEPS),
@@ -846,7 +821,7 @@ dist_agent_2lm = dict(
     eval_dataloader_class=ED.InformedEnvironmentDataLoader,
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=SHUFFLED_YCB_OBJECTS,
-        object_init_sampler=PredefinedObjectInitializer(rotations=ROTATIONS_14),
+        object_init_sampler=PredefinedObjectInitializer(rotations=TEST_ROTATIONS),
     ),
 )
 
@@ -863,16 +838,12 @@ dist_agent_5lm = dict(
     experiment_class=MontyObjectRecognitionExperiment,
     experiment_args=EvalExperimentArgs(
         model_name_or_path=str(PRETRAIN_DIR / "dist_agent_5lm/pretrained"),
-        n_eval_epochs=len(ROTATIONS_14),
+        n_eval_epochs=len(TEST_ROTATIONS),
         max_total_steps=MAX_TOTAL_STEPS,
         max_eval_steps=MAX_EVAL_STEPS,
         min_lms_match=3,
     ),
-    logging_config=ParallelEvidenceLMLoggingConfig(
-        output_dir=OUTPUT_DIR,
-        run_name="dist_agent_5lm",
-        wandb_group=WANDB_GROUP,
-    ),
+    logging_config=ParallelEvidenceLMLoggingConfig(run_name="dist_agent_5lm"),
     monty_config=FiveLMMontyConfig(
         monty_class=MontyForEvidenceGraphMatching,
         monty_args=MontyArgs(min_eval_steps=MIN_EVAL_STEPS),
@@ -899,7 +870,7 @@ dist_agent_5lm = dict(
     eval_dataloader_class=ED.InformedEnvironmentDataLoader,
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=SHUFFLED_YCB_OBJECTS,
-        object_init_sampler=PredefinedObjectInitializer(rotations=ROTATIONS_14),
+        object_init_sampler=PredefinedObjectInitializer(rotations=TEST_ROTATIONS),
     ),
 )
 
@@ -916,16 +887,12 @@ dist_agent_9lm = dict(
     experiment_class=MontyObjectRecognitionExperiment,
     experiment_args=EvalExperimentArgs(
         model_name_or_path=str(PRETRAIN_DIR / "dist_agent_9lm/pretrained"),
-        n_eval_epochs=len(ROTATIONS_14),
+        n_eval_epochs=len(TEST_ROTATIONS),
         max_total_steps=MAX_TOTAL_STEPS,
         max_eval_steps=MAX_EVAL_STEPS,
         min_lms_match=3,
     ),
-    logging_config=ParallelEvidenceLMLoggingConfig(
-        output_dir=OUTPUT_DIR,
-        run_name="dist_agent_9lm",
-        wandb_group=WANDB_GROUP,
-    ),
+    logging_config=ParallelEvidenceLMLoggingConfig(run_name="dist_agent_9lm"),
     monty_config=NineLMMontyConfig(
         monty_class=MontyForEvidenceGraphMatching,
         monty_args=MontyArgs(min_eval_steps=MIN_EVAL_STEPS),
@@ -960,7 +927,7 @@ dist_agent_9lm = dict(
     eval_dataloader_class=ED.InformedEnvironmentDataLoader,
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=SHUFFLED_YCB_OBJECTS,
-        object_init_sampler=PredefinedObjectInitializer(rotations=ROTATIONS_14),
+        object_init_sampler=PredefinedObjectInitializer(rotations=TEST_ROTATIONS),
     ),
 )
 
@@ -976,16 +943,12 @@ dist_agent_10lm = dict(
     experiment_class=MontyObjectRecognitionExperiment,
     experiment_args=EvalExperimentArgs(
         model_name_or_path=str(PRETRAIN_DIR / "dist_agent_10lm/pretrained"),
-        n_eval_epochs=len(ROTATIONS_14),
+        n_eval_epochs=len(TEST_ROTATIONS),
         max_total_steps=MAX_TOTAL_STEPS,
         max_eval_steps=MAX_EVAL_STEPS,
         min_lms_match=3,
     ),
-    logging_config=ParallelEvidenceLMLoggingConfig(
-        output_dir=OUTPUT_DIR,
-        run_name="dist_agent_10lm",
-        wandb_group=WANDB_GROUP,
-    ),
+    logging_config=ParallelEvidenceLMLoggingConfig(run_name="dist_agent_10lm"),
     monty_config=TenLMMontyConfig(
         monty_class=MontyForEvidenceGraphMatching,
         monty_args=MontyArgs(min_eval_steps=MIN_EVAL_STEPS),
@@ -1022,7 +985,7 @@ dist_agent_10lm = dict(
     eval_dataloader_class=ED.InformedEnvironmentDataLoader,
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=SHUFFLED_YCB_OBJECTS,
-        object_init_sampler=PredefinedObjectInitializer(rotations=ROTATIONS_14),
+        object_init_sampler=PredefinedObjectInitializer(rotations=TEST_ROTATIONS),
     ),
 )
 
@@ -1115,24 +1078,14 @@ for key, exp in CONFIGS.items():
 CONFIGS.update(_new_configs)
 del _new_configs, _config
 
-# Sanity check: make sure that no two configs have the same output dir and run name.
+
+# Perform final checks and attribute assignments.
 _output_paths = []
 for key, exp in CONFIGS.items():
-    _output_dir = Path(exp["logging_config"].output_dir)
-    _run_name = exp["logging_config"].run_name
-    _run_name = _run_name if _run_name else key
-    _path = _output_dir / _run_name
-    assert _path not in _output_paths
-    _output_paths.append(_path)
-del _output_paths, _output_dir, _run_name, _path
-
-
-# Perform final cleanup chores.
-for key, exp in CONFIGS.items():
-    # Check key matches run_name.
-    assert key == exp["logging_config"].run_name
-
     # Configure logging.
+    exp["logging_config"].output_dir = str(OUTPUT_DIR)
+    exp["logging_config"].python_log_level = PYTHON_LOG_LEVEL
+    exp["logging_config"].wandb_group = WANDB_GROUP
     if not LOG_WANDB:
         exp["logging_config"].wandb_handlers = []
     if not LOG_REPRODUCE_EPISODES:
@@ -1146,4 +1099,12 @@ for key, exp in CONFIGS.items():
         object_init_sampler=PredefinedObjectInitializer(rotations=[[0, 0, 0]]),
     )
 
-# %%
+    # CHECK: key must match run_name.
+    assert key == exp["logging_config"].run_name
+
+    # CHECK: save destination must be unique.
+    _path = Path(exp["logging_config"].output_dir) / exp["logging_config"].run_name
+    assert _path not in _output_paths
+    _output_paths.append(_path)
+
+del _output_paths, _path
