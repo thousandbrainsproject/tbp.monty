@@ -50,11 +50,10 @@ jobs:
           pip install -e .[generate_api_docs_tool]
           cd tools/generate_api_docs
           make apidoc html
-      - name: Store API docs
+      - name: Store API docs artifact
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: api_docs_html
           path: tbp.monty/tools/generate_api_docs/build/html
 
   build_wheel_monty:
@@ -207,6 +206,27 @@ jobs:
           source activate tbp.monty
           mkdir -p test_results/mypy
           mypy --warn-unused-configs src tests benchmarks
+
+  deploy_sphinx_monty:
+    name: deploy-sphinx-monty
+    runs-on: ubuntu-latest
+    needs:
+      - build_sphinx_monty # Don't run if build fails
+      - should_run_monty
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - name: Deploy API docs
+        id: deployment
+        if: ${{ (needs.should_run_monty.outputs.should_run_monty == 'true') && (github.event_name != 'pull_request') }}
+        uses: actions/deploy-pages@v4
 
   install_monty:
     name: install-monty
