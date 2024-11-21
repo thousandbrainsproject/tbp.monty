@@ -93,6 +93,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
     SurfaceAndViewMontyConfig,
     TenLMMontyConfig,
     TwoLMMontyConfig,
+    get_cube_face_and_corner_views_rotations,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
@@ -133,22 +134,7 @@ if not monty_models_dir:
 PRETRAIN_DIR = Path(monty_models_dir).expanduser() / "pretrained_ycb_dmc"
 
 # - Define training rotations. Views from enclosing cube faces plus its corners.
-ROTATIONS_14 = [
-    np.array([0, 0, 0]),
-    np.array([0, 90, 0]),
-    np.array([0, 180, 0]),
-    np.array([0, 270, 0]),
-    np.array([90, 0, 0]),
-    np.array([90, 180, 0]),
-    np.array([35, 45, 0]),
-    np.array([325, 45, 0]),
-    np.array([35, 315, 0]),
-    np.array([325, 315, 0]),
-    np.array([35, 135, 0]),
-    np.array([325, 135, 0]),
-    np.array([35, 225, 0]),
-    np.array([325, 225, 0]),
-]
+TRAIN_ROTATIONS = get_cube_face_and_corner_views_rotations()
 
 
 # ------------------------------------------------------------------------------
@@ -392,12 +378,10 @@ def make_10distinctobj_variant(template: dict) -> dict:
 pretrain_dist_agent_1lm = dict(
     experiment_class=MontySupervisedObjectPretrainingExperiment,
     experiment_args=ExperimentArgs(
-        n_train_epochs=len(ROTATIONS_14),
+        n_train_epochs=len(TRAIN_ROTATIONS),
+        do_eval=False,
     ),
-    logging_config=PretrainLoggingConfig(
-        output_dir=PRETRAIN_DIR,
-        run_name="dist_agent_1lm",
-    ),
+    logging_config=PretrainLoggingConfig(run_name="dist_agent_1lm"),
     monty_config=PatchAndViewMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=NUM_EXPLORATORY_STEPS_DIST),
         learning_module_configs=dict(
@@ -416,7 +400,7 @@ pretrain_dist_agent_1lm = dict(
     train_dataloader_class=ED.InformedEnvironmentDataLoader,
     train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=SHUFFLED_YCB_OBJECTS,
-        object_init_sampler=PredefinedObjectInitializer(rotations=ROTATIONS_14),
+        object_init_sampler=PredefinedObjectInitializer(rotations=TRAIN_ROTATIONS),
     ),
 )
 
@@ -424,13 +408,10 @@ pretrain_dist_agent_1lm = dict(
 pretrain_surf_agent_1lm = dict(
     experiment_class=MontySupervisedObjectPretrainingExperiment,
     experiment_args=ExperimentArgs(
-        n_train_epochs=len(ROTATIONS_14),
+        n_train_epochs=len(TRAIN_ROTATIONS),
         do_eval=False,
     ),
-    logging_config=PretrainLoggingConfig(
-        output_dir=PRETRAIN_DIR,
-        run_name="surf_agent_1lm",
-    ),
+    logging_config=PretrainLoggingConfig(run_name="surf_agent_1lm"),
     monty_config=SurfaceAndViewMontyConfig(
         monty_args=MontyFeatureGraphArgs(
             num_exploratory_steps=NUM_EXPLORATORY_STEPS_SURF
@@ -451,7 +432,7 @@ pretrain_surf_agent_1lm = dict(
     train_dataloader_class=ED.InformedEnvironmentDataLoader,
     train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=SHUFFLED_YCB_OBJECTS,
-        object_init_sampler=PredefinedObjectInitializer(rotations=ROTATIONS_14),
+        object_init_sampler=PredefinedObjectInitializer(rotations=TRAIN_ROTATIONS),
     ),
 )
 
@@ -459,13 +440,10 @@ pretrain_surf_agent_1lm = dict(
 pretrain_touch_agent_1lm = dict(
     experiment_class=MontySupervisedObjectPretrainingExperiment,
     experiment_args=ExperimentArgs(
-        n_train_epochs=len(ROTATIONS_14),
+        n_train_epochs=len(TRAIN_ROTATIONS),
         do_eval=False,
     ),
-    logging_config=PretrainLoggingConfig(
-        output_dir=PRETRAIN_DIR,
-        run_name="touch_agent_1lm",
-    ),
+    logging_config=PretrainLoggingConfig(run_name="touch_agent_1lm"),
     monty_config=SurfaceAndViewMontyConfig(
         monty_args=MontyFeatureGraphArgs(
             num_exploratory_steps=NUM_EXPLORATORY_STEPS_SURF
@@ -486,7 +464,7 @@ pretrain_touch_agent_1lm = dict(
     train_dataloader_class=ED.InformedEnvironmentDataLoader,
     train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=SHUFFLED_YCB_OBJECTS,
-        object_init_sampler=PredefinedObjectInitializer(rotations=ROTATIONS_14),
+        object_init_sampler=PredefinedObjectInitializer(rotations=TRAIN_ROTATIONS),
     ),
 )
 
@@ -498,13 +476,10 @@ pretrain_touch_agent_1lm = dict(
 pretrain_dist_agent_2lm = dict(
     experiment_class=MontySupervisedObjectPretrainingExperiment,
     experiment_args=ExperimentArgs(
-        n_train_epochs=len(ROTATIONS_14),
+        n_train_epochs=len(TRAIN_ROTATIONS),
         do_eval=False,
     ),
-    logging_config=PretrainLoggingConfig(
-        output_dir=PRETRAIN_DIR,
-        run_name="dist_agent_2lm",
-    ),
+    logging_config=PretrainLoggingConfig(run_name="dist_agent_2lm"),
     monty_config=TwoLMMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=NUM_EXPLORATORY_STEPS_DIST),
         learning_module_configs=dict(
@@ -525,7 +500,7 @@ pretrain_dist_agent_2lm = dict(
     train_dataloader_class=ED.InformedEnvironmentDataLoader,
     train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=SHUFFLED_YCB_OBJECTS,
-        object_init_sampler=PredefinedObjectInitializer(rotations=ROTATIONS_14),
+        object_init_sampler=PredefinedObjectInitializer(rotations=TRAIN_ROTATIONS),
     ),
 )
 
@@ -538,13 +513,10 @@ pretrain_dist_agent_2lm = dict(
 pretrain_dist_agent_5lm = dict(
     experiment_class=MontySupervisedObjectPretrainingExperiment,
     experiment_args=ExperimentArgs(
-        n_train_epochs=len(ROTATIONS_14),
+        n_train_epochs=len(TRAIN_ROTATIONS),
         do_eval=False,
     ),
-    logging_config=PretrainLoggingConfig(
-        output_dir=PRETRAIN_DIR,
-        run_name="dist_agent_5lm",
-    ),
+    logging_config=PretrainLoggingConfig(run_name="dist_agent_5lm"),
     monty_config=FiveLMMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=NUM_EXPLORATORY_STEPS_DIST),
         learning_module_configs=dict(
@@ -571,7 +543,7 @@ pretrain_dist_agent_5lm = dict(
     train_dataloader_class=ED.InformedEnvironmentDataLoader,
     train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=SHUFFLED_YCB_OBJECTS,
-        object_init_sampler=PredefinedObjectInitializer(rotations=ROTATIONS_14),
+        object_init_sampler=PredefinedObjectInitializer(rotations=TRAIN_ROTATIONS),
     ),
 )
 
@@ -585,13 +557,10 @@ pretrain_dist_agent_5lm = dict(
 pretrain_dist_agent_9lm = dict(
     experiment_class=MontySupervisedObjectPretrainingExperiment,
     experiment_args=ExperimentArgs(
-        n_train_epochs=len(ROTATIONS_14),
+        n_train_epochs=len(TRAIN_ROTATIONS),
         do_eval=False,
     ),
-    logging_config=PretrainLoggingConfig(
-        output_dir=PRETRAIN_DIR,
-        run_name="dist_agent_9lm",
-    ),
+    logging_config=PretrainLoggingConfig(run_name="dist_agent_9lm"),
     monty_config=NineLMMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=NUM_EXPLORATORY_STEPS_DIST),
         learning_module_configs=dict(
@@ -626,7 +595,7 @@ pretrain_dist_agent_9lm = dict(
     train_dataloader_class=ED.InformedEnvironmentDataLoader,
     train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=SHUFFLED_YCB_OBJECTS,
-        object_init_sampler=PredefinedObjectInitializer(rotations=ROTATIONS_14),
+        object_init_sampler=PredefinedObjectInitializer(rotations=TRAIN_ROTATIONS),
     ),
 )
 
@@ -640,13 +609,10 @@ pretrain_dist_agent_9lm = dict(
 pretrain_dist_agent_10lm = dict(
     experiment_class=MontySupervisedObjectPretrainingExperiment,
     experiment_args=ExperimentArgs(
-        n_train_epochs=len(ROTATIONS_14),
+        n_train_epochs=len(TRAIN_ROTATIONS),
         do_eval=False,
     ),
-    logging_config=PretrainLoggingConfig(
-        output_dir=PRETRAIN_DIR,
-        run_name="dist_agent_10lm",
-    ),
+    logging_config=PretrainLoggingConfig(run_name="dist_agent_10lm"),
     monty_config=TenLMMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=NUM_EXPLORATORY_STEPS_DIST),
         learning_module_configs=dict(
@@ -683,7 +649,7 @@ pretrain_dist_agent_10lm = dict(
     train_dataloader_class=ED.InformedEnvironmentDataLoader,
     train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=SHUFFLED_YCB_OBJECTS,
-        object_init_sampler=PredefinedObjectInitializer(rotations=ROTATIONS_14),
+        object_init_sampler=PredefinedObjectInitializer(rotations=TRAIN_ROTATIONS),
     ),
 )
 
@@ -705,33 +671,29 @@ CONFIGS = {
 # Add 10 distinct object variants.
 _new_configs = {}
 for key, exp in CONFIGS.items():
-    _config = make_10distinctobj_variant(exp)
-    _new_configs[f"{key}_10distinctobj"] = _config
+    _new_exp = make_10distinctobj_variant(exp)
+    _new_configs[f"{key}_10distinctobj"] = _new_exp
 CONFIGS.update(_new_configs)
-del _new_configs, _config
+del _new_configs, _new_exp
 
-
-# Sanity check: make sure no two configs have the same output dir and run name.
+# Perform final checks and attribute assignments.
 _output_paths = []
 for exp in CONFIGS.values():
-    _output_dir = Path(exp["logging_config"].output_dir)
-    _run_name = exp["logging_config"].run_name
-    _run_name = _run_name if _run_name else key
-    _path = _output_dir / _run_name
-    assert _path not in _output_paths
-    _output_paths.append(_path)
-del _output_paths, _output_dir, _run_name, _path
+    # Configure logging.
+    exp["logging_config"].output_dir = str(PRETRAIN_DIR)
 
-
-# Peform final cleanup chores.
-for _config in CONFIGS.values():
-    # Make sure 'do_eval' is set to False.
-    _config["experiment_args"].do_eval = False
-
-    # Add unused (but required) eval dataloader configs.
-    _config["eval_dataloader_class"] = ED.InformedEnvironmentDataLoader
-    _config["eval_dataloader_args"] = EnvironmentDataloaderPerObjectArgs(
+    # Add dummy eval dataloader. Required but not used.
+    exp["eval_dataloader_class"] = ED.InformedEnvironmentDataLoader
+    exp["eval_dataloader_args"] = EnvironmentDataloaderPerObjectArgs(
         object_names=["mug"],
         object_init_sampler=PredefinedObjectInitializer(rotations=[[0, 0, 0]]),
     )
-del _config
+    # CHECK: `do_eval` must be set to False.
+    assert not exp["experiment_args"].do_eval
+
+    # CHECK: output path must be unique.
+    _path = Path(exp["logging_config"].output_dir) / exp["logging_config"].run_name
+    assert _path not in _output_paths
+    _output_paths.append(_path)
+
+del _output_paths, _path
