@@ -48,28 +48,25 @@ Note that the commands are slightly different depending on whether you are setti
 
 If you have miniconda installed, you can create the environment with the following commands:
 
-```shell Intel
+```shell Intel (zsh shell)
 conda env create
-# If you are using the zsh shell, run:
 conda init zsh
-# Or, if you are using a different shell, run:
-conda init
-# After init, if you do not want conda to change your global shell when
-# you open a new terminal, run:
-conda config --set auto_activate_base false
-# Finally, activate the environment with:
 conda activate tbp.monty
 ```
-```shell ARM64 (Apple Silicon)
-conda env create -f environment_arm64.yml --subdir=osx-64
-# If you are using the zsh shell, run:
-conda init zsh
-# Or, if you are using a different shell, run:
+```shell Intel (other shells)
+conda env create
 conda init
-# After init, if you do not want conda to change your global shell when
-# you open a new terminal, run:
-conda config --set auto_activate_base false
-# Finally, activate the environment with:
+conda activate tbp.monty
+```
+```shell ARM64 (Apple Silicon) (zsh shell)
+conda env create -f environment_arm64.yml --subdir=osx-64
+conda init zsh
+conda activate tbp.monty
+conda config --env --set subdir osx-64
+```
+```shell ARM64 (Apple Silicon) (other shells)
+conda env create -f environment_arm64.yml --subdir=osx-64
+conda init
 conda activate tbp.monty
 conda config --env --set subdir osx-64
 ```
@@ -78,30 +75,32 @@ conda config --env --set subdir osx-64
 
 If you have the full anaconda distribution installed, you can create the environment with the following commands:
 
-```shell Intel
+```shell Intel (zsh shell)
 conda env create
-# If you are using the zsh shell, run:
 conda init zsh
-# Or, if you are using a different shell, run:
-conda init
-# After init, if you do not want conda to change your global shell when
-# you open a new terminal, run:
-conda config --set auto_activate_base false
-# Finally, activate the environment with:
 conda activate tbp.monty
 ```
-```shell ARM64 (Apple Silicon)
+```shell Intel (other shells)
+conda env create
+conda init
+conda activate tbp.monty
+```
+```shell ARM64 (Apple Silicon) (zsh shell)
 conda env create -f environment_arm64.yml
-# If you are using the zsh shell, run:
 conda init zsh
-# Or, if you are using a different shell, run:
-conda init
-# After init, if you do not want conda to change your global shell when
-# you open a new terminal, run:
-conda config --set auto_activate_base false
-# Finally, activate the environment with:
 conda activate tbp.monty
 ```
+```shell ARM64 (Apple Silicon) (other shells)
+conda env create -f environment_arm64.yml
+conda init
+conda activate tbp.monty
+```
+
+> [!NOTE]
+> By default, conda will activate the base environment when you open a new terminal. If you do not want conda to change your global shell when you open a new terminal, run:
+> ```shell
+> conda config --set auto_activate_base false
+> ```
 
 # 3. Run the Code 🎉
 
