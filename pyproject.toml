@@ -22,7 +22,7 @@ dependencies = [
     'pandas',
     'pillow',
     'scikit-image',
-    'scikit-learn==1.3.2',
+    'scikit-learn==1.5.0',
     'scipy',
     'sympy',
     'torch-geometric',
