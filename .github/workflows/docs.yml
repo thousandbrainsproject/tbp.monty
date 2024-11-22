@@ -88,7 +88,8 @@ jobs:
           do
             echo $changed_file
             if [[ $changed_file == docs/* ]] ||
-               [[ $changed_file == tools/github_readme_sync/* ]]; then
+               [[ $changed_file == tools/github_readme_sync/* ]] ||
+               [[ $changed_file == .github/workflows/docs.yml ]]; then
               echo "should_run_docs=true" >> $GITHUB_OUTPUT
               exit 0
             fi
