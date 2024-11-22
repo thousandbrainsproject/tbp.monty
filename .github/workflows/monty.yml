@@ -67,8 +67,6 @@ jobs:
           source activate tbp.monty
           python -m tools.github_readme_sync.cli check docs
 
-
-
   build_sphinx_monty:
     name: build-sphinx-monty
     runs-on:
