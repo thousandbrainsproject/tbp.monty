@@ -5,9 +5,13 @@ concurrency:
   cancel-in-progress: false
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - Monty
     branches:
       - main
+    types:
+      - completed
 
 permissions:
   contents: read
@@ -19,7 +23,7 @@ jobs:
   deploy_sphinx_monty_api_docs:
     name: deploy-sphinx-monty-api-docs
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    if: ${{ (github.repository_owner == 'thousandbrainsproject') && (github.event.workflow_run.conclusion == 'success') }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
