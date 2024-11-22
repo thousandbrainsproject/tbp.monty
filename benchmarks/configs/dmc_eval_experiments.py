@@ -146,7 +146,7 @@ from tbp.monty.frameworks.models.sensor_modules import (
 # Specify defaults here
 
 # - Logging
-PYTHON_LOG_LEVEL = "DEBUG"
+PYTHON_LOG_LEVEL = "INFO"
 LOG_WANDB = True
 WANDB_GROUP = "dmc"
 LOG_REPRODUCE_EPISODES = False
