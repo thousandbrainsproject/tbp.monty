@@ -13,7 +13,7 @@ on:
       - main
 
 jobs:
-  
+
   check_docs_monty:
     name: check-docs-monty
     runs-on:
@@ -338,7 +338,7 @@ jobs:
   should_run_docs:
     name: should-run-docs
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    if: ${{ github.repository_owner == 'codeallthethingz' }}
     outputs:
       should_run_docs: ${{ steps.should_run.outputs.should_run_docs }}
     steps:
