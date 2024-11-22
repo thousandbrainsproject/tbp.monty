@@ -35,25 +35,35 @@ You can also update your code using the terminal by calling `git fetch upstream;
 
 # 2. Set up Your Environment
 
-> [!NOTE]
-> The Easiest Way to Set Up this Environment is With Conda
->
-> For instructions on how to install conda (Miniconda or Anaconda) on your machine see <https://conda.io/projects/conda/en/latest/user-guide/install/index.html>.
+Monty requires Conda to install its dependencies. For instructions on how to install Conda (Miniconda or Anaconda) on your machine see <https://conda.io/projects/conda/en/latest/user-guide/install/index.html>.
 
-The most straightforward way to set up an environment to run the Monty code is to use conda. Simply **use the conda commands below**. Make sure to `cd` into the tbp.monty root directory before running these commands.
+To setup Monty, **use the conda commands below**. Make sure to `cd` into the tbp.monty root directory before running these commands.
 
-Note that the commands are slightly different depending on whether you are setting up the environment on an Intel or ARM64 architecture and whether you are using Miniconda or the full Anaconda distribution.
+Note that the commands are slightly different depending on whether you are setting up the environment on an Intel or ARM64 architecture, whether you are using Miniconda or the full Anaconda distribution, and whether you are using the zsh shell or another shell.
 
 ## Miniconda
 
 If you have miniconda installed, you can create the environment with the following commands:
 
-```shell Intel
+```shell Intel (zsh shell)
 conda env create
+conda init zsh
 conda activate tbp.monty
 ```
-```shell ARM64 (Apple Silicon)
+```shell Intel (other shells)
+conda env create
+conda init
+conda activate tbp.monty
+```
+```shell ARM64 (Apple Silicon) (zsh shell)
 conda env create -f environment_arm64.yml --subdir=osx-64
+conda init zsh
+conda activate tbp.monty
+conda config --env --set subdir osx-64
+```
+```shell ARM64 (Apple Silicon) (other shells)
+conda env create -f environment_arm64.yml --subdir=osx-64
+conda init
 conda activate tbp.monty
 conda config --env --set subdir osx-64
 ```
@@ -62,14 +72,32 @@ conda config --env --set subdir osx-64
 
 If you have the full anaconda distribution installed, you can create the environment with the following commands:
 
-```shell Intel
+```shell Intel (zsh shell)
 conda env create
+conda init zsh
 conda activate tbp.monty
 ```
-```shell ARM64 (Apple Silicon)
+```shell Intel (other shells)
+conda env create
+conda init
+conda activate tbp.monty
+```
+```shell ARM64 (Apple Silicon) (zsh shell)
 conda env create -f environment_arm64.yml
+conda init zsh
 conda activate tbp.monty
 ```
+```shell ARM64 (Apple Silicon) (other shells)
+conda env create -f environment_arm64.yml
+conda init
+conda activate tbp.monty
+```
+
+> [!NOTE]
+> By default, Conda will activate the base environment when you open a new terminal. If you do not want Conda to change your global shell when you open a new terminal, run:
+> ```shell
+> conda config --set auto_activate_base false
+> ```
 
 # 3. Run the Code 🎉
 
