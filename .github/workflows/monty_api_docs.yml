@@ -28,6 +28,12 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Checkout tbp.monty
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
       - name: Filter by path for a push
         id: filter_by_path_push
         working-directory: tbp.monty
