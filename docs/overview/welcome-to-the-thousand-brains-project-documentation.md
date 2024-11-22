@@ -10,7 +10,7 @@ This documentation outlines the current features, and future vision, of our plat
 
 The Monty project incorporates a lot of new concepts and ideas and will require considerable learning on the part of contributors who want to make significant code contributions or to use the code to solve real-world problems.  With that in mind, we've tried to make the project easy to comprehend and get started with.  To understand the fundamental principles of the project, these are some resources that we recommend:
 
-1. 🧠 [Vision of the Thousand Brains Project](./vision-of-the-thousand-brains-project.md) which describes the **guiding principles** of the project.
+1. 🧠 [Vision of the Thousand Brains Project](./vision-of-the-thousand-bra ins-project.md) which describes the **guiding principles** of the project.
 2. 🎥 [YouTube Videos](https://www.youtube.com/@thousandbrainsproject) that contain in depth descriptions of the project and the principles that guide it.  The **Quick Start playlist** is the fastest way to learn the basics.
 3. 📚 [Tutorials](../how-to-use-monty/tutorials.md) which are step-by-step guides for using Monty.
 4. 💬 [Discourse Forum](https://thousandbrains.discourse.group/) which is a community forum for discussing the project and a great place for beginners to **get answers to questions**. You can also check out our FAQs for the [Thousand Brains Project](./faq-thousand-brains-project.md), and the underlying [Monty algorithms](../how-monty-works/faq-monty.md).
