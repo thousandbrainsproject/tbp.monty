@@ -16,9 +16,7 @@ jobs:
 
   check_docs_monty:
     name: check-docs-monty
-    runs-on:
-      group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-2core
+    runs-on: ubuntu-latest
     needs:
       - should_run_docs
     steps:
