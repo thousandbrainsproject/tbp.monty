@@ -67,7 +67,7 @@ jobs:
           python -m tools.github_readme_sync.cli check docs
 
   should_run_docs:
-    name: should_run_docs
+    name: should-run-docs
     runs-on: ubuntu-latest
     outputs:
       should_run_docs: ${{ steps.should_run.outputs.should_run_docs }}
