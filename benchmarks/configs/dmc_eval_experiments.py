@@ -1107,5 +1107,4 @@ for key, exp in CONFIGS.items():
     _path = Path(exp["logging_config"].output_dir) / exp["logging_config"].run_name
     assert _path not in _output_paths
     _output_paths.append(_path)
-
 del _output_paths, _path
