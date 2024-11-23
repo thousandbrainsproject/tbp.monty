@@ -23,11 +23,11 @@ We adopted the Google Style for docstrings. For more details, see the [Google Py
 
 ### Numpy Preferred over PyTorch
 
-After discovering that torch-to-numpy conversions (and the reverse) were a significant speed bottleneck in our algorithms, we decided to consistently use NumPy to represent the data in our system. 
+After discovering that torch-to-numpy conversions (and the reverse) were a significant speed bottleneck in our algorithms, we decided to consistently use NumPy to represent the data in our system.
 
 We still require the PyTorch library since we use it for certain things, such as multiprocessing. However, please use NumPy operations for any vector and matrix operations whenever possible. If you think you cannot work with NumPy and need to use Torch, consider opening an RFC first to increase the chances of your PR being merged.
 
-Another reason we discourage using PyTorch is to add a barrier for deep-learning to creep into Monty. Although we don't have a fundamental issue with contributors using deep learning, we worry that it will be the first thing someone's mind goes to when solving a problem (when you have a hammer...). We want contributors to think intentionally about whether deep-learning is the best solution for what they want to solve. Monty relies on very different principles than those most ML practitioners are used to, and so it is useful to think outside of the mental framework of deep-learning. More importantly, evidence that the brain can perform the long-range weight transport required by deep-learning's cornerstone algorithm - back-propagation - is extremely scarce. We are developing a system that, like the mammalian brain, should be able to use _local_ learning signals to rapidly update representations, while also remaining robust under conditions of continual learning. As a general rule therefore, please avoid Pytorch, and the algorithm that it is usually leveraged to support - back-propagation! 
+Another reason we discourage using PyTorch is to add a barrier for deep-learning to creep into Monty. Although we don't have a fundamental issue with contributors using deep learning, we worry that it will be the first thing someone's mind goes to when solving a problem (when you have a hammer...). We want contributors to think intentionally about whether deep-learning is the best solution for what they want to solve. Monty relies on very different principles than those most ML practitioners are used to, and so it is useful to think outside of the mental framework of deep-learning. More importantly, evidence that the brain can perform the long-range weight transport required by deep-learning's cornerstone algorithm - back-propagation - is extremely scarce. We are developing a system that, like the mammalian brain, should be able to use _local_ learning signals to rapidly update representations, while also remaining robust under conditions of continual learning. As a general rule therefore, please avoid Pytorch, and the algorithm that it is usually leveraged to support - back-propagation!
 
 You can read more about our views on deep learning in Monty in our [FAQ](../how-monty-works/faq-monty.md#why-does-monty-not-make-use-of-deep-learning).
 
@@ -59,7 +59,7 @@ In other words, if you are creating a new file, add the copyright and license he
 
 In a document your first level of headings should be the `#` , then `##` and so on.   This is slightly confusing as usually `#` is reserved for the title, but on readme.com the `h1` tag is used for the actual title of the document.
 
-Use headings to split up long text block into managable chunks.  
+Use headings to split up long text block into managable chunks.
 
 Headings can be referenced in other documents using a hash link `[Headings](doc:style-guide#headings)`. For example [Style Guide - Headings](style-guide.md#headings)
 
@@ -74,13 +74,13 @@ For example
 ```
 This needs a footnote[1](#footnote1)
 
-# Footnotes 
+# Footnotes
 <a name="footnote1">1</a>: Footnote text
 ```
 
 ## Images
 
-Images should be placed in `/docs/figures` in the repo. 
+Images should be placed in `/docs/figures` in the repo.
 
 Images use `snake_case.ext`
 
@@ -99,7 +99,7 @@ For example, the following markdown creates the image below:
   <caption>caption text</caption>
 </div>
 
-> [!WARNING] 
+> [!WARNING]
 > Caption text is only visible on readme.com
 
 
