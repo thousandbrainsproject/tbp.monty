@@ -12,8 +12,9 @@ The Monty project incorporates a lot of new concepts and ideas and will require 
 
 1. 🧠 [Vision of the Thousand Brains Project](./vision-of-the-thousand-brains-project.md) which describes the **guiding principles** of the project.
 2. 🎥 [YouTube Videos](https://www.youtube.com/@thousandbrainsproject) that contain in depth descriptions of the project and the principles that guide it.  The **Quick Start playlist** is the fastest way to learn the basics.
-3. 📚 [Tutorials](../how-to-use-monty/tutorials.md) which are step-by-step guides for using Monty.
-4. 💬 [Discourse Forum](https://thousandbrains.discourse.group/) which is a community forum for discussing the project and a great place for beginners to **get answers to questions**. You can also check out our FAQs for the [Thousand Brains Project](./faq-thousand-brains-project.md), and the underlying [Monty algorithms](../how-monty-works/faq-monty.md).
+3. 📚 [Tutorials](../how-to-use-monty/tutorials.md) which are **step-by-step guides** for using Monty.
+4. 💬 [Discourse Forum](https://thousandbrains.discourse.group/) which is a community forum for discussing the project and a great place for beginners to **get answers to questions**.
+5. ❓ You can also check out our FAQs for the [Thousand Brains Project](./faq-thousand-brains-project.md), and the underlying [Monty algorithms](../how-monty-works/faq-monty.md).
 
 # Section Overview
 
@@ -38,9 +39,12 @@ We are excited to have you here!  Our intention for making the project open-sour
 
 # Resources
 
-<a href="https://github.com/thousandbrainsproject/tbp.monty"><img src="../figures/documentation/github.png" alt="GitHub" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> GitHub Repository</a>
-<a href="https://thousandbrains.discourse.group/"><img src="../figures/documentation/discourse.png" alt="Forum" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> Community Forum</a>
-<a href="https://www.youtube.com/@thousandbrainsproject"><img src="../figures/documentation/youtube.png" alt="YouTube" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> YouTube Channel</a>
-<a href="https://x.com/1000brainsproj"><img src="../figures/documentation/twitter.png" alt="Twitter" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> Twitter/X Profile</a>
-<a href="https://thousandbrains.org/"><img src="../figures/documentation/website.png" alt="Website" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> Official Website</a>
-<a href="https://www.linkedin.com/showcase/thousand-brains-project"><img src="../figures/documentation/linkedin.png" alt="LinkedIn" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none"> LinkedIn Page</a>
+| Resource | Description |
+|----------|-------------|
+| <a href="https://github.com/thousandbrainsproject/tbp.monty" style="display: flex; align-items: center;"><img src="../figures/overview/github.png" alt="GitHub" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;GitHub&nbsp;Repository</a> | Access our source code, contribute features, report issues and collaborate with other developers |
+| <a href="https://thousandbrains.discourse.group/" style="display: flex; align-items: center;"><img src="../figures/overview/discourse.png" alt="Forum" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;Community&nbsp;Forum</a> | Discuss ideas, ask questions and connect with other community members |
+| <a href="https://thousandbrains.org/" style="display: flex; align-items: center;"><img src="../figures/overview/website.png" alt="Website" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;Official&nbsp;Website</a> | Learn about our mission, team and the science behind the project |
+| <a href="https://www.youtube.com/@thousandbrainsproject" style="display: flex; align-items: center;"><img src="../figures/overview/youtube.png" alt="YouTube" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;YouTube&nbsp;Channel</a> | Watch tutorials, technical deep-dives and project updates |
+| <a href="https://bsky.app/profile/1000brainsproj.bsky.social" style="display: flex; align-items: center;"><img src="../figures/overview/bluesky.png" alt="Bluesky" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;Bluesky</a>| Get the latest news and announcements, and engage with our community |
+|<a href="https://x.com/1000brainsproj" style="display: flex; align-items: center;"><img src="../figures/overview/twitter.png" alt="Twitter" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;Twitter/X</a> | Get the latest news and announcements, and engage with our community |
+| <a href="https://www.linkedin.com/showcase/thousand-brains-project" style="display: flex; align-items: center;"><img src="../figures/overview/linkedin.png" alt="LinkedIn" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;LinkedIn&nbsp;Page</a> | Get the latest news and announcements |

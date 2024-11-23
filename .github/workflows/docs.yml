@@ -1,0 +1,115 @@
+name: Docs
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check_docs:
+    name: check-docs
+    runs-on: ubuntu-latest
+    needs:
+      - should_run_docs
+    steps:
+      - name: Checkout tbp.monty
+        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
+      - name: Set up ~/tbp
+        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        run: |
+          mkdir -p ~/tbp
+          ln -s $GITHUB_WORKSPACE/tbp.monty ~/tbp/tbp.monty
+      - name: Set up Python 3.8
+        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.8"
+      - name: Install miniconda
+        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        run: |
+          if [ ! -d ~/miniconda ]
+          then
+            wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
+            bash ~/miniconda.sh -b -p ~/miniconda
+            rm ~/miniconda.sh
+          fi
+          export PATH="$HOME/miniconda/bin:$PATH"
+          conda --version
+      - name: Create conda environment
+        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          (conda env list | grep tbp.monty) && conda remove --name tbp.monty --all --yes || true
+          conda env create
+          source activate tbp.monty
+          pip install -e .[dev,github_readme_sync_tool]
+          pip list
+          conda list
+      - name: Check docs
+        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          python -m tools.github_readme_sync.cli check docs
+
+  should_run_docs:
+    name: should-run-docs
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    outputs:
+      should_run_docs: ${{ steps.should_run.outputs.should_run_docs }}
+    steps:
+      - name: Checkout tbp.monty
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
+      - name: Filter by path for a pull request
+        if: ${{ github.event_name == 'pull_request' }}
+        id: filter_by_path_pr
+        working-directory: tbp.monty
+        run: |
+          git diff --name-only origin/${{ github.base_ref }} > changed_files.txt
+          while IFS= read -r changed_file
+          do
+            echo $changed_file
+            if [[ $changed_file == docs/* ]] ||
+               [[ $changed_file == tools/github_readme_sync/* ]] ||
+               [[ $changed_file == .github/workflows/docs.yml ]]; then
+              echo "should_run_docs=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          done < changed_files.txt
+      - name: Filter by path for a push
+        if: ${{ github.event_name == 'push' }}
+        id: filter_by_path_push
+        working-directory: tbp.monty
+        run: |
+          git diff --name-only HEAD^1 > changed_files.txt
+          while IFS= read -r changed_file
+          do
+            echo $changed_file
+            if [[ $changed_file == docs/* ]]; then
+              echo "should_run_docs=true" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          done < changed_files.txt
+      - name: Should run
+        id: should_run
+        if: ${{ steps.filter_by_path_pr.outputs.should_run_docs == 'true' || steps.filter_by_path_push.outputs.should_run_docs == 'true'}}
+        run: echo "should_run_docs=true" >> $GITHUB_OUTPUT
