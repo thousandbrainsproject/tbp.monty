@@ -91,7 +91,7 @@ Upload high quality images as people can click on the image to see the larger ve
 For example, the following markdown creates the image below:
 
 ```markdown
-![caption text](../figures/docs-only-example.png)
+![caption text](../figures/docs-only-example.png#width:300px)
 ```
 
 <div style="display:flex; flex-direction:column; align-items:center">
