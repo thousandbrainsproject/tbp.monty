@@ -149,8 +149,8 @@ jobs:
           message: |
             📚 **Documentation Preview**
 
-            ✅ A preview of the documentation changes in this PR is available at:
-            ${{ vars.DOCS_URL_PREFIX }}${{ env.VERSION }}-${{ env.BRANCH_NAME }}
+            ✅ A preview of the documentation changes in this PR is available for maintainers at:
+            ${{ vars.DOCS_URL_PREFIX }}v${{ env.VERSION }}-${{ env.BRANCH_NAME }}
 
             Last updated: ${{ env.DATE }}
       - name: Update PR comment on failure
@@ -167,7 +167,7 @@ jobs:
   should_run_docs:
     name: should-run-docs
     runs-on: ubuntu-latest
-    # if: ${{ github.repository_owner == 'thousandbrainsproject' }} TODO add back in later
+    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     outputs:
       should_run_docs: ${{ steps.should_run.outputs.should_run_docs }}
     steps:
