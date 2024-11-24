@@ -74,6 +74,16 @@ jobs:
       - should_run_docs
     if: github.event_name == 'pull_request'
     steps:
+      - name: Create initial PR comment
+        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            📚 **Documentation Preview**
+            
+            Building documentation preview... ⏳
+
+            Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for progress.
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         uses: actions/checkout@v4
@@ -127,6 +137,27 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           python -m tools.github_readme_sync.cli upload docs "${VERSION}-${BRANCH_NAME}"
+      - name: Update PR comment on success
+        if: ${{ success() && needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            📚 **Documentation Preview**
+            
+            ✅ A preview of the documentation changes in this PR is available at:
+            ${{ env.DOCS_URL_PREFIX }}${{ env.VERSION }}-${{ env.BRANCH_NAME }}
+            
+            Last updated: $(date '+%B %d, %Y at %H:%M:%S UTC')
+      - name: Update PR comment on failure
+        if: ${{ failure() && needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          message: |
+            📚 **Documentation Preview**
+
+            ❌ Failed to build documentation preview.
+            
+            Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
 
   should_run_docs:
     name: should-run-docs
