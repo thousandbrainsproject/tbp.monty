@@ -13,7 +13,6 @@ on:
       - main
 
 jobs:
-
   check_docs:
     name: check-docs
     runs-on: ubuntu-latest
