@@ -13,7 +13,7 @@ on:
       - main
 
 jobs:
-  
+
   check_docs:
     name: check-docs
     runs-on: ubuntu-latest
@@ -131,7 +131,7 @@ jobs:
   should_run_docs:
     name: should-run-docs
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    # if: ${{ github.repository_owner == 'thousandbrainsproject' }} TODO add back in later
     outputs:
       should_run_docs: ${{ steps.should_run.outputs.should_run_docs }}
     steps:
