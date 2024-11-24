@@ -11,6 +11,9 @@ on:
   pull_request:
     branches:
       - main
+  pull_request_target:
+    branches:
+      - main
 
 jobs:
   check_docs:
@@ -18,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - should_run_docs
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
@@ -71,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - should_run_docs
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request_target'
     steps:
       - name: Create initial PR comment
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
@@ -177,7 +181,7 @@ jobs:
           lfs: true
           path: tbp.monty
       - name: Filter by path for a pull request
-        if: ${{ github.event_name == 'pull_request' }}
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
         id: filter_by_path_pr
         working-directory: tbp.monty
         run: |
