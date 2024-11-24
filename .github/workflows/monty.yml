@@ -50,11 +50,11 @@ jobs:
           pip install -e .[generate_api_docs_tool]
           cd tools/generate_api_docs
           make apidoc html
-      - name: Store API docs
+      - name: Store API docs artifact
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: api_docs_html
+          name: github-pages-${{ github.sha }}
           path: tbp.monty/tools/generate_api_docs/build/html
 
   build_wheel_monty:
