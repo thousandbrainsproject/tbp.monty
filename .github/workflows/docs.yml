@@ -67,8 +67,8 @@ jobs:
           source activate tbp.monty
           python -m tools.github_readme_sync.cli check docs
 
-  deploy_pr_docs:
-    name: deploy-pr-docs
+  deploy_preview_docs:
+    name: deploy-preview-docs
     runs-on: ubuntu-latest
     needs:
       - should_run_docs
@@ -110,7 +110,7 @@ jobs:
           (conda env list | grep tbp.monty) && conda remove --name tbp.monty --all --yes || true
           conda env create
           source activate tbp.monty
-          pip install -e .[dev,github_readme_sync_tool]
+          pip install -e .[dev,github_readme_sync_tool,print_version_tool]
       - name: Get version and branch
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         working-directory: tbp.monty
