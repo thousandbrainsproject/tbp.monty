@@ -129,7 +129,10 @@ jobs:
           source activate tbp.monty
           echo "VERSION=$(python -m tools.print_version.cli minor)" >> $GITHUB_ENV
           # Make branch name safe for semver by replacing invalid chars with dash
-          echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr -c '[:alnum:]' '-')" >> $GITHUB_ENV
+          # Remove trailing dash if present
+          echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr -c '[:alnum:]' '-' | sed 's/-*$//')" >> $GITHUB_ENV
+          # Get current date in ISO format
+          echo "DATE=$(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_ENV
       - name: Deploy docs
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         working-directory: tbp.monty
@@ -145,11 +148,11 @@ jobs:
         with:
           message: |
             📚 **Documentation Preview**
-            
+
             ✅ A preview of the documentation changes in this PR is available at:
-            ${{ env.DOCS_URL_PREFIX }}${{ env.VERSION }}-${{ env.BRANCH_NAME }}
-            
-            Last updated: $(date '+%B %d, %Y at %H:%M:%S UTC')
+            ${{ vars.DOCS_URL_PREFIX }}${{ env.VERSION }}-${{ env.BRANCH_NAME }}
+
+            Last updated: ${{ env.DATE }}
       - name: Update PR comment on failure
         if: ${{ failure() && needs.should_run_docs.outputs.should_run_docs == 'true' }}
         uses: marocchino/sticky-pull-request-comment@v2
@@ -158,7 +161,7 @@ jobs:
             📚 **Documentation Preview**
 
             ❌ Failed to build documentation preview.
-            
+
             Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
 
   should_run_docs:
