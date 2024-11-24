@@ -1,4 +1,4 @@
-name: Docs
+name: Docs Preview
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
@@ -106,7 +106,6 @@ jobs:
 
             Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
 
-            
   should_run_docs:
     name: should-run-docs
     runs-on: ubuntu-latest
