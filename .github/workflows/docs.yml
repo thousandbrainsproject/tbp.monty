@@ -136,6 +136,9 @@ jobs:
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
+          env:
+            README_API_KEY: ${{ secrets.README_API_KEY }}
+            IMAGE_PATH: ${{ vars.IMAGE_PATH }}
           python -m tools.github_readme_sync.cli upload docs "${VERSION}-${BRANCH_NAME}"
       - name: Update PR comment on success
         if: ${{ success() && needs.should_run_docs.outputs.should_run_docs == 'true' }}
