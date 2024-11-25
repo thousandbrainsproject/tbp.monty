@@ -3,7 +3,7 @@
 while IFS= read -r changed_file
 do
   echo $changed_file
-  if [[ $changed_file != .github/* ]] &&
+  if [[ $changed_file != .github/ISSUE_TEMPLATE/* ]] &&
      [[ $changed_file != .vscode/* ]] &&
      [[ $changed_file != docs/* ]] &&
      [[ $changed_file != rfcs/* ]] &&

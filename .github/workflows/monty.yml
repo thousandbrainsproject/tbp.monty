@@ -286,7 +286,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     outputs:
-      should_run_monty: ${{ steps.should_run.outputs.should_run_monty }}
+      should_run_monty: ${{ steps.should_run_monty.outputs.should_run_monty }}
     steps:
       - name: Checkout tbp.monty
         uses: actions/checkout@v4
@@ -294,14 +294,8 @@ jobs:
           fetch-depth: 0
           lfs: true
           path: tbp.monty
-      - name: Debug
-        run: |
-
-          pwd
-          ls -al $(pwd)
-          ls -al .
       - name: Should Run Monty
-        id: should_run
+        id: should_run_monty
         uses: ./tbp.monty/.github/actions/should_run_monty
         with:
           working_directory: tbp.monty
