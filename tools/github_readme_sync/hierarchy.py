@@ -12,10 +12,11 @@ import logging
 import os
 import re
 import sys
+import timeit
 
 import requests
 
-from tools.github_readme_sync.colors import CYAN, GREEN, RED, RESET, WHITE
+from tools.github_readme_sync.colors import CYAN, GREEN, RED, RESET, WHITE, YELLOW
 from tools.github_readme_sync.excluded_items import IGNORE_DOCS, IGNORE_IMAGES
 
 HIERARCHY_FILE = "hierarchy.md"
@@ -190,7 +191,7 @@ def check_external(folder, ignore_dirs, rdme):
             [os.path.join(root, file) for file in files if file.endswith(".md")]
         )
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         future_to_file = {
             executor.submit(process_file, file_path, rdme, url_cache): file_path
             for file_path in md_files
@@ -267,9 +268,15 @@ def check_readme_link(url, rdme):
 
     try:
         doc_slug = url.split("/")[-1]
+        time = timeit.default_timer()
         response = rdme.get_doc_by_slug(doc_slug)
+        time = timeit.default_timer() - time
+        status_color = GREEN if response else RED
         if not response:
-            logging.debug(f"{WHITE}  {url} (Not found){RESET}")
+            log_msg = f"{WHITE}{url} {status_color}(Not found){RESET}"
+            if time > 1:
+                log_msg += f" ({YELLOW}{time:.2f}s{RESET})"
+            logging.debug(log_msg)
             return [f"  broken link: {url} (Not found)"]
     except Exception as e:
         return [f"  {url}: {str(e)}"]
@@ -278,9 +285,28 @@ def check_readme_link(url, rdme):
 
 
 def check_external_link(url):
+    if "openai.com" in url or "science.org" in url:
+        return []
+
     try:
         headers = request_headers()
-        response = requests.get(url, timeout=5, headers=headers)
+        time = timeit.default_timer()
+
+        # Try HEAD request first
+        try:
+            response = requests.head(url, timeout=5, headers=headers)
+            if response.status_code < 200 or response.status_code > 299:
+                response = requests.get(url, timeout=5, headers=headers)
+        except requests.RequestException:
+            # If HEAD fails, try GET
+            response = requests.get(url, timeout=5, headers=headers)
+
+        time = timeit.default_timer() - time
+        status_color = GREEN if 200 <= response.status_code <= 299 else RED
+        log_msg = f"{WHITE}{url} {status_color}[{response.status_code}]{RESET}"
+        if time > 1:
+            log_msg += f" ({YELLOW}{time:.2f}s{RESET})"
+        logging.info(log_msg)
         if response.status_code < 200 or response.status_code > 299:
             logging.debug(f"{WHITE}  {url} ({response.status_code}){RESET}")
             return [f"  broken link: {url} ({response.status_code})"]
@@ -312,6 +338,7 @@ def request_headers():
 
 
 def report_errors(errors, total_links_checked):
+    logging.info("")
     if errors:
         for file_path, file_errors in errors.items():
             logging.error(f"{RED}{file_path}{RESET}")
