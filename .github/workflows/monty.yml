@@ -298,6 +298,7 @@ jobs:
           ls -al $(pwd)
           ls -al .
       - name: Should Run Monty
+        id: should_run
         uses: ./tbp.monty/.github/actions/should_run_monty
         with:
           working_directory: tbp.monty
