@@ -291,6 +291,11 @@ jobs:
           fetch-depth: 0
           lfs: true
           path: tbp.monty
+      - name: Debug
+        run: |
+          pwd
+          ls -al $(pwd)
+          ls -al .
       - name: Should Run Monty
         uses: ./.github/actions/should_run_monty
         with:
