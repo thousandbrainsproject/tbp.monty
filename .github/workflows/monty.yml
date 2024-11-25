@@ -219,9 +219,6 @@ jobs:
     outputs:
       conda_env_cache_key_sha: ${{ steps.generate_cache_key.outputs.conda_env_cache_key_sha }}
     steps:
-      - name: Debug
-        run: |
-          echo "should_run_monty=${{ needs.should_run_monty.outputs.should_run_monty }}"
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/checkout@v4
