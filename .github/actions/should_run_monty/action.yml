@@ -37,30 +37,30 @@ runs:
               exit 0
             fi
           done < changed_files.txt
-      - name: Filter by path for a push
-        if: ${{ github.event_name == 'push' }}
-        id: filter_by_path_push
-        working-directory: tbp.monty
-        run: |
-          git diff --name-only HEAD^1 > changed_files.txt
-          while IFS= read -r changed_file
-          do
-            echo $changed_file
-            if [[ $changed_file != .github/ISSUE_TEMPLATE/* ]] &&
-               [[ $changed_file != .vscode/* ]] &&
-               [[ $changed_file != docs/* ]] &&
-               [[ $changed_file != rfcs/* ]] &&
-               [[ $changed_file != tools/* ]] &&
-               [[ $changed_file != CODE_OF_CONDUCT.md ]] &&
-               [[ $changed_file != CONTRIBUTING.md ]] &&
-               [[ $changed_file != LICENSE ]] &&
-               [[ $changed_file != MAINTAINERS.md ]] &&
-               [[ $changed_file != README.md ]]; then
-              echo "should_run_monty=true" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-          done < changed_files.txt
-      - name: Should run
-        id: should_run
-        if: ${{ steps.filter_by_path_pr.outputs.should_run_monty == 'true' || steps.filter_by_path_push.outputs.should_run_monty == 'true'}}
-        run: echo "should_run_monty=true" >> $GITHUB_OUTPUT
+    - name: Filter by path for a push
+      if: ${{ github.event_name == 'push' }}
+      id: filter_by_path_push
+      working-directory: ${{ inputs.working_directory }}
+      run: |
+        git diff --name-only HEAD^1 > changed_files.txt
+        while IFS= read -r changed_file
+        do
+          echo $changed_file
+          if [[ $changed_file != .github/ISSUE_TEMPLATE/* ]] &&
+              [[ $changed_file != .vscode/* ]] &&
+              [[ $changed_file != docs/* ]] &&
+              [[ $changed_file != rfcs/* ]] &&
+              [[ $changed_file != tools/* ]] &&
+              [[ $changed_file != CODE_OF_CONDUCT.md ]] &&
+              [[ $changed_file != CONTRIBUTING.md ]] &&
+              [[ $changed_file != LICENSE ]] &&
+              [[ $changed_file != MAINTAINERS.md ]] &&
+              [[ $changed_file != README.md ]]; then
+            echo "should_run_monty=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+        done < changed_files.txt
+    - name: Should run
+      id: should_run
+      if: ${{ steps.filter_by_path_pr.outputs.should_run_monty == 'true' || steps.filter_by_path_push.outputs.should_run_monty == 'true'}}
+      run: echo "should_run_monty=true" >> $GITHUB_OUTPUT
