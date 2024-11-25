@@ -18,6 +18,7 @@ runs:
       if: ${{ github.event_name == 'pull_request' }}
       id: filter_by_path_pr
       working-directory: ${{ inputs.working_directory }}
+      shell: bash
       run: |
           git diff --name-only origin/${{ github.base_ref }} > changed_files.txt
           while IFS= read -r changed_file
@@ -41,6 +42,7 @@ runs:
       if: ${{ github.event_name == 'push' }}
       id: filter_by_path_push
       working-directory: ${{ inputs.working_directory }}
+      shell: bash
       run: |
         git diff --name-only HEAD^1 > changed_files.txt
         while IFS= read -r changed_file
@@ -63,4 +65,5 @@ runs:
     - name: Should run
       id: should_run
       if: ${{ steps.filter_by_path_pr.outputs.should_run_monty == 'true' || steps.filter_by_path_push.outputs.should_run_monty == 'true'}}
+      shell: bash
       run: echo "should_run_monty=true" >> $GITHUB_OUTPUT
