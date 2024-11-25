@@ -272,11 +272,12 @@ def check_readme_link(url, rdme):
         response = rdme.get_doc_by_slug(doc_slug)
         time = timeit.default_timer() - time
         status_color = GREEN if response else RED
+        log_msg = f"{CYAN}{url} {status_color}"
+        log_msg += f"[{200 if response else 404}]{RESET}"
+        if time > 1:
+            log_msg += f" ({YELLOW}{time:.2f}s{RESET})"
+        logging.info(log_msg)
         if not response:
-            log_msg = f"{WHITE}{url} {status_color}(Not found){RESET}"
-            if time > 1:
-                log_msg += f" ({YELLOW}{time:.2f}s{RESET})"
-            logging.debug(log_msg)
             return [f"  broken link: {url} (Not found)"]
     except Exception as e:
         return [f"  {url}: {str(e)}"]
@@ -292,7 +293,6 @@ def check_external_link(url):
         headers = request_headers()
         time = timeit.default_timer()
 
-        # Try HEAD request first
         try:
             response = requests.head(url, timeout=5, headers=headers)
             if response.status_code < 200 or response.status_code > 299:
@@ -308,7 +308,6 @@ def check_external_link(url):
             log_msg += f" ({YELLOW}{time:.2f}s{RESET})"
         logging.info(log_msg)
         if response.status_code < 200 or response.status_code > 299:
-            logging.debug(f"{WHITE}  {url} ({response.status_code}){RESET}")
             return [f"  broken link: {url} ({response.status_code})"]
     except requests.RequestException as e:
         return [f"  {url}: {str(e)}"]
