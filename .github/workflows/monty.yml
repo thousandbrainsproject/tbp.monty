@@ -54,7 +54,7 @@ jobs:
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: github-pages-${{ github.sha }}
+          name: sphinx-html-${{ github.sha }}
           path: tbp.monty/tools/generate_api_docs/build/html
       - name: Debug - Delete generated API docs
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
@@ -65,11 +65,11 @@ jobs:
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/download-artifact@v4
         with:
-          name: github-pages-${{ github.sha }}
+          name: sphinx-html-${{ github.sha }}
+          path: tbp.monty/tools/generate_api_docs/build/html
       - name: Debug - List API docs artifact
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         run: |
-          ls -l tbp.monty
           ls -l tbp.monty/tools/generate_api_docs/build/html
       - name: Store API docs GitHub Pages artifact
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
