@@ -20,10 +20,10 @@ jobs:
       group: tbp.monty
       labels: tbp-linux-x64-ubuntu2204-2core
     needs:
-      - check_dependencies_monty # Don't run if dependency check fails
-      - check_license_monty # Don't run if license check fails
-      - check_style_monty # Don't run if style check fails
-      - check_types_monty # Don't run if type check fails
+      # - check_dependencies_monty # Don't run if dependency check fails
+      # - check_license_monty # Don't run if license check fails
+      # - check_style_monty # Don't run if style check fails
+      # - check_types_monty # Don't run if type check fails
       - install_monty
       - should_run_monty
     steps:
@@ -51,6 +51,22 @@ jobs:
           cd tools/generate_api_docs
           make apidoc html
       - name: Store API docs artifact
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-pages-${{ github.sha }}
+          path: tbp.monty/tools/generate_api_docs/build/html
+      - name: Debug - Download API docs artifact
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages-${{ github.sha }}
+      - name: Debug - List API docs artifact
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        run: |
+          ls -l tbp.monty
+          ls -l tbp.monty/tools/generate_api_docs/build/html
+      - name: Store API docs GitHub Pages artifact
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/upload-pages-artifact@v3
         with:
