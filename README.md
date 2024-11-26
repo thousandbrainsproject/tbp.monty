@@ -11,6 +11,8 @@ This is an open-source project by Numenta, partially funded by the Gates Foundat
 
 Please find our **full documentation** [here](https://thousandbrainsproject.readme.io/)
 
+Our API documentation is [here](https://api-monty.thousandbrains.org).
+
 # Getting Started
 
 You can find detailed instructions on how to install the project requirements and how to get started [here](https://thousandbrainsproject.readme.io/docs/getting-started)
