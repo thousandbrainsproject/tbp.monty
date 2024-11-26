@@ -70,6 +70,8 @@ There are no priorities or severities applied to Pull Requests.
 
 A valid Pull Request is on-topic, well-formatted, contains expected information, does not depend on an unmerged Pull Request, and does not violate the code of conduct.
 
+A Draft Pull Request is ignored and not triaged.
+
 ## Title
 
 A short descriptive title.
