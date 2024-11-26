@@ -20,10 +20,10 @@ jobs:
       group: tbp.monty
       labels: tbp-linux-x64-ubuntu2204-2core
     needs:
-      # - check_dependencies_monty # Don't run if dependency check fails
-      # - check_license_monty # Don't run if license check fails
-      # - check_style_monty # Don't run if style check fails
-      # - check_types_monty # Don't run if type check fails
+      - check_dependencies_monty # Don't run if dependency check fails
+      - check_license_monty # Don't run if license check fails
+      - check_style_monty # Don't run if style check fails
+      - check_types_monty # Don't run if type check fails
       - install_monty
       - should_run_monty
     steps:
