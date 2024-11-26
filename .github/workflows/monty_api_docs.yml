@@ -51,6 +51,7 @@ jobs:
           name: sphinx-html-${{ github.sha }}
           run-id: ${{ github.event.workflow_run.id }}
           path: tbp.monty/sphinx_html
+          github-token: ${{ github.token }}
       - name: Upload GitHub Pages artifact
         if: ${{ steps.should_run_monty_api_docs.outputs.should_run_monty == 'true'}}
         uses: actions/upload-pages-artifact@v3
