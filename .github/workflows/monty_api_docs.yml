@@ -39,9 +39,9 @@ jobs:
         id: should_run_monty_api_docs
         uses: ./tbp.monty/.github/actions/should_run_monty
         with:
-          event_name: ${{ github.event.workflow_run.event }}
           git_base_ref: ${{ github.event.workflow_run.head_branch }}
           git_sha: ${{ github.event.workflow_run.head_sha }}
+          github_event_name: ${{ github.event.workflow_run.event }}
           working_directory: tbp.monty
       # Downloading the artifact from the previous run so that actions/deploy-pages can find it.
       - name: Download artifact

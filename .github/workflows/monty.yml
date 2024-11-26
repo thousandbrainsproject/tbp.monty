@@ -295,9 +295,9 @@ jobs:
         id: should_run_monty
         uses: ./tbp.monty/.github/actions/should_run_monty
         with:
-          event_name: ${{ github.event_name }}
           git_base_ref: ${{ github.base_ref }}
           git_sha: ${{ github.sha }}
+          github_event_name: ${{ github.event_name }}
           working_directory: tbp.monty
 
   test_monty:
