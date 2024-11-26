@@ -9,9 +9,9 @@ This repository contains the first implementation of a **sensorimotor learning s
 
 This is an open-source project by Numenta, partially funded by the Gates Foundation.
 
-Please find our **full documentation** [here](https://thousandbrainsproject.readme.io/)
+Please find our [**full documentation** here](https://thousandbrainsproject.readme.io/)
 
-Our API documentation is [here](https://api-monty.thousandbrains.org).
+Our [**API documentation** here](https://api-monty.thousandbrains.org).
 
 # Getting Started
 
