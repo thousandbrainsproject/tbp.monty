@@ -511,6 +511,23 @@ This is a test document.""",
             block_str = f"[block:html]\n{json.dumps(block, indent=2)}\n[/block]"
             self.assertIn(block_str, result)
 
+    def test_caption_markdown_images_multiple_per_line(self):
+        input_text = (
+            "![First Image](path/to/first.png) ![Second Image](path/to/second.png)"
+        )
+
+        expected_output = (
+            '<figure><img src="path/to/first.png" align="center" '
+            'style="border-radius: 8px;" />'
+            "<figcaption>First Image</figcaption></figure> "
+            '<figure><img src="path/to/second.png" align="center" '
+            'style="border-radius: 8px;" />'
+            "<figcaption>Second Image</figcaption></figure>"
+        )
+
+        result = self.readme.caption_markdown_images(input_text)
+        self.assertEqual(result, expected_output)
+
 
 if __name__ == "__main__":
     unittest.main()
