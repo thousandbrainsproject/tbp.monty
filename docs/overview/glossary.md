@@ -32,7 +32,7 @@ A computational unit that takes features at poses as input and uses this informa
 
 # Model
 
-In the Thousand Brains Project, the term `model` has a specific meaning that differs from how it is commonly understood in deep learning. In Monty, a model refers to a representation of an object stored entirely within the boundaries of a learning module. This contrasts with deep learning, where a model typically represents a single graph of weights encompassing the entire learned dataset. A helpful, though not perfect, analogy is to think of Monty models as CAD representations of objects that exist within the confines of a learning module.
+In Monty, a model (sometimes referred to as object model), is a representation of an object stored entirely within the boundaries of a learning module. Monty can store several object models in memory simultaneously, enabling the system to manage multiple representations at once. This notion of a model in Monty differs from the concept of a model in deep learning, where it typically refers to a neural network model or architecture. A useful analogy is to think of Monty models as CAD representations of objects that exist within the confines of a learning module.
 
 # Path Integration
 
