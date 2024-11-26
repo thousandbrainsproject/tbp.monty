@@ -30,6 +30,10 @@ An assumption that is built into an algorithm/model. If the assumption holds, th
 
 A computational unit that takes features at poses as input and uses this information to learn models of the world. It is also able to recognize objects and their poses from the input if an object has been learned already.
 
+# Model
+
+In the Thousand Brains Project, the term `model` has a specific meaning that differs from how it is commonly understood in deep learning. In Monty, a model refers to a representation of an object stored entirely within the boundaries of a learning module. This contrasts with deep learning, where a model typically represents a single graph of weights encompassing the entire learned dataset. A helpful, though not perfect, analogy is to think of Monty models as CAD representations of objects that exist within the confines of a learning module.
+
 # Path Integration
 
 Updating an agent's location by using its own movement and features in the environment.
