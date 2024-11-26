@@ -43,19 +43,20 @@ jobs:
           git_sha: ${{ github.event.workflow_run.head_sha }}
           github_event_name: ${{ github.event.workflow_run.event }}
           working_directory: tbp.monty
-      # Downloading the artifact from the previous run so that actions/deploy-pages can find it.
+      # Downloading the Sphinx HTML artifact from the previous run.
       - name: Download artifact
         if: ${{ steps.should_run_monty_api_docs.outputs.should_run_monty == 'true'}}
         uses: actions/download-artifact@v4
         with:
-          name: github-pages-${{ github.sha }}
+          name: sphinx-html-${{ github.sha }}
           run-id: ${{ github.event.workflow_run.id }}
-      - name: Upload artifact
+          path: tbp.monty/sphinx_html
+      - name: Upload GitHub Pages artifact
         if: ${{ steps.should_run_monty_api_docs.outputs.should_run_monty == 'true'}}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
           name: github-pages-${{ github.sha }}
-          path: github-pages-${{ github.sha }}
+          path: tbp.monty/sphinx_html
       - name: Deploy Monty API docs
         id: deployment
         if: ${{ steps.should_run_monty_api_docs.outputs.should_run_monty == 'true'}}

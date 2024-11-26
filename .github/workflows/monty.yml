@@ -56,27 +56,6 @@ jobs:
         with:
           name: sphinx-html-${{ github.sha }}
           path: tbp.monty/tools/generate_api_docs/build/html
-      - name: Debug - Delete generated API docs
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        run: |
-          rm -rf tbp.monty/tools/generate_api_docs/build/html
-          ls -l tbp.monty/tools/generate_api_docs/build
-      - name: Debug - Download API docs artifact
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/download-artifact@v4
-        with:
-          name: sphinx-html-${{ github.sha }}
-          path: tbp.monty/tools/generate_api_docs/build/html
-      - name: Debug - List API docs artifact
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        run: |
-          ls -l tbp.monty/tools/generate_api_docs/build/html
-      - name: Store API docs GitHub Pages artifact
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/upload-pages-artifact@v3
-        with:
-          name: github-pages-${{ github.sha }}
-          path: tbp.monty/tools/generate_api_docs/build/html
 
   build_wheel_monty:
     name: build-wheel-monty
