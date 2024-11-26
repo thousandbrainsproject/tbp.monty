@@ -56,6 +56,11 @@ jobs:
         with:
           name: github-pages-${{ github.sha }}
           path: tbp.monty/tools/generate_api_docs/build/html
+      - name: Debug - Delete generated API docs
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        run: |
+          rm -rf tbp.monty/tools/generate_api_docs/build/html
+          ls -l tbp.monty/tools/generate_api_docs/build
       - name: Debug - Download API docs artifact
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/download-artifact@v4
