@@ -37,7 +37,7 @@ In Monty, a model (sometimes referred to as [Object Model](../how-monty-works/ho
 - A single learning module **stores multiple object models** in memory, simultaneously.
 - The Monty system may have **multiple models of the same object** if there are multiple learning modules - this is a desired behavior.
 - Learning modules **update models independently** of each other.
-- Models are structured as [reference frames](#reference-frame), not just a bag of features.
+- Models are structured using [reference frames](#reference-frame), not just a bag of features.
 - Models represent **complete objects**, not just parts of objects.
 
 A useful analogy is to think of **Monty models** as **CAD representations** of objects that exist within the confines of a learning module.
