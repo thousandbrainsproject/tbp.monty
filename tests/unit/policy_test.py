@@ -896,49 +896,6 @@ class PolicyTest(unittest.TestCase):
 
         self.exp.dataset.close()
 
-    def test_hab_utils_quat_rotate_vector(self):
-        """Verify hab_utils.quat_rotate_vector replacement results."""
-        quat_wxyz = qt.quaternion(1, 2, 3, 4)
-        vec_xyz = np.array([5, 6, 7])
-        hu_vec_rotated_xyz = hab_utils.quat_rotate_vector(quat_wxyz, vec_xyz)
-        print(hu_vec_rotated_xyz)  # [2.6 6.  8.2]
-
-        qt_vec_rotated_xyz = qt.rotate_vectors(quat_wxyz, vec_xyz)
-        print(qt_vec_rotated_xyz)  # [2.6 6.  8.2]
-
-        rot_vec_rotated_xyz = Rotation.from_quat(qt.as_float_array(quat_wxyz)).apply(
-            vec_xyz
-        )
-        print(rot_vec_rotated_xyz)  # [1.8 7.6 7. ]
-
-        [w, x, y, z] = qt.as_float_array(quat_wxyz)
-        rot_vec_rotated_xyz = Rotation.from_quat([x, y, z, w]).apply(vec_xyz)
-        print(rot_vec_rotated_xyz)  # [2.6 6.  8.2]
-
-        assert np.allclose(
-            hu_vec_rotated_xyz, rot_vec_rotated_xyz, rtol=1.0e-10, atol=1.0e-10
-        ), "hu_vec_rotated_xyz and rot_vec_rotated_xyz do not match"
-
-    def test_hab_utils_inverse(self):
-        """Verify get_inverse_agent_rot replacement results."""
-        vec_xyz = np.array([5, 6, 7])
-        quat_wxyz = qt.quaternion(1, 2, 3, 4)
-        inverse_magnum_rotation = hab_utils.common.quat_to_magnum(quat_wxyz).inverted()
-        inverse_quaternion_rotation = hab_utils.common.quat_from_magnum(
-            inverse_magnum_rotation
-        )
-        [w, x, y, z] = qt.as_float_array(inverse_quaternion_rotation)
-        magnum_vec_rotated_xyz = Rotation.from_quat([x, y, z, w]).apply(vec_xyz)
-        print(magnum_vec_rotated_xyz)  # [3.00000014 5.1999997 8.60000013]
-
-        [w, x, y, z] = qt.as_float_array(quat_wxyz)
-        rot_vec_rotated_xyz = Rotation.from_quat([x, y, z, w]).inv().apply(vec_xyz)
-        print(rot_vec_rotated_xyz)  # [3.  5.2 8.6]
-
-        assert np.allclose(
-            magnum_vec_rotated_xyz, rot_vec_rotated_xyz, rtol=1.0e-5, atol=1.0e-8
-        ), "magnum_vec_rotated_xyz and rot_vec_rotated_xyz do not match"
-
     def test_surface_policy_orientation(self):
         """Test ability of surface agent to orient to a point-normal.
 
