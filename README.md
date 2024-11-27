@@ -1,9 +1,13 @@
-![](docs/figures/overview/logo.png)
+<div style="text-align: center">
+  <img src="docs/figures/overview/logo.png" alt="Logo">
+</div>
 
 # Welcome to the Monty repository!
 *An open-source, sensorimotor learning system following the principles of the neocortex.*
 
-[![](https://github.com/thousandbrainsproject/tbp.monty/actions/workflows/monty.yml/badge.svg)](https://github.com/thousandbrainsproject/tbp.monty/actions/workflows/monty.yml)
+<div style="text-align: center">
+  <img src="https://github.com/thousandbrainsproject/tbp.monty/actions/workflows/monty.yml/badge.svg" alt="Build Status">
+</div>
 
 This repository contains the first implementation of a **sensorimotor learning system** from the **Thousand Brains Project at Numenta**. We lovingly call it **Monty** after Vernon Mountcastle, who proposed cortical columns as a repeating functional unit across the neocortex.
 
@@ -38,13 +42,25 @@ You can find our **project road map** and details on the next features we are wo
 
 # More Information and Updates
 As mentioned above, we have extensive **documentation** of this project [here](https://thousandbrainsproject.readme.io/).
-[![](docs/figures/overview/docs_screenshot.png)](https://thousandbrainsproject.readme.io/)
+<div style="text-align: center">
+  <a href="https://thousandbrainsproject.readme.io/">
+    <img src="docs/figures/overview/docs_screenshot.png" alt="Documentation Screenshot">
+  </a>
+</div>
 
 We also publish our meeting recordings on **YouTube** on the [Thousand Brains Project channel](https://www.youtube.com/@thousandbrainsproject).
-[![](docs/figures/overview/youtube_screenshot.png)](https://www.youtube.com/@thousandbrainsproject)
+<div style="text-align: center">
+  <a href="https://www.youtube.com/@thousandbrainsproject">
+    <img src="docs/figures/overview/youtube_screenshot.png" alt="YouTube Screenshot">
+  </a>
+</div>
 
 If you want to use this code, contribute to it, ask questions or propose ideas, please consider joining [our discourse channel](https://thousandbrains.discourse.group/).
-[![](docs/figures/overview/discourse_screenshot.png)](https://thousandbrains.discourse.group/)
+<div style="text-align: center">
+  <a href="https://thousandbrains.discourse.group/">
+    <img src="docs/figures/overview/discourse_screenshot.png" alt="Discourse Screenshot">
+  </a>
+</div>
 
 If you would like to receive updates, follow us on [Bluesky](https://bluesky.social/thousandbrainsproject) or [Twitter](https://x.com/1000brainsproj) or [LinkedIn](https://www.linkedin.com/showcase/thousand-brains-project/).
 
