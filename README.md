@@ -38,12 +38,15 @@ You can find our **project road map** and details on the next features we are wo
 
 # More Information and Updates
 As mentioned above, we have extensive **documentation** of this project [here](https://thousandbrainsproject.readme.io/).
+
 [![](docs/figures/overview/docs_screenshot.png)](https://thousandbrainsproject.readme.io/)
 
 We also publish our meeting recordings on **YouTube** on the [Thousand Brains Project channel](https://www.youtube.com/@thousandbrainsproject).
+
 [![](docs/figures/overview/youtube_screenshot.png)](https://www.youtube.com/@thousandbrainsproject)
 
 If you want to use this code, contribute to it, ask questions or propose ideas, please consider joining [our discourse channel](https://thousandbrains.discourse.group/).
+
 [![](docs/figures/overview/discourse_screenshot.png)](https://thousandbrains.discourse.group/)
 
 If you would like to receive updates, follow us on [Bluesky](https://bluesky.social/thousandbrainsproject) or [Twitter](https://x.com/1000brainsproj) or [LinkedIn](https://www.linkedin.com/showcase/thousand-brains-project/).
