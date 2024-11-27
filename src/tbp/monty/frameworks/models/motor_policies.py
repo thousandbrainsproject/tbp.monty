@@ -1223,7 +1223,9 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             Inverse quaternion rotation.
         """
+        # Note that quaternion format is [w, x, y, z]
         [w, x, y, z] = qt.as_float_array(self.state[self.agent_id]["rotation"])
+        # Note that scipy.spatial.transform.Rotation (v1.10.0) format is [x, y, z, w]
         [x, y, z, w] = rot.from_quat([x, y, z, w]).inv().as_quat()
         return qt.quaternion(w, x, y, z)
 
