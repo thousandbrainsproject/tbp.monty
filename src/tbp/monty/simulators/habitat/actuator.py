@@ -35,6 +35,8 @@ from tbp.monty.frameworks.actions.actuator import Actuator
 
 __all__ = [
     "HabitatActuator",
+    "HabitatActuatorRequirements",
+    "HabitatParameterizer",
 ]
 
 
