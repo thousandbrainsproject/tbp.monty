@@ -1886,10 +1886,9 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # locations to the headings (also in the reference frame of the agent) that
             # we might take
             # TODO could vectorize this
-            rotated_locs = [
-                qt.rotate_vectors(inverse_quaternion_rotation, point)
-                for point in adjusted_prev_locs
-            ]
+            rotated_locs = qt.rotate_vectors(
+                inverse_quaternion_rotation, adjusted_prev_locs
+            )
 
             # Until we have not found a direction that we can guarentee is
             # in a new heading, continue to attempt new directions
