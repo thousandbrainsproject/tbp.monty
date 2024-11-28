@@ -48,7 +48,7 @@ jobs:
         if: ${{ steps.should_run_monty_api_docs.outputs.should_run_monty == 'true'}}
         uses: actions/download-artifact@v4
         with:
-          name: sphinx-html-${{ github.sha }}
+          name: sphinx-html-${{ github.event.workflow_run.head_sha }}
           run-id: ${{ github.event.workflow_run.id }}
           path: tbp.monty/sphinx_html
           github-token: ${{ github.token }}
@@ -56,11 +56,11 @@ jobs:
         if: ${{ steps.should_run_monty_api_docs.outputs.should_run_monty == 'true'}}
         uses: actions/upload-pages-artifact@v3
         with:
-          name: github-pages-${{ github.sha }}
+          name: github-pages-${{ github.event.workflow_run.head_sha }}
           path: tbp.monty/sphinx_html
       - name: Deploy Monty API docs
         id: deployment
         if: ${{ steps.should_run_monty_api_docs.outputs.should_run_monty == 'true'}}
         uses: actions/deploy-pages@v4
         with:
-          artifact_name: github-pages-${{ github.sha }}
+          artifact_name: github-pages-${{ github.event.workflow_run.head_sha }}
