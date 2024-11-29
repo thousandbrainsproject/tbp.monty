@@ -1,6 +1,12 @@
 ---
 title: Vision of the Thousand Brains Project
 ---
+<picture>
+  <source media="(min-width: 1200px)" srcset="../figures/vision/F01_MS_BrainLaunch_HD_Opt.png">
+  <source media="(min-width: 768px)" srcset="../figures/vision/F01_MS_BrainLaunch_LAP_Opt.png">
+  <img alt="Descriptive alt text for the banner image" src="../figures/vision/F01_MS_BrainLaunch_MO_Opt.png">
+</picture>
+
 We are developing a platform for building AI and robotics applications using the same principles as the human brain. These principles are fundamentally different from those used in deep learning, which is currently the most prevalent form of AI. Therefore, our platform represents an alternate form of AI, one that we believe will play an ever-increasing role in the future.
 
 # Monty
