@@ -100,7 +100,7 @@ jobs:
         id: filter_by_path_push
         working-directory: tbp.monty
         run: |
-          git diff --name-only HEAD^1 > changed_files.txt
+          git diff --name-only ${{ github.sha }}^1 > changed_files.txt
           while IFS= read -r changed_file
           do
             echo $changed_file

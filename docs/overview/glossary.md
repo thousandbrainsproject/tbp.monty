@@ -30,6 +30,20 @@ An assumption that is built into an algorithm/model. If the assumption holds, th
 
 A computational unit that takes features at poses as input and uses this information to learn models of the world. It is also able to recognize objects and their poses from the input if an object has been learned already.
 
+# Model
+
+In Monty, a model (sometimes referred to as [Object Model](../how-monty-works/how-learning-modules-work.md#object-models)), is a representation of an object stored entirely within the boundaries of a learning module. The notion of a model in Monty differs from the concept of a deep learning neural network model in several ways:
+
+- A single learning module **stores multiple object models** in memory, simultaneously.
+- The Monty system may have **multiple models of the same object** if there are multiple learning modules - this is a desired behavior.
+- Learning modules **update models independently** of each other.
+- Models are structured using [reference frames](#reference-frame), not just a bag of features.
+- Models represent **complete objects**, not just parts of objects. These objects can still become subcomponents of compositional objects but are also objects themselves (like the light bulb in a lamp).
+
+A useful analogy is to think of **Monty models** as **CAD representations** of objects that exist within the confines of a learning module.
+
+Also see [Do Cortical Columns in the Brain Really Model Whole Objects Like a Coffee Mug in V1?](../how-monty-works/faq-monty.md#do-cortical-columns-in-the-brain-really-model-whole-objects-like-a-coffee-mug-in-v1)
+
 # Path Integration
 
 Updating an agent's location by using its own movement and features in the environment.

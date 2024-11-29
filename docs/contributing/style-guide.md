@@ -53,6 +53,58 @@ In other words, if you are creating a new file, add the copyright and license he
 > [!NOTE]
 > While we deeply value and appreciate every contribution, the source code file header is reserved for essential copyright and license information and will not be used for contributor acknowledgments.
 
+# GitHub Actions
+
+We use GitHub Actions to run our continuous integration workflows.
+
+## GitHub Actions Naming Convention
+
+### Workflow Name
+
+The workflow name is a human-readable descriptive Capitalized Case name, e.g.,
+
+```yml
+name: Docs
+```
+```yml
+name: Monty
+```
+
+```yml
+name: Tools
+```
+
+```yml
+name: Potato Stuff
+```
+
+### Job Name
+
+The job name when in position of a key in a `jobs:` dictionary is a human-readable snake_case ending with `_<workflow_name>`.
+
+When used as a value for the `name:` property, the job name is human-readable kebab-case ending with `-<workflow-name>`, e.g.,
+
+```yml
+jobs:
+  check_docs:
+    name: check-docs
+```
+```yml
+jobs:
+  install_monty:
+    name: install-monty
+```
+```yml
+jobs:
+  test_tools:
+    name: test-tools
+```
+```yml
+jobs:
+  check_style_potato_stuff:
+    name: check-style-potato-stuff
+```
+
 # Documentation Style Guide
 
 ## Headings

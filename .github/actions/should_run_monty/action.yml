@@ -1,0 +1,44 @@
+name: "Should Run Monty"
+description: "Determines if the Monty workflow should run based on the changed files."
+
+inputs:
+  git_base_ref:
+    description: "The git base ref to compare against."
+  git_sha:
+    description: "The git sha to compare against."
+  github_event_name:
+    description: "The event name."
+    required: true
+  working_directory:
+    description: "The directory to run the command in."
+    required: true
+
+outputs:
+  should_run_monty:
+    description: "Whether the Monty workflow should run."
+    value: ${{ steps.should_run.outputs.should_run_monty }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Filter by path for a pull request
+      if: ${{ inputs.github_event_name == 'pull_request' }}
+      id: filter_by_path_pr
+      working-directory: ${{ inputs.working_directory }}
+      shell: bash
+      run: |
+        git diff --name-only origin/${{ inputs.git_base_ref }} > changed_files.txt
+        ./.github/actions/should_run_monty/check_changed_files.sh
+    - name: Filter by path for a push
+      if: ${{ inputs.github_event_name == 'push' }}
+      id: filter_by_path_push
+      working-directory: ${{ inputs.working_directory }}
+      shell: bash
+      run: |
+        git diff --name-only ${{ inputs.git_sha }}^1 > changed_files.txt
+        ./.github/actions/should_run_monty/check_changed_files.sh
+    - name: Should run
+      id: should_run
+      if: ${{ steps.filter_by_path_pr.outputs.should_run_monty == 'true' || steps.filter_by_path_push.outputs.should_run_monty == 'true'}}
+      shell: bash
+      run: echo "should_run_monty=true" >> $GITHUB_OUTPUT
