@@ -1,5 +1,5 @@
 ---
-title: Figure out Performance Measure and Supervision in Heterarchy
+title: Figure out Performance Measures and Supervision in Heterarchy
 ---
 
 As we introduce hierarchy and leverage more unsupervised learning, representations will emerge at different levels of the system that may not correspond to any labels present in our datasets. For example, handles, or the head of a spoon, may emerge as object-representations in low-level LMs, even though the dataset only recognizes labels like "mug" and "spoon".

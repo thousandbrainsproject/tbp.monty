@@ -6,4 +6,4 @@ Currently we do not use the pose of the objects when we are voting, however we b
 
 This relates to [Generalize Voting To Associative Connections](./generalize-voting-to-associative-connections.md), which faces a similar challenge.
 
-To make this more efficient, it would also be useful to improve the way we represent symmetry in our object models (see TODO task on this), as this will significantly reduce the number of associative connections that need to be learned for robust generalization.
+To make this more efficient, it would also be useful to improve the way we represent symmetry in our object models (see [Improve Handling of Symmetry](../learning-module-improvements/improve-handling-of-symmetry.md)), as this will significantly reduce the number of associative connections that need to be learned for robust generalization.
