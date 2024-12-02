@@ -17,5 +17,7 @@ These are the things we would like to implement:
 - [Deal with incomplete models](learning-module-improvements/deal-with-incomplete-models.md) #learning
 - [Implement & test GNNs to model object behaviors & states](learning-module-improvements/implement-test-gnns-to-model-object-behaviors-states.md) #dynamic
 - [Deal with moving objects](learning-module-improvements/deal-with-moving-objects.md) #dynamic #realworld
+- [Support scale invariance](learning-module-improvements/support-scale-invariance.md) #scale
+- [Improve handling of symmetry](learning-module-improvements/improve-handling-of-symmetry.md) #pose
 
 Please see the [instructions here](project-roadmap.md#how-you-can-contribute) if you would like to tackle one of these tasks.
