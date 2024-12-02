@@ -92,7 +92,6 @@
   - [enable-policy-switching-learning-vs-inference](future-work/motor-system-improvements/enable-policy-switching-learning-vs-inference.md)
   - [bottom-up-exploration-policy-for-surface-agent](future-work/motor-system-improvements/bottom-up-exploration-policy-for-surface-agent.md)
   - [top-down-exploration-policy](future-work/motor-system-improvements/top-down-exploration-policy.md)
-  - [bottom-up-policies-for-distant-agent](future-work/motor-system-improvements/bottom-up-policies-for-distant-agent.md)
   - [implement-efficient-saccades-driven-by-model-free-and-model-based-signals](future-work/motor-system-improvements/implement-efficient-saccades-driven-by-model-free-and-model-based-signals.md)
   - [learn-policy-using-rl](future-work/motor-system-improvements/learn-policy-using-rl.md)
   - [decompose-goals-into-subgoals-communicate](future-work/motor-system-improvements/decompose-goals-into-subgoals-communicate.md)

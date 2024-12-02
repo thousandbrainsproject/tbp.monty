@@ -6,4 +6,4 @@ We have developed an initial dataset based on setting a dinner-table with a vari
 
 By using explicit objects to compose multi-part objects, this dataset has the advantage that we can learn on the component objects in isolation, using supervised learning signals if necessary.
 
-However, we would eventually expect compositional objects to be learned in an unsupervised manner. When this is consistently possible, we can consider more diverse datasets where the component objects may not be as explicit. At that time, the challenges described in [Figure out Performance Measure and Supervision in Heterarchy](figure-out-performance-measure-and-supervision-in-heterarchy.md) will become more relevant.
+However, we would eventually expect compositional objects to be learned in an unsupervised manner. When this is consistently possible, we can consider more diverse datasets where the component objects may not be as explicit. At that time, the challenges described in [Figure out Performance Measure and Supervision in Heterarchy](../cmp-hierarchy-improvements/figure-out-performance-measure-and-supervision-in-heterarchy.md) will become more relevant.
