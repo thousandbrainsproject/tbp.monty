@@ -26,7 +26,6 @@ dependencies:
   - cmake>=3.14.0
   - pyg::pyg
   - wget
-  - lark=1.2.2
 
   - aihabitat::habitat-sim=0.2.2
   - pytorch::pytorch=1.11.0
