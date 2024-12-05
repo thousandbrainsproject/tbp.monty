@@ -107,6 +107,8 @@ jobs:
 
 # Documentation Style Guide
 
+In general we try and stick to native markdown syntax, if you find yourself needing to use HTML, please chat with the team about your use case.  It might be something that we build into the sync tool.
+
 ## Headings
 
 In a document your first level of headings should be the `#` , then `##` and so on.   This is slightly confusing as usually `#` is reserved for the title, but on readme.com the `h1` tag is used for the actual title of the document.
@@ -138,12 +140,12 @@ Images use `snake_case.ext`
 
 Images should generally be `png` or `svg` formats.  Use `jpg` if the file is actually a photograph.
 
-Upload high quality images as people can click on the image to see the larger version.  You can add style attriubtes after the image path with `#width:300px` or similar.
+Upload high quality images as people can click on the image to see the larger version.  You can add style attriubtes after the image path with `#width=300px` or similar.
 
 For example, the following markdown creates the image below:
 
 ```markdown
-![caption text](../figures/docs-only-example.png#width:300px)
+![caption text](../figures/docs-only-example.png#width=300px)
 ```
 
 <div style="display:flex; flex-direction:column; align-items:center">

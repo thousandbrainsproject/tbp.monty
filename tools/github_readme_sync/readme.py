@@ -279,8 +279,24 @@ class ReadMe:
             src_parts = image_src.split("#")
             clean_src = src_parts[0]
             style = "border-radius: 8px;"
+
+            # Parse and sanitize style parameters from fragment
             if len(src_parts) > 1:
-                style = f"{style}{src_parts[1]}"
+                try:
+                    from urllib.parse import parse_qs
+
+                    params = parse_qs(src_parts[1])
+                    safe_styles = []
+                    for key, values in params.items():
+                        if re.match(r"^[\w\-%]+$", key) and re.match(
+                            r"^[\w\-\%px]+$", values[0]
+                        ):
+                            safe_styles.append(f"{key}: {values[0]}")
+                    if safe_styles:
+                        style = f"{style} " + "; ".join(safe_styles)
+                except (ValueError, ImportError):
+                    # If parsing fails, just use default style
+                    pass
 
             if alt_text:
                 return (

@@ -347,13 +347,13 @@ This is a test document.""",
 
     def test_caption_markdown_images(self):
         images = [
-            "![Image 1 Caption](../figures/image1.png)",
+            "![Image 1 Caption](../figures/image1.png#width=300px&height=200px)",
             "![](../figures/image1.png)",
             "![Image 1 Caption](../figures/docs-only-example.png)",
         ]
         expected = [
             '<figure><img src="../figures/image1.png" align="center"'
-            ' style="border-radius: 8px;" />'
+            ' style="border-radius: 8px; width: 300px; height: 200px" />'
             "<figcaption>Image 1 Caption</figcaption></figure>",
             '<figure><img src="../figures/image1.png" align="center"'
             ' style="border-radius: 8px;" /></figure>',
