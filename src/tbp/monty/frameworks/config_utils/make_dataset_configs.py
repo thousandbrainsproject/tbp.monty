@@ -9,9 +9,11 @@
 
 import os
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Union
+from numbers import Number
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union
 
 import numpy as np
+from numpy.typing import ArrayLike
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.environment_utils.transforms import (
@@ -1102,3 +1104,267 @@ class FiveLMMountConfig:
     zooms: List[float] = field(
         default_factory=lambda: [10.0, 10.0, 10.0, 10.0, 10.0, 1.0]
     )
+
+
+"""
+Utilities for generating arbitrary multi-LM dataset args.
+"""
+
+
+def make_multi_lm_sensor_positions(
+    n_sms: int,
+    delta: Number = 0.01,
+    order_by: str = "distance",
+    add_view_finder: bool = True,
+) -> np.ndarray:
+    """Generate sensor positions based on a 2D grid.
+
+    Create mounting positions for an arbitrary number of sensor module, where the
+    sensor modules lie along an imaginary grid on the xy plane (and z = 0). Sensor
+    module 0 is always centered at (0, 0, 0), and all other sensors are clustered
+    around it. The method for selecting which grid points around the center to assign
+    to sensor modules is determined by the `order_by` argument (see below).
+
+    By default, `n_sms + 1` positions are returned to accommodate a view finder. The
+    view finder position (if used) is also centered on (0, 0, 0).
+
+    Args:
+        n_sms (int): Number of sensor modules.
+        delta (number): The grid spacing length. By default, sensor modules will be
+            placed every centimeter (units are in meters).
+        order_by (str, optional): How to select points on the grid that will contain
+            sensor modules.
+             - "spiral": sensor modules are numbered along a counter-clockwise spiral
+                spreading outwards from the center.
+             - "distance": sensor modules are ordered by their distance from the center.
+                This can result in a more jagged pattern along the edges but
+                results in sensor modules generally more packed towards the center.
+                Positions that are equidistant from the center are ordered somewhat
+                arbitrarily but consistently.
+        add_view_finder (bool, optional): Whether to include an extra position module
+            at the origin to serve as a view finder. Defaults to `True`.
+
+    Returns:
+        np.ndarray: A 2D array of sensor positions where each row has positions
+            (x, y, z). If `add_view_finder` is True, the array has `n_sms + 1` rows,
+            where the last row corresponds to the view finder's position and is
+            identical to row 0. Otherwise, the array has `n_sms` rows. row 0 is
+            always centered at (0, 0, 0), and all other rows are offset relative to it.
+
+    """
+    assert n_sms > 0, "n_lms must be greater than 0"
+    assert delta > 0, "delta must be greater than 0"
+    assert order_by in ["spiral", "distance"], "order_by must be 'spiral' or 'distance'"
+
+    # Find smallest square grid size that can fit n_lms with odd-length sides.
+    n = 1
+    while n_sms > n**2:
+        n += 2
+
+    # Make coordinate grids, where the center is (0, 0).
+    pts = np.arange(-n // 2 + 1, n // 2 + 1)
+    x, y = np.meshgrid(pts, pts)
+    y = np.flipud(y)
+
+    if order_by == "distance":
+        dists = x**2 + y**2
+        indices = np.dstack(np.unravel_index(np.argsort(dists.ravel()), dists.shape))[0]
+    elif order_by == "spiral":
+        center = n // 2
+        indices = [(center, center)]
+
+        # Directions for moving in spiral: right, down, left, up
+        directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+        current_dir = 0  # Start moving right
+        steps = 1  # How many steps to take in current direction
+        steps_taken = 0  # Steps taken in current direction
+        row, col = center, center  # Start at center
+
+        # Generate spiral pattern until we have enough points
+        while len(indices) < n**2:
+            # Move in current direction
+            row += directions[current_dir][0]
+            col += directions[current_dir][1]
+
+            # Add point if it's within bounds
+            if 0 <= row < n and 0 <= col < n:
+                indices.append((row, col))
+
+            steps_taken += 1
+
+            # Check if we need to change direction
+            if steps_taken == steps:
+                steps_taken = 0
+                current_dir = (current_dir + 1) % 4
+                # Increase steps every 2 direction changes (completing half circle)
+                if current_dir % 2 == 0:
+                    steps += 1
+
+        # Convert to numpy array for easier indexing
+        indices = np.array(indices)
+
+    indices = indices[:n_sms]
+    positions = []
+    for idx in indices:
+        positions.append((x[idx[0], idx[1]] * delta, y[idx[0], idx[1]] * delta))
+
+    positions = np.array(positions)
+
+    # Add z-positions.
+    positions = np.hstack((positions, np.zeros([positions.shape[0], 1])))
+
+    # Optionally append entry for a view finder which is a duplicate of row zero.
+    # Should be (0, 0, 0).
+    if add_view_finder:
+        positions = np.vstack([positions, positions[0].reshape(1, -1)])
+
+    return positions
+
+
+def make_multi_lm_mount_config(
+    n_sms: int,
+    *,
+    agent_id: str = "agent_id_0",
+    sensor_ids: Optional[Sequence[str]] = None,
+    height: Number = 0.0,
+    position: ArrayLike = (0, 1.5, 0.2),  # agent position
+    resolutions: Optional[ArrayLike] = None,
+    positions: Optional[ArrayLike] = None,
+    rotations: Optional[ArrayLike] = None,
+    semantics: Optional[ArrayLike] = None,
+    zooms: Optional[ArrayLike] = None,
+) -> Mapping[str, Any]:
+    """Generate a multi-sensor mount configuration.
+
+    Facilitates dynamic generation of habitat dataset args for an abitrary number of
+    sensor modules mounted to a single agent. Defaults are reasonable and reflect
+    common practices.
+
+    Args:
+        n_sms: Number of sensor modules.
+        agent_id: ID of the agent. Defaults to "agent_id_0". In practice, this should
+            probably not be altered since other multi-LM config functions assume
+            "agent_id_0".
+        sensor_ids: IDs of the sensor modules. Defaults to
+            `["patch_0", "patch_1", ... "patch_{n_sms - 1}", "view_finder"]`. Like
+            `agent_id`, this should also go unaltered for compatibility with other
+            multi-LM config functions.
+        height: Height of the agent. Defaults to 0.0.
+        position: Position of the agent. Defaults to [0, 1.5, 0.2].
+        resolutions: Resolutions of the sensor modules. Defaults to (64, 64) for all
+            sensor modules.
+        positions: Positions of the sensor modules. If not provided, calls
+            `make_sensor_positions_grid` with its default arguments.
+        rotations: Rotations of the sensor modules. Defaults to [1, 0, 0, 0] for all
+            sensor modules.
+        semantics: Semantics of the sensor modules. Defaults to `True` for all sensor
+            modules.
+        zooms: Zooms of the sensor modules. Defaults to 10.0 for all sensor modules
+          except for the view finder (which has a zoom of 1.0)
+
+    Returns:
+        dict: A dictionary representing a complete multi-LM mount config.
+    """
+    assert n_sms > 0, "n_sms must be a positive integer"
+    arr_len = n_sms + 1
+
+    # Initialize with agent info, then add sensor info.
+    mount_config = {
+        "agent_id": str(agent_id),
+        "height": float(height),
+        "position": np.asarray(position),
+    }
+
+    # sensor IDs.
+    if sensor_ids is None:
+        sensor_ids = np.array(
+            [f"patch_{i}" for i in range(n_sms)] + ["view_finder"], dtype=object
+        )
+    else:
+        sensor_ids = np.array(sensor_ids, dtype=object)
+    assert sensor_ids.shape == (arr_len,), "`sensor_ids` must have length n_sms + 1"
+    mount_config["sensor_ids"] = sensor_ids
+
+    # sensor resolutions
+    if resolutions is None:
+        resolutions = np.full([n_sms + 1, 2], 64)
+    else:
+        resolutions = np.asarray(resolutions)
+    assert resolutions.shape == (
+        arr_len,
+        2,
+    ), "`resolutions` must have shape (n_sms + 1, 2)"
+    mount_config["resolutions"] = resolutions
+
+    # sensor positions
+    if positions is None:
+        positions = make_multi_lm_sensor_positions(
+            n_sms=n_sms,
+            add_view_finder=True,
+        )
+    else:
+        positions = np.asarray(positions)
+    assert positions.shape == (arr_len, 3), "`positions` must have shape (n_sms + 1, 3)"
+    mount_config["positions"] = positions
+
+    # sensor rotations
+    if rotations is None:
+        rotations = np.zeros([positions.shape[0], 4])
+        rotations[:, 0] = 1.0
+    else:
+        rotations = np.asarray(rotations)
+    assert rotations.shape == (arr_len, 4), "`rotations` must have shape (n_sms + 1, 4)"
+    mount_config["rotations"] = rotations
+
+    # sensor semantics
+    if semantics is None:
+        semantics = np.ones(n_sms + 1, dtype=bool)
+    else:
+        semantics = np.array(semantics, dtype=bool)
+    assert semantics.shape == (arr_len,), "`semantics` must have shape (n_sms + 1,)"
+    mount_config["semantics"] = semantics
+
+    # sensor zooms
+    if zooms is None:
+        zooms = 10.0 * np.ones(n_sms + 1)
+        zooms[-1] = 1.0  # view finder
+    else:
+        zooms = np.asarray(zooms)
+    assert zooms.shape == (arr_len,), "`zooms` must have shape (n_sms + 1,)"
+    mount_config["zooms"] = zooms
+
+    return mount_config
+
+
+def make_multi_lm_habitat_dataset_args(
+    n_sms: int,
+    **mount_kwargs: Mapping,
+) -> MultiLMMountHabitatDatasetArgs:
+    """Generate a dataset configs for a multi-LM experiment config.
+
+    This function is useful for creating habitat dataset args for multi-LM
+    experiments. The default arguments will place sensor modules on a grid, with
+    sensor modules spreading out from the center and with 1cm spacing between sensors,
+    64 x 64 resolution, and 10x zoom (except for the view finder which has a zoom of
+    1.0).
+
+    Any keyword arguments are passed to `make_multi_lm_mount_config`. You can, for
+    example, build non-default sensor module positions (perhaps using
+    `make_sensor_positions_grid`) and supply them to this function. All other
+    attributes will be generated according to default behavior.
+
+    Args:
+        n_sms: Number of sensor modules, not including the view finder.
+        **mount_kwargs: Arguments forwarded to `make_multilm_mount_config`. See
+            `make_multilm_mount_config` for details.
+
+    Returns:
+        `MultiLMMountHabitatDatasetArgs`: config ready for use in an experiment config.
+    """
+    mount_config = make_multi_lm_mount_config(n_sms, **mount_kwargs)
+
+    env_init_args = EnvInitArgsMultiLMMount()
+    env_init_args.agents = [AgentConfig(MultiSensorAgent, mount_config)]
+    env_init_args = env_init_args.__dict__
+    dataset_args = MultiLMMountHabitatDatasetArgs(env_init_args=env_init_args)
+    return dataset_args
