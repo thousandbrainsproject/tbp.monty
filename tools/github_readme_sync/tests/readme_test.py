@@ -345,7 +345,7 @@ This is a test document.""",
         for path in markdown_paths_not_modified:
             self.assertEqual(self.readme.correct_image_locations(path), path)
 
-    def test_caption_markdown_images(self):
+    def test_parse_images(self):
         images = [
             "![Image 1 Caption](../figures/image1.png#width=300px&height=200px)",
             "![](../figures/image1.png)",
@@ -361,7 +361,7 @@ This is a test document.""",
         ]
         # iterate
         for i, image in enumerate(images):
-            self.assertEqual(self.readme.caption_markdown_images(image), expected[i])
+            self.assertEqual(self.readme.parse_images(image), expected[i])
 
     @patch.dict(os.environ, {"IMAGE_PATH": "user/repo"})
     def test_correct_file_locations_markdown(self):
@@ -525,7 +525,7 @@ This is a test document.""",
             "<figcaption>Second Image</figcaption></figure>"
         )
 
-        result = self.readme.caption_markdown_images(input_text)
+        result = self.readme.parse_images(input_text)
         self.assertEqual(result, expected_output)
 
 

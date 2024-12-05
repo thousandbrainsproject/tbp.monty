@@ -13,6 +13,7 @@ import os
 import re
 from collections import OrderedDict
 from typing import Any, List, Tuple
+from urllib.parse import parse_qs
 
 import yaml
 
@@ -168,7 +169,7 @@ class ReadMe:
         body = self.correct_image_locations(doc["body"])
         body = self.correct_file_locations(body)
         body = self.convert_note_tags(body)
-        body = self.caption_markdown_images(body)
+        body = self.parse_images(body)
         body = self.convert_cloudinary_videos(body)
 
         create_doc_request = {
@@ -269,7 +270,7 @@ class ReadMe:
 
         raise ValueError("No stable version found")
 
-    def caption_markdown_images(self, markdown_text: str) -> str:
+    def parse_images(self, markdown_text: str) -> str:
         def replace_image(match):
             if any(ignore_image in match.groups()[1] for ignore_image in IGNORE_IMAGES):
                 return match.group(0)
@@ -283,8 +284,6 @@ class ReadMe:
             # Parse and sanitize style parameters from fragment
             if len(src_parts) > 1:
                 try:
-                    from urllib.parse import parse_qs
-
                     params = parse_qs(src_parts[1])
                     safe_styles = []
                     for key, values in params.items():
