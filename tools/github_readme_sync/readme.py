@@ -13,6 +13,7 @@ import os
 import re
 from collections import OrderedDict
 from typing import Any, List, Tuple
+from urllib.parse import parse_qs
 
 import yaml
 
@@ -168,7 +169,7 @@ class ReadMe:
         body = self.correct_image_locations(doc["body"])
         body = self.correct_file_locations(body)
         body = self.convert_note_tags(body)
-        body = self.caption_markdown_images(body)
+        body = self.parse_images(body)
         body = self.convert_cloudinary_videos(body)
 
         create_doc_request = {
@@ -213,6 +214,22 @@ class ReadMe:
                 return match.group(0)
             return f"{GITHUB_RAW}/{repo}/{image_filename}"
 
+        # Find all image tags in the body
+        img_tags = re.finditer(r'<img\s+[^>]*src="([^"]*)"[^>]*>', new_body)
+        for match in img_tags:
+            img_tag = match.group(0)
+            src = match.group(1)
+            # Only process if it's a relative path to figures
+            if "../figures/" in src:
+                image_path = re.search(regex_image_path, src)
+                if image_path:
+                    image_filename = image_path.group(2)
+                    if image_filename not in IGNORE_IMAGES:
+                        new_src = f"{GITHUB_RAW}/{repo}/{image_filename}"
+                        new_img_tag = img_tag.replace(src, new_src)
+                        new_body = new_body.replace(img_tag, new_img_tag)
+
+        # Process regular markdown images
         new_body = re.sub(regex_image_path, replace_image_path, new_body)
         return new_body
 
@@ -253,21 +270,43 @@ class ReadMe:
 
         raise ValueError("No stable version found")
 
-    def caption_markdown_images(self, markdown_text: str) -> str:
+    def parse_images(self, markdown_text: str) -> str:
         def replace_image(match):
             if any(ignore_image in match.groups()[1] for ignore_image in IGNORE_IMAGES):
                 return match.group(0)
             alt_text, image_src = match.groups()
+
+            # Split image source and fragment
+            src_parts = image_src.split("#")
+            clean_src = src_parts[0]
+            style = "border-radius: 8px;"
+
+            # Parse and sanitize style parameters from fragment
+            if len(src_parts) > 1:
+                try:
+                    params = parse_qs(src_parts[1])
+                    safe_styles = []
+                    for key, values in params.items():
+                        if re.match(r"^[\w\-%]+$", key) and re.match(
+                            r"^[\w\-\%px]+$", values[0]
+                        ):
+                            safe_styles.append(f"{key}: {values[0]}")
+                    if safe_styles:
+                        style = f"{style} " + "; ".join(safe_styles)
+                except (ValueError, ImportError):
+                    # If parsing fails, just use default style
+                    pass
+
             if alt_text:
                 return (
-                    f'<figure><img src="{image_src}" align="center"'
-                    f' style="border-radius: 8px;" />'
+                    f'<figure><img src="{clean_src}" align="center"'
+                    f' style="{style}" />'
                     f"<figcaption>{alt_text}</figcaption></figure>"
                 )
             else:
                 return (
-                    f'<figure><img src="{image_src}" align="center"'
-                    f' style="border-radius: 8px;" /></figure>'
+                    f'<figure><img src="{clean_src}" align="center"'
+                    f' style="{style}" /></figure>'
                 )
 
         return regex_images.sub(replace_image, markdown_text)

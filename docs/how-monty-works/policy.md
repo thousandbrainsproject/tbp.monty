@@ -33,7 +33,7 @@ Note that the differences between the agents and action spaces are in some sense
 
   - Object enclosure: by using an array of 3D sensors that are still relatively nearby (such as the fingers on a hand), surface agents can more easily surround an object from all sides and instantaneously reduce object self-occlusion that otherwise affects distant-agent observations. By moving on the surface of an object it also significantly reduces the risk of other objects occluding the object of interest and makes it easier to isolate the object and detect when moving onto a new object.
 
-![Surface-agent and distant-agent action spaces contrasted. The distant-agent agent generally remains in one location while tilting its camera along two axes. The surface-agent agent can change its location but has to remain perpendicular and close to the object’s surface. Note that the action space can be independent of sensory modalities; for example, the surface agent can still have an RGB camera for detecting colors.](../figures/how-monty-works/touch_vs_vision.png)
+![Surface-agent and distant-agent action spaces contrasted. The distant-agent agent generally remains in one location while tilting its camera along two axes. The surface-agent agent can change its location but has to remain perpendicular and close to the object’s surface. Note that the action space can be independent of sensory modalities; for example, the surface agent can still have an RGB camera for detecting colors.](../figures/how-monty-works/touch_vs_vision.png#width=500px)
 
 
 # Utility Functions/Policies
@@ -79,7 +79,7 @@ The surface agent can either use a random walk policy (again with an optional mo
 
 Finally, both the distant and surface agent can make use of the hypothesis-driven action policy.
 
-![Comparison of different surface-agent policies. (orange) Random movement along the object’s surface. (yellow) input-driven policy that follows principal curvature directions. (green) Hypothesis-driven policy that can jump to specific locations on the object to actively test and contrast current most likely hypotheses.](../figures/how-monty-works/policies.png)
+![Comparison of different surface-agent policies. (orange) Random movement along the object’s surface. (yellow) input-driven policy that follows principal curvature directions. (green) Hypothesis-driven policy that can jump to specific locations on the object to actively test and contrast current most likely hypotheses.](../figures/how-monty-works/policies.png#width=400px)
 
 
 The policies mentioned above are aimed at efficient inference. There is also a specialized policy that can be used to ensure good object coverage when learning about new objects called `NaiveScanPolicy`. This policy starts at the center of the object and moves outwards on a spiral path. This policy makes the most sense to use with the `MontySupervisedObjectPretraining` `Experiment` and is written for the distant agent. For hypothesis-driven policies during exploration, one would want to go to locations on the object that are not well represented in the model yet (not implemented). **Exploration policies generally aim at good object coverage** and exploring new areas of an object while **inference policies aim at efficiently viewing unique and distinguishing features** that are well represented in the object model.
