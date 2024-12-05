@@ -106,6 +106,11 @@ html_theme_options = {
             "icon": "fa-brands fa-twitter",
         },
         {
+            "name": "Bluesky",
+            "url": "https://bsky.app/profile/1000brainsproj.bsky.social",
+            "icon": "fa-brands fa-bluesky",
+        },
+        {
             "name": "GitHub",
             "url": "https://github.com/thousandbrainsproject/tbp.monty",
             "icon": "fa-brands fa-github",
@@ -113,12 +118,12 @@ html_theme_options = {
         {
             "name": "Discourse",
             "url": "https://thousandbrains.discourse.group/",
-            "icon": "fa-solid fa-comments",
+            "icon": "fa-brands fa-discourse",
         },
         {
             "name": "Docs",
             "url": "https://thousandbrainsproject.readme.io/",
-            "icon": "fa-solid fa-book",
+            "icon": "fa-brands fa-readme",
         },
     ],
 }
