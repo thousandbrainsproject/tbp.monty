@@ -102,8 +102,8 @@ html_theme_options = {
     "icon_links": [
         {
             "name": "Twitter",
-            "url": "https://x.com/@1000brainsproj",
-            "icon": "fa-brands fa-twitter",
+            "url": "https://x.com/1000brainsproj",
+            "icon": "fa-brands fa-x-twitter",
         },
         {
             "name": "Bluesky",
