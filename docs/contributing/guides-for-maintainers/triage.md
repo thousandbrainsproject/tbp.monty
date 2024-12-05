@@ -68,7 +68,9 @@ A **Maintainer** will check the Pull Request for validity.
 
 There are no priorities or severities applied to Pull Requests.
 
-A valid Pull Request is on-topic, well-formatted, contains expected information, and does not violate the code of conduct.
+A valid Pull Request is on-topic, well-formatted, contains expected information, does not depend on an unmerged Pull Request, and does not violate the code of conduct.
+
+A Draft Pull Request is ignored and not triaged.
 
 ## Title
 
@@ -84,7 +86,12 @@ If the Pull Request is related to a previous RFC process, the RFC document is re
 
 ## Commit History
 
-Pull Request branches from a recent `main` commit. 
+Pull Request branches from a recent `main` commit.
+
+Pull Request does not depend on another unmerged Pull Request.
+
+> [!NOTE]
+> Pull Requests that depend on unmerged Pull Requests add unnecessary complexity to the review process: **Maintainers** must track the status of multiple Pull Requests and re-review them if the dependent Pull Request is updated. Such dependency is much easier for the Pull Request author to track and to submit the Pull Request after all dependent code is already merged to `main`.
 
 It is OK if the commit history is messy. It will be "squashed" when merged.
 
