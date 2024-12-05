@@ -9,7 +9,7 @@ These are the things we would like to implement:
 - [Use off-object observations](learning-module-improvements/use-off-object-observations.md) #numsteps #multiobj
 - [Reinitialize hypotheses when starting to recognize a new object](learning-module-improvements/reinitialize-hypotheses-when-starting-to-recognize-a-new-object.md) #multiobj
 - [Improve bounded evidence performance](learning-module-improvements/improve-bounded-evidence-performance.md) #multiobj
-- [Use models with less points](learning-module-improvements/use-models-with-less-points.md) #speed #generalization
+- [Use models with less points](learning-module-improvements/use-models-with-fewer-points.md) #speed #generalization
 - [Make it possible to store multiple feature maps on one graph](learning-module-improvements/make-it-possible-to-store-multiple-feature-maps-on-one-graph.md) #featsandmorph
 - [Test particle-filter-like resampling of hypothesis space](learning-module-improvements/test-particle-filter-like-resampling-of-hypothesis-space.md) #accuracy #speed
 - [Re-anchor hypotheses](learning-module-improvements/re-anchor-hypotheses.md) #deformations #noise #generalization

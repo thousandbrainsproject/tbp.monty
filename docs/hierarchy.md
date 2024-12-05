@@ -80,7 +80,7 @@
   - [use-off-object-observations](future-work/learning-module-improvements/use-off-object-observations.md)
   - [reinitialize-hypotheses-when-starting-to-recognize-a-new-object](future-work/learning-module-improvements/reinitialize-hypotheses-when-starting-to-recognize-a-new-object.md)
   - [improve-bounded-evidence-performance](future-work/learning-module-improvements/improve-bounded-evidence-performance.md)
-  - [use-models-with-less-points](future-work/learning-module-improvements/use-models-with-less-points.md)
+  - [use-models-with-fewer-points](future-work/learning-module-improvements/use-models-with-fewer-points.md)
   - [make-it-possible-to-store-multiple-feature-maps-on-one-graph](future-work/learning-module-improvements/make-it-possible-to-store-multiple-feature-maps-on-one-graph.md)
   - [test-particle-filter-like-resampling-of-hypothesis-space](future-work/learning-module-improvements/test-particle-filter-like-resampling-of-hypothesis-space.md)
   - [re-anchor-hypotheses](future-work/learning-module-improvements/re-anchor-hypotheses.md)
