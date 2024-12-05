@@ -52,7 +52,7 @@ To contribute a substantial change to Monty, you must first merge the RFC into t
 1. **Fork the Monty repository** (see the development [Getting Started](../how-to-use-monty/getting-started.md) guide)
 2. **Copy** `rfcs/0000_template.md` to `rfcs/0000_my_proposal.md`. (where "my-proposal" is short but descriptive). Don't assign an RFC number yet. The file will be renamed accordingly if the RFC is accepted.
 3. **Fill in the RFC**. Carefully consider the details. RFCs that do not present convincing motivation, demonstrate a lack of understanding of the design's impact or do not fully explore the drawbacks or alternatives tend to be poorly received.
-4. **Submit an RFC [Pull Request]\(doc:contributing-pull-requests**). As a pull request, the RFC will receive design feedback from the broader community, and you should be prepared to revise it in response.
+4. **Submit an RFC [Pull Request](./pull-requests.md)**. As a pull request, the RFC will receive design feedback from the broader community, and you should be prepared to revise it in response.
 5. Each RFC Pull Request will be triaged, given an `rfc:proposal` label, and assigned to a Maintainer who will serve as your primary point of contact for the RFC.
 6. **Build consensus and integrate feedback**. RFCs with broad support are much more likely to make progress than those that don't receive any comments. Contact the RFC Pull Request assignee for help identifying stakeholders and obstacles.
 7. In due course, one of the Maintainers will propose a "**motion for final comment period (FCP)**" along with the _disposition_ for the RFC (merge or close).
