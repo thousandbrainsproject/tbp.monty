@@ -1107,7 +1107,7 @@ class FiveLMMountConfig:
 
 
 """
-Utilities for generating arbitrary multi-LM dataset args.
+Utilities for generating multi-LM dataset args.
 """
 
 
@@ -1117,7 +1117,7 @@ def make_multi_lm_sensor_positions(
     order_by: str = "distance",
     add_view_finder: bool = True,
 ) -> np.ndarray:
-    """Generate sensor positions based on a 2D grid.
+    """Generate sensor positions on a 2D grid.
 
     Create mounting positions for an arbitrary number of sensor module, where the
     sensor modules lie along an imaginary grid on the xy plane (and z = 0). Sensor
