@@ -28,6 +28,7 @@ dependencies = [
     'torch-geometric',
     'tqdm',
     'wandb',
+    'lark',
 ]
 description = 'Numenta Monty'
 dynamic = ['version']
