@@ -1125,8 +1125,9 @@ def make_multi_lm_sensor_positions(
     around it. The method for selecting which grid points around the center to assign
     to sensor modules is determined by the `order_by` argument (see below).
 
-    By default, `n_sms + 1` positions are returned to accommodate a view finder. The
-    view finder position (if used) is also centered on (0, 0, 0).
+    By default, `n_sms + 1` positions are returned; the first `n_sms` positions are for
+    regular sensor modules, and an additional position is appended to accommodate
+    a view finder. The view finder position (if used) is also centered on (0, 0, 0).
 
     Args:
         n_sms (int): Number of sensor modules.
@@ -1139,8 +1140,8 @@ def make_multi_lm_sensor_positions(
              - "distance": sensor modules are ordered by their distance from the center.
                 This can result in a more jagged pattern along the edges but
                 results in sensor modules generally more packed towards the center.
-                Positions that are equidistant from the center are ordered somewhat
-                arbitrarily but consistently.
+                Positions that are equidistant from the center are ordered
+                counterclockwise starting at 3 o'clock.
         add_view_finder (bool, optional): Whether to include an extra position module
             at the origin to serve as a view finder. Defaults to `True`.
 
@@ -1165,20 +1166,30 @@ def make_multi_lm_sensor_positions(
     pts = np.arange(-n // 2 + 1, n // 2 + 1)
     x, y = np.meshgrid(pts, pts)
     y = np.flipud(y)
+    i_mid = n // 2
 
     if order_by == "distance":
         dists = x**2 + y**2
-        indices = np.dstack(np.unravel_index(np.argsort(dists.ravel()), dists.shape))[0]
+        unique_dists = np.sort(np.unique(dists))
+        assert unique_dists[0] == 0
+        indices = []
+        for i in range(len(unique_dists)):
+            u = unique_dists[i]
+            inds = np.argwhere(dists == u)
+            angles = np.arctan2(i_mid - inds[:, 1], inds[:, 0] - i_mid)
+            sorting_inds = np.argsort(angles)
+            inds = inds[sorting_inds]
+            indices.extend([row for row in inds])
+
     elif order_by == "spiral":
-        center = n // 2
-        indices = [(center, center)]
+        indices = [(i_mid, i_mid)]
 
         # Directions for moving in spiral: right, down, left, up
         directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
         current_dir = 0  # Start moving right
         steps = 1  # How many steps to take in current direction
         steps_taken = 0  # Steps taken in current direction
-        row, col = center, center  # Start at center
+        row, col = i_mid, i_mid  # Start at center
 
         # Generate spiral pattern until we have enough points
         while len(indices) < n**2:
@@ -1200,14 +1211,12 @@ def make_multi_lm_sensor_positions(
                 if current_dir % 2 == 0:
                     steps += 1
 
-        # Convert to numpy array for easier indexing
-        indices = np.array(indices)
+    indices = np.array(indices)[:n_sms]
 
-    indices = indices[:n_sms]
+    # Convert indices to locations in agent space.
     positions = []
     for idx in indices:
         positions.append((x[idx[0], idx[1]] * delta, y[idx[0], idx[1]] * delta))
-
     positions = np.array(positions)
 
     # Add z-positions.
