@@ -54,7 +54,7 @@ Defines the function used to select actions. Selected actions can be dependent o
 
 # Pose
 
-An object's location and orientation (in a given reference frame). The location can for example be x, y, z coordinates and the orientation can be represented as a quaternion, Euler angles or rotation matrix.
+An object's location and orientation (in a given reference frame). The location can for example be x, y, z coordinates and the orientation can be represented as a quaternion, Euler angles, or a rotation matrix.
 
 **displacement:** The spatial difference between two locations. In 3D space, this would be a 3D vector.
 
@@ -64,7 +64,7 @@ A specific coordinate system within which locations and rotations can be represe
 
 # Rigid Body Transformation
 
-Applies a displacement/translation and a rotation to a set of points. Every point is transformed in the same way such that the overall shape stays the same (i.e. the relative distance between points is fixed).
+Applies a displacement/translation and a rotation to a set of points. Every point is transformed in the same way such that the overall shape stays the same (i.e., the relative distance between points is fixed).
 
 # Sensor Module
 
@@ -76,7 +76,7 @@ Learning or inference through interaction with an environment using a closed loo
 
 # Sparse Distributed Representation (SDR)
 
-A binary vector with significantly more 0 bits than 1 bits. Significant overlap between the bit assignments in different SDRs captures similarity in representational space (e.g. similar features).
+A binary vector with significantly more 0 bits than 1 bits. Significant overlap between the bit assignments in different SDRs captures similarity in representational space (e.g., similar features).
 
 # Transformation
 
