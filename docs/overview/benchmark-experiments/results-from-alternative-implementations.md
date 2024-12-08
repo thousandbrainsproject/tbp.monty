@@ -4,7 +4,7 @@ title: Results from Alternative Implementations
 # FeatureGraphLM (Old LM)
 
 For comparison, the following results were obtained with the previous LM version (FeatureGraphLM). These results have not been updated since September 22nd 2022. Results here were obtained with more densely sampled models than results presented for the evidence LM. This means it is less likely for new points to be sampled. With the current, more sparse, models used for the EvidenceLM the FeatureGraphLM would have reduced performance.  
-Runtimes are reported on laptop with 8CPUs and no parallelization.
+Runtimes are reported on laptop with 8 CPUs and no parallelization.
 
 ### Results
 | Experiment                     | # objects | tested rotations | new sampling | other                          | Object Detection Accuracy | Rotation Error | Run Time        |
@@ -20,7 +20,7 @@ Runtimes are reported on laptop with 8CPUs and no parallelization.
 ### Explanation of Some of the Results
 
 - **Why is `full_rotation_eval_all_objects` so much worse than `full_rotation_eval`?**  
-  The difference is that we test 77 objects instead of just 4. There are a lot of objects in the YCB dataset that are quite similar (i.e. a_cups, b_cups, ..., e_cups) and if we have all of them in memory there is more chance for confusion between them. Additionally, the 4 objects in `full_rotation_eval` are quite distinguishable and have fewer symmetries within themselves than some of the other objects do (like all the balls in the YCB dataset).
+  The difference is that we test 77 objects instead of just 4. There are a lot of objects in the YCB dataset that are quite similar (i.e., a_cups, b_cups, ..., e_cups) and if we have all of them in memory there is more chance for confusion between them. Additionally, the 4 objects in `full_rotation_eval` are quite distinguishable and have fewer symmetries within themselves than some of the other objects do (like all the balls in the YCB dataset).
 - **Why is `full_rotation_eval_all_objects` so slow?**  
   In this experiment, we test all 77 YCB objects. This means that we also have to store models of all objects in memory and check sensory observations against all of them. At step 0 we have to test `#possible_objects`x`#possible_locations` x`#possible_rotation_per_location` which in this case is roughly 78 x 33.00 x 2 = 514.800. If we only test 4 objects this is just 26.400. Additionally, we test all rotation combinations along all axes which are 32 combinations.
 - **Why do new sampling experiments work better if we don't determine the pose?**  
