@@ -246,7 +246,7 @@ class PatchViewFinderMountHabitatDatasetArgs:
                 world_coord=True,
                 zooms=agent_args["zooms"],
                 get_all_points=True,
-                use_semantic_sensor=True,
+                use_semantic_sensor=False,
             ),
         ]
 
@@ -276,7 +276,7 @@ class NoisyPatchViewFinderMountHabitatDatasetArgs:
                 world_coord=True,
                 zooms=agent_args["zooms"],
                 get_all_points=True,
-                use_semantic_sensor=True,
+                use_semantic_sensor=False,
             ),
         ]
 
@@ -296,7 +296,7 @@ class OmniglotDatasetArgs:
                 world_coord=True,
                 zooms=1,
                 get_all_points=True,
-                use_semantic_sensor=True,
+                use_semantic_sensor=False,
                 depth_clip_sensors=(0,),
                 clip_value=1.1,
             ),
@@ -380,7 +380,7 @@ class SurfaceViewFinderMountHabitatDatasetArgs(PatchViewFinderMountHabitatDatase
                 world_coord=True,
                 zooms=agent_args["zooms"],
                 get_all_points=True,
-                use_semantic_sensor=True,
+                use_semantic_sensor=False,
                 depth_clip_sensors=(0,),  # comma needed to make it a tuple
                 clip_value=0.05,
             ),
@@ -421,7 +421,7 @@ class NoisySurfaceViewFinderMountHabitatDatasetArgs(
                 world_coord=True,
                 zooms=agent_args["zooms"],
                 get_all_points=True,
-                use_semantic_sensor=True,
+                use_semantic_sensor=False,
                 depth_clip_sensors=(0,),  # comma needed to make it a tuple
                 clip_value=0.05,
             ),
@@ -918,7 +918,7 @@ class MultiLMMountHabitatDatasetArgs:
                 world_coord=True,
                 zooms=agent_args["zooms"],
                 get_all_points=True,
-                use_semantic_sensor=True,
+                use_semantic_sensor=False,
             ),
         ]
 
