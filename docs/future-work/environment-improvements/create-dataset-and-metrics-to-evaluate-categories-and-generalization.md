@@ -8,4 +8,4 @@ Labeling a dataset with "hierarchical" labels, such that an object might be both
 
 We might leverage crowd-sourced labels to ensure that this labeling is reflective of human perception, and not biased by our beliefs as designers of Monty.
 
-Initially such labels should focus on morphology, as this is the current focus of Monty's recognition system. However, we would eventually want to also account for affordances, such as an object that is a chair, a vessel, etc.
+Initially such labels should focus on morphology, as this is the current focus of Monty's recognition system. However, we would eventually want to also account for affordances, such as an object that is a chair, a vessel, etc. Being able to classify objects based on their affordances would be an experimental stepping stone to the true measure of the systems representations, which would be how well affordances are used to manipulate the world.
