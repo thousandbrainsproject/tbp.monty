@@ -104,7 +104,6 @@
 - [cmp-hierarchy-improvements](future-work/cmp-hierarchy-improvements.md)
   - [figure-out-performance-measure-and-supervision-in-heterarchy](future-work/cmp-hierarchy-improvements/figure-out-performance-measure-and-supervision-in-heterarchy.md)
   - [add-top-down-connections](future-work/cmp-hierarchy-improvements/add-top-down-connections.md)
-  - [add-associative-connections](future-work/cmp-hierarchy-improvements/add-associative-connections.md)
   - [run-analyze-experiments-with-2lms-in-heterarchy-testbed](future-work/cmp-hierarchy-improvements/run-analyze-experiments-with-2lms-in-heterarchy-testbed.md)
   - [run-analyze-experiments-in-multiobject-environment-looking-at-scene-graphs](future-work/cmp-hierarchy-improvements/run-analyze-experiments-in-multiobject-environment-looking-at-scene-graphs.md)
   - [test-learning-at-different-speeds-depending-on-level-in-hierarchy](future-work/cmp-hierarchy-improvements/test-learning-at-different-speeds-depending-on-level-in-hierarchy.md)

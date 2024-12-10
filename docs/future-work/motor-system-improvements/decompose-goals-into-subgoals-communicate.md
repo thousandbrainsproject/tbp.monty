@@ -14,4 +14,4 @@ In the above example, neither the dinner-table, fork, nor hand LMs have sufficie
 
 How exactly we define the goal-states that carry out the practical process of applying pressure to move the fork is still a point of discussion, and so an early implementation might assume that a sub-cortical policy is already known that can move objects around the scene, based on a receive goal-state. Alternatively, we might begin with a simpler task such as pressing a button or key, where the motor policy simply needs to apply force at a specific location.
 
-Actually learning the causal relationships between states in low-level objects and high-level objects is also an aspect we are still developing ideas for.
+Actually learning the causal relationships between states in low-level objects and high-level objects is also an aspect we are still developing ideas for. However, we know that these will be formed via hierarchical connections between LMs, similar to the [Top Down Connections Used for Sensory Prediction](../cmp-hierarchy-improvements/add-top-down-connections.md).

@@ -2,7 +2,7 @@
 title: Send Similarity Encoding Object ID to Next Level & Test
 ---
 
-We have implemented the ability to encode object IDs using sparse-distributed representations (SDRs), and in particular can use this as a way of capturing similarity and disimlarity between objects. Using such encodings in learned [Associative Connections](add-associative-connections.md), we should observe a degree of natural generalization when recognizing compositional objects.
+We have implemented the ability to encode object IDs using sparse-distributed representations (SDRs), and in particular can use this as a way of capturing similarity and disimlarity between objects. Using such encodings in learned [Top Down Connections](add-top-down-connections.md), we should observe a degree of natural generalization when recognizing compositional objects.
 
 For example, assume a Monty system learns a dinner table setting with normal cuttlery and plates. Separately, the system learns about medieval instances of cuttlery and plates, but never sees them arranged in a dinner table setting. Based on the similarity of the medieval cutterly objects to their modern counterparts, the objects should have considerable overlap in their SDR encodings.
 
