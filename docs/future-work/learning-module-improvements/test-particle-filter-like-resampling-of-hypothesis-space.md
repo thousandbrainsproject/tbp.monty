@@ -6,4 +6,4 @@ When the evidence values for a point in an LM's graph falls below a certain thre
 
 We would like to implement a method to randomly initialize a subset of rejected hypotheses, and then test these. This relates to [Less Dependency on First Observation](less-dependency-on-first-observation.md).
 
-This work could also tie in with the ability to [Bias Rotation Hypotheses by Common Object Poses](bias-rotation-hypotheses.md), as these might be poses that an LM would resample more than others.
+This work could also tie in with the ability to [Use Better Priors for Hypothesis Initialization](../learning-module-improvements/use-better-hypothesis-priors.md), as these common poses could be resampled more frequently.
