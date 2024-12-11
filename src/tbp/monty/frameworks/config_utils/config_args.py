@@ -1159,7 +1159,7 @@ Multi-LM Config Utils.
 """
 
 
-def make_multi_lm_connectivity(n_lms: int) -> Dict:
+def make_multi_lm_flat_dense_connectivity(n_lms: int) -> Dict:
     """Create default connectivity matrices for a multi-LM experiment.
 
     Helper function for creating monty configs for experiments having multiple sensor
@@ -1171,8 +1171,8 @@ def make_multi_lm_connectivity(n_lms: int) -> Dict:
     monty config dataclass/dictionary.
 
     Args:
-        n_lms: Number of LMs. It is assumed that the number of sensor modules is equal
-            to the number of LMs.
+        n_lms: Number of LMs. It is assumed that the number of sensor modules (not
+            including a view finder) is equal to the number of LMs.
 
     Returns:
         Mapping: A dictionary with keys "sm_to_agent_dict", "sm_to_lm_matrix",
@@ -1295,7 +1295,7 @@ def make_multi_lm_monty_config(
         "sensor_module_class": DetailedLoggingSM,
         "sensor_module_args": {
             "sensor_module_id": "view_finder",
-            "save_raw_obs": True,
+            "save_raw_obs": sensor_module_args.get("save_raw_obs", False),
         },
     }
 
@@ -1309,7 +1309,7 @@ def make_multi_lm_monty_config(
         "motor_system_args": motor_system_args,
     }
 
-    conn = make_multi_lm_connectivity(n_lms)
+    connectivity = make_multi_lm_flat_dense_connectivity(n_lms)
 
     if monty_args is None:
         monty_args = MontyArgs()
@@ -1323,10 +1323,10 @@ def make_multi_lm_monty_config(
         learning_module_configs=learning_module_configs,
         sensor_module_configs=sensor_module_configs,
         motor_system_config=motor_system_config,
-        sm_to_agent_dict=conn["sm_to_agent_dict"],
-        sm_to_lm_matrix=conn["sm_to_lm_matrix"],
-        lm_to_lm_matrix=conn["lm_to_lm_matrix"],
-        lm_to_lm_vote_matrix=conn["lm_to_lm_vote_matrix"],
+        sm_to_agent_dict=connectivity["sm_to_agent_dict"],
+        sm_to_lm_matrix=connectivity["sm_to_lm_matrix"],
+        lm_to_lm_matrix=connectivity["lm_to_lm_matrix"],
+        lm_to_lm_vote_matrix=connectivity["lm_to_lm_vote_matrix"],
         monty_args=monty_args,
     )
     return monty_config
