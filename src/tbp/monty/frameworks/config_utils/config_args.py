@@ -1205,6 +1205,7 @@ def make_multi_lm_flat_dense_connectivity(n_lms: int) -> Dict:
 
 def make_multi_lm_monty_config(
     n_lms: int,
+    *,
     monty_class: type,
     learning_module_class: type,
     learning_module_args: Optional[Mapping],
@@ -1213,11 +1214,13 @@ def make_multi_lm_monty_config(
     motor_system_class: type,
     motor_system_args: Optional[Mapping],
     monty_args: Optional[Union[Mapping, MontyArgs]],
+    connectivity_func: Callable[[int], Mapping] = make_multi_lm_flat_dense_connectivity,
 ) -> MontyConfig:
     """Create a monty config for multi-LM experiments.
 
     Creates a complete monty config for a multi-LM experiment. It is assumed that
-        - There is the same number of sensor modules as learning modules (`n_lms`).
+        - There is the same number of sensor modules as learning modules (`n_lms`),
+          not including the view finder in the number of sensor modules.
         - Sensor modules are connected to learning modules in a 1:1 fashion.
         - Sensor modules are mounted to a single agent.
 
@@ -1259,6 +1262,11 @@ def make_multi_lm_monty_config(
         motor_system_class (type): Motor system class.
         motor_system_args (Mapping, optional): Arguments for motor system.
         monty_args (Mapping, MontyArgs, optional): Arguments for monty.
+        connectivity_func (Callable[[int], Mapping], optional): Function that returns a
+            dictionary of connectivity matrices given a number of learning modules.
+            In particular, it must return a dictionary with keys "sm_to_agent_dict",
+            "sm_to_lm_matrix", "lm_to_lm_matrix", and "lm_to_lm_vote_matrix". Defaults
+            to `make_multi_lm_flat_dense_connectivity`.
 
     Returns:
         `MontyConfig`: complete monty config for multi-LM experiment.
@@ -1309,7 +1317,7 @@ def make_multi_lm_monty_config(
         "motor_system_args": motor_system_args,
     }
 
-    connectivity = make_multi_lm_flat_dense_connectivity(n_lms)
+    connectivity = connectivity_func(n_lms)
 
     if monty_args is None:
         monty_args = MontyArgs()
