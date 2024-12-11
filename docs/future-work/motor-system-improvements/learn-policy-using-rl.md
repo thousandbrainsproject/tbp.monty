@@ -2,7 +2,7 @@
 title: Learn Policy using RL
 ---
 
-This will likely be most relevant when we begin implementing policies that change the state of the world, rather than just those that support efficient sensing and inference.
+Learning policies through rewards will become important when we begin implementing complex policies that change the state of the world. However, these could also be relevant for inference and learning, for example by learning when to switch policies instead of adhering to a single heuristic like in the curvature following policy.
 
 In general, we envision that we would use slow, deliberate model-based policies to perform a complex new task, such as one that involves coordinating multiple actuators. Initially, the action would always be performed in this slow, model-based manner. However, with each execution of the task, these sequences of movements provide samples for training a model-free policy to efficiently coordinate relevant actuators *in parallel*, and without the expensive sampling cost of model-based policies.
 

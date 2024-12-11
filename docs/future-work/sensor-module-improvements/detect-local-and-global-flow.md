@@ -2,7 +2,10 @@
 title: Detect Local and Global Flow
 ---
 
-Our general view is that there are two sources of flow processed by cortical columns. A larger receptive field sensor helps to estimate global flow, where flow here will be particularly pronounced if the whole object is moving, or the sensor itself is moving. A small receptive-field sensor patch corresponds to the channel by which the primary sensory features (e.g. point-normal, color) arrive. If flow is detected here, but not in the more global channel, then it is likely that just part of the object is moving.
+Our general view is that there are two sources of flow processed by cortical columns. These should correspond to:
+- Local flow: detected in a small receptive field, and indicates that the *object is moving*.
+- Global flow: detected in a larger receptive field, and indicates that the *sensor is moving*.
+Note however that depending on the receptive field sizes, it may not be possible for a particular learning module to always distinguish these. For example, if an object is larger than the global-flow receptive field, then from that LM's perspective, it cannot distinguish between the object moving and the sensor moving.
 
 Note that flow can be either optical or based on sensed texture changes for a blind surface agent.
 

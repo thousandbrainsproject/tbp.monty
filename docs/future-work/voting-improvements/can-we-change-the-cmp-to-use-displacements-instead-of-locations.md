@@ -6,4 +6,6 @@ Movement is core to how LMs process and model the world. Currently, an LM receiv
 
 However, a more general formulation might be to use displacements as the core spatial information in the CMP, such that a specific location (in body-centric coordinates or otherwise) is never communicated outside of an LM or sensor module.
 
-Such an approach might align well with adding information about flow (see [Detect Local and Global Flow](../sensor-module-improvements/detect-local-and-global-flow.md)), modeling moving objects (see [Deal With Moving Objects](../learning-module-improvements/deal-with-moving-objects.md)), and supporting abstract movements like the transition from grandchild to grandparent.
+Such an approach might align well with adding information about flow (see [Detect Local and Global Flow](../sensor-module-improvements/detect-local-and-global-flow.md)), modeling moving objects (see [Deal With Moving Objects](../learning-module-improvements/deal-with-moving-objects.md)), and supporting abstract movements like the transition from grandchild to grandparent. It would also result in a reformulation of "goal-states" to "goal-displacements".
+
+Note that whatever approach is taken, we would need to have information about the location or displacement of the sensor to ensure that communicated displacements are still in a shared coordinate system. This may relate to the division of "what" and "where" pathways in the brain, although this is not yet clear and requires further investigation.
