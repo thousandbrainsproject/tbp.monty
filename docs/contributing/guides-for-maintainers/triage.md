@@ -57,14 +57,29 @@ Multiple labels can be assigned to an Issue.
 
 # Pull Request Triage
 
-> [!NOTE]
-> Triage link (is pull request, is open, is not a draft, is not triaged)
->
-> <https://github.com/thousandbrainsproject/tbp.monty/pulls?q=is%3Apr+is%3Aopen+-label%3Atriaged+draft%3Afalse>
-
 The desired cadence for Pull Request Triage is at least once per business day.
 
-A **Maintainer** will check the Pull Request for validity. 
+## 1. Pending CLA
+
+First, review any Pull Requests pending CLA.
+
+> [!NOTE]
+>Pending CLA link (is pull request, is open, is not a draft, is not triaged, is pending cla)
+>
+> <https://github.com/thousandbrainsproject/tbp.monty/pulls?q=is%3Apr+is%3Aopen+-label%3Atriaged+draft%3Afalse+label%3Acla>
+
+If the Pull Request CLA check is passing (you may need to rerun the CLA check), remove the `cla` label.
+
+## 2. Triage
+
+> [!NOTE]
+> Triage link (is pull request, is open, is not a draft, is not triaged, is not pending cla)
+>
+> <https://github.com/thousandbrainsproject/tbp.monty/pulls?q=is%3Apr+is%3Aopen+-label%3Atriaged+draft%3Afalse+-label%3Acla>
+
+First, check if the Pull Request CLA check is passing. If the check is not passing, add the `cla` label and move on to the next Pull Request. The skipped Pull Request will be triaged again after the CLA check is passing.
+
+A **Maintainer** will check the Pull Request for validity.
 
 There are no priorities or severities applied to Pull Requests.
 
@@ -99,6 +114,7 @@ It is OK if the commit history is messy. It will be "squashed" when merged.
 
 Multiple labels can be assigned to a Pull Request. For example, an `enhancement` can come with `documentation` and continue along the Pull Request Flow after being `triaged`.
 
+- `cla`: Apply this label if the Pull Request CLA check is failing.
 - `documentation`: Apply this label if the Pull Request relates to documentation without affecting code.
 - `enhancement`: Apply this label if the Pull Request implements new functionality or changes functional code.
 - `infrastructure`: Apply this label if the Pull Request concerns infrastructure such as GitHub, continuous integration, continuous deployment, publishing, etc.
