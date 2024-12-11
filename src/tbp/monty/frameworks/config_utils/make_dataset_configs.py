@@ -1158,15 +1158,15 @@ def make_multi_lm_sensor_positions(
     assert order_by in ["spiral", "distance"], "order_by must be 'spiral' or 'distance'"
 
     # Find smallest square grid size that can fit n_lms with odd-length sides.
-    n = 1
-    while n_sms > n**2:
-        n += 2
+    grid_size = 1
+    while n_sms > grid_size**2:
+        grid_size += 2
 
     # Make coordinate grids, where the center is (0, 0).
-    pts = np.arange(-n // 2 + 1, n // 2 + 1)
-    x, y = np.meshgrid(pts, pts)
+    points = np.arange(-grid_size // 2 + 1, grid_size // 2 + 1)
+    x, y = np.meshgrid(points, points)
     y = np.flipud(y)
-    i_mid = n // 2
+    i_mid = grid_size // 2
 
     if order_by == "distance":
         dists = x**2 + y**2
@@ -1192,13 +1192,13 @@ def make_multi_lm_sensor_positions(
         row, col = i_mid, i_mid  # Start at center
 
         # Generate spiral pattern until we have enough points
-        while len(indices) < n**2:
+        while len(indices) < grid_size**2:
             # Move in current direction
             row += directions[current_dir][0]
             col += directions[current_dir][1]
 
             # Add point if it's within bounds
-            if 0 <= row < n and 0 <= col < n:
+            if 0 <= row < grid_size and 0 <= col < grid_size:
                 indices.append((row, col))
 
             steps_taken += 1
@@ -1230,9 +1230,8 @@ def make_multi_lm_sensor_positions(
     return positions
 
 
-def make_multi_lm_mount_config(
+def make_multi_sensor_mount_config(
     n_sms: int,
-    *,
     agent_id: str = "agent_id_0",
     sensor_ids: Optional[Sequence[str]] = None,
     height: Number = 0.0,
@@ -1246,7 +1245,7 @@ def make_multi_lm_mount_config(
     """Generate a multi-sensor mount configuration.
 
     Facilitates dynamic generation of habitat dataset args for an abitrary number of
-    sensor modules mounted to a single agent. Defaults are reasonable and reflect
+    sensors mounted to a single agent. Defaults are reasonable and reflect
     common practices.
 
     Args:
@@ -1345,7 +1344,7 @@ def make_multi_lm_mount_config(
     return mount_config
 
 
-def make_multi_lm_habitat_dataset_args(
+def make_multi_sm_habitat_dataset_args(
     n_sms: int,
     **mount_kwargs: Mapping,
 ) -> MultiLMMountHabitatDatasetArgs:
@@ -1370,7 +1369,7 @@ def make_multi_lm_habitat_dataset_args(
     Returns:
         `MultiLMMountHabitatDatasetArgs`: config ready for use in an experiment config.
     """
-    mount_config = make_multi_lm_mount_config(n_sms, **mount_kwargs)
+    mount_config = make_multi_sensor_mount_config(n_sms, **mount_kwargs)
 
     env_init_args = EnvInitArgsMultiLMMount()
     env_init_args.agents = [AgentConfig(MultiSensorAgent, mount_config)]
