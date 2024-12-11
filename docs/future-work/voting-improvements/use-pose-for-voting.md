@@ -2,7 +2,7 @@
 title: Use Pose for Voting
 ---
 
-Currently we do not use the pose of the objects when we are voting, however we believe it will be an important signal to use. One complication is that the poses stored for any given LM's object models are arbitrary with respect to other LM's models, as each uses an object-centric coordinate system.
+Currently we do not send out pose hypotheses when we are voting, however we believe it will be an important signal to use. One complication is that the poses stored for any given LM's object models are arbitrary with respect to other LM's models, as each uses an object-centric coordinate system.
 
 This relates to [Generalize Voting To Associative Connections](./generalize-voting-to-associative-connections.md), which faces a similar challenge.
 
