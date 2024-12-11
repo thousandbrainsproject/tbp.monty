@@ -2,7 +2,7 @@
 title: Use Off-Object Observations
 ---
 
-There are a variety of instances where a Monty system has a hypothesis about the current object, and then moves off the hypothesis-space of that object, either sensing nothing/empty space, or another object. For example, this can occur due to a model-free driven action like a saccade moving off the object, or the surface agent leaving the surface of the object. Similarly, a model-based action like the hypothesis-testing "jump" can move an agent to a location where another object is seen.
+There are a variety of instances where a Monty system has a hypothesis about the current object, and then moves off the hypothesis-space of that object, either sensing nothing/empty space, or another object. For example, this can occur due to a model-free driven action like a saccade moving off the object, or the surface agent leaving the surface of the object. Similarly, a model-based action like the hypothesis-testing "jump" can move an agent to a location where the object doesn't exist if the hypothesis it tested was false.
 
 Currently we have methods to move the sensor back on to the object, however we do not make use of the information that the object was absent at the perceived location. However, this is valuable information, as the absence of the object at a location will be consistent with some object and pose hypotheses, but not others.
 
