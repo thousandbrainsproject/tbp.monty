@@ -10,3 +10,5 @@ Note however that depending on the receptive field sizes, it may not be possible
 Note that flow can be either optical or based on sensed texture changes for a blind surface agent.
 
 Implementing methods so that we can estimate these two sources of flow and pass them to the LM will be an important step towards modeling objects with complex behaviors, as well as accounting for noise in the motor-system's estimates of self-motion.
+
+Eventually, similar techniques might be used to detect "flow" in how low-level LM representations are changing. This could correspond to movements in non-physical spaces, and enable more abstract representations in higher-level LMs. See also [Can We Change the CMP to Use Displacements Instead of Locations?](../voting-improvements/can-we-change-the-cmp-to-use-displacements-instead-of-locations.md)
