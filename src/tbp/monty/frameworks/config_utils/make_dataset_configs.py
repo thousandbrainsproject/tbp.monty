@@ -1339,7 +1339,7 @@ def make_multi_sensor_mount_config(
     if semantics is None:
         semantics = np.zeros(arr_len, dtype=bool)
     else:
-        semantics = np.zeros(semantics, dtype=bool)
+        semantics = np.asarray(semantics, dtype=bool)
     assert semantics.shape == (arr_len,), f"`semantics` must have shape ({arr_len},)"
     mount_config["semantics"] = semantics
 
