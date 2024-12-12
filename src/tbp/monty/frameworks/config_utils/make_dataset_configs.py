@@ -1269,7 +1269,10 @@ def make_multi_sensor_mount_config(
         positions: Positions of the sensors. If not provided, calls
             `make_sensor_positions_on_grid` with its default arguments.
         rotations: Rotations of the sensors. Defaults to [1, 0, 0, 0] for all sensors.
-        semantics: Defaults to `True` for all sensors.
+        semantics: Defaults to `False` for all sensors except for the last entry
+            which is set to `True`. This is because Monty currently requires the
+            view finder to create semantic maps. If given, `semantics` must also
+            have `semantics[-1]` set to `True`.
         zooms: Zooms of the sensors. Defaults to 10.0 for all sensors except for the
           except for the view finder (which has a zoom of 1.0)
 
@@ -1338,9 +1341,13 @@ def make_multi_sensor_mount_config(
     # sensor semantics
     if semantics is None:
         semantics = np.zeros(arr_len, dtype=bool)
+        semantics[-1] = True  # view finder must have semantics=True.
     else:
         semantics = np.asarray(semantics, dtype=bool)
     assert semantics.shape == (arr_len,), f"`semantics` must have shape ({arr_len},)"
+    assert (
+        semantics[-1] is True
+    ), "The view finder (last sensor) must have semantics=True"
     mount_config["semantics"] = semantics
 
     # sensor zooms
