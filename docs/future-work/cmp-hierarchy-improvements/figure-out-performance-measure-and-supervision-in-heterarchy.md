@@ -1,3 +1,10 @@
 ---
-title: Figure out Performance Measure and Supervision in Heterarchy
+title: Figure out Performance Measures and Supervision in Heterarchy
 ---
+As we introduce hierarchy and compositional objects, such as a dinner-table setting, we need to figure out both how to measure the performance of the system, and how to supervise the learning. For the latter, we might choose to train the system on component objects in isolation (a fork, a knife, etc.) before then showing Monty the full compositional object (the dinner-table setting). When evaluating performance, we might then see how well the system retrieves representations at different levels of the hierarchy. However, in the more core setting of unsupervised learning, representations of the sub-objects would likely also emerge at the high level (a coarse knife representation, etc.), while we may also find some representations of the dinner scene in low-level LMs. Deciding then how we measure performance will be more difficult.
+
+When we move to objects with less obvious composition (i.e. where the sub-objects must be disentangled in a fully unsupervised manner), representations will emerge at different levels of the system that may not correspond to any labels present in our datasets. For example, handles, or the head of a spoon, may emerge as object-representations in low-level LMs, even though the dataset only recognizes labels like "mug" and "spoon".
+
+This is less clear, but one approach to measure the "correctness" of representations in this setting might be how well a predicted representation aligns with the outside world. For example, while LMs are not designed to be used as generative models, we could visualize how well an inferred object graph maps onto the object actually present in the world. Quantifying such alignment might leverage measures such as differences in point-clouds. This would provide some evidence of how well the learned decomposition of objects corresponds to the actual objects present in the world.
+
+See also [Make Dataset to Test Compositional Objects](../environment-improvements/make-dataset-to-test-compositional-objects.md) and [Metrics to Evaluate Categories and Generalization](../environment-improvements/create-dataset-and-metrics-to-evaluate-categories-and-generalization.md).

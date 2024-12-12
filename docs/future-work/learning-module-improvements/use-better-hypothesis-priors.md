@@ -1,0 +1,9 @@
+---
+title: Use Better Priors for Hypothesis Initialization
+---
+
+Currently all object poses are equally likely, because stimuli exist in a void and are typically rotated randomly at test time. However, as we move towards compositional and scene-like datasets where certain object poses are more common, we would like to account for this information in our hypothesis testing.
+
+A simple way to do this is to store in long-term memory the frequently encountered object poses, and bias these with more evidence during initialization. A consequence of this is that objects should be recognized more quickly when they are in a typical pose, consistent with human behavior (see e.g. [Lawson et al, 2003](https://www.sciencedirect.com/science/article/abs/pii/S0001691802000999?via%3Dihub)).
+
+In terms of implementation, this could be done either relative to a body-centric coordinate, through a hierarchical biasing, or both. With the former, the object would have an inherent bias towards a pose relative to the observer, or some more abstract reference-frame like gravity (e.g. right-side up coffee mug). With the latter, the pose would be biased with respect to a higher-level, compositional object. For example, in a dinner table setup, the orientation of the fork and knife would be biased relative to the plate, even though in of themselves, the fork and knife do not have any inherent bias in their pose. This information would be stored in the compositional dinner-set object in the higher level LM, and the bias in pose implemented by top-down feedback to the low-level LM. Such feedback could bias both specific poses, as well as specific locations of the child object relative to the parent object, or specific scales of an object (see also [Support Scale Invariance](../learning-module-improvements/support-scale-invariance.md)).

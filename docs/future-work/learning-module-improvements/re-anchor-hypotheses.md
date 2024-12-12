@@ -1,3 +1,9 @@
 ---
-title: Re-Anchor Hypotheses
+title: Re-Anchor Hypotheses for Robustness to Noise and Distortions
 ---
+
+One aspect that we believe may contribute to dealing with object distortions, such as perceiving Dali's melted clocks for the first time, or being robust to the way a logo follows the surface of a mug, is through re-anchoring of hypotheses. More concretely, as the system moves over the object and path-integrates, the estimate of where the sensor is in space might lend greater weight to sensory landmarks, resulting in a re-assessment of the current location. Such re-anchoring is required even without distortions, due to the fact that path integration in the real world is imperfect.
+
+Such an approach would likely be further supported by hierarchical, top-down connections (see also [Add Top-Down Connections](../cmp-hierarchy-improvements/add-top-down-connections.md)). This will be relevant where the system has previously learned how a low-level object is associated with a high-level object at multiple locations, and where the low-level object is in some way distorted. In this instance, the system can re-instate where it is on the low-level object, based on where it is on the high-level object. Depending on the degree of distortion of the object, we would expect more such location-location associations to be learned in order to capture the relationship between the two. For example, a logo on a flat surface with a single 90-degree bend in it might just need two location associations to be learned and represented, while a heavily distorted logo would require more.
+
+It's worth emphasizing that this approach would also help reduce the reliance on the first observation. In particular, the first observation initializes the hypothesis space, so if that observation is noisy or doesn't resemble any of the points in the model, it has an overly-large impact on performance.

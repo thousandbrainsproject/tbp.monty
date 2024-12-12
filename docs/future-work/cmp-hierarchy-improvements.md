@@ -4,9 +4,8 @@ description: Improvements we would like to add to the CMP or hierarchical inform
 ---
 These are the things we would like to implement:
 
-- [Figure out performance measure and supervision in heterarchy](cmp-hierarchy-improvements/figure-out-performance-measure-and-supervision-in-heterarchy.md) #infrastructure
-- [Add top-down connections](cmp-hierarchy-improvements/add-top-down-connections.md) #numsteps
-- [Add associative connections](cmp-hierarchy-improvements/add-associative-connections.md) #abstract #numsteps
+- [Figure out performance measures and supervision in heterarchy](cmp-hierarchy-improvements/figure-out-performance-measure-and-supervision-in-heterarchy.md) #infrastructure #compositional
+- [Add top-down connections](cmp-hierarchy-improvements/add-top-down-connections.md) #numsteps #multiobj #compositional
 - [Run & Analyze experiments with >2LMs in heterarchy testbed](cmp-hierarchy-improvements/run-analyze-experiments-with-2lms-in-heterarchy-testbed.md) #compositional
 - [Run & Analyze experiments in multiobject environment looking at scene graphs](cmp-hierarchy-improvements/run-analyze-experiments-in-multiobject-environment-looking-at-scene-graphs.md) #multiobj
 - [Test learning at different speeds depending on level in hierarchy](cmp-hierarchy-improvements/test-learning-at-different-speeds-depending-on-level-in-hierarchy.md) #learning #generalization
