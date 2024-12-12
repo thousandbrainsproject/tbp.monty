@@ -1213,6 +1213,7 @@ def make_multi_lm_monty_config(
     motor_system_args: Optional[Mapping],
     monty_args: Optional[Union[Mapping, MontyArgs]],
     connectivity_func: Callable[[int], Mapping] = make_multi_lm_flat_dense_connectivity,
+    view_finder_config: Optional[Mapping] = None,
 ) -> MontyConfig:
     """Create a monty config for multi-LM experiments.
 
@@ -1261,6 +1262,11 @@ def make_multi_lm_monty_config(
             In particular, it must return a dictionary with keys "sm_to_agent_dict",
             "sm_to_lm_matrix", "lm_to_lm_matrix", and "lm_to_lm_vote_matrix". Defaults
             to `make_multi_lm_flat_dense_connectivity`.
+        view_finder_config (Mapping, optional): A mapping which contains the items
+            `"sensor_module_class"` and `"sensor_module_args"`. If not specified,
+            a config is added using the class `DetailedLoggingSM` with  `"view_finder"`
+            as the `sensor_module_id`. `"save_raw_obs"` will default to match the
+            value in `sensor_module_args` and `False` if none was provided.
 
     Returns:
         `MontyConfig`: complete monty config for multi-LM experiment.
@@ -1293,13 +1299,16 @@ def make_multi_lm_monty_config(
             "sensor_module_class": sensor_module_class,
             "sensor_module_args": sm_args_i,
         }
-    sensor_module_configs["view_finder"] = {
-        "sensor_module_class": DetailedLoggingSM,
-        "sensor_module_args": {
-            "sensor_module_id": "view_finder",
-            "save_raw_obs": sensor_module_args.get("save_raw_obs", False),
-        },
-    }
+    if view_finder_config is None:
+        sensor_module_configs["view_finder"] = {
+            "sensor_module_class": DetailedLoggingSM,
+            "sensor_module_args": {
+                "sensor_module_id": "view_finder",
+                "save_raw_obs": sensor_module_args.get("save_raw_obs", False),
+            },
+        }
+    else:
+        sensor_module_configs["view_finder"] = copy.deepcopy(view_finder_config)
 
     # Make motor system config.
     if motor_system_args is None:
