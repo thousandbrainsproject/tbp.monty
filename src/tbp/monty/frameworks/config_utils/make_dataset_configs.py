@@ -1147,11 +1147,12 @@ def make_sensor_positions_on_grid(
             at the origin to serve as a view finder. Defaults to `True`.
 
     Returns:
-        np.ndarray: A 2D array of sensor positions where each row has positions
-            (x, y, z). If `add_view_finder` is True, the array has `n_sensors + 1` rows,
-            where the last row corresponds to the view finder's position and is
-            identical to row 0. Otherwise, the array has `n_sensors` rows. row 0 is
-            always centered at (0, 0, 0), and all other rows are offset relative to it.
+        np.ndarray: A 2D array of sensor positions where each row is an array of
+            (x, y, z) positions. If `add_view_finder` is True, the array has
+            `n_sensors + 1` rows, where the last row corresponds to the view finder's
+            position and is identical to row 0. Otherwise, the array has `n_sensors`
+            rows. row 0 is always centered at (0, 0, 0), and all other rows are offset
+            relative to it.
 
     """
     assert n_sensors > 0, "n_sensors must be greater than 0"
@@ -1246,13 +1247,18 @@ def make_multi_sensor_mount_config(
     """Generate a multi-sensor mount configuration.
 
     Creates a multi-sensor, single-agent mount config. Its primary use is in generating
-    a `MultiLMMountHabitatDatasetArgs` config. This function assumes that a view finder
-    will be included which entails that the number of sensor_ids, resolution, etc. will
-    be of length `n_sensors + 1`. Defaults are reasonable and reflect current common
-    practices.
+    a `MultiLMMountHabitatDatasetArgs` config. Defaults are reasonable and reflect
+    current common practices.
+
+    Note:
+        `n_sensors` indicates the number of non-view-finder sensors. However, the
+        arrays generated for `sensor_ids`, `resolutions`, `positions`, `rotations`,
+        `semantics`, and `zooms` will have length `n_sensors + 1` to accommodate a
+        view finder. As such, arguments supplied for these arrays must also have length
+        `n_sensors + 1`, where the view finder's values come last.
 
     Args:
-        n_sensors: Number of sensors. Count should not include an optional view finder.
+        n_sensors: Number of sensors, not including the view finder.
         agent_id: ID of the agent. Defaults to "agent_id_0".
         sensor_ids: IDs of the sensor modules. Defaults to
             `["patch_0", "patch_1", ... "patch_{n_sms - 1}", "view_finder"]`.
@@ -1268,7 +1274,9 @@ def make_multi_sensor_mount_config(
           except for the view finder (which has a zoom of 1.0)
 
     Returns:
-        dict: A dictionary representing a complete multi-sensor mount config.
+        dict: A dictionary representing a complete multi-sensor mount config. Arrays
+            are converted to lists.
+
     """
     assert n_sensors > 0, "n_sensors must be a positive integer"
     arr_len = n_sensors + 1
