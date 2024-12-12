@@ -1345,9 +1345,7 @@ def make_multi_sensor_mount_config(
     else:
         semantics = np.asarray(semantics, dtype=bool)
     assert semantics.shape == (arr_len,), f"`semantics` must have shape ({arr_len},)"
-    assert (
-        semantics[-1] is True
-    ), "The view finder (last sensor) must have semantics=True"
+    assert semantics[-1], "The view finder (last sensor) must have semantics=True"
     mount_config["semantics"] = semantics
 
     # sensor zooms
