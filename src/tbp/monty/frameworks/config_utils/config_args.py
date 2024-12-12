@@ -1160,15 +1160,13 @@ Multi-LM Config Utils.
 
 
 def make_multi_lm_flat_dense_connectivity(n_lms: int) -> Dict:
-    """Create default connectivity matrices for a multi-LM experiment.
+    """Create flat, dense connectivity matrices for a multi-LM experiment.
 
-    Helper function for creating monty configs for experiments having multiple sensor
-    and learning modules, and learning modules are not hierarchically connected.
-    Also assumes each LM is connected to a single upstream sensor module in 1:1 fashion,
-    and all sensor modules are mounted on a single agent.
-
-    The results of this function are primarily intended to be included in a
-    monty config dataclass/dictionary.
+    Generates connectivity matrices for a `MontyConfig` with multiple sensor
+    and learning modules where learning modules are not hierarchically connected
+    ('flat'), and voting is all-to-all ('dense'). This assumes each LM is connected
+    to a single upstream sensor module in 1:1 fashion, and all sensor modules are
+    mounted on a single agent.
 
     Args:
         n_lms: Number of LMs. It is assumed that the number of sensor modules (not
@@ -1218,14 +1216,10 @@ def make_multi_lm_monty_config(
 ) -> MontyConfig:
     """Create a monty config for multi-LM experiments.
 
-    Creates a complete monty config for a multi-LM experiment. It is assumed that
-        - There is the same number of sensor modules as learning modules (`n_lms`),
-          not including the view finder in the number of sensor modules.
-        - Sensor modules are connected to learning modules in a 1:1 fashion.
-        - Sensor modules are mounted to a single agent.
+    Creates a complete monty config for a multi-LM experiment.
 
     This function primarily duplicates learning and sensor module configs and connects
-    them, and it uses a common naming convention.
+    them, and it uses the following conventions:
         - A `sensor_module_id` is of the form `"patch_{i}"` except for the view
           finder which always has the ID `"view_finder"`.
         - IMPORTANT: A reference to a sensor module with ID "patch" is a placeholder,
@@ -1338,11 +1332,6 @@ def make_multi_lm_monty_config(
         monty_args=monty_args,
     )
     return monty_config
-
-
-"""
-etc.
-"""
 
 
 def get_possible_3d_rotations(
