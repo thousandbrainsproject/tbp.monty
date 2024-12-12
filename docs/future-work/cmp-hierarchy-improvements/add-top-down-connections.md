@@ -2,7 +2,7 @@
 title: Add Top-Down Connections
 ---
 
-In Monty systems, low-level LMs project to high-level LMs, where this projection occurs if their sensory receptive fields are co-aligned. Hierarchical connections should be able to learn a mapping between objects represented at these low-level LMs, and objects represented in the high-level LMs that frequently co-occur. Such learning would be similar to that required for [Generalizing Voting To Associative Connections](../voting-improvements/generalize-voting-to-associative-connections.md).
+In Monty systems, low-level LMs project to high-level LMs, where this projection occurs if their sensory receptive fields are co-aligned. Hierarchical connections should be able to learn a mapping between objects represented at these low-level LMs, and objects represented in the high-level LMs that frequently co-occur.
 
 For example, a high-level LM of a dinner-set might have learned that the fork is present at a particular location in its internal reference frame. When at that location, it would therefore predict that the low-level LM should be sensing a fork, enabling the perception of a fork in the low-level LM even when there is a degree of noise or other source of uncertainty in the low-level LM's representation.
 
