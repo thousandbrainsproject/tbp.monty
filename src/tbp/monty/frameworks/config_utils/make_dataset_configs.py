@@ -1167,7 +1167,7 @@ def make_sensor_positions_on_grid(
     # Make coordinate grids, where the center is (0, 0).
     points = np.arange(-grid_size // 2 + 1, grid_size // 2 + 1)
     x, y = np.meshgrid(points, points)
-    y = np.flipud(y)
+    y = np.flipud(y)  # Flip y-axis to match habitat coordinate system (positive is up).
     i_mid = grid_size // 2
 
     if order_by == "distance":
@@ -1295,18 +1295,18 @@ def make_multi_sensor_mount_config(
         )
     else:
         sensor_ids = np.array(sensor_ids, dtype=object)
-    assert sensor_ids.shape == (arr_len,), "`sensor_ids` must have length n_sensors + 1"
+    assert sensor_ids.shape == (arr_len,), f"`sensor_ids` must have length {arr_len}"
     mount_config["sensor_ids"] = sensor_ids
 
     # sensor resolutions
     if resolutions is None:
-        resolutions = np.full([n_sensors + 1, 2], 64)
+        resolutions = np.full([arr_len, 2], 64)
     else:
         resolutions = np.asarray(resolutions)
     assert resolutions.shape == (
         arr_len,
         2,
-    ), "`resolutions` must have shape (n_sensors + 1, 2)"
+    ), f"`resolutions` must have shape ({arr_len}, 2)"
     mount_config["resolutions"] = resolutions
 
     # sensor positions
@@ -1320,36 +1320,36 @@ def make_multi_sensor_mount_config(
     assert positions.shape == (
         arr_len,
         3,
-    ), "`positions` must have shape (n_sensors + 1, 3)"
+    ), f"`positions` must have shape ({arr_len}, 3)"
     mount_config["positions"] = positions
 
     # sensor rotations
     if rotations is None:
-        rotations = np.zeros([positions.shape[0], 4])
+        rotations = np.zeros([arr_len, 4])
         rotations[:, 0] = 1.0
     else:
         rotations = np.asarray(rotations)
     assert rotations.shape == (
         arr_len,
         4,
-    ), "`rotations` must have shape (n_sensors + 1, 4)"
+    ), f"`rotations` must have shape ({arr_len}, 4)"
     mount_config["rotations"] = rotations
 
     # sensor semantics
     if semantics is None:
-        semantics = np.ones(n_sensors + 1, dtype=bool)
+        semantics = np.zeros(arr_len, dtype=bool)
     else:
-        semantics = np.array(semantics, dtype=bool)
-    assert semantics.shape == (arr_len,), "`semantics` must have shape (n_sensors + 1,)"
+        semantics = np.zeros(semantics, dtype=bool)
+    assert semantics.shape == (arr_len,), f"`semantics` must have shape ({arr_len},)"
     mount_config["semantics"] = semantics
 
     # sensor zooms
     if zooms is None:
-        zooms = 10.0 * np.ones(n_sensors + 1)
+        zooms = 10.0 * np.ones(arr_len)
         zooms[-1] = 1.0  # view finder
     else:
         zooms = np.asarray(zooms)
-    assert zooms.shape == (arr_len,), "`zooms` must have shape (n_sensors + 1,)"
+    assert zooms.shape == (arr_len,), f"`zooms` must have shape ({arr_len},)"
     mount_config["zooms"] = zooms
 
     return mount_config
