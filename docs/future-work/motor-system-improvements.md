@@ -5,7 +5,7 @@ description: Improvements we would like to add to the motor system.
 
 These are the things we would like to implement:
 
-- [Enable switching between learning and inference-focused policies](motor-system-improvements/enable-policy-switching-learning-vs-inference.md) #learning
+- [Implement switching between learning and inference-focused policies](motor-system-improvements/implement-policy-switching-learning-vs-inference.md) #learning
 - [Bottom-up exploration policy for surface agent](motor-system-improvements/bottom-up-exploration-policy-for-surface-agent.md) #learning
 - [Top-down exploration policy](motor-system-improvements/top-down-exploration-policy.md) #learning #numsteps
 - [Implement efficient saccades driven by model-free and model-based signals](motor-system-improvements/implement-efficient-saccades-driven-by-model-free-and-model-based-signals.md) #numsteps #multiobj

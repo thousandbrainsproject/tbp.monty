@@ -89,7 +89,7 @@
   - [implement-test-gnns-to-model-object-behaviors-states](future-work/learning-module-improvements/implement-test-gnns-to-model-object-behaviors-states.md)
   - [deal-with-moving-objects](future-work/learning-module-improvements/deal-with-moving-objects.md)
 - [motor-system-improvements](future-work/motor-system-improvements.md)
-  - [enable-policy-switching-learning-vs-inference](future-work/motor-system-improvements/enable-policy-switching-learning-vs-inference.md)
+  - [implement-policy-switching-learning-vs-inference](future-work/motor-system-improvements/implement-policy-switching-learning-vs-inference.md)
   - [bottom-up-exploration-policy-for-surface-agent](future-work/motor-system-improvements/bottom-up-exploration-policy-for-surface-agent.md)
   - [top-down-exploration-policy](future-work/motor-system-improvements/top-down-exploration-policy.md)
   - [implement-efficient-saccades-driven-by-model-free-and-model-based-signals](future-work/motor-system-improvements/implement-efficient-saccades-driven-by-model-free-and-model-based-signals.md)
