@@ -13,6 +13,6 @@ These are the things we would like to implement:
 - [Learn policy using RL and simplified action space](motor-system-improvements/learn-policy-using-rl.md) #numsteps #speed
 - [Decompose goals into subgoals & communicate](motor-system-improvements/decompose-goals-into-subgoals-communicate.md) #goalpolicy
 - [Reuse hypothesis testing policy target points](motor-system-improvements/reuse-hypothesis-testing-policy-target-points.md) #goalpolicy #numsteps
-- [Implement a simple cross-modal policy](motor-system-improvements/simple-cross-modal-policy.md) #learning #multiobj #goalpolicy #numsteps
+- [Implement a simple cross-modal policy](motor-system-improvements/implement-a-simple-cross-modal-policy-for-sensory-guidance.md) #learning #multiobj #goalpolicy #numsteps
 
 Please see the [instructions here](project-roadmap.md#how-you-can-contribute) if you would like to tackle one of these tasks.

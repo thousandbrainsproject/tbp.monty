@@ -100,7 +100,7 @@
   - [decompose-goals-into-subgoals-communicate](future-work/motor-system-improvements/decompose-goals-into-subgoals-communicate.md)
   - [interpret-goal-states-in-motor-system-switch-policies](future-work/motor-system-improvements/interpret-goal-states-in-motor-system-switch-policies.md)
   - [reuse-hypothesis-testing-policy-target-points](future-work/motor-system-improvements/reuse-hypothesis-testing-policy-target-points.md)
-  - [simple-cross-modal-policy](future-work/motor-system-improvements/simple-cross-modal-policy.md)
+  - [implement-a-simple-cross-modal-policy-for-sensory-guidance](future-work/motor-system-improvements/implement-a-simple-cross-modal-policy-for-sensory-guidance.md)
 - [voting-improvements](future-work/voting-improvements.md)
   - [use-pose-for-voting](future-work/voting-improvements/use-pose-for-voting.md)
   - [outline-routing-protocol-attention](future-work/voting-improvements/outline-routing-protocol-attention.md)
