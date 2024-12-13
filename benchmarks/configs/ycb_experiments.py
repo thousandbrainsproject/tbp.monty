@@ -15,6 +15,7 @@ import numpy as np
 from tbp.monty.frameworks.config_utils.config_args import (
     CSVLoggingConfig,
     FiveLMMontySOTAConfig,
+    LoggingConfig,
     MontyArgs,
     MotorSystemConfigCurInformedSurfaceGoalStateDriven,
     ParallelEvidenceLMLoggingConfig,
@@ -698,6 +699,32 @@ randrot_noise_77obj_dist_agent.update(
     ),
 )
 
+MY_OBJECTS = [
+    # "power_drill",
+    # "power_drill",
+    "knife",
+]
+MY_ROTATIONS = [
+    # [109.6609569, 35.16196104, 246.32388954],  # power_drill
+    [205.22202123, 34.98353776, 221.40260161],  # knife
+]
+randrot_noise_77obj_dist_agent_test = copy.deepcopy(randrot_noise_77obj_dist_agent)
+randrot_noise_77obj_dist_agent_test.update(
+    experiment_args=EvalExperimentArgs(
+        model_name_or_path=model_path_1lm_77obj,
+        n_eval_epochs=len(MY_ROTATIONS),
+        max_total_steps=100,
+        max_eval_steps=100,
+        max_train_steps=1,
+    ),
+    # logging_config=LoggingConfig(python_log_level="DEBUG"),
+    eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+        object_names=MY_OBJECTS,
+        object_init_sampler=PredefinedObjectInitializer(rotations=MY_ROTATIONS),
+    ),
+)
+randrot_noise_77obj_dist_agent_test["monty_config"].monty_args.num_exploratory_steps = 1
+
 randrot_noise_77obj_5lms_dist_agent = copy.deepcopy(
     randrot_noise_10distinctobj_5lms_dist_agent
 )
@@ -739,4 +766,5 @@ CONFIGS = dict(
     randrot_noise_77obj_surf_agent=randrot_noise_77obj_surf_agent,
     randrot_noise_77obj_dist_agent=randrot_noise_77obj_dist_agent,
     randrot_noise_77obj_5lms_dist_agent=randrot_noise_77obj_5lms_dist_agent,
+    randrot_noise_77obj_dist_agent_test=randrot_noise_77obj_dist_agent_test,
 )

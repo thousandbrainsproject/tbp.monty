@@ -673,7 +673,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             patch_x_min, patch_x_max = x_mid - half_patch_size, x_mid + half_patch_size
             patch = sem_obs[patch_y_min:patch_y_max, patch_x_min:patch_x_max]
             frac_obj_on_patch = np.sum(patch == target_semantic_id) / patch.size
-            if frac_obj_on_patch > 0.75:
+            if frac_obj_on_patch > 0.9:
                 logging.debug("Already centered on the object")
                 return [], True
 
@@ -732,7 +732,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         # as expected, which can otherwise break if e.g. on_object_image is passed
         # as an int or boolean rather than float
         smoothed_on_object_image = scipy.ndimage.gaussian_filter(
-            on_object_image, on_object_image.shape[0] / 20, mode="nearest"
+            on_object_image, on_object_image.shape[0] / 50, mode="constant"
         )
         idx_loc_to_look_at = np.argmax(smoothed_on_object_image * on_object_image)
         idx_loc_to_look_at = np.unravel_index(idx_loc_to_look_at, on_object_image.shape)
