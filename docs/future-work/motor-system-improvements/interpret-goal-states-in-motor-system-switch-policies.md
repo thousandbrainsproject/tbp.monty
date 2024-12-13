@@ -6,4 +6,4 @@ We would like to implement a state-switching mechanism where an LM (or multiple 
 
 For example, we might like to perform a thorough, random walk in a small region if the observations are noisy and we would like to sample them densely. Alternatively, we might like to move quickly across the surface of an object, spending little time in a given region.
 
-This task also relates to [Enable Switching Between Learning and Inference-Focused Policies](./implement-policy-switching-learning-vs-inference.md).
+This task also relates to [Enable Switching Between Learning and Inference-Focused Policies](./implement-switching-between-learning-and-inference-focused-policies.md).

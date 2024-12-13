@@ -7,7 +7,7 @@ It remains unclear how scale invariance would be implemented at a neural level, 
 Regardless of the precise implementation, it is reasonable to assume that a given learning module will have a range of scales that it is able to represent, adjusting path integration in the reference frame according to the hypothesized scale. This scale invariance would likely have the following properties:
 - Heuristics based on low-level sensory input (e.g. inferred distance) that are used to rapidly propose the most probable scales.
 - Testing of different scales in parallel, similar to how we test different poses of an object.
-- Storing the most commonly experienced scales in long-term memory, using these to preferentially bias initialized hypotheses, related to [Use Better Priors for Hypothesis Initialization](../learning-module-improvements/use-better-hypothesis-priors.md).
+- Storing the most commonly experienced scales in long-term memory, using these to preferentially bias initialized hypotheses, related to [Use Better Priors for Hypothesis Initialization](../learning-module-improvements/use-better-priors-for-hypothesis-initialization.md).
 
 These scales would represent a small sub-sampling of all possible scales, similar to how we test a subset of possible rotations, and consistent with the fact that human estimates of scale and rotation are imperfect and tend to align with common values.
 
