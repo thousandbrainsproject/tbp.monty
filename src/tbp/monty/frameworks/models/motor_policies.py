@@ -664,10 +664,18 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         logging.debug("Searching for object")
 
-        # Check if the center of the view finder is on the object
-        if sem_obs[obs_dim[0] // 2][obs_dim[1] // 2] == target_semantic_id:
-            logging.debug("Already centered on the object")
-            return [], True
+        # Check if the central pixel is on object AND if the majority of its
+        # surrounding pixels are on-object.
+        y_mid, x_mid = obs_dim[0] // 2, obs_dim[1] // 2
+        if sem_obs[y_mid, x_mid] == target_semantic_id:
+            half_patch_size = 2
+            patch_y_min, patch_y_max = y_mid - half_patch_size, y_mid + half_patch_size
+            patch_x_min, patch_x_max = x_mid - half_patch_size, x_mid + half_patch_size
+            patch = sem_obs[patch_y_min:patch_y_max, patch_x_min:patch_x_max]
+            frac_obj_on_patch = np.sum(patch == target_semantic_id) / patch.size
+            if frac_obj_on_patch > 0.75:
+                logging.debug("Already centered on the object")
+                return [], True
 
         relative_location = self.find_location_to_look_at(
             sem3d_obs, image_shape=obs_dim, target_semantic_id=target_semantic_id
@@ -724,7 +732,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         # as expected, which can otherwise break if e.g. on_object_image is passed
         # as an int or boolean rather than float
         smoothed_on_object_image = scipy.ndimage.gaussian_filter(
-            on_object_image, sem3d_obs.shape[0] / 10, mode="constant"
+            on_object_image, on_object_image.shape[0] / 20, mode="nearest"
         )
         idx_loc_to_look_at = np.argmax(smoothed_on_object_image * on_object_image)
         idx_loc_to_look_at = np.unravel_index(idx_loc_to_look_at, on_object_image.shape)
