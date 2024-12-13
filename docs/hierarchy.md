@@ -92,7 +92,7 @@
   - [improve-handling-of-symmetry](future-work/learning-module-improvements/improve-handling-of-symmetry.md)
   - [use-better-priors-for-hypothesis-initialization](future-work/learning-module-improvements/use-better-priors-for-hypothesis-initialization.md)
 - [motor-system-improvements](future-work/motor-system-improvements.md)
-  - [implement-policy-switching-learning-vs-inference](future-work/motor-system-improvements/implement-policy-switching-learning-vs-inference.md)
+  - [implement-switching-between-learning-and-inference-focused-policies](future-work/motor-system-improvements/implement-switching-between-learning-and-inference-focused-policies.md)
   - [bottom-up-exploration-policy-for-surface-agent](future-work/motor-system-improvements/bottom-up-exploration-policy-for-surface-agent.md)
   - [top-down-exploration-policy](future-work/motor-system-improvements/top-down-exploration-policy.md)
   - [implement-efficient-saccades-driven-by-model-free-and-model-based-signals](future-work/motor-system-improvements/implement-efficient-saccades-driven-by-model-free-and-model-based-signals.md)
