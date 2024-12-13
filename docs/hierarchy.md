@@ -77,6 +77,7 @@
   - [extract-better-features](future-work/sensor-module-improvements/extract-better-features.md)
   - [detect-local-and-global-flow](future-work/sensor-module-improvements/detect-local-and-global-flow.md)
 - [learning-module-improvements](future-work/learning-module-improvements.md)
+  - [contributing-learning-modules](future-work/learning-module-improvements/contributing-learning-modules.md)
   - [use-off-object-observations](future-work/learning-module-improvements/use-off-object-observations.md)
   - [reinitialize-hypotheses-when-starting-to-recognize-a-new-object](future-work/learning-module-improvements/reinitialize-hypotheses-when-starting-to-recognize-a-new-object.md)
   - [improve-bounded-evidence-performance](future-work/learning-module-improvements/improve-bounded-evidence-performance.md)
