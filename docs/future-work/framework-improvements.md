@@ -4,7 +4,7 @@ description: Improvements we would like to make on the general code framework.
 ---
 These are the things we would like to implement:
 
-- [Add infrastructure for multiple agents that move independently](framework-improvements/add-infrastructure-for-multiple-agents-that-move-independently.md) #numsteps #infrastructure
+- [Add infrastructure for multiple agents that move independently](framework-improvements/add-infrastructure-for-multiple-agents-that-move-independently.md) #numsteps #infrastructure #goalpolicy
 - [Automate benchmark experiments & analysis](framework-improvements/automate-benchmark-experiments-analysis.md) #infrastructure
 - [Add more wandb logging for learning from unsupervised](framework-improvements/add-more-wandb-logging-for-learning-unsupervised.md) #learning
 - [Add GPU support for Monty](framework-improvements/add-gpu-support-for-monty.md) #speed

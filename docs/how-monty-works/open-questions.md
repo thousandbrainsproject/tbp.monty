@@ -1,21 +1,23 @@
 ---
 title: Open Questions
-description: I'm just starting to collect a new list of open questions here. Still a WIP
+description: Below is a simple outline of some of the open questions that we are currently exploring.
 ---
+
+For more details, we also encourage checking out our [Future Work Roadmap](../future-work/project-roadmap.md) and related sections, where we go into some possible approaches to these questions.
 
 # Learning Modules/Modeling
 
 ## Object Behaviors
 
 - How are object behaviors represented?
-- How are the recognized?
+- How are they recognized?
 
 ## Object Models
 - Where do we have a model of general physics? Can every LM learn the basic physics necessary for the objects it models (e.g. fluid-like behavior in some, cloth-like behavior in others)? Or are some LMs more specialized for this?
 
 ## Object Transformations
 
-- How are the represented?
+- How are they represented?
 - How are they recognized?
 
 ## Scale
