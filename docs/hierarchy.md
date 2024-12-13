@@ -90,7 +90,7 @@
   - [deal-with-moving-objects](future-work/learning-module-improvements/deal-with-moving-objects.md)
   - [support-scale-invariance](future-work/learning-module-improvements/support-scale-invariance.md)
   - [improve-handling-of-symmetry](future-work/learning-module-improvements/improve-handling-of-symmetry.md)
-  - [use-better-hypothesis-priors](future-work/learning-module-improvements/use-better-hypothesis-priors.md)
+  - [use-better-priors-for-hypothesis-initialization](future-work/learning-module-improvements/use-better-priors-for-hypothesis-initialization.md)
 - [motor-system-improvements](future-work/motor-system-improvements.md)
   - [implement-policy-switching-learning-vs-inference](future-work/motor-system-improvements/implement-policy-switching-learning-vs-inference.md)
   - [bottom-up-exploration-policy-for-surface-agent](future-work/motor-system-improvements/bottom-up-exploration-policy-for-surface-agent.md)

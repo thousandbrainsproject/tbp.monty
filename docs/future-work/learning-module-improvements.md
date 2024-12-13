@@ -19,6 +19,6 @@ These are the things we would like to implement:
 - [Deal with moving objects](learning-module-improvements/deal-with-moving-objects.md) #dynamic #realworld
 - [Support scale invariance](learning-module-improvements/support-scale-invariance.md) #scale
 - [Improve handling of symmetry](learning-module-improvements/improve-handling-of-symmetry.md) #pose
-- [Use Better Priors for Hypothesis Initialization](learning-module-improvements/use-better-hypothesis-priors.md) #numsteps #pose #scale
+- [Use Better Priors for Hypothesis Initialization](learning-module-improvements/use-better-priors-for-hypothesis-initialization.md) #numsteps #pose #scale
 
 Please see the [instructions here](project-roadmap.md#how-you-can-contribute) if you would like to tackle one of these tasks.
