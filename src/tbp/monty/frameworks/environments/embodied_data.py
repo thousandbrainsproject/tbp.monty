@@ -484,6 +484,10 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         super().pre_episode()
         if not self.dataset.env._agents[0].action_space_type == "surface_agent":
             self.get_good_view("view_finder")
+            for patch_id in ("patch", "patch_0"):
+                if patch_id in self._observation["agent_id_0"].keys():
+                    self.get_good_view(patch_id, allow_translation=False)
+                    break
 
     def first_step(self):
         """Carry out particular motor-system state updates required on the first step.
@@ -509,7 +513,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         return self._observation
 
-    def get_good_view(self, view_sensor_id):
+    def get_good_view(self, view_sensor_id: str, allow_translation: bool = True):
         """Policy to get a good view of the object before an episode starts.
 
         Used by the distant agent - the surface agent makes use of the
@@ -547,25 +551,26 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 for action in actions:
                     self._observation, self.motor_system.state = self.dataset[action]
 
-        # Move closer to the object, if not already close enough
-        action, close_enough = self.motor_system.move_close_enough(
-            self._observation,
-            view_sensor_id,
-            target_semantic_id=self.primary_target["semantic_id"],
-            multi_objects_present=self.num_distactors > 0,
-        )
-
-        # Continue moving to a close distance to the object
-        while not close_enough:
-            logging.debug("moving closer!")
-            self._observation, self.motor_system.state = self.dataset[action]
-
+        if allow_translation:
+            # Move closer to the object, if not already close enough
             action, close_enough = self.motor_system.move_close_enough(
                 self._observation,
                 view_sensor_id,
                 target_semantic_id=self.primary_target["semantic_id"],
                 multi_objects_present=self.num_distactors > 0,
             )
+
+            # Continue moving to a close distance to the object
+            while not close_enough:
+                logging.debug("moving closer!")
+                self._observation, self.motor_system.state = self.dataset[action]
+
+                action, close_enough = self.motor_system.move_close_enough(
+                    self._observation,
+                    view_sensor_id,
+                    target_semantic_id=self.primary_target["semantic_id"],
+                    multi_objects_present=self.num_distactors > 0,
+                )
 
         # Re-center ourselves (if necessary) after having moved closer
         actions, on_object = self.motor_system.orient_to_object(
@@ -574,6 +579,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             target_semantic_id=self.primary_target["semantic_id"],
         )
         if not on_object:
+            if view_sensor_id == "patch":
+                print("\n----- SECOND ORIENT -----\n")
             for action in actions:
                 self._observation, self.motor_system.state = self.dataset[action]
 
@@ -715,6 +722,10 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         else:
             self.get_good_view("view_finder")
+            for patch_id in ("patch", "patch_0"):
+                if patch_id in self._observation["agent_id_0"].keys():
+                    self.get_good_view(patch_id, allow_translation=False)
+                    break
             # TODO implement better way to get better view after the jump that isn't
             # "cheating" by using get_good_view (which uses the semantic sensor)
 
