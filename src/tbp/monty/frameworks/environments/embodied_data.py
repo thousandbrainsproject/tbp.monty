@@ -460,7 +460,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 ] = True
 
             self._observation, self.motor_system.state = self.dataset[self._action]
-
+            # dump_all(self._observation, note="__next__")
             # Check whether sensory information is just for feeding back to motor policy
             # TODO refactor so that the motor policy itself is making this update
             # when appropriate, not embodied_data
@@ -540,6 +540,9 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # TODO break up this method so that there is less code duplication
         # Start by ensuring the center of the patch is covering the primary target
         # object before we start moving forward; only done for multi-object experiments
+        vf_key = "agent_id_0.view_finder.rgba"
+        patch_key = "agent_id_0.patch.rgba"
+        # dump_all(self._observation, note=f"start.{view_sensor_id}")
 
         if self.num_distactors > 0:
             actions, on_object = self.motor_system.orient_to_object(
@@ -550,7 +553,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             if not on_object:
                 for action in actions:
                     self._observation, self.motor_system.state = self.dataset[action]
-
+                    # dump_all(self._observation, note=f"multi_obj.{view_sensor_id}")
         if allow_translation:
             # Move closer to the object, if not already close enough
             action, close_enough = self.motor_system.move_close_enough(
@@ -559,12 +562,11 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 target_semantic_id=self.primary_target["semantic_id"],
                 multi_objects_present=self.num_distactors > 0,
             )
-
             # Continue moving to a close distance to the object
             while not close_enough:
                 logging.debug("moving closer!")
                 self._observation, self.motor_system.state = self.dataset[action]
-
+                # dump_all(self._observation, note=f"moving_closer.{view_sensor_id}")
                 action, close_enough = self.motor_system.move_close_enough(
                     self._observation,
                     view_sensor_id,
@@ -579,10 +581,9 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             target_semantic_id=self.primary_target["semantic_id"],
         )
         if not on_object:
-            if view_sensor_id == "patch":
-                print("\n----- SECOND ORIENT -----\n")
             for action in actions:
                 self._observation, self.motor_system.state = self.dataset[action]
+                # dump_all(self._observation, note=f"finishing.{view_sensor_id}")
 
         # # Final check that we're on the object
         # TODO add this back later : at the moment we sometimes just don't have the
@@ -668,7 +669,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # self.motor_system.action_details["post_jump_pose"].append(
         #     temp_motor_state_copy
         # )
-
+        # dump_all(self._observation, note="execute_jump_attempt")
         # If depth_at_center < 1.0, there is a visible element within 1 meter of the
         # view-finder's central pixel)
         if depth_at_center < 1.0:
@@ -771,6 +772,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 == pre_jump_state["sensors"][current_sensor]["rotation"]
             ), "Failed to return sensor to orientation"
 
+        # dump_all(self._observation, note="handle_failed_jump")
         # TODO explore reverting to an attempt with touch_object here,
         # only moving back to our starting location if this is unsuccessful
         # after e.g. 16 glances around where we arrived; NB however that

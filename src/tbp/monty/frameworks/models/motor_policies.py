@@ -18,6 +18,8 @@ from typing import Any, Callable, Dict, List, Tuple, Type, Union, cast
 import numpy as np
 import quaternion as qt
 import scipy.ndimage
+
+# from monty_utils.dumper import dump, dump_all
 from scipy.spatial.transform import Rotation as rot  # noqa: N813
 
 from tbp.monty.frameworks.actions.action_samplers import ActionSampler
@@ -669,16 +671,12 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         if sem_obs[y_mid, x_mid] == target_semantic_id:
             logging.debug("Already centered on the object")
             return [], True
-            # patch_y_min, patch_y_max = y_mid - 1, y_mid + 2
-            # patch_x_min, patch_x_max = x_mid - 1, x_mid + 2
-            # patch = sem_obs[patch_y_min:patch_y_max, patch_x_min:patch_x_max]
-            # frac_obj_on_patch = np.sum(patch == target_semantic_id) / patch.size
-            # if frac_obj_on_patch > 0.9:
-            #     logging.debug("Already centered on the object")
-            #     return [], True
 
         relative_location = self.find_location_to_look_at(
-            sem3d_obs, image_shape=obs_dim, target_semantic_id=target_semantic_id
+            sem3d_obs,
+            image_shape=obs_dim,
+            target_semantic_id=target_semantic_id,
+            view_sensor_id=view_sensor_id,
         )
         down_amount, left_amount = self.compute_look_amounts(relative_location)
 
@@ -704,7 +702,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         left_amount = np.degrees(np.arctan2(relative_location[0], relative_location[2]))
         return down_amount, left_amount
 
-    def find_location_to_look_at(self, sem3d_obs, image_shape, target_semantic_id):
+    def find_location_to_look_at(
+        self, sem3d_obs, image_shape, target_semantic_id, view_sensor_id
+    ):
         """Takes in a semantic 3D observation and returns an x,y,z location.
 
         The location is on the object and surrounded by pixels that are also on
@@ -732,7 +732,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         # as expected, which can otherwise break if e.g. on_object_image is passed
         # as an int or boolean rather than float
         smoothed_on_object_image = scipy.ndimage.gaussian_filter(
-            on_object_image, 1.5, mode="nearest"
+            on_object_image, 2, mode="constant"
         )
         idx_loc_to_look_at = np.argmax(smoothed_on_object_image * on_object_image)
         idx_loc_to_look_at = np.unravel_index(idx_loc_to_look_at, on_object_image.shape)
@@ -744,6 +744,23 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         ]
         agent_location = self.get_agent_state()["position"]
         relative_location = (camera_location + agent_location) - location_to_look_at
+
+        rgba_image = np.copy(smoothed_on_object_image * on_object_image)
+        rgba_image = np.dstack([rgba_image] * 3)  # Create RGB channels
+        rgba_image = np.dstack(
+            [rgba_image, np.ones_like(rgba_image[:, :, 0])]
+        )  # Add alpha channel
+        rgba_image[idx_loc_to_look_at[0], idx_loc_to_look_at[1], :] = [1, 0, 0, 1]
+        rgba_image = (rgba_image * 255).astype(np.uint8)
+        dct = {
+            "agent_id_0": {
+                view_sensor_id: {
+                    "rgba": rgba_image,
+                }
+            }
+        }
+        # dump(dct, f"agent_id_0.{view_sensor_id}.rgba", note="find_location_to_look_at")
+
         return relative_location
 
     def get_sensors_perc_on_obj(self, observation):
