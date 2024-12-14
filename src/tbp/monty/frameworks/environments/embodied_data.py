@@ -663,6 +663,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # self.motor_system.action_details["post_jump_pose"].append(
         #     temp_motor_state_copy
         # )
+
         # If depth_at_center < 1.0, there is a visible element within 1 meter of the
         # view-finder's central pixel)
         if depth_at_center < 1.0:

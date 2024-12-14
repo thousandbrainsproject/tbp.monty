@@ -671,9 +671,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             return [], True
 
         relative_location = self.find_location_to_look_at(
-            sem3d_obs,
-            image_shape=obs_dim,
-            target_semantic_id=target_semantic_id,
+            sem3d_obs, image_shape=obs_dim, target_semantic_id=target_semantic_id
         )
         down_amount, left_amount = self.compute_look_amounts(relative_location)
 
