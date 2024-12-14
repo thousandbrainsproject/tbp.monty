@@ -460,6 +460,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 ] = True
 
             self._observation, self.motor_system.state = self.dataset[self._action]
+
             # Check whether sensory information is just for feeding back to motor policy
             # TODO refactor so that the motor policy itself is making this update
             # when appropriate, not embodied_data
