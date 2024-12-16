@@ -7,11 +7,12 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import copy
 import os
 from dataclasses import dataclass, field
 from itertools import product
 from numbers import Number
-from typing import Callable, Dict, Iterable, List, Optional, Union
+from typing import Callable, Dict, Iterable, List, Mapping, Optional, Union
 
 import numpy as np
 import wandb
@@ -1151,6 +1152,195 @@ class FiveLMMontySOTAConfig(FiveLMMontyConfig):
     motor_system_config: Union[dataclass, Dict] = field(
         default_factory=MotorSystemConfigInformedGoalStateDriven
     )
+
+
+"""
+Multi-LM Config Utils.
+"""
+
+
+def make_multi_lm_flat_dense_connectivity(n_lms: int) -> Dict:
+    """Create flat, dense connectivity matrices for a multi-LM experiment.
+
+    Generates connectivity matrices for a `MontyConfig` with multiple sensor
+    and learning modules where learning modules are not hierarchically connected
+    ('flat'), and voting is all-to-all ('dense'). This assumes each LM is connected
+    to a single upstream sensor module in 1:1 fashion, and all sensor modules are
+    mounted on a single agent.
+
+    Args:
+        n_lms: Number of LMs. It is assumed that the number of sensor modules (not
+            including a view finder) is equal to the number of LMs.
+
+    Returns:
+        Mapping: A dictionary with keys "sm_to_agent_dict", "sm_to_lm_matrix",
+            "lm_to_lm_matrix", and "lm_to_lm_vote_matrix".
+    """
+    # Create default sm_to_lm_matrix: all sensors are on 'agent_id_0'.
+    sm_to_agent_dict = {f"patch_{i}": f"agent_id_0" for i in range(n_lms)}
+    sm_to_agent_dict["view_finder"] = "agent_id_0"
+
+    # Create default sm_to_lm_matrix: each sensor connects to one LM.
+    sm_to_lm_matrix = [[i] for i in range(n_lms)]
+
+    # Create default lm_to_lm_matrix: no LM hierarchy.
+    lm_to_lm_matrix = None
+
+    # Create default lm_to_lm_vote_matrix: all-to-all voting.
+    lm_to_lm_vote_matrix = []
+    for i in range(n_lms):
+        lst = list(range(n_lms))
+        lst.remove(i)
+        lm_to_lm_vote_matrix.append(lst)
+
+    return {
+        "sm_to_agent_dict": sm_to_agent_dict,
+        "sm_to_lm_matrix": sm_to_lm_matrix,
+        "lm_to_lm_matrix": lm_to_lm_matrix,
+        "lm_to_lm_vote_matrix": lm_to_lm_vote_matrix,
+    }
+
+
+def make_multi_lm_monty_config(
+    n_lms: int,
+    *,
+    monty_class: type,
+    learning_module_class: type,
+    learning_module_args: Optional[Mapping],
+    sensor_module_class: type,
+    sensor_module_args: Optional[Mapping],
+    motor_system_class: type,
+    motor_system_args: Optional[Mapping],
+    monty_args: Optional[Union[Mapping, MontyArgs]],
+    connectivity_func: Callable[[int], Mapping] = make_multi_lm_flat_dense_connectivity,
+    view_finder_config: Optional[Mapping] = None,
+) -> MontyConfig:
+    """Create a monty config for multi-LM experiments.
+
+    Creates a complete monty config for a multi-LM experiment.
+
+    This function primarily duplicates learning and sensor module configs and connects
+    them, and it uses the following conventions:
+        - A `sensor_module_id` is of the form `"patch_{i}"` except for the view
+          finder which always has the ID `"view_finder"`.
+        - IMPORTANT: A reference to a sensor module with ID "patch" is a placeholder,
+          and it will be replaced by some `"patch_{i}"`. For example, learning
+          module args may contain parameters that reference a sensor module like so:
+          ```python
+            learning_module_args = dict(
+                tolerances={
+                    "patch": {
+                        "hsv": np.array([0.1, 0.2, 0.2]),
+                        "principal_curvatures_log": np.ones(2),
+                    }
+                },
+                feature_weights={
+                    "patch": {
+                        "hsv": np.array([1, 0.5, 0.5]),
+                    }
+                }
+            }
+            ```
+          When we are constructing the config for learning module **i**, that entry
+          for `"patch"` will be replaced with `"patch_{i}"`. This is currently
+          done for three possible items in `learning_module_args`:
+          `"graph_delta_thresholds"`, `"tolerances"`, and `"feature_weights"`.
+
+
+    Args:
+        n_lms (int): Number of learning modules.
+        monty_class (type): Monty class.
+        learning_module_class (type): Learning module class.
+        learning_module_args (dict, optional): Arguments for learning modules.
+        sensor_module_class (type): Sensor module class.
+        sensor_module_args (dict, optional): Arguments for sensor modules.
+        motor_system_class (type): Motor system class.
+        motor_system_args (Mapping, optional): Arguments for motor system.
+        monty_args (Mapping, MontyArgs, optional): Arguments for monty.
+        connectivity_func (Callable[[int], Mapping], optional): Function that returns a
+            dictionary of connectivity matrices given a number of learning modules.
+            In particular, it must return a dictionary with keys "sm_to_agent_dict",
+            "sm_to_lm_matrix", "lm_to_lm_matrix", and "lm_to_lm_vote_matrix". Defaults
+            to `make_multi_lm_flat_dense_connectivity`.
+        view_finder_config (Mapping, optional): A mapping which contains the items
+            `"sensor_module_class"` and `"sensor_module_args"`. If not specified,
+            a config is added using the class `DetailedLoggingSM` with  `"view_finder"`
+            as the `sensor_module_id`. `"save_raw_obs"` will default to match the
+            value in `sensor_module_args` and `False` if none was provided.
+
+    Returns:
+        `MontyConfig`: complete monty config for multi-LM experiment.
+    """
+    # Make learning module configs.
+    if learning_module_args is None:
+        learning_module_args = {}
+    learning_module_configs = {}
+    for i in range(n_lms):
+        lm_args_i = copy.deepcopy(learning_module_args)
+        # Rename specs keyed with "patch" to "patch_{i}".
+        for name in ["graph_delta_thresholds", "tolerances", "feature_weights"]:
+            if name in lm_args_i:
+                spec = lm_args_i[name]
+                if "patch" in spec:
+                    spec[f"patch_{i}"] = spec.pop("patch")
+        learning_module_configs[f"learning_module_{i}"] = {
+            "learning_module_class": learning_module_class,
+            "learning_module_args": lm_args_i,
+        }
+
+    # Make sensor module configs.
+    if sensor_module_args is None:
+        sensor_module_args = {}
+    sensor_module_configs = {}
+    for i in range(n_lms):
+        sm_args_i = copy.deepcopy(sensor_module_args)
+        sm_args_i["sensor_module_id"] = f"patch_{i}"
+        sensor_module_configs[f"sensor_module_{i}"] = {
+            "sensor_module_class": sensor_module_class,
+            "sensor_module_args": sm_args_i,
+        }
+    if view_finder_config is None:
+        sensor_module_configs["view_finder"] = {
+            "sensor_module_class": DetailedLoggingSM,
+            "sensor_module_args": {
+                "sensor_module_id": "view_finder",
+                "save_raw_obs": sensor_module_args.get("save_raw_obs", False),
+            },
+        }
+    else:
+        sensor_module_configs["view_finder"] = copy.deepcopy(view_finder_config)
+
+    # Make motor system config.
+    if motor_system_args is None:
+        motor_system_args = {}
+    else:
+        motor_system_args = copy.deepcopy(motor_system_args)
+    motor_system_config = {
+        "motor_system_class": motor_system_class,
+        "motor_system_args": motor_system_args,
+    }
+
+    connectivity = connectivity_func(n_lms)
+
+    if monty_args is None:
+        monty_args = MontyArgs()
+    elif isinstance(monty_args, MontyArgs):
+        monty_args = copy.deepcopy(monty_args)
+    else:
+        monty_args = MontyArgs(**monty_args)
+
+    monty_config = MontyConfig(
+        monty_class=monty_class,
+        learning_module_configs=learning_module_configs,
+        sensor_module_configs=sensor_module_configs,
+        motor_system_config=motor_system_config,
+        sm_to_agent_dict=connectivity["sm_to_agent_dict"],
+        sm_to_lm_matrix=connectivity["sm_to_lm_matrix"],
+        lm_to_lm_matrix=connectivity["lm_to_lm_matrix"],
+        lm_to_lm_vote_matrix=connectivity["lm_to_lm_vote_matrix"],
+        monty_args=monty_args,
+    )
+    return monty_config
 
 
 def get_possible_3d_rotations(
