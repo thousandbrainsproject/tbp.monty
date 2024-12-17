@@ -258,7 +258,7 @@ class DepthTo3DLocations:
         depth_clip_sensors=(),
         world_coord=True,
         get_all_points=False,
-        use_semantic_sensor=True,
+        use_semantic_sensor=False,
     ):
         self.needs_rng = False
 

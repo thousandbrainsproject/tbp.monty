@@ -13,7 +13,7 @@ import json
 import logging
 import math
 import os
-from typing import Any, Callable, Dict, List, Tuple, Type, Union, cast
+from typing import Any, Callable, Dict, List, Mapping, Tuple, Type, Union, cast
 
 import numpy as np
 import quaternion as qt
@@ -551,7 +551,11 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     ###
 
     def move_close_enough(
-        self, raw_observation, view_sensor_id, target_semantic_id, multi_objects_present
+        self,
+        raw_observation: Mapping,
+        view_sensor_id: str,
+        target_semantic_id: int,
+        multi_objects_present: bool,
     ) -> Tuple[Union[Action, None], bool]:
         """At beginning of episode move close enough to the object.
 
@@ -574,31 +578,25 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         Raises:
             ValueError: If the object is not visible
         """
-        view = raw_observation[self.agent_id][view_sensor_id]["semantic"]
-        points_on_target_obj = (
-            raw_observation[self.agent_id][view_sensor_id]["semantic"]
-            == target_semantic_id
-        )
+        # Reconstruct 2D semantic map.
+        depth_image = raw_observation[self.agent_id][view_sensor_id]["depth"]
+        semantic_3d = raw_observation[self.agent_id][view_sensor_id]["semantic_3d"]
+        semantic_image = semantic_3d[:, 3].reshape(depth_image.shape).astype(int)
+
+        if not multi_objects_present:
+            semantic_image[semantic_image > 0] = target_semantic_id
+
+        points_on_target_obj = semantic_image == target_semantic_id
+        n_points_on_target_obj = points_on_target_obj.sum()
 
         # For multi-object experiments, handle the possibility that object is no
-        # longer visible
-        if multi_objects_present and (
-            len(
-                raw_observation[self.agent_id][view_sensor_id]["depth"][
-                    points_on_target_obj
-                ]
-            )
-            == 0
-        ):
+        # longer visible.
+        if multi_objects_present and n_points_on_target_obj == 0:
             logging.debug("Object not visible, cannot move closer")
             return None, True
 
-        if len(points_on_target_obj) > 0:
-            closest_point_on_target_obj = np.min(
-                raw_observation[self.agent_id][view_sensor_id]["depth"][
-                    points_on_target_obj
-                ]
-            )
+        if n_points_on_target_obj > 0:
+            closest_point_on_target_obj = np.min(depth_image[points_on_target_obj])
             logging.debug(
                 "closest target object point: " + str(closest_point_on_target_obj)
             )
@@ -608,18 +606,14 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             )
 
         perc_on_target_obj = get_perc_on_obj_semantic(
-            view, sematic_id=target_semantic_id
+            semantic_image, semantic_id=target_semantic_id
         )
         logging.debug("% on target object: " + str(perc_on_target_obj))
 
         # Also calculate closest point on *any* object so that we don't get too close
         # and clip into objects; NB that any object will have a semantic ID > 0
-        points_on_any_obj = (
-            raw_observation[self.agent_id][view_sensor_id]["semantic"] > 0
-        )
-        closest_point_on_any_obj = np.min(
-            raw_observation[self.agent_id][view_sensor_id]["depth"][points_on_any_obj]
-        )
+        points_on_any_obj = semantic_image > 0
+        closest_point_on_any_obj = np.min(depth_image[points_on_any_obj])
         logging.debug("closest point on any object: " + str(closest_point_on_any_obj))
 
         if perc_on_target_obj < self.good_view_percentage:
@@ -642,7 +636,11 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             return None, True  # done
 
     def orient_to_object(
-        self, raw_observation, view_sensor_id, target_semantic_id
+        self,
+        raw_observation: Mapping,
+        view_sensor_id: str,
+        target_semantic_id: int,
+        multi_objects_present: bool,
     ) -> Tuple[List[Action], bool]:
         """Rotate sensors so that they are centered on the object using a view finder.
 
@@ -658,9 +656,14 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         Returns:
             Two actions to execute to put the patch on the object
         """
-        sem_obs = raw_observation[self.agent_id][view_sensor_id]["semantic"]
+        # Reconstruct 2D semantic map.
+        depth_image = raw_observation[self.agent_id][view_sensor_id]["depth"]
+        obs_dim = depth_image.shape[0:2]
         sem3d_obs = raw_observation[self.agent_id][view_sensor_id]["semantic_3d"]
-        obs_dim = sem_obs.shape
+        sem_obs = sem3d_obs[:, 3].reshape(obs_dim).astype(int)
+
+        if not multi_objects_present:
+            sem_obs[sem_obs > 0] = target_semantic_id
 
         logging.debug("Searching for object")
 
@@ -1313,7 +1316,7 @@ def get_perc_on_obj(rgba_obs):
     return per_on_obj
 
 
-def get_perc_on_obj_semantic(semantic_obs, sematic_id=0):
+def get_perc_on_obj_semantic(semantic_obs, semantic_id=0):
     """Get the percentage of pixels in the observation that land on the target object.
 
     If a semantic ID is provided, then only pixels on the target object are counted;
@@ -1330,11 +1333,11 @@ def get_perc_on_obj_semantic(semantic_obs, sematic_id=0):
         perc_on_obj: Percentage of pixels on the object.
     """
     res = semantic_obs.shape[0] * semantic_obs.shape[1]
-    if sematic_id == 0:
+    if semantic_id == 0:
         csum = np.sum(semantic_obs >= 1)
     else:
         # Count only pixels on the target (e.g. primary target) object
-        csum = np.sum(semantic_obs == sematic_id)
+        csum = np.sum(semantic_obs == semantic_id)
     per_on_obj = csum / res
     return per_on_obj
 
