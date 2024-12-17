@@ -1328,7 +1328,7 @@ def make_multi_sensor_mount_config(
 
     # sensor rotations
     if rotations is None:
-        rotations = np.zeros([arr_len, 4])
+        rotations = np.ones([arr_len, 4])
         rotations[:, 0] = 1.0
     else:
         rotations = np.asarray(rotations)
