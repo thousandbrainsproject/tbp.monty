@@ -1251,9 +1251,9 @@ class SurfacePolicy(InformedPolicy):
         x, y, z = rotated_point_normal
 
         if "horizontal" == orienting:
-            return -np.degrees(np.arctan(x / z))
+            return -np.degrees(np.arctan(x / z)) if z != 0 else -np.sign(x)*90.0
         if "vertical" == orienting:
-            return -np.degrees(np.arctan(y / z))
+            return -np.degrees(np.arctan(y / z)) if z != 0 else -np.sign(y)*90.0
 
 
 ###
