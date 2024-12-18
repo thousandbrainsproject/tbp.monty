@@ -652,6 +652,8 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             view_sensor_id: view finder id (str)
             target_semantic_id: the integer corresponding to the semantic ID
                 of the target object that we will try to fixate on
+            multi_objects_present: whether there are multiple objects present in the
+                scene.
 
         Returns:
             Two actions to execute to put the patch on the object
