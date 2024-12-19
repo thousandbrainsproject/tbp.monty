@@ -542,6 +542,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 self._observation,
                 view_sensor_id,
                 target_semantic_id=self.primary_target["semantic_id"],
+                multi_objects_present=self.num_distactors > 0,
             )
             if not on_object:
                 for action in actions:
@@ -572,6 +573,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             self._observation,
             view_sensor_id,
             target_semantic_id=self.primary_target["semantic_id"],
+            multi_objects_present=self.num_distactors > 0,
         )
         if not on_object:
             for action in actions:

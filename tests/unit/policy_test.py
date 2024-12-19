@@ -598,7 +598,7 @@ class PolicyTest(unittest.TestCase):
         observation = next(self.exp.dataloader)
         # TODO M remove the following train-wreck during refactor
         view = observation[self.exp.model.motor_system.agent_id]["view_finder"]
-        perc_on_target_obj = get_perc_on_obj_semantic(view["semantic"], sematic_id=1)
+        perc_on_target_obj = get_perc_on_obj_semantic(view["semantic"], semantic_id=1)
 
         dict_config = config_to_dict(config)
 
@@ -707,7 +707,7 @@ class PolicyTest(unittest.TestCase):
         observation = next(self.exp.dataloader)
         # TODO M remove the following train-wreck during refactor
         view = observation[self.exp.model.motor_system.agent_id]["view_finder"]
-        perc_on_target_obj = get_perc_on_obj_semantic(view["semantic"], sematic_id=1)
+        perc_on_target_obj = get_perc_on_obj_semantic(view["semantic"], semantic_id=1)
 
         dict_config = config_to_dict(config)
         target_perc_on_target_obj = dict_config["monty_config"]["motor_system_config"][
