@@ -483,7 +483,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
     def pre_episode(self):
         super().pre_episode()
         if not self.dataset.env._agents[0].action_space_type == "surface_agent":
-            self.get_good_view("view_finder")
+            self.get_good_view_with_patch_refinement()
 
     def first_step(self):
         """Carry out particular motor-system state updates required on the first step.
@@ -509,26 +509,36 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         return self._observation
 
-    def get_good_view(self, view_sensor_id):
+    def get_good_view(
+        self, view_sensor_id: str, allow_translation: bool = True
+    ) -> None:
         """Policy to get a good view of the object before an episode starts.
 
-        Used by the distant agent - the surface agent makes use of the
-        touch_object method instead. Also currently used by the distant
-        after a "jump" has been initialized by a model-based policy.
+        Used by the distant agent to find the initial view of an object at the
+        beginning of an episode with respect to a given sensor (the surface agent
+        makes use of the `touch_object` method instead). Also currently used
+        by the distant agent after a "jump" has been initialized by a model-based
+        policy.
 
-        Move towards object until it fills n percent of the view sensor
-        or the closest point of the object is <0.03 distance from the
-        sensor (-> won't be rendered properly anymore). This makes sure
-        that big and small objects all fill similar amount of space in the
-        sensor field of view. Otherwise small objects may be too small to
-        perform saccades or the sensor ends up inside of big objects.
+        First, the agent moves towards object until it fills a minimum of percentage
+        (given by `motor_system.good_view_percentage`) of the sensor's field of view
+        or the closest point of the object is less than a given distance
+        (`motor_system.desired_object_distance`) from the sensor. This makes sure
+        that big and small objects all fill similar amount of space in the sensor's
+        field of view. Otherwise small objects may be too small to perform saccades or
+        the sensor ends up inside of big objects. This step is performed by default
+        but can be skipped by setting `allow_translation=False`.
+
+        Second, the agent will then be oriented towards the object so that the
+        sensor's central pixel is on-object. In the case of multi-object experiments,
+        (i.e., when `num_distractors > 0`), there is an additional orientation step
+        performed prior to the translational movement step.
 
         Args:
-            view_sensor_id: The name of the sensor used as view finder.
-                This sensor should ideally be a zoomed out version of the
-                sensor patch such that it can contain the whole object
-                while the sensor patch always only sees a small patch of
-                the object.
+            view_sensor_id: The name of the sensor used to inform movements.
+            allow_translation: Whether to allow movement toward the object via
+                the motor systems's `move_close_enough` method. If `False`, only
+                orientienting movements are performed. Default is `True`.
 
         TODO M : move most of this to the motor systems, shouldn't be in embodied_data
             class
@@ -547,25 +557,24 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 for action in actions:
                     self._observation, self.motor_system.state = self.dataset[action]
 
-        # Move closer to the object, if not already close enough
-        action, close_enough = self.motor_system.move_close_enough(
-            self._observation,
-            view_sensor_id,
-            target_semantic_id=self.primary_target["semantic_id"],
-            multi_objects_present=self.num_distactors > 0,
-        )
-
-        # Continue moving to a close distance to the object
-        while not close_enough:
-            logging.debug("moving closer!")
-            self._observation, self.motor_system.state = self.dataset[action]
-
+        if allow_translation:
+            # Move closer to the object, if not already close enough
             action, close_enough = self.motor_system.move_close_enough(
                 self._observation,
                 view_sensor_id,
                 target_semantic_id=self.primary_target["semantic_id"],
                 multi_objects_present=self.num_distactors > 0,
             )
+            # Continue moving to a close distance to the object
+            while not close_enough:
+                logging.debug("moving closer!")
+                self._observation, self.motor_system.state = self.dataset[action]
+                action, close_enough = self.motor_system.move_close_enough(
+                    self._observation,
+                    view_sensor_id,
+                    target_semantic_id=self.primary_target["semantic_id"],
+                    multi_objects_present=self.num_distactors > 0,
+                )
 
         # Re-center ourselves (if necessary) after having moved closer
         actions, on_object = self.motor_system.orient_to_object(
@@ -589,6 +598,26 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         #     target_semantic_id=self.primary_target["semantic_id"],
         # )
         # assert on_object, "Primary target must be visible at the start of the episode"
+
+    def get_good_view_with_patch_refinement(self) -> None:
+        """Policy to get a good view of the object for the central patch.
+
+        Used by the distant agent to move and orient toward an object such that the
+        central patch is on-object. This is done by first moving and orienting the
+        agent toward the object using the view finder. A second orienting movement is
+        then performed using the central patch (i.e., the sensor module with id
+        "patch" or "patch_0") to ensure that the patch's central pixel is on-object.
+
+        Also currently used by the distant agent after a "jump" has been initialized
+        by a model-based policy.
+
+
+        """
+        self.get_good_view("view_finder")
+        for patch_id in ("patch", "patch_0"):
+            if patch_id in self._observation["agent_id_0"].keys():
+                self.get_good_view(patch_id, allow_translation=False)
+                break
 
     def execute_jump_attempt(self):
         """Attempt a hypothesis-testing "jump" onto a location of the object.
@@ -714,7 +743,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             self.motor_system.action_details["z_defined_pc"].append(None)
 
         else:
-            self.get_good_view("view_finder")
+            self.get_good_view_with_patch_refinement()
             # TODO implement better way to get better view after the jump that isn't
             # "cheating" by using get_good_view (which uses the semantic sensor)
 

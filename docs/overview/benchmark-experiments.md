@@ -51,18 +51,18 @@ The following results are obtained from experiments using the 10-object subsets 
 
 | Experiment                                  | % Correct | % Used MLH | Num Matching Steps | Rotation Error (radians) | Run Time | Episode Run Time (s) |
 |---------------------------------------------|-----------|------------|--------------------|--------------------------|----------|----------------------|
-| base_config_10distinctobj_dist_agent        | 98.57%    | 5.71%      | 36                 | 0.31                     | 12m      | 31s                  |
-| base_config_10distinctobj_surf_agent        | 100.00%   | 0.00%      | 28                 | 0.17                     | 6m       | 27s                  |
-| randrot_noise_10distinctobj_dist_agent      | 99.00%    | 7.00%      | 51                 | 0.50                     | 10m      | 56s                  |
-| randrot_noise_10distinctobj_dist_on_distm   | 99.00%    | 1.00%      | 35                 | 0.26                     | 7m       | 48s                  |
-| randrot_noise_10distinctobj_surf_agent      | 100.00%   | 1.00%      | 29                 | 0.36                     | 7m       | 49s                  |
-| randrot_10distinctobj_surf_agent            | 100.00%   | 0.00%      | 29                 | 0.37                     | 4m       | 29s                  |
-| randrot_noise_10distinctobj_5lms_dist_agent | 100.00%   | 3.00%      | 52                 | 0.88                     | 21m      | 139s                 |
-| base_10simobj_surf_agent                    | 95.00%    | 10.00%     | 84                 | 0.21                     | 14m      | 76s                  |
-| randrot_noise_10simobj_dist_agent           | 81.00%    | 38.00%     | 193                | 0.52                     | 26m      | 206s                 |
-| randrot_noise_10simobj_surf_agent           | 90.00%    | 35.00%     | 178                | 0.45                     | 34m      | 294s                 |
-| randomrot_rawnoise_10distinctobj_surf_agent | 65.00%    | 77.00%     | 16                 | 1.60                     | 22m      | 24s                  |
-| base_10multi_distinctobj_dist_agent         | 74.29%    | 37.14%     | 27                 | 0.64                     | 1h9m     | 2s                   |
+| base_config_10distinctobj_dist_agent        | 99.29%    | 5.71%      | 36                 | 0.31                     | 10m      | 31s                  |
+| base_config_10distinctobj_surf_agent        | 100.00%   | 0.00%      | 28                 | 0.21                     | 6m       | 28s                  |
+| randrot_noise_10distinctobj_dist_agent      | 98.00%    | 7.00%      | 46                 | 0.50                     | 9m       | 55s                  |
+| randrot_noise_10distinctobj_dist_on_distm   | 99.00%    | 3.00%      | 35                 | 0.26                     | 7m       | 50s                  |
+| randrot_noise_10distinctobj_surf_agent      | 100.00%   | 0.00%      | 31                 | 0.34                     | 8m       | 62s                  |
+| randrot_10distinctobj_surf_agent            | 100.00%   | 0.00%      | 28                 | 0.40                     | 7m       | 50s                  |
+| randrot_noise_10distinctobj_5lms_dist_agent | 100.00%   | 7.00%      | 50                 | 0.94                     | 44m      | 189s                 |
+| base_10simobj_surf_agent                    | 95.71%    | 10.71%     | 82                 | 0.21                     | 18m      | 104s                 |
+| randrot_noise_10simobj_dist_agent           | 82.00%    | 37.00%     | 185                | 0.52                     | 26m      | 202s                 |
+| randrot_noise_10simobj_surf_agent           | 89.00%    | 34.00%     | 183                | 0.47                     | 35m      | 307s                 |
+| randomrot_rawnoise_10distinctobj_surf_agent | 68.00%    | 81.00%     | 15                 | 1.72                     | 22m      | 23s                  |
+| base_10multi_distinctobj_dist_agent         | 72.86%    | 43.57%     | 23                 | 0.75                     | 1h12m    | 1s                   |
 
 ## Longer Experiments with all 77 YCB Objects
 
@@ -75,11 +75,11 @@ The following results are obtained from experiments on the entire YCB dataset (7
 
 | Experiment                          | % Correct | % Used MLH | Num Matching Steps | Rotation Error (radians) | Run Time | Episode Run Time (s) |
 |-------------------------------------|-----------|------------|--------------------|--------------------------|----------|----------------------|
-| base_77obj_dist_agent               | 93.51%    | 14.29%     | 90                 | 0.31                     | 1h37m    | 295s                 |
-| base_77obj_surf_agent               | 98.27%    | 5.63%      | 57                 | 0.21                     | 46m      | 141s                 |
-| randrot_noise_77obj_dist_agent      | 87.01%    | 28.57%     | 155                | 0.64                     | 2h14m    | 479s                 |
-| randrot_noise_77obj_surf_agent      | 94.93%    | 19.48%     | 102                | 0.62                     | 1h23m    | 304s                 |
-| randrot_noise_77obj_5lms_dist_agent | 93.51%    | 3.90%      | 71                 | 0.92                     | 54m      | 1398s                |
+| base_77obj_dist_agent               | 92.21%    | 16.02%     | 88                 | 0.30                     | 1h38m    | 301s                 |
+| base_77obj_surf_agent               | 98.27%    | 4.33%      | 52                 | 0.18                     | 42m      | 123s                 |
+| randrot_noise_77obj_dist_agent      | 87.01%    | 29.00%     | 151                | 0.63                     | 2h10m    | 468s                 |
+| randrot_noise_77obj_surf_agent      | 94.37%    | 21.65%     | 113                | 0.61                     | 1h31m    | 339s                 |
+| randrot_noise_77obj_5lms_dist_agent | 90.91%    | 5.19%      | 70                 | 1.01                     | 1h7m     | 1439s                |
 
 ### Explanation of Some of the Results
 
