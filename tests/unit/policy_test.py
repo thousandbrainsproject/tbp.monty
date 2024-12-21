@@ -53,6 +53,7 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     ExperimentArgs,
     FiveLMMountHabitatDatasetArgs,
     PatchViewFinderMountHabitatDatasetArgs,
+    PatchViewFinderMultiObjectMountHabitatDatasetArgs,
     PredefinedObjectInitializer,
     SurfaceViewFinderMountHabitatDatasetArgs,
 )
@@ -313,6 +314,7 @@ class PolicyTest(unittest.TestCase):
         self.poor_initial_view_multi_object_config.update(
             # For multi-objects, we test get good view at evaluation, because in
             # Monty we don't currently train with multiple objects in the environment
+            dataset_args=PatchViewFinderMultiObjectMountHabitatDatasetArgs(),
             eval_dataloader_args=EnvironmentDataloaderMultiObjectArgs(
                 object_names=dict(
                     targets_list=["cubeSolid"],
@@ -598,7 +600,8 @@ class PolicyTest(unittest.TestCase):
         observation = next(self.exp.dataloader)
         # TODO M remove the following train-wreck during refactor
         view = observation[self.exp.model.motor_system.agent_id]["view_finder"]
-        perc_on_target_obj = get_perc_on_obj_semantic(view["semantic"], semantic_id=1)
+        semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
+        perc_on_target_obj = get_perc_on_obj_semantic(semantic, semantic_id=1)
 
         dict_config = config_to_dict(config)
 
@@ -611,7 +614,7 @@ class PolicyTest(unittest.TestCase):
         ), f"Initial view is not good enough, {perc_on_target_obj}\
             vs target of {target_perc_on_target_obj}"
 
-        points_on_target_obj = view["semantic"] == 1
+        points_on_target_obj = semantic == 1
         closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
 
         target_closest_point = dict_config["monty_config"]["motor_system_config"][
@@ -658,7 +661,10 @@ class PolicyTest(unittest.TestCase):
         ]
         dict_config = config_to_dict(config)
 
-        points_on_target_obj = view["semantic"] == 1
+        # points_on_target_obj = view["semantic"] == 1
+        points_on_target_obj = (
+            view["semantic_3d"][:, 3].reshape(view["depth"].shape) == 1
+        )
         closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
 
         assert (
@@ -707,7 +713,8 @@ class PolicyTest(unittest.TestCase):
         observation = next(self.exp.dataloader)
         # TODO M remove the following train-wreck during refactor
         view = observation[self.exp.model.motor_system.agent_id]["view_finder"]
-        perc_on_target_obj = get_perc_on_obj_semantic(view["semantic"], semantic_id=1)
+        semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
+        perc_on_target_obj = get_perc_on_obj_semantic(semantic, semantic_id=1)
 
         dict_config = config_to_dict(config)
         target_perc_on_target_obj = dict_config["monty_config"]["motor_system_config"][
@@ -719,7 +726,7 @@ class PolicyTest(unittest.TestCase):
         ), f"Initial view is not good enough, {perc_on_target_obj}\
             vs target of {target_perc_on_target_obj}"
 
-        points_on_target_obj = view["semantic"] == 1
+        points_on_target_obj = semantic == 1
         closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
 
         target_closest_point = dict_config["monty_config"]["motor_system_config"][
