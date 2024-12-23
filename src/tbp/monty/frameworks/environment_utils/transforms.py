@@ -7,6 +7,9 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from numbers import Number
+from typing import Tuple
+
 import numpy as np
 import quaternion as qt
 import scipy
@@ -309,6 +312,9 @@ class DepthTo3DLocations:
             agent_obs = observations[self.agent_id][sensor_id]
             if i in self.depth_clip_sensors:
                 self.clip(agent_obs)
+                default_on_surface_th = self.clip_value
+            else:
+                default_on_surface_th = 1000
             depth_obs = agent_obs["depth"]
             # if applying depth clip, then do not use depth for semantic info
             # because the depth surface now includes a sheet of pixels all
@@ -317,11 +323,15 @@ class DepthTo3DLocations:
             if self.depth_clip_sensors and self.use_semantic_sensor:
                 semantic_obs = agent_obs["semantic"]
             elif self.use_semantic_sensor:
-                surface_obs = self.get_semantic_from_depth(depth_obs.copy())
+                surface_obs = self.get_semantic_from_depth(
+                    depth_obs, default_on_surface_th
+                )
                 # set pixel to 1 if it is on the main surface and on the object
                 semantic_obs = agent_obs["semantic"] * surface_obs
             else:
-                semantic_obs = self.get_semantic_from_depth(depth_obs.copy())
+                semantic_obs = self.get_semantic_from_depth(
+                    depth_obs, default_on_surface_th
+                )
 
             # Approximate true world coordinates
             x, y = np.meshgrid(
@@ -395,11 +405,16 @@ class DepthTo3DLocations:
         Set the values of 0 (infinite depth) to the clip value.
         """
         if "semantic" in agent_obs.keys():
-            agent_obs["semantic"][agent_obs["depth"] > self.clip_value] = 0
+            agent_obs["semantic"][agent_obs["depth"] >= self.clip_value] = 0
         agent_obs["depth"][agent_obs["depth"] > self.clip_value] = self.clip_value
         agent_obs["depth"][agent_obs["depth"] == 0] = self.clip_value
 
-    def get_on_surface_th(self, depth_patch, min_depth_range):
+    def get_on_surface_th(
+        self,
+        depth_patch,
+        min_depth_range: Number,
+        default_on_surface_th: Number,
+    ) -> Tuple[Number, bool]:
         """Return a depth threshold if we have a bimodal depth distribution.
 
         If the depth values are in a large enough range (> min_depth_range) we may
@@ -424,13 +439,14 @@ class DepthTo3DLocations:
         Args:
             depth_patch: sensor patch observations of depth
             min_depth_range: minimum range of depth values to even be considered
-
+            default_on_surface_th: default threshold to use if no bimodal distribution
+                is found
         Returns:
             threshold and whether we want to use values above or below threshold
         """
-        depths = np.array(depth_patch).flatten()
+        depths = np.asarray(depth_patch).flatten()
         flip_sign = False
-        th = 1000  # just high value
+        th = default_on_surface_th
         if (max(depths) - min(depths)) > min_depth_range:
             # only check for bimodal distribution if we have a large enough
             # range in depth values
@@ -452,19 +468,35 @@ class DepthTo3DLocations:
                         flip_sign = True
         return th, flip_sign
 
-    def get_semantic_from_depth(self, depth_patch):
+    def get_semantic_from_depth(
+        self, depth_patch: np.ndarray, default_on_surface_th: Number
+    ) -> np.ndarray:
         """Return semantic patch information from heuristics on depth patch.
 
         Args:
             depth_patch: sensor patch observations of depth
-
+            default_on_surface_th: default threshold to use if no bimodal distribution
+                is found
         Returns:
             sensor patch shaped info about whether each pixel is on surface of not
         """
         # avoid large range when seeing the table (goes up to almost 100 and then
         # just using 8 bins will not work anymore)
+        depth_patch = np.array(depth_patch)
         depth_patch[depth_patch > 1] = 1.0
-        th, flip_sign = self.get_on_surface_th(depth_patch, min_depth_range=0.01)
+
+        # If all depth values are at maximum (1.0), then we are automatically
+        # off-object.
+        if np.all(depth_patch == 1.0):
+            return np.zeros_like(depth_patch, dtype=bool)
+
+        # Compute the on-suface depth threshold (and whether we need to flip the
+        # sign), and apply it to the depth to get the semantic patch.
+        th, flip_sign = self.get_on_surface_th(
+            depth_patch,
+            min_depth_range=0.01,
+            default_on_surface_th=default_on_surface_th,
+        )
         if flip_sign is False:
             semantic_patch = depth_patch < th
         else:
