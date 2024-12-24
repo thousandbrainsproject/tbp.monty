@@ -103,7 +103,6 @@ class EnvironmentDataset(Dataset):
         state = self.env.get_state()
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-
         return observation, state
 
     def __len__(self):
@@ -546,13 +545,13 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # TODO break up this method so that there is less code duplication
         # Start by ensuring the center of the patch is covering the primary target
         # object before we start moving forward; only done for multi-object experiments
-
-        if self.num_distactors > 0:
+        multiple_objects_present = self.num_distactors > 0
+        if multiple_objects_present:
             actions, on_object = self.motor_system.orient_to_object(
                 self._observation,
                 view_sensor_id,
                 target_semantic_id=self.primary_target["semantic_id"],
-                multi_objects_present=self.num_distactors > 0,
+                multiple_objects_present=multiple_objects_present,
             )
             if not on_object:
                 for action in actions:
@@ -564,7 +563,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 self._observation,
                 view_sensor_id,
                 target_semantic_id=self.primary_target["semantic_id"],
-                multi_objects_present=self.num_distactors > 0,
+                multiple_objects_present=multiple_objects_present,
             )
             # Continue moving to a close distance to the object
             while not close_enough:
@@ -574,7 +573,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                     self._observation,
                     view_sensor_id,
                     target_semantic_id=self.primary_target["semantic_id"],
-                    multi_objects_present=self.num_distactors > 0,
+                    multiple_objects_present=multiple_objects_present,
                 )
 
         # Re-center ourselves (if necessary) after having moved closer
@@ -582,7 +581,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             self._observation,
             view_sensor_id,
             target_semantic_id=self.primary_target["semantic_id"],
-            multi_objects_present=self.num_distactors > 0,
+            multiple_objects_present=multiple_objects_present,
         )
         if not on_object:
             for action in actions:

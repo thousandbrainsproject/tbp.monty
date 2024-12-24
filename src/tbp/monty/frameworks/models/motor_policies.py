@@ -555,7 +555,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         raw_observation: Mapping,
         view_sensor_id: str,
         target_semantic_id: int,
-        multi_objects_present: bool,
+        multiple_objects_present: bool,
     ) -> Tuple[Union[Action, None], bool]:
         """At beginning of episode move close enough to the object.
 
@@ -567,7 +567,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             view_sensor_id: The ID of the view sensor
             target_semantic_id: The semantic ID of the primary target object in the
                 scene.
-            multi_objects_present: Whether there are multiple objects present in the
+            multiple_objects_present: Whether there are multiple objects present in the
                 scene. If so, we do additional checks to make sure we don't get too
                 close to these when moving forward
 
@@ -583,7 +583,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         semantic_3d = raw_observation[self.agent_id][view_sensor_id]["semantic_3d"]
         semantic_image = semantic_3d[:, 3].reshape(depth_image.shape).astype(int)
 
-        if not multi_objects_present:
+        if not multiple_objects_present:
             semantic_image[semantic_image > 0] = target_semantic_id
 
         points_on_target_obj = semantic_image == target_semantic_id
@@ -591,7 +591,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         # For multi-object experiments, handle the possibility that object is no
         # longer visible.
-        if multi_objects_present and n_points_on_target_obj == 0:
+        if multiple_objects_present and n_points_on_target_obj == 0:
             logging.debug("Object not visible, cannot move closer")
             return None, True
 
@@ -618,7 +618,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         if perc_on_target_obj < self.good_view_percentage:
             if closest_point_on_target_obj > self.desired_object_distance:
-                if multi_objects_present and (
+                if multiple_objects_present and (
                     closest_point_on_any_obj < self.desired_object_distance / 4
                 ):
                     logging.debug(
@@ -640,7 +640,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         raw_observation: Mapping,
         view_sensor_id: str,
         target_semantic_id: int,
-        multi_objects_present: bool,
+        multiple_objects_present: bool,
     ) -> Tuple[List[Action], bool]:
         """Rotate sensors so that they are centered on the object using a view finder.
 
@@ -652,7 +652,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             view_sensor_id: view finder id (str)
             target_semantic_id: the integer corresponding to the semantic ID
                 of the target object that we will try to fixate on
-            multi_objects_present: whether there are multiple objects present in the
+            multiple_objects_present: whether there are multiple objects present in the
                 scene.
 
         Returns:
@@ -664,7 +664,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         sem3d_obs = raw_observation[self.agent_id][view_sensor_id]["semantic_3d"]
         sem_obs = sem3d_obs[:, 3].reshape(obs_dim).astype(int)
 
-        if not multi_objects_present:
+        if not multiple_objects_present:
             sem_obs[sem_obs > 0] = target_semantic_id
 
         logging.debug("Searching for object")
@@ -676,7 +676,10 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             return [], True
 
         relative_location = self.find_location_to_look_at(
-            sem3d_obs, image_shape=obs_dim, target_semantic_id=target_semantic_id
+            sem3d_obs,
+            image_shape=obs_dim,
+            target_semantic_id=target_semantic_id,
+            multiple_objects_present=multiple_objects_present,
         )
         down_amount, left_amount = self.compute_look_amounts(relative_location)
 
@@ -702,7 +705,13 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         left_amount = np.degrees(np.arctan2(relative_location[0], relative_location[2]))
         return down_amount, left_amount
 
-    def find_location_to_look_at(self, sem3d_obs, image_shape, target_semantic_id):
+    def find_location_to_look_at(
+        self,
+        sem3d_obs: np.ndarray,
+        image_shape: Tuple[int, int],
+        target_semantic_id: int,
+        multiple_objects_present: bool,
+    ) -> np.ndarray:
         """Takes in a semantic 3D observation and returns an x,y,z location.
 
         The location is on the object and surrounded by pixels that are also on
@@ -715,6 +724,8 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             image_shape: the shape of the camera image
             target_semantic_id: the semantic ID of the target object we'd like to
                 saccade on to
+            multi_objects_present: whether there are multiple objects present in the
+                scene.
 
         Returns:
             relative_location: the x,y,z distance from camera to pixel with max
@@ -722,6 +733,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         """
         sem3d_obs_image = sem3d_obs.reshape((image_shape[0], image_shape[1], 4))
         on_object_image = sem3d_obs_image[:, :, 3]
+
+        if not multiple_objects_present:
+            on_object_image[on_object_image > 0] = target_semantic_id
 
         on_object_image = on_object_image == target_semantic_id
         on_object_image = on_object_image.astype(float)
