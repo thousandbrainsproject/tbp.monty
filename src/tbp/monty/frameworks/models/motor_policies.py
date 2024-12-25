@@ -724,7 +724,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             image_shape: the shape of the camera image
             target_semantic_id: the semantic ID of the target object we'd like to
                 saccade on to
-            multi_objects_present: whether there are multiple objects present in the
+            multiple_objects_present: whether there are multiple objects present in the
                 scene.
 
         Returns:
@@ -1344,7 +1344,7 @@ def get_perc_on_obj_semantic(semantic_obs, semantic_id=0):
 
     Args:
         semantic_obs: Semantic image observation.
-        sematic_id: Semantic ID of the target object.
+        semantic_id: Semantic ID of the target object.
 
     Returns:
         perc_on_obj: Percentage of pixels on the object.
