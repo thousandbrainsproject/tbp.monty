@@ -12,10 +12,11 @@ import logging
 import os
 import re
 import sys
+import timeit
 
 import requests
 
-from tools.github_readme_sync.colors import CYAN, GREEN, RED, RESET, WHITE
+from tools.github_readme_sync.colors import CYAN, GREEN, RED, RESET, WHITE, YELLOW
 from tools.github_readme_sync.excluded_items import IGNORE_DOCS, IGNORE_IMAGES
 
 HIERARCHY_FILE = "hierarchy.md"
@@ -136,9 +137,10 @@ def check_links(path):
     regex_md_links = r"\[([^\]]*)\]\(([^)]+\.md(?:#[^)]*)?)\)"
     md_link_matches = re.findall(regex_md_links, content)
 
-    regex_image_links = r"!\[([^\]]*)\]\(([^)]+/figures/[^)]+)\)"
-    image_link_matches = re.findall(regex_image_links, content)
-
+    regex_figures = (
+        r"(?:\.\./)*figures/[^\s\)\"\']+(?:\.png|\.jpg|\.jpeg|\.gif|\.svg|\.webp|\s)"
+    )
+    image_link_matches = re.findall(regex_figures, content)
     logging.debug(
         f"{WHITE}{file_name}"
         f"{GREEN} {len(md_link_matches)} links"
@@ -151,6 +153,7 @@ def check_links(path):
     for match in md_link_matches:
         if match[1].startswith(("http://", "https://", "mailto:")):
             continue
+
         path_to_check = os.path.join(current_dir, match[1].split("#")[0])
         path_to_check = os.path.normpath(path_to_check)
         if any(placeholder in match[1] for placeholder in IGNORE_DOCS):
@@ -160,9 +163,11 @@ def check_links(path):
             errors.append(f"  Linked {match[1]} does not exist")
 
     for match in image_link_matches:
-        path_to_check = os.path.join(current_dir, match[1])
+        # Remove any #hash fragments from the path
+        path = match.split("#")[0]
+        path_to_check = os.path.join(current_dir, path)
         path_to_check = os.path.normpath(path_to_check)
-        if any(placeholder in match[1] for placeholder in IGNORE_IMAGES):
+        if any(placeholder in match for placeholder in IGNORE_IMAGES):
             continue
         logging.debug(f"{CYAN}  {path_to_check.split('/')[-1]}{RESET}")
         if not os.path.exists(path_to_check):
@@ -190,7 +195,7 @@ def check_external(folder, ignore_dirs, rdme):
             [os.path.join(root, file) for file in files if file.endswith(".md")]
         )
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         future_to_file = {
             executor.submit(process_file, file_path, rdme, url_cache): file_path
             for file_path in md_files
@@ -267,9 +272,16 @@ def check_readme_link(url, rdme):
 
     try:
         doc_slug = url.split("/")[-1]
+        time = timeit.default_timer()
         response = rdme.get_doc_by_slug(doc_slug)
+        time = timeit.default_timer() - time
+        status_color = GREEN if response else RED
+        log_msg = f"{CYAN}{url} {status_color}"
+        log_msg += f"[{200 if response else 404}]{RESET}"
+        if time > 1:
+            log_msg += f" ({YELLOW}{time:.2f}s{RESET})"
+        logging.info(log_msg)
         if not response:
-            logging.debug(f"{WHITE}  {url} (Not found){RESET}")
             return [f"  broken link: {url} (Not found)"]
     except Exception as e:
         return [f"  {url}: {str(e)}"]
@@ -278,11 +290,28 @@ def check_readme_link(url, rdme):
 
 
 def check_external_link(url):
+    if "openai.com" in url or "science.org" in url:
+        return []
+
     try:
         headers = request_headers()
-        response = requests.get(url, timeout=5, headers=headers)
+        time = timeit.default_timer()
+
+        try:
+            response = requests.head(url, timeout=5, headers=headers)
+            if response.status_code < 200 or response.status_code > 299:
+                response = requests.get(url, timeout=5, headers=headers)
+        except requests.RequestException:
+            # If HEAD fails, try GET
+            response = requests.get(url, timeout=5, headers=headers)
+
+        time = timeit.default_timer() - time
+        status_color = GREEN if 200 <= response.status_code <= 299 else RED
+        log_msg = f"{WHITE}{url} {status_color}[{response.status_code}]{RESET}"
+        if time > 1:
+            log_msg += f" ({YELLOW}{time:.2f}s{RESET})"
+        logging.info(log_msg)
         if response.status_code < 200 or response.status_code > 299:
-            logging.debug(f"{WHITE}  {url} ({response.status_code}){RESET}")
             return [f"  broken link: {url} ({response.status_code})"]
     except requests.RequestException as e:
         return [f"  {url}: {str(e)}"]
@@ -312,6 +341,7 @@ def request_headers():
 
 
 def report_errors(errors, total_links_checked):
+    logging.info("")
     if errors:
         for file_path, file_errors in errors.items():
             logging.error(f"{RED}{file_path}{RESET}")

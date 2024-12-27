@@ -36,7 +36,7 @@ Configs with `randrot` in their name test each object in 10 random, new rotation
 
 Configs with `noise` in their name test with noisy sensor modules where we add Gaussian noise to the sensed locations (0.002), point-normals (2), curvature directions (2), log curvatures (0.1), pose_fully_defined (0.01), and hue (0.1). Numbers in brackets are the standard deviations used for sampling the noisy observations. Note that the learned models were acquired without sensor noise. The image below should visualize how much location noise we get during inference but the LM still contains the noiseless models shown above.
 
-![](../figures/overview/graph_noise_002.png)
+![](../figures/overview/graph_noise_002.png#width=400px)
 
 
 Configs with `rawnoise` in the name test with noisy raw sensor input where Gaussian noise is applied directly to the depth image which is used for location, point normal, and curvature estimation. Here we use a standard deviation of 0.001. This allows us to test the noise robustness of the sensor module compared to testing the noise robustness of the learning module in the `noise` experiments.
