@@ -45,6 +45,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvInitArgsFiveLMMount,
+    EnvInitArgsPatchViewFinderMultiObjectMount,
     EnvInitArgsPatchViewMount,
     EnvInitArgsSurfaceViewMount,
     EnvironmentDataloaderMultiObjectArgs,
@@ -314,7 +315,11 @@ class PolicyTest(unittest.TestCase):
         self.poor_initial_view_multi_object_config.update(
             # For multi-objects, we test get good view at evaluation, because in
             # Monty we don't currently train with multiple objects in the environment
-            dataset_args=PatchViewFinderMultiObjectMountHabitatDatasetArgs(),
+            dataset_args=PatchViewFinderMultiObjectMountHabitatDatasetArgs(
+                env_init_args=EnvInitArgsPatchViewFinderMultiObjectMount(
+                    data_path=None
+                ).__dict__,
+            ),
             eval_dataloader_args=EnvironmentDataloaderMultiObjectArgs(
                 object_names=dict(
                     targets_list=["cubeSolid"],
