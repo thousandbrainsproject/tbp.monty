@@ -338,7 +338,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.flake8-copyright]
-author = "Numenta"
+author = "Thousand Brains Project"
 
 [tool.ruff.lint.mccabe]
 max-complexity = 18
