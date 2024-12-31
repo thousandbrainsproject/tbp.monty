@@ -54,14 +54,16 @@ If you would like to receive updates, follow us on [Bluesky](https://bluesky.soc
 If you have further questions or suggestions for collaborations, don't hesitate to contact us directly at **ThousandBrains@numenta.com**.
 
 # Citing the Project
-If you're writing a paper that references the Thousand Brains Project, please cite our overview paper:
+If you're writing a publication that references the Thousand Brains Project, please cite our TBP whitepaper:
 ```
-@misc{TBP_Overview,
-	title = {The Thousand Brains Project},
-	url = {https://www.numenta.com/wp-content/uploads/2024/06/Short_TBP_Overview.pdf},
-	author = {Clay, Viviane and Leadholm, Niels and Hawkins, Jeff},
-	month = jun,
-	year = {2024},
+@misc{thousandbrainsproject2024,
+      title={The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence}, 
+      author={Viviane Clay and Niels Leadholm and Jeff Hawkins},
+      year={2024},
+      eprint={2412.18354},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2412.18354}, 
 }
 ```
 

@@ -48,3 +48,17 @@ We are excited to have you here!  Our intention for making the project open-sour
 | <a href="https://bsky.app/profile/1000brainsproj.bsky.social" style="display: flex; align-items: center;"><img src="../figures/overview/bluesky.png" alt="Bluesky" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;Bluesky</a>| Get the latest news and announcements, and engage with our community |
 |<a href="https://x.com/1000brainsproj" style="display: flex; align-items: center;"><img src="../figures/overview/twitter.png" alt="Twitter" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;Twitter/X</a> | Get the latest news and announcements, and engage with our community |
 | <a href="https://www.linkedin.com/showcase/thousand-brains-project" style="display: flex; align-items: center;"><img src="../figures/overview/linkedin.png" alt="LinkedIn" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;LinkedIn&nbsp;Page</a> | Get the latest news and announcements |
+
+# Citing this Project
+If you're writing a publication that references the Thousand Brains Project, please cite our TBP whitepaper:
+```
+@misc{thousandbrainsproject2024,
+      title={The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence}, 
+      author={Viviane Clay and Niels Leadholm and Jeff Hawkins},
+      year={2024},
+      eprint={2412.18354},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2412.18354}, 
+}
+```
