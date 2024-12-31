@@ -52,7 +52,7 @@ We will start hosting regular **research and industry workshops** and would be h
 
 Follow our [meetup group](https://www.meetup.com/thousand-brains-project/) for updates on upcoming events.
 
-We are also planning to host a series of **invited speakers** again, so please let us know if you have research that you would like to present and discuss with us. Also, if you have ideas for potential **collaborations**, feel free to reach out to us at [thousandbrains@numenta.com](mailto:thousandbrains@numenta.com).
+We are also planning to host a series of **invited speakers** again, so please let us know if you have research that you would like to present and discuss with us. Also, if you have ideas for potential **collaborations**, feel free to reach out to us at [info@thousandbrains.org](mailto:info@thousandbrains.org).
 
 # How is the Thousand Brains Project Funded?
 
