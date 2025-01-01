@@ -1,3 +1,4 @@
+# Copyright 2025 Thousand Brains Project
 # Copyright 2021-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -664,8 +665,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         logging.debug("Searching for object")
 
-        # Check if the center of the view finder is on the object
-        if sem_obs[obs_dim[0] // 2][obs_dim[1] // 2] == target_semantic_id:
+        # Check if the central pixel is on-object.
+        y_mid, x_mid = obs_dim[0] // 2, obs_dim[1] // 2
+        if sem_obs[y_mid, x_mid] == target_semantic_id:
             logging.debug("Already centered on the object")
             return [], True
 
@@ -724,7 +726,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         # as expected, which can otherwise break if e.g. on_object_image is passed
         # as an int or boolean rather than float
         smoothed_on_object_image = scipy.ndimage.gaussian_filter(
-            on_object_image, sem3d_obs.shape[0] / 10, mode="constant"
+            on_object_image, 2, mode="constant"
         )
         idx_loc_to_look_at = np.argmax(smoothed_on_object_image * on_object_image)
         idx_loc_to_look_at = np.unravel_index(idx_loc_to_look_at, on_object_image.shape)
@@ -1251,9 +1253,9 @@ class SurfacePolicy(InformedPolicy):
         x, y, z = rotated_point_normal
 
         if "horizontal" == orienting:
-            return -np.degrees(np.arctan(x / z))
+            return -np.degrees(np.arctan(x / z)) if z != 0 else -np.sign(x)*90.0
         if "vertical" == orienting:
-            return -np.degrees(np.arctan(y / z))
+            return -np.degrees(np.arctan(y / z)) if z != 0 else -np.sign(y)*90.0
 
 
 ###

@@ -4,7 +4,7 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 authors = [
-    { name = 'Numenta' }
+    { name = 'Thousand Brains Project' }
 ]
 classifiers = [
     'Development Status :: 3 - Alpha', # Update to Beta when we start using semver
@@ -29,7 +29,7 @@ dependencies = [
     'tqdm',
     'wandb',
 ]
-description = 'Numenta Monty'
+description = 'Thousand Brains Project Monty'
 dynamic = ['version']
 license = { file = 'LICENSE' }
 name = 'tbp.monty'
@@ -338,7 +338,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.flake8-copyright]
-author = "Numenta"
+author = "Thousand Brains Project"
 
 [tool.ruff.lint.mccabe]
 max-complexity = 18

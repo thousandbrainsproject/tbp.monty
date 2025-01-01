@@ -3,7 +3,7 @@ title: Our Licence and Patent Pledge Explained
 ---
 # Overview
 
-One of the goals of the Thousand Brains Project is to create a new form of AI that benefits the world **to the greatest extent possible**. To accomplish this goal of broad adoption, we have chosen a **permissive license** and **non-assertion pledge** that covers our patents. These two actions, we believe, will encourage researchers, universities, the private sector, and industry specialists to help accelerate our community's progress in building impressive new capabilities to serve the world.
+One of the goals of the Thousand Brains Project is to create a new form of AI that benefits the world **to the greatest extent possible**. To accomplish this goal of broad adoption, we have chosen a **permissive license** and Numenta has created a **non-assertion pledge** that covers the patents related to the Thousand Brains Project. These two actions, we believe, will encourage researchers, universities, the private sector, and industry specialists to help accelerate our community's progress in building impressive new capabilities to serve the world.
 
 # 🛡️ License
 
