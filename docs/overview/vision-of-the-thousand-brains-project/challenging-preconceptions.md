@@ -1,7 +1,7 @@
 ---
 title: Challenging Preconceptions
 ---
-Several of the ideas and ways of thinking introduced in this document may be counter-intuitive to people used to the way of thinking prominent in current AI methods, including deep learning. For example, ideas about intelligent systems, learning, models, hierarchical processing, or action policies that you already have in mind might not apply to the system that we are describing. We therefore ask the reader to try and dispense with as many preconceptions as possible and to understand the ideas presented here on their own terms. We are happy to discuss any questions or thoughts that may arise from reading this document. Please reach out to us at [ThousandBrains@numenta.com](mailto:ThousandBrains@numenta.com).
+Several of the ideas and ways of thinking introduced in this document may be counter-intuitive to people used to the way of thinking prominent in current AI methods, including deep learning. For example, ideas about intelligent systems, learning, models, hierarchical processing, or action policies that you already have in mind might not apply to the system that we are describing. We therefore ask the reader to try and dispense with as many preconceptions as possible and to understand the ideas presented here on their own terms. We are happy to discuss any questions or thoughts that may arise from reading this document. Please reach out to us at [info@thousandbrains.org](mailto:info@thousandbrains.org).
 
 Below, we highlight some of the most important differences between the system we are trying to build here and other AI systems.
 
