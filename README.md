@@ -51,7 +51,7 @@ If you want to use this code, contribute to it, ask questions or propose ideas, 
 
 If you would like to receive updates, follow us on [Bluesky](https://bluesky.social/thousandbrainsproject) or [Twitter](https://x.com/1000brainsproj) or [LinkedIn](https://www.linkedin.com/showcase/thousand-brains-project/).
 
-If you have further questions or suggestions for collaborations, don't hesitate to contact us directly at **ThousandBrains@numenta.com**.
+If you have further questions or suggestions for collaborations, don't hesitate to contact us directly at **info@thousandbrains.org**.
 
 # Citing the Project
 If you're writing a publication that references the Thousand Brains Project, please cite our TBP whitepaper:
