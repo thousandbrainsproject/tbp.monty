@@ -36,6 +36,24 @@ It is also important to note that compositionality and hierarchy are still very 
 
 We are focused on ensuring that the first generation of thousand-brain systems are interpretable and easy to iterate upon. Being able to conceptually understand what is happening in the Monty system, visualize it, debug it, and propose new algorithms in intuitive terms is something we believe to be extremely valuable for fast progress. As such, we have focused on the core principles of the TBT, but have not yet included lower-level neuroscience components such as HTM, sparse distributed representations (SDRs), grid-cells, and active dendrites. In the future, we will consider adding these elements where a clear case for a comparative advantage exists.
 
+## Where does the hippocampal formation fit into the Thousand Brains Theory?
+
+Part of the underlying Thousand Brains Theory is that the hippocampal formation evolved to enable rapid episodic memory, as well as spatial navigation in animals, with grid cells forming reference frames of environments. Over time, evolution replicated this approach of modeling the world with reference frames in the form of cortical columns, which were then replicated throughout the neocortex to model objects at any level of abstraction.
+
+As such, we believe that the core computations that a cortical column performs are similar to the hippocampal formation. Since learning modules (LMs) are designed to capture the former, they also implement the core capabilities of the latter. This includes elements such as how objects change as a function of time (analogous to episodic memory), and recognizing specific vs. general instances of objects (analogous to pattern separation vs. completion). The key difference we believe is the time-scale over which learning happens, with the hippocampal complex laying down new information much more rapidly. In Monty, this would be implemented as a high-level LM that builds new information extremely quickly.
+
+It’s worth noting that the speed of learning in LMs is an instance where Monty might be “super-human”, in that within computers, it is easy to rapidly build arbitrary, new associations, while this is challenging for biology. Evolution has required innovations such as silent synapses and an excess of synapses in the hippocampal formation. This degree of neural hardware to support rapid learning cannot be easily replicated in the compact space of a cortical column, so in biology the latter will always learn much more slowly, and very rapid learning is a more specialized domain of the hippocampal formation.
+
+In the case of Monty, we might choose to enable most LMs to have fairly rapid learning, although we believe there are other reasons that we might restrict this, such as ensuring that low-level representations do not drift (change) too rapidly with respect to high-level ones.
+
+Finally, it's worth noting that there may be other unique features of the hippocampal complex that would require details not found in standard LMs, however our aim is to re-use the implementation of LMs where possible.
+
+## Neuroscience evidence suggests "cognitive maps" of things like objects might exist in the hippocampal formation, why do we believe they are found in the neocortex?
+
+The Thousand Brains Theory does not argue that structured representations do *not* exist in the hippocampal formation. As noted above, this structure has been highly developed so as to enable very rapid learning, which would account for its important role in learning structured representations in mammals. Furthermore, the fact is that this neural hardware exists, so even if cortical columns learn structured representations, it is likely that there will be a degree of redundancy with the hippocampal formation, at least early in learning. 
+
+More generally, we believe the learning that takes place in the reference frames of cortical columns proceeds on a slower basis, which would make it more challenging to measure experimentally. If you are a research-scientist interested in structured representations of objects, we would love to discuss ways that it might be possible to measure the emergence of such representations in the neocortex.
+
 # Alternative Approaches to Intelligence
 
 ## What is the Relationship of the Thousand Brains Theory to Robotics Algorithms That Use Maps?
