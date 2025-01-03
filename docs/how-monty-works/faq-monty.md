@@ -38,7 +38,7 @@ We are focused on ensuring that the first generation of thousand-brain systems a
 
 ## Where Does the Hippocampal Formation Fit Into the Thousand Brains Theory?
 
-Part of the underlying Thousand Brains Theory is that the hippocampal formation evolved to enable rapid episodic memory, as well as spatial navigation in animals, with grid cells forming reference frames of environments. Over time, evolution replicated this approach of modeling the world with reference frames in the form of cortical columns, which were then replicated throughout the neocortex to model objects at any level of abstraction.
+Part of the underlying Thousand Brains Theory is that the hippocampal formation evolved to enable rapid episodic memory, as well as spatial navigation in animals, with grid cells forming reference frames of environments. Over time, evolution repurposed this approach of modeling the world with reference frames in the form of cortical columns, which were then replicated throughout the neocortex to model objects at any level of abstraction.
 
 As such, we believe that the core computations that a cortical column performs are similar to the hippocampal formation. Since learning modules (LMs) are designed to capture the former, they also implement the core capabilities of the latter. This includes elements such as how objects change as a function of time (analogous to episodic memory), and recognizing specific vs. general instances of objects (analogous to pattern separation vs. completion). The key difference we believe is the time-scale over which learning happens, with the hippocampal complex laying down new information much more rapidly. In Monty, this would be implemented as a high-level LM that builds new information extremely quickly.
 
