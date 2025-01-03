@@ -54,6 +54,18 @@ The Thousand Brains Theory does not argue that structured representations do *no
 
 More generally, we believe the learning that takes place in the reference frames of cortical columns proceeds on a slower basis, which would make it more challenging to measure experimentally. If you are a research-scientist interested in structured representations of objects, we would love to discuss ways that it might be possible to measure the emergence of such representations in the neocortex.
 
+## Does the "What" vs "Where" pathway exist in Monty?
+
+In short, not at the moment, and it's unclear how essential this would be. 
+
+The terms “what” vs. “where” can be misleading, as spatial computation is important throughout the brain, including within cortical columns. This is central to the TBT claim that every column leverages a reference frame, and so "what" should not be interpreted as there being a part of the brain that does not care about spatial relations. Even the alternative naming of the ventral and dorsal streams as a “perception” vs. “action” stream can be misleading, as all columns have motor projections. For example, [eye control can be mediated by columns in the ventral stream projecting to the superior colliculus, as well as by other sensory regions](https://pubmed.ncbi.nlm.nih.gov/6096414/).
+
+However one distinction that might exist, at least in the brain, is the following: for columns to meaningfully communicate spatial information with one another, there needs to be some common reference frame. Within a column, the spatial representation is object-centric, but a common reference frame comes into play when different columns interact.
+- One choice for this common reference frame is a body-centric coordinate system, which is likely at play in the dorsal ("where") stream. This would explain its importance for directing complex motor actions, as in [the classic Milner and Goodale study](https://pubmed.ncbi.nlm.nih.gov/1374953/) that spawned the two-stream framing of function.
+- An alternative choice is an “allocentric” reference frame, which could be some temporary landmark in the environment, such as the corners of a monitor, or a prominent object in a room. This may be utilizied in the ventral ("what") pathway.
+
+In Monty, the between-column computations, such as voting, have made use of an ego/body-centric shared coordinate system. However, this might change in the future, where motor coordination would benefit from egocentric coordinates, and reasoning about object interactions might benefit from allocentric coordinates. If ever implemented, this could be analogous to separate "what" and "where" pathways.
+
 # Alternative Approaches to Intelligence
 
 ## What is the Relationship of the Thousand Brains Theory to Robotics Algorithms That Use Maps?
