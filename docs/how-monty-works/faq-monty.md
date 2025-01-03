@@ -36,7 +36,7 @@ It is also important to note that compositionality and hierarchy are still very 
 
 We are focused on ensuring that the first generation of thousand-brain systems are interpretable and easy to iterate upon. Being able to conceptually understand what is happening in the Monty system, visualize it, debug it, and propose new algorithms in intuitive terms is something we believe to be extremely valuable for fast progress. As such, we have focused on the core principles of the TBT, but have not yet included lower-level neuroscience components such as HTM, sparse distributed representations (SDRs), grid-cells, and active dendrites. In the future, we will consider adding these elements where a clear case for a comparative advantage exists.
 
-## Where does the hippocampal formation fit into the Thousand Brains Theory?
+## Where Does the Hippocampal Formation Fit Into the Thousand Brains Theory?
 
 Part of the underlying Thousand Brains Theory is that the hippocampal formation evolved to enable rapid episodic memory, as well as spatial navigation in animals, with grid cells forming reference frames of environments. Over time, evolution replicated this approach of modeling the world with reference frames in the form of cortical columns, which were then replicated throughout the neocortex to model objects at any level of abstraction.
 
@@ -48,13 +48,13 @@ In the case of Monty, we might choose to enable most LMs to have fairly rapid le
 
 Finally, it's worth noting that there may be other unique features of the hippocampal complex that would require details not found in standard LMs, however our aim is to re-use the implementation of LMs where possible.
 
-## Neuroscience evidence suggests "cognitive maps" of things like objects might exist in the hippocampal formation, why do we believe they are found in the neocortex?
+## If "Cognitive Maps" are Found in the Hippocampal Formation, Why Do We Believe They Are Found in the Neocortex?
 
 The Thousand Brains Theory does not argue that structured representations do *not* exist in the hippocampal formation. As noted above, this structure has been highly developed so as to enable very rapid learning, which would account for its important role in learning structured representations in mammals. Furthermore, the fact is that this neural hardware exists, so even if cortical columns learn structured representations, it is likely that there will be a degree of redundancy with the hippocampal formation, at least early in learning. 
 
 More generally, we believe the learning that takes place in the reference frames of cortical columns proceeds on a slower basis, which would make it more challenging to measure experimentally. If you are a research-scientist interested in structured representations of objects, we would love to discuss ways that it might be possible to measure the emergence of such representations in the neocortex.
 
-## Does the "What" vs "Where" pathway exist in Monty?
+## Does the "What" vs "Where" Pathway Exist in Monty?
 
 In short, not at the moment, and it's unclear how essential this would be. 
 
@@ -134,7 +134,7 @@ We believe that there is limited evidence that deep learning systems, including 
 
 Instead, these systems appear to learn complex input-output mappings, which are capable of some degree of composition and interpolation between observed points, but limited generalization beyond the training data. This makes them useful for many tasks, but requires training on enormous amounts of data, and limits their ability to solve benchmarks such as [ARC-AGI](https://github.com/fchollet/ARC-AGI), or more importantly, make themselves very useful when physically embodied. This dependence on input-output mappings means that even approaches such as chain-of-thought or searching over the space of possible outputs (e.g. the [recent o1 models](https://openai.com/index/introducing-openai-o1-preview/)), are more akin to searching over a space of learned "Type 1" actions, rather than the true "Type 2" ([Stanovich and West, 2000](https://www.cambridge.org/core/journals/behavioral-and-brain-sciences/article/abs/individual-differences-in-reasoning-implications-for-the-rationality-debate/2906AEF620B36C10018DD291F790BE97)), model-based thinking that is a marker of intelligence.
 
-## How does hierarchical composition relate to low-level and high-level features in convolutional neural networks?
+## How Does Hierarchical Composition Relate to the Hierarchical Features in Convolutional Neural Networks?
 
 In CNNs, and deep-learning systems more generally, there is often a lack of “object-centric” representations, which is to say that when processing a scene with many objects, the properties of these tend to be mixed up with one another. This is in contrast to humans, where we understand the world as being composed of discrete objects with a degree of permanence, and where these objects have the ability to interact with one another.
 
@@ -144,11 +144,11 @@ Importantly, such object-centric and spatially-structured representations do not
 
 So while there is hierarchy in both CNNs and the human visual system, the former can be thought of more as a bank of filters that detect things like textures and other correlations between input pixels and text. We believe that in the brain, every level of the hierarchy is representing discrete objects with their own structure and associated motor policies. These can be rapidly composed and recombined, enabling a wide range of representations and behaviors to emerge.
 
-## Some researchers have argued that intelligence requires "symbolic" representations, how does this relate to the Thousand Brains Theory?
+## Is the Thousand Brains Theory Related to "Symbolic" Artificial Intelligence?
 
-The formulation of symbolic representations has some similarities to the Thousand Brains Theory, including the importance of discrete entities, and how these are structurally related to one another. However, we believe that it is important that representation are grounded in a sensorimotor model of the world, whereas these approaches typically begin at high levels of abstraction.
+Concepts from symbolic AI have some similarities to the Thousand Brains Theory, including the importance of discrete entities, and mapping how these are structurally related to one another. However, we believe that it is important that representation are grounded in a sensorimotor model of the world, whereas symbolic approaches typically begin at high levels of abstraction.
 
-Note that the approach we are adopting contrasts to some "neuro-symbolic" approaches that have been proposed. In particular, we are not attmepting to embed entangled, object-impoverished deep-learning representations within abstract, symbolic spaces. Rather, we believe that object-centric representations using reference frames should be the representational substrate from the lowest-level of representations (vision, touch) all the way up to to abstract concepts (languages, societies, mathematics, etc.). Such a commonality in representation is consistent with the re-use of the same neural hardware (the cortical column) through the human neocortex, from sensory regions to higher-level, "cognitive" regions.
+However, the approach we are adopting contrasts to some "neuro-symbolic" approaches that have been proposed. In particular, we are not attmepting to embed entangled, object-impoverished deep-learning representations within abstract, symbolic spaces. Rather, we believe that object-centric representations using reference frames should be the representational substrate from the lowest-level of representations (vision, touch) all the way up to to abstract concepts (languages, societies, mathematics, etc.). Such a commonality in representation is consistent with the re-use of the same neural hardware (the cortical column) through the human neocortex, from sensory regions to higher-level, "cognitive" regions.
 
 # Applications of Monty
 
