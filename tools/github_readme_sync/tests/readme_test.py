@@ -346,23 +346,22 @@ This is a test document.""",
         for path in markdown_paths_not_modified:
             self.assertEqual(self.readme.correct_image_locations(path), path)
 
-    def test_caption_markdown_images(self):
+    def test_parse_images(self):
         images = [
-            "![Image 1 Caption](../figures/image1.png)",
+            "![Image 1 Caption](../figures/image1.png#width=300px&height=200px)",
             "![](../figures/image1.png)",
             "![Image 1 Caption](../figures/docs-only-example.png)",
         ]
         expected = [
             '<figure><img src="../figures/image1.png" align="center"'
-            ' style="border-radius: 8px;" />'
+            ' style="border-radius: 8px; width: 300px; height: 200px">'
             "<figcaption>Image 1 Caption</figcaption></figure>",
             '<figure><img src="../figures/image1.png" align="center"'
-            ' style="border-radius: 8px;" /></figure>',
+            ' style="border-radius: 8px;"></figure>',
             "![Image 1 Caption](../figures/docs-only-example.png)",
         ]
-        # iterate
         for i, image in enumerate(images):
-            self.assertEqual(self.readme.caption_markdown_images(image), expected[i])
+            self.assertEqual(self.readme.parse_images(image), expected[i])
 
     @patch.dict(os.environ, {"IMAGE_PATH": "user/repo"})
     def test_correct_file_locations_markdown(self):
@@ -511,6 +510,23 @@ This is a test document.""",
         for block in expected_blocks:
             block_str = f"[block:html]\n{json.dumps(block, indent=2)}\n[/block]"
             self.assertIn(block_str, result)
+
+    def test_caption_markdown_images_multiple_per_line(self):
+        input_text = (
+            "![First Image](path/to/first.png) ![Second Image](path/to/second.png)"
+        )
+
+        expected_output = (
+            '<figure><img src="path/to/first.png" align="center" '
+            'style="border-radius: 8px;">'
+            "<figcaption>First Image</figcaption></figure> "
+            '<figure><img src="path/to/second.png" align="center" '
+            'style="border-radius: 8px;">'
+            "<figcaption>Second Image</figcaption></figure>"
+        )
+
+        result = self.readme.parse_images(input_text)
+        self.assertEqual(result, expected_output)
 
 
 if __name__ == "__main__":

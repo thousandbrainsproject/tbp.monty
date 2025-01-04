@@ -137,9 +137,10 @@ def check_links(path):
     regex_md_links = r"\[([^\]]*)\]\(([^)]+\.md(?:#[^)]*)?)\)"
     md_link_matches = re.findall(regex_md_links, content)
 
-    regex_image_links = r"!\[([^\]]*)\]\(([^)]+/figures/[^)]+)\)"
-    image_link_matches = re.findall(regex_image_links, content)
-
+    regex_figures = (
+        r"(?:\.\./)*figures/[^\s\)\"\']+(?:\.png|\.jpg|\.jpeg|\.gif|\.svg|\.webp|\s)"
+    )
+    image_link_matches = re.findall(regex_figures, content)
     logging.debug(
         f"{WHITE}{file_name}"
         f"{GREEN} {len(md_link_matches)} links"
@@ -152,6 +153,7 @@ def check_links(path):
     for match in md_link_matches:
         if match[1].startswith(("http://", "https://", "mailto:")):
             continue
+
         path_to_check = os.path.join(current_dir, match[1].split("#")[0])
         path_to_check = os.path.normpath(path_to_check)
         if any(placeholder in match[1] for placeholder in IGNORE_DOCS):
@@ -161,9 +163,11 @@ def check_links(path):
             errors.append(f"  Linked {match[1]} does not exist")
 
     for match in image_link_matches:
-        path_to_check = os.path.join(current_dir, match[1])
+        # Remove any #hash fragments from the path
+        path = match.split("#")[0]
+        path_to_check = os.path.join(current_dir, path)
         path_to_check = os.path.normpath(path_to_check)
-        if any(placeholder in match[1] for placeholder in IGNORE_IMAGES):
+        if any(placeholder in match for placeholder in IGNORE_IMAGES):
             continue
         logging.debug(f"{CYAN}  {path_to_check.split('/')[-1]}{RESET}")
         if not os.path.exists(path_to_check):
