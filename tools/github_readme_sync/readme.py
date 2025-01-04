@@ -37,7 +37,7 @@ regex_cloudinary_video = re.compile(
 )
 
 # Allowlist of supported CSS properties
-ALLOWED_CSS_PROPERTIES = {"width", "height", "float"}
+ALLOWED_CSS_PROPERTIES = {"width", "height"}
 
 
 class OrderedDumper(yaml.SafeDumper):
@@ -304,18 +304,18 @@ class ReadMe:
 
             # Construct HTML with sanitized values
             if alt_text:
-                html = (
+                unsafe_html = (
                     f'<figure><img src="{clean_src}" align="center"'
                     f' style="{style}" />'
                     f"<figcaption>{nh3.clean(alt_text)}</figcaption></figure>"
                 )
             else:
-                html = (
+                unsafe_html = (
                     f'<figure><img src="{clean_src}" align="center"'
                     f' style="{style}" /></figure>'
                 )
 
-            return html
+            return nh3.clean(unsafe_html, attributes={"img": {"src", "align", "style"}})
 
         return regex_images.sub(replace_image, markdown_text)
 
