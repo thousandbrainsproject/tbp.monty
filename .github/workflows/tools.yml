@@ -111,7 +111,7 @@ jobs:
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
-          # deptry src tools
+          deptry src tools
       - name: Run tests
         if: ${{ steps.should_run.outputs.run_test_tools == 'true' }}
         working-directory: tbp.monty
