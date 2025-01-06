@@ -79,7 +79,7 @@
 - [learning-module-improvements](future-work/learning-module-improvements.md)
   - [contributing-learning-modules](future-work/learning-module-improvements/contributing-learning-modules.md)
   - [use-off-object-observations](future-work/learning-module-improvements/use-off-object-observations.md)
-  - [reinitialize-hypotheses-when-starting-to-recognize-a-new-object](future-work/learning-module-improvements/reinitialize-hypotheses-when-starting-to-recognize-a-new-object.md)
+  - [implement-and-test-rapid-evidence-decay-as-form-of-unsupervised-memory-resetting](future-work/learning-module-improvements/implement-and-test-rapid-evidence-decay-as-form-of-unsupervised-memory-resetting.md)
   - [improve-bounded-evidence-performance](future-work/learning-module-improvements/improve-bounded-evidence-performance.md)
   - [use-models-with-fewer-points](future-work/learning-module-improvements/use-models-with-fewer-points.md)
   - [make-it-possible-to-store-multiple-feature-maps-on-one-graph](future-work/learning-module-improvements/make-it-possible-to-store-multiple-feature-maps-on-one-graph.md)
