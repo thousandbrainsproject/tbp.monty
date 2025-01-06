@@ -102,6 +102,8 @@
   - [interpret-goal-states-in-motor-system-switch-policies](future-work/motor-system-improvements/interpret-goal-states-in-motor-system-switch-policies.md)
   - [reuse-hypothesis-testing-policy-target-points](future-work/motor-system-improvements/reuse-hypothesis-testing-policy-target-points.md)
   - [implement-a-simple-cross-modal-policy-for-sensory-guidance](future-work/motor-system-improvements/implement-a-simple-cross-modal-policy-for-sensory-guidance.md)
+  - [model-based-policy-to-recognize-an-object-before-moving-on-to-a-new-object](future-work/motor-system-improvements/model-based-policy-to-recognize-an-object-before-moving-on-to-a-new-object.md)
+  - [policy-to-quickly-move-to-a-new-object](future-work/motor-system-improvements/policy-to-quickly-move-to-a-new-object.md)
 - [voting-improvements](future-work/voting-improvements.md)
   - [use-pose-for-voting](future-work/voting-improvements/use-pose-for-voting.md)
   - [outline-routing-protocol-attention](future-work/voting-improvements/outline-routing-protocol-attention.md)

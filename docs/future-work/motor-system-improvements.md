@@ -14,5 +14,7 @@ These are the things we would like to implement:
 - [Decompose goals into subgoals & communicate](motor-system-improvements/decompose-goals-into-subgoals-communicate.md) #goalpolicy
 - [Reuse hypothesis testing policy target points](motor-system-improvements/reuse-hypothesis-testing-policy-target-points.md) #goalpolicy #numsteps
 - [Implement a simple cross-modal policy](motor-system-improvements/implement-a-simple-cross-modal-policy-for-sensory-guidance.md) #learning #multiobj #goalpolicy #numsteps
+- [Model-based policy to recognize an object before moving onto a new object](motor-system-improvements/model-based-policy-to-recognize-an-object-before-moving-on-to-a-new-object.md) #multiobj #compositional
+- [Policy to quickly move to a new object](motor-system-improvements/policy-to-quickly-move-to-a-new-object.md) #speed #multiobj #compositional
 
 Please see the [instructions here](project-roadmap.md#how-you-can-contribute) if you would like to tackle one of these tasks.
