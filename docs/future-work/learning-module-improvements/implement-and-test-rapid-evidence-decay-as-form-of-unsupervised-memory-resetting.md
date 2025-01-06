@@ -2,7 +2,7 @@
 title: Implement and Test Rapid Evidence Decay as Form of Unsupervised Memory Resetting
 ---
 
-In a natural, unsupervised setting, the object that a Monty system is observing will change from time to time. Currently, Monty's internal representations of objects does not change unless explicitly reset, for example during episodes of training.
+In a natural, unsupervised setting, the object that a Monty system is observing will change from time to time. Currently, Monty's internal representations of objects is only explicitly reset by the experimenter, for example at the start of an episode of training.
 
 We would like to see if we can achieve reasonable performance when objects change (including during learning) by having a shorter memory horizon that rapidly decays. Assuming policies are sufficiently efficient in their exploration of objects, this should enable us to effectively determine whether we are still on the same object, on a different (but known) object, or on an entirely new object. This can subsequently inform changes such as switching to an exploration-focused policy (see [Implement Switching Between Learning and Inference-Focused Policies](../motor-system-improvements/implement-switching-between-learning-and-inference-focused-policies.md)).
 
