@@ -8,7 +8,7 @@ These are the things we would like to implement:
 
 - [Use off-object observations](learning-module-improvements/use-off-object-observations.md) #numsteps #multiobj
 - [Implement and test rapid evidence decay as form of unsupervised memory resetting](learning-module-improvements/implement-and-test-rapid-evidence-decay-as-form-of-unsupervised-memory-resetting.md) #multiobj
-- [Improve bounded evidence performance](learning-module-improvements/improve-bounded-evidence-performance.
+- [Improve bounded evidence performance](learning-module-improvements/improve-bounded-evidence-performance.md) #multiobj
 - [Use models with fewer points](learning-module-improvements/use-models-with-fewer-points.md) #speed #generalization
 - [Make it possible to store multiple feature maps on one graph](learning-module-improvements/make-it-possible-to-store-multiple-feature-maps-on-one-graph.md) #featsandmorph
 - [Test particle-filter-like resampling of hypothesis space](learning-module-improvements/test-particle-filter-like-resampling-of-hypothesis-space.md) #accuracy #speed
