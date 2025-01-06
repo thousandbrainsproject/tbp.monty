@@ -8,8 +8,8 @@ These are the things we would like to implement:
 - [Interpret goal states in motor system & switch policies](motor-system-improvements/interpret-goal-states-in-motor-system-switch-policies.md) #goalpolicy
 - [Implement switching between learning and inference-focused policies](motor-system-improvements/implement-switching-between-learning-and-inference-focused-policies.md) #learning
 - [Bottom-up exploration policy for surface agent](motor-system-improvements/bottom-up-exploration-policy-for-surface-agent.md) #learning
-- [Top-down exploration policy](motor-system-improvements/top-down-exploration-policy.md) #learning #numsteps
-- [Implement efficient saccades driven by model-free and model-based signals](motor-system-improvements/implement-efficient-saccades-driven-by-model-free-and-model-based-signals.md) #numsteps #multiobj
+- [Model-based exploration policy](motor-system-improvements/model-based-exploration-policy.md) #learning #numsteps
+- [Implement efficient saccades driven by model-free and model-based signals](motor-system-improvements/implement-efficient-saccades-driven-by-model-free-and-model-based-signals.
 - [Learn policy using RL and simplified action space](motor-system-improvements/learn-policy-using-rl.md) #numsteps #speed
 - [Decompose goals into subgoals & communicate](motor-system-improvements/decompose-goals-into-subgoals-communicate.md) #goalpolicy
 - [Reuse hypothesis testing policy target points](motor-system-improvements/reuse-hypothesis-testing-policy-target-points.md) #goalpolicy #numsteps
