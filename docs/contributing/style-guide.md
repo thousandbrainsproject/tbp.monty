@@ -36,7 +36,7 @@ You can read more about our views on deep learning in Monty in our [FAQ](../how-
 All source code files must have a copyright and license header. The header must be placed at the top of the file, on the first line, before any other code. For example, in Python:
 
 ```python
-# Copyright <YEARS> Numenta Inc.
+# Copyright <YEARS> Thousand Brains Project
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -46,7 +46,7 @@ All source code files must have a copyright and license header. The header must 
 # https://opensource.org/licenses/MIT.
 ```
 
-The `<YEARS>` is the year of the file's creation, and an optional sequence or range of years if the file has been modified over time. For example, if a file was created in 2024 and not modified again, the first line of the header should be `# Copyright 2024 Numenta Inc.`. If the file has been modified in consecutive years between 2022 and 2024, the header should be `# Copyright 2022-2024 Numenta Inc.`. If the file has been modified in multiple non-consecutive years in 2022, then in 2024 and 2025, the header should be `# Copyright 2022,2024-2025 Numenta Inc.`.
+The `<YEARS>` is the year of the file's creation, and an optional sequence or range of years if the file has been modified over time. For example, if a file was created in 2024 and not modified again, the first line of the header should be `# Copyright 2024 Thousand Brains Project`. If the file has been modified in consecutive years between 2022 and 2024, the header should be `# Copyright 2022-2024 Thousand Brains Project`. If the file has been modified in multiple non-consecutive years in 2022, then in 2024 and 2025, the header should be `# Copyright 2022,2024-2025 Thousand Brains Project`.
 
 In other words, if you are creating a new file, add the copyright and license header with the current year. If you are modifying an existing file and the header does not include the current year, then add the current year to the header. You should never need to modify anything aside from the year in the very first line of the header.
 

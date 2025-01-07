@@ -1,3 +1,4 @@
+# Copyright 2025 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -353,13 +354,12 @@ This is a test document.""",
         ]
         expected = [
             '<figure><img src="../figures/image1.png" align="center"'
-            ' style="border-radius: 8px; width: 300px; height: 200px" />'
+            ' style="border-radius: 8px; width: 300px; height: 200px">'
             "<figcaption>Image 1 Caption</figcaption></figure>",
             '<figure><img src="../figures/image1.png" align="center"'
-            ' style="border-radius: 8px;" /></figure>',
+            ' style="border-radius: 8px;"></figure>',
             "![Image 1 Caption](../figures/docs-only-example.png)",
         ]
-        # iterate
         for i, image in enumerate(images):
             self.assertEqual(self.readme.parse_images(image), expected[i])
 
@@ -518,10 +518,10 @@ This is a test document.""",
 
         expected_output = (
             '<figure><img src="path/to/first.png" align="center" '
-            'style="border-radius: 8px;" />'
+            'style="border-radius: 8px;">'
             "<figcaption>First Image</figcaption></figure> "
             '<figure><img src="path/to/second.png" align="center" '
-            'style="border-radius: 8px;" />'
+            'style="border-radius: 8px;">'
             "<figcaption>Second Image</figcaption></figure>"
         )
 

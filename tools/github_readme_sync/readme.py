@@ -1,3 +1,4 @@
+# Copyright 2025 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -15,6 +16,7 @@ from collections import OrderedDict
 from typing import Any, List, Tuple
 from urllib.parse import parse_qs
 
+import nh3
 import yaml
 
 from tools.github_readme_sync.colors import GRAY, GREEN, RESET
@@ -33,6 +35,9 @@ regex_cloudinary_video = re.compile(
     r"\[(.*?)\]\((https://res\.cloudinary\.com/([^/]+)/video/upload/v(\d+)/([^/]+\.mp4))\)",
     re.IGNORECASE,
 )
+
+# Allowlist of supported CSS properties
+ALLOWED_CSS_PROPERTIES = {"width", "height"}
 
 
 class OrderedDumper(yaml.SafeDumper):
@@ -278,36 +283,41 @@ class ReadMe:
 
             # Split image source and fragment
             src_parts = image_src.split("#")
-            clean_src = src_parts[0]
+            clean_src = nh3.clean(src_parts[0])
             style = "border-radius: 8px;"
 
-            # Parse and sanitize style parameters from fragment
+            # Parse and filter style parameters using allowlist
             if len(src_parts) > 1:
                 try:
                     params = parse_qs(src_parts[1])
-                    safe_styles = []
+                    allowed_styles = []
                     for key, values in params.items():
-                        if re.match(r"^[\w\-%]+$", key) and re.match(
-                            r"^[\w\-\%px]+$", values[0]
-                        ):
-                            safe_styles.append(f"{key}: {values[0]}")
-                    if safe_styles:
-                        style = f"{style} " + "; ".join(safe_styles)
+                        if key in ALLOWED_CSS_PROPERTIES:
+                            # Sanitize both key and value
+                            safe_key = nh3.clean(key)
+                            safe_value = nh3.clean(values[0])
+                            allowed_styles.append(f"{safe_key}: {safe_value}")
+                        else:
+                            logging.warning(f"Ignoring disallowed CSS property '{key}'")
+                    if allowed_styles:
+                        style = f"{style} " + "; ".join(allowed_styles)
                 except (ValueError, ImportError):
-                    # If parsing fails, just use default style
                     pass
 
+            # Construct HTML with sanitized values
             if alt_text:
-                return (
+                unsafe_html = (
                     f'<figure><img src="{clean_src}" align="center"'
                     f' style="{style}" />'
-                    f"<figcaption>{alt_text}</figcaption></figure>"
+                    f"<figcaption>{nh3.clean(alt_text)}</figcaption></figure>"
                 )
             else:
-                return (
+                unsafe_html = (
                     f'<figure><img src="{clean_src}" align="center"'
                     f' style="{style}" /></figure>'
                 )
+
+            return nh3.clean(unsafe_html, attributes={"img": {"src", "align", "style"}})
 
         return regex_images.sub(replace_image, markdown_text)
 
