@@ -303,18 +303,10 @@ def check_external_link(url):
         return []
 
     try:
-        headers = request_headers()
         time = timeit.default_timer()
-
-        try:
-            response = requests.head(url, timeout=5, headers=headers)
-            if response.status_code < 200 or response.status_code > 299:
-                response = requests.get(url, timeout=5, headers=headers)
-        except requests.RequestException:
-            # If HEAD fails, try GET
-            response = requests.get(url, timeout=5, headers=headers)
-
+        response = check_url(url)
         time = timeit.default_timer() - time
+
         status_color = GREEN if 200 <= response.status_code <= 299 else RED
         log_msg = f"{WHITE}{url} {status_color}[{response.status_code}]{RESET}"
         if time > 1:
@@ -326,6 +318,35 @@ def check_external_link(url):
         return [f"  {url}: {str(e)}"]
 
     return []
+
+
+def check_url(url):
+    """Make HTTP request to URL, trying HEAD first then falling back to GET.
+
+    Args:
+        url: The URL to request
+
+    Returns:
+        requests.Response: The response from the server
+
+    Raises:
+        requests.RequestException: If either HEAD or GET request fails
+    """
+    headers = request_headers()
+    try:
+        response = requests.head(url, timeout=5, headers=headers)
+    except requests.RequestException as e:
+        try:
+            response = requests.get(url, timeout=5, headers=headers)
+        except requests.RequestException as e:
+            raise requests.RequestException(f"Failed to connect to {url}") from e
+    else:
+        if not (200 <= response.status_code <= 299):
+            try:
+                response = requests.get(url, timeout=5, headers=headers)
+            except requests.RequestException as e:
+                raise requests.RequestException(f"Failed to connect to {url}") from e
+    return response
 
 
 def request_headers():
