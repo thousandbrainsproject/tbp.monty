@@ -18,12 +18,19 @@ import timeit
 import requests
 
 from tools.github_readme_sync.colors import CYAN, GREEN, RED, RESET, WHITE, YELLOW
-from tools.github_readme_sync.excluded_items import IGNORE_DOCS, IGNORE_IMAGES
+from tools.github_readme_sync.excluded_items import (
+    IGNORE_DOCS,
+    IGNORE_EXTERNAL_URLS,
+    IGNORE_IMAGES,
+)
 
 HIERARCHY_FILE = "hierarchy.md"
 CATEGORY_PREFIX = "# "
 DOCUMENT_PREFIX = "- "
 INDENTATION_UNIT = "  "  # Single indentation level
+
+# URLs that are checked
+README_URL = "https://thousandbrainsproject.readme.io"
 
 
 def create_hierarchy_file(output_dir, hierarchy):
@@ -260,7 +267,7 @@ def extract_links(content):
 
 
 def is_readme_url(url):
-    return url.startswith("https://thousandbrainsproject.readme.io")
+    return url.startswith(README_URL)
 
 
 def is_external_url(url):
@@ -268,7 +275,7 @@ def is_external_url(url):
 
 
 def check_readme_link(url, rdme):
-    if url == "https://thousandbrainsproject.readme.io/":
+    if url == f"{README_URL}/":
         return []
 
     try:
@@ -291,7 +298,7 @@ def check_readme_link(url, rdme):
 
 
 def check_external_link(url):
-    if "openai.com" in url or "science.org" in url:
+    if any(ignored_url in url for ignored_url in IGNORE_EXTERNAL_URLS):
         return []
 
     try:
