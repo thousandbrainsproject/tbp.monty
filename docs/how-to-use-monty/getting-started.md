@@ -37,13 +37,11 @@ You can also update your code using the terminal by calling `git fetch upstream;
 
 Monty requires Conda to install its dependencies. For instructions on how to install Conda (Miniconda or Anaconda) on your machine see <https://conda.io/projects/conda/en/latest/user-guide/install/index.html>.
 
-To setup Monty, **use the conda commands below**. Make sure to `cd` into the tbp.monty root directory before running these commands.
+To setup Monty, **use the conda commands below**. Make sure to `cd` into the `tbp.monty` directory before running these commands.
 
-Note that the commands are slightly different depending on whether you are setting up the environment on an Intel or ARM64 architecture, whether you are using Miniconda or the full Anaconda distribution, and whether you are using the zsh shell or another shell.
+Note that the commands are slightly different depending on whether you are setting up the environment on an Intel or ARM64 architecture, and whether you are using the zsh shell or another shell.
 
-## Miniconda
-
-If you have miniconda installed, you can create the environment with the following commands:
+You can create the environment with the following commands:
 
 ```shell Intel (zsh shell)
 conda env create
@@ -66,31 +64,6 @@ conda env create -f environment_arm64.yml --subdir=osx-64
 conda init
 conda activate tbp.monty
 conda config --env --set subdir osx-64
-```
-
-## Anaconda
-
-If you have the full anaconda distribution installed, you can create the environment with the following commands:
-
-```shell Intel (zsh shell)
-conda env create
-conda init zsh
-conda activate tbp.monty
-```
-```shell Intel (other shells)
-conda env create
-conda init
-conda activate tbp.monty
-```
-```shell ARM64 (Apple Silicon) (zsh shell)
-conda env create -f environment_arm64.yml
-conda init zsh
-conda activate tbp.monty
-```
-```shell ARM64 (Apple Silicon) (other shells)
-conda env create -f environment_arm64.yml
-conda init
-conda activate tbp.monty
 ```
 
 > [!NOTE]
