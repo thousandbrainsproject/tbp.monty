@@ -298,9 +298,7 @@ class ReadMe:
                             safe_value = nh3.clean(values[0])
                             allowed_styles.append(f"{safe_key}: {safe_value}")
                         else:
-                            logging.warning(
-                                f"CSS property '{key}' is not allowed and will be ignored"
-                            )
+                            logging.warning(f"Ignoring disallowed CSS property '{key}'")
                     if allowed_styles:
                         style = f"{style} " + "; ".join(allowed_styles)
                 except (ValueError, ImportError):
