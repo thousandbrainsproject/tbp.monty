@@ -299,6 +299,7 @@ def check_readme_link(url, rdme):
 
 def check_external_link(url):
     if any(ignored_url in url for ignored_url in IGNORE_EXTERNAL_URLS):
+        logging.info(f"{WHITE}{url} {GREEN}[IGNORED]{RESET}")
         return []
 
     try:
