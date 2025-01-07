@@ -6,7 +6,7 @@ description: Performance of current implementation on our benchmark test suite.
 
 ## What do we Test?
 
-We split up the experiments into a short benchmark test suite and a long one. The short suite tests performance on a subset of 10 out of the 77 YCB objects which allows us to asses performance under different conditions more quickly. Unless otherwise indicated, the 10 objects are chosen to be distinct in morphology and models are learned using the surface agent, which follows the object surface much like a finger. 
+We split up the experiments into a short benchmark test suite and a long one. The short suite tests performance on a subset of 10 out of the 77 [YCB](https://www.ycbbenchmarks.com/) objects which allows us to assess performance under different conditions more quickly. Unless otherwise indicated, the 10 objects are chosen to be distinct in morphology and models are learned using the surface agent, which follows the object surface much like a finger. 
 
 When building the graph we add a new point if it differs in location by more than 1cm from other points already learned, or its features are different from physically nearby learned points (a difference of 0.1 for hue and 1 for log curvature). Experiments using these models have `10distobj` in their name.
 
@@ -18,7 +18,7 @@ To be able to test the ability to distinguish similar objects (for example by us
 ![](../figures/overview/current_models_surf_agent_similar.png)
 
 
-For experiments with multiple sensors and learning modules we currently only have a setup with the distant agent so we also have to train the models with the distant agent. These models have less even coverage of points since we just see the objects from several fixed viewpoints and can't move as freely around the object as we can with the surface agent. This is why these models have a few missing areas where parts of the object were never visible during training. In the 5LM experiments, each LM has learned slightly different models, depending on their sensor parameters. The image below shows the models learned in one LM. Results with one LM for comparability are given in the experiment marked with `dist_on_distm` (i.e. distant agent evaluated on distant-agent trained models). 
+For experiments with multiple sensors and learning modules we currently only have a setup with the distant agent so we also have to train the models with the distant agent. These models have less even coverage of points since we just see the objects from several fixed viewpoints and can't move as freely around the object as we can with the surface agent. This is why these models have a few missing areas where parts of the object were never visible during training. In the 5LM experiments, each LM has learned slightly different models, depending on their sensor parameters. The image below shows the models learned in one LM. Results with one LM for comparability are given in the experiment marked with `dist_on_distm` (i.e., distant agent evaluated on distant-agent trained models). 
 
 ![](../figures/overview/current_models_dist_agent_distinct.png)
 
@@ -28,7 +28,7 @@ Configs with `multi` in the name have additional distractor objects, in addition
 ![](../figures/overview/multi_obj_environments.png)
 
 
-Configs with `_dist_agent` in the name use the distant agent for inference (by default they still use the models learned with the surface agent). This means that the sensor is fixed in one location and can only tilt up, down, left and right following a random walk. When using the model-based hypothesis-testing policy, the agent can also "jump" to new locations in space. Configs with `surf_agent` in the name use the surface agent for inference which can freely move around the entire object. Both the surface and the distant agent can execute model-based actions using the hypothesis testing policy. For more details, see our documentation on [policies](../how-monty-works/policy.md).
+Configs with `_dist_agent` in the name use the distant agent for inference (by default they still use the models learned with the surface agent). This means that the sensor is fixed in one location and can only tilt up, down, left, and right following a random walk. When using the model-based hypothesis-testing policy, the agent can also "jump" to new locations in space. Configs with `surf_agent` in the name use the surface agent for inference which can freely move around the entire object. Both the surface and the distant agent can execute model-based actions using the hypothesis testing policy. For more details, see our documentation on [policies](../how-monty-works/policy.md).
 
 Configs with `base` in their name test each object in the 14 orientations in which they were learned. No noise is added to the sensor.
 
@@ -36,7 +36,7 @@ Configs with `randrot` in their name test each object in 10 random, new rotation
 
 Configs with `noise` in their name test with noisy sensor modules where we add Gaussian noise to the sensed locations (0.002), point-normals (2), curvature directions (2), log curvatures (0.1), pose_fully_defined (0.01), and hue (0.1). Numbers in brackets are the standard deviations used for sampling the noisy observations. Note that the learned models were acquired without sensor noise. The image below should visualize how much location noise we get during inference but the LM still contains the noiseless models shown above.
 
-![](../figures/overview/graph_noise_002.png)
+![](../figures/overview/graph_noise_002.png#width=400px)
 
 
 Configs with `rawnoise` in the name test with noisy raw sensor input where Gaussian noise is applied directly to the depth image which is used for location, point normal, and curvature estimation. Here we use a standard deviation of 0.001. This allows us to test the noise robustness of the sensor module compared to testing the noise robustness of the learning module in the `noise` experiments.
@@ -51,18 +51,18 @@ The following results are obtained from experiments using the 10-object subsets 
 
 | Experiment                                  | % Correct | % Used MLH | Num Matching Steps | Rotation Error (radians) | Run Time | Episode Run Time (s) |
 |---------------------------------------------|-----------|------------|--------------------|--------------------------|----------|----------------------|
-| base_config_10distinctobj_dist_agent        | 98.57%    | 5.71%      | 36                 | 0.31                     | 12m      | 31s                  |
-| base_config_10distinctobj_surf_agent        | 100.00%   | 0.00%      | 28                 | 0.17                     | 6m       | 27s                  |
-| randrot_noise_10distinctobj_dist_agent      | 99.00%    | 7.00%      | 51                 | 0.50                     | 10m      | 56s                  |
-| randrot_noise_10distinctobj_dist_on_distm   | 99.00%    | 1.00%      | 35                 | 0.26                     | 7m       | 48s                  |
-| randrot_noise_10distinctobj_surf_agent      | 100.00%   | 1.00%      | 29                 | 0.36                     | 7m       | 49s                  |
-| randrot_10distinctobj_surf_agent            | 100.00%   | 0.00%      | 29                 | 0.37                     | 4m       | 29s                  |
-| randrot_noise_10distinctobj_5lms_dist_agent | 100.00%   | 3.00%      | 52                 | 0.88                     | 21m      | 139s                 |
-| base_10simobj_surf_agent                    | 95.00%    | 10.00%     | 84                 | 0.21                     | 14m      | 76s                  |
-| randrot_noise_10simobj_dist_agent           | 81.00%    | 38.00%     | 193                | 0.52                     | 26m      | 206s                 |
-| randrot_noise_10simobj_surf_agent           | 90.00%    | 35.00%     | 178                | 0.45                     | 34m      | 294s                 |
-| randomrot_rawnoise_10distinctobj_surf_agent | 65.00%    | 77.00%     | 16                 | 1.60                     | 22m      | 24s                  |
-| base_10multi_distinctobj_dist_agent         | 74.29%    | 37.14%     | 27                 | 0.64                     | 1h9m     | 2s                   |
+| base_config_10distinctobj_dist_agent        | 99.29%    | 5.71%      | 36                 | 0.31                     | 10m      | 31s                  |
+| base_config_10distinctobj_surf_agent        | 100.00%   | 0.00%      | 28                 | 0.21                     | 6m       | 28s                  |
+| randrot_noise_10distinctobj_dist_agent      | 98.00%    | 7.00%      | 46                 | 0.50                     | 9m       | 55s                  |
+| randrot_noise_10distinctobj_dist_on_distm   | 99.00%    | 3.00%      | 35                 | 0.26                     | 7m       | 50s                  |
+| randrot_noise_10distinctobj_surf_agent      | 100.00%   | 0.00%      | 31                 | 0.34                     | 8m       | 62s                  |
+| randrot_10distinctobj_surf_agent            | 100.00%   | 0.00%      | 28                 | 0.40                     | 7m       | 50s                  |
+| randrot_noise_10distinctobj_5lms_dist_agent | 100.00%   | 7.00%      | 50                 | 0.94                     | 44m      | 189s                 |
+| base_10simobj_surf_agent                    | 95.71%    | 10.71%     | 82                 | 0.21                     | 18m      | 104s                 |
+| randrot_noise_10simobj_dist_agent           | 82.00%    | 37.00%     | 185                | 0.52                     | 26m      | 202s                 |
+| randrot_noise_10simobj_surf_agent           | 89.00%    | 34.00%     | 183                | 0.47                     | 35m      | 307s                 |
+| randomrot_rawnoise_10distinctobj_surf_agent | 68.00%    | 81.00%     | 15                 | 1.72                     | 22m      | 23s                  |
+| base_10multi_distinctobj_dist_agent         | 72.86%    | 43.57%     | 23                 | 0.75                     | 1h12m    | 1s                   |
 
 ## Longer Experiments with all 77 YCB Objects
 
@@ -75,11 +75,11 @@ The following results are obtained from experiments on the entire YCB dataset (7
 
 | Experiment                          | % Correct | % Used MLH | Num Matching Steps | Rotation Error (radians) | Run Time | Episode Run Time (s) |
 |-------------------------------------|-----------|------------|--------------------|--------------------------|----------|----------------------|
-| base_77obj_dist_agent               | 93.51%    | 14.29%     | 90                 | 0.31                     | 1h37m    | 295s                 |
-| base_77obj_surf_agent               | 98.27%    | 5.63%      | 57                 | 0.21                     | 46m      | 141s                 |
-| randrot_noise_77obj_dist_agent      | 87.01%    | 28.57%     | 155                | 0.64                     | 2h14m    | 479s                 |
-| randrot_noise_77obj_surf_agent      | 94.93%    | 19.48%     | 102                | 0.62                     | 1h23m    | 304s                 |
-| randrot_noise_77obj_5lms_dist_agent | 93.51%    | 3.90%      | 71                 | 0.92                     | 54m      | 1398s                |
+| base_77obj_dist_agent               | 92.21%    | 16.02%     | 88                 | 0.30                     | 1h38m    | 301s                 |
+| base_77obj_surf_agent               | 98.27%    | 4.33%      | 52                 | 0.18                     | 42m      | 123s                 |
+| randrot_noise_77obj_dist_agent      | 87.01%    | 29.00%     | 151                | 0.63                     | 2h10m    | 468s                 |
+| randrot_noise_77obj_surf_agent      | 94.37%    | 21.65%     | 113                | 0.61                     | 1h31m    | 339s                 |
+| randrot_noise_77obj_5lms_dist_agent | 90.91%    | 5.19%      | 70                 | 1.01                     | 1h7m     | 1439s                |
 
 ### Explanation of Some of the Results
 
@@ -175,7 +175,7 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 - **Why is the percent MLH used so high?**  
   Each episode is restricted to a single viewing angle of an object, resulting in significant ambiguity. Furthermore, episodes use a maximum of 100 matching steps so that these experiments can be run quickly.
 - **Are there any other factors contributing to performance differences to be aware of?**  
-  During the collection of some of the datasets, the "smoothing" setting was unfortunately not active; this affects the standard (world_image_on_scanned_model) dataset, as well as the bright and hand-intrusion experiments. Broadly, this appears to not have had too much of an impact, given that e.g. dark and bright perform comparably (with bright actually being better, even though it was acquired without smoothing). There appear to be a couple of images (around 5 out of the 240 images), where this has resulted in a large step-change in the depth reading, and as a result of this, the experiment begins with the model "off" the object, even though to a human eye, the initial position of the patch is clearly on the object. This will be addressed in a future update to the data-sets, where we can also implement any additional changes we may wish to make during data collection (e.g. more control of object poses, or the inclusion of motor data).
+  During the collection of some of the datasets, the "smoothing" setting was unfortunately not active; this affects the standard (world_image_on_scanned_model) dataset, as well as the bright and hand-intrusion experiments. Broadly, this appears to not have had too much of an impact, given that e.g., dark and bright perform comparably (with bright actually being better, even though it was acquired without smoothing). There appear to be a couple of images (around 5 out of the 240 images), where this has resulted in a large step-change in the depth reading, and as a result of this, the experiment begins with the model "off" the object, even though to a human eye, the initial position of the patch is clearly on the object. This will be addressed in a future update to the data-sets, where we can also implement any additional changes we may wish to make during data collection (e.g., more control of object poses, or the inclusion of motor data).
 - **What steps should be noted when aquiring new images?**  
   In addition to ensuring that the "smoothing" option is toggled on (currently off by default), lie the iPad on its side, ensuring that the volume bottom is at the top, so that the orientation of images are consistent across the data-sets. In general, objects should be as close to the camera as possible when taking images, while ensuring the depth values do not begin to clip. 
 

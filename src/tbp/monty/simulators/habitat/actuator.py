@@ -1,3 +1,4 @@
+# Copyright 2025 Thousand Brains Project
 # Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -35,6 +36,8 @@ from tbp.monty.frameworks.actions.actuator import Actuator
 
 __all__ = [
     "HabitatActuator",
+    "HabitatActuatorRequirements",
+    "HabitatParameterizer",
 ]
 
 

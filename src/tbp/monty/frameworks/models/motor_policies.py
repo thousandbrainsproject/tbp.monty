@@ -1,3 +1,4 @@
+# Copyright 2025 Thousand Brains Project
 # Copyright 2021-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -15,8 +16,8 @@ import math
 import os
 from typing import Any, Callable, Dict, List, Tuple, Type, Union, cast
 
-import habitat_sim.utils as hab_utils
 import numpy as np
+import quaternion as qt
 import scipy.ndimage
 from scipy.spatial.transform import Rotation as rot  # noqa: N813
 
@@ -664,8 +665,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         logging.debug("Searching for object")
 
-        # Check if the center of the view finder is on the object
-        if sem_obs[obs_dim[0] // 2][obs_dim[1] // 2] == target_semantic_id:
+        # Check if the central pixel is on-object.
+        y_mid, x_mid = obs_dim[0] // 2, obs_dim[1] // 2
+        if sem_obs[y_mid, x_mid] == target_semantic_id:
             logging.debug("Already centered on the object")
             return [], True
 
@@ -724,7 +726,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         # as expected, which can otherwise break if e.g. on_object_image is passed
         # as an int or boolean rather than float
         smoothed_on_object_image = scipy.ndimage.gaussian_filter(
-            on_object_image, sem3d_obs.shape[0] / 10, mode="constant"
+            on_object_image, 2, mode="constant"
         )
         idx_loc_to_look_at = np.argmax(smoothed_on_object_image * on_object_image)
         idx_loc_to_look_at = np.unravel_index(idx_loc_to_look_at, on_object_image.shape)
@@ -1150,7 +1152,7 @@ class SurfacePolicy(InformedPolicy):
             self.tangential_angle * (1 - self.alpha) + new_target_direction * self.alpha
         )
 
-        direction = hab_utils.quat_rotate_vector(
+        direction = qt.rotate_vectors(
             self.state[self.agent_id]["rotation"],
             [
                 np.cos(self.tangential_angle - np.pi / 2),
@@ -1220,19 +1222,14 @@ class SurfacePolicy(InformedPolicy):
         identity pose, which will be aquired by transforming the original pose by the
         inverse
 
-        NB Magnum appears to be a library used by Habitat; i.e. it is still grounded
-        in quaternions
-
         Returns:
             Inverse quaternion rotation.
         """
-        inverse_magnum_rotation = hab_utils.common.quat_to_magnum(
-            self.state["agent_id_0"]["rotation"]
-        ).inverted()
-        inverse_quaternion_rotation = hab_utils.common.quat_from_magnum(
-            inverse_magnum_rotation
-        )
-        return inverse_quaternion_rotation
+        # Note that quaternion format is [w, x, y, z]
+        [w, x, y, z] = qt.as_float_array(self.state[self.agent_id]["rotation"])
+        # Note that scipy.spatial.transform.Rotation (v1.10.0) format is [x, y, z, w]
+        [x, y, z, w] = rot.from_quat([x, y, z, w]).inv().as_quat()
+        return qt.quaternion(w, x, y, z)
 
     def orienting_angle_from_normal(self, orienting: str) -> float:
         """Compute turn angle to face the object.
@@ -1250,15 +1247,15 @@ class SurfacePolicy(InformedPolicy):
 
         inverse_quaternion_rotation = self.get_inverse_agent_rot()
 
-        rotated_point_normal = hab_utils.quat_rotate_vector(
+        rotated_point_normal = qt.rotate_vectors(
             inverse_quaternion_rotation, original_point_normal
         )
         x, y, z = rotated_point_normal
 
         if "horizontal" == orienting:
-            return -np.degrees(np.arctan(x / z))
+            return -np.degrees(np.arctan(x / z)) if z != 0 else -np.sign(x)*90.0
         if "vertical" == orienting:
-            return -np.degrees(np.arctan(y / z))
+            return -np.degrees(np.arctan(y / z)) if z != 0 else -np.sign(y)*90.0
 
 
 ###
@@ -1603,9 +1600,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         # Rotate the tangential vector to be in the coordinate frame of the sensory
         # agent (rather than the global reference frame of the environment)
         inverse_quaternion_rotation = self.get_inverse_agent_rot()
-        rotated_form = hab_utils.quat_rotate_vector(
-            inverse_quaternion_rotation, selected_pc_dir
-        )
+        rotated_form = qt.rotate_vectors(inverse_quaternion_rotation, selected_pc_dir)
 
         # Before updating the representation and removing z-axis direction, check
         # for movements defined in the z-axis
@@ -1654,7 +1649,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             self.reset_pc_buffers()
             self.following_heading_counter = 0
 
-            return hab_utils.quat_rotate_vector(
+            return qt.rotate_vectors(
                 self.state["agent_id_0"]["rotation"],
                 self.tangential_vec,
             )
@@ -1675,7 +1670,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.following_pc_counter += 1
         self.continuous_pc_steps += 1
 
-        return hab_utils.quat_rotate_vector(
+        return qt.rotate_vectors(
             self.state["agent_id_0"]["rotation"],
             self.tangential_vec,
         )
@@ -1739,7 +1734,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         self.following_heading_counter += 1
 
-        return hab_utils.quat_rotate_vector(
+        return qt.rotate_vectors(
             self.state["agent_id_0"]["rotation"],
             self.tangential_vec,
         )
@@ -1895,10 +1890,9 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # locations to the headings (also in the reference frame of the agent) that
             # we might take
             # TODO could vectorize this
-            rotated_locs = [
-                hab_utils.quat_rotate_vector(inverse_quaternion_rotation, point)
-                for point in adjusted_prev_locs
-            ]
+            rotated_locs = qt.rotate_vectors(
+                inverse_quaternion_rotation, adjusted_prev_locs
+            )
 
             # Until we have not found a direction that we can guarentee is
             # in a new heading, continue to attempt new directions
