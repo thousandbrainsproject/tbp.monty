@@ -44,6 +44,9 @@ runs:
         ${MESSAGE}"
         echo "Debug: Created comment with marker"
 
+        # Properly escape the comment for JSON
+        ESCAPED_COMMENT=$(echo "$COMMENT" | jq -R -s '.')
+
         # Find and delete old comment with same ID using GitHub token
         # Get all comments and find the one with our marker
         echo "Debug: Fetching existing comments"
