@@ -1,0 +1,50 @@
+name: "Pin Comment"
+description: "Pins a comment by hiding it with HTML comments and a unique ID"
+
+inputs:
+  message:
+    description: "The message to pin"
+    required: true
+  token:
+    description: "GitHub token"
+    required: true
+  issue_number:
+    description: "The issue or PR number"
+    required: true
+  comment_id:
+    description: "Unique identifier for this pinned comment"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Pin comment
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        MESSAGE: ${{ inputs.message }}
+        ISSUE_NUMBER: ${{ inputs.issue_number }}
+        COMMENT_ID: ${{ inputs.comment_id }}
+      run: |
+        # Create comment with hidden marker and ID
+        COMMENT="<!--pin-comment-marker-${COMMENT_ID}-->
+        ${MESSAGE}"
+        
+        # Find and delete old comment with same ID
+        gh api graphql -f query='
+          query($owner:String!, $repo:String!, $number:Int!) {
+            repository(owner:$owner, name:$repo) {
+              issueOrPullRequest(number:$number) {
+                ... on Issue { comments(first:100) { nodes { id body } } }
+                ... on PullRequest { comments(first:100) { nodes { id body } } }
+              }
+            }
+          }' -f owner="${GITHUB_REPOSITORY%/*}" -f repo="${GITHUB_REPOSITORY#*/}" -f number="${ISSUE_NUMBER}" |
+        jq -r ".data.repository.issueOrPullRequest.comments.nodes[] | select(.body | startswith(\"<!--pin-comment-marker-${COMMENT_ID}-->\")) | .id" |
+        while read -r comment_id; do
+          gh api --method DELETE "/graphql" -f query="mutation { deleteIssueComment(input: {id: \"$comment_id\"}) { clientMutationId } }"
+        done
+
+        # Create new pinned comment
+        gh issue comment "${ISSUE_NUMBER}" --body "${COMMENT}"
+

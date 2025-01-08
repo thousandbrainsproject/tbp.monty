@@ -20,8 +20,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Create initial PR comment
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: ./.github/actions/pin_comment
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue_number: ${{ github.event.pull_request.number }}
+          comment_id: docs-preview
           message: |
             📚 **Documentation Preview**
 
@@ -81,8 +84,11 @@ jobs:
           python -m tools.github_readme_sync.cli upload docs "${VERSION}-${BRANCH_NAME}"
       - name: Update PR comment on success
         if: success()
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: ./.github/actions/pin_comment
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue_number: ${{ github.event.pull_request.number }}
+          comment_id: docs-preview
           message: |
             📚 **Documentation Preview**
 
@@ -92,8 +98,11 @@ jobs:
             Last updated: ${{ env.DATE }}
       - name: Update PR comment on failure
         if: failure()
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: ./.github/actions/pin_comment
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue_number: ${{ github.event.pull_request.number }}
+          comment_id: docs-preview
           message: |
             📚 **Documentation Preview**
 
