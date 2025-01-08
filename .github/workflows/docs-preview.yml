@@ -9,16 +9,17 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - 'docs/**'
+      - 'tools/github_readme_sync/**'
+      - '.github/workflows/docs-preview.yml'
 
 jobs:
   deploy_preview_docs:
     name: deploy-preview-docs
     runs-on: ubuntu-latest
-    needs:
-      - should_run_docs
     steps:
       - name: Create initial PR comment
-        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           message: |
@@ -28,24 +29,20 @@ jobs:
 
             Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for progress.
       - name: Checkout tbp.monty
-        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           lfs: true
           path: tbp.monty
       - name: Set up ~/tbp
-        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         run: |
           mkdir -p ~/tbp
           ln -s $GITHUB_WORKSPACE/tbp.monty ~/tbp/tbp.monty
       - name: Set up Python 3.8
-        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         uses: actions/setup-python@v5
         with:
           python-version: "3.8"
       - name: Install miniconda
-        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         run: |
           if [ ! -d ~/miniconda ]
           then
@@ -56,7 +53,6 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           conda --version
       - name: Create conda environment
-        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
@@ -65,7 +61,6 @@ jobs:
           source activate tbp.monty
           pip install -e .[dev,github_readme_sync_tool,print_version_tool]
       - name: Get version and branch
-        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
@@ -77,7 +72,6 @@ jobs:
           # Get current date in ISO format
           echo "DATE=$(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_ENV
       - name: Deploy docs
-        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
@@ -86,7 +80,7 @@ jobs:
           export IMAGE_PATH=${{ vars.IMAGE_PATH }}
           python -m tools.github_readme_sync.cli upload docs "${VERSION}-${BRANCH_NAME}"
       - name: Update PR comment on success
-        if: ${{ success() && needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        if: success()
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           message: |
@@ -97,7 +91,7 @@ jobs:
 
             Last updated: ${{ env.DATE }}
       - name: Update PR comment on failure
-        if: ${{ failure() && needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        if: failure()
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           message: |
@@ -106,37 +100,3 @@ jobs:
             ❌ Failed to build documentation preview.
 
             Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
-
-  should_run_docs:
-    name: should-run-docs
-    runs-on: ubuntu-latest
-    # TODO uncomment
-    # if: ${{ github.repository_owner == 'thousandbrainsproject' }}
-    outputs:
-      should_run_docs: ${{ steps.should_run.outputs.should_run_docs }}
-    steps:
-      - name: Checkout tbp.monty
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          lfs: true
-          path: tbp.monty
-      - name: Filter by path for a pull request
-        id: filter_by_path_pr
-        working-directory: tbp.monty
-        run: |
-          git diff --name-only origin/${{ github.base_ref }} > changed_files.txt
-          while IFS= read -r changed_file
-          do
-            echo $changed_file
-            if [[ $changed_file == docs/* ]] ||
-               [[ $changed_file == tools/github_readme_sync/* ]] ||
-               [[ $changed_file == .github/workflows/docs* ]]; then
-              echo "should_run_docs=true" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-          done < changed_files.txt
-      - name: Should run
-        id: should_run
-        if: ${{ steps.filter_by_path_pr.outputs.should_run_docs == 'true' }}
-        run: echo "should_run_docs=true" >> $GITHUB_OUTPUT
