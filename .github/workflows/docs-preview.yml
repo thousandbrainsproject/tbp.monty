@@ -5,8 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  # TODO change to pull_request_target
-  pull_request:
+  pull_request_target:
     branches:
       - main
     paths:
