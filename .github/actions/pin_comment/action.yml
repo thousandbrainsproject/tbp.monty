@@ -18,6 +18,9 @@ inputs:
     description: "Path to the repository working directory"
     required: true
 
+permissions:
+  pull-requests: write
+
 runs:
   using: "composite"
   steps:
