@@ -18,7 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - should_run_docs
-    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
