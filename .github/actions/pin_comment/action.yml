@@ -20,6 +20,7 @@ inputs:
 
 permissions:
   pull-requests: write
+  issues: write
 
 runs:
   using: "composite"
