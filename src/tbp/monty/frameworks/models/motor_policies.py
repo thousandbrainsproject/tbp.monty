@@ -573,7 +573,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         Returns:
             Tuple[Union[Action, None], bool]: The next action to take and whether the
-                episode is done
+                episode is done.
 
         Raises:
             ValueError: If the object is not visible
@@ -656,7 +656,10 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 scene.
 
         Returns:
-            Two actions to execute to put the patch on the object
+            A (possibly empty) list of actions and a bool that indicates whether we
+            are already on the target object. If we are not on the target object, the
+            list of actions is of length two and is composed of actions needed to get
+            us onto the target object.
         """
         # Reconstruct 2D semantic map.
         depth_image = raw_observation[self.agent_id][view_sensor_id]["depth"]

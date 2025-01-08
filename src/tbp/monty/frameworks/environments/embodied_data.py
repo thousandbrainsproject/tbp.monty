@@ -223,7 +223,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             self.object_names = object_names
             # Return an (ordered) list of unique items:
             self.source_object_list = list(dict.fromkeys(object_names))
-            self.num_distactors = 0
+            self.num_distractors = 0
         elif isinstance(object_names, dict):
             # TODO when we want more advanced multi-object experiments, update these
             # arguments along with the Object Initializers so that we can easily
@@ -233,7 +233,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             self.source_object_list = list(
                 dict.fromkeys(object_names["source_object_list"])
             )
-            self.num_distactors = object_names["num_distractors"]
+            self.num_distractors = object_names["num_distractors"]
         else:
             raise ValueError("Object names should be a list or dictionary")
         self.create_semantic_mapping()
@@ -327,7 +327,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             name=self.object_names[idx], **init_params
         )
 
-        if self.num_distactors > 0:
+        if self.num_distractors > 0:
             self.add_distractor_objects(
                 primary_target_obj,
                 init_params,
@@ -366,7 +366,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             item for item in self.source_object_list if item != primary_target_name
         ]
 
-        for __ in range(self.num_distactors):
+        for __ in range(self.num_distractors):
             new_init_params = copy.deepcopy(init_params)
 
             new_obj_label = self.rng.choice(sampling_list)
@@ -482,10 +482,12 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
     def pre_episode(self):
         super().pre_episode()
         if not self.dataset.env._agents[0].action_space_type == "surface_agent":
-            on_object = self.get_good_view_with_patch_refinement()
-            assert (
-                on_object
-            ), "Primary target must be visible at the start of the episode"
+            on_target_object = self.get_good_view_with_patch_refinement()
+            if self.num_distractors == 0:
+                # Only perform this check if we aren't doing multi-object experiments.
+                assert (
+                    on_target_object
+                ), "Primary target must be visible at the start of the episode"
 
     def first_step(self):
         """Carry out particular motor-system state updates required on the first step.
@@ -551,15 +553,15 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # TODO break up this method so that there is less code duplication
         # Start by ensuring the center of the patch is covering the primary target
         # object before we start moving forward; only done for multi-object experiments
-        multiple_objects_present = self.num_distactors > 0
+        multiple_objects_present = self.num_distractors > 0
         if multiple_objects_present:
-            actions, on_object = self.motor_system.orient_to_object(
+            actions, on_target_object = self.motor_system.orient_to_object(
                 self._observation,
                 view_sensor_id,
                 target_semantic_id=self.primary_target["semantic_id"],
                 multiple_objects_present=multiple_objects_present,
             )
-            if not on_object:
+            if not on_target_object:
                 for action in actions:
                     self._observation, self.motor_system.state = self.dataset[action]
 
@@ -583,25 +585,25 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 )
 
         # Re-center ourselves (if necessary) after having moved closer
-        actions, on_object = self.motor_system.orient_to_object(
+        actions, on_target_object = self.motor_system.orient_to_object(
             self._observation,
             view_sensor_id,
             target_semantic_id=self.primary_target["semantic_id"],
             multiple_objects_present=multiple_objects_present,
         )
-        if not on_object:
+        if not on_target_object:
             for action in actions:
                 self._observation, self.motor_system.state = self.dataset[action]
 
         # Final check that we're on the object. May be used by calling function
         # to raise an error.
-        _, on_object = self.motor_system.orient_to_object(
+        _, on_target_object = self.motor_system.orient_to_object(
             self._observation,
             view_sensor_id,
             target_semantic_id=self.primary_target["semantic_id"],
             multiple_objects_present=multiple_objects_present,
         )
-        return on_object
+        return on_target_object
 
     def get_good_view_with_patch_refinement(self) -> bool:
         """Policy to get a good view of the object for the central patch.
@@ -622,9 +624,9 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         self.get_good_view("view_finder")
         for patch_id in ("patch", "patch_0"):
             if patch_id in self._observation["agent_id_0"].keys():
-                on_object = self.get_good_view(patch_id, allow_translation=False)
+                on_target_object = self.get_good_view(patch_id, allow_translation=False)
                 break
-        return on_object
+        return on_target_object
 
     def execute_jump_attempt(self):
         """Attempt a hypothesis-testing "jump" onto a location of the object.

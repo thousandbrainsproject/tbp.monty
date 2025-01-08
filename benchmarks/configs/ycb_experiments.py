@@ -108,7 +108,7 @@ monty_models_dir = os.getenv("MONTY_MODELS")
 # v8 : Using separate graph per input channel
 # v9 : Using models trained on 14 unique rotations
 fe_pretrain_dir = os.path.expanduser(
-    os.path.join(monty_models_dir, "pretrained_ycb_v9")
+    os.path.join(monty_models_dir, "pretrained_ycb_v10")
 )
 
 model_path_10distinctobj = os.path.join(
