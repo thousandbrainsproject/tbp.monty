@@ -30,30 +30,47 @@ runs:
         COMMENT_ID: ${{ inputs.comment_id }}
         WORKING_DIRECTORY: ${{ inputs.working_directory }}
       run: |
+        echo "Debug: Starting pin comment action"
+        echo "Debug: Working directory: ${WORKING_DIRECTORY}"
+        echo "Debug: Issue number: ${ISSUE_NUMBER}"
+        echo "Debug: Comment ID: ${COMMENT_ID}"
+
         # Change to working directory
         cd "${WORKING_DIRECTORY}"
+        echo "Debug: Changed to working directory"
 
         # Create comment with hidden marker and ID
         COMMENT="<!--pin-comment-marker-${COMMENT_ID}-->
         ${MESSAGE}"
+        echo "Debug: Created comment with marker"
 
         # Find and delete old comment with same ID using GitHub token
         # Get all comments and find the one with our marker
+        echo "Debug: Fetching existing comments"
         comments=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
           "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments")
         old_comment_id=$(echo "$comments" | jq -r ".[] | select(.body | startswith(\"<!--pin-comment-marker-${COMMENT_ID}-->\")) | .id")
+        
+        echo "Debug: Found old comment ID: ${old_comment_id:-none}"
 
         # Delete old comment if found
         if [ ! -z "$old_comment_id" ]; then
+          echo "Debug: Deleting old comment with ID: ${old_comment_id}"
           curl -X DELETE -H "Authorization: token ${GITHUB_TOKEN}" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/comments/${old_comment_id}"
+          echo "Debug: Deleted old comment"
+        else
+          echo "Debug: No old comment found to delete"
         fi
 
         # Escape newlines and quotes in comment for JSON
         ESCAPED_COMMENT=$(echo "$COMMENT" | jq -R -s '.')
+        echo "Debug: Escaped comment for JSON"
 
         # Create new pinned comment using GitHub API directly
+        echo "Debug: Creating new comment"
         curl -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
           -H "Content-Type: application/json" \
           -d "{\"body\":${ESCAPED_COMMENT}}" \
           "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments"
+        echo "Debug: Created new comment successfully"
