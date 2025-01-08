@@ -46,7 +46,7 @@ runs:
           "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments")
         status_code=${response: -3}
         comments=${response:0:-3}
-        
+
         if [ "$status_code" != "200" ]; then
           echo "Failed to fetch comments. Status code: ${status_code}"
           exit 1
@@ -62,7 +62,7 @@ runs:
             -d "{\"body\":${ESCAPED_COMMENT}}" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/comments/${old_comment_id}")
           status_code=${response: -3}
-          
+
           if [ "$status_code" != "200" ]; then
             echo "Failed to update comment. Status code: ${status_code}"
             exit 1
@@ -75,7 +75,7 @@ runs:
             -d "{\"body\":${ESCAPED_COMMENT}}" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments")
           status_code=${response: -3}
-          
+
           if [ "$status_code" != "201" ]; then
             echo "Failed to create comment. Status code: ${status_code}"
             exit 1
