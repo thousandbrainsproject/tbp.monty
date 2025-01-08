@@ -32,6 +32,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue_number: ${{ github.event.pull_request.number }}
           comment_id: docs-preview
+          working_directory: tbp.monty
           message: |
             📚 **Documentation Preview**
 
@@ -90,6 +91,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue_number: ${{ github.event.pull_request.number }}
           comment_id: docs-preview
+          working_directory: tbp.monty
           message: |
             📚 **Documentation Preview**
 
@@ -104,6 +106,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue_number: ${{ github.event.pull_request.number }}
           comment_id: docs-preview
+          working_directory: tbp.monty
           message: |
             📚 **Documentation Preview**
 

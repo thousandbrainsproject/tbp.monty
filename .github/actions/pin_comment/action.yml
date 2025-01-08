@@ -14,13 +14,13 @@ inputs:
   comment_id:
     description: "Unique identifier for this pinned comment"
     required: true
+  working_directory:
+    description: "Path to the repository working directory"
+    required: true
 
 runs:
   using: "composite"
   steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      
     - name: Pin comment
       shell: bash
       env:
@@ -28,7 +28,11 @@ runs:
         MESSAGE: ${{ inputs.message }}
         ISSUE_NUMBER: ${{ inputs.issue_number }}
         COMMENT_ID: ${{ inputs.comment_id }}
+        WORKING_DIRECTORY: ${{ inputs.working_directory }}
       run: |
+        # Change to working directory
+        cd "${WORKING_DIRECTORY}"
+        
         # Create comment with hidden marker and ID
         COMMENT="<!--pin-comment-marker-${COMMENT_ID}-->
         ${MESSAGE}"
