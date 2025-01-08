@@ -19,6 +19,12 @@ jobs:
     name: deploy-preview-docs
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout tbp.monty
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
       - name: Create initial PR comment
         uses: ./.github/actions/pin_comment
         with:
@@ -31,12 +37,6 @@ jobs:
             Building documentation preview... ⏳
 
             Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for progress.
-      - name: Checkout tbp.monty
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          lfs: true
-          path: tbp.monty
       - name: Set up ~/tbp
         run: |
           mkdir -p ~/tbp
