@@ -14,6 +14,9 @@ on:
       - 'tools/github_readme_sync/**'
       - '.github/workflows/docs-preview.yml'
 
+permissions:
+  pull-requests: write
+
 jobs:
   deploy_preview_docs:
     name: deploy-preview-docs
