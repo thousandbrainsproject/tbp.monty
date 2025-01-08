@@ -42,22 +42,42 @@ runs:
 
         # Find and delete old comment with same ID using GitHub token
         echo "Searching for existing pinned comment with ID: ${COMMENT_ID}"
-        comments=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+        response=$(curl -s -w "%{http_code}" -H "Authorization: token ${GITHUB_TOKEN}" \
           "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments")
+        status_code=${response: -3}
+        comments=${response:0:-3}
+        
+        if [ "$status_code" != "200" ]; then
+          echo "Failed to fetch comments. Status code: ${status_code}"
+          exit 1
+        fi
+
         old_comment_id=$(echo "$comments" | jq -r ".[] | select(.body | startswith(\"<!--pin-comment-marker-${COMMENT_ID}-->\")) | .id")
 
         # Update old comment if found
         if [ ! -z "$old_comment_id" ]; then
           echo "Updating existing comment with ID: ${old_comment_id}"
-          curl -X PATCH -H "Authorization: token ${GITHUB_TOKEN}" \
+          response=$(curl -s -w "%{http_code}" -X PATCH -H "Authorization: token ${GITHUB_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{\"body\":${ESCAPED_COMMENT}}" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/comments/${old_comment_id}"
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/comments/${old_comment_id}")
+          status_code=${response: -3}
+          
+          if [ "$status_code" != "200" ]; then
+            echo "Failed to update comment. Status code: ${status_code}"
+            exit 1
+          fi
         else
           # Create new pinned comment using GitHub API directly
           echo "Creating new pinned comment"
-          curl -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
+          response=$(curl -s -w "%{http_code}" -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
             -H "Content-Type: application/json" \
             -d "{\"body\":${ESCAPED_COMMENT}}" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments"
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments")
+          status_code=${response: -3}
+          
+          if [ "$status_code" != "201" ]; then
+            echo "Failed to create comment. Status code: ${status_code}"
+            exit 1
+          fi
         fi
