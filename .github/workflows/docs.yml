@@ -90,7 +90,7 @@ jobs:
             echo $changed_file
             if [[ $changed_file == docs/* ]] ||
                [[ $changed_file == tools/github_readme_sync/* ]] ||
-               [[ $changed_file == .github/workflows/docs-check.yml ]] ||
+               [[ $changed_file == .github/workflows/docs.yml ]] ||
                [[ $changed_file == .github/workflows/docs-preview.yml ]]; then
               echo "should_run_docs=true" >> $GITHUB_OUTPUT
               exit 0
