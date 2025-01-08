@@ -7,21 +7,18 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import os
 from numbers import Number
-from pathlib import Path
 from typing import Tuple
 
-import matplotlib.pyplot as plt
 import numpy as np
 import quaternion as qt
 import scipy
 
 __all__ = [
-    "MissingToMaxDepth",
     "AddNoiseToRawDepthImage",
-    "GaussianSmoothing",
     "DepthTo3DLocations",
+    "GaussianSmoothing",
+    "MissingToMaxDepth",
 ]
 
 
@@ -315,7 +312,8 @@ class DepthTo3DLocations:
             agent_obs = observations[self.agent_id][sensor_id]
             depth_obs = agent_obs["depth"]
 
-            # Initialize rudimentary semantic mask that makes off-object pixels 0.
+            # Initialize rudimentary semantic mask needed to mask off-object pixels.
+            # If we add it here, we'll delete it before exiting the function.
             if "semantic" in agent_obs.keys():
                 semantic_added = False
             else:
@@ -341,14 +339,11 @@ class DepthTo3DLocations:
             if self.depth_clip_sensors and self.use_semantic_sensor:
                 semantic_obs = agent_obs["semantic"]
             else:
-                surface_obs = self.get_semantic_from_depth(
+                semantic_obs = self.get_semantic_from_depth(
                     depth_obs,
                     default_on_surface_th,
                     agent_obs["semantic"],
                 )
-                # set pixel to 1 if it is on the main surface and on the object
-                # semantic_obs = agent_obs["semantic"] * surface_obs
-                semantic_obs = surface_obs
 
             # Approximate true world coordinates
             x, y = np.meshgrid(
@@ -415,10 +410,7 @@ class DepthTo3DLocations:
             # a deepcopy because we are appending a new observation
             observations[self.agent_id][sensor_id]["semantic_3d"] = semantic_3d
 
-        # Check if plots should be saved
-        if os.environ.get("saveplots"):
-            do_plots(observations)
-
+        # Delete the added semantic mask if it was added.
         if semantic_added:
             del agent_obs["semantic"]
 
@@ -537,73 +529,3 @@ class DepthTo3DLocations:
 
         semantic_patch = semantic_patch * semantic_mask
         return semantic_patch
-
-def do_plots(observations):
-    fig, axes = plt.subplots(2, 3, figsize=[7.02, 4])
-
-    sensor_id = "view_finder"
-    agent_obs = observations["agent_id_0"][sensor_id]
-    rgba_patch = agent_obs["rgba"]
-    depth_patch = agent_obs["depth"]
-    semantic_patch_1d = agent_obs["semantic_3d"][:, 3]
-    semantic_patch = semantic_patch_1d.reshape(
-        depth_patch.shape[0], depth_patch.shape[1]
-    )
-
-    ax = axes[0, 0]
-    ax.imshow(rgba_patch)
-    ax.set_title("RGBA")
-
-    ax = axes[0, 1]
-    vmin = vmax = None
-    # if sensor_id == "patch":
-    # vmin, vmax = 0.0, 0.5
-    im = ax.imshow(depth_patch, cmap="gray", vmin=vmin, vmax=vmax)
-    plt.colorbar(im, ax=ax)
-    ax.set_title(f"Depth")
-
-    ax = axes[0, 2]
-    # im = ax.imshow(semantic_patch, cmap="gray", vmin=0, vmax=1)
-    im = ax.imshow(semantic_patch)
-    plt.colorbar(im, ax=ax)
-    center = semantic_patch[32, 32]
-    on_center = center > 0.0
-    ax.set_title(f"Semantic: on_center={on_center}")
-
-    sensor_id = "patch"
-    agent_obs = observations["agent_id_0"][sensor_id]
-    rgba_patch = agent_obs["rgba"]
-    depth_patch = agent_obs["depth"]
-    semantic_patch_1d = agent_obs["semantic_3d"][:, 3]
-    semantic_patch = semantic_patch_1d.reshape(
-        depth_patch.shape[0], depth_patch.shape[1]
-    )
-
-    ax = axes[1, 0]
-    ax.imshow(rgba_patch)
-    ax.set_title("RGBA")
-
-    ax = axes[1, 1]
-    vmin = vmax = None
-    # if sensor_id == "patch":
-    # vmin, vmax = 0.0, 0.05
-    im = ax.imshow(depth_patch, cmap="gray", vmin=vmin, vmax=vmax)
-    plt.colorbar(im, ax=ax)
-    ax.set_title(f"Depth")
-
-    ax = axes[1, 2]
-    # im = ax.imshow(semantic_patch, cmap="gray", vmin=0, vmax=1)
-    im = ax.imshow(semantic_patch)
-    plt.colorbar(im, ax=ax)
-    center = semantic_patch[32, 32]
-    on_center = center > 0.0
-    ax.set_title(f"Semantic: on_center={on_center}")
-
-    for ax in axes.flatten():
-        ax.axis("off")
-    fig.tight_layout(pad=0.1)
-    figdir = Path("/Users/sknudstrup/figs")
-    figdir.mkdir(parents=True, exist_ok=True)
-    n_files = len(list(figdir.glob("*.png")))
-
-    fig.savefig(figdir / f"{n_files}.png")
