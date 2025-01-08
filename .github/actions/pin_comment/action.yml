@@ -24,7 +24,7 @@ runs:
     - name: Pin comment
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.token }}
+        GITHUB_TOKEN: ${{ inputs.token }}
         MESSAGE: ${{ inputs.message }}
         ISSUE_NUMBER: ${{ inputs.issue_number }}
         COMMENT_ID: ${{ inputs.comment_id }}
@@ -37,15 +37,20 @@ runs:
         COMMENT="<!--pin-comment-marker-${COMMENT_ID}-->
         ${MESSAGE}"
         
-        # Find and delete old comment with same ID
+        # Find and delete old comment with same ID using GitHub token
         # Get all comments and find the one with our marker
-        comments=$(gh api "/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments")
+        comments=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+          "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments")
         old_comment_id=$(echo "$comments" | jq -r ".[] | select(.body | startswith(\"<!--pin-comment-marker-${COMMENT_ID}-->\")) | .id")
         
         # Delete old comment if found
         if [ ! -z "$old_comment_id" ]; then
-          gh api -X DELETE "/repos/${GITHUB_REPOSITORY}/issues/comments/${old_comment_id}"
+          curl -X DELETE -H "Authorization: token ${GITHUB_TOKEN}" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/comments/${old_comment_id}"
         fi
 
-        # Create new pinned comment
-        gh issue comment "${ISSUE_NUMBER}" --body "${COMMENT}"
+        # Create new pinned comment using GitHub API directly
+        curl -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
+          -H "Content-Type: application/json" \
+          -d "{\"body\":\"${COMMENT}\"}" \
+          "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments"
