@@ -26,7 +26,7 @@ runs:
   using: "composite"
   steps:
     - name: Pin comment
-      shell: bash
+      shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
         MESSAGE: ${{ inputs.message }}
@@ -53,8 +53,11 @@ runs:
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/comments/${old_comment_id}"
         fi
 
+        # Escape newlines and quotes in comment for JSON
+        ESCAPED_COMMENT=$(echo "$COMMENT" | jq -R -s '.')
+        
         # Create new pinned comment using GitHub API directly
         curl -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
           -H "Content-Type: application/json" \
-          -d "{\"body\":\"${COMMENT}\"}" \
+          -d "{\"body\":${ESCAPED_COMMENT}}" \
           "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments"
