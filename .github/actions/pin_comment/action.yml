@@ -31,23 +31,13 @@ runs:
         ${MESSAGE}"
         
         # Find and delete old comment with same ID
-        gh api graphql -f query='
-          query($owner:String!, $repo:String!, $issue:Int!) {
-            repository(owner:$owner, name:$repo) {
-              issueOrPullRequest(number:$issue) {
-                ... on Issue { comments(first:100) { nodes { id body } } }
-                ... on PullRequest { comments(first:100) { nodes { id body } } }
-              }
-            }
-          }' -f owner="${GITHUB_REPOSITORY%/*}" -f repo="${GITHUB_REPOSITORY#*/}" -f issue="${ISSUE_NUMBER}" > query_result.json
-
-        if [ -s query_result.json ]; then
-          cat query_result.json | jq -r ".data.repository.issueOrPullRequest.comments.nodes[] | select(.body | startswith(\"<!--pin-comment-marker-${COMMENT_ID}-->\")) | .id" |
-          while read -r comment_id; do
-            if [ ! -z "$comment_id" ]; then
-              gh api --method DELETE "/graphql" -f query="mutation { deleteIssueComment(input: {id: \"$comment_id\"}) { clientMutationId } }"
-            fi
-          done
+        # Get all comments and find the one with our marker
+        comments=$(gh api "/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments")
+        old_comment_id=$(echo "$comments" | jq -r ".[] | select(.body | startswith(\"<!--pin-comment-marker-${COMMENT_ID}-->\")) | .id")
+        
+        # Delete old comment if found
+        if [ ! -z "$old_comment_id" ]; then
+          gh api -X DELETE "/repos/${GITHUB_REPOSITORY}/issues/comments/${old_comment_id}"
         fi
 
         # Create new pinned comment
