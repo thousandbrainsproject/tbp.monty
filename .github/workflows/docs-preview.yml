@@ -18,8 +18,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  deploy_preview_docs:
-    name: deploy-preview-docs
+  deploy_docs_preview:
+    name: deploy-docs-preview
     runs-on: ubuntu-latest
     steps:
       - name: Checkout tbp.monty
@@ -73,12 +73,12 @@ jobs:
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
-          echo "VERSION=$(python -m tools.print_version.cli minor)" >> $GITHUB_ENV
+          echo "MONTY_VERSION=$(python -m tools.print_version.cli minor)" >> $GITHUB_ENV
           # Make branch name safe for semver by replacing invalid chars with dash
           # Remove trailing dash if present
           echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr -c '[:alnum:]' '-' | sed 's/-*$//')" >> $GITHUB_ENV
           # Get current date in ISO format
-          echo "DATE=$(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_ENV
+          echo "MONTY_DATE=$(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_ENV
       - name: Deploy docs
         working-directory: tbp.monty
         run: |
@@ -86,7 +86,7 @@ jobs:
           source activate tbp.monty
           export README_API_KEY=${{ secrets.README_API_KEY }}
           export IMAGE_PATH=${{ vars.IMAGE_PATH }}
-          python -m tools.github_readme_sync.cli upload docs "${VERSION}-${BRANCH_NAME}"
+          python -m tools.github_readme_sync.cli upload docs "${MONTY_VERSION}-${BRANCH_NAME}"
       - name: Update PR comment on success
         if: success()
         uses: ./tbp.monty/.github/actions/pin_comment
@@ -99,9 +99,9 @@ jobs:
             📚 **Documentation Preview**
 
             ✅ A preview of the documentation changes in this PR is available for maintainers at:
-            ${{ vars.DOCS_URL_PREFIX }}v${{ env.VERSION }}-${{ env.BRANCH_NAME }}
+            ${{ vars.DOCS_URL_PREFIX }}v${{ env.MONTY_VERSION }}-${{ env.BRANCH_NAME }}
 
-            Last updated: ${{ env.DATE }}
+            Last updated: ${{ env.MONTY_DATE }}
       - name: Update PR comment on failure
         if: failure()
         uses: ./tbp.monty/.github/actions/pin_comment
