@@ -18,10 +18,6 @@ inputs:
     description: "Path to the repository working directory"
     required: true
 
-permissions:
-  pull-requests: write
-  issues: write
-
 runs:
   using: "composite"
   steps:
@@ -36,17 +32,17 @@ runs:
       run: |
         # Change to working directory
         cd "${WORKING_DIRECTORY}"
-        
+
         # Create comment with hidden marker and ID
         COMMENT="<!--pin-comment-marker-${COMMENT_ID}-->
         ${MESSAGE}"
-        
+
         # Find and delete old comment with same ID using GitHub token
         # Get all comments and find the one with our marker
         comments=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
           "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments")
         old_comment_id=$(echo "$comments" | jq -r ".[] | select(.body | startswith(\"<!--pin-comment-marker-${COMMENT_ID}-->\")) | .id")
-        
+
         # Delete old comment if found
         if [ ! -z "$old_comment_id" ]; then
           curl -X DELETE -H "Authorization: token ${GITHUB_TOKEN}" \
@@ -55,7 +51,7 @@ runs:
 
         # Escape newlines and quotes in comment for JSON
         ESCAPED_COMMENT=$(echo "$COMMENT" | jq -R -s '.')
-        
+
         # Create new pinned comment using GitHub API directly
         curl -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
           -H "Content-Type: application/json" \
