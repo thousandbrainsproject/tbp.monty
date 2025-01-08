@@ -15,7 +15,7 @@ on:
       - '.github/workflows/docs-preview.yml'
 
 permissions:
-  issues: write
+  pull-requests: write
 
 jobs:
   deploy_preview_docs:
