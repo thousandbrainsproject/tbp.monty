@@ -1,0 +1,14 @@
+name: Docs Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  docs-check:
+    name: docs-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo Hello
+        run: echo "Hello"
