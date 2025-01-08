@@ -25,8 +25,9 @@ jobs:
           fetch-depth: 0
           lfs: true
           path: tbp.monty
+
       - name: Create initial PR comment
-        uses: ./.github/actions/pin_comment
+        uses: ./tbp.monty/.github/actions/pin_comment
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue_number: ${{ github.event.pull_request.number }}
@@ -84,7 +85,7 @@ jobs:
           python -m tools.github_readme_sync.cli upload docs "${VERSION}-${BRANCH_NAME}"
       - name: Update PR comment on success
         if: success()
-        uses: ./.github/actions/pin_comment
+        uses: ./tbp.monty/.github/actions/pin_comment
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue_number: ${{ github.event.pull_request.number }}
@@ -98,7 +99,7 @@ jobs:
             Last updated: ${{ env.DATE }}
       - name: Update PR comment on failure
         if: failure()
-        uses: ./.github/actions/pin_comment
+        uses: ./tbp.monty/.github/actions/pin_comment
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue_number: ${{ github.event.pull_request.number }}
