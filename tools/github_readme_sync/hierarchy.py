@@ -321,31 +321,29 @@ def check_external_link(url):
 
 
 def check_url(url):
-    """Make HTTP request to URL, trying HEAD first then falling back to GET.
+    """Check if the URL exists.
 
-    Args:
-        url: The URL to request
+    The cache-control was just in-case.
+    The User Agent was needed to stop a 406 from
+    ycbbenchmarks.com. I think it will work with
+    any user-agent, but I figured a realistic one
+    was a bit more future proof.
 
     Returns:
-        requests.Response: The response from the server
-
-    Raises:
-        requests.RequestException: If either HEAD or GET request fails
+        requests.Response: The response from the URL request.
     """
     headers = request_headers()
+
     try:
         response = requests.head(url, timeout=5, headers=headers)
-    except requests.RequestException as e:
-        try:
-            response = requests.get(url, timeout=5, headers=headers)
-        except requests.RequestException as e:
-            raise requests.RequestException(f"Failed to connect to {url}") from e
+    except requests.RequestException:
+        # If HEAD fails, try GET instead
+        response = requests.get(url, timeout=5, headers=headers)
     else:
+        # If HEAD succeeds but returns non-2xx, try GET
         if not (200 <= response.status_code <= 299):
-            try:
-                response = requests.get(url, timeout=5, headers=headers)
-            except requests.RequestException as e:
-                raise requests.RequestException(f"Failed to connect to {url}") from e
+            response = requests.get(url, timeout=5, headers=headers)
+
     return response
 
 
