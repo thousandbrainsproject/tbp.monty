@@ -2,6 +2,8 @@
 title: Welcome to the Thousand Brains Project Documentation!
 ---
 
+Test
+
 ![](../figures/overview/logo.png)
 
 Welcome to the Thousand Brains Project, an open-source framework for sensorimotor learning systems that follow the same principles as the human brain.
