@@ -1,3 +1,11 @@
 ---
 title: Use Off-Object Observations
 ---
+
+There are a variety of instances where a Monty system has a hypothesis about the current object, and then moves off the hypothesis-space of that object, either sensing nothing/empty space, or another object. For example, this can occur due to a model-free driven action like a saccade moving off the object, or the surface agent leaving the surface of the object. Similarly, a model-based action like the hypothesis-testing "jump" can move an agent to a location where the object doesn't exist if the hypothesis it tested was false.
+
+Currently we have methods to move the sensor back on to the object, however we do not make use of the information that the object was absent at the perceived location. However, this is valuable information, as the absence of the object at a location will be consistent with some object and pose hypotheses, but not others.
+
+For example, if the most-likely hypothesis is a coffee mug and the system performs a saccade that results in the nearest feature being very far away (such as the distant surface of a table), then any hypotheses about the pose of the mug that predicted there would be mug-parts should receive evidence against them. On the other hand, a hypothesis about the mug's pose that is *consistent* with the absence of the mug at that location should receive positive evidence. The same would apply if the surface agent leaves the surface of the mug, where the absense of mug is consistent with a subset of hypotheses.
+
+A more nuanced instance arises if there is something at the expected location, but it is a feature of a different object. For example, when moving to where the handle of the coffee mug is believed to be, we might sense a glass of water. Again, however, as the sensed features (transparent, smooth glass) are different from those predicted by hypotheses that there was a mug handle there, then these hypotheses should receive negative evidence. On the other hand, this observation of unusual features is entirely consistent with the hypotheses that predicted that the mug would not be there. As such, it should still be possible to adjust evidence values based on how observations match the predictions of each hypothesis.

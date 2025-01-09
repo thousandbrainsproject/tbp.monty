@@ -1,3 +1,4 @@
+# Copyright 2025 Thousand Brains Project
 # Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
@@ -365,6 +366,12 @@ class EvidenceGraphLM(GraphLM):
             self.graph_memory.initialize_feature_arrays()
         self.symmetry_evidence = 0
         self.last_possible_hypotheses = None
+
+        self.current_mlh["graph_id"] = "no_observations_yet"
+        self.current_mlh["location"] = [0, 0, 0]
+        self.current_mlh["rotation"] = Rotation.from_euler("xyz", [0, 0, 0])
+        self.current_mlh["scale"] = 1
+        self.current_mlh["evidence"] = 0
 
     def receive_votes(self, vote_data):
         """Get evidence count votes and use to update own evidence counts.

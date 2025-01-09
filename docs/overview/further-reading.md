@@ -274,3 +274,5 @@ Ahmad, S., & Scheinkman, L. (2019). **How can we be so dense? The benefits of us
 Hawkins, J., Lewis, M., Klukas, M., Purdy, S., & Ahmad, S. (2019). **A framework for intelligence and cortical function based on grid cells in the neocortex.** Frontiers in Neural Circuits, 12, Article 121. <https://doi.org/10.3389/fncir.2018.00121>
 
 Hole, K. J., & Ahmad, S. (2021). **A thousand brains: Toward biologically constrained AI**. SN Applied Sciences, 3(8), 743. <https://doi.org/10.1007/s42452-021-04715-0>
+
+Clay, V., Leadholm, N., & Hawkins, J. (2024). **The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence.** arXiv. <https://arxiv.org/abs/2412.18354#>
