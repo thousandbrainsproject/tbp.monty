@@ -1,0 +1,117 @@
+name: Docs Preview
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'tools/github_readme_sync/**'
+      - '.github/workflows/docs_preview.yml'
+
+permissions:
+  pull-requests: write
+
+jobs:
+  deploy_docs_preview:
+    name: deploy-docs-preview
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tbp.monty
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
+
+      - name: Create initial PR comment
+        uses: ./tbp.monty/.github/actions/pin_comment
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue_number: ${{ github.event.pull_request.number }}
+          comment_id: docs-preview
+          working_directory: tbp.monty
+          message: |
+            📚 **Documentation Preview**
+
+            Building documentation preview... ⏳
+
+            Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for progress.
+      - name: Set up ~/tbp
+        run: |
+          mkdir -p ~/tbp
+          ln -s $GITHUB_WORKSPACE/tbp.monty ~/tbp/tbp.monty
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.8"
+      - name: Install miniconda
+        run: |
+          if [ ! -d ~/miniconda ]
+          then
+            wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
+            bash ~/miniconda.sh -b -p ~/miniconda
+            rm ~/miniconda.sh
+          fi
+          export PATH="$HOME/miniconda/bin:$PATH"
+          conda --version
+      - name: Create conda environment
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          (conda env list | grep tbp.monty) && conda remove --name tbp.monty --all --yes || true
+          conda env create
+          source activate tbp.monty
+          pip install -e .[dev,github_readme_sync_tool,print_version_tool]
+      - name: Get version and branch
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          echo "MONTY_VERSION=$(python -m tools.print_version.cli minor)" >> $GITHUB_ENV
+          # Make branch name safe for semver by replacing invalid chars with dash
+          # Remove trailing dash if present
+          echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr -c '[:alnum:]' '-' | sed 's/-*$//')" >> $GITHUB_ENV
+          # Get current date in ISO format
+          echo "MONTY_DATE=$(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_ENV
+      - name: Deploy docs
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          export README_API_KEY=${{ secrets.README_API_KEY }}
+          export IMAGE_PATH=${{ vars.IMAGE_PATH }}
+          python -m tools.github_readme_sync.cli upload docs "${MONTY_VERSION}-${BRANCH_NAME}"
+      - name: Update PR comment on success
+        if: success()
+        uses: ./tbp.monty/.github/actions/pin_comment
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue_number: ${{ github.event.pull_request.number }}
+          comment_id: docs-preview
+          working_directory: tbp.monty
+          message: |
+            📚 **Documentation Preview**
+
+            ✅ A preview of the documentation changes in this PR is available for maintainers at:
+            ${{ vars.DOCS_URL_PREFIX }}v${{ env.MONTY_VERSION }}-${{ env.BRANCH_NAME }}
+
+            Last updated: ${{ env.MONTY_DATE }}
+      - name: Update PR comment on failure
+        if: failure()
+        uses: ./tbp.monty/.github/actions/pin_comment
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue_number: ${{ github.event.pull_request.number }}
+          comment_id: docs-preview
+          working_directory: tbp.monty
+          message: |
+            📚 **Documentation Preview**
+
+            ❌ Failed to build documentation preview.
+
+            Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.

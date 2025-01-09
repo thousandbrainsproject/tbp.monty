@@ -1,0 +1,83 @@
+name: "Pin Comment"
+description: "Pins a comment by hiding it with HTML comments and a unique ID"
+
+inputs:
+  message:
+    description: "The message to pin"
+    required: true
+  token:
+    description: "GitHub token"
+    required: true
+  issue_number:
+    description: "The issue or PR number"
+    required: true
+  comment_id:
+    description: "Unique identifier for this pinned comment"
+    required: true
+  working_directory:
+    description: "Path to the repository working directory"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Pin comment
+      shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        MESSAGE: ${{ inputs.message }}
+        ISSUE_NUMBER: ${{ inputs.issue_number }}
+        COMMENT_ID: ${{ inputs.comment_id }}
+        WORKING_DIRECTORY: ${{ inputs.working_directory }}
+      run: |
+        # Change to working directory
+        cd "${WORKING_DIRECTORY}"
+
+        # Create comment with hidden marker and ID
+        COMMENT="<!--pin-comment-marker-${COMMENT_ID}-->
+        ${MESSAGE}"
+
+        # Properly escape the comment for JSON
+        ESCAPED_COMMENT=$(echo "$COMMENT" | jq -R -s '.')
+
+        # Find and delete old comment with same ID using GitHub token
+        echo "Searching for existing pinned comment with ID: ${COMMENT_ID}"
+        response=$(curl -s -w "%{http_code}" -H "Authorization: token ${GITHUB_TOKEN}" \
+          "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments?per_page=100")
+        status_code=${response: -3}
+        comments=${response:0:-3}
+
+        if [ "$status_code" != "200" ]; then
+          echo "Failed to fetch comments. Status code: ${status_code}"
+          exit 1
+        fi
+
+        old_comment_id=$(echo "$comments" | jq -r ".[] | select(.body | startswith(\"<!--pin-comment-marker-${COMMENT_ID}-->\")) | .id")
+
+        # Update old comment if found
+        if [ ! -z "$old_comment_id" ]; then
+          echo "Updating existing comment with ID: ${old_comment_id}"
+          response=$(curl -s -w "%{http_code}" -X PATCH -H "Authorization: token ${GITHUB_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"body\":${ESCAPED_COMMENT}}" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/comments/${old_comment_id}")
+          status_code=${response: -3}
+
+          if [ "$status_code" != "200" ]; then
+            echo "Failed to update comment. Status code: ${status_code}"
+            exit 1
+          fi
+        else
+          # Create new pinned comment using GitHub API directly
+          echo "Creating new pinned comment"
+          response=$(curl -s -w "%{http_code}" -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"body\":${ESCAPED_COMMENT}}" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments")
+          status_code=${response: -3}
+
+          if [ "$status_code" != "201" ]; then
+            echo "Failed to create comment. Status code: ${status_code}"
+            exit 1
+          fi
+        fi
