@@ -37,6 +37,7 @@ if _supports_color():
     WHITE = Fore.WHITE
     CYAN = Fore.CYAN
     BLUE = Fore.BLUE
+    YELLOW = Fore.YELLOW
     RESET = Style.RESET_ALL
 else:
     # If color is not supported, use empty strings
@@ -46,6 +47,7 @@ else:
     WHITE = ""
     CYAN = ""
     BLUE = ""
+    YELLOW = ""
     RESET = ""
 
 # No need to call any functions; the file automatically initializes color support.

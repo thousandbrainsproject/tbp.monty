@@ -14,7 +14,9 @@ import os
 import re
 from collections import OrderedDict
 from typing import Any, List, Tuple
+from urllib.parse import parse_qs
 
+import nh3
 import yaml
 
 from tools.github_readme_sync.colors import GRAY, GREEN, RESET
@@ -33,6 +35,9 @@ regex_cloudinary_video = re.compile(
     r"\[(.*?)\]\((https://res\.cloudinary\.com/([^/]+)/video/upload/v(\d+)/([^/]+\.mp4))\)",
     re.IGNORECASE,
 )
+
+# Allowlist of supported CSS properties
+ALLOWED_CSS_PROPERTIES = {"width", "height"}
 
 
 class OrderedDumper(yaml.SafeDumper):
@@ -169,7 +174,7 @@ class ReadMe:
         body = self.correct_image_locations(doc["body"])
         body = self.correct_file_locations(body)
         body = self.convert_note_tags(body)
-        body = self.caption_markdown_images(body)
+        body = self.parse_images(body)
         body = self.convert_cloudinary_videos(body)
 
         create_doc_request = {
@@ -214,6 +219,22 @@ class ReadMe:
                 return match.group(0)
             return f"{GITHUB_RAW}/{repo}/{image_filename}"
 
+        # Find all image tags in the body
+        img_tags = re.finditer(r'<img\s+[^>]*src="([^"]*)"[^>]*>', new_body)
+        for match in img_tags:
+            img_tag = match.group(0)
+            src = match.group(1)
+            # Only process if it's a relative path to figures
+            if "../figures/" in src:
+                image_path = re.search(regex_image_path, src)
+                if image_path:
+                    image_filename = image_path.group(2)
+                    if image_filename not in IGNORE_IMAGES:
+                        new_src = f"{GITHUB_RAW}/{repo}/{image_filename}"
+                        new_img_tag = img_tag.replace(src, new_src)
+                        new_body = new_body.replace(img_tag, new_img_tag)
+
+        # Process regular markdown images
         new_body = re.sub(regex_image_path, replace_image_path, new_body)
         return new_body
 
@@ -254,22 +275,49 @@ class ReadMe:
 
         raise ValueError("No stable version found")
 
-    def caption_markdown_images(self, markdown_text: str) -> str:
+    def parse_images(self, markdown_text: str) -> str:
         def replace_image(match):
             if any(ignore_image in match.groups()[1] for ignore_image in IGNORE_IMAGES):
                 return match.group(0)
             alt_text, image_src = match.groups()
+
+            # Split image source and fragment
+            src_parts = image_src.split("#")
+            clean_src = nh3.clean(src_parts[0])
+            style = "border-radius: 8px;"
+
+            # Parse and filter style parameters using allowlist
+            if len(src_parts) > 1:
+                try:
+                    params = parse_qs(src_parts[1])
+                    allowed_styles = []
+                    for key, values in params.items():
+                        if key in ALLOWED_CSS_PROPERTIES:
+                            # Sanitize both key and value
+                            safe_key = nh3.clean(key)
+                            safe_value = nh3.clean(values[0])
+                            allowed_styles.append(f"{safe_key}: {safe_value}")
+                        else:
+                            logging.warning(f"Ignoring disallowed CSS property '{key}'")
+                    if allowed_styles:
+                        style = f"{style} " + "; ".join(allowed_styles)
+                except (ValueError, ImportError):
+                    pass
+
+            # Construct HTML with sanitized values
             if alt_text:
-                return (
-                    f'<figure><img src="{image_src}" align="center"'
-                    f' style="border-radius: 8px;" />'
-                    f"<figcaption>{alt_text}</figcaption></figure>"
+                unsafe_html = (
+                    f'<figure><img src="{clean_src}" align="center"'
+                    f' style="{style}" />'
+                    f"<figcaption>{nh3.clean(alt_text)}</figcaption></figure>"
                 )
             else:
-                return (
-                    f'<figure><img src="{image_src}" align="center"'
-                    f' style="border-radius: 8px;" /></figure>'
+                unsafe_html = (
+                    f'<figure><img src="{clean_src}" align="center"'
+                    f' style="{style}" /></figure>'
                 )
+
+            return nh3.clean(unsafe_html, attributes={"img": {"src", "align", "style"}})
 
         return regex_images.sub(replace_image, markdown_text)
 
