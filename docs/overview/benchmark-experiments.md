@@ -157,14 +157,14 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 
 ### Results
 
-| Experiment                                  | % Correct | % Used MLH | Num Matching Steps | Rotation Error (radians)   | Run Time | Episode Run Time (s) |
-|---------------------------------------------|-----------|------------|--------------------|----------------------------|----------|----------------------|
-| randrot_noise_sim_on_scan_monty_world       | 80.00%    | 85.83%     | 437                | 0.94                       | 54m      | 25s                  |
-| world_image_on_scanned_model                | 66.67%    | 87.50%     | 453                | 2.05                       | 16m      | 19s                  |
-| dark_world_image_on_scanned_model           | 43.75%    | 77.08%     | 433                | 1.87                       | 15m      | 18s                  |
-| bright_world_image_on_scanned_model         | 47.92%    | 83.33%     | 457                | 2.16                       | 22m      | 27s                  |
-| hand_intrusion_world_image_on_scanned_model | 54.17%    | 47.92%     | 333                | 1.79                       | 11m      | 13s                  |
-| multi_object_world_image_on_scanned_model   | 41.67%    | 39.58%     | 298                | 1.67                       | 10m      | 12s                  |
+| Experiment                                  | % Correct | % Used MLH | Num Matching Steps | [Rotation Error (radians)]   | Run Time | Episode Run Time (s) |
+|---------------------------------------------|-----------|------------|--------------------|------------------------------|----------|----------------------|
+| randrot_noise_sim_on_scan_monty_world       | 80.00%    | 85.83%     | 437                | 0.94                         | 54m      | 25s                  |
+| world_image_on_scanned_model                | 66.67%    | 87.50%     | 453                | 2.05                         | 16m      | 19s                  |
+| dark_world_image_on_scanned_model           | 43.75%    | 77.08%     | 433                | 1.87                         | 15m      | 18s                  |
+| bright_world_image_on_scanned_model         | 47.92%    | 83.33%     | 457                | 2.16                         | 22m      | 27s                  |
+| hand_intrusion_world_image_on_scanned_model | 54.17%    | 47.92%     | 333                | 1.79                         | 11m      | 13s                  |
+| multi_object_world_image_on_scanned_model   | 41.67%    | 39.58%     | 298                | 1.67                         | 10m      | 12s                  |
 
 **Note that rotation errors are meaningless since no ground truth rotation is provided**
 
