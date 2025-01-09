@@ -49,19 +49,21 @@ If you want to use this code, contribute to it, ask questions or propose ideas, 
 
 [![](docs/figures/overview/discourse_screenshot.png)](https://thousandbrains.discourse.group/)
 
-If you would like to receive updates, follow us on [Bluesky](https://bluesky.social/thousandbrainsproject) or [Twitter](https://x.com/1000brainsproj) or [LinkedIn](https://www.linkedin.com/showcase/thousand-brains-project/).
+If you would like to receive updates, follow us on [Bluesky](https://bsky.app/profile/1000brainsproj.bsky.social) or [Twitter](https://x.com/1000brainsproj) or [LinkedIn](https://www.linkedin.com/company/thousand-brains-project/).
 
-If you have further questions or suggestions for collaborations, don't hesitate to contact us directly at **ThousandBrains@numenta.com**.
+If you have further questions or suggestions for collaborations, don't hesitate to contact us directly at **info@thousandbrains.org**.
 
 # Citing the Project
-If you're writing a paper that references the Thousand Brains Project, please cite our overview paper:
+If you're writing a publication that references the Thousand Brains Project, please cite our TBP whitepaper:
 ```
-@misc{TBP_Overview,
-	title = {The Thousand Brains Project},
-	url = {https://www.numenta.com/wp-content/uploads/2024/06/Short_TBP_Overview.pdf},
-	author = {Clay, Viviane and Leadholm, Niels and Hawkins, Jeff},
-	month = jun,
-	year = {2024},
+@misc{thousandbrainsproject2024,
+      title={The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence},
+      author={Viviane Clay and Niels Leadholm and Jeff Hawkins},
+      year={2024},
+      eprint={2412.18354},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2412.18354},
 }
 ```
 
