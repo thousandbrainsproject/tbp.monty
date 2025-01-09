@@ -43,7 +43,7 @@ runs:
         # Find and delete old comment with same ID using GitHub token
         echo "Searching for existing pinned comment with ID: ${COMMENT_ID}"
         response=$(curl -s -w "%{http_code}" -H "Authorization: token ${GITHUB_TOKEN}" \
-          "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments")
+          "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_NUMBER}/comments?per_page=100")
         status_code=${response: -3}
         comments=${response:0:-3}
 

@@ -11,7 +11,7 @@ on:
     paths:
       - 'docs/**'
       - 'tools/github_readme_sync/**'
-      - '.github/workflows/docs-preview.yml'
+      - '.github/workflows/docs_preview.yml'
 
 permissions:
   pull-requests: write
