@@ -1,0 +1,23 @@
+name: 'Get Version and Branch'
+description: 'Gets Monty version and formats branch name'
+outputs:
+  monty_version:
+    description: 'The Monty version'
+    value: ${{ steps.set-vars.outputs.monty_version }}
+  branch_name:
+    description: 'The formatted branch name'
+    value: ${{ steps.set-vars.outputs.branch_name }}
+  monty_date:
+    description: 'The current UTC date'
+    value: ${{ steps.set-vars.outputs.monty_date }}
+runs:
+  using: 'composite'
+  steps:
+    - id: set-vars
+      shell: bash
+      run: |
+        export PATH="$HOME/miniconda/bin:$PATH"
+        source activate tbp.monty
+        echo "monty_version=$(python -m tools.print_version.cli minor)" >> $GITHUB_OUTPUT
+        echo "branch_name=$(echo ${GITHUB_HEAD_REF} | tr -c '[:alnum:]' '-' | sed 's/-*$//')" >> $GITHUB_OUTPUT
+        echo "monty_date=$(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_OUTPUT 
