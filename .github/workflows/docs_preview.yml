@@ -97,7 +97,7 @@ jobs:
           (conda env list | grep tbp.monty) && conda remove --name tbp.monty --all --yes || true
           
           # Create environment with parallel downloads
-          CONDA_EXPERIMENTAL_SOLVER=libmamba conda env create --quiet
+          CONDA_EXPERIMENTAL_SOLVER=libmamba conda env create
           source activate tbp.monty
           pip install -e .[dev,github_readme_sync_tool,print_version_tool]
       - name: Get version and branch
@@ -124,7 +124,7 @@ jobs:
           message: |
             📚 **Documentation Preview**
 
-            ✅ A preview of the documentation changes in this PR is available for *maintainers only* at:
+            ✅ A preview of the documentation changes in this PR is available for *maintainers only* here:
             ${{ vars.DOCS_URL_PREFIX }}v${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}
 
             Last updated: ${{ steps.preview_info.outputs.monty_date }}
