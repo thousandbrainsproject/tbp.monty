@@ -43,68 +43,30 @@ jobs:
             Building documentation preview... ⏳
 
             Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for progress.
-      - name: Generate cache key
-        id: generate_cache_key
+      - name: Set up ~/tbp
         run: |
           mkdir -p ~/tbp
           ln -s $GITHUB_WORKSPACE/tbp.monty ~/tbp/tbp.monty
-          shasum -a 256 ~/tbp/tbp.monty/environment_arm64.yml | awk '{print $1}' > ~/tbp/environment_arm64.sha
-          shasum -a 256 ~/tbp/tbp.monty/environment.yml | awk '{print $1}' > ~/tbp/environment.sha
-          shasum -a 256 ~/tbp/tbp.monty/pyproject.toml | awk '{print $1}' > ~/tbp/pyproject.toml.sha
-          echo "monty-${RUNNER_OS}-$(cat ~/tbp/environment_arm64.sha)-$(cat ~/tbp/environment.sha)-$(cat ~/tbp/pyproject.toml.sha)" > ~/tbp/conda_env_cache_key.txt
-          echo "conda_env_cache_key_sha=$(cat ~/tbp/conda_env_cache_key.txt | shasum -a 256 | awk '{print $1}')" >> $GITHUB_OUTPUT
-
-      - name: Restore cache
-        id: restore_cache
-        uses: actions/cache/restore@v4
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v5
         with:
-          path: |
-            ~/miniconda
-          key: ${{ steps.generate_cache_key.outputs.conda_env_cache_key_sha }}
-          lookup-only: true
-
-      - name: Initialize conda or install if missing
+          python-version: "3.8"
+      - name: Install miniconda
         run: |
-          if [ -f ~/miniconda/etc/profile.d/conda.sh ]; then
-            echo "Conda installation found, initializing..."
-            export PATH="$HOME/miniconda/bin:$PATH"
-            source ~/miniconda/etc/profile.d/conda.sh
-            conda activate base
-          else
-            echo "Conda installation not found or corrupt, installing fresh..."
-            rm -rf ~/miniconda
+          if [ ! -d ~/miniconda ]
+          then
             wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
             bash ~/miniconda.sh -b -p ~/miniconda
             rm ~/miniconda.sh
-            export PATH="$HOME/miniconda/bin:$PATH"
-            source ~/miniconda/etc/profile.d/conda.sh
-            conda activate base
           fi
-
-      - name: Save cache
-        if: steps.restore_cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/miniconda
-          key: ${{ steps.restore_cache.outputs.cache-primary-key }}
-
+          export PATH="$HOME/miniconda/bin:$PATH"
+          conda --version
       - name: Create conda environment
-        if: steps.restore_cache.outputs.cache-hit != 'true'
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          # Configure conda for faster downloads
-          conda config --set channel_priority flexible
-          
-          # Install faster conda solver
-          conda install -n base conda-libmamba-solver -y
-          
-          # Remove existing environment if it exists
           (conda env list | grep tbp.monty) && conda remove --name tbp.monty --all --yes || true
-          
-          # Create environment with parallel downloads
-          CONDA_EXPERIMENTAL_SOLVER=libmamba conda env create
+          conda env create
           source activate tbp.monty
           pip install -e .[dev,github_readme_sync_tool,print_version_tool]
       - name: Get version and branch
@@ -115,8 +77,7 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source ~/miniconda/etc/profile.d/conda.sh
-          conda activate tbp.monty
+          source activate tbp.monty
           export README_API_KEY=${{ secrets.README_API_KEY }}
           export IMAGE_PATH=${{ vars.IMAGE_PATH }}
           python -m tools.github_readme_sync.cli upload docs "${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}"
@@ -132,7 +93,7 @@ jobs:
           message: |
             📚 **Documentation Preview**
 
-            ✅ A preview of the documentation changes in this PR is available for *maintainers only* here:
+            ✅ A preview of the documentation changes in this PR is available for maintainers at:
             ${{ vars.DOCS_URL_PREFIX }}v${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}
 
             Last updated: ${{ steps.preview_info.outputs.monty_date }}
