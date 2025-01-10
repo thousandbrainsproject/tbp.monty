@@ -8,6 +8,7 @@ on:
   # TODO: switch to pull_request_target before merging
   pull_request:
     branches:
+      # TODO: move back to main before merging
       - main2
     paths:
       - 'docs/**'
@@ -69,8 +70,8 @@ jobs:
           source activate tbp.monty
           pip install -e .[dev,github_readme_sync_tool,print_version_tool]
       - name: Get version and branch
-        id: versions
-        uses: ./tbp.monty/.github/actions/get-version
+        id: preview_info
+        uses: ./tbp.monty/.github/actions/get_preview_info
 
       - name: Deploy docs
         working-directory: tbp.monty
@@ -79,7 +80,7 @@ jobs:
           source activate tbp.monty
           export README_API_KEY=${{ secrets.README_API_KEY }}
           export IMAGE_PATH=${{ vars.IMAGE_PATH }}
-          python -m tools.github_readme_sync.cli upload docs "${{ steps.versions.outputs.monty_version }}-${{ steps.versions.outputs.branch_name }}"
+          python -m tools.github_readme_sync.cli upload docs "${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}"
 
       - name: Update PR comment on success
         if: success()
@@ -93,9 +94,9 @@ jobs:
             📚 **Documentation Preview**
 
             ✅ A preview of the documentation changes in this PR is available for maintainers at:
-            ${{ vars.DOCS_URL_PREFIX }}v${{ steps.versions.outputs.monty_version }}-${{ steps.versions.outputs.branch_name }}
+            ${{ vars.DOCS_URL_PREFIX }}v${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}
 
-            Last updated: ${{ steps.versions.outputs.monty_date }}
+            Last updated: ${{ steps.preview_info.outputs.monty_date }}
       - name: Update PR comment on failure
         if: failure()
         uses: ./tbp.monty/.github/actions/pin_comment
