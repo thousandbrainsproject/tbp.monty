@@ -67,8 +67,6 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           # Configure conda for faster downloads
           conda config --set channel_priority flexible
-          conda config --set repodata_threads 4
-          conda config --set download_threads 4
           
           # Install faster conda solver
           conda install -n base conda-libmamba-solver -y
