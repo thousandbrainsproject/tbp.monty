@@ -1,6 +1,6 @@
 ![](docs/figures/overview/logo.png)
 
-# Welcome to the Monty repository!
+# Welcome to the Monty repository
 *An open-source, sensorimotor learning system following the principles of the neocortex.*
 
 [![](https://github.com/thousandbrainsproject/tbp.monty/actions/workflows/monty.yml/badge.svg)](https://github.com/thousandbrainsproject/tbp.monty/actions/workflows/monty.yml)
