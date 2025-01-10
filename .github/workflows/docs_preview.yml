@@ -75,7 +75,7 @@ jobs:
           echo "MONTY_VERSION=$(python -m tools.print_version.cli minor)" >> $GITHUB_ENV
           # Make branch name safe for semver by replacing invalid chars with dash
           # Remove trailing dash if present
-          echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr -c '[:alnum:]' '-' | sed 's/-*$//')" >> $GITHUB_ENV
+          echo "BRANCH_NAME=${{ github.event.pull_request.user.login }}-$(echo ${GITHUB_HEAD_REF} | tr -c '[:alnum:]' '-' | sed 's/-*$//')" >> $GITHUB_ENV
           # Get current date in ISO format
           echo "MONTY_DATE=$(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_ENV
       - name: Deploy docs
