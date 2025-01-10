@@ -15,6 +15,7 @@ runs:
   steps:
     - id: set-vars
       shell: bash
+      working-directory: tbp.monty
       run: |
         export PATH="$HOME/miniconda/bin:$PATH"
         source activate tbp.monty
