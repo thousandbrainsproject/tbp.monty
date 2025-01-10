@@ -102,7 +102,7 @@ jobs:
           message: |
             📚 **Documentation Preview**
 
-            ✅ A preview of the documentation changes in this PR is available for maintainers at:
+            ✅ A preview of the documentation changes in this PR is available for *maintainers only* at:
             ${{ vars.DOCS_URL_PREFIX }}v${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}
 
             Last updated: ${{ steps.preview_info.outputs.monty_date }}
