@@ -8,7 +8,7 @@ on:
   # TODO: switch to pull_request_target before merging
   pull_request:
     branches:
-      - main
+      - main2
     paths:
       - 'docs/**'
       - 'tools/github_readme_sync/**'
