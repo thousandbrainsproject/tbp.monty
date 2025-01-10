@@ -63,6 +63,12 @@ jobs:
           key: ${{ steps.generate_cache_key.outputs.conda_env_cache_key_sha }}
           lookup-only: true
 
+      - name: Initialize conda
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source ~/miniconda/etc/profile.d/conda.sh
+          conda activate base
+
       - name: Install miniconda
         if: steps.restore_cache.outputs.cache-hit != 'true'
         run: |
@@ -108,7 +114,8 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
+          source ~/miniconda/etc/profile.d/conda.sh
+          conda activate tbp.monty
           export README_API_KEY=${{ secrets.README_API_KEY }}
           export IMAGE_PATH=${{ vars.IMAGE_PATH }}
           python -m tools.github_readme_sync.cli upload docs "${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}"
