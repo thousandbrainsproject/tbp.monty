@@ -5,11 +5,9 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  # TODO: switch to pull_request_target before merging
-  pull_request:
+  pull_request_target:
     branches:
-      # TODO: move back to main before merging
-      - main2
+      - main
     paths:
       - 'docs/**'
       - 'tools/github_readme_sync/**'

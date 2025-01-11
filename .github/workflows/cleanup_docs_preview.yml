@@ -1,10 +1,10 @@
 name: Cleanup Docs Preview
 
 on:
-  pull_request:
+  pull_request_target:
     types: [closed]
     branches:
-      - main2
+      - main
     paths:
       - 'docs/**'
       - 'tools/github_readme_sync/**'
