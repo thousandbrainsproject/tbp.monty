@@ -20,5 +20,5 @@ runs:
         export PATH="$HOME/miniconda/bin:$PATH"
         source activate tbp.monty
         echo "monty_version=$(python -m tools.print_version.cli minor)" >> $GITHUB_OUTPUT
-        echo "branch_name=$(echo ${GITHUB_HEAD_REF} | tr -c '[:alnum:]' '-' | sed 's/-*$//')" >> $GITHUB_OUTPUT
+        echo "BRANCH_NAME=${{ github.event.pull_request.user.login }}-$(echo ${GITHUB_HEAD_REF} | tr -c '[:alnum:]' '-' | sed 's/-*$//')" >> $GITHUB_OUTPUT
         echo "monty_date=$(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_OUTPUT
