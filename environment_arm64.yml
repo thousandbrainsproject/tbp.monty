@@ -49,5 +49,4 @@ dependencies:
 
   - pip
   - pip:
-      - vale
       - -e .[dev]
