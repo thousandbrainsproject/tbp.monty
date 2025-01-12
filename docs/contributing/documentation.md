@@ -56,7 +56,7 @@ Example: `title: 'My New Doc''s'`
 
 > 🚧 Your title must match the url-safe slug
 >
->So if your title is `My New Doc's` then your file name should be `my-new-docs.md`
+>If your title is `My New Doc's` then your file name should be `my-new-docs.md`
 
 Continue with the [Pull Requests](pull-requests.md) process.
 
