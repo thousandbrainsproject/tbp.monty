@@ -14,13 +14,13 @@ To manage the logging for an experiment you can specify the handlers that should
 | **BasicCSVStatsHandler**          | Log a .csv file with one row per episode that contains the results and performance of this episode.                                                         |
 | **ReproduceEpisodeHandler**       | Logs action sequence and target such that an episode can be exactly reproduced.                                                                             |
 | **BasicWandbTableStatsHandler**   | Logs a table similar to the .csv table to wandb.                                                                                                            |
-| **BasicWandbChartStatsHandler**   | Logs episode stats to wandb charts. When running in parallel this is done at the end of a run. Otherwise one can follow the run stats live on wanbd.        |
+| **BasicWandbChartStatsHandler**   | Logs episode stats to wandb charts. When running in parallel this is done at the end of a run. Otherwise one can follow the run stats live on wandb.       |
 | **DetailedWandbHandler**          | Logs animations of raw observations to wandb.                                                                                                               |
 | **DetailedWandbMarkedObsHandler** | Same as previous but marks the view-finder observation with a square indicating where the patch is.                                                         |
 
 ## Logging to Wandb
 
-When logging to wanbd we recommend to run`export WANDB_DIR=~/tbp/results/monty/wandb`so the wandb logs are not stored in the repository folder.
+When logging to wandb we recommend to run`export WANDB_DIR=~/tbp/results/monty/wandb`so the wandb logs are not stored in the repository folder.
 
 The first time you run experiments that log to wandb you will need to set your WANDB_API key using `export WANDB_API_KEY=your_key`
 
@@ -122,7 +122,7 @@ plt.show()
 
 > 📘 Plotting in 3D
 >
-> Most plots shown here use the 3D projection feature of matplotlib. The plots can be viewed interactively by dragging the mouse over them to zoom and rotate. When you want to save figures with 3D plots programatically, it can be useful to set the `rotation` parameter in the `plot_graph` function such that the POV provides a good view of the 3D structure of the object.
+> Most plots shown here use the 3D projection feature of matplotlib. The plots can be viewed interactively by dragging the mouse over them to zoom and rotate. When you want to save figures with 3D plots programmatically, it can be useful to set the `rotation` parameter in the `plot_graph` function such that the POV provides a good view of the 3D structure of the object.
 
 ### Plotting Matching Animations
 

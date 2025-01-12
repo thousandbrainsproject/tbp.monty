@@ -140,7 +140,7 @@ Images use `snake_case.ext`
 
 Images should generally be `png` or `svg` formats.  Use `jpg` if the file is actually a photograph.
 
-Upload high quality images as people can click on the image to see the larger version.  You can add style attriubtes after the image path with `#width=300px` or similar.
+Upload high quality images as people can click on the image to see the larger version.  You can add style attributes after the image path with `#width=300px` or similar.
 
 For example, the following markdown creates the image below:
 

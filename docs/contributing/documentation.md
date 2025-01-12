@@ -52,7 +52,7 @@ title: 'New Placeholder Example Doc'
 > 🚧 Quotes
 >
 >Please put the title in single quotes and, if applicable, escape any single quotes using two single quotes in a row.
-Exapmle: `title: 'My New Doc''s'`
+Example: `title: 'My New Doc''s'`
 
 > 🚧 Your title must match the url-safe slug
 >

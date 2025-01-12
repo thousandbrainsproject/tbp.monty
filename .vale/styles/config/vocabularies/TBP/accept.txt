@@ -1,6 +1,6 @@
-Bluesky
+\bBluesky\b
 neocortex
-Mountcastle
+\bMountcastle\b
 \bconfigs\b
 \bConfig\b
 \bconfig\b
@@ -12,7 +12,6 @@ hippocampal
 \bheterarchy\b
 saccading
 \bHTM\b
-html
 \bANNs*\b
 \bCNNs*\b
 \bGNNs*\b
@@ -69,20 +68,17 @@ fullscreen
 favicon
 href
 dataclass
-specifid
 Pretrained
 pretrained
 runtimes
 neurophysiologist
 mixin
-distingush
 Conda
 Miniconda
 zsh
-wanbd
+wandb
 utils
 matplotlib
-programatically
 timeseries
 pretrain
 misclassification
@@ -95,7 +91,6 @@ Leyman
 Sampath
 Shen
 Neuromorphic
-succesive
 interpretability
 Walkthrough
 presynaptic
@@ -143,9 +138,7 @@ prechecks
 repo
 rdme
 cli
-Exapmle
 semver
-attriubtes
 callouts
 discretized
 discretize
