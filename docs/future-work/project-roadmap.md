@@ -19,7 +19,7 @@ Tasks are categorized in two ways:
 
 Tasks that are done have a check mark next to them and are shaded in green. When a task gets checked off, it will add progress to the corresponding capabilities on the right.
 
-# What the TBP Team is Working on
+# What the TBP Team is Working On
 
 Some of the tasks are under active development by our team or scheduled to be tackled by us soon. Those are shaded in color. Below the main table, you can find a **list of our past and current milestones** with more detailed descriptions, timeline, and who is working on it. The colors of the milestones correspond to the colors in the main table.
 

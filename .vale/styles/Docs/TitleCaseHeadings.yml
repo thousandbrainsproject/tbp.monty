@@ -1,28 +1,7 @@
 extends: capitalization
-message: "%s should follow AMA title case."
+message: "%s should follow APA title case. (https://apastyle.apa.org/style-grammar-guidelines/capitalization/title-case)"
 level: error
 scope: heading
 match: $title
-style: AMA
+style: APA
 vocab: false
-exceptions:
-  - \ba\b
-  - \ban\b
-  - \band\b
-  - \bas\b
-  - \bat\b
-  - \bfor\b
-  - \bbut\b
-  - \bby\b
-  - \bif\b
-  - \bin\b
-  - \bdo\b
-  - \bwe\b
-  - \bof\b
-  - \bon\b
-  - \bor\b
-  - \bto\b
-  - \bup\b
-  - \bloader\b
-  - STM
-  - LTM

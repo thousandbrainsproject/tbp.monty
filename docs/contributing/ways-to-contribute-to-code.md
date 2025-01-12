@@ -16,6 +16,6 @@ There are many ways in which you can contribute to the code. The list below is n
 - **Add to our Benchmarks**: If you have ideas on how to test more capabilities of the system we appreciate if you add to our [benchmark experiments](../overview/benchmark-experiments.md). This could be evaluating different aspects in our current environments or adding completely new environments. Please note that in order to allow us to frequently run all the benchmark experiments, we only add one experiment for each specific capability we test and try to keep the run times reasonable.
 - **Work on an open Issue**: If you came to our project and want to contribute code but are unsure of what, the [open Issues](https://github.com/thousandbrainsproject/tbp.monty/issues) are a good place to start.  See our guide on [how to identify an issue to work on](ways-to-contribute-to-code/identify-an-issue-to-work-on.md) for more information.
 
-# How to Contribute Code
+# How To Contribute Code
 
 Monty integrates code changes using Github Pull Requests. To start contributing code to Monty, please consult the [Contributing Pull Requests](pull-requests.md) guide.

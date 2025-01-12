@@ -36,9 +36,7 @@ worldimages
 neocortical
 Initializer
 resample
-retreive
 actuations
-displacemnts
 Calli
 Omniglot
 iter
@@ -88,7 +86,6 @@ programatically
 timeseries
 pretrain
 misclassification
-succint
 _all_
 args
 eval
@@ -102,7 +99,6 @@ succesive
 interpretability
 Walkthrough
 presynaptic
-\befference\b
 subcortically
 Pytorch
 Guillery
@@ -136,11 +132,7 @@ Klukas
 Purdy
 xyz
 readme
-commande
-availabe
-triaged
 substep
-severities
 CLA
 unmerged
 github
@@ -153,9 +145,6 @@ rdme
 cli
 Exapmle
 semver
-serverity
-truely
-managable
 attriubtes
 callouts
 discretized
@@ -164,17 +153,13 @@ discretization
 profiler
 overconstrained
 loopdown
-acutation
 perceptrons
 bool
 gaussian
-aquired
-sequencce
 Cui
 learnable
 Eitan
 Azoff
-accross
 Sync'ing
 subdocuments
 sync'd
@@ -184,3 +169,6 @@ sync'd
 \bKalman\b
 biofilm
 \bTolman's\b
+\befference\b
+\bEfference\b
+\bTriaged\b

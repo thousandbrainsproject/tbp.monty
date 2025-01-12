@@ -4,7 +4,7 @@ description: Performance of current implementation on our benchmark test suite.
 ---
 # Object and Pose Recognition on the YCB Dataset
 
-## What do we Test?
+## What Do We Test?
 
 We split up the experiments into a short benchmark test suite and a long one. The short suite tests performance on a subset of 10 out of the 77 [YCB](https://www.ycbbenchmarks.com/) objects which allows us to assess performance under different conditions more quickly. Unless otherwise indicated, the 10 objects are chosen to be distinct in morphology and models are learned using the surface agent, which follows the object surface much like a finger. 
 
@@ -115,7 +115,7 @@ An object is classified as detected correctly if the detected object ID is in th
 | surf_agent_unsupervised_10distinctobj_noise | 80.00%               | 67.78%                 | 1.09                   | 2.78                   | 22m      | 13s                  |
 | surf_agent_unsupervised_10simobj            | 50.00%               | 76.67%                 | 2.75                   | 2.20                   | 25m      | 15s                  |
 
-To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning can, by definition, not be parallelized accross epochs. Therefore these experiments were run without multiprocessing on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
+To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning can, by definition, not be parallelized across epochs. Therefore these experiments were run without multiprocessing on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
 
 # Monty-Meets-World
 

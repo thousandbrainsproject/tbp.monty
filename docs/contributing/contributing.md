@@ -7,7 +7,7 @@ Welcome, and thank you for your interest in contributing to Monty!
 We appreciate all of your contributions. Below, you will find a list of ways to get involved and help create AI based on principles of the neocortex.
 
 
-# Contribute to Our Code
+# Contribute To Our Code
 
 There are many ways in which you can contribute to the code. For some suggestions, see the [Contributing Code Guide](ways-to-contribute-to-code.md).
 

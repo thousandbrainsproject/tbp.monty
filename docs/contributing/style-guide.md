@@ -113,11 +113,11 @@ In general we try and stick to native markdown syntax, if you find yourself need
 
 In a document your first level of headings should be the `#` , then `##` and so on.   This is slightly confusing as usually `#` is reserved for the title, but on readme.com the `h1` tag is used for the actual title of the document.
 
-Use headings to split up long text block into managable chunks.
+Use headings to split up long text blocks into manageable chunks.
 
 Headings can be referenced in other documents using a hash link `[Headings](doc:style-guide#headings)`. For example [Style Guide - Headings](style-guide.md#headings)
 
-All headings should use capitalization following APA convention. For detailed guidelines see the [APA heading style guide](https://apastyle.apa.org/style-grammar-guidelines/capitalization/title-case).
+All headings should use capitalization following APA convention. For detailed guidelines see the [APA heading style guide](https://apastyle.apa.org/style-grammar-guidelines/capitalization/title-case) and this can be tested with the [Vale](https://vale.sh/) tool and running `vale .` in the root of the repo.
 
 ## Footnotes
 
