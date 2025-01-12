@@ -58,6 +58,9 @@ dev = [
 
     # Python linter and formatter
     'ruff==0.7.1',
+    
+    # Documentation linting
+    'vale',
 ]
 generate_api_docs_tool = [
     'docutils>=0.17',

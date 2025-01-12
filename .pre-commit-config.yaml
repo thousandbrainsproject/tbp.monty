@@ -1,0 +1,12 @@
+repos:
+  - repo: local
+    hooks:
+      - id: vale-docs
+        name: Vale Documentation Linter
+        entry: bash -c 'vale .'
+        language: system
+        types: [markdown]
+        files: '^docs/.*\.md$|.*README\.md$'
+        pass_filenames: false
+        require_serial: true
+        additional_dependencies: [] 
