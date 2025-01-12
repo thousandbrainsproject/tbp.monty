@@ -10,7 +10,7 @@ The most natural application is **robotics**, with physical sensors and actuator
 
 For more details, see [Application Criteria](application-criteria.md) and [Capabilities of the System](./vision-of-the-thousand-brains-project/capabilities-of-the-system.md).
 
-# What is Special about This Project?
+# What is Special About This Project?
 
 Much of today's AI is based on learning from giant datasets by training ANNs on vast clusters of GPUs. This not only burns a lot of energy and requires a large dataset, but it is also fundamentally different from how humans learn. We know that there is a more efficient way of learning; we do it every day with our brain, which uses about as much energy as a light bulb. So why not use what we know about the brain to make AI more efficient and robust?
 
@@ -26,7 +26,7 @@ In addition to making all incremental progress visible, we will publish more suc
 
 **No**, LLMs are incredibly useful and powerful for various applications. However, we believe that the current approach most researchers and companies employ of incrementally adding small features to ANNs/LLMs will lead to diminishing returns over the next few years. **Developing genuine human-like intelligence demands a bold, innovative departure from the norm.** As we rethink AI from the ground up, we anticipate a longer period of initial investment with little return that will eventually compound to unlock potential that is unreachable with today’s solutions. We believe that this more human-like artificial intelligence will be what people think of when asked about AI in the future. At the same time, **we see LLMs as a tool that will continue to be useful for specific problems, much like the calculator is today**. 
 
-# What are the Advantages of This System (over ANNs/LLMs)?
+# What are the Advantages of This System (Over ANNs/LLMs)?
 
 The system we are building in the Thousand Brains Project has many advantages over current popular approaches. For one, it is much **more energy and data-efficient.** It can **learn faster and from less data** than deep learning approaches. This means that it can **learn from higher-quality data and be deployed in applications where data is scarce**. It can also **continually add new knowledge** to its models without forgetting old knowledge. The system is always learning, actively testing hypotheses, and improving its current models of whatever environment it is learning in.
 
@@ -34,7 +34,7 @@ Another advantage is the system's **scalability and modularity**. Due to the mod
 
 Using reference frames for modeling allows for **easier generalization, more robust representations, and more interpretability**. To sum it up, the system is **good at all the things that humans are good at**, but current AI is not.
 
-# How is the Thousand Brains Project (TBP) Different from Hierarchical Temporal Memory (HTM)?
+# How is the Thousand Brains Project (TBP) Different From Hierarchical Temporal Memory (HTM)?
 
 The TBP and HTM are both based on years of neuroscience research at Numenta and other labs across the world. They both implement principles we learned from the neocortex in code to build intelligent machines. However, they are **entirely separate implementations and differ in which principles they focus on**. While **HTM focuses more on the lower-level computational principles** such as sparse distributed representations (SDR), biologically plausible learning rules, and sequence memory, the **TBP focuses more on the higher-level principles** such as sensorimotor learning, the cortical column as a general and repeatable modeling unit, and models structured by reference frames. 
 

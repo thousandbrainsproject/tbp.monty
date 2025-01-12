@@ -1,0 +1,28 @@
+extends: capitalization
+message: "%s should follow AMA title case."
+level: error
+scope: heading
+match: $title
+style: AMA
+vocab: false
+exceptions:
+  - \ba\b
+  - \ban\b
+  - \band\b
+  - \bas\b
+  - \bat\b
+  - \bfor\b
+  - \bbut\b
+  - \bby\b
+  - \bif\b
+  - \bin\b
+  - \bdo\b
+  - \bwe\b
+  - \bof\b
+  - \bon\b
+  - \bor\b
+  - \bto\b
+  - \bup\b
+  - \bloader\b
+  - STM
+  - LTM

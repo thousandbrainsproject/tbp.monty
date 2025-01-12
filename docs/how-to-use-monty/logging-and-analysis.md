@@ -26,7 +26,7 @@ The first time you run experiments that log to wandb you will need to set your W
 
 # Analysis
 
-## Analyzing Data from monty_handlers
+## Analyzing Data From `monty_handlers`
 
 The [`plot_utils.py`](../../src/tbp/monty/frameworks/utils/plot_utils.py) contains utils for plotting the logged data. The [`logging_utils.py`](../../src/tbp/monty/frameworks/utils/logging_utils.py) file contains some useful utils for loading logs and printing some summary statistics on them.
 
@@ -220,7 +220,7 @@ plt.show()
 
 Obviously, there are tons of options for visualizing the logged data. The code and images above are just some examples to provide inspiration.
 
-## Analyzing Data from wandb_handlers
+## Analyzing Data From `wandb_handlers`
 
 When logging into Wandb, you can track your experiment results at <https://wandb.ai/home> . When you navigate to your project (by default called "Monty") you should see all your experiments in the Wandb dashboard. If you click on one of the runs, you should see something like this:
 

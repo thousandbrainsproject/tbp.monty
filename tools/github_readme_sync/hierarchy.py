@@ -72,11 +72,12 @@ def check_hierarchy_file(folder: str):
         sys.exit(1)
 
     with open(os.path.join(folder, HIERARCHY_FILE), "r") as f:
-        lines = f.readlines()
+        content = f.read()
+        content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
+        lines = content.splitlines()
 
     parent_stack = []
     current_category = None
-    # unique_slugs a set of all slugs and corresponding line in a dict
     unique_slugs = {}
     link_check_errors = []
 
@@ -93,7 +94,6 @@ def check_hierarchy_file(folder: str):
             )
             slug = extract_slug(line.strip())
 
-            # Check for duplicate slugs
             if slug in unique_slugs:
                 logging.error(
                     f"Duplicate slug found: {slug}"
@@ -107,7 +107,6 @@ def check_hierarchy_file(folder: str):
             parent_stack[-1]["children"].append(new_doc)
             parent_stack.append(new_doc)
 
-            # Verify file existence and sanity checks
             full_path = (
                 os.path.join(folder, *(el["slug"] for el in parent_stack)) + ".md"
             )

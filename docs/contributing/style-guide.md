@@ -21,7 +21,7 @@ We adopted the Google Style for docstrings. For more details, see the [Google Py
 
 ## Libraries
 
-### Numpy Preferred over PyTorch
+### Numpy Preferred Over PyTorch
 
 After discovering that torch-to-numpy conversions (and the reverse) were a significant speed bottleneck in our algorithms, we decided to consistently use NumPy to represent the data in our system.
 
