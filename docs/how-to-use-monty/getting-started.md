@@ -22,7 +22,7 @@ Next, you need to **clone the repository onto your device**. To do that, open th
 > [!NOTE]
 > If you want the same setup as we use at the Thousand Brains Project by default, clone the repository at `${HOME}/tbp/`. If you don't have a `tbp` folder in your home directory yet you can run `cd ~; mkdir tbp; cd tbp` to create it. It's not required to clone the code in this folder but it is the path we assume in our tutorials.
 
-## 1.2 Make Sure Your Local Copy is Up-To-Date
+## 1.2 Make Sure Your Local Copy is Up-to-Date
 
 If you just forked and cloned this repository, you may skip this step, but any other time you get back to this code, you will want to synchronize it to work with the latest changes.
 

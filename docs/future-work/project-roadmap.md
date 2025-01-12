@@ -2,7 +2,7 @@
 title: Project Roadmap
 description: An overview of tasks we plan to work on or would welcome contributions on.
 ---
-# Tasks on our Roadmap
+# Tasks on Our Roadmap
 
 We have a high-level overview table of tasks on our roadmap in our [project planning spreadsheet](https://docs.google.com/spreadsheets/d/1HlKqhMzYWxpW6_D0LtDd5qEuWRYHl6xMfxbIZ76lzng/edit?usp=sharing).
 
@@ -19,7 +19,7 @@ Tasks are categorized in two ways:
 
 Tasks that are done have a check mark next to them and are shaded in green. When a task gets checked off, it will add progress to the corresponding capabilities on the right.
 
-# What the TBP Team @Numenta is Working on
+# What the TBP Team is Working On
 
 Some of the tasks are under active development by our team or scheduled to be tackled by us soon. Those are shaded in color. Below the main table, you can find a **list of our past and current milestones** with more detailed descriptions, timeline, and who is working on it. The colors of the milestones correspond to the colors in the main table.
 
@@ -27,7 +27,7 @@ Some of the tasks are under active development by our team or scheduled to be ta
 
 We also have two stars that mark the current top two priorities of the TBP team.
 
-# How you can Contribute
+# How You Can Contribute
 
 We are happy if one of the tasks on this list piques your interest and you would like to contribute by tackling it!
 
@@ -41,7 +41,7 @@ Once you have a concrete idea of how you would like to tackle a task (whether it
 >
 > Besides these more involved and research/code heavy tasks on our roadmap, there are many other ways you can get involved and support this project. Check out our page on [ways to contribute](../contributing/ways-to-contribute-to-code.md) to find out what best matches your skillset and interests.
 
-# Tasks that are not on this Sheet
+# Tasks That Are Not on This Sheet
 
 Obviously, this table doesn't cover everything we want the system to eventually be able to do or all the ideas you might be coming up with. 
 

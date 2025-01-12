@@ -6,7 +6,7 @@ This page showcases some projects that were realized using the Monty code-base. 
 
 Please make sure your project is well documented, including a README on how to run it and ideally some images or video showcasing it. Feel free to also include a video or image here. Please also keep your description on this page short and concise.
 
-## Monty for Object Detection with the iPad Camera
+## Monty for Object Detection With the iPad Camera
 
 [block:embed]
 {

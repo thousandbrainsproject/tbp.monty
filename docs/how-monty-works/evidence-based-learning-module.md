@@ -92,7 +92,7 @@ Besides possible matches and possible poses, we also have the **most likely hypo
 
 Finally, when an object has no hypothesis with a positive evidence count, it is not considered a possible match. If all objects have only negative evidence we do not know the object we are presented with and the LM creates a new model for it in memory.
 
-# Voting with Evidence
+# Voting With Evidence
 
 Voting can help to **recognize objects faster** as it helps integrate information from multiple matches. Generally, the learning module is designed to be able to recognize objects on its own simply through successive movements. With voting we can achieve **flash inference** by sharing information between multiple learning modules. Note that even though the example in the figure below shows voting between two surface-based sensors, voting also **works across modalities**. This is because votes only contain information about possible objects and their poses which is modality agnostic.
 

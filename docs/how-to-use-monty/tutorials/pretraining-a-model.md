@@ -207,7 +207,7 @@ Here, we explicitly specified most parameters in config classes for transparency
 
 Briefly, we specified our experiment class and the number of epochs to run. We also configured a [logger](../logging-and-analysis.md), the environment dataset, and a training data loader to initialize our objects at different orientations for each episode. We also specified a valid but unused eval dataloader (currently necessary). `monty_config` is a nested config that describes the complete sensorimotor modeling system. Here is a short breakdown of its components:
 
-- `PatchAndViewMontyConfig`: the top-level monty config object specifies that we will have a sensor patch and an additional viewfinder as inputs to the system. It also specifies the routing matrices between sensors, SMs and LMs (using defaults in this simple setup).
+- `PatchAndViewMontyConfig`: the top-level Monty config object specifies that we will have a sensor patch and an additional viewfinder as inputs to the system. It also specifies the routing matrices between sensors, SMs and LMs (using defaults in this simple setup).
   - `monty_args`: a `MontyArgs`object specifying we want 500 exploratory steps per episode.
   - `sensor_module_configs`: a dictionary specifying sensor module class and arguments. These dictionaries specify that
     - `sensor_module_0` will be a `HabitatSurfacePatchSM` (a small sensory patch for a surface agent). The sensor module will extract the given list of features for each patch. We won't save raw observations here since it is memory-intensive and only required for detailed logging/plotting.

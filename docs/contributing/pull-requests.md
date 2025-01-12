@@ -3,7 +3,7 @@ title: Pull Requests
 ---
 Monty uses Github Pull Requests to integrate code changes.
 
-# Before making a pull request
+# Before Making a Pull Request
 
 ## Contributor License Agreement
 
@@ -11,7 +11,7 @@ Before we can accept your contribution, you must sign the Contributor License Ag
 
 See the [Contributor License Agreement](pull-requests/contributor-license-agreement.md) page for more on the CLA.
 
-## First-time Contributor
+## First-Time Contributor
 
 Before submitting a Pull Request, you should set up your development environment to work with Monty. See the development [Getting Started](../how-to-use-monty/getting-started.md) guide for more information.
 

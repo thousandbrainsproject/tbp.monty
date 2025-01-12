@@ -1,0 +1,7 @@
+extends: capitalization
+message: "%s should follow APA title case. (https://apastyle.apa.org/style-grammar-guidelines/capitalization/title-case)"
+level: error
+scope: heading
+match: $title
+style: APA
+vocab: false

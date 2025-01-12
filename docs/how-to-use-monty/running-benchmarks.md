@@ -10,7 +10,7 @@ For more details on the current benchmark experiments, see [this page.](../overv
 
 **When merging a change that impacts the performance on the benchmark experiments, you need to update the table in our documentation [here](../overview/benchmark-experiments.md).**
 
-# How to run a Benchmark Experiment
+# How to Run a Benchmark Experiment
 
 To run a benchmark experiment, simply call
 

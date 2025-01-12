@@ -28,7 +28,7 @@ These links will work even if you're on a designated version of the documentatio
 
 # Modifying a Document or Sub-Document
 
-This is the simplest flow.  To modify a document simply edit the markdown file in your forked version of the monty repository and commit the changes by following the normal [Pull Requests](pull-requests.md) process.
+This is the simplest flow.  To modify a document simply edit the markdown file in your forked version of the Monty repository and commit the changes by following the normal [Pull Requests](pull-requests.md) process.
 
 # Creating a Document
 
@@ -52,11 +52,11 @@ title: 'New Placeholder Example Doc'
 > 🚧 Quotes
 >
 >Please put the title in single quotes and, if applicable, escape any single quotes using two single quotes in a row.
-Exapmle: `title: 'My New Doc''s'`
+Example: `title: 'My New Doc''s'`
 
 > 🚧 Your title must match the url-safe slug
 >
->So if your title is `My New Doc's` then your file name should be `my-new-docs.md`
+>If your title is `My New Doc's` then your file name should be `my-new-docs.md`
 
 Continue with the [Pull Requests](pull-requests.md) process.
 
@@ -82,7 +82,7 @@ Continue with the [Pull Requests](pull-requests.md) process.
 
 If the move is within a category or sub-pages within a page, you can simply edit the `hierarchy.md` file and update the locations by moving the lines around.
 
-If you are changing the parent path of a document (ie, sub-page -> page, or page -> sub-page, or page/sub-page -> new category, or sub-page -> new page, then along with updating the `hierarchy.md` file you also must update the folder structure to make sure the document is correctly located.  The sync tool will fail with a pre-check error saying there is a mismatch between the hierarchy file and the location on disk if they do not match up.
+If you are changing the parent path of a document (i.e., sub-page -> page, or page -> sub-page, or page/sub-page -> new category, or sub-page -> new page, then along with updating the `hierarchy.md` file you also must update the folder structure to make sure the document is correctly located.  The sync tool will fail with a pre-check error saying there is a mismatch between the hierarchy file and the location on disk if they do not match up.
 
 Continue with the [Pull Requests](pull-requests.md) process.
 

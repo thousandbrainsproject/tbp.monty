@@ -7,7 +7,7 @@ Even though we cannot predict the ultimate use cases of the system, we want to t
 
 Following is a list of capabilities that we are always thinking about when designing and implementing the system. We are not looking for point solutions for each of these problems but a general algorithm that can solve them all. It is by no means a comprehensive list but should give an idea of the scope of the system.
 
-### Capabilities That our System Already has (At Least to a Certain Extent):
+### Capabilities That Our System Already Has (At Least to a Certain Extent):
 
 - Recognizing objects independent of their location and orientation in the world.
 
@@ -21,7 +21,7 @@ Following is a list of capabilities that we are always thinking about when desig
 
 - Recognizing objects when they are partially occluded by other objects.
 
-### Further Capabilities That we are Currently Working on:
+### Further Capabilities That we Are Currently Working On:
 
 - Learning categories of objects and generalizing to new instances of a category.
 

@@ -8,4 +8,4 @@ For example, a hand-like surface-agent might explore the surface of an object, w
 
 An example of a first task that could make use of this infrastructure is [Implement a Simple Cross-Modal Policy for Sensory Guidance](../motor-system-improvements/implement-a-simple-cross-modal-policy-for-sensory-guidance.md).
 
-It's also worth noting that we would like to move towards the concept of "motor modules" in the code-base, i.e. a plurarity of motor modules that convert from CMP-compliant goal states to non-CMP actuator changes. This would be a shift from the singular "motor system" that we currently have.
+It's also worth noting that we would like to move towards the concept of "motor modules" in the code-base, i.e. a plurality of motor modules that convert from CMP-compliant goal states to non-CMP actuator changes. This would be a shift from the singular "motor system" that we currently have.
