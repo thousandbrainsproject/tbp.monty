@@ -3,7 +3,7 @@ title: Governance
 ---
 # Summary
 
-Thousand Brains Project adopts a hierarchical technical governance structure for monty.
+Thousand Brains Project adopts a hierarchical technical governance structure for Monty.
 
 - A community of **Contributors** who file issues, make pull requests, and contribute to the project.
 - A small set of **Maintainers**, who drive the overall project direction.

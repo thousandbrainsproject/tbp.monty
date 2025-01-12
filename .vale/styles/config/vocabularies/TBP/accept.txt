@@ -180,7 +180,6 @@ subdocuments
 sync'd
 \bNumpy\b
 \bNumenta\b
-\bMonty\b
 \bLeadholm\b
 \bKalman\b
 biofilm
