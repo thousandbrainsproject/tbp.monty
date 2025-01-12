@@ -105,8 +105,7 @@ If you examine the `MontyExperiment` class, you will also notice that there are 
       - Do post-epoch logging.
   - Do post-train logging.
 
-and **this is exactly the procedure that was executed when you ran `python run.py -e firs
-t_experiment`.** When we run Monty in evaluation mode, the same sequence of calls is initiated by `MontyExperiment.evaluate` minus the model updating step in `MontyExperiment.post_episode`. See [here](../../how-monty-works/experiment.md) for more details on epochs, episodes, and steps.
+and **this is exactly the procedure that was executed when you ran `python run.py -e first_experiment`.** When we run Monty in evaluation mode, the same sequence of calls is initiated by `MontyExperiment.evaluate` minus the model updating step in `MontyExperiment.post_episode`. See [here](../../how-monty-works/experiment.md) for more details on epochs, episodes, and steps.
 
 ## Model
 
