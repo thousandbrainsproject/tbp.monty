@@ -443,16 +443,10 @@ class DepthTo3DLocations:
         histogram and check for empty bins in the middle. The center of the empty
         part if the histogram will be defined as the threshold.
 
-        Next, we want to check if we should use the depth values above or below the
-        threshold. Currently this is done by looking which side of the distribution
-        is larger (occupies more space in the patch). Alternatively we could check
-        which side the depth at the center of the patch is on. I'm not sure what would
-        be better.
-
-        Lastly, if we do decide to use the depth points that are further away, we need
-        to make sure they are not the points that are off the object. Currently this is
-        just done with a simple heuristic (depth difference < 0.1) but in the future we
-        will probably have to find a better solution for this.
+        If we do have a bimodal depth distribution, we effectively have two surfaces.
+        This could be the mug's handle vs the mug's body, or the front lip of a mug
+        vs the rear of the mug. We will use the depth threshold defined above to mask
+        out the surface that is not in the center of the patch.
 
         Args:
             depth_patch: sensor patch observations of depth
