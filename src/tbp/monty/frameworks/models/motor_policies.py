@@ -720,7 +720,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         The location is on the object and surrounded by pixels that are also on
         the object. This is done by smoothing the on_object image and then
-        taking the maximum of this smoothed image
+        taking the maximum of this smoothed image.
 
         Args:
             sem3d_obs: the location of each pixel and the semantic ID associated
