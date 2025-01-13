@@ -667,7 +667,6 @@ class PolicyTest(unittest.TestCase):
         ]
         dict_config = config_to_dict(config)
 
-        # points_on_target_obj = view["semantic"] == 1
         points_on_target_obj = (
             view["semantic_3d"][:, 3].reshape(view["depth"].shape) == 1
         )
