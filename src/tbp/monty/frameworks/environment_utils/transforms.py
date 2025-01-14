@@ -313,34 +313,83 @@ class DepthTo3DLocations:
             agent_obs = observations[self.agent_id][sensor_id]
             depth_obs = agent_obs["depth"]
 
-            # Initialize rudimentary semantic mask needed to mask off-object pixels.
-            # If we add it here, we'll delete it before exiting the function.
+            #     In the first part of this function, we build a mask that indicates
+            # not only which part of the image is on-object, but also which part of
+            # the image is "on-surface". The distinction between on-object and
+            # on-surface arises from the fact that the field of view may contain parts
+            # of the object that are far away from each other. For example, we may
+            # be looking at the front lip of a mug, but the back lip of the mug is
+            # also in the field of view. When we compute surface point normals or
+            # surface curvature for the front lip of the mug, we don't want to include
+            # pixels from the back lip of the mug.
+            #     To do this, we first need a semantic map that indicates only whether
+            # the pixel is on- or off-object. We then analyze the depth data to
+            # determine whether the pixels in the field of view appear to belong to the
+            # same part of the object (see `get_surface_from_depth` for details). The
+            # intersection of these two maps forms the on-surface mask (called
+            # `semantic_obs`) that is embedded into the observation dict and is used
+            # later when performing point-normal and curvature estimation.
+            #     How we decide to build these masks is dependent on several factors,
+            # such as whether we are using a distant agent or a surface agent, and
+            # whether a ground-truth semantic map should be used. This necessitates
+            # a few different code paths. Here is a brief outline of the parameters
+            # that reflect these factors as they are commonly used in Monty:
+            #  - when using a surface agent, self.depth_clip_sensors is a non-empty
+            #    tuple. More specifically, we know which sensor is the surface agent
+            #    since it's index will be in self.depth_clip_sensors. We only apply
+            #    depth clipping to the surface agent.
+            #  - surface agents also have their depth and semantic data clipped to a
+            #    a very short range from the sensor. This is done to more closely model
+            #    a finger which has short reach.
+            #  - `use_semantic_sensor` is currently only used with multi-object
+            #    experiments, and when this is `True`, the observation dict will have
+            #    an item called "semantic". In the future, we would like to include
+            #    semantic estimation for multi-object experiments. But until then, we
+            #    continue to support use of the semantic sensor for multi-object
+            #    experiments.
+            #  - When two parts of an object are visible, we separate the two parts
+            #    according to depth. However, the threshold we use to separate the two
+            #    parts is dependent on distant vs surface agents. The parameter
+            #    `default_on_surface_th` changes based on whether we are using a distant
+            #    or surface agent.
+
+            # We need a semantic map that masks off-object pixels. We can use the
+            # ground-truth semantic map if it's available. Otherwise, we generate one
+            # from the depth map and (temporarily) add it to the observation dict.
             if "semantic" in agent_obs.keys():
                 semantic_added = False
             else:
-                semantic_added = True
                 semantic_mask = np.ones_like(depth_obs, dtype=int)
                 semantic_mask[depth_obs >= 1] = 0
                 agent_obs["semantic"] = semantic_mask
                 semantic_added = True
 
+            # Apply depth clipping to the surface agent, and initialize the
+            # surface-separation threshold for later use.
             if i in self.depth_clip_sensors:
-                # Clip depth and semantic mask. Modifies agent_obs["depth"] and
-                # semantic_mask in place. Also modifies agent_obs["semantic"] in place
-                # if it exists.
+                # Surface agent: clip depth and semantic data (in place), and set
+                # the default surface-separation threshold to be very short.
                 self.clip(agent_obs)
                 default_on_surface_th = self.clip_value
             else:
-                default_on_surface_th = 10.0
+                # Distance agent: do not clip depth or semantic data, and set the
+                # default surface-separation threshold to be very long.
+                default_on_surface_th = 1000.0
 
-            # if applying depth clip, then do not use depth for semantic info
-            # because the depth surface now includes a sheet of pixels all
-            # set to the clip_value, and this sheet can confuse the
-            # get_semantic_from_depth function into thinking that it is the object
+            # Build a mask that only includes the pixels that are on-surface, where
+            # on-surface means the pixels are on-object and locally connected to
+            # the center of the patch's field of view. However, if we are using a
+            # surface agent and are using the semantic sensor, we may use the
+            # (clipped) ground-truth semantic mask as a shortcut (though it doesn't
+            # use surface estimation--just ton-objectness).
             if self.depth_clip_sensors and self.use_semantic_sensor:
+                # NOTE: this particular combination of self.depth_clip_sensors and
+                # self.use_semantic_sensor is not commonly used at present, if ever.
+                # self.depth_clip_sensors implies a surface agent, and
+                # self.use_semantic_sensor implies multi-object experiments.
                 semantic_obs = agent_obs["semantic"]
             else:
-                semantic_obs = self.get_semantic_from_depth(
+                semantic_obs = self.get_surface_from_depth(
                     depth_obs,
                     default_on_surface_th,
                     agent_obs["semantic"],
@@ -483,13 +532,41 @@ class DepthTo3DLocations:
 
         return th, flip_sign
 
-    def get_semantic_from_depth(
+    def get_surface_from_depth(
         self,
         depth_patch: np.ndarray,
         default_on_surface_th: Number,
         semantic_mask: np.ndarray,
     ) -> np.ndarray:
-        """Return semantic patch information from heuristics on depth patch.
+        """Return surface patch information from heuristics on depth patch.
+
+        This function returns a binary mask indicating whether each pixel is
+        "on-surface" using heuristics on the depth patch and the semantic mask.
+        When we say "on-surface", we mean "on the part of the object that the sensor
+        is centered on". For example, the sensor may be looking directly at the front
+        lip of a mug, but the back lip of the mug is also in view. While both parts
+        of the mug are on-object, we only want to use the front lip of the mug for
+        later computation (such as point-normal extraction and curvature estimation),
+        and so we want to mask out the back lip of the mug.
+
+        Continuing with the the mug front/back lip example, we separate the front
+        and back lips by their depth data. When we generate a histogram of pixel
+        depths, we should see two distincts peaks of the histogram (or 3 peaks if there
+        is a part of the field of view that is off-object entirely). We would then
+        compute which depth threshold separates the two peaks that correspond to the
+        two surfaces, and this is performed by `get_on_surface_th`. This function
+        uses that value to mask out the pixels that are beyond that threshold. Finally,
+        we element-wise multiply this surface mask by the semantic (i.e., object mask)
+        mask which ensures that off-object observations are also masked out.
+
+        Note that we most often don't have multiple surfaces in view. For example,
+        when exploring a mug, we are most often looking direclty at one locally
+        connected part of the mug, such as a patch on the mug's cylindrical body.
+        In this case, we don't attempt to find a surface-separating threshold, and we
+        instead use the default threshold `default_on_surface_th`. As with a
+        computed threshold, anything beyond it is zeroed out. For surface agents,
+        this threshold is usually quite small (e.g., 5 cm). For distant agents, the
+        threshold is large (e.g., 1000 meters) which is functionally infinite.
 
         Args:
             depth_patch: sensor patch observations of depth
