@@ -408,7 +408,7 @@ class DepthTo3DLocations:
             # the center of the patch's field of view. However, if we are using a
             # surface agent and are using the semantic sensor, we may use the
             # (clipped) ground-truth semantic mask as a shortcut (though it doesn't
-            # use surface estimation--just ton-objectness).
+            # use surface estimation--just on-objectness).
             if self.depth_clip_sensors and self.use_semantic_sensor:
                 # NOTE: this particular combination of self.depth_clip_sensors and
                 # self.use_semantic_sensor is not commonly used at present, if ever.
