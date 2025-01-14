@@ -384,9 +384,11 @@ class DepthTo3DLocations:
             if "semantic" in agent_obs.keys():
                 semantic_added = False
             else:
-                semantic_mask = np.ones_like(depth_obs, dtype=int)
-                semantic_mask[depth_obs >= 1] = 0
-                agent_obs["semantic"] = semantic_mask
+                # The generated map uses depth observations to determine whether
+                # pixels are on object using 1 meter as a threshold since
+                # `MissingToMaxDepth` sets the background void to 1.
+                agent_obs["semantic"] = np.ones_like(depth_obs, dtype=int)
+                agent_obs["semantic"][depth_obs >= 1] = 0
                 semantic_added = True
 
             # Apply depth clipping to the surface agent, and initialize the
@@ -491,7 +493,7 @@ class DepthTo3DLocations:
 
         return observations
 
-    def clip(self, agent_obs: dict):
+    def clip(self, agent_obs: dict) -> None:
         """Clip the depth and semantic data that lie beyond a certain depth threshold.
 
         Set the values of 0 (infinite depth) to the clip value.
