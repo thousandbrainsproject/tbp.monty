@@ -1,4 +1,4 @@
-name: Cleanup Docs Preview2
+name: Cleanup Docs Preview
 
 on:
   pull_request_target:
