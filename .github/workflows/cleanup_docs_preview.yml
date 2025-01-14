@@ -24,7 +24,6 @@ jobs:
 
       - name: Generate cache key
         id: generate_cache_key
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         run: |
           mkdir -p ~/tbp
           ln -s $GITHUB_WORKSPACE/tbp.monty ~/tbp/tbp.monty
