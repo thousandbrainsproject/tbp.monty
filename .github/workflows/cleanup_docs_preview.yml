@@ -8,7 +8,7 @@ on:
     paths:
       - 'docs/**'
       - 'tools/github_readme_sync/**'
-      - '.github/workflows/docs_preview.yml'
+      - '.github/workflows/cleanup_docs_preview.yml'
 
 jobs:
   cleanup_docs_preview:
