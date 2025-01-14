@@ -1,4 +1,4 @@
-name: 'Get Version and Branch'
+name: 'Get Version and Branch and Date'
 description: 'Gets Monty version and formats branch name'
 inputs:
   user_login:
