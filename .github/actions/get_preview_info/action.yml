@@ -7,13 +7,13 @@ inputs:
 outputs:
   monty_version:
     description: 'The Monty version'
-    value: ${{ steps.set-vars.outputs.monty_version }}
+    value: ${{ steps.set_vars.outputs.monty_version }}
   branch_name:
     description: 'The formatted branch name'
-    value: ${{ steps.set-vars.outputs.branch_name }}
+    value: ${{ steps.set_vars.outputs.branch_name }}
   monty_date:
     description: 'The current UTC date'
-    value: ${{ steps.set-vars.outputs.monty_date }}
+    value: ${{ steps.set_vars.outputs.monty_date }}
 runs:
   using: 'composite'
   steps:
