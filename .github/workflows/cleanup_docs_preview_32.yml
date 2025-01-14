@@ -4,7 +4,7 @@ on:
   pull_request:
     # types: [closed]
     branches:
-      - main2
+      - delete-preview
     paths:
       - 'docs/**'
       - 'tools/github_readme_sync/**'
