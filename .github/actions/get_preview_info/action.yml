@@ -27,18 +27,3 @@ runs:
         echo "monty_version=$(python -m tools.print_version.cli minor)" >> $GITHUB_OUTPUT
         echo "branch_name=${{ inputs.user_login }}-$(echo ${GITHUB_HEAD_REF} | tr -c '[:alnum:]' '-' | sed 's/-*$//')" >> $GITHUB_OUTPUT
         echo "monty_date=$(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_OUTPUT
-
-        # Debug output for version
-        echo "Debug: Running version command..."
-        python -m tools.print_version.cli minor
-        echo "Debug: Version output complete"
-
-        # Debug output for branch name
-        echo "Debug: User login is ${{ inputs.user_login }}"
-        echo "Debug: GITHUB_HEAD_REF is ${GITHUB_HEAD_REF}"
-        echo "Debug: Transformed branch name is $(echo ${GITHUB_HEAD_REF} | tr -c '[:alnum:]' '-' | sed 's/-*$//')"
-
-        # Debug output for date
-        echo "Debug: Current UTC date command output..."
-        date -u +'%Y-%m-%d %H:%M UTC'
-        echo "Debug: Date command complete"
