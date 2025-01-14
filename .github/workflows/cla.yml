@@ -17,7 +17,7 @@ jobs:
     if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     steps:
       - name: "Verify CLA"
-        uses: thousandbrainsproject/cla-assistant@main
+        uses: thousandbrainsproject/cla-assistant@v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TBP_BOT_TOKEN_SECRET: ${{ secrets.TBP_BOT_TOKEN_SECRET }}
