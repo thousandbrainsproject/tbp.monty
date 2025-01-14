@@ -67,7 +67,7 @@ jobs:
           source activate tbp.monty
           pip install -e .[dev,github_readme_sync_tool,print_version_tool]
           pip list
-          conda last
+          conda list
 
       - name: Save cache
         if: steps.restore_cache.outputs.cache-hit != 'true'
