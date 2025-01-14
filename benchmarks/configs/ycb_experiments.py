@@ -108,6 +108,7 @@ monty_models_dir = os.getenv("MONTY_MODELS")
 # v7 : Updated for State class support + using new feature names like pose_vectors
 # v8 : Using separate graph per input channel
 # v9 : Using models trained on 14 unique rotations
+# v10 : Using models trained without the semantic sensor
 fe_pretrain_dir = os.path.expanduser(
     os.path.join(monty_models_dir, "pretrained_ycb_v10")
 )
