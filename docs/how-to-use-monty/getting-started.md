@@ -99,8 +99,8 @@ A lot of our current experiments are based on the [YCB dataset](https://www.ycbb
 
 | Models | Archive Format | Download Link |
 | --- | --- | --- |
-| pretrained_ycb_v9 | tgz |  [pretrained_ycb_v9.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v9.tgz) |
-| pretrained_ycb_v9 | zip |  [pretrained_ycb_v9.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v9.zip) |
+| pretrained_ycb_v9 | tgz |  [pretrained_ycb_v10.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.tgz) |
+| pretrained_ycb_v9 | zip |  [pretrained_ycb_v10.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.zip) |
 
 Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
 
