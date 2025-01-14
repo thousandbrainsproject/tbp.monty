@@ -45,7 +45,6 @@ jobs:
           path: |
             ~/miniconda
           key: ${{ steps.generate_cache_key.outputs.conda_env_cache_key_sha }}
-          lookup-only: true
 
       - name: Install miniconda
         if: steps.restore_cache.outputs.cache-hit != 'true'
