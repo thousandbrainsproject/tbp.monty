@@ -9,11 +9,13 @@
 # https://opensource.org/licenses/MIT.
 
 from numbers import Number
-from typing import Tuple
+from typing import Optional, Tuple
 
 import numpy as np
 import quaternion as qt
 import scipy
+
+from tbp.monty.frameworks.models.states import State
 
 __all__ = [
     "AddNoiseToRawDepthImage",
@@ -308,50 +310,73 @@ class DepthTo3DLocations:
         self.clip_value = clip_value
         self.depth_clip_sensors = depth_clip_sensors
 
-    def __call__(self, observations, state=None):
+    def __call__(self, observations: dict, state: Optional[State] = None):
+        """Apply the depth-to-3D-locations transform to sensor observations.
+
+        Applies spatial transforms to the observations and generates a mask used
+        to determine which pixels are the object's surface. This modifies the
+        observations in-place. Some items may be modified, such as depth values,
+        while other values are added (see Returns section).
+
+        In the first part of this function, we build a mask that indicates
+        not only which part of the image is on-object, but also which part of
+        the image is "on-surface". The distinction between on-object and
+        on-surface arises from the fact that the field of view may contain parts
+        of the object that are far away from each other. For example, we may
+        be looking at the front lip of a mug, but the back lip of the mug is
+        also in the field of view. When we compute surface point normals or
+        surface curvature for the front lip of the mug, we don't want to include
+        pixels from the back lip of the mug.
+
+        To do this, we first need a semantic map that indicates only whether
+        the pixel is on- or off-object. We then analyze the depth data to
+        determine whether the pixels in the field of view appear to belong to the
+        same part of the object (see `get_surface_from_depth` for details). The
+        intersection of these two maps forms the on-surface mask (called
+        `semantic_obs`) that is embedded into the observation dict and is used
+        later when performing point-normal and curvature estimation.
+
+        How we decide to build these masks is dependent on several factors,
+        such as whether we are using a distant agent or a surface agent, and
+        whether a ground-truth semantic map should be used. This necessitates
+        a few different code paths. Here is a brief outline of the parameters
+        that reflect these factors as they are commonly used in Monty:
+         - when using a surface agent, self.depth_clip_sensors is a non-empty
+           tuple. More specifically, we know which sensor is the surface agent
+           since it's index will be in self.depth_clip_sensors. We only apply
+           depth clipping to the surface agent.
+         - surface agents also have their depth and semantic data clipped to a
+           a very short range from the sensor. This is done to more closely model
+           a finger which has short reach.
+         - `use_semantic_sensor` is currently only used with multi-object
+           experiments, and when this is `True`, the observation dict will have
+           an item called "semantic". In the future, we would like to include
+           semantic estimation for multi-object experiments. But until then, we
+           continue to support use of the semantic sensor for multi-object
+           experiments.
+         - When two parts of an object are visible, we separate the two parts
+           according to depth. However, the threshold we use to separate the two
+           parts is dependent on distant vs surface agents. The parameter
+           `default_on_surface_th` changes based on whether we are using a distant
+           or surface agent.
+
+        After the mask is generated, we unproject the 2D camera coordinates into
+        3D coordinates relative to the agent. We then add the transformed observations
+        to the original observations dict.
+
+        Args:
+            observations (dict): Observations returned by the data loader.
+            state (State, optional): Optionally supplied CMP-compliant state object.
+
+        Returns:
+            dict: The original observations dict with the following added:
+                - "semantic_3d": 3D coordinates of detected objects.
+                - "semantic": Binary mask indicating on-object pixels.
+                - "world_camera": Sensor-to-world coordinate frame transform.
+        """
         for i, sensor_id in enumerate(self.sensor_ids):
             agent_obs = observations[self.agent_id][sensor_id]
             depth_obs = agent_obs["depth"]
-
-            #     In the first part of this function, we build a mask that indicates
-            # not only which part of the image is on-object, but also which part of
-            # the image is "on-surface". The distinction between on-object and
-            # on-surface arises from the fact that the field of view may contain parts
-            # of the object that are far away from each other. For example, we may
-            # be looking at the front lip of a mug, but the back lip of the mug is
-            # also in the field of view. When we compute surface point normals or
-            # surface curvature for the front lip of the mug, we don't want to include
-            # pixels from the back lip of the mug.
-            #     To do this, we first need a semantic map that indicates only whether
-            # the pixel is on- or off-object. We then analyze the depth data to
-            # determine whether the pixels in the field of view appear to belong to the
-            # same part of the object (see `get_surface_from_depth` for details). The
-            # intersection of these two maps forms the on-surface mask (called
-            # `semantic_obs`) that is embedded into the observation dict and is used
-            # later when performing point-normal and curvature estimation.
-            #     How we decide to build these masks is dependent on several factors,
-            # such as whether we are using a distant agent or a surface agent, and
-            # whether a ground-truth semantic map should be used. This necessitates
-            # a few different code paths. Here is a brief outline of the parameters
-            # that reflect these factors as they are commonly used in Monty:
-            #  - when using a surface agent, self.depth_clip_sensors is a non-empty
-            #    tuple. More specifically, we know which sensor is the surface agent
-            #    since it's index will be in self.depth_clip_sensors. We only apply
-            #    depth clipping to the surface agent.
-            #  - surface agents also have their depth and semantic data clipped to a
-            #    a very short range from the sensor. This is done to more closely model
-            #    a finger which has short reach.
-            #  - `use_semantic_sensor` is currently only used with multi-object
-            #    experiments, and when this is `True`, the observation dict will have
-            #    an item called "semantic". In the future, we would like to include
-            #    semantic estimation for multi-object experiments. But until then, we
-            #    continue to support use of the semantic sensor for multi-object
-            #    experiments.
-            #  - When two parts of an object are visible, we separate the two parts
-            #    according to depth. However, the threshold we use to separate the two
-            #    parts is dependent on distant vs surface agents. The parameter
-            #    `default_on_surface_th` changes based on whether we are using a distant
-            #    or surface agent.
 
             # We need a semantic map that masks off-object pixels. We can use the
             # ground-truth semantic map if it's available. Otherwise, we generate one
@@ -466,7 +491,7 @@ class DepthTo3DLocations:
 
         return observations
 
-    def clip(self, agent_obs):
+    def clip(self, agent_obs: dict):
         """Clip the depth and semantic data that lie beyond a certain depth threshold.
 
         Set the values of 0 (infinite depth) to the clip value.
