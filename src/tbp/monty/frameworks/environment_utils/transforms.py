@@ -477,7 +477,7 @@ class DepthTo3DLocations:
 
     def get_on_surface_th(
         self,
-        depth_patch,
+        depth_patch: np.ndarray,
         min_depth_range: Number,
         default_on_surface_th: Number,
         semantic_mask: np.ndarray,
