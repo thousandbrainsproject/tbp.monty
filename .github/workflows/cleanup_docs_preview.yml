@@ -41,7 +41,6 @@ jobs:
 
       - name: Restore cache
         id: restore_cache
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/cache/restore@v4
         with:
           path: |
