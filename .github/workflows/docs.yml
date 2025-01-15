@@ -120,6 +120,7 @@ jobs:
           fetch-depth: 0
           lfs: true
           path: tbp.monty
+
       - name: Filter by path for a pull request
         if: ${{ github.event_name == 'pull_request' }}
         id: filter_by_path_pr
@@ -136,6 +137,7 @@ jobs:
               exit 0
             fi
           done < changed_files.txt
+
       - name: Filter by path for a push
         if: ${{ github.event_name == 'push' }}
         id: filter_by_path_push
@@ -150,6 +152,7 @@ jobs:
               exit 0
             fi
           done < changed_files.txt
+
       - name: Should run
         id: should_run
         if: ${{ steps.filter_by_path_pr.outputs.should_run_docs == 'true' || steps.filter_by_path_push.outputs.should_run_docs == 'true'}}
