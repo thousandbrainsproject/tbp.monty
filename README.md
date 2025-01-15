@@ -1,6 +1,6 @@
 ![](docs/figures/overview/logo.png)
 
-# Welcome to the Monty repository!
+# Welcome to the Monty Repository!
 
 *An open-source, sensorimotor learning system following the principles of the neocortex.*
 
