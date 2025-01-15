@@ -16,6 +16,7 @@ Our [**API documentation** here](https://api-monty.thousandbrains.org).
 
 # Getting Started
 
+
 You can find detailed instructions on how to install the project requirements and how to get started [here](https://thousandbrainsproject.readme.io/docs/getting-started)
 
 # Current Performance
