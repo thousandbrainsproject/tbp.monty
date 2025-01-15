@@ -13,15 +13,14 @@ runs:
     - name: Install Vale
       shell: bash
       run: |
-        sudo mkdir -p /usr/local/bin
-        sudo chmod 777 /usr/local/bin
-        curl -L https://github.com/errata-ai/vale/releases/download/v3.9.3/vale_3.9.3_Linux_64-bit.tar.gz | tar xvz -C /usr/local/bin vale
+        cd ${{ inputs.path }}
+        curl -L https://github.com/errata-ai/vale/releases/download/v3.9.3/vale_3.9.3_Linux_64-bit.tar.gz | tar xvz vale
 
     - name: Run Vale
       shell: bash
       run: |
         cd ${{ inputs.path }}
-        vale --output=line . > vale_output.txt
+        ./vale --output=line . > vale_output.txt
         exit_code=$?
         if [ -s vale_output.txt ]; then
           while IFS= read -r line; do

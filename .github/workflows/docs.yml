@@ -28,6 +28,7 @@ jobs:
           path: tbp.monty
 
       - name: lint-docs
+        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         uses: ./tbp.monty/.github/actions/vale_linter
         with:
           path: tbp.monty
