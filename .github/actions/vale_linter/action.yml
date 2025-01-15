@@ -20,8 +20,9 @@ runs:
       shell: bash
       run: |
         cd ${{ inputs.path }}
-        ./vale
+        ./vale .
         ./vale --output=line . > vale_output.txt
+        cat vale_output.txt
         exit_code=$?
         if [ -s vale_output.txt ]; then
           while IFS= read -r line; do
