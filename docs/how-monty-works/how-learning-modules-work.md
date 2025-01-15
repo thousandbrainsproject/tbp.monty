@@ -43,7 +43,7 @@ Each learning module has a buffer class which could be compared to a short term 
 
 # The Graph Memory (LTM)
 
-Each learning module has one graph memory class which it uses as a long term memory (LTM) of previously aquired knowledge. In the graph learning modules, the memory stores explicit object models in the form of graphs (represented in the ObjectModel class). The graph memory is responsible for storing, updating, and retrieving models from memory.
+Each learning module has one graph memory class which it uses as a long term memory (LTM) of previously acquired knowledge. In the graph learning modules, the memory stores explicit object models in the form of graphs (represented in the ObjectModel class). The graph memory is responsible for storing, updating, and retrieving models from memory.
 
 ![Graph memory classes and their relationships.](../figures/how-monty-works/gm_classes.png)
 

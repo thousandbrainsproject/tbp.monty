@@ -7,7 +7,7 @@ Welcome, and thank you for your interest in contributing to Monty!
 We appreciate all of your contributions. Below, you will find a list of ways to get involved and help create AI based on principles of the neocortex.
 
 
-# Contribute to our Code
+# Contribute To Our Code
 
 There are many ways in which you can contribute to the code. For some suggestions, see the [Contributing Code Guide](ways-to-contribute-to-code.md).
 
@@ -29,7 +29,7 @@ As a Monty user or contributor, you can help others become familiar with differe
 
 You can find the researchers, developers, and users of Monty on the [Thousand Brains Forum](https://thousandbrains.discourse.group/). Please join us there for active discussion on all things Monty and Thousand Brains.
 
-# Test our Approach
+# Test Our Approach
 
 The vision of this project is to implement a generally intelligent system that can solve a wide variety of sensorimotor tasks (at a minimum, any task the neocortex can solve/humans can perform with ease). To evaluate this, we are continually looking for test beds in which we can assess the system's capabilities. If you have an idea of how to test an important capability or you have an existing benchmark on which you want to compare our algorithm, please consider contributing these. 
 
@@ -65,6 +65,6 @@ Thank you for being a member of our community. By using Monty, you are already p
 
 If you want to discuss further opportunities, such as mentioning us in a blog post or newspaper article or recording an interview with us, don't hesitate to contact [info@thousandbrains.org](mailto:info@thousandbrains.org).
 
-# Partner with Us
+# Partner With Us
 
 If you are a research lab, government institution, or company and you think a closer collaboration with our team could be mutually beneficial, please reach out to us at [info@thousandbrains.org](mailto:info@thousandbrains.org).
