@@ -12,7 +12,7 @@ We are excited about all contributors and there may be a wide range of motivatio
 - You want to solve a task that requires quick, continuous learning and adaptation.
 - You want to better understand the brain and principles underlying our intelligence.
 - You want to work on the future of AI.
-- You want to be part of a truely unique and special project.
+- You want to be part of a truly unique and special project.
 
 Here is a list of concrete output you may get out of working on this project.
 

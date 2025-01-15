@@ -4,7 +4,7 @@ description: Performance of current implementation on our benchmark test suite.
 ---
 # Object and Pose Recognition on the YCB Dataset
 
-## What do we Test?
+## What Do We Test?
 
 We split up the experiments into a short benchmark test suite and a long one. The short suite tests performance on a subset of 10 out of the 77 [YCB](https://www.ycbbenchmarks.com/) objects which allows us to assess performance under different conditions more quickly. Unless otherwise indicated, the 10 objects are chosen to be distinct in morphology and models are learned using the surface agent, which follows the object surface much like a finger. 
 
@@ -64,7 +64,7 @@ The following results are obtained from experiments using the 10-object subsets 
 | randomrot_rawnoise_10distinctobj_surf_agent | 73.00%    | 78.00%     | 15                 | 1.54                     | 11m      | 12s                  |
 | base_10multi_distinctobj_dist_agent         | 69.29%    | 47.14%     | 25                 | 0.82                     | 1h6m     | 2s                   | 
 
-## Longer Experiments with all 77 YCB Objects
+## Longer Experiments With all 77 YCB Objects
 
 The following results are obtained from experiments on the entire YCB dataset (77 objects). Since this means having 77 instead of 10 objects in memory, having to disambiguate between them, and running 77 episodes instead of 10 per epoch, these runs take significantly longer. Due to that we only test 3 known rotations ([0, 0, 0], [0, 90, 0], [0, 180, 0]) for the `base` configs and 3 random rotations for the `randrot` configs. The 5LM experiment is currently just run with 1 epoch (1 random rotation per object) but might be extended to 3. The 5LM experiment is run on 48 CPUs instead of 16.
 
@@ -115,7 +115,7 @@ An object is classified as detected correctly if the detected object ID is in th
 | surf_agent_unsupervised_10distinctobj_noise | 80.00%               | 67.78%                 | 1.09                   | 2.78                   | 22m      | 13s                  |
 | surf_agent_unsupervised_10simobj            | 50.00%               | 76.67%                 | 2.75                   | 2.20                   | 25m      | 15s                  |
 
-To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning can, by definition, not be parallelized accross epochs. Therefore these experiments were run without multiprocessing on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
+To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning can, by definition, not be parallelized across epochs. Therefore these experiments were run without multiprocessing on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
 
 # Monty-Meets-World
 
@@ -176,7 +176,7 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
   Each episode is restricted to a single viewing angle of an object, resulting in significant ambiguity. Furthermore, episodes use a maximum of 100 matching steps so that these experiments can be run quickly.
 - **Are there any other factors contributing to performance differences to be aware of?**  
   During the collection of some of the datasets, the "smoothing" setting was unfortunately not active; this affects the standard (world_image_on_scanned_model) dataset, as well as the bright and hand-intrusion experiments. Broadly, this appears to not have had too much of an impact, given that e.g., dark and bright perform comparably (with bright actually being better, even though it was acquired without smoothing). There appear to be a couple of images (around 5 out of the 240 images), where this has resulted in a large step-change in the depth reading, and as a result of this, the experiment begins with the model "off" the object, even though to a human eye, the initial position of the patch is clearly on the object. This will be addressed in a future update to the data-sets, where we can also implement any additional changes we may wish to make during data collection (e.g., more control of object poses, or the inclusion of motor data).
-- **What steps should be noted when aquiring new images?**  
+- **What steps should be noted when acquiring new images?**  
   In addition to ensuring that the "smoothing" option is toggled on (currently off by default), lie the iPad on its side, ensuring that the volume bottom is at the top, so that the orientation of images are consistent across the data-sets. In general, objects should be as close to the camera as possible when taking images, while ensuring the depth values do not begin to clip. 
 
 # Future Capabilities

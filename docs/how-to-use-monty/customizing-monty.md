@@ -37,4 +37,4 @@ my_custom_config.update(
 )
 ```
 
-For simplicity we inherit all other default values from the `base_config_10distinctobj_dist_agent` config in `benchmarks/configs/ycb_experiments.py` and use the `monty_config` specifid in the `PatchAndViewSOTAMontyConfig` dataclass.
+For simplicity we inherit all other default values from the `base_config_10distinctobj_dist_agent` config in `benchmarks/configs/ycb_experiments.py` and use the `monty_config` specified in the `PatchAndViewSOTAMontyConfig` dataclass.

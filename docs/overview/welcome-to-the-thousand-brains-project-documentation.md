@@ -48,8 +48,8 @@ We are excited to have you here!  Our intention for making the project open-sour
 | <a href="https://bsky.app/profile/1000brainsproj.bsky.social" style="display: flex; align-items: center;"><img src="../figures/overview/bluesky.png" alt="Bluesky" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;Bluesky</a> <a href="https://x.com/1000brainsproj" style="display: flex; align-items: center;"><img src="../figures/overview/twitter.png" alt="X/Twitter" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;X/Twitter</a> | Get the latest news and announcements, and engage with our community |
 | <a href="https://www.linkedin.com/company/thousand-brains-project" style="display: flex; align-items: center;"><img src="../figures/overview/linkedin.png" alt="LinkedIn" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;LinkedIn&nbsp;Page</a> | Get the latest news and announcements |
 
-# Citing this Project
-If you're writing a publication that references the Thousand Brains Project, please cite our TBP whitepaper:
+# Citing This Project
+If you're writing a publication that references the Thousand Brains Project, please cite our TBP white paper:
 ```
 @misc{thousandbrainsproject2024,
       title={The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence},
