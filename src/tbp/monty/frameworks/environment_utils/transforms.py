@@ -376,31 +376,30 @@ class DepthTo3DLocations:
         """
         for i, sensor_id in enumerate(self.sensor_ids):
             agent_obs = observations[self.agent_id][sensor_id]
-            depth_obs = agent_obs["depth"]
+            depth_patch = agent_obs["depth"]
 
             # We need a semantic map that masks off-object pixels. We can use the
             # ground-truth semantic map if it's available. Otherwise, we generate one
             # from the depth map and (temporarily) add it to the observation dict.
             if "semantic" in agent_obs.keys():
-                semantic_added = False
+                semantic_patch = agent_obs["semantic"]
             else:
                 # The generated map uses depth observations to determine whether
                 # pixels are on object using 1 meter as a threshold since
                 # `MissingToMaxDepth` sets the background void to 1.
-                agent_obs["semantic"] = np.ones_like(depth_obs, dtype=int)
-                agent_obs["semantic"][depth_obs >= 1] = 0
-                semantic_added = True
+                semantic_patch = np.ones_like(depth_patch, dtype=int)
+                semantic_patch[depth_patch >= 1] = 0
 
             # Apply depth clipping to the surface agent, and initialize the
             # surface-separation threshold for later use.
             if i in self.depth_clip_sensors:
                 # Surface agent: clip depth and semantic data (in place), and set
                 # the default surface-separation threshold to be very short.
-                self.clip(agent_obs)
+                self.clip(depth_patch, semantic_patch)
                 default_on_surface_th = self.clip_value
             else:
                 # Distance agent: do not clip depth or semantic data, and set the
-                # default surface-separation threshold to be very long.
+                # default surface-separation threshold to be very far away.
                 default_on_surface_th = 1000.0
 
             # Build a mask that only includes the pixels that are on-surface, where
@@ -414,12 +413,12 @@ class DepthTo3DLocations:
                 # self.use_semantic_sensor is not commonly used at present, if ever.
                 # self.depth_clip_sensors implies a surface agent, and
                 # self.use_semantic_sensor implies multi-object experiments.
-                semantic_obs = agent_obs["semantic"]
+                surface_patch = agent_obs["semantic"]
             else:
-                semantic_obs = self.get_surface_from_depth(
-                    depth_obs,
+                surface_patch = self.get_surface_from_depth(
+                    depth_patch,
+                    semantic_patch,
                     default_on_surface_th,
-                    agent_obs["semantic"],
                 )
 
             # Approximate true world coordinates
@@ -430,7 +429,7 @@ class DepthTo3DLocations:
             y = y.reshape(1, self.h[i], self.w[i])
 
             # Unproject 2D camera coordinates into 3D coordinates relative to the agent
-            depth = depth_obs.reshape(1, self.h[i], self.w[i])
+            depth = depth_patch.reshape(1, self.h[i], self.w[i])
             xyz = np.vstack((x * depth, y * depth, -depth, np.ones(depth.shape)))
             xyz = xyz.reshape(4, -1)
             xyz = np.matmul(self.inv_k[i], xyz)
@@ -466,7 +465,7 @@ class DepthTo3DLocations:
                 observations[self.agent_id][sensor_id]["world_camera"] = world_camera
 
             # Extract 3D coordinates of detected objects (semantic_id != 0)
-            semantic = semantic_obs.reshape(1, -1)
+            semantic = surface_patch.reshape(1, -1)
             if self.get_all_points:
                 semantic_3d = xyz.transpose(1, 0)
                 semantic_3d[:, 3] = semantic[0]
@@ -487,27 +486,32 @@ class DepthTo3DLocations:
             # a deepcopy because we are appending a new observation
             observations[self.agent_id][sensor_id]["semantic_3d"] = semantic_3d
 
-        # Delete the added semantic mask if it was added.
-        if semantic_added:
-            del agent_obs["semantic"]
-
         return observations
 
-    def clip(self, agent_obs: dict) -> None:
+    def clip(self, depth_patch: np.ndarray, semantic_patch: np.ndarray) -> None:
         """Clip the depth and semantic data that lie beyond a certain depth threshold.
 
-        Set the values of 0 (infinite depth) to the clip value.
+        This is currently used for surface agent observations to limit the "reach"
+        of the agent. Pixels beyond the clip value are set to 0 in the semantic patch,
+        and the depth values beyond the clip value (or equal to 0) are set to the clip
+        value.
+
+        This function this modifies `depth_patch` and `semantic_patch` in-place.
+
+        Args:
+            depth_patch: depth observations
+            semantic_patch: binary mask indicating on-object locations
         """
-        agent_obs["semantic"][agent_obs["depth"] >= self.clip_value] = 0
-        agent_obs["depth"][agent_obs["depth"] > self.clip_value] = self.clip_value
-        agent_obs["depth"][agent_obs["depth"] == 0] = self.clip_value
+        semantic_patch[depth_patch >= self.clip_value] = 0
+        depth_patch[depth_patch > self.clip_value] = self.clip_value
+        depth_patch[depth_patch == 0] = self.clip_value
 
     def get_on_surface_th(
         self,
         depth_patch: np.ndarray,
+        semantic_patch: np.ndarray,
         min_depth_range: Number,
         default_on_surface_th: Number,
-        semantic_mask: np.ndarray,
     ) -> Tuple[Number, bool]:
         """Return a depth threshold if we have a bimodal depth distribution.
 
@@ -526,16 +530,17 @@ class DepthTo3DLocations:
 
         Args:
             depth_patch: sensor patch observations of depth
+            semantic_patch: binary mask indicating on-object locations
             min_depth_range: minimum range of depth values to even be considered
             default_on_surface_th: default threshold to use if no bimodal distribution
                 is found
-            semantic_mask: binary mask indicating on-object locations
+
         Returns:
             threshold and whether we want to use values above or below threshold
         """
         center_loc = (depth_patch.shape[0] // 2, depth_patch.shape[1] // 2)
         depth_center = depth_patch[center_loc[0], center_loc[1]]
-        semantic_center = semantic_mask[center_loc[0], center_loc[1]]
+        semantic_center = semantic_patch[center_loc[0], center_loc[1]]
 
         depths = np.asarray(depth_patch).flatten()
         flip_sign = False
@@ -562,8 +567,8 @@ class DepthTo3DLocations:
     def get_surface_from_depth(
         self,
         depth_patch: np.ndarray,
+        semantic_patch: np.ndarray,
         default_on_surface_th: Number,
-        semantic_mask: np.ndarray,
     ) -> np.ndarray:
         """Return surface patch information from heuristics on depth patch.
 
@@ -597,9 +602,10 @@ class DepthTo3DLocations:
 
         Args:
             depth_patch: sensor patch observations of depth
+            semantic_patch: binary mask indicating on-object locations
             default_on_surface_th: default threshold to use if no bimodal distribution
                 is found
-            semantic_mask: binary mask indicating on-object locations
+
         Returns:
             sensor patch shaped info about whether each pixel is on surface of not
         """
@@ -617,14 +623,13 @@ class DepthTo3DLocations:
         # sign), and apply it to the depth to get the semantic patch.
         th, flip_sign = self.get_on_surface_th(
             depth_patch,
-            min_depth_range=0.01,
-            default_on_surface_th=default_on_surface_th,
-            semantic_mask=semantic_mask,
+            semantic_patch,
+            0.01,
+            default_on_surface_th,
         )
         if flip_sign is False:
-            semantic_patch = depth_patch < th
+            surface_patch = depth_patch < th
         else:
-            semantic_patch = depth_patch > th
+            surface_patch = depth_patch > th
 
-        semantic_patch = semantic_patch * semantic_mask
-        return semantic_patch
+        return surface_patch * semantic_patch
