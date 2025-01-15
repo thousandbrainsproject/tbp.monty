@@ -1,3 +1,4 @@
+<!-- vale off -->
 # overview: Overview
 - [welcome-to-the-thousand-brains-project-documentation](overview/welcome-to-the-thousand-brains-project-documentation.md)
 - [vision-of-the-thousand-brains-project](overview/vision-of-the-thousand-brains-project.md)
@@ -131,4 +132,4 @@
 - [oss-communication-improvements](future-work/oss-communication-improvements.md)
   - [organize-start-podcast-series](future-work/oss-communication-improvements/organize-start-podcast-series.md)
   - [make-more-condensed-videos-about-the-project-monty](future-work/oss-communication-improvements/make-more-condensed-videos-about-the-project-monty.md)
-
+<!-- vale on -->

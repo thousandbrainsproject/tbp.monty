@@ -22,7 +22,7 @@ Characteristics that can be sensed at a specific location. Features may vary dep
 
 A set of nodes that are connected to each other with edges. Both nodes and edges can have features associated with them. For instance all graphs used in the Monty project have a location associated with each node and a variable list of features. An edge can, for example, have a displacement associated with it.
 
-# Inductive bias
+# Inductive Bias
 
 An assumption that is built into an algorithm/model. If the assumption holds, this can make the model a lot more efficient than without the inductive bias. However, it will cause problems when the assumption does not hold.
 

@@ -21,7 +21,7 @@ We adopted the Google Style for docstrings. For more details, see the [Google Py
 
 ## Libraries
 
-### Numpy Preferred over PyTorch
+### Numpy Preferred Over PyTorch
 
 After discovering that torch-to-numpy conversions (and the reverse) were a significant speed bottleneck in our algorithms, we decided to consistently use NumPy to represent the data in our system.
 
@@ -113,11 +113,11 @@ In general we try and stick to native markdown syntax, if you find yourself need
 
 In a document your first level of headings should be the `#` , then `##` and so on.   This is slightly confusing as usually `#` is reserved for the title, but on readme.com the `h1` tag is used for the actual title of the document.
 
-Use headings to split up long text block into managable chunks.
+Use headings to split up long text blocks into manageable chunks.
 
 Headings can be referenced in other documents using a hash link `[Headings](doc:style-guide#headings)`. For example [Style Guide - Headings](style-guide.md#headings)
 
-All headings should use capitalization following APA convention. For detailed guidelines see the [APA heading style guide](https://apastyle.apa.org/style-grammar-guidelines/capitalization/title-case).
+All headings should use capitalization following APA convention. For detailed guidelines see the [APA heading style guide](https://apastyle.apa.org/style-grammar-guidelines/capitalization/title-case) and this can be tested with the [Vale](https://vale.sh/) tool and running `vale .` in the root of the repo.
 
 ## Footnotes
 
@@ -140,7 +140,7 @@ Images use `snake_case.ext`
 
 Images should generally be `png` or `svg` formats.  Use `jpg` if the file is actually a photograph.
 
-Upload high quality images as people can click on the image to see the larger version.  You can add style attriubtes after the image path with `#width=300px` or similar.
+Upload high quality images as people can click on the image to see the larger version.  You can add style attributes after the image path with `#width=300px` or similar.
 
 For example, the following markdown creates the image below:
 

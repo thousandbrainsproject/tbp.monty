@@ -13,7 +13,7 @@ If you have nothing specific to work on or want to become more familiar with the
 
 If you decide to start work on one of the issues, please leave a comment to let Maintainers and others know.
 
-# Create a new Issue
+# Create a New Issue
 
 **Before creating a new issue, please check if a similar issue exists** in the [Issue Tracker](https://github.com/thousandbrainsproject/tbp.monty/issues). Perhaps someone already reported it, and someone might even be working on it.
 
