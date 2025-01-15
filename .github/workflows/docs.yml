@@ -83,7 +83,7 @@ jobs:
           pip list
           conda list
       - name: Save cache
-        if: steps.restore_cache.outputs.cache-hit != 'true'
+        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: |
