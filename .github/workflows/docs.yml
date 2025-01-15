@@ -58,6 +58,10 @@ jobs:
           pip install -e .[dev,github_readme_sync_tool]
           pip list
           conda list
+      - name: Install Vale
+        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        run: |
+          curl -sfL https://install.goreleaser.com/github.com/ValeLint/vale.sh | sh -s -- -b /usr/local/bin v2.28.0
       - name: Check docs
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         working-directory: tbp.monty
@@ -65,11 +69,12 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           python -m tools.github_readme_sync.cli check docs
+          vale docs/
 
   should_run_docs:
     name: should-run-docs
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    # if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     outputs:
       should_run_docs: ${{ steps.should_run.outputs.should_run_docs }}
     steps:
