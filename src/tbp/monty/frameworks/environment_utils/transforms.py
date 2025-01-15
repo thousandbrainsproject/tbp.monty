@@ -631,8 +631,8 @@ class DepthTo3DLocations:
         th, flip_sign = self.get_on_surface_th(
             depth_patch,
             semantic_patch,
-            0.01,
-            default_on_surface_th,
+            min_depth_range=0.01,
+            default_on_surface_th=default_on_surface_th,
         )
         if flip_sign is False:
             surface_patch = depth_patch < th
