@@ -28,7 +28,7 @@ jobs:
           path: tbp.monty
 
       - name: lint-docs
-        uses: ./.github/actions/vale_linter
+        uses: ./tbp.monty/.github/actions/vale_linter
         with:
           path: tbp.monty
 
