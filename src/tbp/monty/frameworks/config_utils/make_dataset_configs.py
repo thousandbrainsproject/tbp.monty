@@ -87,7 +87,7 @@ class EnvInitArgs:
     )
     scene_id: Union[int, None] = field(default=None)
     seed: int = field(default=42)
-    data_path: str = os.path.expanduser("~/tbp/data/habitat/objects/ycb")
+    data_path: str = os.path.join(os.environ["MONTY_DATA"], "habitat/objects/ycb")
 
 
 @dataclass
@@ -130,35 +130,41 @@ class EnvInitArgsPatchViewMount(EnvInitArgs):
 
 @dataclass
 class EnvInitArgsShapenetPatchViewMount(EnvInitArgsPatchViewMount):
-    data_path: str = os.path.expanduser("~/tbp/data/shapenet")
+    data_path: str = os.path.join(os.environ["MONTY_DATA"], "shapenet")
 
 
 @dataclass
 class EnvInitArgsMontyWorldPatchViewMount(EnvInitArgsPatchViewMount):
-    data_path: str = os.path.expanduser("~/tbp/data/numenta_lab")
+    data_path: str = os.path.join(os.environ["MONTY_DATA"], "numenta_lab")
 
 
 # Data-set containing RGBD images of real-world objects taken with a mobile device
 @dataclass
 class EnvInitArgsMontyWorldStandardScenes:
-    data_path: str = os.path.expanduser("~/tbp/data/worldimages/standard_scenes/")
+    data_path: str = os.path.join(
+        os.environ["MONTY_DATA"], "worldimages/standard_scenes/"
+    )
 
 
 @dataclass
 class EnvInitArgsMontyWorldBrightScenes:
-    data_path: str = os.path.expanduser("~/tbp/data/worldimages/bright_scenes/")
+    data_path: str = os.path.join(
+        os.environ["MONTY_DATA"], "worldimages/bright_scenes/"
+    )
 
 
 @dataclass
 class EnvInitArgsMontyWorldDarkScenes:
-    data_path: str = os.path.expanduser("~/tbp/data/worldimages/dark_scenes/")
+    data_path: str = os.path.join(os.environ["MONTY_DATA"], "worldimages/dark_scenes/")
 
 
 # Data-set where a hand is prominently visible holding (and thereby partially
 # occluding) the objects
 @dataclass
 class EnvInitArgsMontyWorldHandIntrusionScenes:
-    data_path: str = os.path.expanduser("~/tbp/data/worldimages/hand_intrusion_scenes/")
+    data_path: str = os.path.join(
+        os.environ["MONTY_DATA"], "worldimages/hand_intrusion_scenes/"
+    )
 
 
 # Data-set where there are two objects in the image; the target class is in the centre
@@ -167,7 +173,9 @@ class EnvInitArgsMontyWorldHandIntrusionScenes:
 # as a book if the target is a type of mug)
 @dataclass
 class EnvInitArgsMontyWorldMultiObjectScenes:
-    data_path: str = os.path.expanduser("~/tbp/data/worldimages/multi_object_scenes/")
+    data_path: str = os.path.join(
+        os.environ["MONTY_DATA"], "worldimages/multi_object_scenes/"
+    )
 
 
 @dataclass
@@ -679,7 +687,7 @@ def get_omniglot_train_dataloader(num_versions, alphabet_ids, data_path=None):
         OmniglotDataloaderArgs for training.
     """
     if data_path is None:
-        data_path = os.path.expanduser("~/tbp/data/omniglot/python/")
+        data_path = os.path.join(os.environ["MONTY_DATA"], "omniglot/python/")
     if os.path.exists(data_path):
         alphabet_folders = [
             a for a in os.listdir(data_path + "images_background") if a[0] != "."
@@ -734,7 +742,7 @@ def get_omniglot_eval_dataloader(
         OmniglotDataloaderArgs for evaluation.
     """
     if data_path is None:
-        data_path = os.path.expanduser("~/tbp/data/omniglot/python/")
+        data_path = os.path.join(os.environ["MONTY_DATA"], "omniglot/python/")
     if os.path.exists(data_path):
         alphabet_folders = [
             a for a in os.listdir(data_path + "images_background") if a[0] != "."
