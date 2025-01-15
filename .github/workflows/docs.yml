@@ -7,10 +7,10 @@ concurrency:
 on:
   push:
     branches:
-      - vale-check
+      - main
   pull_request:
     branches:
-      - vale-check
+      - main
 
 jobs:
   check_docs:
@@ -26,13 +26,11 @@ jobs:
           fetch-depth: 0
           lfs: true
           path: tbp.monty
-
       - name: lint-docs
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         uses: ./tbp.monty/.github/actions/vale_linter
         with:
           path: tbp.monty
-
       - name: Generate cache key
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         id: generate_cache_key
@@ -44,19 +42,16 @@ jobs:
           shasum -a 256 ~/tbp/tbp.monty/pyproject.toml | awk '{print $1}' > ~/tbp/pyproject.toml.sha
           echo "monty-${RUNNER_OS}-$(cat ~/tbp/environment_arm64.sha)-$(cat ~/tbp/environment.sha)-$(cat ~/tbp/pyproject.toml.sha)" > ~/tbp/conda_env_cache_key.txt
           echo "conda_env_cache_key_sha=$(cat ~/tbp/conda_env_cache_key.txt | shasum -a 256 | awk '{print $1}')" >> $GITHUB_OUTPUT
-
       - name: Set up ~/tbp
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         run: |
           mkdir -p ~/tbp
           ln -s $GITHUB_WORKSPACE/tbp.monty ~/tbp/tbp.monty
-
       - name: Set up Python 3.8
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         uses: actions/setup-python@v5
         with:
           python-version: "3.8"
-
       - name: Restore cache
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         id: restore_cache
@@ -65,7 +60,6 @@ jobs:
           path: |
             ~/miniconda
           key: ${{ steps.generate_cache_key.outputs.conda_env_cache_key_sha }}
-
       - name: Install miniconda
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
         run: |
@@ -77,7 +71,6 @@ jobs:
           fi
           export PATH="$HOME/miniconda/bin:$PATH"
           conda --version
-
       - name: Create conda environment
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
         working-directory: tbp.monty
@@ -89,7 +82,6 @@ jobs:
           pip install -e .[dev,github_readme_sync_tool]
           pip list
           conda list
-
       - name: Save cache
         if: steps.restore_cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -97,7 +89,6 @@ jobs:
           path: |
             ~/miniconda
           key: ${{ steps.restore_cache.outputs.cache-primary-key }}
-
       - name: Check docs
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         working-directory: tbp.monty
@@ -109,7 +100,7 @@ jobs:
   should_run_docs:
     name: should-run-docs
     runs-on: ubuntu-latest
-    # if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     outputs:
       should_run_docs: ${{ steps.should_run.outputs.should_run_docs }}
     steps:
@@ -119,7 +110,6 @@ jobs:
           fetch-depth: 0
           lfs: true
           path: tbp.monty
-
       - name: Filter by path for a pull request
         if: ${{ github.event_name == 'pull_request' }}
         id: filter_by_path_pr
@@ -136,7 +126,6 @@ jobs:
               exit 0
             fi
           done < changed_files.txt
-
       - name: Filter by path for a push
         if: ${{ github.event_name == 'push' }}
         id: filter_by_path_push
@@ -151,7 +140,6 @@ jobs:
               exit 0
             fi
           done < changed_files.txt
-
       - name: Should run
         id: should_run
         if: ${{ steps.filter_by_path_pr.outputs.should_run_docs == 'true' || steps.filter_by_path_push.outputs.should_run_docs == 'true'}}
