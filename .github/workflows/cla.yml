@@ -17,10 +17,11 @@ jobs:
     if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     steps:
       - name: "Verify CLA"
-        uses: thousandbrainsproject/cla-assistant@v1.0.0
+        uses: thousandbrainsproject/cla-assistant@v2.0.0
         env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.CLA_ASSISTANT_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CLA_ASSISTANT_SECRET_ACCESS_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TBP_BOT_TOKEN_SECRET: ${{ secrets.TBP_BOT_TOKEN_SECRET }}
         with:
           pull-request-author: ${{ github.event.pull_request.user.login }}
           pull-request-number: ${{ github.event.pull_request.number }}
