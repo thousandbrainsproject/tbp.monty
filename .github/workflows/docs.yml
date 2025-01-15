@@ -13,15 +13,6 @@ on:
       - vale-check
 
 jobs:
-  vale:
-    name: lint-docs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: errata-ai/vale-action@v2
-        with:
-          fail_on_error: true
-
   check_docs:
     name: check-docs
     runs-on: ubuntu-latest
@@ -34,6 +25,11 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
+          path: tbp.monty
+
+      - name: lint-docs
+        uses: ./.github/actions/vale_linter
+        with:
           path: tbp.monty
 
       - name: Generate cache key
