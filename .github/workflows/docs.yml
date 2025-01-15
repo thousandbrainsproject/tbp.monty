@@ -19,6 +19,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: errata-ai/vale-action@v2
+        with:
+          fail_on_error: true
 
   check_docs:
     name: check-docs
