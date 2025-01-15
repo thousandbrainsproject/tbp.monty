@@ -369,10 +369,17 @@ class DepthTo3DLocations:
             state (State, optional): Optionally supplied CMP-compliant state object.
 
         Returns:
-            dict: The original observations dict with the following added:
-                - "semantic_3d": 3D coordinates of detected objects.
-                - "semantic": Binary mask indicating on-object pixels.
-                - "world_camera": Sensor-to-world coordinate frame transform.
+            dict: The original observations dict with the following possibly added:
+                - "semantic_3d": 3D coordinates for each pixel. If `self.world_coord`
+                    is `True` (default), then the coordinates are in the world's
+                    reference frame and are in the sensor's reference frame otherwise.
+                    It is structured as a 2D array with shape (n_pixels, 4) with
+                    columns containing x-, y-, z-coordinates, and a semantic ID.
+                - "world_camera": Sensor-to-world coordinate frame transform. Included
+                    only when `self.world_coord` is `True` (default).
+                - "sensor_frame_data": 3D coordinates for each pixel relative to the
+                    sensor. Has the same structure as "semantic_3d". Included only
+                    when `self.get_all_points` is `True`.
         """
         for i, sensor_id in enumerate(self.sensor_ids):
             agent_obs = observations[self.agent_id][sensor_id]
