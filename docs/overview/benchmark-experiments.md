@@ -51,18 +51,18 @@ The following results are obtained from experiments using the 10-object subsets 
 
 | Experiment                                  | % Correct | % Used MLH | Num Matching Steps | Rotation Error (radians) | Run Time | Episode Run Time (s) |
 |---------------------------------------------|-----------|------------|--------------------|--------------------------|----------|----------------------|
-| base_config_10distinctobj_dist_agent        | 99.29%    | 5.00%      | 34                 | 0.27                     | 6m       | 20s                  |
-| base_config_10distinctobj_surf_agent        | 100.00%   | 0.00%      | 28                 | 0.17                     | 4m       | 19s                  |
-| randrot_noise_10distinctobj_dist_agent      | 98.00%    | 6.00%      | 47                 | 0.45                     | 5m       | 31s                  |
-| randrot_noise_10distinctobj_dist_on_distm   | 100.00%   | 2.00%      | 36                 | 0.26                     | 4m       | 28s                  |
-| randrot_noise_10distinctobj_surf_agent      | 99.00%    | 0.00%      | 28                 | 0.33                     | 4m       | 27s                  |
-| randrot_10distinctobj_surf_agent            | 100.00%   | 0.00%      | 29                 | 0.40                     | 3m       | 19s                  |
-| randrot_noise_10distinctobj_5lms_dist_agent | 100.00%   | 7.00%      | 52                 | 0.86                     | 18m      | 86s                  |
-| base_10simobj_surf_agent                    | 95.00%    | 7.86%      | 70                 | 0.16                     | 8m       | 41s                  |
-| randrot_noise_10simobj_dist_agent           | 82.00%    | 40.00%     | 182                | 0.61                     | 16m      | 116s                 |
-| randrot_noise_10simobj_surf_agent           | 90.00%    | 34.00%     | 180                | 0.50                     | 24m      | 203s                 |
-| randomrot_rawnoise_10distinctobj_surf_agent | 73.00%    | 78.00%     | 15                 | 1.54                     | 11m      | 12s                  |
-| base_10multi_distinctobj_dist_agent         | 69.29%    | 47.14%     | 25                 | 0.82                     | 1h6m     | 2s                   | 
+| base_config_10distinctobj_dist_agent        | 99.29%    | 3.57%      | 34                 | 0.24                     | 5m       | 19s                  |
+| base_config_10distinctobj_surf_agent        | 100.00%   | 0.00%      | 28                 | 0.18                     | 4m       | 21s                  |
+| randrot_noise_10distinctobj_dist_agent      | 99.00%    | 6.00%      | 48                 | 0.46                     | 5m       | 29s                  |
+| randrot_noise_10distinctobj_dist_on_distm   | 100.00%   | 2.00%      | 36                 | 0.25                     | 4m       | 28s                  |
+| randrot_noise_10distinctobj_surf_agent      | 100.00%   | 1.00%      | 29                 | 0.36                     | 5m       | 33s                  |
+| randrot_10distinctobj_surf_agent            | 100.00%   | 0.00%      | 28                 | 0.38                     | 3m       | 17s                  |
+| randrot_noise_10distinctobj_5lms_dist_agent | 100.00%   | 6.00%      | 53                 | 0.84                     | 15m      | 82s                  |
+| base_10simobj_surf_agent                    | 93.57%    | 10.00%     | 78                 | 0.16                     | 10m      | 53s                  |
+| randrot_noise_10simobj_dist_agent           | 82.00%    | 42.00%     | 189                | 0.59                     | 16m      | 119s                 |
+| randrot_noise_10simobj_surf_agent           | 91.00%    | 31.00%     | 162                | 0.42                     | 23m      | 192s                 |
+| randomrot_rawnoise_10distinctobj_surf_agent | 72.00%    | 76.00%     | 16                 | 1.56                     | 15m      | 15s                  |
+| base_10multi_distinctobj_dist_agent         | 73.57%    | 40.00%     | 27                 | 0.73                     | 1h5m     | 2s                   |
 
 ## Longer Experiments With all 77 YCB Objects
 
@@ -75,11 +75,11 @@ The following results are obtained from experiments on the entire YCB dataset (7
 
 | Experiment                          | % Correct | % Used MLH | Num Matching Steps | Rotation Error (radians) | Run Time | Episode Run Time (s) |
 |-------------------------------------|-----------|------------|--------------------|--------------------------|----------|----------------------|
-| base_77obj_dist_agent               | 93.07%    | 14.72%     | 86                 | 0.33                     | 1h4m     | 197s                 |
-| base_77obj_surf_agent               | 98.27%    | 5.19%      | 57                 | 0.21                     | 31m      | 96s                  |
-| randrot_noise_77obj_dist_agent      | 87.01%    | 29.87%     | 148                | 0.69                     | 1h33m    | 314s                 |
-| randrot_noise_77obj_surf_agent      | 94.81%    | 19.91%     | 107                | 0.61                     | 55m      | 198s                 |
-| randrot_noise_77obj_5lms_dist_agent | 84.42%    | 9.09%      | 64                 | 1.07                     | 42m      | 800s                 |
+| base_77obj_dist_agent               | 93.07%    | 13.85%     | 86                 | 0.32                     | 56m      | 178s                 |
+| base_77obj_surf_agent               | 98.70%    | 6.49%      | 56                 | 0.16                     | 35m      | 104s                 |
+| randrot_noise_77obj_dist_agent      | 87.45%    | 30.74%     | 149                | 0.70                     | 1h17m    | 264s                 |
+| randrot_noise_77obj_surf_agent      | 96.54%    | 18.61%     | 103                | 0.58                     | 1h3m     | 225s                 |
+| randrot_noise_77obj_5lms_dist_agent | 84.42%    | 9.09%      | 66                 | 1.08                     | 39m      | 843s                 | 
 
 ### Explanation of Some of the Results
 
@@ -111,9 +111,9 @@ An object is classified as detected correctly if the detected object ID is in th
 
 | Experiment                                  | %Correct - 1st Epoch | % Correct - >1st Epoch | Mean Objects per Graph | Mean Graphs per Object | Run Time | Episode Run Time (s) |
 |---------------------------------------------|----------------------|------------------------|------------------------|------------------------|----------|----------------------|
-| surf_agent_unsupervised_10distinctobj       | 80.00%               | 86.67%                 | 1.11                   | 1.11                   | 16m      | 10s                  |
-| surf_agent_unsupervised_10distinctobj_noise | 80.00%               | 67.78%                 | 1.09                   | 2.78                   | 22m      | 13s                  |
-| surf_agent_unsupervised_10simobj            | 50.00%               | 76.67%                 | 2.75                   | 2.20                   | 25m      | 15s                  |
+| surf_agent_unsupervised_10distinctobj       | 70.00%               | 83.33%                 | 1.43                   | 1.11                   | 20m      | 12s                  |
+| surf_agent_unsupervised_10distinctobj_noise | 70.00%               | 67.78%                 | 1.19                   | 2.11                   | 24m      | 15s                  |
+| surf_agent_unsupervised_10simobj            | 40.00%               | 86.67%                 | 2.60                   | 1.30                   | 28m      | 17s                  |
 
 To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning can, by definition, not be parallelized across epochs. Therefore these experiments were run without multiprocessing on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
 
@@ -157,14 +157,14 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 
 ### Results
 
-| Experiment                                  | % Correct | % Used MLH | Num Matching Steps | [Rotation Error (radians)]   | Run Time | Episode Run Time (s) |
-|---------------------------------------------|-----------|------------|--------------------|------------------------------|----------|----------------------|
-| randrot_noise_sim_on_scan_monty_world       | 80.00%    | 85.83%     | 437                | 0.94                         | 54m      | 25s                  |
-| world_image_on_scanned_model                | 66.67%    | 87.50%     | 453                | 2.05                         | 16m      | 19s                  |
-| dark_world_image_on_scanned_model           | 43.75%    | 77.08%     | 433                | 1.87                         | 15m      | 18s                  |
-| bright_world_image_on_scanned_model         | 47.92%    | 83.33%     | 457                | 2.16                         | 22m      | 27s                  |
-| hand_intrusion_world_image_on_scanned_model | 54.17%    | 47.92%     | 333                | 1.79                         | 11m      | 13s                  |
-| multi_object_world_image_on_scanned_model   | 41.67%    | 39.58%     | 298                | 1.67                         | 10m      | 12s                  |
+| Experiment                                  | % Correct | % Used MLH | Num Matching Steps | [Rotation Error (radians)] | Run Time | Episode Run Time (s) |
+|---------------------------------------------|-----------|------------|--------------------|----------------------------|----------|----------------------|
+| randrot_noise_sim_on_scan_monty_world       | 80.00%    | 80.83%     | 412                | 0.86                       | 52m      | 24s                  |
+| world_image_on_scanned_model                | 72.92%    | 83.33%     | 442                | 2.15                       | 18m      | 21s                  |
+| dark_world_image_on_scanned_model           | 35.42%    | 83.33%     | 430                | 1.81                       | 16m      | 20s                  |
+| bright_world_image_on_scanned_model         | 43.75%    | 79.17%     | 428                | 1.87                       | 18m      | 22s                  |
+| hand_intrusion_world_image_on_scanned_model | 39.58%    | 56.25%     | 344                | 2.00                       | 8m       | 10s                  |
+| multi_object_world_image_on_scanned_model   | 43.75%    | 52.08%     | 344                | 1.90                       | 11m      | 14s                  | 
 
 **Note that rotation errors are meaningless since no ground truth rotation is provided**
 

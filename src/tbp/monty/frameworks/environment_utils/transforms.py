@@ -8,15 +8,20 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from numbers import Number
+from typing import Optional, Tuple
+
 import numpy as np
 import quaternion as qt
 import scipy
 
+from tbp.monty.frameworks.models.states import State
+
 __all__ = [
-    "MissingToMaxDepth",
     "AddNoiseToRawDepthImage",
-    "GaussianSmoothing",
     "DepthTo3DLocations",
+    "GaussianSmoothing",
+    "MissingToMaxDepth",
 ]
 
 
@@ -259,7 +264,7 @@ class DepthTo3DLocations:
         depth_clip_sensors=(),
         world_coord=True,
         get_all_points=False,
-        use_semantic_sensor=True,
+        use_semantic_sensor=False,
     ):
         self.needs_rng = False
 
@@ -305,24 +310,123 @@ class DepthTo3DLocations:
         self.clip_value = clip_value
         self.depth_clip_sensors = depth_clip_sensors
 
-    def __call__(self, observations, state=None):
+    def __call__(self, observations: dict, state: Optional[State] = None):
+        """Apply the depth-to-3D-locations transform to sensor observations.
+
+        Applies spatial transforms to the observations and generates a mask used
+        to determine which pixels are the object's surface. This modifies the
+        observations in-place. Some items may be modified, such as depth values,
+        while other values are added (see Returns section).
+
+        In the first part of this function, we build a mask that indicates
+        not only which part of the image is on-object, but also which part of
+        the image is "on-surface". The distinction between on-object and
+        on-surface arises from the fact that the field of view may contain parts
+        of the object that are far away from each other. For example, we may
+        be looking at the front lip of a mug, but the back lip of the mug is
+        also in the field of view. When we compute surface point normals or
+        surface curvature for the front lip of the mug, we don't want to include
+        pixels from the back lip of the mug.
+
+        To do this, we first need a semantic map that indicates only whether
+        the pixel is on- or off-object. We then analyze the depth data to
+        determine whether the pixels in the field of view appear to belong to the
+        same part of the object (see `get_surface_from_depth` for details). The
+        intersection of these two maps forms the on-surface mask (called
+        `semantic_obs`) that is embedded into the observation dict and is used
+        later when performing point-normal and curvature estimation.
+
+        How we decide to build these masks is dependent on several factors,
+        such as whether we are using a distant agent or a surface agent, and
+        whether a ground-truth semantic map should be used. This necessitates
+        a few different code paths. Here is a brief outline of the parameters
+        that reflect these factors as they are commonly used in Monty:
+         - when using a surface agent, self.depth_clip_sensors is a non-empty
+           tuple. More specifically, we know which sensor is the surface agent
+           since it's index will be in self.depth_clip_sensors. We only apply
+           depth clipping to the surface agent.
+         - surface agents also have their depth and semantic data clipped to a
+           a very short range from the sensor. This is done to more closely model
+           a finger which has short reach.
+         - `use_semantic_sensor` is currently only used with multi-object
+           experiments, and when this is `True`, the observation dict will have
+           an item called "semantic". In the future, we would like to include
+           semantic estimation for multi-object experiments. But until then, we
+           continue to support use of the semantic sensor for multi-object
+           experiments.
+         - When two parts of an object are visible, we separate the two parts
+           according to depth. However, the threshold we use to separate the two
+           parts is dependent on distant vs surface agents. The parameter
+           `default_on_surface_th` changes based on whether we are using a distant
+           or surface agent.
+
+        After the mask is generated, we unproject the 2D camera coordinates into
+        3D coordinates relative to the agent. We then add the transformed observations
+        to the original observations dict.
+
+        Args:
+            observations (dict): Observations returned by the data loader.
+            state (State, optional): Optionally supplied CMP-compliant state object.
+
+        Returns:
+            dict: The original observations dict with the following possibly added:
+                - "semantic_3d": 3D coordinates for each pixel. If `self.world_coord`
+                    is `True` (default), then the coordinates are in the world's
+                    reference frame and are in the sensor's reference frame otherwise.
+                    It is structured as a 2D array with shape (n_pixels, 4) with
+                    columns containing x-, y-, z-coordinates, and a semantic ID.
+                - "world_camera": Sensor-to-world coordinate frame transform. Included
+                    only when `self.world_coord` is `True` (default).
+                - "sensor_frame_data": 3D coordinates for each pixel relative to the
+                    sensor. Has the same structure as "semantic_3d". Included only
+                    when `self.get_all_points` is `True`.
+        """
         for i, sensor_id in enumerate(self.sensor_ids):
             agent_obs = observations[self.agent_id][sensor_id]
-            if i in self.depth_clip_sensors:
-                self.clip(agent_obs)
-            depth_obs = agent_obs["depth"]
-            # if applying depth clip, then do not use depth for semantic info
-            # because the depth surface now includes a sheet of pixels all
-            # set to the clip_value, and this sheet can confuse the
-            # get_semantic_from_depth function into thinking that it is the object
-            if self.depth_clip_sensors and self.use_semantic_sensor:
-                semantic_obs = agent_obs["semantic"]
-            elif self.use_semantic_sensor:
-                surface_obs = self.get_semantic_from_depth(depth_obs.copy())
-                # set pixel to 1 if it is on the main surface and on the object
-                semantic_obs = agent_obs["semantic"] * surface_obs
+            depth_patch = agent_obs["depth"]
+
+            # We need a semantic map that masks off-object pixels. We can use the
+            # ground-truth semantic map if it's available. Otherwise, we generate one
+            # from the depth map and (temporarily) add it to the observation dict.
+            if "semantic" in agent_obs.keys():
+                semantic_patch = agent_obs["semantic"]
             else:
-                semantic_obs = self.get_semantic_from_depth(depth_obs.copy())
+                # The generated map uses depth observations to determine whether
+                # pixels are on object using 1 meter as a threshold since
+                # `MissingToMaxDepth` sets the background void to 1.
+                semantic_patch = np.ones_like(depth_patch, dtype=int)
+                semantic_patch[depth_patch >= 1] = 0
+
+            # Apply depth clipping to the surface agent, and initialize the
+            # surface-separation threshold for later use.
+            if i in self.depth_clip_sensors:
+                # Surface agent: clip depth and semantic data (in place), and set
+                # the default surface-separation threshold to be very short.
+                self.clip(depth_patch, semantic_patch)
+                default_on_surface_th = self.clip_value
+            else:
+                # Distance agent: do not clip depth or semantic data, and set the
+                # default surface-separation threshold to be very far away.
+                default_on_surface_th = 1000.0
+
+            # Build a mask that only includes the pixels that are on-surface, where
+            # on-surface means the pixels are on-object and locally connected to
+            # the center of the patch's field of view. However, if we are using a
+            # surface agent and are using the semantic sensor, we may use the
+            # (clipped) ground-truth semantic mask as a shortcut (though it doesn't
+            # use surface estimation--just on-objectness).
+            if self.depth_clip_sensors and self.use_semantic_sensor:
+                # NOTE: this particular combination of self.depth_clip_sensors and
+                # self.use_semantic_sensor is not commonly used at present, if ever.
+                # self.depth_clip_sensors implies a surface agent, and
+                # self.use_semantic_sensor implies multi-object experiments.
+                surface_patch = agent_obs["semantic"]
+            else:
+                surface_patch = self.get_surface_from_depth(
+                    depth_patch,
+                    semantic_patch,
+                    default_on_surface_th,
+                )
 
             # Approximate true world coordinates
             x, y = np.meshgrid(
@@ -332,7 +436,7 @@ class DepthTo3DLocations:
             y = y.reshape(1, self.h[i], self.w[i])
 
             # Unproject 2D camera coordinates into 3D coordinates relative to the agent
-            depth = depth_obs.reshape(1, self.h[i], self.w[i])
+            depth = depth_patch.reshape(1, self.h[i], self.w[i])
             xyz = np.vstack((x * depth, y * depth, -depth, np.ones(depth.shape)))
             xyz = xyz.reshape(4, -1)
             xyz = np.matmul(self.inv_k[i], xyz)
@@ -368,7 +472,7 @@ class DepthTo3DLocations:
                 observations[self.agent_id][sensor_id]["world_camera"] = world_camera
 
             # Extract 3D coordinates of detected objects (semantic_id != 0)
-            semantic = semantic_obs.reshape(1, -1)
+            semantic = surface_patch.reshape(1, -1)
             if self.get_all_points:
                 semantic_3d = xyz.transpose(1, 0)
                 semantic_3d[:, 3] = semantic[0]
@@ -388,19 +492,34 @@ class DepthTo3DLocations:
             # Add transformed observation to existing dict. We don't need to create
             # a deepcopy because we are appending a new observation
             observations[self.agent_id][sensor_id]["semantic_3d"] = semantic_3d
+
         return observations
 
-    def clip(self, agent_obs):
+    def clip(self, depth_patch: np.ndarray, semantic_patch: np.ndarray) -> None:
         """Clip the depth and semantic data that lie beyond a certain depth threshold.
 
-        Set the values of 0 (infinite depth) to the clip value.
-        """
-        if "semantic" in agent_obs.keys():
-            agent_obs["semantic"][agent_obs["depth"] > self.clip_value] = 0
-        agent_obs["depth"][agent_obs["depth"] > self.clip_value] = self.clip_value
-        agent_obs["depth"][agent_obs["depth"] == 0] = self.clip_value
+        This is currently used for surface agent observations to limit the "reach"
+        of the agent. Pixels beyond the clip value are set to 0 in the semantic patch,
+        and the depth values beyond the clip value (or equal to 0) are set to the clip
+        value.
 
-    def get_on_surface_th(self, depth_patch, min_depth_range):
+        This function this modifies `depth_patch` and `semantic_patch` in-place.
+
+        Args:
+            depth_patch: depth observations
+            semantic_patch: binary mask indicating on-object locations
+        """
+        semantic_patch[depth_patch >= self.clip_value] = 0
+        depth_patch[depth_patch > self.clip_value] = self.clip_value
+        depth_patch[depth_patch == 0] = self.clip_value
+
+    def get_on_surface_th(
+        self,
+        depth_patch: np.ndarray,
+        semantic_patch: np.ndarray,
+        min_depth_range: Number,
+        default_on_surface_th: Number,
+    ) -> Tuple[Number, bool]:
         """Return a depth threshold if we have a bimodal depth distribution.
 
         If the depth values are in a large enough range (> min_depth_range) we may
@@ -411,27 +530,28 @@ class DepthTo3DLocations:
         histogram and check for empty bins in the middle. The center of the empty
         part if the histogram will be defined as the threshold.
 
-        Next, we want to check if we should use the depth values above or below the
-        threshold. Currently this is done by looking which side of the distribution
-        is larger (occupies more space in the patch). Alternatively we could check
-        which side the depth at the center of the patch is on. I'm not sure what would
-        be better.
-
-        Lastly, if we do decide to use the depth points that are further away, we need
-        to make sure they are not the points that are off the object. Currently this is
-        just done with a simple heuristic (depth difference < 0.1) but in the future we
-        will probably have to find a better solution for this.
+        If we do have a bimodal depth distribution, we effectively have two surfaces.
+        This could be the mug's handle vs the mug's body, or the front lip of a mug
+        vs the rear of the mug. We will use the depth threshold defined above to mask
+        out the surface that is not in the center of the patch.
 
         Args:
             depth_patch: sensor patch observations of depth
+            semantic_patch: binary mask indicating on-object locations
             min_depth_range: minimum range of depth values to even be considered
+            default_on_surface_th: default threshold to use if no bimodal distribution
+                is found
 
         Returns:
             threshold and whether we want to use values above or below threshold
         """
-        depths = np.array(depth_patch).flatten()
+        center_loc = (depth_patch.shape[0] // 2, depth_patch.shape[1] // 2)
+        depth_center = depth_patch[center_loc[0], center_loc[1]]
+        semantic_center = semantic_patch[center_loc[0], center_loc[1]]
+
+        depths = np.asarray(depth_patch).flatten()
         flip_sign = False
-        th = 1000  # just high value
+        th = default_on_surface_th
         if (max(depths) - min(depths)) > min_depth_range:
             # only check for bimodal distribution if we have a large enough
             # range in depth values
@@ -444,30 +564,79 @@ class DepthTo3DLocations:
                 gap_center = len(gap) // 2
                 th_id = gap[gap_center]
                 th = bins[th_id]
-                # Check which side of the distribution we should use
-                if np.sum(height[:th_id]) < np.sum(height[th_id:]):
-                    # more points in the patch are on the further away surface
-                    if (bins[-1] - bins[0]) < 0.1:
-                        # not too large distance between depth values -> avoid
-                        # flipping sign when off object
-                        flip_sign = True
+                if depth_center > th and semantic_center > 0:
+                    # if the FOV's center is on the further away surface and the FOV's
+                    # center is on-object, then we want to use the further-away surface.
+                    flip_sign = True
+
         return th, flip_sign
 
-    def get_semantic_from_depth(self, depth_patch):
-        """Return semantic patch information from heuristics on depth patch.
+    def get_surface_from_depth(
+        self,
+        depth_patch: np.ndarray,
+        semantic_patch: np.ndarray,
+        default_on_surface_th: Number,
+    ) -> np.ndarray:
+        """Return surface patch information from heuristics on depth patch.
+
+        This function returns a binary mask indicating whether each pixel is
+        "on-surface" using heuristics on the depth patch and the semantic mask.
+        When we say "on-surface", we mean "on the part of the object that the sensor
+        is centered on". For example, the sensor may be looking directly at the front
+        lip of a mug, but the back lip of the mug is also in view. While both parts
+        of the mug are on-object, we only want to use the front lip of the mug for
+        later computation (such as point-normal extraction and curvature estimation),
+        and so we want to mask out the back lip of the mug.
+
+        Continuing with the the mug front/back lip example, we separate the front
+        and back lips by their depth data. When we generate a histogram of pixel
+        depths, we should see two distincts peaks of the histogram (or 3 peaks if there
+        is a part of the field of view that is off-object entirely). We would then
+        compute which depth threshold separates the two peaks that correspond to the
+        two surfaces, and this is performed by `get_on_surface_th`. This function
+        uses that value to mask out the pixels that are beyond that threshold. Finally,
+        we element-wise multiply this surface mask by the semantic (i.e., object mask)
+        mask which ensures that off-object observations are also masked out.
+
+        Note that we most often don't have multiple surfaces in view. For example,
+        when exploring a mug, we are most often looking direclty at one locally
+        connected part of the mug, such as a patch on the mug's cylindrical body.
+        In this case, we don't attempt to find a surface-separating threshold, and we
+        instead use the default threshold `default_on_surface_th`. As with a
+        computed threshold, anything beyond it is zeroed out. For surface agents,
+        this threshold is usually quite small (e.g., 5 cm). For distant agents, the
+        threshold is large (e.g., 1000 meters) which is functionally infinite.
 
         Args:
             depth_patch: sensor patch observations of depth
+            semantic_patch: binary mask indicating on-object locations
+            default_on_surface_th: default threshold to use if no bimodal distribution
+                is found
 
         Returns:
             sensor patch shaped info about whether each pixel is on surface of not
         """
         # avoid large range when seeing the table (goes up to almost 100 and then
         # just using 8 bins will not work anymore)
+        depth_patch = np.array(depth_patch)
         depth_patch[depth_patch > 1] = 1.0
-        th, flip_sign = self.get_on_surface_th(depth_patch, min_depth_range=0.01)
+
+        # If all depth values are at maximum (1.0), then we are automatically
+        # off-object.
+        if np.all(depth_patch >= 1.0):
+            return np.zeros_like(depth_patch, dtype=bool)
+
+        # Compute the on-suface depth threshold (and whether we need to flip the
+        # sign), and apply it to the depth to get the semantic patch.
+        th, flip_sign = self.get_on_surface_th(
+            depth_patch,
+            semantic_patch,
+            min_depth_range=0.01,
+            default_on_surface_th=default_on_surface_th,
+        )
         if flip_sign is False:
-            semantic_patch = depth_patch < th
+            surface_patch = depth_patch < th
         else:
-            semantic_patch = depth_patch > th
-        return semantic_patch
+            surface_patch = depth_patch > th
+
+        return surface_patch * semantic_patch
