@@ -11,6 +11,30 @@ Our documentation is held in markdown files in the Monty repo under the [`/docs`
 
 > 📘 Edits to the documentation need to be submitted in the form of PRs to the Monty repository.
 
+# Linting
+
+We use [Vale](https://vale.sh/) to lint our documentation. The linting process checks for spelling errors and ensures that headings follow the [APA title case style](https://apastyle.apa.org/style-grammar-guidelines/capitalization/title-case).
+
+The linting rules are defined in the `/.vale/` directory.
+
+### How to Install and Use Vale
+
+1. **Install Vale**  
+  Download Vale from its [installation page](https://vale.sh/docs/install).
+
+2. **Run Vale**  
+  Use the following command in your terminal to run Vale:
+
+    ```bash
+    vale .
+    ```
+
+    Example output:
+    ```
+    ➜  tbp.monty git:(main) vale .
+    ✔ 0 errors, 0 warnings and 0 suggestions in 141 files.
+    ```
+
 
 # Relative Links
 
