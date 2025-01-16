@@ -1,0 +1,91 @@
+name: Cleanup Docs Preview
+
+on:
+  pull_request_target:
+    types: [closed]
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'tools/github_readme_sync/**'
+      - '.github/workflows/cleanup_docs_preview.yml'
+
+jobs:
+  cleanup_docs_preview:
+    name: cleanup-docs-preview
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tbp.monty
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
+
+      - name: Generate cache key
+        id: generate_cache_key
+        run: |
+          mkdir -p ~/tbp
+          ln -s $GITHUB_WORKSPACE/tbp.monty ~/tbp/tbp.monty
+          shasum -a 256 ~/tbp/tbp.monty/environment_arm64.yml | awk '{print $1}' > ~/tbp/environment_arm64.sha
+          shasum -a 256 ~/tbp/tbp.monty/environment.yml | awk '{print $1}' > ~/tbp/environment.sha
+          shasum -a 256 ~/tbp/tbp.monty/pyproject.toml | awk '{print $1}' > ~/tbp/pyproject.toml.sha
+          echo "monty-${RUNNER_OS}-$(cat ~/tbp/environment_arm64.sha)-$(cat ~/tbp/environment.sha)-$(cat ~/tbp/pyproject.toml.sha)" > ~/tbp/conda_env_cache_key.txt
+          echo "conda_env_cache_key_sha=$(cat ~/tbp/conda_env_cache_key.txt | shasum -a 256 | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.8"
+
+      - name: Restore cache
+        id: restore_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/miniconda
+          key: ${{ steps.generate_cache_key.outputs.conda_env_cache_key_sha }}
+
+      - name: Install miniconda
+        if: steps.restore_cache.outputs.cache-hit != 'true'
+        run: |
+          if [ ! -d ~/miniconda ]
+          then
+            wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
+            bash ~/miniconda.sh -b -p ~/miniconda
+            rm ~/miniconda.sh
+          fi
+
+      - name: Create conda environment
+        if: steps.restore_cache.outputs.cache-hit != 'true'
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          (conda env list | grep tbp.monty) && conda remove --name tbp.monty --all --yes || true
+          conda env create
+          source activate tbp.monty
+          pip install -e .[dev,github_readme_sync_tool,print_version_tool]
+          pip list
+          conda list
+
+      - name: Save cache
+        if: steps.restore_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/miniconda
+          key: ${{ steps.restore_cache.outputs.cache-primary-key }}
+
+      - name: Get version and branch
+        id: preview_info
+        uses: ./tbp.monty/.github/actions/get_preview_info
+        with:
+          user_login: ${{ github.event.pull_request.user.login }}
+
+      - name: Delete docs preview
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          export README_API_KEY=${{ secrets.README_API_KEY }}
+          python -m tools.github_readme_sync.cli delete "${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}" 
