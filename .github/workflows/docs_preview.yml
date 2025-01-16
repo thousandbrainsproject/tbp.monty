@@ -68,16 +68,11 @@ jobs:
           source activate tbp.monty
           pip install -e .[dev,github_readme_sync_tool,print_version_tool]
       - name: Get version and branch
-        working-directory: tbp.monty
-        run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          echo "MONTY_VERSION=$(python -m tools.print_version.cli minor)" >> $GITHUB_ENV
-          # Make branch name safe for semver by replacing invalid chars with dash
-          # Remove trailing dash if present
-          echo "BRANCH_NAME=$(echo ${GITHUB_HEAD_REF} | tr -c '[:alnum:]' '-' | sed 's/-*$//')" >> $GITHUB_ENV
-          # Get current date in ISO format
-          echo "MONTY_DATE=$(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_ENV
+        id: preview_info
+        uses: ./tbp.monty/.github/actions/get_preview_info
+        with:
+          user_login: ${{ github.event.pull_request.user.login }}
+
       - name: Deploy docs
         working-directory: tbp.monty
         run: |
@@ -85,7 +80,8 @@ jobs:
           source activate tbp.monty
           export README_API_KEY=${{ secrets.README_API_KEY }}
           export IMAGE_PATH=${{ vars.IMAGE_PATH }}
-          python -m tools.github_readme_sync.cli upload docs "${MONTY_VERSION}-${BRANCH_NAME}"
+          python -m tools.github_readme_sync.cli upload docs "${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}"
+
       - name: Update PR comment on success
         if: success()
         uses: ./tbp.monty/.github/actions/pin_comment
@@ -98,9 +94,9 @@ jobs:
             📚 **Documentation Preview**
 
             ✅ A preview of the documentation changes in this PR is available for maintainers at:
-            ${{ vars.DOCS_URL_PREFIX }}v${{ env.MONTY_VERSION }}-${{ env.BRANCH_NAME }}
+            ${{ vars.DOCS_URL_PREFIX }}v${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}
 
-            Last updated: ${{ env.MONTY_DATE }}
+            Last updated: ${{ steps.preview_info.outputs.monty_date }}
       - name: Update PR comment on failure
         if: failure()
         uses: ./tbp.monty/.github/actions/pin_comment
