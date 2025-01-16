@@ -1,0 +1,35 @@
+name: 'Vale Linter'
+description: 'Run Vale linter and annotate PR with findings'
+
+inputs:
+  path:
+    description: 'Path to run Vale in'
+    required: true
+    default: '.'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Vale
+      shell: bash
+      run: |
+        cd ${{ inputs.path }}
+        curl -L https://github.com/errata-ai/vale/releases/download/v3.9.3/vale_3.9.3_Linux_64-bit.tar.gz | tar xvz vale
+
+    - name: Run Vale
+      shell: bash
+      run: |
+        cd ${{ inputs.path }}
+        ./vale --output=line . > vale_output.txt || true
+        if [ -s vale_output.txt ]; then
+          while IFS= read -r line; do
+            if [[ $line =~ ^([^:]+):([0-9]+):([0-9]+):(.+)$ ]]; then
+              file="${BASH_REMATCH[1]}"
+              line_num="${BASH_REMATCH[2]}"
+              col="${BASH_REMATCH[3]}"
+              message="${BASH_REMATCH[4]}"
+              echo "::error file=${file},line=${line_num},col=${col}::${message}"
+            fi
+          done < vale_output.txt
+          exit 1
+        fi

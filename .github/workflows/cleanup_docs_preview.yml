@@ -30,7 +30,7 @@ jobs:
           shasum -a 256 ~/tbp/tbp.monty/environment_arm64.yml | awk '{print $1}' > ~/tbp/environment_arm64.sha
           shasum -a 256 ~/tbp/tbp.monty/environment.yml | awk '{print $1}' > ~/tbp/environment.sha
           shasum -a 256 ~/tbp/tbp.monty/pyproject.toml | awk '{print $1}' > ~/tbp/pyproject.toml.sha
-          echo "monty-${RUNNER_OS}-$(cat ~/tbp/environment_arm64.sha)-$(cat ~/tbp/environment.sha)-$(cat ~/tbp/pyproject.toml.sha)" > ~/tbp/conda_env_cache_key.txt
+          echo "monty-cleanup-docs-preview-${RUNNER_OS}-$(cat ~/tbp/environment_arm64.sha)-$(cat ~/tbp/environment.sha)-$(cat ~/tbp/pyproject.toml.sha)" > ~/tbp/conda_env_cache_key.txt
           echo "conda_env_cache_key_sha=$(cat ~/tbp/conda_env_cache_key.txt | shasum -a 256 | awk '{print $1}')" >> $GITHUB_OUTPUT
 
       - name: Set up Python 3.8
