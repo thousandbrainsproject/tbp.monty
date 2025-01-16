@@ -33,6 +33,7 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     FiveLMMountHabitatDatasetArgs,
     NoisySurfaceViewFinderMountHabitatDatasetArgs,
     PatchViewFinderMountHabitatDatasetArgs,
+    PatchViewFinderMultiObjectMountHabitatDatasetArgs,
     PredefinedObjectInitializer,
     RandomRotationObjectInitializer,
     SurfaceViewFinderMountHabitatDatasetArgs,
@@ -107,8 +108,9 @@ monty_models_dir = os.getenv("MONTY_MODELS")
 # v7 : Updated for State class support + using new feature names like pose_vectors
 # v8 : Using separate graph per input channel
 # v9 : Using models trained on 14 unique rotations
+# v10 : Using models trained without the semantic sensor
 fe_pretrain_dir = os.path.expanduser(
-    os.path.join(monty_models_dir, "pretrained_ycb_v9")
+    os.path.join(monty_models_dir, "pretrained_ycb_v10")
 )
 
 model_path_10distinctobj = os.path.join(
@@ -538,6 +540,7 @@ base_10multi_distinctobj_dist_agent.update(
         learning_module_configs=lower_max_nneighbors_1lm_config,
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
     ),
+    dataset_args=PatchViewFinderMultiObjectMountHabitatDatasetArgs(),
     eval_dataloader_args=EnvironmentDataloaderMultiObjectArgs(
         object_names=dict(
             targets_list=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),

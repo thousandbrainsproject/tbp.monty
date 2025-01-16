@@ -257,7 +257,7 @@ class PatchViewFinderMountHabitatDatasetArgs:
                 world_coord=True,
                 zooms=agent_args["zooms"],
                 get_all_points=True,
-                use_semantic_sensor=True,
+                use_semantic_sensor=False,
             ),
         ]
 
@@ -287,7 +287,7 @@ class NoisyPatchViewFinderMountHabitatDatasetArgs:
                 world_coord=True,
                 zooms=agent_args["zooms"],
                 get_all_points=True,
-                use_semantic_sensor=True,
+                use_semantic_sensor=False,
             ),
         ]
 
@@ -307,7 +307,7 @@ class OmniglotDatasetArgs:
                 world_coord=True,
                 zooms=1,
                 get_all_points=True,
-                use_semantic_sensor=True,
+                use_semantic_sensor=False,
                 depth_clip_sensors=(0,),
                 clip_value=1.1,
             ),
@@ -391,7 +391,7 @@ class SurfaceViewFinderMountHabitatDatasetArgs(PatchViewFinderMountHabitatDatase
                 world_coord=True,
                 zooms=agent_args["zooms"],
                 get_all_points=True,
-                use_semantic_sensor=True,
+                use_semantic_sensor=False,
                 depth_clip_sensors=(0,),  # comma needed to make it a tuple
                 clip_value=0.05,
             ),
@@ -432,7 +432,7 @@ class NoisySurfaceViewFinderMountHabitatDatasetArgs(
                 world_coord=True,
                 zooms=agent_args["zooms"],
                 get_all_points=True,
-                use_semantic_sensor=True,
+                use_semantic_sensor=False,
                 depth_clip_sensors=(0,),  # comma needed to make it a tuple
                 clip_value=0.05,
             ),
@@ -870,7 +870,7 @@ class PatchAndViewFinderMountConfig:
         default_factory=lambda: [[1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]]
     )
     semantics: List[List[Union[int, float]]] = field(
-        default_factory=lambda: [True, True]
+        default_factory=lambda: [False, False]
     )
     zooms: List[float] = field(default_factory=lambda: [10.0, 1.0])
 
@@ -929,7 +929,7 @@ class MultiLMMountHabitatDatasetArgs:
                 world_coord=True,
                 zooms=agent_args["zooms"],
                 get_all_points=True,
-                use_semantic_sensor=True,
+                use_semantic_sensor=False,
             ),
         ]
 
@@ -1018,7 +1018,7 @@ class MultiLMMountConfig:
         ]
     )
     semantics: List[List[Union[int, float]]] = field(
-        default_factory=lambda: [True, True, True]
+        default_factory=lambda: [False, False, False]
     )
     zooms: List[float] = field(default_factory=lambda: [10.0, 10.0, 1.0])
 
@@ -1051,7 +1051,7 @@ class TwoLMStackedDistantMountConfig:
         ]
     )
     semantics: List[List[Union[int, float]]] = field(
-        default_factory=lambda: [True, True, True]
+        default_factory=lambda: [False, False, False]
     )
     zooms: List[float] = field(default_factory=lambda: [10.0, 5.0, 1.0])
 
@@ -1108,11 +1108,54 @@ class FiveLMMountConfig:
         ]
     )
     semantics: List[List[Union[int, float]]] = field(
-        default_factory=lambda: [True, True, True, True, True, True]
+        default_factory=lambda: [False, False, False, False, False, False]
     )
     zooms: List[float] = field(
         default_factory=lambda: [10.0, 10.0, 10.0, 10.0, 10.0, 1.0]
     )
+
+
+@dataclass
+class PatchAndViewFinderMultiObjectMountConfig(PatchAndViewFinderMountConfig):
+    semantics: List[List[Union[int, float]]] = field(
+        default_factory=lambda: [True, True]
+    )
+
+
+@dataclass
+class EnvInitArgsPatchViewFinderMultiObjectMount(EnvInitArgs):
+    agents: List[AgentConfig] = field(
+        default_factory=lambda: [
+            AgentConfig(
+                MultiSensorAgent, PatchAndViewFinderMultiObjectMountConfig().__dict__
+            )
+        ]
+    )
+
+
+@dataclass
+class PatchViewFinderMultiObjectMountHabitatDatasetArgs:
+    env_init_func: Callable = field(default=HabitatEnvironment)
+    env_init_args: Dict = field(
+        default_factory=lambda: EnvInitArgsPatchViewFinderMultiObjectMount().__dict__
+    )
+    transform: Union[Callable, list, None] = None
+    rng: Union[Callable, None] = None
+
+    def __post_init__(self):
+        agent_args = self.env_init_args["agents"][0].agent_args
+        self.transform = [
+            MissingToMaxDepth(agent_id=agent_args["agent_id"], max_depth=1),
+            DepthTo3DLocations(
+                agent_id=agent_args["agent_id"],
+                sensor_ids=agent_args["sensor_ids"],
+                resolutions=agent_args["resolutions"],
+                world_coord=True,
+                zooms=agent_args["zooms"],
+                get_all_points=True,
+                use_semantic_sensor=True,
+            ),
+        ]
 
 
 """
@@ -1278,10 +1321,7 @@ def make_multi_sensor_mount_config(
         positions: Positions of the sensors. If not provided, calls
             `make_sensor_positions_on_grid` with its default arguments.
         rotations: Rotations of the sensors. Defaults to [1, 0, 0, 0] for all sensors.
-        semantics: Defaults to `False` for all sensors except for the last entry
-            which is set to `True`. This is because Monty currently requires the
-            view finder to create semantic maps. If given, `semantics` must also
-            have `semantics[-1]` set to `True`.
+        semantics: Defaults to `False` for all sensors.
         zooms: Zooms of the sensors. Defaults to 10.0 for all sensors except for the
           except for the view finder (which has a zoom of 1.0)
 
@@ -1349,13 +1389,10 @@ def make_multi_sensor_mount_config(
 
     # sensor semantics
     if semantics is None:
-        semantics = np.ones(arr_len, dtype=bool)
+        semantics = np.zeros(arr_len, dtype=bool)
     else:
         semantics = np.asarray(semantics, dtype=bool)
     assert semantics.shape == (arr_len,), f"`semantics` must have shape ({arr_len},)"
-    # TODO: Support `False` values. They currently cause errors.
-    # Also make sure numpy.bool is OK here. May possibly need to use built-in booleans
-    # (so possibly make dtype 'object', but I think it's fine).
     mount_config["semantics"] = semantics
 
     # sensor zooms
