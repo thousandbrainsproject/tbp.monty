@@ -113,7 +113,7 @@ In the long term, there may be a role for something like deep-reinforcement lear
 
 ## How Can Monty Learn Without Back-Propagation for Credit Assignment?
 
-Attempts to explain how back-propagation might exist in the brain require problematic assumptions, such as 1:1 assocations between neurons that are not observed experimentally. Furthermore, systems reliant on back-propagation display undeseriable learning characteristics, such as catastrophic forgetting, and the requirement for large amounts of training data.
+Attempts to explain how back-propagation might exist in the brain require problematic assumptions, such as 1:1 assocations between neurons that are not observed experimentally. Furthermore, systems reliant on back-propagation display undesirable learning characteristics, such as catastrophic forgetting, and the requirement for large amounts of training data.
 
 In Monty, we make use of associative learning, together with a strong spatial inductive bias, to enable rapid learning without the use of back-propagation. Although we do not currently use modifiable "weights", one way to conceptualize this is as a form of Hebbian learning in a Hopfield (associative memory) network, where memories are embedded in reference frames, rather than a single, homogenous population of neurons.
 
