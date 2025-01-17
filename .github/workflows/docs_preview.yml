@@ -21,20 +21,21 @@ jobs:
     name: deploy-docs-preview
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout tbp.monty from main
+      - name: Checkout tbp.monty
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           lfs: true
           path: tbp.monty
-      - name: Checkout PR docs
-        uses: actions/checkout@v4
-        with:
           ref: ${{ github.event.pull_request.head.sha }}
-          path: pr_docs
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             docs/
+            tools/github_readme_sync/
+            .github/workflows/
+            .github/actions/
+            environment.yml
+
       - name: Create initial PR comment
         uses: ./tbp.monty/.github/actions/pin_comment
         with:
