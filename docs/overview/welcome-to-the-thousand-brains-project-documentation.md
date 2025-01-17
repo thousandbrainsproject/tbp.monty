@@ -1,5 +1,5 @@
 ---
-title: Welcome to the Thousand Brains Project Documentation
+title: Welcome to the Thousand Brains Project Documentation2
 ---
 
 ![](../figures/overview/logo.png)
