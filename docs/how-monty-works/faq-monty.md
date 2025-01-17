@@ -50,7 +50,7 @@ Finally, it's worth noting that there may be other unique features of the hippoc
 
 ## If "Cognitive Maps" are Found in the Hippocampal Formation, Why Do We Believe They Are Found in the Neocortex?
 
-Neuroscientists have found evidence that grid cells in the hippocampal complex can encode abstract reference frames, such as the conceptual space of an object's properties ([Constantinescu et al, 2016](https://pmc.ncbi.nlm.nih.gov/articles/PMC5248972/)), what is often referred to as "cognitive maps" ([O'Keefe and Nadel, 1978](https://www.cmor-faculty.rice.edu/~cox/neuro/HCMComplete.pdf)). The Thousand Brains Theory does *not* argue that abstract, structured representations cannot be found in the hippocampal formation. As noted above, this structure has been highly developed so as to enable very rapid learning, which would account for its important role in learning structured representations in mammals. Furthermore, the fact is that this neural hardware exists, so even if cortical columns learn structured representations, it is likely that there will be a degree of redundancy with the hippocampal formation, at least early in learning. 
+Neuroscientists have found evidence that grid cells in the hippocampal complex can encode abstract reference frames, such as the conceptual space of an object's properties ([Constantinescu et al, 2016](https://pmc.ncbi.nlm.nih.gov/articles/PMC5248972/)), what is often referred to as "cognitive maps" ([O'Keefe and Nadel, 1978](https://www.cmor-faculty.rice.edu/~cox/neuro/HCMComplete.pdf)). The Thousand Brains Theory does *not* argue that abstract, structured representations cannot be found in the hippocampal formation. As noted above, this structure has been highly developed so as to enable very rapid learning, which would account for its important role in learning structured representations in mammals. Furthermore, the fact is that this neural hardware exists, so even if cortical columns learn structured representations, it is natural that these would also emerge in the hippocampal formation. This would result in a degree of redundancy between cortical columns and the hippocampal formation, at least early in learning. With this view, evidence for structured representations in the hippocampal formation does not imply that such representations cannot be found in cortical columns.
 
 More generally, we believe the learning that takes place in the reference frames of cortical columns happens more slowly, which would make it more challenging to measure experimentally. If you are an experimental neuroscientist interested in structured representations of objects, we would love to discuss ways that it might be possible to measure the emergence of such representations in the cortical columns.
 
@@ -138,7 +138,9 @@ Instead, these systems appear to learn complex input-output mappings, which are 
 
 In CNNs, and deep-learning systems more generally, there is often a lack of “object-centric” representations, which is to say that when processing a scene with many objects, the properties of these tend to be mixed up with one another. This is in contrast to humans, where we understand the world as being composed of discrete objects with a degree of permanence, and where these objects have the ability to interact with one another.
 
-Furthermore, any given object in our brain is represented spatially, where the shape of the object - i.e. the relative arrangement of features - is far more important than low-level details like a texture that might correlate with a particular object class. Again, this is different from how CNNs and other deep-learning systems learn to represent objects.
+Furthermore, any given object in our brain is represented spatially, where the shape of the object - i.e. the relative arrangement of features - is far more important than low-level details like a texture that might correlate with a particular object class. This is how we see a person in the famous Vertumnus painting by Arcimboldo, despite all the local features being pieces of fruit. Again, this is different from how CNNs and other deep-learning systems learn to represent objects.
+
+![Vertumnus by Arcimboldo, 1591, oil on canvas](../figures/how-monty-works/painting_vertumnus.png#width=300px)
 
 Importantly, such object-centric and spatially-structured representations do not just exist at one level of abstraction, but throughout various levels of hierarchy, from how you understand something like an iris or a fingernail, all the way up to your representation of a person. This continues to extend upwards to abstract concepts like society, where representations continue to be discrete, structured objects.
 
@@ -152,10 +154,12 @@ However, the approach we are adopting contrasts to some "neuro-symbolic" approac
 
 # Applications of Monty
 
-## Can Monty be used for a scientific problem, like mapping the genetic sequence of a protein to its 3D structure?
+## Can Monty be Used for a Scientific Problem, Like Mapping the Genetic Sequence of a Protein to its 3D Structure?
 
 This depends a lot on how data is available. Given a static dataset of genetic sequences and their mapping onto the 3D structures of their proteins, Monty is not going to work well, while this is where a function-approximation algorithm like deep-learning can excel.
 
 Where Monty would eventually shine is when it is able to control experimental devices that allow it to further probe information about the world, i.e. a sensorimotor environment. For exampple, Monty might have some hypotheses about a structure, and want to test these through various experiments, probing the space in which it is uncertain. We embed representations in 3D coordinates that can take on any kind of graph structure necessary which is <= 3D space (strings, graphs defined by edges, or 3D point-clouds), so in theory these kinds of entities can all be represented.
 
 How Monty would *learn* to generalize a mapping between these levels of representations remains outstanding, and relates to how Monty can learn a mapping between different spaces (e.g. meeting a new family, and mapping these people onto an abstract family-tree structure). We are still figuring out exactly how this would work in a simpler case like the family-tree. In the protein case, the rules are much more complex, and so learning this is definitely not something that Monty can do now. However, just like a human scientist, the ultimate aim would be for Monty to learn to do this mapping based on a causal understanding of the world, informed by the above mentioned experiments, and in contrast to an end-to-end black-box function approximator.
+
+You can also read more about [applications of Monty under the suggested criteria](../overview/application-criteria).
