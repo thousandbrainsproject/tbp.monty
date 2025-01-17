@@ -134,3 +134,6 @@ Session.vim
 
 # JetBrains/PyCharm
 .idea/
+
+# rsync
+.rsyncignore.local
