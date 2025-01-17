@@ -7,7 +7,7 @@ concurrency:
 on:
   pull_request:
     branches:
-      - main
+      - bug-preview-does-not
     paths:
       - 'docs/**'
       - 'tools/github_readme_sync/**'
