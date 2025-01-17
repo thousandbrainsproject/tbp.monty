@@ -18,4 +18,4 @@ There are many ways in which you can contribute to the code. The list below is n
 
 # How To Contribute Code
 
-Monty integrates code changes using Github Pull Requests. To start contributing code to Monty, please consult the [Contributing Pull Requests](pull-requests.md) guide.
+Monty integrates code changes using GitHub Pull Requests. To start contributing code to Monty, please consult the [Contributing Pull Requests](pull-requests.md) guide.
