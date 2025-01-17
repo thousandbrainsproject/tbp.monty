@@ -62,7 +62,7 @@ It has been proposed that the *ventral* and *dorsal* streams of the visual corte
 
 However one distinction that might exist, at least in the brain, is the following: for columns to meaningfully communicate spatial information with one another, there needs to be some common reference frame. Within a column, the spatial representation is object-centric, but a common reference frame comes into play when different columns interact.
 - One choice for this common reference frame is a body-centric coordinate system, which is likely at play in the dorsal ("where") stream. This would explain its importance for directing complex motor actions, as in [the classic Milner and Goodale study](https://pubmed.ncbi.nlm.nih.gov/1374953/) that spawned the two-stream framing of function.
-- An alternative choice is an “allocentric” reference frame, which could be some temporary landmark in the environment, such as the corners of a monitor, or a prominent object in a room. This may be utilizied in the ventral ("what") pathway.
+- An alternative choice is an “allocentric” reference frame, which could be some temporary landmark in the environment, such as the corners of a monitor, or a prominent object in a room. This may be utilized in the ventral ("what") pathway.
 
 In Monty, the between-column computations, such as voting, have made use of an ego/body-centric shared coordinate system. However, this might change in the future, where motor coordination would benefit from egocentric coordinates, and reasoning about object interactions might benefit from allocentric coordinates. If ever implemented, this could be analogous to separate "what" and "where" pathways.
 
@@ -113,7 +113,7 @@ In the long term, there may be a role for something like deep-reinforcement lear
 
 ## How Can Monty Learn Without Back-Propagation for Credit Assignment?
 
-Attempts to explain how back-propagation might exist in the brain require problematic assumptions, such as 1:1 assocations between neurons that are not observed experimentally. Furthermore, systems reliant on back-propagation display undesirable learning characteristics, such as catastrophic forgetting, and the requirement for large amounts of training data.
+Attempts to explain how back-propagation might exist in the brain require problematic assumptions, such as 1:1 associations between neurons that are not observed experimentally. Furthermore, systems reliant on back-propagation display undesirable learning characteristics, such as catastrophic forgetting, and the requirement for large amounts of training data.
 
 In Monty, we make use of associative learning, together with a strong spatial inductive bias, to enable rapid learning without the use of back-propagation. Although we do not currently use modifiable "weights", one way to conceptualize this is as a form of Hebbian learning in a Hopfield (associative memory) network, where memories are embedded in reference frames, rather than a single, homogenous population of neurons.
 
