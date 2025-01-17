@@ -27,15 +27,13 @@ jobs:
           fetch-depth: 0
           lfs: true
           path: tbp.monty
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
           ref: ${{ github.event.pull_request.head.sha }}
-          sparse-checkout-cone-mode: false
-          sparse-checkout: |
-            docs/
-            tools/github_readme_sync/
-            .github/workflows/
-            .github/actions/
-            environment.yml
-
+          fetch-depth: 0
+          lfs: true
+          path: pr_docs
       - name: Create initial PR comment
         uses: ./tbp.monty/.github/actions/pin_comment
         with:
