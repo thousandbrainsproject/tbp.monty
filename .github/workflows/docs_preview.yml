@@ -27,6 +27,7 @@ jobs:
           fetch-depth: 0
           lfs: true
           path: tbp.monty
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
       - name: Create initial PR comment
         uses: ./tbp.monty/.github/actions/pin_comment
