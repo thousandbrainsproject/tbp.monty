@@ -22,7 +22,7 @@ Next, you need to **clone the repository onto your device**. To do that, open th
 > [!NOTE]
 > If you want the same setup as we use at the Thousand Brains Project by default, clone the repository at `${HOME}/tbp/`. If you don't have a `tbp` folder in your home directory yet you can run `cd ~; mkdir tbp; cd tbp` to create it. It's not required to clone the code in this folder but it is the path we assume in our tutorials.
 
-## 1.2 Make Sure Your Local Copy is Up-To-Date
+## 1.2 Make Sure Your Local Copy is Up-to-Date
 
 If you just forked and cloned this repository, you may skip this step, but any other time you get back to this code, you will want to synchronize it to work with the latest changes.
 
@@ -99,8 +99,8 @@ A lot of our current experiments are based on the [YCB dataset](https://www.ycbb
 
 | Models | Archive Format | Download Link |
 | --- | --- | --- |
-| pretrained_ycb_v9 | tgz |  [pretrained_ycb_v9.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v9.tgz) |
-| pretrained_ycb_v9 | zip |  [pretrained_ycb_v9.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v9.zip) |
+| pretrained_ycb_v9 | tgz |  [pretrained_ycb_v10.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.tgz) |
+| pretrained_ycb_v9 | zip |  [pretrained_ycb_v10.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.zip) |
 
 Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
 
@@ -150,6 +150,17 @@ export MONTY_MODELS=/path/to/your/pretrained/models/dir
 ```
 
 This path should point to the `pretrained_models` folder that contains the`pretrained_ycb_v9`folders.
+
+
+### MONTY_DATA
+
+If you did not save the data (e.g., YCB objects) in the `~/tbp/data` folder, you will need to set the **MONTY_DATA** environment variable.
+
+```shell
+export MONTY_DATA=/path/to/your/data
+```
+
+This path should point to the `data` folder, which contains data used for your experiments. Examples of data stored in this folder are the `habitat` folder containing YCB objects, the `worldimages` folder containing camera images for the 'Monty Meets Worlds' experiments, and the `omniglot' folder containing the Omniglot dataset.
 
 ### MONTY_LOGS
 

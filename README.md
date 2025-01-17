@@ -1,6 +1,7 @@
 ![](docs/figures/overview/logo.png)
 
-# Welcome to the Monty repository!
+# Welcome to the Monty Repository!
+
 *An open-source, sensorimotor learning system following the principles of the neocortex.*
 
 [![](https://github.com/thousandbrainsproject/tbp.monty/actions/workflows/monty.yml/badge.svg)](https://github.com/thousandbrainsproject/tbp.monty/actions/workflows/monty.yml)
@@ -54,7 +55,7 @@ If you would like to receive updates, follow us on [Bluesky](https://bsky.app/pr
 If you have further questions or suggestions for collaborations, don't hesitate to contact us directly at **info@thousandbrains.org**.
 
 # Citing the Project
-If you're writing a publication that references the Thousand Brains Project, please cite our TBP whitepaper:
+If you're writing a publication that references the Thousand Brains Project, please cite our TBP white paper:
 ```
 @misc{thousandbrainsproject2024,
       title={The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence},

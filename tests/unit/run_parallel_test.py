@@ -273,8 +273,14 @@ class RunParallelTest(unittest.TestCase):
         scsv = pd.read_csv(os.path.join(eval_dir, "eval_stats.csv"))
         pcsv = pd.read_csv(os.path.join(parallel_eval_dir, "eval_stats.csv"))
 
-        scsv.drop(columns="time", inplace=True)
-        pcsv.drop(columns="time", inplace=True)
+        # We have to drop these columns because they are not the same in the parallel
+        # and serial runs. In particular, 'stepwise_performance' and
+        # 'stepwise_target_object' are derived from the mapping between semantic IDs to
+        #  names which depend on the number of objects in the data loader, and data
+        # loaders only have one object in parallel experiments.
+        for col in ["time", "stepwise_performance", "stepwise_target_object"]:
+            scsv.drop(columns=col, inplace=True)
+            pcsv.drop(columns=col, inplace=True)
 
         self.assertTrue(pcsv.equals(scsv))
 
@@ -315,14 +321,12 @@ class RunParallelTest(unittest.TestCase):
         scsv_lt = pd.read_csv(os.path.join(eval_dir_lt, "eval_stats.csv"))
         pcsv_lt = pd.read_csv(os.path.join(parallel_eval_dir_lt, "eval_stats.csv"))
 
-        scsv_lt.drop(columns="time", inplace=True)
-        pcsv_lt.drop(columns="time", inplace=True)
+        # Remove columns that are not the same in the parallel and serial runs.
+        for col in ["time", "stepwise_performance", "stepwise_target_object"]:
+            scsv_lt.drop(columns=col, inplace=True)
+            pcsv_lt.drop(columns=col, inplace=True)
 
         self.assertTrue(pcsv_lt.equals(scsv_lt))
-
-        ###
-        # n_eval_epochs > len(rotations)
-        ###
 
         # In serial like normal
         pprint("...Setting up serial experiment...")
@@ -357,8 +361,9 @@ class RunParallelTest(unittest.TestCase):
         scsv_gt = pd.read_csv(os.path.join(eval_dir_gt, "eval_stats.csv"))
         pcsv_gt = pd.read_csv(os.path.join(parallel_eval_dir_gt, "eval_stats.csv"))
 
-        scsv_gt.drop(columns="time", inplace=True)
-        pcsv_gt.drop(columns="time", inplace=True)
+        for col in ["time", "stepwise_performance", "stepwise_target_object"]:
+            scsv_gt.drop(columns=col, inplace=True)
+            pcsv_gt.drop(columns=col, inplace=True)
 
         self.assertTrue(pcsv_gt.equals(scsv_gt))
 

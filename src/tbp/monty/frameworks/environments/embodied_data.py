@@ -104,7 +104,6 @@ class EnvironmentDataset(Dataset):
         state = self.env.get_state()
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-
         return observation, state
 
     def __len__(self):
@@ -225,7 +224,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             self.object_names = object_names
             # Return an (ordered) list of unique items:
             self.source_object_list = list(dict.fromkeys(object_names))
-            self.num_distactors = 0
+            self.num_distractors = 0
         elif isinstance(object_names, dict):
             # TODO when we want more advanced multi-object experiments, update these
             # arguments along with the Object Initializers so that we can easily
@@ -235,7 +234,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             self.source_object_list = list(
                 dict.fromkeys(object_names["source_object_list"])
             )
-            self.num_distactors = object_names["num_distractors"]
+            self.num_distractors = object_names["num_distractors"]
         else:
             raise ValueError("Object names should be a list or dictionary")
         self.create_semantic_mapping()
@@ -329,7 +328,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             name=self.object_names[idx], **init_params
         )
 
-        if self.num_distactors > 0:
+        if self.num_distractors > 0:
             self.add_distractor_objects(
                 primary_target_obj,
                 init_params,
@@ -368,7 +367,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             item for item in self.source_object_list if item != primary_target_name
         ]
 
-        for __ in range(self.num_distactors):
+        for __ in range(self.num_distractors):
             new_init_params = copy.deepcopy(init_params)
 
             new_obj_label = self.rng.choice(sampling_list)
@@ -484,7 +483,12 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
     def pre_episode(self):
         super().pre_episode()
         if not self.dataset.env._agents[0].action_space_type == "surface_agent":
-            self.get_good_view_with_patch_refinement()
+            on_target_object = self.get_good_view_with_patch_refinement()
+            if self.num_distractors == 0:
+                # Only perform this check if we aren't doing multi-object experiments.
+                assert (
+                    on_target_object
+                ), "Primary target must be visible at the start of the episode"
 
     def first_step(self):
         """Carry out particular motor-system state updates required on the first step.
@@ -512,7 +516,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
     def get_good_view(
         self, view_sensor_id: str, allow_translation: bool = True
-    ) -> None:
+    ) -> bool:
         """Policy to get a good view of the object before an episode starts.
 
         Used by the distant agent to find the initial view of an object at the
@@ -541,20 +545,24 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 the motor systems's `move_close_enough` method. If `False`, only
                 orientienting movements are performed. Default is `True`.
 
+        Returns:
+            Whether the sensor is on the object.
+
         TODO M : move most of this to the motor systems, shouldn't be in embodied_data
             class
         """
         # TODO break up this method so that there is less code duplication
         # Start by ensuring the center of the patch is covering the primary target
         # object before we start moving forward; only done for multi-object experiments
-
-        if self.num_distactors > 0:
-            actions, on_object = self.motor_system.orient_to_object(
+        multiple_objects_present = self.num_distractors > 0
+        if multiple_objects_present:
+            actions, on_target_object = self.motor_system.orient_to_object(
                 self._observation,
                 view_sensor_id,
                 target_semantic_id=self.primary_target["semantic_id"],
+                multiple_objects_present=multiple_objects_present,
             )
-            if not on_object:
+            if not on_target_object:
                 for action in actions:
                     self._observation, self.motor_system.state = self.dataset[action]
 
@@ -564,7 +572,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 self._observation,
                 view_sensor_id,
                 target_semantic_id=self.primary_target["semantic_id"],
-                multi_objects_present=self.num_distactors > 0,
+                multiple_objects_present=multiple_objects_present,
             )
             # Continue moving to a close distance to the object
             while not close_enough:
@@ -574,33 +582,31 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                     self._observation,
                     view_sensor_id,
                     target_semantic_id=self.primary_target["semantic_id"],
-                    multi_objects_present=self.num_distactors > 0,
+                    multiple_objects_present=multiple_objects_present,
                 )
 
         # Re-center ourselves (if necessary) after having moved closer
-        actions, on_object = self.motor_system.orient_to_object(
+        actions, on_target_object = self.motor_system.orient_to_object(
             self._observation,
             view_sensor_id,
             target_semantic_id=self.primary_target["semantic_id"],
+            multiple_objects_present=multiple_objects_present,
         )
-        if not on_object:
+        if not on_target_object:
             for action in actions:
                 self._observation, self.motor_system.state = self.dataset[action]
 
-        # # Final check that we're on the object
-        # TODO add this back later : at the moment we sometimes just don't have the
-        # object visible here, e.g. the spoon, regardless of whether it's a multi
-        # object experiment or not; orient_to_object seems to sometimes fail due to
-        # the Gaussean filtering getting us to move to somewhere that's not on the
-        # actual object
-        # _, on_object = self.motor_system.orient_to_object(
-        #     self._observation,
-        #     view_sensor_id,
-        #     target_semantic_id=self.primary_target["semantic_id"],
-        # )
-        # assert on_object, "Primary target must be visible at the start of the episode"
+        # Final check that we're on the object. May be used by calling function
+        # to raise an error.
+        _, on_target_object = self.motor_system.orient_to_object(
+            self._observation,
+            view_sensor_id,
+            target_semantic_id=self.primary_target["semantic_id"],
+            multiple_objects_present=multiple_objects_present,
+        )
+        return on_target_object
 
-    def get_good_view_with_patch_refinement(self) -> None:
+    def get_good_view_with_patch_refinement(self) -> bool:
         """Policy to get a good view of the object for the central patch.
 
         Used by the distant agent to move and orient toward an object such that the
@@ -612,13 +618,16 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         Also currently used by the distant agent after a "jump" has been initialized
         by a model-based policy.
 
+        Returns:
+            Whether the sensor is on the object.
 
         """
         self.get_good_view("view_finder")
         for patch_id in ("patch", "patch_0"):
             if patch_id in self._observation["agent_id_0"].keys():
-                self.get_good_view(patch_id, allow_translation=False)
+                on_target_object = self.get_good_view(patch_id, allow_translation=False)
                 break
+        return on_target_object
 
     def execute_jump_attempt(self):
         """Attempt a hypothesis-testing "jump" onto a location of the object.
@@ -745,8 +754,6 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         else:
             self.get_good_view_with_patch_refinement()
-            # TODO implement better way to get better view after the jump that isn't
-            # "cheating" by using get_good_view (which uses the semantic sensor)
 
     def handle_failed_jump(self, pre_jump_state, first_sensor):
         """Deal with the results of a failed hypothesis-testing jump.
