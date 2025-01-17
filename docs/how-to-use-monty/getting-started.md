@@ -151,6 +151,17 @@ export MONTY_MODELS=/path/to/your/pretrained/models/dir
 
 This path should point to the `pretrained_models` folder that contains the`pretrained_ycb_v9`folders.
 
+
+### MONTY_DATA
+
+If you did not save the data (e.g., YCB objects) in the `~/tbp/data` folder, you will need to set the **MONTY_DATA** environment variable.
+
+```shell
+export MONTY_DATA=/path/to/your/data
+```
+
+This path should point to the `data` folder, which contains data used for your experiments. Examples of data stored in this folder are the `habitat` folder containing YCB objects, the `worldimages` folder containing camera images for the 'Monty Meets Worlds' experiments, and the `omniglot' folder containing the Omniglot dataset.
+
 ### MONTY_LOGS
 
 If you would like to log your experiment results in a different folder than the default path (`~/tbp/results/monty/`) you need to set the **MONTY_LOGS** environment variable.
