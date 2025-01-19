@@ -484,11 +484,15 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         super().pre_episode()
         if not self.dataset.env._agents[0].action_space_type == "surface_agent":
             on_target_object = self.get_good_view_with_patch_refinement()
-            if self.num_distractors == 0:
-                # Only perform this check if we aren't doing multi-object experiments.
-                assert (
-                    on_target_object
-                ), "Primary target must be visible at the start of the episode"
+            if not on_target_object:
+                target_object = self.primary_target["semantic_id"]
+                logging.error(f"--Target object {target_object} not found")
+                # rot = self.primary_target["rotation_euler"]
+            # if self.num_distractors == 0:
+            #     # Only perform this check if we aren't doing multi-object experiments.
+            #     assert (
+            #         on_target_object
+            #     ), "Primary target must be visible at the start of the episode"
 
     def first_step(self):
         """Carry out particular motor-system state updates required on the first step.
