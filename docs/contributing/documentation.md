@@ -17,12 +17,16 @@ We use [Vale](https://vale.sh/) to lint our documentation. The linting process c
 
 The linting rules are defined in the `/.vale/` directory.
 
-### How to Install and Use Vale
+## Adding New Words to the Dictionary
 
-1. **Install Vale**  
+You can add new words to the dictionary by adding them to `.vale/styles/config/vocabularies/TBP/accept.txt` - for more information see [Vale's documentation](https://vale.sh/docs/keys/vocab#file-format).
+
+## How to Install and Use Vale
+
+1. **Install Vale**
   Download Vale from its [installation page](https://vale.sh/docs/install).
 
-2. **Run Vale**  
+2. **Run Vale**
   Use the following command in your terminal to run Vale:
 
     ```bash
@@ -34,7 +38,6 @@ The linting rules are defined in the `/.vale/` directory.
     ➜  tbp.monty git:(main) vale .
     ✔ 0 errors, 0 warnings and 0 suggestions in 141 files.
     ```
-
 
 # Relative Links
 
@@ -78,7 +81,7 @@ title: 'New Placeholder Example Doc'
 >Please put the title in single quotes and, if applicable, escape any single quotes using two single quotes in a row.
 Example: `title: 'My New Doc''s'`
 
-> 🚧 Your title must match the url-safe slug
+> 🚧 Your title must match the URL-safe slug
 >
 >If your title is `My New Doc's` then your file name should be `my-new-docs.md`
 

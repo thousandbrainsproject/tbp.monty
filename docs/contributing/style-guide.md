@@ -21,13 +21,13 @@ We adopted the Google Style for docstrings. For more details, see the [Google Py
 
 ## Libraries
 
-### Numpy Preferred Over PyTorch
+### NumPy Preferred Over PyTorch
 
-After discovering that torch-to-numpy conversions (and the reverse) were a significant speed bottleneck in our algorithms, we decided to consistently use NumPy to represent the data in our system.
+After discovering that PyTorch-to-NumPy conversions (and the reverse) were a significant speed bottleneck in our algorithms, we decided to consistently use NumPy to represent the data in our system.
 
 We still require the PyTorch library since we use it for certain things, such as multiprocessing. However, please use NumPy operations for any vector and matrix operations whenever possible. If you think you cannot work with NumPy and need to use Torch, consider opening an RFC first to increase the chances of your PR being merged.
 
-Another reason we discourage using PyTorch is to add a barrier for deep-learning to creep into Monty. Although we don't have a fundamental issue with contributors using deep learning, we worry that it will be the first thing someone's mind goes to when solving a problem (when you have a hammer...). We want contributors to think intentionally about whether deep-learning is the best solution for what they want to solve. Monty relies on very different principles than those most ML practitioners are used to, and so it is useful to think outside of the mental framework of deep-learning. More importantly, evidence that the brain can perform the long-range weight transport required by deep-learning's cornerstone algorithm - back-propagation - is extremely scarce. We are developing a system that, like the mammalian brain, should be able to use _local_ learning signals to rapidly update representations, while also remaining robust under conditions of continual learning. As a general rule therefore, please avoid Pytorch, and the algorithm that it is usually leveraged to support - back-propagation!
+Another reason we discourage using PyTorch is to add a barrier for deep-learning to creep into Monty. Although we don't have a fundamental issue with contributors using deep learning, we worry that it will be the first thing someone's mind goes to when solving a problem (when you have a hammer...). We want contributors to think intentionally about whether deep-learning is the best solution for what they want to solve. Monty relies on very different principles than those most ML practitioners are used to, and so it is useful to think outside of the mental framework of deep-learning. More importantly, evidence that the brain can perform the long-range weight transport required by deep-learning's cornerstone algorithm - back-propagation - is extremely scarce. We are developing a system that, like the mammalian brain, should be able to use _local_ learning signals to rapidly update representations, while also remaining robust under conditions of continual learning. As a general rule therefore, please avoid PyTorch, and the algorithm that it is usually leveraged to support - back-propagation!
 
 You can read more about our views on deep learning in Monty in our [FAQ](../how-monty-works/faq-monty.md#why-does-monty-not-make-use-of-deep-learning).
 
