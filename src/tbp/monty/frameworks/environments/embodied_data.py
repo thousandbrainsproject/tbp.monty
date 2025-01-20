@@ -562,13 +562,13 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # object before we start moving forward; only done for multi-object experiments
         multiple_objects_present = self.num_distractors > 0
         if multiple_objects_present:
-            actions, on_target_object = self.motor_system.orient_to_object(
-                self._observation,
-                sensor_id,
-                target_semantic_id=self.primary_target["semantic_id"],
-                multiple_objects_present=multiple_objects_present,
-            )
-            if not on_target_object:
+            if not self.is_on_target_object(sensor_id):
+                actions = self.motor_system.orient_to_object(
+                    self._observation,
+                    sensor_id,
+                    target_semantic_id=self.primary_target["semantic_id"],
+                    multiple_objects_present=multiple_objects_present,
+                )
                 for action in actions:
                     self._observation, self.motor_system.state = self.dataset[action]
 
