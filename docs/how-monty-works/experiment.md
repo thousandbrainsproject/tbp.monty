@@ -14,13 +14,13 @@ In reality an agent interacts continuously with the world and time is not explic
 
   - **monty_step** (model.episode_steps total_steps): number of observations sent to the Monty model. This includes observations that were not interesting enough to be sent to an LM such as off-object observations. It includes both matching and exploratory steps.
 
-  - **monty_matching_step** (model.matching_steps): At least one LM performed a matching step (updating its possible matches using an observation). There are also exploratory steps which do not update possible matches and only store an observation in the LMs buffer. These are not counted here.
+  - **monty_matching_step** (`model.matching_steps`): At least one LM performed a matching step (updating its possible matches using an observation). There are also exploratory steps which do not update possible matches and only store an observation in the LMs buffer. These are not counted here.
 
-  - **num_steps** (lm.buffer.get_num_matching_steps): Number of matching steps that a specific LM performed.
+  - **num_steps** (`lm.buffer.get_num_matching_steps`): Number of matching steps that a specific LM performed.
 
-  - **lm_step** (max(num_steps)): Number of matching steps performed by the LM that took the most steps.
+  - **lm_step** (`max(num_steps)`): Number of matching steps performed by the LM that took the most steps.
 
-  - **lm_steps_indv_ts** (lm.buffer\["individual_ts_reached_at_step"\]): Number of matching steps a specific LM performed until reaching a local terminal state. A local terminal state means that a specific LM has settled on a result (match or no match). This does not mean that the entire Monty system has reached a terminal state since it usually requires multiple LMs to have reached a local terminal state. For more details see section [Terminal Condition](doc:evidence-based-learning-module#terminal-condition)
+  - **lm_steps_indv_ts** (`lm.buffer["individual_ts_reached_at_step"]`): Number of matching steps a specific LM performed until reaching a local terminal state. A local terminal state means that a specific LM has settled on a result (match or no match). This does not mean that the entire Monty system has reached a terminal state since it usually requires multiple LMs to have reached a local terminal state. For more details see section [Terminal Condition](doc:evidence-based-learning-module#terminal-condition)
 
 - **Episode:** putting a single object in the environment and taking steps until a terminal condition is reached, like recognizing the object or exceeding max steps.
 
