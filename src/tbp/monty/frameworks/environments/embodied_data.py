@@ -484,15 +484,11 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         super().pre_episode()
         if not self.dataset.env._agents[0].action_space_type == "surface_agent":
             on_target_object = self.get_good_view_with_patch_refinement()
-            if not on_target_object:
-                target_object = self.primary_target["semantic_id"]
-                logging.error(f"--Target object {target_object} not found")
-                # rot = self.primary_target["rotation_euler"]
-            # if self.num_distractors == 0:
-            #     # Only perform this check if we aren't doing multi-object experiments.
-            #     assert (
-            #         on_target_object
-            #     ), "Primary target must be visible at the start of the episode"
+            if self.num_distractors == 0:
+                # Only perform this check if we aren't doing multi-object experiments.
+                assert (
+                    on_target_object
+                ), "Primary target must be visible at the start of the episode"
 
     def first_step(self):
         """Carry out particular motor-system state updates required on the first step.
@@ -519,7 +515,10 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         return self._observation
 
     def get_good_view(
-        self, view_sensor_id: str, allow_translation: bool = True
+        self,
+        sensor_id: str,
+        allow_translation: bool = True,
+        max_orientation_attempts: int = 1,
     ) -> bool:
         """Policy to get a good view of the object before an episode starts.
 
@@ -544,13 +543,16 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         performed prior to the translational movement step.
 
         Args:
-            view_sensor_id: The name of the sensor used to inform movements.
+            sensor_id: The name of the sensor used to inform movements.
             allow_translation: Whether to allow movement toward the object via
                 the motor systems's `move_close_enough` method. If `False`, only
                 orientienting movements are performed. Default is `True`.
+            max_orientation_attempts: The maximum number of orientation attempts
+                allowed before giving up and return `False` indicating that the
+                sensor is not on the target object.
 
         Returns:
-            Whether the sensor is on the object.
+            Whether the sensor is on the target object.
 
         TODO M : move most of this to the motor systems, shouldn't be in embodied_data
             class
@@ -562,7 +564,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         if multiple_objects_present:
             actions, on_target_object = self.motor_system.orient_to_object(
                 self._observation,
-                view_sensor_id,
+                sensor_id,
                 target_semantic_id=self.primary_target["semantic_id"],
                 multiple_objects_present=multiple_objects_present,
             )
@@ -574,7 +576,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             # Move closer to the object, if not already close enough
             action, close_enough = self.motor_system.move_close_enough(
                 self._observation,
-                view_sensor_id,
+                sensor_id,
                 target_semantic_id=self.primary_target["semantic_id"],
                 multiple_objects_present=multiple_objects_present,
             )
@@ -584,30 +586,25 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 self._observation, self.motor_system.state = self.dataset[action]
                 action, close_enough = self.motor_system.move_close_enough(
                     self._observation,
-                    view_sensor_id,
+                    sensor_id,
                     target_semantic_id=self.primary_target["semantic_id"],
                     multiple_objects_present=multiple_objects_present,
                 )
 
-        # Re-center ourselves (if necessary) after having moved closer
-        actions, on_target_object = self.motor_system.orient_to_object(
-            self._observation,
-            view_sensor_id,
-            target_semantic_id=self.primary_target["semantic_id"],
-            multiple_objects_present=multiple_objects_present,
-        )
-        if not on_target_object:
+        on_target_object = self.is_on_target_object(sensor_id)
+        num_attempts = 0
+        while not on_target_object and num_attempts < max_orientation_attempts:
+            actions = self.motor_system.orient_to_object(
+                self._observation,
+                sensor_id,
+                target_semantic_id=self.primary_target["semantic_id"],
+                multiple_objects_present=multiple_objects_present,
+            )
             for action in actions:
                 self._observation, self.motor_system.state = self.dataset[action]
+            on_target_object = self.is_on_target_object(sensor_id)
+            num_attempts += 1
 
-        # Final check that we're on the object. May be used by calling function
-        # to raise an error.
-        _, on_target_object = self.motor_system.orient_to_object(
-            self._observation,
-            view_sensor_id,
-            target_semantic_id=self.primary_target["semantic_id"],
-            multiple_objects_present=multiple_objects_present,
-        )
         return on_target_object
 
     def get_good_view_with_patch_refinement(self) -> bool:
@@ -615,9 +612,10 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         Used by the distant agent to move and orient toward an object such that the
         central patch is on-object. This is done by first moving and orienting the
-        agent toward the object using the view finder. A second orienting movement is
-        then performed using the central patch (i.e., the sensor module with id
+        agent toward the object using the view finder. Then orienting movements are
+        performed using the central patch (i.e., the sensor module with id
         "patch" or "patch_0") to ensure that the patch's central pixel is on-object.
+        Up to 10 reorientation attempts are performed using the central patch.
 
         Also currently used by the distant agent after a "jump" has been initialized
         by a model-based policy.
@@ -629,8 +627,34 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         self.get_good_view("view_finder")
         for patch_id in ("patch", "patch_0"):
             if patch_id in self._observation["agent_id_0"].keys():
-                on_target_object = self.get_good_view(patch_id, allow_translation=False)
+                on_target_object = self.get_good_view(
+                    patch_id,
+                    allow_translation=False,  # only orientation movements
+                    max_orientation_attempts=10,  # allow 10 reorientation attempts
+                )
                 break
+        return on_target_object
+
+    def is_on_target_object(self, sensor_id: str) -> bool:
+        """Check if a sensor is on the target object.
+
+        Args:
+            sensor_id (str): The sensor to check.
+
+        Returns:
+            bool: Whether the sensor is on the target object.
+        """
+        # Reconstruct the 2D semantic/surface map from the 3D semantic map.
+        depth_image = self._observation["agent_id_0"][sensor_id]["depth"]
+        obs_dim = depth_image.shape[0:2]
+        sem3d_obs = self._observation["agent_id_0"][sensor_id]["semantic_3d"]
+        sem_obs = sem3d_obs[:, 3].reshape(obs_dim).astype(int)
+        if self.num_distractors == 0:
+            sem_obs[sem_obs > 0] = self.primary_target["semantic_id"]
+
+        # Check if the central pixel is on the target object.
+        y_mid, x_mid = obs_dim[0] // 2, obs_dim[1] // 2
+        on_target_object = sem_obs[y_mid, x_mid] == self.primary_target["semantic_id"]
         return on_target_object
 
     def execute_jump_attempt(self):

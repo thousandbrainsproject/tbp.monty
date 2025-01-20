@@ -639,10 +639,10 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     def orient_to_object(
         self,
         raw_observation: Mapping,
-        view_sensor_id: str,
+        sensor_id: str,
         target_semantic_id: int,
         multiple_objects_present: bool,
-    ) -> Tuple[List[Action], bool]:
+    ) -> List[Action]:
         """Rotate sensors so that they are centered on the object using a view finder.
 
         The view finder needs to be in the same position as the sensor patch
@@ -650,7 +650,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         Args:
             raw_observation: raw observations of the view finder
-            view_sensor_id: view finder id (str)
+            sensor_id: view finder id (str)
             target_semantic_id: the integer corresponding to the semantic ID
                 of the target object that we will try to fixate on
             multiple_objects_present: whether there are multiple objects present in the
@@ -663,9 +663,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             us onto the target object.
         """
         # Reconstruct 2D semantic map.
-        depth_image = raw_observation[self.agent_id][view_sensor_id]["depth"]
+        depth_image = raw_observation[self.agent_id][sensor_id]["depth"]
         obs_dim = depth_image.shape[0:2]
-        sem3d_obs = raw_observation[self.agent_id][view_sensor_id]["semantic_3d"]
+        sem3d_obs = raw_observation[self.agent_id][sensor_id]["semantic_3d"]
         sem_obs = sem3d_obs[:, 3].reshape(obs_dim).astype(int)
 
         if not multiple_objects_present:
@@ -673,41 +673,70 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         logging.debug("Searching for object")
 
-        # Check if the central pixel is on-object.
+        # Check if the central pixel is on-object. Note: we should be guaranteed
+        # to be off-object at this point, but we leave the check for now.
         y_mid, x_mid = obs_dim[0] // 2, obs_dim[1] // 2
         if sem_obs[y_mid, x_mid] == target_semantic_id:
             logging.debug("Already centered on the object")
-            return [], True
+            return []
 
         relative_location = self.find_location_to_look_at(
             sem3d_obs,
             image_shape=obs_dim,
             target_semantic_id=target_semantic_id,
             multiple_objects_present=multiple_objects_present,
+            sensor_id=sensor_id,
         )
-        down_amount, left_amount = self.compute_look_amounts(relative_location)
-
-        return (
-            [
-                LookDown(agent_id=self.agent_id, rotation_degrees=down_amount),
-                TurnLeft(agent_id=self.agent_id, rotation_degrees=left_amount),
-            ],
-            False,
+        down_amount, left_amount = self.compute_look_amounts(
+            relative_location, sensor_id
         )
+        return [
+            LookDown(agent_id=self.agent_id, rotation_degrees=down_amount),
+            TurnLeft(agent_id=self.agent_id, rotation_degrees=left_amount),
+        ]
 
-    def compute_look_amounts(self, relative_location):
+    def compute_look_amounts(
+        self,
+        relative_location: np.ndarray,
+        sensor_id: str,
+    ) -> Tuple[float, float]:
         """Compute the amount to look down and left given a relative location.
 
-        TODO: rotate/translate the relative location so that this works regardless
-        of the camera location and rotation.
+        This function computes the amount needed to look down and left in order
+        for the sensor to be aimed at the object. The returned amounts are relative
+        to the agent's current position and rotation.
+
+        Args:
+            relative_location: the x,y,z distance from the agent's current position
+                to the new target.
+            sensor_id: the ID of the sensor used to produce the relative location
 
         Returns:
             down_amount: Amount to look down.
             left_amount: Amount to look left.
         """
+        # The are the amounts we'd look down and left if the agnet and sensors
+        # have no rotation.
         down_amount = np.degrees(np.arctan2(relative_location[1], relative_location[2]))
         left_amount = np.degrees(np.arctan2(relative_location[0], relative_location[2]))
-        return down_amount, left_amount
+
+        # Now we need to account for the agent and sensor's current rotation.
+        agent_rotation = self.get_agent_state()["rotation"]
+        sensor_rotation = self.get_agent_state()["sensors"][f"{sensor_id}.depth"][
+            "rotation"
+        ]
+        sensor_rel_world = agent_rotation * sensor_rotation
+        rotation_matrix = qt.as_rotation_matrix(sensor_rel_world)
+        tform = rot.from_matrix(rotation_matrix)
+        cur_euler_angles = tform.as_euler("xyz", degrees=True)
+
+        cur_down_amount = -cur_euler_angles[0]  # we flip this because euler is "up"
+        cur_left_amount = cur_euler_angles[1]
+
+        # Subtract the current rotation from the "absolute" rotation to get the amount
+        rel_down_amount = down_amount - cur_down_amount
+        rel_left_amount = left_amount - cur_left_amount
+        return rel_down_amount, rel_left_amount
 
     def find_location_to_look_at(
         self,
@@ -715,6 +744,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         image_shape: Tuple[int, int],
         target_semantic_id: int,
         multiple_objects_present: bool,
+        sensor_id: str,
     ) -> np.ndarray:
         """Takes in a semantic 3D observation and returns an x,y,z location.
 
@@ -730,10 +760,12 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 saccade on to
             multiple_objects_present: whether there are multiple objects present in the
                 scene.
+            sensor_id: the ID of the sensor to use for the search. Used for computing
+                the relative location of the new target.
 
         Returns:
-            relative_location: the x,y,z distance from camera to pixel with max
-                smoothed on_object value
+            relative_location: the x,y,z distance from the agent's current position
+                to the new target.
         """
         sem3d_obs_image = sem3d_obs.reshape((image_shape[0], image_shape[1], 4))
         on_object_image = sem3d_obs_image[:, :, 3]
@@ -755,7 +787,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         location_to_look_at = sem3d_obs_image[
             idx_loc_to_look_at[0], idx_loc_to_look_at[1], :3
         ]
-        camera_location = self.get_agent_state()["sensors"]["view_finder.depth"][
+        camera_location = self.get_agent_state()["sensors"][f"{sensor_id}.depth"][
             "position"
         ]
         agent_location = self.get_agent_state()["position"]
