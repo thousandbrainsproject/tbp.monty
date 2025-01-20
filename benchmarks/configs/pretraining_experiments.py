@@ -60,7 +60,7 @@ train_rotations_all = get_cube_face_and_corner_views_rotations()
 monty_models_dir = os.getenv("MONTY_MODELS")
 
 fe_pretrain_dir = os.path.expanduser(
-    os.path.join(monty_models_dir, "pretrained_ycb_v9")
+    os.path.join(monty_models_dir, "pretrained_ycb_v10")
 )
 
 pre_surf_agent_visual_training_model_path = os.path.join(

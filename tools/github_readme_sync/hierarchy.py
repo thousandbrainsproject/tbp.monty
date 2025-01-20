@@ -13,16 +13,24 @@ import logging
 import os
 import re
 import sys
+import timeit
 
 import requests
 
-from tools.github_readme_sync.colors import CYAN, GREEN, RED, RESET, WHITE
-from tools.github_readme_sync.excluded_items import IGNORE_DOCS, IGNORE_IMAGES
+from tools.github_readme_sync.colors import CYAN, GREEN, RED, RESET, WHITE, YELLOW
+from tools.github_readme_sync.excluded_items import (
+    IGNORE_DOCS,
+    IGNORE_EXTERNAL_URLS,
+    IGNORE_IMAGES,
+)
 
 HIERARCHY_FILE = "hierarchy.md"
 CATEGORY_PREFIX = "# "
 DOCUMENT_PREFIX = "- "
 INDENTATION_UNIT = "  "  # Single indentation level
+
+# URLs that are checked
+README_URL = "https://thousandbrainsproject.readme.io"
 
 
 def create_hierarchy_file(output_dir, hierarchy):
@@ -64,11 +72,12 @@ def check_hierarchy_file(folder: str):
         sys.exit(1)
 
     with open(os.path.join(folder, HIERARCHY_FILE), "r") as f:
-        lines = f.readlines()
+        content = f.read()
+        content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
+        lines = content.splitlines()
 
     parent_stack = []
     current_category = None
-    # unique_slugs a set of all slugs and corresponding line in a dict
     unique_slugs = {}
     link_check_errors = []
 
@@ -85,7 +94,6 @@ def check_hierarchy_file(folder: str):
             )
             slug = extract_slug(line.strip())
 
-            # Check for duplicate slugs
             if slug in unique_slugs:
                 logging.error(
                     f"Duplicate slug found: {slug}"
@@ -99,7 +107,6 @@ def check_hierarchy_file(folder: str):
             parent_stack[-1]["children"].append(new_doc)
             parent_stack.append(new_doc)
 
-            # Verify file existence and sanity checks
             full_path = (
                 os.path.join(folder, *(el["slug"] for el in parent_stack)) + ".md"
             )
@@ -137,9 +144,10 @@ def check_links(path):
     regex_md_links = r"\[([^\]]*)\]\(([^)]+\.md(?:#[^)]*)?)\)"
     md_link_matches = re.findall(regex_md_links, content)
 
-    regex_image_links = r"!\[([^\]]*)\]\(([^)]+/figures/[^)]+)\)"
-    image_link_matches = re.findall(regex_image_links, content)
-
+    regex_figures = (
+        r"(?:\.\./)*figures/[^\s\)\"\']+(?:\.png|\.jpg|\.jpeg|\.gif|\.svg|\.webp|\s)"
+    )
+    image_link_matches = re.findall(regex_figures, content)
     logging.debug(
         f"{WHITE}{file_name}"
         f"{GREEN} {len(md_link_matches)} links"
@@ -152,6 +160,7 @@ def check_links(path):
     for match in md_link_matches:
         if match[1].startswith(("http://", "https://", "mailto:")):
             continue
+
         path_to_check = os.path.join(current_dir, match[1].split("#")[0])
         path_to_check = os.path.normpath(path_to_check)
         if any(placeholder in match[1] for placeholder in IGNORE_DOCS):
@@ -161,9 +170,11 @@ def check_links(path):
             errors.append(f"  Linked {match[1]} does not exist")
 
     for match in image_link_matches:
-        path_to_check = os.path.join(current_dir, match[1])
+        # Remove any #hash fragments from the path
+        path = match.split("#")[0]
+        path_to_check = os.path.join(current_dir, path)
         path_to_check = os.path.normpath(path_to_check)
-        if any(placeholder in match[1] for placeholder in IGNORE_IMAGES):
+        if any(placeholder in match for placeholder in IGNORE_IMAGES):
             continue
         logging.debug(f"{CYAN}  {path_to_check.split('/')[-1]}{RESET}")
         if not os.path.exists(path_to_check):
@@ -191,7 +202,7 @@ def check_external(folder, ignore_dirs, rdme):
             [os.path.join(root, file) for file in files if file.endswith(".md")]
         )
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         future_to_file = {
             executor.submit(process_file, file_path, rdme, url_cache): file_path
             for file_path in md_files
@@ -255,7 +266,7 @@ def extract_links(content):
 
 
 def is_readme_url(url):
-    return url.startswith("https://thousandbrainsproject.readme.io")
+    return url.startswith(README_URL)
 
 
 def is_external_url(url):
@@ -263,14 +274,21 @@ def is_external_url(url):
 
 
 def check_readme_link(url, rdme):
-    if url == "https://thousandbrainsproject.readme.io/":
+    if url == f"{README_URL}/":
         return []
 
     try:
         doc_slug = url.split("/")[-1]
+        time = timeit.default_timer()
         response = rdme.get_doc_by_slug(doc_slug)
+        time = timeit.default_timer() - time
+        status_color = GREEN if response else RED
+        log_msg = f"{CYAN}{url} {status_color}"
+        log_msg += f"[{200 if response else 404}]{RESET}"
+        if time > 1:
+            log_msg += f" ({YELLOW}{time:.2f}s{RESET})"
+        logging.info(log_msg)
         if not response:
-            logging.debug(f"{WHITE}  {url} (Not found){RESET}")
             return [f"  broken link: {url} (Not found)"]
     except Exception as e:
         return [f"  {url}: {str(e)}"]
@@ -279,16 +297,53 @@ def check_readme_link(url, rdme):
 
 
 def check_external_link(url):
+    if any(ignored_url in url for ignored_url in IGNORE_EXTERNAL_URLS):
+        logging.info(f"{WHITE}{url} {GREEN}[IGNORED]{RESET}")
+        return []
+
     try:
-        headers = request_headers()
-        response = requests.get(url, timeout=5, headers=headers)
+        time = timeit.default_timer()
+        response = check_url(url)
+        time = timeit.default_timer() - time
+
+        status_color = GREEN if 200 <= response.status_code <= 299 else RED
+        log_msg = f"{WHITE}{url} {status_color}[{response.status_code}]{RESET}"
+        if time > 1:
+            log_msg += f" ({YELLOW}{time:.2f}s{RESET})"
+        logging.info(log_msg)
         if response.status_code < 200 or response.status_code > 299:
-            logging.debug(f"{WHITE}  {url} ({response.status_code}){RESET}")
             return [f"  broken link: {url} ({response.status_code})"]
     except requests.RequestException as e:
         return [f"  {url}: {str(e)}"]
 
     return []
+
+
+def check_url(url):
+    """Check if the URL exists.
+
+    The cache-control was just in-case.
+    The User Agent was needed to stop a 406 from
+    ycbbenchmarks.com. I think it will work with
+    any user-agent, but I figured a realistic one
+    was a bit more future proof.
+
+    Returns:
+        requests.Response: The response from the URL request.
+    """
+    headers = request_headers()
+
+    try:
+        response = requests.head(url, timeout=5, headers=headers)
+    except requests.RequestException:
+        # If HEAD fails, try GET instead
+        response = requests.get(url, timeout=5, headers=headers)
+    else:
+        # If HEAD succeeds but returns non-2xx, try GET
+        if not (200 <= response.status_code <= 299):
+            response = requests.get(url, timeout=5, headers=headers)
+
+    return response
 
 
 def request_headers():
@@ -313,6 +368,7 @@ def request_headers():
 
 
 def report_errors(errors, total_links_checked):
+    logging.info("")
     if errors:
         for file_path, file_errors in errors.items():
             logging.error(f"{RED}{file_path}{RESET}")

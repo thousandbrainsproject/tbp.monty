@@ -105,7 +105,7 @@ If you examine the `MontyExperiment` class, you will also notice that there are 
       - Do post-epoch logging.
   - Do post-train logging.
 
-and **this is exactly the procedure that was executed when you ran `python run.py -e first_experiment`.** When we run Monty in evaluation mode, the same sequencce of calls is initiated by `MontyExperiment.evaluate` minus the model updating step in `MontyExperiment.post_episode`. See [here](../../how-monty-works/experiment.md) for more details on epochs, episodes, and steps.
+and **this is exactly the procedure that was executed when you ran `python run.py -e first_experiment`.** When we run Monty in evaluation mode, the same sequence of calls is initiated by `MontyExperiment.evaluate` minus the model updating step in `MontyExperiment.post_episode`. See [here](../../how-monty-works/experiment.md) for more details on epochs, episodes, and steps.
 
 ## Model
 
@@ -123,7 +123,7 @@ You can, of course, customize step types and when to switch between step types b
 
 **In this particular experiment, `n_train_epochs` was set to 1, and `max_train_steps` was set to 1. This means a single epoch was run, with one matching step per episode**. In the next section, we go up a level from the model step to understand episodes and epochs.
 
-## Data{set, loader}
+## `Data{set, loader}`
 
 In the config for first_experiment, there is a comment that marks the start of data configuration. Now we turn our attention to everything below that line, as this is where episode specifics are defined.
 

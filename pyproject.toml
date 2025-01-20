@@ -72,7 +72,8 @@ github_readme_sync_tool = [
     'python-dotenv',
     'colorama',
     'markdown2',
-    'python-slugify'
+    'python-slugify',
+    'nh3'
 ]
 print_version_tool = [
     'semver'

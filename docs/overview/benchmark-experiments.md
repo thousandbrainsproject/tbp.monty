@@ -4,7 +4,7 @@ description: Performance of current implementation on our benchmark test suite.
 ---
 # Object and Pose Recognition on the YCB Dataset
 
-## What do we Test?
+## What Do We Test?
 
 We split up the experiments into a short benchmark test suite and a long one. The short suite tests performance on a subset of 10 out of the 77 [YCB](https://www.ycbbenchmarks.com/) objects which allows us to assess performance under different conditions more quickly. Unless otherwise indicated, the 10 objects are chosen to be distinct in morphology and models are learned using the surface agent, which follows the object surface much like a finger. 
 
@@ -36,7 +36,7 @@ Configs with `randrot` in their name test each object in 10 random, new rotation
 
 Configs with `noise` in their name test with noisy sensor modules where we add Gaussian noise to the sensed locations (0.002), point-normals (2), curvature directions (2), log curvatures (0.1), pose_fully_defined (0.01), and hue (0.1). Numbers in brackets are the standard deviations used for sampling the noisy observations. Note that the learned models were acquired without sensor noise. The image below should visualize how much location noise we get during inference but the LM still contains the noiseless models shown above.
 
-![](../figures/overview/graph_noise_002.png)
+![](../figures/overview/graph_noise_002.png#width=400px)
 
 
 Configs with `rawnoise` in the name test with noisy raw sensor input where Gaussian noise is applied directly to the depth image which is used for location, point normal, and curvature estimation. Here we use a standard deviation of 0.001. This allows us to test the noise robustness of the sensor module compared to testing the noise robustness of the learning module in the `noise` experiments.
@@ -51,20 +51,20 @@ The following results are obtained from experiments using the 10-object subsets 
 
 | Experiment                                  | % Correct | % Used MLH | Num Matching Steps | Rotation Error (radians) | Run Time | Episode Run Time (s) |
 |---------------------------------------------|-----------|------------|--------------------|--------------------------|----------|----------------------|
-| base_config_10distinctobj_dist_agent        | 99.29%    | 5.71%      | 36                 | 0.31                     | 10m      | 31s                  |
-| base_config_10distinctobj_surf_agent        | 100.00%   | 0.00%      | 28                 | 0.21                     | 6m       | 28s                  |
-| randrot_noise_10distinctobj_dist_agent      | 98.00%    | 7.00%      | 46                 | 0.50                     | 9m       | 55s                  |
-| randrot_noise_10distinctobj_dist_on_distm   | 99.00%    | 3.00%      | 35                 | 0.26                     | 7m       | 50s                  |
-| randrot_noise_10distinctobj_surf_agent      | 100.00%   | 0.00%      | 31                 | 0.34                     | 8m       | 62s                  |
-| randrot_10distinctobj_surf_agent            | 100.00%   | 0.00%      | 28                 | 0.40                     | 7m       | 50s                  |
-| randrot_noise_10distinctobj_5lms_dist_agent | 100.00%   | 7.00%      | 50                 | 0.94                     | 44m      | 189s                 |
-| base_10simobj_surf_agent                    | 95.71%    | 10.71%     | 82                 | 0.21                     | 18m      | 104s                 |
-| randrot_noise_10simobj_dist_agent           | 82.00%    | 37.00%     | 185                | 0.52                     | 26m      | 202s                 |
-| randrot_noise_10simobj_surf_agent           | 89.00%    | 34.00%     | 183                | 0.47                     | 35m      | 307s                 |
-| randomrot_rawnoise_10distinctobj_surf_agent | 68.00%    | 81.00%     | 15                 | 1.72                     | 22m      | 23s                  |
-| base_10multi_distinctobj_dist_agent         | 72.86%    | 43.57%     | 23                 | 0.75                     | 1h12m    | 1s                   |
+| base_config_10distinctobj_dist_agent        | 99.29%    | 3.57%      | 34                 | 0.24                     | 5m       | 19s                  |
+| base_config_10distinctobj_surf_agent        | 100.00%   | 0.00%      | 28                 | 0.18                     | 4m       | 21s                  |
+| randrot_noise_10distinctobj_dist_agent      | 99.00%    | 6.00%      | 48                 | 0.46                     | 5m       | 29s                  |
+| randrot_noise_10distinctobj_dist_on_distm   | 100.00%   | 2.00%      | 36                 | 0.25                     | 4m       | 28s                  |
+| randrot_noise_10distinctobj_surf_agent      | 100.00%   | 1.00%      | 29                 | 0.36                     | 5m       | 33s                  |
+| randrot_10distinctobj_surf_agent            | 100.00%   | 0.00%      | 28                 | 0.38                     | 3m       | 17s                  |
+| randrot_noise_10distinctobj_5lms_dist_agent | 100.00%   | 6.00%      | 53                 | 0.84                     | 15m      | 82s                  |
+| base_10simobj_surf_agent                    | 93.57%    | 10.00%     | 78                 | 0.16                     | 10m      | 53s                  |
+| randrot_noise_10simobj_dist_agent           | 82.00%    | 42.00%     | 189                | 0.59                     | 16m      | 119s                 |
+| randrot_noise_10simobj_surf_agent           | 91.00%    | 31.00%     | 162                | 0.42                     | 23m      | 192s                 |
+| randomrot_rawnoise_10distinctobj_surf_agent | 72.00%    | 76.00%     | 16                 | 1.56                     | 15m      | 15s                  |
+| base_10multi_distinctobj_dist_agent         | 73.57%    | 40.00%     | 27                 | 0.73                     | 1h5m     | 2s                   |
 
-## Longer Experiments with all 77 YCB Objects
+## Longer Experiments With all 77 YCB Objects
 
 The following results are obtained from experiments on the entire YCB dataset (77 objects). Since this means having 77 instead of 10 objects in memory, having to disambiguate between them, and running 77 episodes instead of 10 per epoch, these runs take significantly longer. Due to that we only test 3 known rotations ([0, 0, 0], [0, 90, 0], [0, 180, 0]) for the `base` configs and 3 random rotations for the `randrot` configs. The 5LM experiment is currently just run with 1 epoch (1 random rotation per object) but might be extended to 3. The 5LM experiment is run on 48 CPUs instead of 16.
 
@@ -75,11 +75,11 @@ The following results are obtained from experiments on the entire YCB dataset (7
 
 | Experiment                          | % Correct | % Used MLH | Num Matching Steps | Rotation Error (radians) | Run Time | Episode Run Time (s) |
 |-------------------------------------|-----------|------------|--------------------|--------------------------|----------|----------------------|
-| base_77obj_dist_agent               | 92.21%    | 16.02%     | 88                 | 0.30                     | 1h38m    | 301s                 |
-| base_77obj_surf_agent               | 98.27%    | 4.33%      | 52                 | 0.18                     | 42m      | 123s                 |
-| randrot_noise_77obj_dist_agent      | 87.01%    | 29.00%     | 151                | 0.63                     | 2h10m    | 468s                 |
-| randrot_noise_77obj_surf_agent      | 94.37%    | 21.65%     | 113                | 0.61                     | 1h31m    | 339s                 |
-| randrot_noise_77obj_5lms_dist_agent | 90.91%    | 5.19%      | 70                 | 1.01                     | 1h7m     | 1439s                |
+| base_77obj_dist_agent               | 93.07%    | 13.85%     | 86                 | 0.32                     | 56m      | 178s                 |
+| base_77obj_surf_agent               | 98.70%    | 6.49%      | 56                 | 0.16                     | 35m      | 104s                 |
+| randrot_noise_77obj_dist_agent      | 87.45%    | 30.74%     | 149                | 0.70                     | 1h17m    | 264s                 |
+| randrot_noise_77obj_surf_agent      | 96.54%    | 18.61%     | 103                | 0.58                     | 1h3m     | 225s                 |
+| randrot_noise_77obj_5lms_dist_agent | 84.42%    | 9.09%      | 66                 | 1.08                     | 39m      | 843s                 | 
 
 ### Explanation of Some of the Results
 
@@ -111,11 +111,11 @@ An object is classified as detected correctly if the detected object ID is in th
 
 | Experiment                                  | %Correct - 1st Epoch | % Correct - >1st Epoch | Mean Objects per Graph | Mean Graphs per Object | Run Time | Episode Run Time (s) |
 |---------------------------------------------|----------------------|------------------------|------------------------|------------------------|----------|----------------------|
-| surf_agent_unsupervised_10distinctobj       | 80%                  | 92%                    | 1.22                   | 1.1                    | 17m      | 10s                  |
-| surf_agent_unsupervised_10distinctobj_noise | 80%                  | 71.11%                 | 1.05                   | 2.22                   | 106m     | 64s                  |
-| surf_agent_unsupervised_10simobj            | 20%                  | 67.78%                 | 2.63                   | 2.1                    | 32m      | 19s                  |
+| surf_agent_unsupervised_10distinctobj       | 70.00%               | 83.33%                 | 1.43                   | 1.11                   | 20m      | 12s                  |
+| surf_agent_unsupervised_10distinctobj_noise | 70.00%               | 67.78%                 | 1.19                   | 2.11                   | 24m      | 15s                  |
+| surf_agent_unsupervised_10simobj            | 40.00%               | 86.67%                 | 2.60                   | 1.30                   | 28m      | 17s                  |
 
-To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning can, by definition, not be parallelized accross epochs. Therefore these experiments were run without multiprocessing on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
+To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning can, by definition, not be parallelized across epochs. Therefore these experiments were run without multiprocessing on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
 
 # Monty-Meets-World
 
@@ -159,12 +159,12 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 
 | Experiment                                  | % Correct | % Used MLH | Num Matching Steps | [Rotation Error (radians)] | Run Time | Episode Run Time (s) |
 |---------------------------------------------|-----------|------------|--------------------|----------------------------|----------|----------------------|
-| randrot_noise_sim_on_scan_monty_world       | 85.83%    | 87.50%     | 437                | 0.91                       | 1h5m     | 29s                  |
-| world_image_on_scanned_model                | 66.67%    | 83.33%     | 454                | 2.10                       | 12m      | 14s                  |
-| dark_world_image_on_scanned_model           | 31.25%    | 70.83%     | 435                | 2.03                       | 11m      | 13s                  |
-| bright_world_image_on_scanned_model         | 54.17%    | 87.50%     | 464                | 2.15                       | 12m      | 15s                  |
-| hand_intrusion_world_image_on_scanned_model | 37.50%    | 58.33%     | 366                | 1.96                       | 8m       | 9s                   |
-| multi_object_world_image_on_scanned_model   | 37.50%    | 41.67%     | 325                | 1.93                       | 8m       | 9s                   |
+| randrot_noise_sim_on_scan_monty_world       | 80.00%    | 80.83%     | 412                | 0.86                       | 52m      | 24s                  |
+| world_image_on_scanned_model                | 72.92%    | 83.33%     | 442                | 2.15                       | 18m      | 21s                  |
+| dark_world_image_on_scanned_model           | 35.42%    | 83.33%     | 430                | 1.81                       | 16m      | 20s                  |
+| bright_world_image_on_scanned_model         | 43.75%    | 79.17%     | 428                | 1.87                       | 18m      | 22s                  |
+| hand_intrusion_world_image_on_scanned_model | 39.58%    | 56.25%     | 344                | 2.00                       | 8m       | 10s                  |
+| multi_object_world_image_on_scanned_model   | 43.75%    | 52.08%     | 344                | 1.90                       | 11m      | 14s                  | 
 
 **Note that rotation errors are meaningless since no ground truth rotation is provided**
 
@@ -176,7 +176,7 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
   Each episode is restricted to a single viewing angle of an object, resulting in significant ambiguity. Furthermore, episodes use a maximum of 100 matching steps so that these experiments can be run quickly.
 - **Are there any other factors contributing to performance differences to be aware of?**  
   During the collection of some of the datasets, the "smoothing" setting was unfortunately not active; this affects the standard (world_image_on_scanned_model) dataset, as well as the bright and hand-intrusion experiments. Broadly, this appears to not have had too much of an impact, given that e.g., dark and bright perform comparably (with bright actually being better, even though it was acquired without smoothing). There appear to be a couple of images (around 5 out of the 240 images), where this has resulted in a large step-change in the depth reading, and as a result of this, the experiment begins with the model "off" the object, even though to a human eye, the initial position of the patch is clearly on the object. This will be addressed in a future update to the data-sets, where we can also implement any additional changes we may wish to make during data collection (e.g., more control of object poses, or the inclusion of motor data).
-- **What steps should be noted when aquiring new images?**  
+- **What steps should be noted when acquiring new images?**  
   In addition to ensuring that the "smoothing" option is toggled on (currently off by default), lie the iPad on its side, ensuring that the volume bottom is at the top, so that the orientation of images are consistent across the data-sets. In general, objects should be as close to the camera as possible when taking images, while ensuring the depth values do not begin to clip. 
 
 # Future Capabilities

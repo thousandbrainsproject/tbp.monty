@@ -31,6 +31,13 @@ def setup_env(monty_logs_dir_default: str = "~/tbp/results/monty/"):
         os.environ["MONTY_MODELS"] = monty_models_dir
         print(f"MONTY_MODELS not set. Using default directory: {monty_models_dir}")
 
+    monty_data_dir = os.getenv("MONTY_DATA")
+
+    if monty_data_dir is None:
+        monty_data_dir = os.path.expanduser("~/tbp/data/")
+        os.environ["MONTY_DATA"] = monty_data_dir
+        print(f"MONTY_DATA not set. Using default directory: {monty_data_dir}")
+
     wandb_dir = os.getenv("WANDB_DIR")
 
     if wandb_dir is None:

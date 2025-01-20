@@ -26,6 +26,22 @@ jobs:
           fetch-depth: 0
           lfs: true
           path: tbp.monty
+      - name: lint-docs
+        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        uses: ./tbp.monty/.github/actions/vale_linter
+        with:
+          path: tbp.monty
+      - name: Generate cache key
+        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        id: generate_cache_key
+        run: |
+          mkdir -p ~/tbp
+          ln -s $GITHUB_WORKSPACE/tbp.monty ~/tbp/tbp.monty
+          shasum -a 256 ~/tbp/tbp.monty/environment_arm64.yml | awk '{print $1}' > ~/tbp/environment_arm64.sha
+          shasum -a 256 ~/tbp/tbp.monty/environment.yml | awk '{print $1}' > ~/tbp/environment.sha
+          shasum -a 256 ~/tbp/tbp.monty/pyproject.toml | awk '{print $1}' > ~/tbp/pyproject.toml.sha
+          echo "monty-docs-${RUNNER_OS}-$(cat ~/tbp/environment_arm64.sha)-$(cat ~/tbp/environment.sha)-$(cat ~/tbp/pyproject.toml.sha)" > ~/tbp/conda_env_cache_key.txt
+          echo "conda_env_cache_key_sha=$(cat ~/tbp/conda_env_cache_key.txt | shasum -a 256 | awk '{print $1}')" >> $GITHUB_OUTPUT
       - name: Set up ~/tbp
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         run: |
@@ -36,8 +52,16 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.8"
-      - name: Install miniconda
+      - name: Restore cache
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        id: restore_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/miniconda
+          key: ${{ steps.generate_cache_key.outputs.conda_env_cache_key_sha }}
+      - name: Install miniconda
+        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
         run: |
           if [ ! -d ~/miniconda ]
           then
@@ -48,7 +72,7 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           conda --version
       - name: Create conda environment
-        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
+        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
@@ -58,6 +82,13 @@ jobs:
           pip install -e .[dev,github_readme_sync_tool]
           pip list
           conda list
+      - name: Save cache
+        if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/miniconda
+          key: ${{ steps.restore_cache.outputs.cache-primary-key }}
       - name: Check docs
         if: ${{ needs.should_run_docs.outputs.should_run_docs == 'true' }}
         working-directory: tbp.monty

@@ -43,7 +43,7 @@ Each learning module has a buffer class which could be compared to a short term 
 
 # The Graph Memory (LTM)
 
-Each learning module has one graph memory class which it uses as a long term memory (LTM) of previously aquired knowledge. In the graph learning modules, the memory stores explicit object models in the form of graphs (represented in the ObjectModel class). The graph memory is responsible for storing, updating, and retrieving models from memory.
+Each learning module has one graph memory class which it uses as a long term memory (LTM) of previously acquired knowledge. In the graph learning modules, the memory stores explicit object models in the form of graphs (represented in the ObjectModel class). The graph memory is responsible for storing, updating, and retrieving models from memory.
 
 ![Graph memory classes and their relationships.](../figures/how-monty-works/gm_classes.png)
 
@@ -63,7 +63,7 @@ Object models are stored in the graph memory and typically contain information a
 
 A graph is constructed from a list of observations (poses, features). Each observation can become a node in the graph which in turn connects to its nearest neighbors in the graph (or by temporal sequence), indicated by the edges of the graph. **Each edge has a displacement associated with it** which is the action that is required to move from one node to the other. Edges can also have other information associated with them, for instance, rotation invariant point pair features (Drost et al., 2010). **Each node can have multiple features associated with it** or simply indicate that the object exists there (morphology). Each node must contain location and orientation information in a common reference frame (object centric with an arbitrary origin).
 
-![A Graph of features (nodes), linked by displacements (edges). Each node represents a relative location and stores three pose vectors (for example the point normal and the two principal curvature directions). Nodes can also have pose-independent features associated with them such as color and curvature. The graph stored in memory can then be used to recognize objects from actual feature-pose observations.](../figures/how-monty-works/full_graph.png)
+![A Graph of features (nodes), linked by displacements (edges). Each node represents a relative location and stores three pose vectors (for example the point normal and the two principal curvature directions). Nodes can also have pose-independent features associated with them such as color and curvature. The graph stored in memory can then be used to recognize objects from actual feature-pose observations.](../figures/how-monty-works/full_graph.png#width=300px)
 
 ## What are Point Normals and Principal Curvatures?
 
