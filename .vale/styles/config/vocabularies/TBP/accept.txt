@@ -1,7 +1,7 @@
 # This file is case-sensitive by default and you can use regex
 # see the docs here: https://vale.sh/docs/keys/vocab#file-format
 Bluesky
-neocortex
+[Nn]eocortex
 [a-zA-Z.]+(_[a-zA-Z.]+)+
 Mountcastle
 [Cc]onfigs?
