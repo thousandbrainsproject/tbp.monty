@@ -164,3 +164,13 @@ Tolman's
 [Tt]riaged
 YouTube
 GitHub
+[nN]euroscientists
+Constantinescu
+O'Keefe
+Nadel
+Milner
+Goodale
+[aA]llocentric
+Hebbian
+Hopfield
+Arcimboldo
