@@ -712,8 +712,8 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             sensor_id: the ID of the sensor used to produce the relative location
 
         Returns:
-            down_amount: Amount to look down.
-            left_amount: Amount to look left.
+            rel_down_amount: Amount to look down.
+            rel_left_amount: Amount to look left.
         """
         # The are the amounts we'd look down and left if the agnet and sensors
         # have no rotation.
