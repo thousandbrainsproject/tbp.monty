@@ -40,15 +40,16 @@ from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
 """
 Just like run.py, but run episodes in parallel. Running in parallel is as simple as
 
-`python run_parallel.py -e my_exp -n ${NUM_CPUS}`
+`python run_parallel.py -e my_exp -n ${NUM_PARALLEL}`
 
 Assumptions and notes:
 --- There are some differences between training and testing in parallel. At train time,
     we parallelize across objects, but episodes with the same object are run in serial.
-    In this case it is best to set num_cpus to num_objects in your dataset if possible.
-    At test time, we separate all (object, pose) combos into separate jobs and run them
-    in parallel. In this case, the total_n_jobs is n_objects * n_poses, and the
-    more cpus the better (assuming you won't have more than total_n_jobs oavialable).
+    In this case it is best to set num_parallel to num_objects in your dataset if
+    possible. At test time, we separate all (object, pose) combos into separate jobs and
+    run them in parallel. In this case, the total_n_jobs is n_objects * n_poses, and
+    the more parallelism the better (assuming you won't have more than total_n_jobs
+    available).
 --- Only certain experiment classes are supported for training. Right now the focus is
     on SupervisedPreTraning. Some classes like ObjectRecognition are inherently
     not parallelizable because each episode depends on results from the previous.
@@ -380,7 +381,10 @@ def run_episodes_parallel(
             else:
                 print(f"No csv table found at {csv_path} to log to wandb")
 
-    print(f"Total time for {len(configs)} using {num_parallel} cpus: {total_time}")
+    print(
+        f"Total time for {len(configs)} running {num_parallel} episodes in parallel: "
+        f"{total_time}"
+    )
     if configs[0]["logging_config"]["log_parallel_wandb"]:
         run.finish()
 
@@ -389,7 +393,7 @@ def run_episodes_parallel(
     # Keep a record of how long everything takes
     with open(os.path.join(base_dir, "parallel_log.txt"), "w") as f:
         f.write(f"experiment: {experiment_name}\n")
-        f.write(f"num_cpus: {num_parallel}\n")
+        f.write(f"num_parallel: {num_parallel}\n")
         f.write(f"total_time: {total_time}")
 
 
