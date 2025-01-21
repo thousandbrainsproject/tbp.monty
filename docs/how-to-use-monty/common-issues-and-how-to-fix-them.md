@@ -7,7 +7,7 @@ Below we highlight a few issues that often crop up and can present problems when
 
 ## Quaternions
 
-Be aware that in Numpy, and in the saved CSV result files, quaternions follow the wxyz format, where "w" is the real component. Thus the identity rotation would be [1, 0, 0, 0]. In contrast however, Scipy.Rotation expects them to be in xyzw format. When operating with quaternions, it is therefore important to be aware of what format you should be using for the particular setting.
+Be aware that in Numpy, and in the saved CSV result files, quaternions follow the wxyz format, where "w" is the real component. Thus the identity rotation would be [1, 0, 0, 0]. In contrast however, `Scipy.Rotation` expects them to be in xyzw format. When operating with quaternions, it is therefore important to be aware of what format you should be using for the particular setting.
 
 ## XYZ Conventions
 

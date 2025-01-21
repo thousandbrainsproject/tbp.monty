@@ -64,7 +64,7 @@ The desired cadence for Pull Request Triage is at least once per business day.
 First, review any Pull Requests pending CLA.
 
 > [!NOTE]
->Pending CLA link (is pull request, is open, is not a draft, is not triaged, is pending cla)
+>Pending CLA link (is pull request, is open, is not a draft, is not triaged, is pending CLA)
 >
 > <https://github.com/thousandbrainsproject/tbp.monty/pulls?q=is%3Apr+is%3Aopen+-label%3Atriaged+draft%3Afalse+label%3Acla>
 
@@ -73,7 +73,7 @@ If the Pull Request CLA check is passing (you may need to rerun the CLA check), 
 ## 2. Triage
 
 > [!NOTE]
-> Triage link (is pull request, is open, is not a draft, is not triaged, is not pending cla)
+> Triage link (is pull request, is open, is not a draft, is not triaged, is not pending CLA)
 >
 > <https://github.com/thousandbrainsproject/tbp.monty/pulls?q=is%3Apr+is%3Aopen+-label%3Atriaged+draft%3Afalse+-label%3Acla>
 
