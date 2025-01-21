@@ -301,12 +301,12 @@ def post_parallel_train(configs, base_dir):
 
 
 def run_episodes_parallel(
-    configs, num_cpus, experiment_name, train=True, is_unittest=False
+    configs, num_parallel, experiment_name, train=True, is_unittest=False
 ):
     exp_type = "training" if train else "evaluation"
     print(
         f"-------- Running {exp_type} experiment {experiment_name}"
-        f" with {num_cpus} cpus --------"
+        f" with {num_parallel} episodes in parallel --------"
     )
     start_time = time.time()
     if configs[0]["logging_config"]["log_parallel_wandb"]:
@@ -326,7 +326,7 @@ def run_episodes_parallel(
         for config in configs:
             run_fn(config)
     else:
-        with mp.Pool(num_cpus) as p:
+        with mp.Pool(num_parallel) as p:
             if train:
                 # NOTE: since we don't use wandb logging for training right now
                 # it is also not covered here. Might want to add that in the future.
@@ -349,7 +349,7 @@ def run_episodes_parallel(
                     overall_stats["overall/parallel_run_time"] = (
                         time.time() - start_time
                     )
-                    overall_stats["overall/num_processes"] = num_cpus
+                    overall_stats["overall/num_processes"] = num_parallel
                     run.log(overall_stats)
                 else:
                     p.map(single_evaluate, configs)
@@ -380,7 +380,7 @@ def run_episodes_parallel(
             else:
                 print(f"No csv table found at {csv_path} to log to wandb")
 
-    print(f"Total time for {len(configs)} using {num_cpus} cpus: {total_time}")
+    print(f"Total time for {len(configs)} using {num_parallel} cpus: {total_time}")
     if configs[0]["logging_config"]["log_parallel_wandb"]:
         run.finish()
 
@@ -389,7 +389,7 @@ def run_episodes_parallel(
     # Keep a record of how long everything takes
     with open(os.path.join(base_dir, "parallel_log.txt"), "w") as f:
         f.write(f"experiment: {experiment_name}\n")
-        f.write(f"num_cpus: {num_cpus}\n")
+        f.write(f"num_cpus: {num_parallel}\n")
         f.write(f"total_time: {total_time}")
 
 
@@ -512,21 +512,21 @@ def main(
     all_configs=None,
     exp=None,
     experiment=None,
-    num_cpus=None,
+    num_parallel=None,
     quiet_habitat_logs=True,
     print_cfg=False,
     is_unittest=False,
 ):
     # Handle args passed directly (only used by unittest) or command line (normal)
     if experiment:
-        assert num_cpus, "missing arg num_cpus"
+        assert num_parallel, "missing arg num_parallel"
         assert exp, "missing arg exp"
 
     else:
         cmd_parser = create_cmd_parser_parallel(all_configs=all_configs)
         cmd_args = cmd_parser.parse_args()
         experiment = cmd_args.experiment
-        num_cpus = cmd_args.num_cpus
+        num_parallel = cmd_args.num_parallel
         quiet_habitat_logs = cmd_args.quiet_habitat_logs
         print_cfg = cmd_args.print_cfg
         is_unittest = False
@@ -556,7 +556,7 @@ def main(
         else:
             run_episodes_parallel(
                 train_configs,
-                num_cpus,
+                num_parallel,
                 experiment,
                 train=True,
                 is_unittest=is_unittest,
@@ -575,7 +575,7 @@ def main(
         else:
             run_episodes_parallel(
                 eval_configs,
-                num_cpus,
+                num_parallel,
                 experiment,
                 train=False,
                 is_unittest=is_unittest,
