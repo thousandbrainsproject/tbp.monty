@@ -831,7 +831,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         semantic_3d = observation[self.agent_id][sensor_id]["semantic_3d"]
         semantic = semantic_3d[:, 3].reshape(image_shape).astype(int)
         if not multiple_objects_present:
-            semantic[semantic > 0] = self.primary_target["semantic_id"]
+            semantic[semantic > 0] = target_semantic_id
 
         # Check if the central pixel is on the target object.
         y_mid, x_mid = image_shape[0] // 2, image_shape[1] // 2
