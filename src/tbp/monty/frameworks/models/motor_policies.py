@@ -725,12 +725,10 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         # Invert the location to align it with sensor's rotation.
         w, x, y, z = qt.as_float_array(sensor_rel_world)
         rotation = rot.from_quat([x, y, z, w])
-        p_rotated = rotation.inv().apply(relative_location)
-
-        # Extract transformed coordinates.
-        x_rot, y_rot, z_rot = p_rotated
+        rotatied_location = rotation.inv().apply(relative_location)
 
         # Calculate left and down amounts.
+        x_rot, y_rot, z_rot = rotatied_location
         left_amount = -np.degrees(np.arctan2(x_rot, -z_rot))
         distance_horiz = np.sqrt(x_rot**2 + z_rot**2)
         down_amount = -np.degrees(np.arctan2(y_rot, distance_horiz))
