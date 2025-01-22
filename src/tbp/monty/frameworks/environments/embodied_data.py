@@ -548,7 +548,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 the motor systems's `move_close_enough` method. If `False`, only
                 orientienting movements are performed. Default is `True`.
             max_orientation_attempts: The maximum number of orientation attempts
-                allowed before giving up and return `False` indicating that the
+                allowed before giving up and returning `False` indicating that the
                 sensor is not on the target object.
 
         Returns:
