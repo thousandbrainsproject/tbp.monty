@@ -672,14 +672,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             sem_obs[sem_obs > 0] = target_semantic_id
 
         logging.debug("Searching for object")
-
-        # Check if the central pixel is on-object. Note: we should be guaranteed
-        # to be off-object at this point, but we leave the check for now.
-        y_mid, x_mid = obs_dim[0] // 2, obs_dim[1] // 2
-        if sem_obs[y_mid, x_mid] == target_semantic_id:
-            logging.debug("Already centered on the object")
-            return []
-
         relative_location = self.find_location_to_look_at(
             sem3d_obs,
             image_shape=obs_dim,
