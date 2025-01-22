@@ -706,29 +706,34 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         for the sensor to be aimed at the target. The returned amounts are relative
         to the agent's current position and rotation.
 
+        TODO: Test whether this function works when the agent is facing in the
+        positive z-direction.
+
         Args:
-            relative_location: the x,y,z distance of the target relative to the
-                the sensor.
+            relative_location: the x,y,z coordinates of the target with respect
+            to the sensor.
             sensor_id: the ID of the sensor used to produce the relative location.
 
         Returns:
-            down_amount: Amount to look down.
-            left_amount: Amount to look left.
+            down_amount: Amount to look down (degrees).
+            left_amount: Amount to look left (degrees).
         """
-        # Get the sensor's current rotation.
-        agent_rotation = self.get_agent_state()["rotation"]
-        sensor_rotation = self.get_agent_state()["sensors"][f"{sensor_id}.depth"][
-            "rotation"
-        ]
-        sensor_rel_world = agent_rotation * sensor_rotation
+        # Get the sensor's rotation relative to the world.
+        agent_state = self.get_agent_state()
+        # - The agent's rotation relative to the world.
+        agent_rotation = agent_state["rotation"]
+        # - The sensor's rotation relative to the agent.
+        sensor_rotation = agent_state["sensors"][f"{sensor_id}.depth"]["rotation"]
+        # - The sensor's rotation relative to the world.
+        sensor_rotation_rel_world = agent_rotation * sensor_rotation
 
         # Invert the location to align it with sensor's rotation.
-        w, x, y, z = qt.as_float_array(sensor_rel_world)
+        w, x, y, z = qt.as_float_array(sensor_rotation_rel_world)
         rotation = rot.from_quat([x, y, z, w])
-        rotatied_location = rotation.inv().apply(relative_location)
+        rotated_location = rotation.inv().apply(relative_location)
 
-        # Calculate left and down amounts.
-        x_rot, y_rot, z_rot = rotatied_location
+        # Calculate the necessary rotation amounts.
+        x_rot, y_rot, z_rot = rotated_location
         left_amount = -np.degrees(np.arctan2(x_rot, -z_rot))
         distance_horiz = np.sqrt(x_rot**2 + z_rot**2)
         down_amount = -np.degrees(np.arctan2(y_rot, distance_horiz))
@@ -761,8 +766,8 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 the relative location of the new target.
 
         Returns:
-            relative_location: the x,y,z distance from the agent's current position
-                to the new target.
+            relative_location: the x,y,z coordinates of the target with respect
+            to the sensor.
         """
         sem3d_obs_image = sem3d_obs.reshape((image_shape[0], image_shape[1], 4))
         on_object_image = sem3d_obs_image[:, :, 3]
@@ -789,7 +794,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             "position"
         ]
         agent_location = self.get_agent_state()["position"]
-        # Get the location of the object relative to the agent's current position.
+        # Get the location of the object relative to sensor.
         relative_location = location_to_look_at - (camera_location + agent_location)
 
         return relative_location
@@ -810,6 +815,34 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             perc_on_obj += get_perc_on_obj(sensor_obs) / len(self.guiding_sensors)
         return perc_on_obj
 
+    def is_on_target_object(
+        self,
+        observation: Mapping,
+        sensor_id: str,
+        multiple_objects_present: bool,
+    ) -> bool:
+        """Check if a sensor is on the target object.
+
+        Args:
+            observation (Mapping): The raw observations from the dataloader.
+            sensor_id (str): The sensor to check.
+            multiple_objects_present (bool): Whether there are multiple objects
+                present in the scene.
+
+        Returns:
+            bool: Whether the sensor is on the target object.
+        """
+        # Reconstruct the 2D semantic/surface map embedded in 'semantic_3d'.
+        image_shape = observation[self.agent_id][sensor_id]["depth"].shape[0:2]
+        semantic_3d = observation[self.agent_id][sensor_id]["semantic_3d"]
+        semantic = semantic_3d[:, 3].reshape(image_shape).astype(int)
+        if not multiple_objects_present:
+            semantic[semantic > 0] = self.primary_target["semantic_id"]
+
+        # Check if the central pixel is on the target object.
+        y_mid, x_mid = image_shape[0] // 2, image_shape[1] // 2
+        on_target_object = semantic[y_mid, x_mid] == self.primary_target["semantic_id"]
+        return on_target_object
 
 class NaiveScanPolicy(InformedPolicy):
     """Policy that just moves left and right along the object."""
