@@ -715,31 +715,19 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             rel_down_amount: Amount to look down.
             rel_left_amount: Amount to look left.
         """
-        # The are the amounts we'd look down and left if the agnet and sensors
-        # have no rotation.
-
-        down_amount = np.degrees(np.arctan2(relative_location[1], relative_location[2]))
-        left_amount = np.degrees(np.arctan2(relative_location[0], relative_location[2]))
-
-        # Now we need to account for the agent and sensor's current rotation.
+        # Get the sensor's current rotation.
         agent_rotation = self.get_agent_state()["rotation"]
         sensor_rotation = self.get_agent_state()["sensors"][f"{sensor_id}.depth"][
             "rotation"
         ]
         sensor_rel_world = agent_rotation * sensor_rotation
 
-        # Convert agent quaternion to rotation matrix
+        # Convert sensor's quaternion to rotation matrix
         w, x, y, z = qt.as_float_array(sensor_rel_world)
 
-        # Given agent's quaternion (w, x, y, z)
-        q_agent = [x, y, z, w]  # Ensure quaternion order is (x, y, z, w) if using scipy
-
-        # Given object position relative to an unrotated agent
-        p_relative_unrotated = -relative_location
-
-        # Convert the quaternion and get the inverse to align it with agent's rotation
-        rotation = rot.from_quat(q_agent)
-        p_rotated = rotation.inv().apply(p_relative_unrotated)
+        # Convert the quaternion and get the inverse to align it with sensor's rotation
+        rotation = rot.from_quat([x, y, z, w])
+        p_rotated = rotation.inv().apply(relative_location)
 
         # Extract transformed coordinates
         x_rot, y_rot, z_rot = p_rotated
@@ -807,15 +795,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             "position"
         ]
         agent_location = self.get_agent_state()["position"]
-        relative_location = (camera_location + agent_location) - location_to_look_at
-        # relative_location = location_to_look_at - (camera_location + agent_location)
+        # Get the location of the object relative to the agent's current position.
+        relative_location = location_to_look_at - (camera_location + agent_location)
 
-        dumper = get_dumper()
-        dumper.log(idx_loc_to_look_at=idx_loc_to_look_at)
-        img = smoothed_on_object_image * on_object_image
-        dumper.dump_array(img, "smoothed_on_object_image")
-        dumper.dump_array(relative_location, "relative_location")
-        dumper.dump_array(location_to_look_at, "location_to_look_at")
         return relative_location
 
     def get_sensors_perc_on_obj(self, observation):
