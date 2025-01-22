@@ -630,7 +630,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 on_target_object = self.get_good_view(
                     patch_id,
                     allow_translation=False,  # only orientation movements
-                    max_orientation_attempts=10,  # allow 10 reorientation attempts
+                    max_orientation_attempts=3,  # allow 10 reorientation attempts
                 )
                 break
         return on_target_object
