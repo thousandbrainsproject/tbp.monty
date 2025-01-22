@@ -717,6 +717,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         """
         # The are the amounts we'd look down and left if the agnet and sensors
         # have no rotation.
+
         down_amount = np.degrees(np.arctan2(relative_location[1], relative_location[2]))
         left_amount = np.degrees(np.arctan2(relative_location[0], relative_location[2]))
 
@@ -726,17 +727,31 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             "rotation"
         ]
         sensor_rel_world = agent_rotation * sensor_rotation
-        rotation_matrix = qt.as_rotation_matrix(sensor_rel_world)
-        tform = rot.from_matrix(rotation_matrix)
-        cur_euler_angles = tform.as_euler("xyz", degrees=True)
 
-        cur_down_amount = -cur_euler_angles[0]  # we flip this because euler is "up"
-        cur_left_amount = cur_euler_angles[1]
+        # Convert agent quaternion to rotation matrix
+        w, x, y, z = qt.as_float_array(sensor_rel_world)
 
-        # Subtract the current rotation from the "absolute" rotation to get the amount
-        rel_down_amount = down_amount - cur_down_amount
-        rel_left_amount = left_amount - cur_left_amount
-        return rel_down_amount, rel_left_amount
+        # Given agent's quaternion (w, x, y, z)
+        q_agent = [x, y, z, w]  # Ensure quaternion order is (x, y, z, w) if using scipy
+
+        # Given object position relative to an unrotated agent
+        p_relative_unrotated = -relative_location
+
+        # Convert the quaternion and get the inverse to align it with agent's rotation
+        rotation = rot.from_quat(q_agent)
+        p_rotated = rotation.inv().apply(p_relative_unrotated)
+
+        # Extract transformed coordinates
+        x_rot, y_rot, z_rot = p_rotated
+
+        # Calculate yaw (left/right), agent originally facing -z
+        yaw_deg = np.degrees(np.arctan2(x_rot, -z_rot))
+
+        # Calculate pitch (up/down)
+        distance_horiz = np.sqrt(x_rot**2 + z_rot**2)
+        pitch_deg = np.degrees(np.arctan2(y_rot, distance_horiz))
+
+        return -pitch_deg, -yaw_deg
 
     def find_location_to_look_at(
         self,
@@ -779,8 +794,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         # TODO add unit test that we make sure find_location_to_look at functions
         # as expected, which can otherwise break if e.g. on_object_image is passed
         # as an int or boolean rather than float
+        kernel_size = on_object_image.shape[0] // 16
         smoothed_on_object_image = scipy.ndimage.gaussian_filter(
-            on_object_image, 2, mode="constant"
+            on_object_image, kernel_size, mode="constant"
         )
         idx_loc_to_look_at = np.argmax(smoothed_on_object_image * on_object_image)
         idx_loc_to_look_at = np.unravel_index(idx_loc_to_look_at, on_object_image.shape)
@@ -792,6 +808,14 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         ]
         agent_location = self.get_agent_state()["position"]
         relative_location = (camera_location + agent_location) - location_to_look_at
+        # relative_location = location_to_look_at - (camera_location + agent_location)
+
+        dumper = get_dumper()
+        dumper.log(idx_loc_to_look_at=idx_loc_to_look_at)
+        img = smoothed_on_object_image * on_object_image
+        dumper.dump_array(img, "smoothed_on_object_image")
+        dumper.dump_array(relative_location, "relative_location")
+        dumper.dump_array(location_to_look_at, "location_to_look_at")
         return relative_location
 
     def get_sensors_perc_on_obj(self, observation):
