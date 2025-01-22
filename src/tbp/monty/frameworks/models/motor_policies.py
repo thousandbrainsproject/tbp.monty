@@ -799,7 +799,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         return relative_location
 
-    def get_sensors_perc_on_obj(self, observation):
+    def get_sensors_perc_on_obj(self, observation: Mapping) -> float:
         """Calculate how much percent of the sensor is on the object.
 
         Get the average percentage of pixels on the object for all sensors in the
@@ -819,6 +819,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         self,
         observation: Mapping,
         sensor_id: str,
+        target_semantic_id: int,
         multiple_objects_present: bool,
     ) -> bool:
         """Check if a sensor is on the target object.
@@ -826,6 +827,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         Args:
             observation (Mapping): The raw observations from the dataloader.
             sensor_id (str): The sensor to check.
+            target_semantic_id (int): The semantic ID of the target object.
             multiple_objects_present (bool): Whether there are multiple objects
                 present in the scene.
 
@@ -841,7 +843,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         # Check if the central pixel is on the target object.
         y_mid, x_mid = image_shape[0] // 2, image_shape[1] // 2
-        on_target_object = semantic[y_mid, x_mid] == self.primary_target["semantic_id"]
+        on_target_object = semantic[y_mid, x_mid] == target_semantic_id
         return on_target_object
 
 class NaiveScanPolicy(InformedPolicy):

@@ -562,7 +562,13 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # object before we start moving forward; only done for multi-object experiments
         multiple_objects_present = self.num_distractors > 0
         if multiple_objects_present:
-            if not self.is_on_target_object(sensor_id):
+            on_target_object = self.motor_system.is_on_target_object(
+                self._observation,
+                sensor_id,
+                target_semantic_id=self.primary_target["semantic_id"],
+                multiple_objects_present=multiple_objects_present,
+            )
+            if not on_target_object:
                 actions = self.motor_system.orient_to_object(
                     self._observation,
                     sensor_id,
@@ -591,7 +597,12 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                     multiple_objects_present=multiple_objects_present,
                 )
 
-        on_target_object = self.is_on_target_object(sensor_id)
+        on_target_object = self.motor_system.is_on_target_object(
+            self._observation,
+            sensor_id,
+            target_semantic_id=self.primary_target["semantic_id"],
+            multiple_objects_present=multiple_objects_present,
+        )
         num_attempts = 0
         while not on_target_object and num_attempts < max_orientation_attempts:
             actions = self.motor_system.orient_to_object(
@@ -602,7 +613,12 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             )
             for action in actions:
                 self._observation, self.motor_system.state = self.dataset[action]
-            on_target_object = self.is_on_target_object(sensor_id)
+            on_target_object = self.motor_system.is_on_target_object(
+                self._observation,
+                sensor_id,
+                target_semantic_id=self.primary_target["semantic_id"],
+                multiple_objects_present=multiple_objects_present,
+            )
             num_attempts += 1
 
         return on_target_object
@@ -615,7 +631,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         agent toward the object using the view finder. Then orienting movements are
         performed using the central patch (i.e., the sensor module with id
         "patch" or "patch_0") to ensure that the patch's central pixel is on-object.
-        Up to 10 reorientation attempts are performed using the central patch.
+        Up to 3 reorientation attempts are performed using the central patch.
 
         Also currently used by the distant agent after a "jump" has been initialized
         by a model-based policy.
@@ -630,32 +646,11 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 on_target_object = self.get_good_view(
                     patch_id,
                     allow_translation=False,  # only orientation movements
-                    max_orientation_attempts=3,  # allow 10 reorientation attempts
+                    max_orientation_attempts=3,  # allow 3 reorientation attempts
                 )
                 break
         return on_target_object
 
-    def is_on_target_object(self, sensor_id: str) -> bool:
-        """Check if a sensor is on the target object.
-
-        Args:
-            sensor_id (str): The sensor to check.
-
-        Returns:
-            bool: Whether the sensor is on the target object.
-        """
-        # Reconstruct the 2D semantic/surface map from the 3D semantic map.
-        depth_image = self._observation["agent_id_0"][sensor_id]["depth"]
-        obs_dim = depth_image.shape[0:2]
-        sem3d_obs = self._observation["agent_id_0"][sensor_id]["semantic_3d"]
-        sem_obs = sem3d_obs[:, 3].reshape(obs_dim).astype(int)
-        if self.num_distractors == 0:
-            sem_obs[sem_obs > 0] = self.primary_target["semantic_id"]
-
-        # Check if the central pixel is on the target object.
-        y_mid, x_mid = obs_dim[0] // 2, obs_dim[1] // 2
-        on_target_object = sem_obs[y_mid, x_mid] == self.primary_target["semantic_id"]
-        return on_target_object
 
     def execute_jump_attempt(self):
         """Attempt a hypothesis-testing "jump" onto a location of the object.
