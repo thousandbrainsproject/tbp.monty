@@ -13,3 +13,5 @@ Content here.
 ```
 
 Additionally, lets update the tone and content of the process documentation to reflect that the idea of the templates is to provide a starting point. The RFC can take the form appropriate to the idea being conveyed.
+
+This RFC will become an example of a minimal RFC and we can use [RFC 4: Action Object](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0004_action_object.md) as an example of a comprehensive RFC.
