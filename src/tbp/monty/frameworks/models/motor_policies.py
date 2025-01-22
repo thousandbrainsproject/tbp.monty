@@ -703,17 +703,17 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         """Compute the amount to look down and left given a relative location.
 
         This function computes the amount needed to look down and left in order
-        for the sensor to be aimed at the object. The returned amounts are relative
+        for the sensor to be aimed at the target. The returned amounts are relative
         to the agent's current position and rotation.
 
         Args:
-            relative_location: the x,y,z distance from the agent's current position
-                to the new target.
-            sensor_id: the ID of the sensor used to produce the relative location
+            relative_location: the x,y,z distance of the target relative to the
+                the sensor.
+            sensor_id: the ID of the sensor used to produce the relative location.
 
         Returns:
-            rel_down_amount: Amount to look down.
-            rel_left_amount: Amount to look left.
+            down_amount: Amount to look down.
+            left_amount: Amount to look left.
         """
         # Get the sensor's current rotation.
         agent_rotation = self.get_agent_state()["rotation"]
@@ -722,24 +722,20 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         ]
         sensor_rel_world = agent_rotation * sensor_rotation
 
-        # Convert sensor's quaternion to rotation matrix
+        # Invert the location to align it with sensor's rotation.
         w, x, y, z = qt.as_float_array(sensor_rel_world)
-
-        # Convert the quaternion and get the inverse to align it with sensor's rotation
         rotation = rot.from_quat([x, y, z, w])
         p_rotated = rotation.inv().apply(relative_location)
 
-        # Extract transformed coordinates
+        # Extract transformed coordinates.
         x_rot, y_rot, z_rot = p_rotated
 
-        # Calculate yaw (left/right), agent originally facing -z
-        yaw_deg = np.degrees(np.arctan2(x_rot, -z_rot))
-
-        # Calculate pitch (up/down)
+        # Calculate left and down amounts.
+        left_amount = -np.degrees(np.arctan2(x_rot, -z_rot))
         distance_horiz = np.sqrt(x_rot**2 + z_rot**2)
-        pitch_deg = np.degrees(np.arctan2(y_rot, distance_horiz))
+        down_amount = -np.degrees(np.arctan2(y_rot, distance_horiz))
 
-        return -pitch_deg, -yaw_deg
+        return down_amount, left_amount
 
     def find_location_to_look_at(
         self,
