@@ -30,10 +30,6 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     ExperimentArgs,
     PredefinedObjectInitializer,
 )
-from tbp.monty.frameworks.config_utils.make_habitat_configs import (
-    EnvInitArgsPatchViewMount,
-    PatchViewFinderMountHabitatDatasetArgs,
-)
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
     MontyObjectRecognitionExperiment,
@@ -41,6 +37,10 @@ from tbp.monty.frameworks.experiments import (
 )
 from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphLM
 from tbp.monty.frameworks.run_parallel import main as run_parallel
+from tbp.monty.simulators.habitat.configs import (
+    EnvInitArgsPatchViewMount,
+    PatchViewFinderMountHabitatDatasetArgs,
+)
 from tests.unit.graph_learning_test import MotorSystemConfigFixed
 
 

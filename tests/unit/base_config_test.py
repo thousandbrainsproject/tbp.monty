@@ -27,12 +27,12 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     NotYCBEvalObjectList,
     NotYCBTrainObjectList,
 )
-from tbp.monty.frameworks.config_utils.make_habitat_configs import (
+from tbp.monty.frameworks.environments import embodied_data as ED
+from tbp.monty.frameworks.experiments import MontyExperiment
+from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsSinglePTZ,
     SinglePTZHabitatDatasetArgs,
 )
-from tbp.monty.frameworks.environments import embodied_data as ED
-from tbp.monty.frameworks.experiments import MontyExperiment
 
 
 class BaseConfigTest(unittest.TestCase):
