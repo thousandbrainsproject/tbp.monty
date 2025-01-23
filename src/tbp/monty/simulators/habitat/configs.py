@@ -27,12 +27,12 @@ from tbp.monty.frameworks.environment_utils.transforms import (
     DepthTo3DLocations,
     MissingToMaxDepth,
 )
-from tbp.monty.frameworks.environments.habitat import (
+from tbp.monty.simulators.habitat import MultiSensorAgent, SingleSensorAgent
+from tbp.monty.simulators.habitat.environment import (
     AgentConfig,
     HabitatEnvironment,
     ObjectConfig,
 )
-from tbp.monty.simulators.habitat import MultiSensorAgent, SingleSensorAgent
 
 
 @dataclass
