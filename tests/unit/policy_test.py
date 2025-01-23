@@ -51,16 +51,6 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     ExperimentArgs,
     PredefinedObjectInitializer,
 )
-from tbp.monty.frameworks.config_utils.make_habitat_configs import (
-    EnvInitArgsFiveLMMount,
-    EnvInitArgsPatchViewFinderMultiObjectMount,
-    EnvInitArgsPatchViewMount,
-    EnvInitArgsSurfaceViewMount,
-    FiveLMMountHabitatDatasetArgs,
-    PatchViewFinderMountHabitatDatasetArgs,
-    PatchViewFinderMultiObjectMountHabitatDatasetArgs,
-    SurfaceViewFinderMountHabitatDatasetArgs,
-)
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
     make_curv_surface_policy_config,
     make_informed_policy_config,
@@ -79,6 +69,16 @@ from tbp.monty.frameworks.models.motor_policies import get_perc_on_obj_semantic
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
 from tbp.monty.frameworks.utils.transform_utils import numpy_to_scipy_quat
+from tbp.monty.simulators.habitat.configs import (
+    EnvInitArgsFiveLMMount,
+    EnvInitArgsPatchViewFinderMultiObjectMount,
+    EnvInitArgsPatchViewMount,
+    EnvInitArgsSurfaceViewMount,
+    FiveLMMountHabitatDatasetArgs,
+    PatchViewFinderMountHabitatDatasetArgs,
+    PatchViewFinderMultiObjectMountHabitatDatasetArgs,
+    SurfaceViewFinderMountHabitatDatasetArgs,
+)
 
 
 class PolicyTest(unittest.TestCase):

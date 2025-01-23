@@ -31,12 +31,6 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     get_env_dataloader_per_object_by_idx,
     get_object_names_by_idx,
 )
-from tbp.monty.frameworks.config_utils.make_habitat_configs import (
-    FiveLMMountHabitatDatasetArgs,
-    PatchViewFinderMountHabitatDatasetArgs,
-    SurfaceViewFinderMontyWorldMountHabitatDatasetArgs,
-    SurfaceViewFinderMountHabitatDatasetArgs,
-)
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
     make_naive_scan_policy_config,
 )
@@ -54,6 +48,12 @@ from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphL
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
     HabitatSurfacePatchSM,
+)
+from tbp.monty.simulators.habitat.configs import (
+    FiveLMMountHabitatDatasetArgs,
+    PatchViewFinderMountHabitatDatasetArgs,
+    SurfaceViewFinderMontyWorldMountHabitatDatasetArgs,
+    SurfaceViewFinderMountHabitatDatasetArgs,
 )
 
 # FOR SUPERVISED PRETRAINING: 14 unique rotations that give good views of the object.
