@@ -7,7 +7,7 @@ We have a guide on [customizing learning modules](learning-module-improvements/c
 These are the things we would like to implement:
 
 - [Use off-object observations](learning-module-improvements/use-off-object-observations.md) #numsteps #multiobj
-- [Reinitialize hypotheses when starting to recognize a new object](learning-module-improvements/reinitialize-hypotheses-when-starting-to-recognize-a-new-object.md) #multiobj
+- [Implement and test rapid evidence decay as form of unsupervised memory resetting](learning-module-improvements/implement-and-test-rapid-evidence-decay-as-form-of-unsupervised-memory-resetting.md) #multiobj
 - [Improve bounded evidence performance](learning-module-improvements/improve-bounded-evidence-performance.md) #multiobj
 - [Use models with fewer points](learning-module-improvements/use-models-with-fewer-points.md) #speed #generalization
 - [Make it possible to store multiple feature maps on one graph](learning-module-improvements/make-it-possible-to-store-multiple-feature-maps-on-one-graph.md) #featsandmorph

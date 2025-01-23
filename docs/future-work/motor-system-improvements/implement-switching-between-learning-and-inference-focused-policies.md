@@ -6,4 +6,4 @@ Currently, a Monty system cannot flexibly switch between a learning-focused poli
 
 This would be a specific example of a more general mechanism for switching between different policies, as discussed in [Switching Policies via Goal States](interpret-goal-states-in-motor-system-switch-policies.md).
 
-Similarly, an LM should be able to determine the most appropriate *model-based* policies to initialize, such as the hypothesis-testing policy vs. a [top-down exploration policy](top-down-exploration-policy.md).
+Similarly, an LM should be able to determine the most appropriate *model-based* policies to initialize, such as the hypothesis-testing policy vs. a [model-based exploration policy](model-based-exploration-policy.md).
