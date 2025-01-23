@@ -26,7 +26,7 @@ simulators/habitat/
 ├── simulator.py
 ```
 
-Additionally, this organization makes it much easier to spot specific simulator-dependent code. This should facilitate further refactoring.
+Additionally, this organization makes it much easier to spot specific simulator-dependent code. This should facilitate further refactoring. You can see an example of this in the [refactor: compartmentalize habitat simulator dependent code Pull Request](https://github.com/thousandbrainsproject/tbp.monty/pull/149)
 
 # Motivation
 
