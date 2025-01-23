@@ -699,7 +699,10 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         to the agent's current position and rotation.
 
         TODO: Test whether this function works when the agent is facing in the
-        positive z-direction.
+        positive z-direction. It may be fine, but there were some adjustments to
+        accommodate the z-axis positive direction pointing opposite the body's initial
+        orientation (e.g., using negative  `z` in
+        `left_amount = -np.degrees(np.arctan2(x_rot, -z_rot)))`.
 
         Args:
             relative_location: the x,y,z coordinates of the target with respect
