@@ -26,6 +26,10 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     ExperimentArgs,
     PredefinedObjectInitializer,
 )
+from tbp.monty.frameworks.config_utils.make_habitat_configs import (
+    EnvInitArgsPatchViewMount,
+    PatchViewFinderMountHabitatDatasetArgs,
+)
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 from tbp.monty.frameworks.models.sensor_modules import (
