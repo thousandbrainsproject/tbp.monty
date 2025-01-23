@@ -45,18 +45,20 @@ from tbp.monty.frameworks.config_utils.config_args import (
     SurfaceAndViewMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvInitArgsFiveLMMount,
-    EnvInitArgsPatchViewFinderMultiObjectMount,
-    EnvInitArgsPatchViewMount,
-    EnvInitArgsSurfaceViewMount,
     EnvironmentDataloaderMultiObjectArgs,
     EnvironmentDataLoaderPerObjectEvalArgs,
     EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
+    PredefinedObjectInitializer,
+)
+from tbp.monty.frameworks.config_utils.make_habitat_configs import (
+    EnvInitArgsFiveLMMount,
+    EnvInitArgsPatchViewFinderMultiObjectMount,
+    EnvInitArgsPatchViewMount,
+    EnvInitArgsSurfaceViewMount,
     FiveLMMountHabitatDatasetArgs,
     PatchViewFinderMountHabitatDatasetArgs,
     PatchViewFinderMultiObjectMountHabitatDatasetArgs,
-    PredefinedObjectInitializer,
     SurfaceViewFinderMountHabitatDatasetArgs,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (

@@ -24,11 +24,13 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PretrainLoggingConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvInitArgsPatchViewMount,
     EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
-    PatchViewFinderMountHabitatDatasetArgs,
     PredefinedObjectInitializer,
+)
+from tbp.monty.frameworks.config_utils.make_habitat_configs import (
+    EnvInitArgsPatchViewMount,
+    PatchViewFinderMountHabitatDatasetArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (

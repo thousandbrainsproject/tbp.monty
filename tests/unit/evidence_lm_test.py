@@ -34,16 +34,18 @@ from tbp.monty.frameworks.config_utils.config_args import (
     TwoLMStackedMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvInitArgsFiveLMMount,
-    EnvInitArgsPatchViewMount,
-    EnvInitArgsTwoLMDistantStackedMount,
     EnvironmentDataLoaderPerObjectEvalArgs,
     EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
+    PredefinedObjectInitializer,
+)
+from tbp.monty.frameworks.config_utils.make_habitat_configs import (
+    EnvInitArgsFiveLMMount,
+    EnvInitArgsPatchViewMount,
+    EnvInitArgsTwoLMDistantStackedMount,
     FiveLMMountHabitatDatasetArgs,
     NoisyPatchViewFinderMountHabitatDatasetArgs,
     PatchViewFinderMountHabitatDatasetArgs,
-    PredefinedObjectInitializer,
     TwoLMStackedDistantMountHabitatDatasetArgs,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
