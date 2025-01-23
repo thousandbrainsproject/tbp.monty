@@ -11,7 +11,7 @@ The proposal is to compartmentalize the HabitatSim-related code into its own fol
 
 The end result will be that the `frameworks` folder will retain the general framework code, while the `simulators` folder will contain the simulator-specific code.
 
-An example of what `simulators/habitat` folder will like after refactoring:
+An example of what `simulators/habitat` folder will look like after refactoring:
 
 ```
 simulators/habitat/
