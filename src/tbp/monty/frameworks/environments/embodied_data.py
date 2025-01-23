@@ -27,6 +27,7 @@ from tbp.monty.frameworks.models.motor_policies import (
     SurfacePolicy,
     SurfacePolicyCurvatureInformed,
 )
+from tbp.monty.simulators.habitat.environment_utils import get_bounding_corners
 
 from .embodied_environment import EmbodiedEnvironment
 
