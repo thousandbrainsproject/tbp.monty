@@ -12,9 +12,12 @@ from dataclasses import asdict, dataclass, is_dataclass
 from typing import Dict, List, Optional, Type, Union
 
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.environment_utils.habitat_utils import get_bounding_corners
 from tbp.monty.frameworks.environments.embodied_environment import (
     ActionSpace,
     EmbodiedEnvironment,
+    QuaternionWXYZ,
+    VectorXYZ,
 )
 from tbp.monty.frameworks.utils.dataclass_utils import create_dataclass_args
 from tbp.monty.simulators.habitat import (
@@ -131,8 +134,41 @@ class HabitatEnvironment(EmbodiedEnvironment):
     def action_space(self):
         return HabitatActionSpace(self._env.get_action_space())
 
+    def add_object(
+        self,
+        name: str,
+        position: VectorXYZ = (0.0, 0.0, 0.0),
+        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
+        scale: VectorXYZ = (1.0, 1.0, 1.0),
+        semantic_id: Optional[str] = None,
+        enable_physics: Optional[bool] = False,
+        object_to_avoid=False,
+        primary_target_object=None,
+    ):
+        primary_target_bb = None
+        if primary_target_object is not None:
+            # TODO It may be worth memoizing this result. If we are adding multiple
+            #      objects to the scene, we may be calling this function multiple times
+            #      for the same primary target object.
+            min_corner, max_corner = get_bounding_corners(primary_target_object)
+            primary_target_bb = [min_corner, max_corner]
+
+        return self._env.add_object(
+            name,
+            position,
+            rotation,
+            scale,
+            semantic_id,
+            enable_physics,
+            object_to_avoid,
+            primary_target_bb=primary_target_bb,
+        )
+
     def step(self, action: Action) -> Dict[str, Dict]:
         return self._env.apply_action(action)
+
+    def remove_all_objects(self):
+        return self._env.remove_all_objects()
 
     def reset(self):
         return self._env.reset()
