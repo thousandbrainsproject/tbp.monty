@@ -22,11 +22,13 @@ from tbp.monty.frameworks.config_utils.config_args import (
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     DebugExperimentArgs,
-    EnvInitArgsSinglePTZ,
     EnvironmentDataLoaderPerObjectEvalArgs,
     EnvironmentDataLoaderPerObjectTrainArgs,
     NotYCBEvalObjectList,
     NotYCBTrainObjectList,
+)
+from tbp.monty.frameworks.config_utils.make_habitat_configs import (
+    EnvInitArgsSinglePTZ,
     SinglePTZHabitatDatasetArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED

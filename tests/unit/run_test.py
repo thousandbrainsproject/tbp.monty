@@ -26,6 +26,8 @@ from tbp.monty.frameworks.config_utils.config_args import (
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     ExperimentArgs,
+)
+from tbp.monty.frameworks.config_utils.make_habitat_configs import (
     SinglePTZHabitatDatasetArgs,
 )
 from tbp.monty.frameworks.environments.embodied_data import (
