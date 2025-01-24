@@ -60,8 +60,9 @@ class EmbodiedEnvironment(abc.ABC):
             object_to_avoid: If True, run collision checks to ensure the object will not
                 collide with any other objects in the scene. If collision is detected,
                 the object will be moved. Defaults to False.
-            primary_target_object: If not None, the added object will be positioned to
-                obscure the initial view of the primary target object. Used when adding
+            primary_target_object: If not None, the added object will be positioned so
+                that it does not obscure the initial view of the primary target object
+                (which avoiding collision alone cannot guarantee). Used when adding
                 multiple objects. Defaults to None.
 
         Returns:

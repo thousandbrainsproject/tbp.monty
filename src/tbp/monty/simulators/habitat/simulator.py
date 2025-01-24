@@ -218,9 +218,9 @@ class HabitatSim(HabitatActuator):
                 colliding with any other objects in the scene, and otherwise move it
             primary_target_bb: If not None, the bounding box of the primary target
                 object; passed when we're adding multiple objects, such that we ensure
-                that the added object obscures the initial view of the primary target
-                object (which avoiding collision alone cannot guarantee); defined by a
-                list of the min and max corners
+                that the added object does not obscure the initial view of the primary
+                target object (which avoiding collision alone cannot guarantee); defined
+                by a list of the min and max corners
 
         Returns:
             RigidObject: The newly added object
