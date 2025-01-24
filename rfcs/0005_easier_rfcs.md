@@ -1,5 +1,5 @@
 - Start Date: 2025-01-21
-- RFC PR: (leave this empty, it will be filled in after RFC is merged)
+- RFC PR: https://github.com/thousandbrainsproject/tbp.monty/pull/148
 
 The RFC process can be intimidating. The default template asks for a lot of information. An intimidating template combined with a bureaucratic process can discourage people from contributing.
 
