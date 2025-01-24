@@ -33,17 +33,17 @@ from tbp.monty.simulators.habitat.configs import (
     PatchViewFinderMontyWorldMountHabitatDatasetArgs,
 )
 
-from .ycb_experiments import (
+from .defaults import (
     default_all_noisy_sensor_module,
     default_evidence_1lm_config,
-    fe_pretrain_dir,
     min_eval_steps,
+    pretrained_dir,
 )
 
 test_rotations_one = [[0, 0, 0]]
 
 model_path_numenta_lab_obj = os.path.join(
-    fe_pretrain_dir,
+    pretrained_dir,
     "surf_agent_1lm_numenta_lab_obj/pretrained/",
 )
 
