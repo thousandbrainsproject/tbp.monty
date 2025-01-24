@@ -10,6 +10,7 @@
 
 import copy
 import os
+from dataclasses import asdict
 
 import numpy as np
 
@@ -55,6 +56,8 @@ from tbp.monty.simulators.habitat.configs import (
     SurfaceViewFinderMontyWorldMountHabitatDatasetArgs,
     SurfaceViewFinderMountHabitatDatasetArgs,
 )
+
+from .names import PretrainingExperiments
 
 # FOR SUPERVISED PRETRAINING: 14 unique rotations that give good views of the object.
 train_rotations_all = get_cube_face_and_corner_views_rotations()
@@ -271,7 +274,7 @@ supervised_pre_training_5lms_all_objects.update(
     ),
 )
 
-CONFIGS = dict(
+experiments = PretrainingExperiments(
     supervised_pre_training_base=supervised_pre_training_base,
     supervised_pre_training_5lms=supervised_pre_training_5lms,
     supervised_pre_training_5lms_all_objects=supervised_pre_training_5lms_all_objects,
@@ -280,3 +283,4 @@ CONFIGS = dict(
     only_surf_agent_training_allobj=only_surf_agent_training_allobj,
     only_surf_agent_training_numenta_lab_obj=only_surf_agent_training_numenta_lab_obj,
 )
+CONFIGS = asdict(experiments)

@@ -10,6 +10,7 @@
 
 import copy
 import os
+from dataclasses import asdict
 
 import numpy as np
 
@@ -68,6 +69,7 @@ from .defaults import (
     min_eval_steps,
     pretrained_dir,
 )
+from .names import YcbExperiments
 
 """
 (all use surface-agent models with 0.01 min dist and 64x64 resolution,
@@ -625,7 +627,7 @@ randrot_noise_77obj_5lms_dist_agent.update(
     ),
 )
 
-CONFIGS = dict(
+experiments = YcbExperiments(
     base_config_10distinctobj_dist_agent=base_config_10distinctobj_dist_agent,
     base_config_10distinctobj_surf_agent=base_config_10distinctobj_surf_agent,
     randrot_noise_10distinctobj_dist_agent=randrot_noise_10distinctobj_dist_agent,
@@ -649,3 +651,4 @@ CONFIGS = dict(
     randrot_noise_77obj_dist_agent=randrot_noise_77obj_dist_agent,
     randrot_noise_77obj_5lms_dist_agent=randrot_noise_77obj_5lms_dist_agent,
 )
+CONFIGS = asdict(experiments)
