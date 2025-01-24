@@ -9,6 +9,7 @@
 
 
 import os
+from dataclasses import asdict
 
 from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
@@ -39,6 +40,7 @@ from .defaults import (
     min_eval_steps,
     pretrained_dir,
 )
+from .names import MontyWorldHabitatExperiments
 
 test_rotations_one = [[0, 0, 0]]
 
@@ -86,6 +88,7 @@ randrot_noise_sim_on_scan_monty_world = dict(
     ),
 )
 
-CONFIGS = dict(
+experiments = MontyWorldHabitatExperiments(
     randrot_noise_sim_on_scan_monty_world=randrot_noise_sim_on_scan_monty_world,
 )
+CONFIGS = asdict(experiments)

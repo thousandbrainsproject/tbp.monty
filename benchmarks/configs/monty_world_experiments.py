@@ -10,6 +10,7 @@
 
 import copy
 import os
+from dataclasses import asdict
 
 import numpy as np
 
@@ -38,6 +39,7 @@ from .defaults import (
     min_eval_steps,
     pretrained_dir,
 )
+from .names import MontyWorldExperiments
 
 """
 Experiments for a Monty model trained on photogrammetry-scanned objects, and
@@ -127,7 +129,7 @@ multi_object_world_image_on_scanned_model.update(
     ),
 )
 
-CONFIGS = dict(
+experiments = MontyWorldExperiments(
     world_image_from_stream_on_scanned_model=world_image_from_stream_on_scanned_model,
     # ------------- Experiments for Benchmarks Table -------------
     world_image_on_scanned_model=world_image_on_scanned_model,
@@ -136,3 +138,4 @@ CONFIGS = dict(
     hand_intrusion_world_image_on_scanned_model=hand_intrusion_world_image_on_scanned_model,
     multi_object_world_image_on_scanned_model=multi_object_world_image_on_scanned_model,
 )
+CONFIGS = asdict(experiments)
