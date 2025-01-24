@@ -1,5 +1,5 @@
 - Start Date: 2025-01-23
-- RFC PR: (leave this empty, it will be filled in after RFC is merged)
+- RFC PR: https://github.com/thousandbrainsproject/tbp.monty/pull/150
 
 # Summary
 
@@ -32,7 +32,7 @@ Additionally, this organization makes it much easier to spot specific simulator-
 
 As part of the Monty code roadmap, we are looking toward being able to run Monty without having HabitatSim (or any other simulator) installed. For example, when running on hardware interacting with the real world. In the future, we will also want to support additional simulators. This implies a future use case of: "Integrate a new simulator into Monty", which is a factor to consider when reorganizing the code structure.
 
-![Near term code roadmap](0000_compartmentalize_simulator_code/near-term-code-roadmap-with-higlights.png)
+![Near term code roadmap](0006_compartmentalize_simulator_code/near-term-code-roadmap-with-higlights.png)
 
 # Future possibilities
 
