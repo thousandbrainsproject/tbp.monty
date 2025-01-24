@@ -79,7 +79,7 @@ def main(all_configs, experiments=None):
     """
     cmd_args = None
     if not experiments:
-        cmd_parser = create_cmd_parser(all_configs=all_configs)
+        cmd_parser = create_cmd_parser(experiments=list(all_configs.keys()))
         cmd_args = cmd_parser.parse_args()
         experiments = cmd_args.experiments
 
