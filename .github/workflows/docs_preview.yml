@@ -27,8 +27,13 @@ jobs:
           fetch-depth: 0
           lfs: true
           path: tbp.monty
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
-
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          lfs: true
+          path: pr_docs
       - name: Create initial PR comment
         uses: ./tbp.monty/.github/actions/pin_comment
         with:
@@ -73,7 +78,6 @@ jobs:
         uses: ./tbp.monty/.github/actions/get_preview_info
         with:
           user_login: ${{ github.event.pull_request.user.login }}
-
       - name: Deploy docs
         working-directory: tbp.monty
         run: |
@@ -81,8 +85,7 @@ jobs:
           source activate tbp.monty
           export README_API_KEY=${{ secrets.README_API_KEY }}
           export IMAGE_PATH=${{ vars.IMAGE_PATH }}
-          python -m tools.github_readme_sync.cli upload docs "${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}"
-
+          python -m tools.github_readme_sync.cli upload ../pr_docs/docs "${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}"
       - name: Update PR comment on success
         if: success()
         uses: ./tbp.monty/.github/actions/pin_comment

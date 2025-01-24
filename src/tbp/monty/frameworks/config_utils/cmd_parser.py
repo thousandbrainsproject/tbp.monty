@@ -121,7 +121,11 @@ def create_cmd_parser_parallel(all_configs):
         choices=list(all_configs.keys()),
     )
     parser.add_argument(
-        "-n", "--num_cpus", default=16, help="How many cpus to use", type=int
+        "-n",
+        "--num_parallel",
+        default=16,
+        help="How many episodes to run in parallel",
+        type=int,
     )
     parser.add_argument(
         "-q",

@@ -1,7 +1,7 @@
 ---
 title: Pull Requests
 ---
-Monty uses Github Pull Requests to integrate code changes.
+Monty uses GitHub Pull Requests to integrate code changes.
 
 # Before Making a Pull Request
 
@@ -36,7 +36,7 @@ Before submitting a Pull Request, you should set up your development environment
    ```shell
    git push
    ```
-7. [Create a new Github Pull Request from your fork to the official Monty repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork).
+7. [Create a new GitHub Pull Request from your fork to the official Monty repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork).
 8. Respond to and address any comments on your Pull Request. See [Pull Request Flow](pull-requests/pull-request-flow.md) for what to expect.
 9. Once your Pull Request is approved, it will be merged by one of the Maintainers. Thank you for contributing! 🥳🎉🎊
 

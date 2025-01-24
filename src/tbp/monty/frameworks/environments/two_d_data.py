@@ -67,7 +67,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         self.state = 0
         self.data_path = data_path
         if self.data_path is None:
-            self.data_path = os.path.expanduser("~/tbp/data/omniglot/python/")
+            self.data_path = os.path.join(os.environ["MONTY_DATA"], "omniglot/python/")
         self.alphabet_names = [
             a for a in os.listdir(self.data_path + "images_background") if a[0] != "."
         ]
@@ -253,8 +253,8 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         self.state = 0
         self.data_path = data_path
         if self.data_path is None:
-            self.data_path = os.path.expanduser(
-                "~/tbp/data/worldimages/labeled_scenes/"
+            self.data_path = os.path.join(
+                os.environ["MONTY_DATA"], "worldimages/labeled_scenes/"
             )
         self.scene_names = [a for a in os.listdir(self.data_path) if a[0] != "."]
         self.current_scene = self.scene_names[0]
@@ -663,8 +663,8 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
         self.state = 0
         self.data_path = data_path
         if self.data_path is None:
-            self.data_path = os.path.expanduser(
-                "~/tbp/data/worldimages/world_data_stream/"
+            self.data_path = os.path.join(
+                os.environ["MONTY_DATA"], "worldimages/world_data_stream/"
             )
         self.scene_names = [a for a in os.listdir(self.data_path) if a[0] != "."]
         self.current_scene = 0
@@ -694,7 +694,7 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
         # Instantiate once and reuse when checking action name in step()
         # TODO Use 2D-specific actions instead of overloading? Habitat actions
         # TODO Fix how inheritance is used here. We duplicate the below code because we
-        #      don't call super().__init__ while inherting
+        #      don't call super().__init__ while inheriting
         self._valid_actions = ["look_up", "look_down", "turn_left", "turn_right"]
 
     def switch_to_scene(self, scene_id):
