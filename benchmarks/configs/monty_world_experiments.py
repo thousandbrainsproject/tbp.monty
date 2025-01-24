@@ -33,10 +33,10 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 
-from .ycb_experiments import (
+from .defaults import (
     default_evidence_1lm_config,
-    fe_pretrain_dir,
     min_eval_steps,
+    pretrained_dir,
 )
 
 """
@@ -51,7 +51,7 @@ therefore ensure you omit the -m flag when running these
 """
 
 model_path_numenta_lab_obj = os.path.join(
-    fe_pretrain_dir,
+    pretrained_dir,
     "surf_agent_1lm_numenta_lab_obj/pretrained/",
 )
 
