@@ -183,7 +183,7 @@ class RunParallelTest(unittest.TestCase):
         run_parallel(
             exp=self.supervised_pre_training,
             experiment="unittest_supervised_pre_training",
-            num_cpus=1,
+            num_parallel=1,
             quiet_habitat_logs=True,
             print_cfg=False,
             is_unittest=True,
@@ -251,7 +251,7 @@ class RunParallelTest(unittest.TestCase):
         run_parallel(
             exp=self.eval_config,
             experiment="unittest_eval_eq",
-            num_cpus=1,
+            num_parallel=1,
             quiet_habitat_logs=True,
             print_cfg=False,
             is_unittest=True,
@@ -302,7 +302,7 @@ class RunParallelTest(unittest.TestCase):
         run_parallel(
             exp=self.eval_config_lt,
             experiment="unittest_eval_lt",
-            num_cpus=1,
+            num_parallel=1,
             quiet_habitat_logs=True,
             print_cfg=False,
             is_unittest=True,
@@ -342,7 +342,7 @@ class RunParallelTest(unittest.TestCase):
         run_parallel(
             exp=self.eval_config_gt,
             experiment="unittest_eval_gt",
-            num_cpus=1,
+            num_parallel=1,
             quiet_habitat_logs=True,
             print_cfg=False,
             is_unittest=True,

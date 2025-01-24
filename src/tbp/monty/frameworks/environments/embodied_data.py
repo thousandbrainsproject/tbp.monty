@@ -515,7 +515,10 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         return self._observation
 
     def get_good_view(
-        self, view_sensor_id: str, allow_translation: bool = True
+        self,
+        sensor_id: str,
+        allow_translation: bool = True,
+        max_orientation_attempts: int = 1,
     ) -> bool:
         """Policy to get a good view of the object before an episode starts.
 
@@ -540,13 +543,16 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         performed prior to the translational movement step.
 
         Args:
-            view_sensor_id: The name of the sensor used to inform movements.
+            sensor_id: The name of the sensor used to inform movements.
             allow_translation: Whether to allow movement toward the object via
                 the motor systems's `move_close_enough` method. If `False`, only
                 orientienting movements are performed. Default is `True`.
+            max_orientation_attempts: The maximum number of orientation attempts
+                allowed before giving up and returning `False` indicating that the
+                sensor is not on the target object.
 
         Returns:
-            Whether the sensor is on the object.
+            Whether the sensor is on the target object.
 
         TODO M : move most of this to the motor systems, shouldn't be in embodied_data
             class
@@ -556,13 +562,19 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # object before we start moving forward; only done for multi-object experiments
         multiple_objects_present = self.num_distractors > 0
         if multiple_objects_present:
-            actions, on_target_object = self.motor_system.orient_to_object(
+            on_target_object = self.motor_system.is_on_target_object(
                 self._observation,
-                view_sensor_id,
+                sensor_id,
                 target_semantic_id=self.primary_target["semantic_id"],
                 multiple_objects_present=multiple_objects_present,
             )
             if not on_target_object:
+                actions = self.motor_system.orient_to_object(
+                    self._observation,
+                    sensor_id,
+                    target_semantic_id=self.primary_target["semantic_id"],
+                    multiple_objects_present=multiple_objects_present,
+                )
                 for action in actions:
                     self._observation, self.motor_system.state = self.dataset[action]
 
@@ -570,7 +582,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             # Move closer to the object, if not already close enough
             action, close_enough = self.motor_system.move_close_enough(
                 self._observation,
-                view_sensor_id,
+                sensor_id,
                 target_semantic_id=self.primary_target["semantic_id"],
                 multiple_objects_present=multiple_objects_present,
             )
@@ -580,30 +592,35 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 self._observation, self.motor_system.state = self.dataset[action]
                 action, close_enough = self.motor_system.move_close_enough(
                     self._observation,
-                    view_sensor_id,
+                    sensor_id,
                     target_semantic_id=self.primary_target["semantic_id"],
                     multiple_objects_present=multiple_objects_present,
                 )
 
-        # Re-center ourselves (if necessary) after having moved closer
-        actions, on_target_object = self.motor_system.orient_to_object(
+        on_target_object = self.motor_system.is_on_target_object(
             self._observation,
-            view_sensor_id,
+            sensor_id,
             target_semantic_id=self.primary_target["semantic_id"],
             multiple_objects_present=multiple_objects_present,
         )
-        if not on_target_object:
+        num_attempts = 0
+        while not on_target_object and num_attempts < max_orientation_attempts:
+            actions = self.motor_system.orient_to_object(
+                self._observation,
+                sensor_id,
+                target_semantic_id=self.primary_target["semantic_id"],
+                multiple_objects_present=multiple_objects_present,
+            )
             for action in actions:
                 self._observation, self.motor_system.state = self.dataset[action]
+            on_target_object = self.motor_system.is_on_target_object(
+                self._observation,
+                sensor_id,
+                target_semantic_id=self.primary_target["semantic_id"],
+                multiple_objects_present=multiple_objects_present,
+            )
+            num_attempts += 1
 
-        # Final check that we're on the object. May be used by calling function
-        # to raise an error.
-        _, on_target_object = self.motor_system.orient_to_object(
-            self._observation,
-            view_sensor_id,
-            target_semantic_id=self.primary_target["semantic_id"],
-            multiple_objects_present=multiple_objects_present,
-        )
         return on_target_object
 
     def get_good_view_with_patch_refinement(self) -> bool:
@@ -611,9 +628,10 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         Used by the distant agent to move and orient toward an object such that the
         central patch is on-object. This is done by first moving and orienting the
-        agent toward the object using the view finder. A second orienting movement is
-        then performed using the central patch (i.e., the sensor module with id
+        agent toward the object using the view finder. Then orienting movements are
+        performed using the central patch (i.e., the sensor module with id
         "patch" or "patch_0") to ensure that the patch's central pixel is on-object.
+        Up to 3 reorientation attempts are performed using the central patch.
 
         Also currently used by the distant agent after a "jump" has been initialized
         by a model-based policy.
@@ -625,9 +643,14 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         self.get_good_view("view_finder")
         for patch_id in ("patch", "patch_0"):
             if patch_id in self._observation["agent_id_0"].keys():
-                on_target_object = self.get_good_view(patch_id, allow_translation=False)
+                on_target_object = self.get_good_view(
+                    patch_id,
+                    allow_translation=False,  # only orientation movements
+                    max_orientation_attempts=3,  # allow 3 reorientation attempts
+                )
                 break
         return on_target_object
+
 
     def execute_jump_attempt(self):
         """Attempt a hypothesis-testing "jump" onto a location of the object.

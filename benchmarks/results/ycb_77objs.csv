@@ -1,6 +1,6 @@
 Experiment,% Correct,% Used MLH,Num Matching Steps,Rotation Error (radians),Run Time,Episode Run Time (s)
-base_77obj_dist_agent,93.07%,13.85%,86,0.32,56m,178s
-base_77obj_surf_agent,98.70%,6.49%,56,0.16,35m,104s
-randrot_noise_77obj_dist_agent,87.45%,30.74%,149,0.70,1h17m,264s
-randrot_noise_77obj_surf_agent,96.54%,18.61%,103,0.58,1h3m,225s
-randrot_noise_77obj_5lms_dist_agent,84.42%,9.09%,66,1.08,39m,843s
+base_77obj_dist_agent,93.51%,12.99%,108,0.28,1h2m,212s
+base_77obj_surf_agent,99.13%,6.06%,54,0.19,28m,82s
+randrot_noise_77obj_dist_agent,89.61%,22.51%,152,0.65,1h25m,308s
+randrot_noise_77obj_surf_agent,92.64%,25.11%,120,0.69,1h5m,227s
+randrot_noise_77obj_5lms_dist_agent,88.31%,0.00%,70,1.02,32m,862s
