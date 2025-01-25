@@ -20,9 +20,9 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     VectorXYZ,
 )
 from tbp.monty.frameworks.utils.dataclass_utils import create_dataclass_args
-from tbp.monty.simulators.habitat import (
+from tbp.monty.simulators.habitat import HabitatSim
+from tbp.monty.simulators.habitat.agents import (
     HabitatAgent,
-    HabitatSim,
     MultiSensorAgent,
     SingleSensorAgent,
 )
