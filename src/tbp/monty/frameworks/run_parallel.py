@@ -13,7 +13,7 @@ import os
 import shutil
 import time
 from pathlib import Path
-from typing import List, Mapping
+from typing import List, Mapping, Optional
 
 import numpy as np
 import pandas as pd
@@ -223,7 +223,15 @@ def move_reproducibility_data(base_dir, parallel_dirs):
         )
 
 
-def post_parallel_eval(configs, base_dir):
+def post_parallel_eval(configs: List[Mapping], base_dir: str) -> None:
+    """Post-execution cleanup after running evaluation in parallel.
+
+    Logs are consolidated across parallel runs and saved to disk.
+
+    Args:
+        configs (List[Mapping]): List of configs ran in parallel.
+        base_dir (str): Directory where parallel logs are stored.
+    """
     print("Executing post parallel evaluation cleanup")
     parallel_dirs = [cfg["logging_config"]["output_dir"] for cfg in configs]
 
@@ -260,7 +268,15 @@ def post_parallel_eval(configs, base_dir):
         shutil.rmtree(pdir)
 
 
-def post_parallel_train(configs, base_dir):
+def post_parallel_train(configs: List[Mapping], base_dir: str) -> None:
+    """Post-execution cleanup after running training in parallel.
+
+    Object models are consolidated across parallel runs and saved to disk.
+
+    Args:
+        configs (List[Mapping]): List of configs ran in parallel.
+        base_dir (str): Directory where parallel logs are stored.
+    """
     print("Executing post parallel training cleanup")
     parallel_dirs = [cfg["logging_config"]["output_dir"] for cfg in configs]
     pretraining = False
@@ -424,8 +440,8 @@ def generate_parallel_train_configs(
     episodes, each parallel config specifies a single object but all rotations.
 
     Args:
-        exp (dict): config for experiment
-        experiment_name (str): name of experiment
+        exp (dict): Config for experiment to be broken into parallel configs.
+        experiment_name (str): Name of experiment.
 
     Returns:
         List of configs for training episodes.
@@ -480,8 +496,8 @@ def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> List[M
     training episodes, a config is created for each object + rotation separately.
 
     Args:
-        exp (dict): config for experiment
-        experiment_name (str): name of experiment
+        exp (dict): Config for experiment to be broken into parallel configs.
+        experiment_name (str): Name of experiment.
 
     Returns:
         List of configs for evaluation episodes.
@@ -547,14 +563,58 @@ def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> List[M
 
 
 def main(
-    all_configs=None,
-    exp=None,
-    experiment=None,
-    num_parallel=None,
-    quiet_habitat_logs=True,
-    print_cfg=False,
-    is_unittest=False,
+    all_configs: Optional[Mapping[str, Mapping]] = None,
+    exp: Optional[Mapping] = None,
+    experiment: Optional[str] = None,
+    num_parallel: Optional[int] = None,
+    quiet_habitat_logs: bool = True,
+    print_cfg: bool = False,
+    is_unittest: bool = False,
 ):
+    """Run an experiment in parallel.
+
+    This function breaks performs runs an experiment in parallel by performing the
+    following three tasks:
+      - Generates a set of configs that can be run in parallel.
+      - Executes the configs in parallel.
+      - Performs post-parallel cleanup where results from each run are consolidated.
+
+    How configs are split up into parallelizable configs depends on the type of
+    experiment. For supervised pre-training, a config is created for each object, and
+    that config will run all object rotations in serial. For evaluation experiments, a
+    config is created for each object and one rotation individually.
+
+    This function is typically called by `run_parallel.py` in conjuction with command
+    command line usage (i.e., `python run_parallel.py -e my_exp`) but is sometimes
+    called directly, such as when performing a unit test. As a result, the arguments
+    required depend on how the function is called. When run via command line, the
+    following arguments are required:
+        - `all_configs`
+        - `experiment`
+        - `num_parallel`
+
+    When called directly (typically via unit tests), the following arguments are
+    required:
+        - `exp`
+        - `experiment`
+        - `num_parallel`
+
+    Args:
+        all_configs (Mapping[str, Mapping], optional): A mapping from config name to
+            config dict.
+        exp (Mapping, optional): Config for experiment to run. Not required if running
+            from command line as the config is selected from `all_configs`.
+        experiment (str, optional): Name of experiment to run. Not required if running
+            from command line.
+        num_parallel (int, optional): Maximum number of parallel processes to run. If
+            the config is broken into fewer parallel configs than `num_parallel`, then
+            the actual number of processes will be equal to the number of parallel
+            configs. Not required if running from command line.
+        quiet_habitat_logs (bool): Whether to quiet Habitat logs. Defaults to True.
+        print_cfg (bool): Whether to print configs for spot checking. Defaults to
+            False.
+        is_unittest (bool): Whether to run in unittest mode. Defaults to False.
+    """
     # Handle args passed directly (only used by unittest) or command line (normal)
     if experiment:
         assert num_parallel, "missing arg num_parallel"
