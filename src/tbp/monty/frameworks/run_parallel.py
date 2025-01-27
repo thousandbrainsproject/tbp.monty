@@ -13,6 +13,7 @@ import os
 import shutil
 import time
 from pathlib import Path
+from typing import List, Mapping
 
 import numpy as np
 import pandas as pd
@@ -302,8 +303,22 @@ def post_parallel_train(configs, base_dir):
 
 
 def run_episodes_parallel(
-    configs, num_parallel, experiment_name, train=True, is_unittest=False
-):
+    configs: List[Mapping],
+    num_parallel: int,
+    experiment_name: str,
+    train: bool = True,
+    is_unittest: bool = False,
+) -> None:
+    """Run episodes in parallel.
+
+    Args:
+        configs (List[Mapping]): list of configs
+        num_parallel (int): number of parallel processes to run
+        experiment_name (str): name of experiment
+        train (bool): whether to run training or evaluation
+        is_unittest (bool): whether to run in unittest mode
+    """
+    num_parallel = min(len(configs), num_parallel)
     exp_type = "training" if train else "evaluation"
     print(
         f"-------- Running {exp_type} experiment {experiment_name}"
@@ -397,14 +412,20 @@ def run_episodes_parallel(
         f.write(f"total_time: {total_time}")
 
 
-def generate_parallel_train_configs(exp, experiment_name):
+def generate_parallel_train_configs(
+    exp: Mapping, experiment_name: str
+) -> List[Mapping]:
     """Generate configs for training episodes in parallel.
 
+    Create a config for each object in the experiment. Unlike with parallel eval
+    episodes, each parallel config specifies a single object but all rotations.
+
     Args:
-        exp: dict, config for experiment
-        experiment_name: str, name of experiment
-        split: optional[str]; train or eval. Determines if we make configs for train
-                  or eval batch
+        exp (dict): config for experiment
+        experiment_name (str): name of experiment
+
+    Returns:
+        List of configs for training episodes.
 
     Note:
         If we view the same object from multiple poses in separate experiments, we
@@ -413,8 +434,6 @@ def generate_parallel_train_configs(exp, experiment_name):
         still in sequence. By contrast, eval episodes are parallel across objects
         AND poses.
 
-    Returns:
-        List of configs for training episodes.
     """
     sampler = exp["train_dataloader_args"]["object_init_sampler"]
     sampler.rng = np.random.RandomState(exp["experiment_args"]["seed"])
@@ -451,7 +470,19 @@ def generate_parallel_train_configs(exp, experiment_name):
     return new_configs
 
 
-def generate_parallel_eval_configs(exp, experiment_name):
+def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> List[Mapping]:
+    """Generate configs for evaluation episodes in parallel.
+
+    Create a config for each object and rotation in the experiment. Unlike with parallel
+    training episodes, a config is created for each object + rotation separately.
+
+    Args:
+        exp (dict): config for experiment
+        experiment_name (str): name of experiment
+
+    Returns:
+        List of configs for evaluation episodes.
+    """
     sampler = exp["eval_dataloader_args"]["object_init_sampler"]
     sampler.rng = np.random.RandomState(exp["experiment_args"]["seed"])
     object_names = exp["eval_dataloader_args"]["object_names"]
