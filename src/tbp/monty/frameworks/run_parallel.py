@@ -312,12 +312,15 @@ def run_episodes_parallel(
     """Run episodes in parallel.
 
     Args:
-        configs (List[Mapping]): list of configs
-        num_parallel (int): number of parallel processes to run
+        configs (List[Mapping]): List of configs to run in parallel.
+        num_parallel (int): Maximum number of parallel processes to run. If there
+            are fewer configs to run than `num_parallel`, then the actual number of
+            processes will be equal to the number of configs.
         experiment_name (str): name of experiment
         train (bool): whether to run training or evaluation
         is_unittest (bool): whether to run in unittest mode
     """
+    # Use fewer processes if there are fewer configs than `num_parallel`.
     num_parallel = min(len(configs), num_parallel)
     exp_type = "training" if train else "evaluation"
     print(
