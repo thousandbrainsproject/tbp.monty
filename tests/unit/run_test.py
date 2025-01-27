@@ -26,7 +26,6 @@ from tbp.monty.frameworks.config_utils.config_args import (
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     ExperimentArgs,
-    SinglePTZHabitatDatasetArgs,
 )
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentDataLoader,
@@ -35,6 +34,9 @@ from tbp.monty.frameworks.environments.embodied_data import (
 from tbp.monty.frameworks.experiments import MontyExperiment
 from tbp.monty.frameworks.run import main, run
 from tbp.monty.simulators.habitat import SingleSensorAgent
+from tbp.monty.simulators.habitat.configs import (
+    SinglePTZHabitatDatasetArgs,
+)
 
 DATASET_LEN = 1000
 TRAIN_EPOCHS = 2

@@ -21,7 +21,7 @@ from scipy.ndimage import gaussian_filter
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environment_utils.transforms import DepthTo3DLocations
 from tbp.monty.frameworks.environments.embodied_environment import EmbodiedEnvironment
-from tbp.monty.frameworks.environments.habitat import HabitatActionSpace
+from tbp.monty.simulators.habitat.environment import HabitatActionSpace
 
 __all__ = [
     "OmniglotEnvironment",

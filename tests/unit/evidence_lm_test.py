@@ -34,17 +34,10 @@ from tbp.monty.frameworks.config_utils.config_args import (
     TwoLMStackedMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvInitArgsFiveLMMount,
-    EnvInitArgsPatchViewMount,
-    EnvInitArgsTwoLMDistantStackedMount,
     EnvironmentDataLoaderPerObjectEvalArgs,
     EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
-    FiveLMMountHabitatDatasetArgs,
-    NoisyPatchViewFinderMountHabitatDatasetArgs,
-    PatchViewFinderMountHabitatDatasetArgs,
     PredefinedObjectInitializer,
-    TwoLMStackedDistantMountHabitatDatasetArgs,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
     make_informed_policy_config,
@@ -64,6 +57,15 @@ from tbp.monty.frameworks.models.sensor_modules import (
     HabitatDistantPatchSM,
 )
 from tbp.monty.frameworks.utils.logging_utils import load_models_from_dir
+from tbp.monty.simulators.habitat.configs import (
+    EnvInitArgsFiveLMMount,
+    EnvInitArgsPatchViewMount,
+    EnvInitArgsTwoLMDistantStackedMount,
+    FiveLMMountHabitatDatasetArgs,
+    NoisyPatchViewFinderMountHabitatDatasetArgs,
+    PatchViewFinderMountHabitatDatasetArgs,
+    TwoLMStackedDistantMountHabitatDatasetArgs,
+)
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
 

@@ -32,16 +32,10 @@ from tbp.monty.frameworks.config_utils.config_args import (
     SurfaceAndViewMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvInitArgsFiveLMMount,
-    EnvInitArgsPatchViewMount,
-    EnvInitArgsSurfaceViewMount,
     EnvironmentDataLoaderPerObjectEvalArgs,
     EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
-    FiveLMMountHabitatDatasetArgs,
-    PatchViewFinderMountHabitatDatasetArgs,
     PredefinedObjectInitializer,
-    SurfaceViewFinderMountHabitatDatasetArgs,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
     make_informed_policy_config,
@@ -58,6 +52,14 @@ from tbp.monty.frameworks.utils.follow_up_configs import (
 from tbp.monty.frameworks.utils.logging_utils import (
     deserialize_json_chunks,
     load_stats,
+)
+from tbp.monty.simulators.habitat.configs import (
+    EnvInitArgsFiveLMMount,
+    EnvInitArgsPatchViewMount,
+    EnvInitArgsSurfaceViewMount,
+    FiveLMMountHabitatDatasetArgs,
+    PatchViewFinderMountHabitatDatasetArgs,
+    SurfaceViewFinderMountHabitatDatasetArgs,
 )
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 

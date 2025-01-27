@@ -22,15 +22,17 @@ from tbp.monty.frameworks.config_utils.config_args import (
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     DebugExperimentArgs,
-    EnvInitArgsSinglePTZ,
     EnvironmentDataLoaderPerObjectEvalArgs,
     EnvironmentDataLoaderPerObjectTrainArgs,
     NotYCBEvalObjectList,
     NotYCBTrainObjectList,
-    SinglePTZHabitatDatasetArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyExperiment
+from tbp.monty.simulators.habitat.configs import (
+    EnvInitArgsSinglePTZ,
+    SinglePTZHabitatDatasetArgs,
+)
 
 
 class BaseConfigTest(unittest.TestCase):

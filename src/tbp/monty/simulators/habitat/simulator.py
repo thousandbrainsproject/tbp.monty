@@ -26,8 +26,8 @@ from importlib_resources import files
 
 import tbp.monty.simulators.resources as resources
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.environment_utils.habitat_utils import get_bounding_corners
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
+from tbp.monty.simulators.habitat.environment_utils import get_bounding_corners
 
 from .agents import HabitatAgent
 
