@@ -155,6 +155,35 @@ Finally, note that the world_image experimental runs **do not support running wi
 
 See the [monty_lab project folder](https://github.com/thousandbrainsproject/monty_lab/tree/main/monty_meets_world) for the code.
 
+> [!NOTE]
+> The `randrot_noise_sim_on_scan_monty_world` experiment requires HabitatSim to be installed as well as additional data containing the meshes for the simulator to use.
+>
+>You can download the data:
+>
+> | Dataset | Archive Format | Download Link |
+> | --- | --- | --- |
+> | numenta_lab | tgz | [numenta_lab.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab.tgz) |
+> | numenta_lab | zip | [numenta_lab.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab.zip) |
+>
+> Unpack the archive in the `~/tbp/data/` folder. For example:
+>
+> ```plaintext tgz
+> mkdir -p ~/tbp/data/
+>
+> cd ~/tbp/data/
+>
+> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab.tgz | tar -xzf -
+> ```
+> ```plaintext zip
+> mkdir -p ~/tbp/data/
+>
+> cd ~/tbp/data/
+>
+> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab.zip
+>
+> unzip numenta_lab.zip
+> ```
+
 ### Results
 
 | Experiment                                  | % Correct | % Used MLH | Num Matching Steps | [Rotation Error (radians)] | Run Time | Episode Run Time (s) |
