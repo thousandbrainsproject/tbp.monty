@@ -28,17 +28,17 @@ More specifically, the proposed structure and description of each repository wou
 
 We could then have two additional types of repositories, with no predefined number of these. These repository *types* would be:
 
-- `tbp_package.name_of_package`
-    - E.g. `tbp_package.floppy`
-    - A package that is a collection of modules that are intended to be re-used in other projects. This does not imply that it is a package that will be maintained long-term for a broader community, but is rather something that we see ourselves re-using at the TBP.
-    - Should be well-documented, and have some unit-test coverage and style checks. PR reviews should be of a similar standard to `tbp.monty`.
-    - Open to contributions from the community.
+`tbp_package.name_of_package`
+- E.g. `tbp_package.floppy`
+- A package that is a collection of modules that are intended to be re-used in other projects. This does not imply that it is a package that will be maintained long-term for a broader community, but is rather something that we see ourselves re-using at the TBP.
+- Should be well-documented, and have some unit-test coverage and style checks. PR reviews should be of a similar standard to `tbp.monty`.
+- Open to contributions from the community.
 
-- `tbp_paper.name_of_paper`
-    - E.g. `tbp_paper.dmc_paper`
-    - A repository that contains the code required to replicate results and figures from a paper.
-    - A given paper can be broken up into multiple repositories if it makes use of highly distinct frameworks for different parts of the paper, such as Pytorch vs. Monty.
-    - PR reviews should be of a similar standard to `tbp.monty`.
+`tbp_paper.name_of_paper`
+- E.g. `tbp_paper.dmc_paper`
+- A repository that contains the code required to replicate results and figures from a paper.
+- A given paper can be broken up into multiple repositories if it makes use of highly distinct frameworks for different parts of the paper, such as Pytorch vs. Monty.
+- PR reviews should be of a similar standard to `tbp.monty`.
 
 More concretely, the structure that would be created given our current codebase and work on the DMC paper is as follows:
 
@@ -70,4 +70,4 @@ This proposal also relates to a potential RFC on the creation of a "repository t
 
 # Final Comments
 
-This is an RFC, so I'm very open to alternative suggestions for how we can organize the codebase.
+This is an RFC, so I'm very open to alternative suggestions for how we can organize the codebase, or any concerns that this proposal raises.
