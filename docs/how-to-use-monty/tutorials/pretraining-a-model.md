@@ -241,7 +241,9 @@ To run this experiment, navigate to the `benchmarks/` folder in a terminal and c
 cd benchmarks
 python run.py -e surf_agent_2obj_train
 ```
-Once complete, you can inspect and visualize the learned models. To do so, create a script and paste in the following code
+
+This will take a few minutes to complete and then you can inspect and visualize the learned models. To do so, create a script and paste in the following code
+
 ```python
 import os
 import matplotlib.pyplot as plt
