@@ -62,7 +62,7 @@ As the Thousand Brains Project grows, it will be important to have a better way 
 # Open Questions
 
 - If a given paper is separated into multiple repositories, will this create unecessary challenges for someone who wants to replicate the results (e.g. generating a figure)? We can think about how to structure results folders to make this as easy as possible.
-- Should we be open to merging code into `monty_lab` as a form of staging before it is eventually moved to a final repository? This would be akin to what has organically happened with the DMC work.
+- Should we be open to merging code into `monty_lab`'s `main` as a form of staging before it is eventually moved to a final repository? This would be akin to what has organically happened with the DMC work.
     - An advantage of this would be to make it easier for maintainers to review provisional code that is not yet ready for a final repository.
 
 # Future Possibilities
