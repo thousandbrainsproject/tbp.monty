@@ -93,7 +93,11 @@ In your usual interaction with this code base, you will most likely run experime
 
 ## 4.1 Download the YCB Dataset
 
-A lot of our current experiments are based on the [YCB dataset](https://www.ycbbenchmarks.com/) which is a dataset of 77 3D objects that we render in habitat. To download the dataset, run `python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat`.
+A lot of our current experiments are based on the [YCB dataset](https://www.ycbbenchmarks.com/) which is a dataset of 77 3D objects that we render in habitat. To download the dataset, run 
+
+```
+python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat
+```
 
 ## 4.2 Download Pretrained Models
 

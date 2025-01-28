@@ -50,9 +50,23 @@ class RealRobotsEnvironment(EmbodiedEnvironment):
     def action_space(self):
         return GymActionSpace(self._env.action_space)
 
+    def add_object(self, *args, **kwargs):
+        # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
+        #      interface and how the class hierarchy is defined and used.
+        raise NotImplementedError(
+            "RealRobotsEnvironment does not support adding objects"
+        )
+
     def step(self, action):
         observation, reward, done, info = self._env.step(action)
         return dict(**observation, reward=reward, done=done, info=info)
+
+    def remove_all_objects(self):
+        # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
+        #      interface and how the class hierarchy is defined and used.
+        raise NotImplementedError(
+            "RealRobotsEnvironment does not support removing all objects"
+        )
 
     def reset(self):
         observation = self._env.reset()
