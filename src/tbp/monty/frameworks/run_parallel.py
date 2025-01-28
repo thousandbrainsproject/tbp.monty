@@ -579,7 +579,12 @@ def main(
     parallelizable configs depends on the type of experiment. For supervised
     pre-training, a config is created for each object, and that config will run all
     object rotations in serial. For evaluation experiments, a config is created for
-    each object + a rotation individually.
+    each object + a rotation individually. Note that we don't parallelize over rotations
+    during training since graphs should be merged in the order in which the object was
+    seen; updating the graph at rotation *i* should influence how observations at
+    rotation *i + 1* are incorporated into the graph. This is not the case for
+    evaluation experiments where graphs aren't modified, and evaluation is therefore
+    embarrassingly parallelizable.
 
     This function is typically called by `run_parallel.py` through command line
     (i.e., `python run_parallel.py -e my_exp`) but is sometimes called directly,
