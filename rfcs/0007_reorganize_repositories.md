@@ -33,6 +33,7 @@ We could then have two additional types of repositories, with no predefined numb
 - E.g. `tbp_package.floppy`
 - A package that is a collection of modules that are intended to be re-used in other projects. This does not imply that it is a package that will be maintained long-term for a broader community, but is rather something that we see ourselves re-using at the TBP.
 - Should be well-documented, and have some unit-test coverage and style checks. PR reviews should be of a similar standard to `tbp.monty`.
+- The code should be of high enough quality that it can be used with confidence with the current `tbp.monty` codebase. However, there is not an expectation that it will be usable "as-is" in the future if `tbp.monty` undergoes significant changes. This is to reduce the burden on contributors of such package repositories, and given the unknowability of how often the package will be used in the future.
 - Open to contributions from the community.
 
 `tbp_paper.name_of_paper`
