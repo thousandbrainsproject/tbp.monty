@@ -10,12 +10,14 @@
 
 import abc
 import collections.abc
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple
 
 from tbp.monty.frameworks.actions.actions import Action
 
 __all__ = ["EmbodiedEnvironment", "ActionSpace"]
 
+VectorXYZ = Tuple[float, float, float]
+QuaternionWXYZ = Tuple[float, float, float, float]
 
 class ActionSpace(collections.abc.Container):
     """Represents the environment action space."""
@@ -34,6 +36,45 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def add_object(
+        self,
+        name: str,
+        position: VectorXYZ = (0.0, 0.0, 0.0),
+        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
+        scale: VectorXYZ = (1.0, 1.0, 1.0),
+        semantic_id: Optional[str] = None,
+        enable_physics: Optional[bool] = False,
+        object_to_avoid=False,
+        primary_target_object=None,
+    ):
+        """Add an object to the environment.
+
+        Args:
+            name: The name of the object to add.
+            position: The initial absolute position of the object.
+            rotation: The initial rotation WXYZ quaternion of the object. Defaults to
+                (1,0,0,0).
+            scale: The scale of the object to add. Defaults to (1,1,1).
+            semantic_id: Optional override for the object semantic ID.
+            enable_physics: Whether to enable physics on the object. Defaults to False.
+            object_to_avoid: If True, run collision checks to ensure the object will not
+                collide with any other objects in the scene. If collision is detected,
+                the object will be moved. Defaults to False.
+            primary_target_object: If not None, the added object will be positioned so
+                that it does not obscure the initial view of the primary target object
+                (which avoiding collision alone cannot guarantee). Used when adding
+                multiple objects. Defaults to None.
+
+        Returns:
+            The newly added object.
+
+        TODO: This add_object interface is elevated from HabitatSim.add_object and is
+              quite specific to HabitatSim implementation. We should consider
+              refactoring this to be more generic.
+        """
+        pass
+
+    @abc.abstractmethod
     def step(self, action: Action) -> Dict[Any, Dict]:
         """Apply the given action to the environment.
 
@@ -45,6 +86,16 @@ class EmbodiedEnvironment(abc.ABC):
     @abc.abstractmethod
     def get_state(self):
         """Return the state of the environment (and agent)."""
+        pass
+
+    @abc.abstractmethod
+    def remove_all_objects(self):
+        """Remove all objects from the environment.
+
+        TODO: This remove_all_objects interface is elevated from
+              HabitatSim.remove_all_objects and is quite specific to HabitatSim
+              implementation. We should consider refactoring this to be more generic.
+        """
         pass
 
     @abc.abstractmethod
