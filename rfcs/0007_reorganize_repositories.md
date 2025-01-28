@@ -43,13 +43,13 @@ We could then have two additional types of repositories, with no predefined numb
 - A given paper can be broken up into multiple repositories if it makes use of highly distinct frameworks for different parts of the paper, such as Pytorch vs. Monty.
 - PR reviews should be of a similar standard to `tbp.monty`. Code (typically configs but also analysis code) should be of a high standard given that it forms the basis of published work.
 
-More concretely, the structure that would be created given our current codebase and work on the DMC paper is as follows:
+More concretely, the structure that would be created given our current codebase and work on the "Demonstrating Monty Capabilities" paper (actual title: Thousand Brains Systems for Rapid, Robust Learning and Inference) is as follows:
 
 ```
 tbp.monty/
 monty_lab/
 tbp_package.floppy/
-tbp_paper.tbs_for_rapid_robust_learning_and_inference_monty/  # Most of the code for the DMC paper, including for generating the figures
+tbp_paper.tbs_for_rapid_robust_learning_and_inference_monty/  # Most of the code for the paper, including for generating the figures
 tbp_paper.tbs_for_rapid_robust_learning_and_inference_pytorch/  # Code to generate the results for the Pytorch models used in the paper
 ```
 
@@ -64,7 +64,7 @@ As the Thousand Brains Project grows, it will be important to have a better way 
 # Open Questions
 
 - If a given paper is separated into multiple repositories, will this create unecessary challenges for someone who wants to replicate the results (e.g. generating a figure)? We can think about how to structure results folders to make this as easy as possible.
-- Should we be open to merging code into `monty_lab`'s `main` as a form of staging before it is eventually moved to a final repository? This would be akin to what has organically happened with the DMC work.
+- Should we be open to merging code into `monty_lab`'s `main` as a form of staging before it is eventually moved to a final repository? This would be akin to what has organically happened with the recent paper work.
     - An advantage of this would be to make it easier for maintainers to review provisional code that is not yet ready for a final repository.
 - What would be a good place for providing an overview of all the repositories in the codebase, with descriptions and links to them? Perhaps on https://thousandbrainsproject.readme.io/docs/ ?
 
