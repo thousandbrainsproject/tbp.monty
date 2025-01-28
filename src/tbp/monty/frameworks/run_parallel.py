@@ -573,22 +573,19 @@ def main(
 ):
     """Run an experiment in parallel.
 
-    This function breaks performs runs an experiment in parallel by performing the
-    following three tasks:
-      - Generates a set of configs that can be run in parallel.
-      - Executes the configs in parallel.
-      - Performs post-parallel cleanup where results from each run are consolidated.
+    This function runs an experiment in parallel by breaking a config into a set
+    of configs that can be run in parallel, executing them, and performing cleanup
+    to consolidate logs across parallelized configs. How configs are split up into
+    parallelizable configs depends on the type of experiment. For supervised
+    pre-training, a config is created for each object, and that config will run all
+    object rotations in serial. For evaluation experiments, a config is created for
+    each object + a rotation individually.
 
-    How configs are split up into parallelizable configs depends on the type of
-    experiment. For supervised pre-training, a config is created for each object, and
-    that config will run all object rotations in serial. For evaluation experiments, a
-    config is created for each object + a rotation individually.
-
-    This function is typically called by `run_parallel.py` in conjuction with command
-    command line usage (i.e., `python run_parallel.py -e my_exp`) but is sometimes
-    called directly, such as when performing a unit test. As a result, the arguments
-    required depend on how the function is called. When run via command line, the
-    following arguments are required:
+    This function is typically called by `run_parallel.py` through command line
+    (i.e., `python run_parallel.py -e my_exp`) but is sometimes called directly,
+    such as when performing a unit test. As a result, the arguments required depend
+    on how the function is called. When run via command line, the following arguments
+    are required:
         - `all_configs`
         - `experiment`
         - `num_parallel`
