@@ -137,7 +137,7 @@ surf_agent_2obj_train = dict(
         run_name=model_name,
         wandb_handlers=[],
     ),
-    # Specify the Monty model.
+    # Specify the Monty config.
     monty_config=PatchAndViewMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=500),
         # sensory module configs: one surface patch for training (sensor_module_0),
