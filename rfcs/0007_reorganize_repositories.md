@@ -40,7 +40,7 @@ We could then have two additional types of repositories, with no predefined numb
 - E.g. `tbp_paper.dmc_paper`
 - A repository that contains the code required to replicate results and figures from a paper.
 - A given paper can be broken up into multiple repositories if it makes use of highly distinct frameworks for different parts of the paper, such as Pytorch vs. Monty.
-- PR reviews should be of a similar standard to `tbp.monty`.
+- PR reviews should be of a similar standard to `tbp.monty`. Code (typically configs but also analysis code) should be of a high standard given that it forms the basis of published work.
 
 More concretely, the structure that would be created given our current codebase and work on the DMC paper is as follows:
 
