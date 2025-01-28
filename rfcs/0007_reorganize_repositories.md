@@ -17,7 +17,8 @@ More specifically, the proposed structure and description of each repository wou
 `tbp.monty`
 - Core code-base for the Monty framework.
 - All code has undergone thorough review, and Circle-CI runs unit-tests and style checks on any new code.
-- Should not become bloated with experimental code that is unlikely to be re-used in future work.
+- Should not become bloated with code that is unlikely to be re-used in future work, or is of sufficient complexity that it can be better understood as a separate package.
+- Should not contain configs for various experiments; the only configs in tbp.monty are those used for our benchmark experiments.
 
 `monty_lab`
 - A repository to house discontinued or paused research projects like  `high_dim_coincidence_detection` and `grid_cells`.
@@ -37,7 +38,7 @@ We could then have two additional types of repositories, with no predefined numb
 - Open to contributions from the community.
 
 `tbp_paper.name_of_paper`
-- E.g. `tbp_paper.dmc_paper`
+- E.g. `tbp_paper.tbs_for_rapid_robust_learning_and_inference`
 - A repository that contains the code required to replicate results and figures from a paper.
 - A given paper can be broken up into multiple repositories if it makes use of highly distinct frameworks for different parts of the paper, such as Pytorch vs. Monty.
 - PR reviews should be of a similar standard to `tbp.monty`. Code (typically configs but also analysis code) should be of a high standard given that it forms the basis of published work.
@@ -48,8 +49,8 @@ More concretely, the structure that would be created given our current codebase 
 tbp.monty/
 monty_lab/
 tbp_package.floppy/
-tbp_paper.dmc_monty/  # Most of the code for the DMC paper, including for generating the figures
-tbp_paper.dmc_pytorch/  # Code to generate the results for the Pytorch models used in the paper
+tbp_paper.tbs_for_rapid_robust_learning_and_inference_monty/  # Most of the code for the DMC paper, including for generating the figures
+tbp_paper.tbs_for_rapid_robust_learning_and_inference_pytorch/  # Code to generate the results for the Pytorch models used in the paper
 ```
 
 ### Other Guidance
@@ -65,6 +66,7 @@ As the Thousand Brains Project grows, it will be important to have a better way 
 - If a given paper is separated into multiple repositories, will this create unecessary challenges for someone who wants to replicate the results (e.g. generating a figure)? We can think about how to structure results folders to make this as easy as possible.
 - Should we be open to merging code into `monty_lab`'s `main` as a form of staging before it is eventually moved to a final repository? This would be akin to what has organically happened with the DMC work.
     - An advantage of this would be to make it easier for maintainers to review provisional code that is not yet ready for a final repository.
+- What would be a good place for providing an overview of all the repositories in the codebase, with descriptions and links to them? Perhaps on https://thousandbrainsproject.readme.io/docs/ ?
 
 # Future Possibilities
 
