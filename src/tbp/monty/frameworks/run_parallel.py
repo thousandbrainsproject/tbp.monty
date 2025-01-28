@@ -582,7 +582,7 @@ def main(
     How configs are split up into parallelizable configs depends on the type of
     experiment. For supervised pre-training, a config is created for each object, and
     that config will run all object rotations in serial. For evaluation experiments, a
-    config is created for each object and one rotation individually.
+    config is created for each object + a rotation individually.
 
     This function is typically called by `run_parallel.py` in conjuction with command
     command line usage (i.e., `python run_parallel.py -e my_exp`) but is sometimes
@@ -593,8 +593,7 @@ def main(
         - `experiment`
         - `num_parallel`
 
-    When called directly (typically via unit tests), the following arguments are
-    required:
+    When called directly, the following arguments are required:
         - `exp`
         - `experiment`
         - `num_parallel`
@@ -613,7 +612,8 @@ def main(
         quiet_habitat_logs (bool): Whether to quiet Habitat logs. Defaults to True.
         print_cfg (bool): Whether to print configs for spot checking. Defaults to
             False.
-        is_unittest (bool): Whether to run in unittest mode. Defaults to False.
+        is_unittest (bool): Whether to run in unittest mode. If `True`, parallel runs
+            are done in serial. Defaults to False.
     """
     # Handle args passed directly (only used by unittest) or command line (normal)
     if experiment:
