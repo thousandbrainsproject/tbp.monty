@@ -12,7 +12,6 @@ from dataclasses import asdict, dataclass, is_dataclass
 from typing import Dict, List, Optional, Type, Union
 
 from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.environment_utils.habitat_utils import get_bounding_corners
 from tbp.monty.frameworks.environments.embodied_environment import (
     ActionSpace,
     EmbodiedEnvironment,
@@ -26,6 +25,7 @@ from tbp.monty.simulators.habitat import (
     MultiSensorAgent,
     SingleSensorAgent,
 )
+from tbp.monty.simulators.habitat.environment_utils import get_bounding_corners
 
 __all__ = [
     "AgentConfig",
