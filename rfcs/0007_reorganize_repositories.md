@@ -21,7 +21,8 @@ More specifically, the proposed structure and description of each repository wou
 
 `monty_lab`
 - A repository to house discontinued or paused research projects like  `high_dim_coincidence_detection` and `grid_cells`.
-- Local forks of `monty_lab` can be used by contributors to track in-progress work. However, this does not mean that such code, once mature enough to be shared, should be merged into the main `monty_lab` repository (more on this below).
+- Local forks of `monty_lab` can be used by contributors to track in-progress work. However, this does not mean that such code, once mature enough to be shared, should necessarily be merged into the main `monty_lab` repository.
+- In general, if the code is likely to be re-used in the future, or forms part of a paper, it should *not* go in `monty_lab` (more on this below).
 - Circle-CI does not include style or unit-test checks on new code. 
 - When merging a discontinued project, PR review does not need to be as thorough as for code pushed to the main `tbp.monty` repository.
 - Not intended as a code-base that community members can contribute to. As such, issues like bugs are less likely to be noticed and fixed. 
