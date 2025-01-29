@@ -11,6 +11,7 @@ from dataclasses import dataclass, fields
 
 NAMES = list()
 
+
 @dataclass
 class MontyWorldExperiments:
     world_image_from_stream_on_scanned_model: dict
@@ -20,11 +21,14 @@ class MontyWorldExperiments:
     hand_intrusion_world_image_on_scanned_model: dict
     multi_object_world_image_on_scanned_model: dict
 
+
 NAMES.extend(field.name for field in fields(MontyWorldExperiments))
+
 
 @dataclass
 class MontyWorldHabitatExperiments:
     randrot_noise_sim_on_scan_monty_world: dict
+
 
 NAMES.extend(field.name for field in fields(MontyWorldHabitatExperiments))
 
@@ -39,7 +43,9 @@ class PretrainingExperiments:
     only_surf_agent_training_allobj: dict
     only_surf_agent_training_numenta_lab_obj: dict
 
+
 NAMES.extend(field.name for field in fields(PretrainingExperiments))
+
 
 @dataclass
 class YcbExperiments:
@@ -63,5 +69,6 @@ class YcbExperiments:
     randrot_noise_77obj_surf_agent: dict
     randrot_noise_77obj_dist_agent: dict
     randrot_noise_77obj_5lms_dist_agent: dict
+
 
 NAMES.extend(field.name for field in fields(YcbExperiments))
