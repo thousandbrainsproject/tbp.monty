@@ -25,6 +25,7 @@ from benchmarks.configs.names import (
     NAMES,
     MontyWorldExperiments,
     MontyWorldHabitatExperiments,
+    MyExperiments,
     PretrainingExperiments,
     YcbExperiments,
 )
@@ -59,26 +60,35 @@ if __name__ == "__main__":
         field.name for field in fields(PretrainingExperiments)
     ]
     ycb_experiment_names = [field.name for field in fields(YcbExperiments)]
+    my_experiment_names = [field.name for field in fields(MyExperiments)]
 
     CONFIGS = dict()
     if experiment in monty_world_experiment_names:
-        from configs.monty_world_experiments import CONFIGS as MONTY_WORLD
+        from benchmarks.configs.monty_world_experiments import (
+            CONFIGS as MONTY_WORLD,
+        )
 
         CONFIGS.update(MONTY_WORLD)
     elif experiment in monty_world_habitat_experiment_names:
-        from configs.monty_world_habitat_experiments import (
+        from benchmarks.configs.monty_world_habitat_experiments import (
             CONFIGS as MONTY_WORLD_HABITAT,
         )
 
         CONFIGS.update(MONTY_WORLD_HABITAT)
     elif experiment in pretraining_experiment_names:
-        from configs.pretraining_experiments import CONFIGS as PRETRAININGS
+        from benchmarks.configs.pretraining_experiments import (
+            CONFIGS as PRETRAININGS,
+        )
 
         CONFIGS.update(PRETRAININGS)
     elif experiment in ycb_experiment_names:
-        from configs.ycb_experiments import CONFIGS as YCB
+        from benchmarks.configs.ycb_experiments import CONFIGS as YCB
 
         CONFIGS.update(YCB)
+    elif experiment in my_experiment_names:
+        from benchmarks.configs.my_experiments import CONFIGS as MY_EXPERIMENTS
+
+        CONFIGS.update(MY_EXPERIMENTS)
 
     main(
         all_configs=CONFIGS,
