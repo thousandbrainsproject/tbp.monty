@@ -13,8 +13,8 @@ import sys
 
 # Benchmarks is a scripts folder. However, we want to reuse and import
 # scripts within the benchmarks folder and externally. This is done by adding
-# the benchmarks folder to the system path and using fully qualified module
-# names like benchmarks.configs.names when importing.
+# the benchmarks' parent folder to the system path and using fully qualified
+# module names like benchmarks.configs.names when importing.
 sys.path.insert(
     0, os.path.dirname(os.path.dirname(os.path.expanduser(os.path.realpath(__file__))))
 )
