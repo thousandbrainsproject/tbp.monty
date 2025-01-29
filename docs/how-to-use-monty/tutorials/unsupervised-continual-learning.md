@@ -13,7 +13,7 @@ Our model will have one surface agent connected to one sensor module connected t
 
 # Setting up the Experiment Config for Continual Learning
 
-To follow along, create a file called `unsupervised_continual_learning_tutorial.py` in the `benchmarks/configs/` folder and paste the code snippets into it.
+To follow along, open the `benchmarks/configs/my_experiments.py` file and paste the code snippets into it.
 
 ```python
 import os
@@ -29,13 +29,15 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
     ExperimentArgs,
     RandomRotationObjectInitializer,
-    SurfaceViewFinderMountHabitatDatasetArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
     MontyObjectRecognitionExperiment,
 )
 from tbp.monty.frameworks.models.evidence_matching import EvidenceGraphLM
+from tbp.monty.simulators.habitat.configs import (
+    SurfaceViewFinderMountHabitatDatasetArgs,
+)
 
 """
 Basic setup
@@ -151,22 +153,20 @@ Besides these crucial changes, we have also made a few minor adjustments to simp
 
 # Running the Unsupervised Continual Learning Experiment
 
-Finally, add the following lines to the bottom of the file:
+Finally, add your experiment to `MyExperiments` at the bottom of the file:
 
 ```python
-CONFIGS = dict(
+experiments = MyExperiments(
     surf_agent_2obj_unsupervised=surf_agent_2obj_unsupervised,
 )
+CONFIGS = asdict(experiments)
 ```
-Next, you will need to add the following lines to the `benchmarks/configs/__init__.py` file:
+Next you will need to declare your experiment name as part of the `MyExperiments` dataclass in the `benchmarks/configs/names.py` file:
 
 ```python
-from .unsupervised_continual_learning_tutorial import (
-    CONFIGS as UNSUPERVISED_CONTINUAL_LEARNING_TUTORIAL,
-)
-
-# Put this line after CONFIGS is initialized
-CONFIGS.update(UNSUPERVISED_CONTINUAL_LEARNING_TUTORIAL)
+@dataclass
+class MyExperiments:
+    surf_agent_2obj_unsupervised: dict
 ```
 To run this experiment, navigate to the `benchmarks/` folder in a terminal and call the `run.py` script with an experiment name as the -e argument like so:
 ```shell
