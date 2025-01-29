@@ -12,20 +12,23 @@ In this tutorial we will introduce the basic mechanics of Monty experiment confi
 
 # Setting up the Experiment Config
 
-To go along, copy this code into a file (for example called `first_experiment.py`). Save this file in the `benchmarks/configs/` folder.
+To go along, copy this code into the `benchmarks/configs/my_experiments.py` file.
 
 ```python
+from dataclasses import asdict
+
+from benchmarks.configs.names import MyExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     SingleCameraMontyConfig,
     LoggingConfig
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     ExperimentArgs,
-    SinglePTZHabitatDatasetArgs,
     get_env_dataloader_per_object_by_idx,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyExperiment
+from tbp.monty.simulators.habitat.configs import SinglePTZHabitatDatasetArgs
 
 #####
 # To test your env and familiarize with the code, we'll run the simplest possible
@@ -52,19 +55,18 @@ first_experiment = dict(
     eval_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=1),
 )
 
-
-CONFIGS = dict(
+experiments = MyExperiments(
     first_experiment=first_experiment,
 )
+CONFIGS = asdict(experiments)
 ```
 
-Next you will need to add the following lines to the `benchmarks/configs/__init__.py` file:
+Next you will need to declare your experiment name as part of the `MyExperiments` dataclass in the `benchmarks/configs/names.py` file:
 
 ```python
-from .first_experiment import CONFIGS as FIRST_EXPERIMENT
-
-# Put this line after CONFIGS is initialized
-CONFIGS.update(FIRST_EXPERIMENT)
+@dataclass
+class MyExperiments:
+    first_experiment: dict
 ```
 
 # Running the Experiment
