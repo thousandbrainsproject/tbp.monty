@@ -220,7 +220,7 @@ To get an idea of what each sensor module sees and the information passed on to 
 
 # Running the Pretraining Experiment
 
-Finally, add the your experiment to `MyExperiments` at the bottom of the file:
+Finally, add your experiment to `MyExperiments` at the bottom of the file:
 
 ```python
 experiments = MyExperiments(
