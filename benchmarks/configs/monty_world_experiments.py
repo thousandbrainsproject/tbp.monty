@@ -27,7 +27,6 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvInitArgsMontyWorldStandardScenes,
     EnvironmentDataloaderPerObjectArgs,
     EvalExperimentArgs,
-    PatchViewFinderMontyWorldMountHabitatDatasetArgs,
     PredefinedObjectInitializer,
     RandomRotationObjectInitializer,
     WorldImageDataloaderArgs,
@@ -41,6 +40,9 @@ from tbp.monty.frameworks.environments.two_d_data import NUMENTA_OBJECTS
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
+)
+from tbp.monty.simulators.habitat.configs import (
+    PatchViewFinderMontyWorldMountHabitatDatasetArgs,
 )
 
 from .ycb_experiments import (

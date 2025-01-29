@@ -13,6 +13,7 @@ import os
 import shutil
 import time
 from pathlib import Path
+from typing import List, Mapping, Optional
 
 import numpy as np
 import pandas as pd
@@ -222,7 +223,15 @@ def move_reproducibility_data(base_dir, parallel_dirs):
         )
 
 
-def post_parallel_eval(configs, base_dir):
+def post_parallel_eval(configs: List[Mapping], base_dir: str) -> None:
+    """Post-execution cleanup after running evaluation in parallel.
+
+    Logs are consolidated across parallel runs and saved to disk.
+
+    Args:
+        configs (List[Mapping]): List of configs ran in parallel.
+        base_dir (str): Directory where parallel logs are stored.
+    """
     print("Executing post parallel evaluation cleanup")
     parallel_dirs = [cfg["logging_config"]["output_dir"] for cfg in configs]
 
@@ -259,7 +268,15 @@ def post_parallel_eval(configs, base_dir):
         shutil.rmtree(pdir)
 
 
-def post_parallel_train(configs, base_dir):
+def post_parallel_train(configs: List[Mapping], base_dir: str) -> None:
+    """Post-execution cleanup after running training in parallel.
+
+    Object models are consolidated across parallel runs and saved to disk.
+
+    Args:
+        configs (List[Mapping]): List of configs ran in parallel.
+        base_dir (str): Directory where parallel logs are stored.
+    """
     print("Executing post parallel training cleanup")
     parallel_dirs = [cfg["logging_config"]["output_dir"] for cfg in configs]
     pretraining = False
@@ -302,8 +319,25 @@ def post_parallel_train(configs, base_dir):
 
 
 def run_episodes_parallel(
-    configs, num_parallel, experiment_name, train=True, is_unittest=False
-):
+    configs: List[Mapping],
+    num_parallel: int,
+    experiment_name: str,
+    train: bool = True,
+    is_unittest: bool = False,
+) -> None:
+    """Run episodes in parallel.
+
+    Args:
+        configs (List[Mapping]): List of configs to run in parallel.
+        num_parallel (int): Maximum number of parallel processes to run. If there
+            are fewer configs to run than `num_parallel`, then the actual number of
+            processes will be equal to the number of configs.
+        experiment_name (str): name of experiment
+        train (bool): whether to run training or evaluation
+        is_unittest (bool): whether to run in unittest mode
+    """
+    # Use fewer processes if there are fewer configs than `num_parallel`.
+    num_parallel = min(len(configs), num_parallel)
     exp_type = "training" if train else "evaluation"
     print(
         f"-------- Running {exp_type} experiment {experiment_name}"
@@ -397,14 +431,20 @@ def run_episodes_parallel(
         f.write(f"total_time: {total_time}")
 
 
-def generate_parallel_train_configs(exp, experiment_name):
+def generate_parallel_train_configs(
+    exp: Mapping, experiment_name: str
+) -> List[Mapping]:
     """Generate configs for training episodes in parallel.
 
+    Create a config for each object in the experiment. Unlike with parallel eval
+    episodes, each parallel config specifies a single object but all rotations.
+
     Args:
-        exp: dict, config for experiment
-        experiment_name: str, name of experiment
-        split: optional[str]; train or eval. Determines if we make configs for train
-                  or eval batch
+        exp (dict): Config for experiment to be broken into parallel configs.
+        experiment_name (str): Name of experiment.
+
+    Returns:
+        List of configs for training episodes.
 
     Note:
         If we view the same object from multiple poses in separate experiments, we
@@ -413,8 +453,6 @@ def generate_parallel_train_configs(exp, experiment_name):
         still in sequence. By contrast, eval episodes are parallel across objects
         AND poses.
 
-    Returns:
-        List of configs for training episodes.
     """
     sampler = exp["train_dataloader_args"]["object_init_sampler"]
     sampler.rng = np.random.RandomState(exp["experiment_args"]["seed"])
@@ -451,7 +489,19 @@ def generate_parallel_train_configs(exp, experiment_name):
     return new_configs
 
 
-def generate_parallel_eval_configs(exp, experiment_name):
+def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> List[Mapping]:
+    """Generate configs for evaluation episodes in parallel.
+
+    Create a config for each object and rotation in the experiment. Unlike with parallel
+    training episodes, a config is created for each object + rotation separately.
+
+    Args:
+        exp (dict): Config for experiment to be broken into parallel configs.
+        experiment_name (str): Name of experiment.
+
+    Returns:
+        List of configs for evaluation episodes.
+    """
     sampler = exp["eval_dataloader_args"]["object_init_sampler"]
     sampler.rng = np.random.RandomState(exp["experiment_args"]["seed"])
     object_names = exp["eval_dataloader_args"]["object_names"]
@@ -513,14 +563,60 @@ def generate_parallel_eval_configs(exp, experiment_name):
 
 
 def main(
-    all_configs=None,
-    exp=None,
-    experiment=None,
-    num_parallel=None,
-    quiet_habitat_logs=True,
-    print_cfg=False,
-    is_unittest=False,
+    all_configs: Optional[Mapping[str, Mapping]] = None,
+    exp: Optional[Mapping] = None,
+    experiment: Optional[str] = None,
+    num_parallel: Optional[int] = None,
+    quiet_habitat_logs: bool = True,
+    print_cfg: bool = False,
+    is_unittest: bool = False,
 ):
+    """Run an experiment in parallel.
+
+    This function runs an experiment in parallel by breaking a config into a set
+    of configs that can be run in parallel, executing them, and performing cleanup
+    to consolidate logs across parallelized configs. How configs are split up into
+    parallelizable configs depends on the type of experiment. For supervised
+    pre-training, a config is created for each object, and that config will run all
+    object rotations in serial. For evaluation experiments, a config is created for
+    each object + a rotation individually. Note that we don't parallelize over rotations
+    during training since graphs should be merged in the order in which the object was
+    seen; updating the graph at rotation *i* should influence how observations at
+    rotation *i + 1* are incorporated into the graph. This is not the case for
+    evaluation experiments where graphs aren't modified, and evaluation is therefore
+    embarrassingly parallelizable.
+
+    This function is typically called by `run_parallel.py` through command line
+    (i.e., `python run_parallel.py -e my_exp`) but is sometimes called directly,
+    such as when performing a unit test. As a result, the arguments required depend
+    on how the function is called. When run via command line, the following arguments
+    are required:
+        - `all_configs`
+        - `experiment`
+        - `num_parallel`
+
+    When called directly, the following arguments are required:
+        - `exp`
+        - `experiment`
+        - `num_parallel`
+
+    Args:
+        all_configs (Mapping[str, Mapping], optional): A mapping from config name to
+            config dict.
+        exp (Mapping, optional): Config for experiment to run. Not required if running
+            from command line as the config is selected from `all_configs`.
+        experiment (str, optional): Name of experiment to run. Not required if running
+            from command line.
+        num_parallel (int, optional): Maximum number of parallel processes to run. If
+            the config is broken into fewer parallel configs than `num_parallel`, then
+            the actual number of processes will be equal to the number of parallel
+            configs. Not required if running from command line.
+        quiet_habitat_logs (bool): Whether to quiet Habitat logs. Defaults to True.
+        print_cfg (bool): Whether to print configs for spot checking. Defaults to
+            False.
+        is_unittest (bool): Whether to run in unittest mode. If `True`, parallel runs
+            are done in serial. Defaults to False.
+    """
     # Handle args passed directly (only used by unittest) or command line (normal)
     if experiment:
         assert num_parallel, "missing arg num_parallel"

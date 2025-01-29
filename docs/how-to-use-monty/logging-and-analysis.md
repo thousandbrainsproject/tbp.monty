@@ -52,7 +52,7 @@ import os
 from tbp.monty.frameworks.utils.logging_utils import load_stats
 
 pretrain_path = os.path.expanduser("~/tbp/results/monty/pretrained_models/")
-pretrained_dict = pretrain_path + "pretrained_ycb_v9/surf_agent_1lm_10distinctobj/pretrained/"
+pretrained_dict = pretrain_path + "pretrained_ycb_v10/surf_agent_1lm_10distinctobj/pretrained/"
 
 log_path = os.path.expanduser("~/tbp/results/monty/projects/evidence_eval_runs/logs/")
 exp_name = "randrot_10distinctobj_surf_agent"

@@ -23,9 +23,9 @@ from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentDataset,
 )
 from tbp.monty.frameworks.environments.embodied_environment import ActionSpace
-from tbp.monty.frameworks.environments.habitat import AgentConfig, HabitatEnvironment
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.simulators.habitat import SingleSensorAgent
+from tbp.monty.simulators.habitat.environment import AgentConfig, HabitatEnvironment
 
 DATASET_LEN = 10
 DEFAULT_ACTUATION_AMOUNT = 0.25
