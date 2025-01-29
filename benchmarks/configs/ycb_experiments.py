@@ -14,6 +14,18 @@ from dataclasses import asdict
 
 import numpy as np
 
+from benchmarks.configs.defaults import (
+    default_all_noise_params,
+    default_all_noisy_sensor_module,
+    default_evidence_1lm_config,
+    default_evidence_lm_config,
+    default_feature_weights,
+    default_tolerance_values,
+    default_tolerances,
+    min_eval_steps,
+    pretrained_dir,
+)
+from benchmarks.configs.names import YcbExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     CSVLoggingConfig,
     FiveLMMontySOTAConfig,
@@ -57,19 +69,6 @@ from tbp.monty.simulators.habitat.configs import (
     PatchViewFinderMultiObjectMountHabitatDatasetArgs,
     SurfaceViewFinderMountHabitatDatasetArgs,
 )
-
-from .defaults import (
-    default_all_noise_params,
-    default_all_noisy_sensor_module,
-    default_evidence_1lm_config,
-    default_evidence_lm_config,
-    default_feature_weights,
-    default_tolerance_values,
-    default_tolerances,
-    min_eval_steps,
-    pretrained_dir,
-)
-from .names import YcbExperiments
 
 """
 (all use surface-agent models with 0.01 min dist and 64x64 resolution,

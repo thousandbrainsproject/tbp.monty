@@ -9,16 +9,25 @@
 # https://opensource.org/licenses/MIT.
 
 import os
+import sys
+
+# Benchmarks is a scripts folder. However, we want to reuse and import
+# scripts within the benchmarks folder and externally. This is done by adding
+# the benchmarks folder to the system path and using fully qualified module
+# names like benchmarks.configs.names when importing.
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.expanduser(os.path.realpath(__file__))))
+)
+
 from dataclasses import fields
 
-from configs.names import (
+from benchmarks.configs.names import (
     NAMES,
     MontyWorldExperiments,
     MontyWorldHabitatExperiments,
     PretrainingExperiments,
     YcbExperiments,
 )
-
 from tbp.monty.frameworks.config_utils.cmd_parser import create_cmd_parser_parallel
 from tbp.monty.frameworks.run_env import setup_env
 

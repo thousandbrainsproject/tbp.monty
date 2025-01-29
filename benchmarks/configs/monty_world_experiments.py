@@ -14,6 +14,12 @@ from dataclasses import asdict
 
 import numpy as np
 
+from benchmarks.configs.defaults import (
+    default_evidence_1lm_config,
+    min_eval_steps,
+    pretrained_dir,
+)
+from benchmarks.configs.names import MontyWorldExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
     MotorSystemConfigInformedNoTransStepS20,
@@ -33,13 +39,6 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
-
-from .defaults import (
-    default_evidence_1lm_config,
-    min_eval_steps,
-    pretrained_dir,
-)
-from .names import MontyWorldExperiments
 
 """
 Experiments for a Monty model trained on photogrammetry-scanned objects, and

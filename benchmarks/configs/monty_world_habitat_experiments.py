@@ -11,6 +11,13 @@
 import os
 from dataclasses import asdict
 
+from benchmarks.configs.defaults import (
+    default_all_noisy_sensor_module,
+    default_evidence_1lm_config,
+    min_eval_steps,
+    pretrained_dir,
+)
+from benchmarks.configs.names import MontyWorldHabitatExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
     MotorSystemConfigInformedNoTransStepS20,
@@ -33,14 +40,6 @@ from tbp.monty.frameworks.models.sensor_modules import DetailedLoggingSM
 from tbp.monty.simulators.habitat.configs import (
     PatchViewFinderMontyWorldMountHabitatDatasetArgs,
 )
-
-from .defaults import (
-    default_all_noisy_sensor_module,
-    default_evidence_1lm_config,
-    min_eval_steps,
-    pretrained_dir,
-)
-from .names import MontyWorldHabitatExperiments
 
 test_rotations_one = [[0, 0, 0]]
 

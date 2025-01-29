@@ -14,6 +14,7 @@ from dataclasses import asdict
 
 import numpy as np
 
+from benchmarks.configs.names import PretrainingExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     FiveLMMontyConfig,
     MontyArgs,
@@ -56,8 +57,6 @@ from tbp.monty.simulators.habitat.configs import (
     SurfaceViewFinderMontyWorldMountHabitatDatasetArgs,
     SurfaceViewFinderMountHabitatDatasetArgs,
 )
-
-from .names import PretrainingExperiments
 
 # FOR SUPERVISED PRETRAINING: 14 unique rotations that give good views of the object.
 train_rotations_all = get_cube_face_and_corner_views_rotations()
