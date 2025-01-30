@@ -541,8 +541,8 @@ This is a test document.""",
                     "Time (mins)",
                 ]
             )
-            writer.writerow(["Test 1", "95.01", "55", "10"])
-            writer.writerow(["Test 2", "87.00", "72", "12"])
+            writer.writerow(["Test 1", "95.01", "55", "10e4"])
+            writer.writerow(["Test 2", "-87.00", "72", "1/2"])
             tmp_path = tmp.name
 
         try:
@@ -564,8 +564,10 @@ This is a test document.""",
             self.assertIn("<td style='text-align:right'>95.01</td>", result)
             self.assertIn("<td style='text-align:right'>55</td>", result)
             self.assertIn("<td>Test 2</td>", result)
-            self.assertIn("<td style='text-align:right'>87.00</td>", result)
+            self.assertIn("<td style='text-align:right'>-87.00</td>", result)
             self.assertIn("<td style='text-align:right'>72</td>", result)
+            self.assertIn("<td style='text-align:right'>1/2</td>", result)
+            self.assertIn("<td style='text-align:right'>10e4</td>", result)
 
             # Test with non-existent file
             result = self.readme.convert_csv_to_html_table(

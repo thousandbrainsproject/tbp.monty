@@ -20,6 +20,7 @@ from urllib.parse import parse_qs
 
 import nh3
 import yaml
+from pint import UnitRegistry
 
 from tools.github_readme_sync.colors import GRAY, GREEN, RESET
 from tools.github_readme_sync.constants import (
@@ -28,6 +29,8 @@ from tools.github_readme_sync.constants import (
     REGEX_CSV_TABLE,
 )
 from tools.github_readme_sync.req import delete, get, post, put
+
+ureg = UnitRegistry()
 
 PREFIX = "https://dash.readme.com/api/v1"
 GITHUB_RAW = "https://raw.githubusercontent.com"
@@ -174,6 +177,14 @@ class ReadMe:
 
         return category["_id"], False
 
+    def is_numeric(self, s):
+        try:
+            parsed = ureg.parse_expression(s)
+        except Exception:
+            return False
+        else:
+            return True
+
     def convert_csv_to_html_table(self, body: str, depth: int) -> str:
         """Convert CSV table references to HTML tables.
 
@@ -202,11 +213,10 @@ class ReadMe:
                     for col_idx in range(len(headers)):
                         is_numeric_col = True
                         for row in rows:
-                            if not row[col_idx].replace(".", "").isdigit():
+                            if not self.is_numeric(row[col_idx]):
                                 is_numeric_col = False
                                 break
                         right_aligned_columns.append(is_numeric_col)
-
                     table = "<div class='data-table'><table>\n<thead>\n<tr>"
                     # Add headers
                     for _, header in enumerate(headers):
