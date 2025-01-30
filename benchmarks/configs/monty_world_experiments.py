@@ -10,9 +10,16 @@
 
 import copy
 import os
+from dataclasses import asdict
 
 import numpy as np
 
+from benchmarks.configs.defaults import (
+    default_evidence_1lm_config,
+    min_eval_steps,
+    pretrained_dir,
+)
+from benchmarks.configs.names import MontyWorldExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
     MotorSystemConfigInformedNoTransStepS20,
@@ -25,32 +32,13 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvInitArgsMontyWorldHandIntrusionScenes,
     EnvInitArgsMontyWorldMultiObjectScenes,
     EnvInitArgsMontyWorldStandardScenes,
-    EnvironmentDataloaderPerObjectArgs,
     EvalExperimentArgs,
-    PredefinedObjectInitializer,
-    RandomRotationObjectInitializer,
     WorldImageDataloaderArgs,
     WorldImageDatasetArgs,
     WorldImageFromStreamDatasetArgs,
-    get_env_dataloader_per_object_by_idx,
-    get_object_names_by_idx,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
-from tbp.monty.frameworks.environments.two_d_data import NUMENTA_OBJECTS
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
-from tbp.monty.frameworks.models.sensor_modules import (
-    DetailedLoggingSM,
-)
-from tbp.monty.simulators.habitat.configs import (
-    PatchViewFinderMontyWorldMountHabitatDatasetArgs,
-)
-
-from .ycb_experiments import (
-    default_all_noisy_sensor_module,
-    default_evidence_1lm_config,
-    fe_pretrain_dir,
-    min_eval_steps,
-)
 
 """
 Experiments for a Monty model trained on photogrammetry-scanned objects, and
@@ -64,19 +52,18 @@ therefore ensure you omit the -m flag when running these
 """
 
 model_path_numenta_lab_obj = os.path.join(
-    fe_pretrain_dir,
+    pretrained_dir,
     "surf_agent_1lm_numenta_lab_obj/pretrained/",
 )
 
-test_rotations_one = [[0, 0, 0]]
-
-# Base config for evlauating on the scanned objects in Habitat (i.e. simulation)
-base_config_monty_world = dict(
+# Evaluation on real-world depth data, but trained on photogrammetry scanned objects
+world_image_on_scanned_model = dict(
     experiment_class=MontyObjectRecognitionExperiment,
     experiment_args=EvalExperimentArgs(
         model_name_or_path=model_path_numenta_lab_obj,
-        n_eval_epochs=len(test_rotations_one),
+        n_eval_epochs=1,
         max_eval_steps=500,
+        show_sensor_output=False,
     ),
     logging_config=ParallelEvidenceLMLoggingConfig(wandb_group="benchmark_experiments"),
     monty_config=PatchAndViewMontyConfig(
@@ -86,58 +73,6 @@ base_config_monty_world = dict(
         motor_system_config=MotorSystemConfigInformedNoTransStepS20(),
     ),
     dataset_class=ED.EnvironmentDataset,
-    dataset_args=PatchViewFinderMontyWorldMountHabitatDatasetArgs(),
-    train_dataloader_class=ED.InformedEnvironmentDataLoader,
-    train_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=12),
-    eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-    eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
-        object_names=get_object_names_by_idx(0, 12, object_list=NUMENTA_OBJECTS),
-        object_init_sampler=PredefinedObjectInitializer(rotations=test_rotations_one),
-    ),
-)
-
-# More challenging evaluation on photogrammetry objects; serves as a baseline
-# for viewing these objects from a fixed, single view, but in simulation rather than
-# with real-world data
-# Note we therefore use the basic distant-agent policy without hypothesis-driven
-# actions, to be more comparable to the constraints of inference on real-world data
-randrot_noise_sim_on_scan_monty_world = copy.deepcopy(base_config_monty_world)
-randrot_noise_sim_on_scan_monty_world.update(
-    experiment_args=EvalExperimentArgs(
-        model_name_or_path=model_path_numenta_lab_obj,
-        n_eval_epochs=10,
-        max_eval_steps=500,
-    ),
-    monty_config=PatchAndViewMontyConfig(
-        sensor_module_configs=dict(
-            sensor_module_0=default_all_noisy_sensor_module,
-            sensor_module_1=dict(
-                sensor_module_class=DetailedLoggingSM,
-                sensor_module_args=dict(
-                    sensor_module_id="view_finder",
-                    save_raw_obs=False,
-                ),
-            ),
-        ),
-        learning_module_configs=default_evidence_1lm_config,
-        monty_args=MontyArgs(min_eval_steps=min_eval_steps),
-        motor_system_config=MotorSystemConfigInformedNoTransStepS20(),
-    ),
-    eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
-        object_names=get_object_names_by_idx(0, 12, object_list=NUMENTA_OBJECTS),
-        object_init_sampler=RandomRotationObjectInitializer(),
-    ),
-)
-
-# Evaluation on real-world depth data, but trained on photogrammetry scanned objects
-world_image_on_scanned_model = copy.deepcopy(base_config_monty_world)
-world_image_on_scanned_model.update(
-    experiment_args=EvalExperimentArgs(
-        model_name_or_path=model_path_numenta_lab_obj,
-        n_eval_epochs=1,
-        max_eval_steps=500,
-        show_sensor_output=False,
-    ),
     dataset_args=WorldImageDatasetArgs(
         env_init_args=EnvInitArgsMontyWorldStandardScenes()
     ),
@@ -193,14 +128,13 @@ multi_object_world_image_on_scanned_model.update(
     ),
 )
 
-CONFIGS = dict(
-    base_config_monty_world=base_config_monty_world,
+experiments = MontyWorldExperiments(
     world_image_from_stream_on_scanned_model=world_image_from_stream_on_scanned_model,
     # ------------- Experiments for Benchmarks Table -------------
-    randrot_noise_sim_on_scan_monty_world=randrot_noise_sim_on_scan_monty_world,
     world_image_on_scanned_model=world_image_on_scanned_model,
     dark_world_image_on_scanned_model=dark_world_image_on_scanned_model,
     bright_world_image_on_scanned_model=bright_world_image_on_scanned_model,
     hand_intrusion_world_image_on_scanned_model=hand_intrusion_world_image_on_scanned_model,
     multi_object_world_image_on_scanned_model=multi_object_world_image_on_scanned_model,
 )
+CONFIGS = asdict(experiments)

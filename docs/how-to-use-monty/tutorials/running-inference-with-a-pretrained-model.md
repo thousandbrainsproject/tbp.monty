@@ -9,7 +9,7 @@ This tutorial is a follow-up of our tutorial on [pretraining a model](pretrainin
 > The [first part](pretraining-a-model.md) of this tutorial must be completed for the code in this tutorial to run.
 >
 # Setting up the Experiment Config for Inference
-To follow along, create a new file called `pretraining_tutorial_eval.py` in the `benchmarks/configs/` folder and paste the code snippets into it.
+To follow along, open the `benchmarks/configs/my_experiments.py` file and paste the code snippets into it.
 
 ```python
 import os
@@ -26,7 +26,6 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
     EvalExperimentArgs,
     PredefinedObjectInitializer,
-    SurfaceViewFinderMountHabitatDatasetArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
@@ -39,6 +38,9 @@ from tbp.monty.frameworks.models.goal_state_generation import (
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
     FeatureChangeSM,
+)
+from tbp.monty.simulators.habitat.configs import (
+    SurfaceViewFinderMountHabitatDatasetArgs,
 )
 
 """
@@ -223,20 +225,20 @@ surf_agent_2obj_eval = dict(
 
 Note that we have changed the Monty experiment class and the logging config. We also opted for a policy whereby learning-modules generate actions to test hypotheses by producing "goal-states" for the low-level motor system (`MotorSystemConfigCurInformedSurfaceGoalStateDriven`). Additionally, we are now initializing the objects at `test_rotations` instead of `train_rotations`.
 
-Finally, add the following lines to the bottom of the file:
+Finally, add your experiment to `MyExperiments` at the bottom of the file:
 
 ```python
-CONFIGS = dict(
+experiments = MyExperiments(
     surf_agent_2obj_eval=surf_agent_2obj_eval,
 )
+CONFIGS = asdict(experiments)
 ```
-Next, you will need to add the following lines to the `benchmarks/configs/__init__.py` file:
+Next you will need to declare your experiment name as part of the `MyExperiments` dataclass in the `benchmarks/configs/names.py` file:
 
 ```python
-from .pretraining_tutorial_eval import CONFIGS as PRETRAINING_TUTORIAL_EVAL
-
-# Put this line after CONFIGS is initialized
-CONFIGS.update(PRETRAINING_TUTORIAL_EVAL)
+@dataclass
+class MyExperiments:
+    surf_agent_2obj_eval: dict
 ```
 
 # Running the Experiment

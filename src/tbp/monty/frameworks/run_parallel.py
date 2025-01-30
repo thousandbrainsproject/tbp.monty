@@ -623,7 +623,7 @@ def main(
         assert exp, "missing arg exp"
 
     else:
-        cmd_parser = create_cmd_parser_parallel(all_configs=all_configs)
+        cmd_parser = create_cmd_parser_parallel(experiments=list(all_configs.keys()))
         cmd_args = cmd_parser.parse_args()
         experiment = cmd_args.experiment
         num_parallel = cmd_args.num_parallel

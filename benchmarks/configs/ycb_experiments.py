@@ -10,9 +10,22 @@
 
 import copy
 import os
+from dataclasses import asdict
 
 import numpy as np
 
+from benchmarks.configs.defaults import (
+    default_all_noise_params,
+    default_all_noisy_sensor_module,
+    default_evidence_1lm_config,
+    default_evidence_lm_config,
+    default_feature_weights,
+    default_tolerance_values,
+    default_tolerances,
+    min_eval_steps,
+    pretrained_dir,
+)
+from benchmarks.configs.names import YcbExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     CSVLoggingConfig,
     FiveLMMontySOTAConfig,
@@ -44,9 +57,6 @@ from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 from tbp.monty.frameworks.models.evidence_matching import (
     EvidenceGraphLM,
     MontyForEvidenceGraphMatching,
-)
-from tbp.monty.frameworks.models.goal_state_generation import (
-    EvidenceGoalStateGenerator,
 )
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
@@ -104,107 +114,34 @@ test_rotations_all = get_cube_face_and_corner_views_rotations()
 # runs with all 77 YCB objects.
 test_rotations_3 = test_rotations_all[:3]
 
-monty_models_dir = os.getenv("MONTY_MODELS")
-
-# v6 : Using TLS for point-normal estimation
-# v7 : Updated for State class support + using new feature names like pose_vectors
-# v8 : Using separate graph per input channel
-# v9 : Using models trained on 14 unique rotations
-# v10 : Using models trained without the semantic sensor
-fe_pretrain_dir = os.path.expanduser(
-    os.path.join(monty_models_dir, "pretrained_ycb_v10")
-)
-
 model_path_10distinctobj = os.path.join(
-    fe_pretrain_dir,
+    pretrained_dir,
     "surf_agent_1lm_10distinctobj/pretrained/",
 )
 
 dist_agent_model_path_10distinctobj = os.path.join(
-    fe_pretrain_dir,
+    pretrained_dir,
     "supervised_pre_training_base/pretrained/",
 )
 
 model_path_10simobj = os.path.join(
-    fe_pretrain_dir,
+    pretrained_dir,
     "surf_agent_1lm_10similarobj/pretrained/",
 )
 
 model_path_5lms_10distinctobj = os.path.join(
-    fe_pretrain_dir,
+    pretrained_dir,
     "supervised_pre_training_5lms/pretrained/",
 )
 
 model_path_1lm_77obj = os.path.join(
-    fe_pretrain_dir,
+    pretrained_dir,
     "surf_agent_1lm_77obj/pretrained/",
 )
 
 model_path_5lms_77obj = os.path.join(
-    fe_pretrain_dir,
+    pretrained_dir,
     "supervised_pre_training_5lms_all_objects/pretrained/",
-)
-
-# NOTE: maybe lower once we have better policies
-# Is not really nescessary for good performance but makes sure we don't just overfit
-# on the first few points.
-min_eval_steps = 20
-
-default_tolerance_values = {
-    "hsv": np.array([0.1, 0.2, 0.2]),
-    "principal_curvatures_log": np.ones(2),
-}
-
-default_tolerances = {
-    "patch": default_tolerance_values
-}  # features where weight is not specified default weight to 1
-# Everything is weighted 1, except for saturation and value which are not used.
-default_feature_weights = {
-    "patch": {
-        # Weighting saturation and value less since these might change under different
-        # lighting conditions. In the future we can extract better features in the SM
-        # such as relative value changes.
-        "hsv": np.array([1, 0.5, 0.5]),
-    }
-}
-
-default_evidence_lm_config = dict(
-    learning_module_class=EvidenceGraphLM,
-    learning_module_args=dict(
-        # mmd of 0.015 get higher performance but slower run time
-        max_match_distance=0.01,  # =1cm
-        tolerances=default_tolerances,
-        feature_weights=default_feature_weights,
-        # smaller threshold reduces runtime but also performance
-        x_percent_threshold=20,
-        # Using a smaller max_nneighbors (5 instead of 10) makes runtime faster,
-        # but reduces performance a bit
-        max_nneighbors=10,
-        # Use this to update all hypotheses at every step as previously
-        # evidence_update_threshold="all",
-        # Use this to update all hypotheses > x_percent_threshold (faster)
-        evidence_update_threshold="x_percent_threshold",
-        # use_multithreading=False,
-        # NOTE: Currently not used when loading pretrained graphs.
-        max_graph_size=0.3,  # 30cm
-        num_model_voxels_per_dim=100,
-        gsg_class=EvidenceGoalStateGenerator,
-        gsg_args=dict(
-            goal_tolerances=dict(
-                location=0.015,  # distance in meters
-            ),  # Tolerance(s) when determining goal-state success
-            elapsed_steps_factor=10,  # Factor that considers the number of elapsed
-            # steps as a possible condition for initiating a hypothesis-testing goal
-            # state; should be set to an integer reflecting a number of steps
-            min_post_goal_success_steps=5,  # Number of necessary steps for a hypothesis
-            # goal-state to be considered
-            x_percent_scale_factor=0.75,  # Scale x-percent threshold to decide
-            # when we should focus on pose rather than determining object ID; should
-            # be bounded between 0:1.0; "mod" for modifier
-            desired_object_distance=0.03,  # Distance from the object to the
-            # agent that is considered "close enough" to the object
-        ),
-    ),
 )
 
 # Default configs for surface policy which has a different desired object distance
@@ -222,7 +159,6 @@ lower_max_nneighbors_lm_config["learning_module_args"]["max_nneighbors"] = 5
 lower_max_nneighbors_surf_lm_config = copy.deepcopy(default_surf_evidence_lm_config)
 lower_max_nneighbors_surf_lm_config["learning_module_args"]["max_nneighbors"] = 5
 
-default_evidence_1lm_config = dict(learning_module_0=default_evidence_lm_config)
 lower_max_nneighbors_1lm_config = dict(learning_module_0=lower_max_nneighbors_lm_config)
 
 default_evidence_surf_1lm_config = dict(
@@ -251,14 +187,6 @@ default_5lm_lmconfig = dict(
     learning_module_4=lm4_config,
 )
 
-default_sensor_features = [
-    "pose_vectors",
-    "pose_fully_defined",
-    "on_object",
-    "hsv",
-    "principal_curvatures_log",
-]
-
 default_sensor_features_surf_agent = [
     "pose_vectors",
     "pose_fully_defined",
@@ -270,30 +198,6 @@ default_sensor_features_surf_agent = [
     "principal_curvatures",
     "principal_curvatures_log",
 ]
-
-default_all_noise_params = {
-    "features": {
-        "pose_vectors": 2,  # rotate by random degrees along xyz
-        "hsv": 0.1,  # add gaussian noise with 0.1 std
-        "principal_curvatures_log": 0.1,
-        "pose_fully_defined": 0.01,  # flip bool in 1% of cases
-    },
-    "location": 0.002,  # add gaussian noise with 0.002 std
-}
-
-default_all_noisy_sensor_module = dict(
-    sensor_module_class=FeatureChangeSM,
-    sensor_module_args=dict(
-        sensor_module_id="patch",
-        features=default_sensor_features,
-        save_raw_obs=False,
-        delta_thresholds={
-            "on_object": 0,
-            "distance": 0.01,
-        },
-        noise_params=default_all_noise_params,
-    ),
-)
 
 default_all_noisy_surf_agent_sensor_module = dict(
     sensor_module_class=FeatureChangeSM,
@@ -722,7 +626,7 @@ randrot_noise_77obj_5lms_dist_agent.update(
     ),
 )
 
-CONFIGS = dict(
+experiments = YcbExperiments(
     base_config_10distinctobj_dist_agent=base_config_10distinctobj_dist_agent,
     base_config_10distinctobj_surf_agent=base_config_10distinctobj_surf_agent,
     randrot_noise_10distinctobj_dist_agent=randrot_noise_10distinctobj_dist_agent,
@@ -746,3 +650,4 @@ CONFIGS = dict(
     randrot_noise_77obj_dist_agent=randrot_noise_77obj_dist_agent,
     randrot_noise_77obj_5lms_dist_agent=randrot_noise_77obj_5lms_dist_agent,
 )
+CONFIGS = asdict(experiments)

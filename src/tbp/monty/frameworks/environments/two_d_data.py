@@ -20,8 +20,10 @@ from scipy.ndimage import gaussian_filter
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environment_utils.transforms import DepthTo3DLocations
-from tbp.monty.frameworks.environments.embodied_environment import EmbodiedEnvironment
-from tbp.monty.simulators.habitat.environment import HabitatActionSpace
+from tbp.monty.frameworks.environments.embodied_environment import (
+    ActionSpace,
+    EmbodiedEnvironment,
+)
 
 __all__ = [
     "OmniglotEnvironment",
@@ -47,6 +49,13 @@ NUMENTA_OBJECTS = [
     "thousand_brains_jp",
     "hot_sauce",
 ]
+
+
+class TwoDDataActionSpace(tuple, ActionSpace):
+    """Action space for 2D data environments."""
+
+    def sample(self):
+        return self.rng.choice(self)
 
 
 class OmniglotEnvironment(EmbodiedEnvironment):
@@ -301,7 +310,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
     @property
     def action_space(self):
         # TODO: move this to other action space definitions and clean up.
-        return HabitatActionSpace(
+        return TwoDDataActionSpace(
             [
                 "look_up",
                 "look_down",

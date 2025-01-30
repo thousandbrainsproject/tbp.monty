@@ -10,9 +10,11 @@
 
 import copy
 import os
+from dataclasses import asdict
 
 import numpy as np
 
+from benchmarks.configs.names import PretrainingExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     FiveLMMontyConfig,
     MontyArgs,
@@ -271,7 +273,7 @@ supervised_pre_training_5lms_all_objects.update(
     ),
 )
 
-CONFIGS = dict(
+experiments = PretrainingExperiments(
     supervised_pre_training_base=supervised_pre_training_base,
     supervised_pre_training_5lms=supervised_pre_training_5lms,
     supervised_pre_training_5lms_all_objects=supervised_pre_training_5lms_all_objects,
@@ -280,3 +282,4 @@ CONFIGS = dict(
     only_surf_agent_training_allobj=only_surf_agent_training_allobj,
     only_surf_agent_training_numenta_lab_obj=only_surf_agent_training_numenta_lab_obj,
 )
+CONFIGS = asdict(experiments)
