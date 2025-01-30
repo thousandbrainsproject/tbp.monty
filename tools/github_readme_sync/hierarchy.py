@@ -154,18 +154,18 @@ def check_links(path):
     logging.debug(
         f"{WHITE}{file_name}"
         f"{GREEN} {len(md_link_matches)} links"
-        f"{CYAN} {len(image_link_matches)} images{RESET}"
+        f"{CYAN} {len(image_link_matches)} images"
+        f"{YELLOW} {len(table_matches)} tables{RESET}"
     )
 
     current_dir = os.path.dirname(path)
     errors = []
 
     for match in table_matches:
-        logging.debug(f"{WHITE}{match}{RESET}")
         path_to_check = os.path.join(current_dir, match)
         path_to_check = os.path.normpath(path_to_check)
         if not os.path.exists(path_to_check):
-            errors.append(f"  Linked {match} does not exist")
+            errors.append(f"  CSV {match} does not exist")
 
     for match in md_link_matches:
         if match[1].startswith(("http://", "https://", "mailto:")):
