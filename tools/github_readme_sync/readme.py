@@ -197,17 +197,19 @@ class ReadMe:
                     headers = next(reader)
                     rows = list(reader)
 
+                    # Check which columns are all numeric
+                    numeric_columns = []
+                    for col_idx in range(len(headers)):
+                        is_numeric_col = True
+                        for row in rows:
+                            if not row[col_idx].replace(".", "").isdigit():
+                                is_numeric_col = False
+                                break
+                        numeric_columns.append(is_numeric_col)
+
                     table = "<div class='data-table'><table>\n<thead>\n<tr>"
                     # Add headers
-                    for i, header in enumerate(headers):
-                        # Check if all values in column are numeric for alignment
-                        is_numeric = all(
-                            row[i].replace(".", "").isdigit()
-                            for row in rows
-                            if i < len(row)
-                        )
-                        align = " style='text-align:right'" if is_numeric else ""
-
+                    for _, header in enumerate(headers):
                         # Extract title from angle brackets if present
                         title_attr = ""
                         title_match = re.search(r"<([^>]+)>", header)
@@ -215,15 +217,18 @@ class ReadMe:
                             title = html.escape(title_match.group(1), quote=True)
                             header = re.sub(r"<[^>]+>", "", header)
                             title_attr = f" title='{title}'"
-                        table += f"<th{align}{title_attr}>{header}</th>"
+                        table += f"<th{title_attr}>{header}</th>"
                     table += "</tr>\n</thead>\n<tbody>\n"
 
                     # Add rows
                     for row in rows:
                         table += "<tr>"
-                        for _, cell in enumerate(row):
-                            is_numeric = cell.replace(".", "").isdigit()
-                            align = " style='text-align:right'" if is_numeric else ""
+                        for col_idx, cell in enumerate(row):
+                            align = (
+                                " style='text-align:right'"
+                                if numeric_columns[col_idx]
+                                else ""
+                            )
                             table += f"<td{align}>{cell}</td>"
                         table += "</tr>\n"
 

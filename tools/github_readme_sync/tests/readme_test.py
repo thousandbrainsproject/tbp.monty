@@ -555,6 +555,7 @@ This is a test document.""",
             # Check headers
             self.assertIn("<thead>", result)
             self.assertIn("<th>Name</th>", result)
+            self.assertIn("<th>Time (s)</th>", result)
             self.assertIn("title='Scöre is the &#x27;percentage&#x27; correct'", result)
 
             # Check data rows
@@ -571,7 +572,6 @@ This is a test document.""",
                 "!table[non_existent.csv]", 0
             )
             self.assertTrue(result.startswith("[Failed to load table"))
-
         finally:
             Path(tmp_path).unlink()
 

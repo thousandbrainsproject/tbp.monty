@@ -1,4 +1,4 @@
-Experiment,Correct (%) <Number of 'correct' matches by the agent>,Used MLH (%),Num Match Steps,Rotation Error (degrees),Run Time (mins),Episode Run Time (s)
+Experiment,Correct (%),Used MLH (%),Num Match Steps,Rotation Error (degrees),Run Time (mins),Episode Run Time (s)
 base_config_10distinctobj_dist_agent,100.00,0.00,37,16.04,5,19
 base_config_10distinctobj_surf_agent,100.00,0.00,28,13.18,4,18
 randrot_noise_10distinctobj_dist_agent,100.00,3.00,55,22.34,5,33
