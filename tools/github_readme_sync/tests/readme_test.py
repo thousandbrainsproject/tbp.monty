@@ -8,9 +8,12 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import csv
 import json
 import os
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from tools.github_readme_sync.readme import GITHUB_RAW, ReadMe
@@ -339,8 +342,6 @@ This is a test document.""",
         ]
 
         for path in markdown_paths:
-            print(path)
-            print(self.readme.correct_image_locations(path))
             self.assertEqual(self.readme.correct_image_locations(path), base_expected)
 
         for path in markdown_paths_not_modified:
@@ -527,6 +528,52 @@ This is a test document.""",
 
         result = self.readme.parse_images(input_text)
         self.assertEqual(result, expected_output)
+
+    def test_convert_csv_to_html_table(self):
+        # Create a temporary CSV file for testing
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as tmp:
+            writer = csv.writer(tmp)
+            writer.writerow(
+                [
+                    "Name",
+                    "Score % <Scöre is the 'percentage' correct>",
+                    "Time (s)",
+                    "Time (mins)",
+                ]
+            )
+            writer.writerow(["Test 1", "95.01%", "55s", "10mins"])
+            writer.writerow(["Test 2", "87.00%", "72s", "12mins"])
+            tmp_path = tmp.name
+
+        try:
+            result = self.readme.convert_csv_to_html_table(f"!table[{tmp_path}]", 0)
+
+            # Check overall structure
+            self.assertIn("<div class='data-table'><table>", result)
+            self.assertIn("</table></div>", result)
+
+            # Check headers
+            self.assertIn("<thead>", result)
+            self.assertIn("<th>Name</th>", result)
+            self.assertIn("title='Scöre is the &#x27;percentage&#x27; correct'", result)
+
+            # Check data rows
+            self.assertIn("<tbody>", result)
+            self.assertIn("<td>Test 1</td>", result)
+            self.assertIn("<td style='text-align:right'>95.01</td>", result)
+            self.assertIn("<td style='text-align:right'>55</td>", result)
+            self.assertIn("<td>Test 2</td>", result)
+            self.assertIn("<td style='text-align:right'>87.00</td>", result)
+            self.assertIn("<td style='text-align:right'>72</td>", result)
+
+            # Test with non-existent file
+            result = self.readme.convert_csv_to_html_table(
+                "!table[non_existent.csv]", 0
+            )
+            self.assertTrue(result.startswith("[Failed to load table"))
+
+        finally:
+            Path(tmp_path).unlink()
 
 
 if __name__ == "__main__":

@@ -8,6 +8,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import csv
+import html
 import json
 import logging
 import os
@@ -20,7 +22,11 @@ import nh3
 import yaml
 
 from tools.github_readme_sync.colors import GRAY, GREEN, RESET
-from tools.github_readme_sync.excluded_items import IGNORE_DOCS, IGNORE_IMAGES
+from tools.github_readme_sync.constants import (
+    IGNORE_DOCS,
+    IGNORE_IMAGES,
+    regex_csv_table,
+)
 from tools.github_readme_sync.req import delete, get, post, put
 
 PREFIX = "https://dash.readme.com/api/v1"
@@ -168,10 +174,90 @@ class ReadMe:
 
         return category["_id"], False
 
+    def convert_csv_to_html_table(self, body: str, depth: int) -> str:
+        """Convert CSV table references to HTML tables.
+
+        Args:
+            body: The document body containing CSV table references
+            depth: The depth of the current file in the hierarchy
+
+        Returns:
+            str: The document body with CSV tables converted to HTML format
+        """
+
+        def replace_match(match):
+            csv_path = match.group(1)
+            for _ in range(depth):
+                csv_path = csv_path.replace("../", "", 1)
+            try:
+                csv_path = os.path.abspath(csv_path)
+
+                with open(csv_path, "r") as f:
+                    reader = csv.reader(f)
+                    headers = next(reader)
+                    rows = list(reader)
+
+                    # Find columns containing % or SI units in header
+                    unit_cols = []
+                    for i, header in enumerate(headers):
+                        if any(
+                            unit in header
+                            for unit in ["%", "(s)", "(m)", "(kg)", "(mins)"]
+                        ):
+                            unit_cols.append(i)
+
+                    units = sorted(["%", "mins", "s", "m"], key=len, reverse=True)
+                    for row in rows:
+                        for col in unit_cols:
+                            if col < len(row):
+                                for unit in units:
+                                    if unit in row[col]:
+                                        row[col] = row[col].replace(unit, "")
+
+                    table = "<div class='data-table'><table>\n<thead>\n<tr>"
+                    # Add headers
+                    for i, header in enumerate(headers):
+                        # Check if all values in column are numeric for alignment
+                        is_numeric = all(
+                            row[i].replace(".", "").isdigit()
+                            for row in rows
+                            if i < len(row)
+                        )
+                        align = " style='text-align:right'" if is_numeric else ""
+
+                        # Extract title from angle brackets if present
+                        title_attr = ""
+                        title_match = re.search(r"<([^>]+)>", header)
+                        if title_match:
+                            title = html.escape(title_match.group(1), quote=True)
+                            header = re.sub(r"<[^>]+>", "", header)
+                            title_attr = f" title='{title}'"
+                        table += f"<th{align}{title_attr}>{header}</th>"
+                    table += "</tr>\n</thead>\n<tbody>\n"
+
+                    # Add rows
+                    for row in rows:
+                        table += "<tr>"
+                        for _, cell in enumerate(row):
+                            is_numeric = cell.replace(".", "").isdigit()
+                            align = " style='text-align:right'" if is_numeric else ""
+                            table += f"<td{align}>{cell}</td>"
+                        table += "</tr>\n"
+
+                    table += "</tbody>\n</table></div>"
+                    return table
+
+            except Exception as e:
+                logging.warning(f"Failed to convert CSV to table: {e}")
+                return f"[Failed to load table from {csv_path}]"
+
+        return regex_csv_table.sub(replace_match, body)
+
     def create_or_update_doc(
-        self, order: int, category_id: str, doc: dict, parent_id: str
+        self, order: int, category_id: str, doc: dict, parent_id: str, depth: int = 0
     ) -> Tuple[str, bool]:
-        body = self.correct_image_locations(doc["body"])
+        body = self.convert_csv_to_html_table(doc["body"], depth)
+        body = self.correct_image_locations(body)
         body = self.correct_file_locations(body)
         body = self.convert_note_tags(body)
         body = self.parse_images(body)

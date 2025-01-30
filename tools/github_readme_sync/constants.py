@@ -8,6 +8,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import re
+
 IGNORE_DOCS = ["placeholder-example-doc", "some-existing-doc"]
 IGNORE_IMAGES = ["docs-only-example.png"]
 IGNORE_EXTERNAL_URLS = [
@@ -16,3 +18,6 @@ IGNORE_EXTERNAL_URLS = [
     "annualreviews.org",
     "sciencedirect.com",
 ]
+
+# Regex for CSV table references
+regex_csv_table = re.compile(r"!table\[(.+?)\]")

@@ -18,10 +18,11 @@ import timeit
 import requests
 
 from tools.github_readme_sync.colors import CYAN, GREEN, RED, RESET, WHITE, YELLOW
-from tools.github_readme_sync.excluded_items import (
+from tools.github_readme_sync.constants import (
     IGNORE_DOCS,
     IGNORE_EXTERNAL_URLS,
     IGNORE_IMAGES,
+    regex_csv_table,
 )
 
 HIERARCHY_FILE = "hierarchy.md"
@@ -144,6 +145,8 @@ def check_links(path):
     regex_md_links = r"\[([^\]]*)\]\(([^)]+\.md(?:#[^)]*)?)\)"
     md_link_matches = re.findall(regex_md_links, content)
 
+    table_matches = re.findall(regex_csv_table, content)
+
     regex_figures = (
         r"(?:\.\./)*figures/[^\s\)\"\']+(?:\.png|\.jpg|\.jpeg|\.gif|\.svg|\.webp|\s)"
     )
@@ -156,6 +159,13 @@ def check_links(path):
 
     current_dir = os.path.dirname(path)
     errors = []
+
+    for match in table_matches:
+        logging.debug(f"{WHITE}{match}{RESET}")
+        path_to_check = os.path.join(current_dir, match)
+        path_to_check = os.path.normpath(path_to_check)
+        if not os.path.exists(path_to_check):
+            errors.append(f"  Linked {match} does not exist")
 
     for match in md_link_matches:
         if match[1].startswith(("http://", "https://", "mailto:")):
@@ -170,9 +180,7 @@ def check_links(path):
             errors.append(f"  Linked {match[1]} does not exist")
 
     for match in image_link_matches:
-        # Remove any #hash fragments from the path
-        path = match.split("#")[0]
-        path_to_check = os.path.join(current_dir, path)
+        path_to_check = os.path.join(current_dir, match.split("#")[0])
         path_to_check = os.path.normpath(path_to_check)
         if any(placeholder in match for placeholder in IGNORE_IMAGES):
             continue
@@ -224,7 +232,7 @@ def process_file(file_path, rdme, url_cache):
     logging.debug(f"{WHITE}{file_path}{RESET}")
     file_errors = []
     content = read_file_content(file_path)
-    all_links = extract_links(content)
+    all_links = extract_external_links(content)
     links_checked = 0
 
     for url in all_links:
@@ -255,7 +263,7 @@ def read_file_content(file_path):
         return f.read()
 
 
-def extract_links(content):
+def extract_external_links(content):
     return (
         re.findall(r"\[[^\]]*\]\(([^)]+)\)", content)
         + re.findall(r'<a[^>]+href="([^"]+)"', content)

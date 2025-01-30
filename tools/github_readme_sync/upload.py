@@ -70,6 +70,7 @@ def process_children(
             category_id=cat_id,
             doc=doc,
             parent_id=parent_doc_id,
+            depth=path_prefix.count("/") + 2,
         )
         print_child(path_prefix.count("/"), doc, created)
         set_do_not_delete(to_be_deleted, child["slug"])
@@ -116,7 +117,7 @@ def print_child(level: int, doc: dict, created: bool):
     indent = INDENTATION_UNIT * level
     suffix = f"{GRAY}[created]{RESET}" if created else f"{GRAY}[updated]{RESET}"
     logging.info(
-        f"{color}{indent}{doc['title']} " f"{WHITE}/{doc['slug']} {GRAY}{suffix}{RESET}"
+        f"{color}{indent}{doc['title']} {WHITE}/{doc['slug']} {GRAY}{suffix}{RESET}"
     )
 
 

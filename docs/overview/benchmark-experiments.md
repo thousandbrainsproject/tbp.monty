@@ -49,20 +49,7 @@ The following results are obtained from experiments using the 10-object subsets 
 
 ### Results
 
-| Experiment                                  | % Correct | % Used MLH | Num Matching Steps | Rotation Error (radians) | Run Time | Episode Run Time (s) |
-|---------------------------------------------|-----------|------------|--------------------|--------------------------|----------|----------------------|
-| base_config_10distinctobj_dist_agent        | 100.00%   | 0.00%      | 37                 | 0.28                     | 5m       | 19s                  |
-| base_config_10distinctobj_surf_agent        | 100.00%   | 0.00%      | 28                 | 0.23                     | 4m       | 18s                  |
-| randrot_noise_10distinctobj_dist_agent      | 100.00%   | 3.00%      | 55                 | 0.39                     | 5m       | 33s                  |
-| randrot_noise_10distinctobj_dist_on_distm   | 99.00%    | 1.00%      | 38                 | 0.21                     | 4m       | 28s                  |
-| randrot_noise_10distinctobj_surf_agent      | 100.00%   | 0.00%      | 29                 | 0.39                     | 5m       | 33s                  |
-| randrot_10distinctobj_surf_agent            | 100.00%   | 1.00%      | 28                 | 0.32                     | 4m       | 21s                  |
-| randrot_noise_10distinctobj_5lms_dist_agent | 100.00%   | 0.00%      | 57                 | 0.79                     | 10m      | 84s                  |
-| base_10simobj_surf_agent                    | 94.29%    | 10.71%     | 81                 | 0.24                     | 10m      | 50s                  |
-| randrot_noise_10simobj_dist_agent           | 84.00%    | 40.00%     | 237                | 0.61                     | 18m      | 147s                 |
-| randrot_noise_10simobj_surf_agent           | 93.00%    | 33.00%     | 176                | 0.52                     | 24m      | 205s                 |
-| randomrot_rawnoise_10distinctobj_surf_agent | 68.00%    | 78.00%     | 16                 | 1.78                     | 17m      | 15s                  |
-| base_10multi_distinctobj_dist_agent         | 79.29%    | 10.71%     | 31                 | 0.35                     | 43m      | 1s                   |
+!table[../../benchmarks/results/ycb_10objs.csv]
 
 ## Longer Experiments With all 77 YCB Objects
 
@@ -73,47 +60,37 @@ The following results are obtained from experiments on the entire YCB dataset (7
 
 ### Results
 
-| Experiment                          | % Correct | % Used MLH | Num Matching Steps | Rotation Error (radians) | Run Time | Episode Run Time (s) |
-|-------------------------------------|-----------|------------|--------------------|--------------------------|----------|----------------------|
-| base_77obj_dist_agent               | 93.51%    | 12.99%     | 108                | 0.28                     | 1h2m     | 212s                 |
-| base_77obj_surf_agent               | 99.13%    | 6.06%      | 54                 | 0.19                     | 28m      | 82s                  |
-| randrot_noise_77obj_dist_agent      | 89.61%    | 22.51%     | 152                | 0.65                     | 1h25m    | 308s                 |
-| randrot_noise_77obj_surf_agent      | 92.64%    | 25.11%     | 120                | 0.69                     | 1h5m     | 227s                 |
-| randrot_noise_77obj_5lms_dist_agent | 88.31%    | 0.00%      | 70                 | 1.02                     | 32m      | 862s                 |
+!table[../../benchmarks/results/ycb_77objs.csv]
 
 ### Explanation of Some of the Results
 
-- **Why does the distant agent do worse than the surface agent?**  
+- **Why does the distant agent do worse than the surface agent?**
   The distant agent has limited capabilities to move along the object. In particular, the distant agent currently uses an almost random policy which is not as efficient and informative as the surface agent which follows the principal curvatures of the object. Note however that both the distant and surface agent can now move around the object using the hypothesis-testing action policy, and so the difference in performance between the two is not as great as it previously was.
 
-- **Why is the distant agent on the distant agent models worse than on the surface agent model?**  
+- **Why is the distant agent on the distant agent models worse than on the surface agent model?**
   As you can see in the figure above, the models learned with distant agent have several blind spots and unevenly sampled areas. When we test random rotations we may see the object from views that are underrepresented in the object model. If we use a 10% threshold instead of 20% we can actually get a little better performance with the distant agent since we allow it to converge faster. This may be because it gets less time to move into badly represented areas and because it reaches the time-out condition less often.
 
-- **Why is the accuracy on distinct objects higher than on similar objects?**  
+- **Why is the accuracy on distinct objects higher than on similar objects?**
   Since we need to be able to deal with noise, it can happen that objects that are similar to each other get confused. In particular, objects that only differ in some specific locations (like the fork and the spoon) can be difficult to distinguish if the policy doesn't efficiently move to the distinguishable features and if there is noise.
 
-- **Why is raw sensor noise so much worse than the standard noise condition?**  
+- **Why is raw sensor noise so much worse than the standard noise condition?**
   This is not related to the capabilities of the learning module but to the sensor module. Currently, our point normal and principal curvature estimates are not implemented to be very robust to sensor noise such that noise in the depth image can distort the point normal by more than 70 degrees. We don't want our learning module to be robust to this much noise in the point normals but instead want the sensor module to communicate better features. We already added some improvements on our point normal estimates which helped a lot on the raw noise experiment.
 
-- **Why do the distant agent experiments take longer and have more episodes where the most likely hypothesis is used?**  
+- **Why do the distant agent experiments take longer and have more episodes where the most likely hypothesis is used?**
   Since the distant agent policy is less efficient in how it explores a given view (random walk of tilting the camera), we take more steps to converge with the distant agent or sometimes do not resolve the object at all (this is when we reach a time-out and use the MLH). If we have to take more steps for each episode, the runtime also increases.
 
-- **Why is the run time for 77 objects longer than for 10?**  
+- **Why is the run time for 77 objects longer than for 10?**
   For one, we run more episodes per epoch (77 instead of 10) so each epoch will take longer. However, in the current benchmark, we test with fewer rotations (only 3 epochs instead of 14 or 10 epochs in the shorter experiments). Therefore the main factor here is that the number of evidence updates we need to perform at each step scales linearly with the number of objects an LM has in its memory (going down over time as we remove objects from our hypothesis space). Additionally, we need to take more steps to distinguish 77 objects than to distinguish 10 (especially if the 10 objects are distinct).
 
 ## Unsupervised Learning
 
-In general, we want to be able to dynamically learn and infer instead of having a clear-cut separation between supervised pre-training followed by inference. We also want to be able to learn unsupervised. This is tested in the following experiment using the surface agent. We test the same 10 objects set as above with 10 fixed rotations. In the first epoch, each object should be recognized as new (no_match) leading to the creation of a new graph. The following episodes should correctly recognize the object and add new points to the existing graphs. Since we do not provide labels it can happen that one object is recognized as another one and then their graphs are merged. This can especially happen with similar objects but ideally, their graphs are still aligned well because of the pose recognition. It can also happen that one object is represented using multiple graphs if it was not recognized. Those scenarios are tracked with the `mean_objects_per_graph` and `mean_graphs_per_object` statistics. 
+In general, we want to be able to dynamically learn and infer instead of having a clear-cut separation between supervised pre-training followed by inference. We also want to be able to learn unsupervised. This is tested in the following experiment using the surface agent. We test the same 10 objects set as above with 10 fixed rotations. In the first epoch, each object should be recognized as new (no_match) leading to the creation of a new graph. The following episodes should correctly recognize the object and add new points to the existing graphs. Since we do not provide labels it can happen that one object is recognized as another one and then their graphs are merged. This can especially happen with similar objects but ideally, their graphs are still aligned well because of the pose recognition. It can also happen that one object is represented using multiple graphs if it was not recognized. Those scenarios are tracked with the `mean_objects_per_graph` and `mean_graphs_per_object` statistics.
 
 An object is classified as detected correctly if the detected object ID is in the list of objects used for building the graph. This means, if a model was built from multiple objects, there are multiple correct classifications for this model. For example, if we learned a graph from a tomato can and later merge points from a peach can into the same graph, then this graph would be the correct label for tomato and peach cans in the future. This is also why the experiment with similar objects reaches a higher accuracy after the first epoch. Since in the first epoch we build fewer graphs than we saw objects (representing similar objects in the same model) it makes it easier later to recognize these combined models since, for this accuracy measure, we do not need to distinguish the similar objects anymore if they are represented in the same graph. In the most extreme case, if during the first epoch, all objects were merged into a single graph, then the following epochs would get 100% accuracy. As such, future work emphasizing unsupervised learning will also require more fine-grained metrics, such as a dataset with hierarchical labels that appropriately distinguish specific instances (peach-can vs tomato-can), from general ones (cans or even just "cylindrical objects").
 
 ## Results
 
-| Experiment                                  | %Correct - 1st Epoch | % Correct - >1st Epoch | Mean Objects per Graph | Mean Graphs per Object | Run Time | Episode Run Time (s) |
-|---------------------------------------------|----------------------|------------------------|------------------------|------------------------|----------|----------------------|
-| surf_agent_unsupervised_10distinctobj       | 70.00%               | 83.33%                 | 1.43                   | 1.11                   | 20m      | 12s                  |
-| surf_agent_unsupervised_10distinctobj_noise | 70.00%               | 67.78%                 | 1.19                   | 2.11                   | 25m      | 15s                  |
-| surf_agent_unsupervised_10simobj            | 40.00%               | 86.67%                 | 2.60                   | 1.30                   | 28m      | 17s                  |
+!table[../../benchmarks/results/ycb_unsupervised.csv]
 
 To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning can, by definition, not be parallelized across epochs. Therefore these experiments were run without multiprocessing on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
 
@@ -157,14 +134,7 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 
 ### Results
 
-| Experiment                                  | % Correct | % Used MLH | Num Matching Steps | [Rotation Error (radians)] | Run Time | Episode Run Time (s) |
-|---------------------------------------------|-----------|------------|--------------------|----------------------------|----------|----------------------|
-| randrot_noise_sim_on_scan_monty_world       | 80.00%    | 80.83%     | 412                | 0.86                       | 39m      | 18s                  |
-| world_image_on_scanned_model                | 72.92%    | 83.33%     | 442                | 2.15                       | 9m       | 11s                  |
-| dark_world_image_on_scanned_model           | 35.42%    | 83.33%     | 430                | 1.81                       | 7m       | 9s                   |
-| bright_world_image_on_scanned_model         | 43.75%    | 79.17%     | 428                | 1.87                       | 10m      | 11s                  |
-| hand_intrusion_world_image_on_scanned_model | 39.58%    | 56.25%     | 344                | 2.00                       | 6m       | 7s                   |
-| multi_object_world_image_on_scanned_model   | 43.75%    | 52.08%     | 344                | 1.90                       | 7m       | 8s                   |
+!table[../../benchmarks/results/montymeetsworld.csv]
 
 **Note that rotation errors are meaningless since no ground truth rotation is provided**
 
