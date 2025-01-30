@@ -76,7 +76,7 @@ NAMES.extend(field.name for field in fields(YcbExperiments))
 
 @dataclass
 class MyExperiments:
-    # TODO: add your experiment names here
+    # Add your experiment names here
     pass
 
 
