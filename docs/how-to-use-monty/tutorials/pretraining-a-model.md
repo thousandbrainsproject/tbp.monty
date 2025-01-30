@@ -137,7 +137,7 @@ surf_agent_2obj_train = dict(
         run_name=model_name,
         wandb_handlers=[],
     ),
-    # Specify the Monty model.
+    # Specify the Monty config.
     monty_config=PatchAndViewMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=500),
         # sensory module configs: one surface patch for training (sensor_module_0),
@@ -241,7 +241,9 @@ To run this experiment, navigate to the `benchmarks/` folder in a terminal and c
 cd benchmarks
 python run.py -e surf_agent_2obj_train
 ```
-Once complete, you can inspect and visualize the learned models. To do so, create a script and paste in the following code
+
+This will take a few minutes to complete and then you can inspect and visualize the learned models. To do so, create a script and paste in the following code. The location and name of the script is unimportant, but we called it `pretraining_tutorial_analysis.py` and placed it outside of the repository at `~/monty_scripts`.
+
 ```python
 import os
 import matplotlib.pyplot as plt
@@ -266,7 +268,7 @@ train_stats, eval_stats, detailed_stats, lm_models = load_stats(
 plot_graph(lm_models["pretrained"][0]["mug"]["patch"], rotation=120)
 plt.show()
 ```
-Replace `"mug"` with `"banana"` in the second to last line to visualize the banana's graph. The location and name of the script is unimportant, but we called it `pretraining_tutorial_analysis.py` and placed it outside of the repository at `~/monty_scripts`. After running the script, you should see a graph of the mug/banana.
+Replace `"mug"` with `"banana"` in the second to last line to visualize the banana's graph. After running the script, you should see a graph of the mug/banana.
 
 ![learned_models](../../figures/how-to-use-monty/pretraining_tutorial_mug_banana.png)
 

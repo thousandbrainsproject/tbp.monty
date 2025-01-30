@@ -24,10 +24,8 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PretrainLoggingConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvInitArgsPatchViewMount,
     EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
-    PatchViewFinderMountHabitatDatasetArgs,
     PredefinedObjectInitializer,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
@@ -38,6 +36,10 @@ from tbp.monty.frameworks.experiments import (
 from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphLM
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
 from tbp.monty.frameworks.utils.graph_matching_utils import get_correct_k_n
+from tbp.monty.simulators.habitat.configs import (
+    EnvInitArgsPatchViewMount,
+    PatchViewFinderMountHabitatDatasetArgs,
+)
 
 
 class GraphLearningTest(unittest.TestCase):
