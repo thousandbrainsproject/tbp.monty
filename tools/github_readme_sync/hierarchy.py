@@ -22,7 +22,7 @@ from tools.github_readme_sync.constants import (
     IGNORE_DOCS,
     IGNORE_EXTERNAL_URLS,
     IGNORE_IMAGES,
-    regex_csv_table,
+    REGEX_CSV_TABLE,
 )
 
 HIERARCHY_FILE = "hierarchy.md"
@@ -145,7 +145,7 @@ def check_links(path):
     regex_md_links = r"\[([^\]]*)\]\(([^)]+\.md(?:#[^)]*)?)\)"
     md_link_matches = re.findall(regex_md_links, content)
 
-    table_matches = re.findall(regex_csv_table, content)
+    table_matches = re.findall(REGEX_CSV_TABLE, content)
 
     regex_figures = (
         r"(?:\.\./)*figures/[^\s\)\"\']+(?:\.png|\.jpg|\.jpeg|\.gif|\.svg|\.webp|\s)"

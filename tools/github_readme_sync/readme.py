@@ -25,7 +25,7 @@ from tools.github_readme_sync.colors import GRAY, GREEN, RESET
 from tools.github_readme_sync.constants import (
     IGNORE_DOCS,
     IGNORE_IMAGES,
-    regex_csv_table,
+    REGEX_CSV_TABLE,
 )
 from tools.github_readme_sync.req import delete, get, post, put
 
@@ -234,7 +234,7 @@ class ReadMe:
                 logging.warning(f"Failed to convert CSV to table: {e}")
                 return f"[Failed to load table from {csv_path}]"
 
-        return regex_csv_table.sub(replace_match, body)
+        return REGEX_CSV_TABLE.sub(replace_match, body)
 
     def create_or_update_doc(
         self, order: int, category_id: str, doc: dict, parent_id: str, depth: int = 0

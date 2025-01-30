@@ -20,4 +20,4 @@ IGNORE_EXTERNAL_URLS = [
 ]
 
 # Regex for CSV table references
-regex_csv_table = re.compile(r"!table\[(.+?)\]")
+REGEX_CSV_TABLE = re.compile(r"!table\[(.+?)\]")
