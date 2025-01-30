@@ -9,8 +9,8 @@
 
 """The names of declared experiments grouped by category.
 
-This module exists to keep experiment names separate from configuration for the
-experiments. The reason to do this is so that we can import the configurations
+This module keeps experiment names separate from the configuration for the
+experiments. The reason for doing this is so that we can import the configurations
 selectively to avoid importing uninstalled dependencies (e.g., not installing a
 specific simulator).
 """
