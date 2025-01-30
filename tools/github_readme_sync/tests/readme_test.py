@@ -549,25 +549,25 @@ This is a test document.""",
             result = self.readme.convert_csv_to_html_table(f"!table[{tmp_path}]", 0)
 
             # Check overall structure
-            self.assertIn("<div class='data-table'><table>", result)
+            self.assertIn('<div class="data-table"><table>', result)
             self.assertIn("</table></div>", result)
 
             # Check headers
             self.assertIn("<thead>", result)
             self.assertIn("<th>Name</th>", result)
             self.assertIn("<th>Time (s)</th>", result)
-            self.assertIn("title='Scöre is the &#x27;percentage&#x27; correct'", result)
+            self.assertIn("title=\"Scöre is the 'percentage' correct\"", result)
 
             # Check data rows
             self.assertIn("<tbody>", result)
             self.assertIn("<td>Test 1</td>", result)
-            self.assertIn("<td style='text-align:right'>95.01</td>", result)
-            self.assertIn("<td style='text-align:right'>55</td>", result)
+            self.assertIn('<td style="text-align:right">95.01</td>', result)
+            self.assertIn('<td style="text-align:right">55</td>', result)
             self.assertIn("<td>Test 2</td>", result)
-            self.assertIn("<td style='text-align:right'>-87.00</td>", result)
-            self.assertIn("<td style='text-align:right'>72</td>", result)
-            self.assertIn("<td style='text-align:right'>1/2</td>", result)
-            self.assertIn("<td style='text-align:right'>10e4</td>", result)
+            self.assertIn('<td style="text-align:right">-87.00</td>', result)
+            self.assertIn('<td style="text-align:right">72</td>', result)
+            self.assertIn('<td style="text-align:right">1/2</td>', result)
+            self.assertIn('<td style="text-align:right">10e4</td>', result)
 
             # Test with non-existent file
             result = self.readme.convert_csv_to_html_table(

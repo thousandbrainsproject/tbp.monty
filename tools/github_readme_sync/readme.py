@@ -217,33 +217,39 @@ class ReadMe:
                                 is_numeric_col = False
                                 break
                         right_aligned_columns.append(is_numeric_col)
-                    table = "<div class='data-table'><table>\n<thead>\n<tr>"
+
+                    # Build unsafe HTML table
+                    unsafe_html = "<div class='data-table'><table>\n<thead>\n<tr>"
+
                     # Add headers
                     for _, header in enumerate(headers):
-                        # Extract title from pipe delimiter if present
                         title_attr = ""
                         title_parts = header.split("|")
                         if len(title_parts) > 1:
-                            title = html.escape(title_parts[1], quote=True)
                             header = title_parts[0]
-                            title_attr = f" title='{title}'"
-                        table += f"<th{title_attr}>{header}</th>"
-                    table += "</tr>\n</thead>\n<tbody>\n"
+                            title_attr = f" title='{html.escape(title_parts[1])}'"
+                        unsafe_html += f"<th{title_attr}>{header}</th>"
+                    unsafe_html += "</tr>\n</thead>\n<tbody>\n"
 
                     # Add rows
                     for row in rows:
-                        table += "<tr>"
+                        unsafe_html += "<tr>"
                         for col_idx, cell in enumerate(row):
                             align = (
                                 " style='text-align:right'"
                                 if right_aligned_columns[col_idx]
                                 else ""
                             )
-                            table += f"<td{align}>{cell}</td>"
-                        table += "</tr>\n"
+                            unsafe_html += f"<td{align}>{cell}</td>"
+                        unsafe_html += "</tr>\n"
 
-                    table += "</tbody>\n</table></div>"
-                    return table
+                    unsafe_html += "</tbody>\n</table></div>"
+
+                    # Clean and return the HTML
+                    return nh3.clean(
+                        unsafe_html,
+                        attributes={"div": {"class"}, "th": {"title"}, "td": {"style"}},
+                    )
 
             except Exception as e:
                 logging.warning(f"Failed to convert CSV to table: {e}")
