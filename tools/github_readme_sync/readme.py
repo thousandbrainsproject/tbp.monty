@@ -198,14 +198,14 @@ class ReadMe:
                     rows = list(reader)
 
                     # Check which columns are all numeric
-                    numeric_columns = []
+                    right_aligned_columns = []
                     for col_idx in range(len(headers)):
                         is_numeric_col = True
                         for row in rows:
                             if not row[col_idx].replace(".", "").isdigit():
                                 is_numeric_col = False
                                 break
-                        numeric_columns.append(is_numeric_col)
+                        right_aligned_columns.append(is_numeric_col)
 
                     table = "<div class='data-table'><table>\n<thead>\n<tr>"
                     # Add headers
@@ -226,7 +226,7 @@ class ReadMe:
                         for col_idx, cell in enumerate(row):
                             align = (
                                 " style='text-align:right'"
-                                if numeric_columns[col_idx]
+                                if right_aligned_columns[col_idx]
                                 else ""
                             )
                             table += f"<td{align}>{cell}</td>"
