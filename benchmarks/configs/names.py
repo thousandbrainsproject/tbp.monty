@@ -13,6 +13,10 @@ This module keeps experiment names separate from the configuration for the
 experiments. The reason for doing this is so that we can import the configurations
 selectively to avoid importing uninstalled dependencies (e.g., not installing a
 specific simulator).
+
+The use of dataclasses assists in raising early errors when experiment names defined
+here and the corresponding experiment configurations drift apart. For additional
+discussion, see: https://github.com/thousandbrainsproject/tbp.monty/pull/153.
 """
 
 from dataclasses import dataclass, fields
