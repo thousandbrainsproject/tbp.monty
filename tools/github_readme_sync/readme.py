@@ -197,23 +197,6 @@ class ReadMe:
                     headers = next(reader)
                     rows = list(reader)
 
-                    # Find columns containing % or SI units in header
-                    unit_cols = []
-                    for i, header in enumerate(headers):
-                        if any(
-                            unit in header
-                            for unit in ["%", "(s)", "(m)", "(kg)", "(mins)"]
-                        ):
-                            unit_cols.append(i)
-
-                    units = sorted(["%", "mins", "s", "m"], key=len, reverse=True)
-                    for row in rows:
-                        for col in unit_cols:
-                            if col < len(row):
-                                for unit in units:
-                                    if unit in row[col]:
-                                        row[col] = row[col].replace(unit, "")
-
                     table = "<div class='data-table'><table>\n<thead>\n<tr>"
                     # Add headers
                     for i, header in enumerate(headers):

@@ -541,8 +541,8 @@ This is a test document.""",
                     "Time (mins)",
                 ]
             )
-            writer.writerow(["Test 1", "95.01%", "55s", "10mins"])
-            writer.writerow(["Test 2", "87.00%", "72s", "12mins"])
+            writer.writerow(["Test 1", "95.01", "55", "10"])
+            writer.writerow(["Test 2", "87.00", "72", "12"])
             tmp_path = tmp.name
 
         try:
