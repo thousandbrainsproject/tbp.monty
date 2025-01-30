@@ -210,12 +210,12 @@ class ReadMe:
                     table = "<div class='data-table'><table>\n<thead>\n<tr>"
                     # Add headers
                     for _, header in enumerate(headers):
-                        # Extract title from angle brackets if present
+                        # Extract title from pipe delimiter if present
                         title_attr = ""
-                        title_match = re.search(r"<([^>]+)>", header)
-                        if title_match:
-                            title = html.escape(title_match.group(1), quote=True)
-                            header = re.sub(r"<[^>]+>", "", header)
+                        title_parts = header.split("|")
+                        if len(title_parts) > 1:
+                            title = html.escape(title_parts[1], quote=True)
+                            header = title_parts[0]
                             title_attr = f" title='{title}'"
                         table += f"<th{title_attr}>{header}</th>"
                     table += "</tr>\n</thead>\n<tbody>\n"

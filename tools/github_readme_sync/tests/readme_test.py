@@ -536,7 +536,7 @@ This is a test document.""",
             writer.writerow(
                 [
                     "Name",
-                    "Score % <Scöre is the 'percentage' correct>",
+                    "Score %|Scöre is the 'percentage' correct",
                     "Time (s)",
                     "Time (mins)",
                 ]
