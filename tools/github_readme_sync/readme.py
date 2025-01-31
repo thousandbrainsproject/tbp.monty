@@ -180,10 +180,9 @@ class ReadMe:
     def is_numeric(self, s):
         try:
             parsed = ureg.parse_expression(s)
-        except Exception:
+            return isinstance(parsed, (int, float))
+        except Exception as e:
             return False
-        else:
-            return True
 
     def convert_csv_to_html_table(self, body: str, depth: int) -> str:
         """Convert CSV table references to HTML tables.

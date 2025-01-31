@@ -539,10 +539,11 @@ This is a test document.""",
                     "Score %|Scöre is the 'percentage' correct",
                     "Time (s)",
                     "Time (mins)",
+                    "Mixed Column",
                 ]
             )
-            writer.writerow(["Test 1", "95.01", "55", "10e4"])
-            writer.writerow(["Test 2", "-87.00", "72", "1/2"])
+            writer.writerow(["Test 1", "95.01", "55", "10e4", "123"])
+            writer.writerow(["Test 2", "-87.00", "72", "1/2", "456s"])
             tmp_path = tmp.name
 
         try:
@@ -568,6 +569,8 @@ This is a test document.""",
             self.assertIn('<td style="text-align:right">72</td>', result)
             self.assertIn('<td style="text-align:right">1/2</td>', result)
             self.assertIn('<td style="text-align:right">10e4</td>', result)
+            self.assertIn("<td>123</td>", result)
+            self.assertIn("<td>456s</td>", result)
 
             # Test with non-existent file
             result = self.readme.convert_csv_to_html_table(
@@ -576,6 +579,33 @@ This is a test document.""",
             self.assertTrue(result.startswith("[Failed to load table"))
         finally:
             Path(tmp_path).unlink()
+
+    def test_is_numeric(self):
+        # Test basic numeric values
+        self.assertTrue(self.readme.is_numeric("123"))
+        self.assertTrue(self.readme.is_numeric("-123"))
+        self.assertTrue(self.readme.is_numeric("123.456"))
+        self.assertTrue(self.readme.is_numeric("-123.456"))
+        self.assertTrue(self.readme.is_numeric("1e-10"))
+
+        # Test numeric values with units
+        self.assertFalse(self.readme.is_numeric("123 m"))
+        self.assertFalse(self.readme.is_numeric("123.45 kg"))
+        self.assertFalse(self.readme.is_numeric("1.2e-10 s"))
+        self.assertFalse(self.readme.is_numeric("-15 °C"))
+
+        # Test fractions
+        self.assertTrue(self.readme.is_numeric("1/2"))
+        self.assertTrue(self.readme.is_numeric("-1/2"))
+
+        # Test non-numeric values
+        self.assertFalse(self.readme.is_numeric("abc"))
+        self.assertFalse(self.readme.is_numeric("123abc"))
+        self.assertFalse(self.readme.is_numeric(""))
+        self.assertFalse(self.readme.is_numeric(" "))
+        self.assertFalse(self.readme.is_numeric("m/s"))
+        self.assertFalse(self.readme.is_numeric("s"))
+        self.assertFalse(self.readme.is_numeric("None"))
 
 
 if __name__ == "__main__":
