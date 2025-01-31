@@ -598,6 +598,10 @@ This is a test document.""",
         # Test fractions
         self.assertTrue(self.readme.is_numeric("1/2"))
         self.assertTrue(self.readme.is_numeric("-1/2"))
+        self.assertFalse(self.readme.is_numeric("1/2/3"))
+        self.assertFalse(self.readme.is_numeric("1/2.0"))
+        self.assertFalse(self.readme.is_numeric("1.9/2"))
+        self.assertFalse(self.readme.is_numeric("1.9/0.2"))
 
         # Test non-numeric values
         self.assertFalse(self.readme.is_numeric("abc"))

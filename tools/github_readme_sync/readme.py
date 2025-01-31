@@ -182,8 +182,8 @@ class ReadMe:
         if "/" in s:
             try:
                 num, denom = s.split("/")
-                float(num)
-                float(denom)
+                int(num)
+                int(denom)
             except ValueError:
                 return False
             else:
