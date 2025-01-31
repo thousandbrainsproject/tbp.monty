@@ -174,31 +174,6 @@ class ReadMe:
 
         return category["_id"], False
 
-    def is_numeric(self, s):
-        if not isinstance(s, str) or not s.strip():
-            return False
-
-        # Handle fractions
-        if "/" in s:
-            try:
-                num, denom = s.split("/")
-                int(num)
-                int(denom)
-            except ValueError:
-                return False
-            else:
-                return True
-
-        # Handle scientific notation and regular numbers
-        try:
-            # Remove spaces from numbers like "1 000 000"
-            s = s.replace(" ", "")
-            float(s)
-        except ValueError:
-            return False
-        else:
-            return True
-
     def convert_csv_to_html_table(self, body: str, depth: int) -> str:
         """Convert CSV table references to HTML tables.
 
@@ -222,39 +197,40 @@ class ReadMe:
                     headers = next(reader)
                     rows = list(reader)
 
-                    # Check which columns are all numeric
-                    right_aligned_columns = []
-                    for col_idx in range(len(headers)):
-                        is_numeric_col = True
-                        for row in rows:
-                            if not self.is_numeric(row[col_idx]):
-                                is_numeric_col = False
-                                break
-                        right_aligned_columns.append(is_numeric_col)
-
                     # Build unsafe HTML table
                     unsafe_html = "<div class='data-table'><table>\n<thead>\n<tr>"
 
-                    # Add headers
-                    for _, header in enumerate(headers):
+                    # Process headers and build alignment lookup
+                    alignments = {}
+                    for i, header in enumerate(headers):
                         title_attr = ""
-                        title_parts = header.split("|")
-                        if len(title_parts) > 1:
-                            header = title_parts[0]
-                            title_attr = f" title='{html.escape(title_parts[1])}'"
+                        align_style = ""
+                        parts = [p.strip() for p in header.split("|")]
+                        header = parts[0]
+
+                        # Process additional attributes in any order
+                        for part in parts[1:]:
+                            if part.startswith("hover "):
+                                hover_text = html.escape(part[6:])
+                                title_attr = f" title='{hover_text}'"
+                            elif part.startswith("align "):
+                                align_value = part[6:]
+                                if align_value not in ["left", "right"]:
+                                    raise ValueError(
+                                        f"Invalid alignment value: {align_value}. Must be 'left' or 'right'"
+                                    )
+                                alignments[i] = (
+                                    f" style='text-align:{html.escape(align_value)}'"
+                                )
                         unsafe_html += f"<th{title_attr}>{header}</th>"
                     unsafe_html += "</tr>\n</thead>\n<tbody>\n"
 
-                    # Add rows
+                    # Add rows using stored alignments
                     for row in rows:
                         unsafe_html += "<tr>"
-                        for col_idx, cell in enumerate(row):
-                            align = (
-                                " style='text-align:right'"
-                                if right_aligned_columns[col_idx]
-                                else ""
-                            )
-                            unsafe_html += f"<td{align}>{cell}</td>"
+                        for i, cell in enumerate(row):
+                            align_style = alignments.get(i, "")
+                            unsafe_html += f"<td{align_style}>{cell}</td>"
                         unsafe_html += "</tr>\n"
 
                     unsafe_html += "</tbody>\n</table></div>"
@@ -262,12 +238,15 @@ class ReadMe:
                     # Clean and return the HTML
                     return nh3.clean(
                         unsafe_html,
-                        attributes={"div": {"class"}, "th": {"title"}, "td": {"style"}},
+                        attributes={
+                            "div": {"class"},
+                            "th": {"title", "style"},
+                            "td": {"style"},
+                        },
                     )
 
             except Exception as e:
-                logging.warning(f"Failed to convert CSV to table: {e}")
-                return f"[Failed to load table from {csv_path}]"
+                return f"[Failed to load table from {csv_path} - {e}]"
 
         return REGEX_CSV_TABLE.sub(replace_match, body)
 

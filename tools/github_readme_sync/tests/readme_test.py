@@ -536,10 +536,10 @@ This is a test document.""",
             writer.writerow(
                 [
                     "Name",
-                    "Score %|Scöre is the 'percentage' correct",
-                    "Time (s)",
-                    "Time (mins)",
-                    "Mixed Column",
+                    "Score %|hover Scöre is the 'percentage' correct",
+                    "Time (s)|align right",
+                    "Time (mins)|align left",
+                    "Mixed Column|    align left| hover Mixed Column",
                 ]
             )
             writer.writerow(["Test 1", "95.01", "55", "10e4", "123"])
@@ -558,19 +558,20 @@ This is a test document.""",
             self.assertIn("<th>Name</th>", result)
             self.assertIn("<th>Time (s)</th>", result)
             self.assertIn("title=\"Scöre is the 'percentage' correct\"", result)
+            self.assertIn('title="Mixed Column"', result)
 
             # Check data rows
             self.assertIn("<tbody>", result)
             self.assertIn("<td>Test 1</td>", result)
-            self.assertIn('<td style="text-align:right">95.01</td>', result)
+            self.assertIn("<td>95.01</td>", result)
             self.assertIn('<td style="text-align:right">55</td>', result)
             self.assertIn("<td>Test 2</td>", result)
-            self.assertIn('<td style="text-align:right">-87.00</td>', result)
+            self.assertIn("<td>-87.00</td>", result)
             self.assertIn('<td style="text-align:right">72</td>', result)
-            self.assertIn('<td style="text-align:right">1/2</td>', result)
-            self.assertIn('<td style="text-align:right">10e4</td>', result)
-            self.assertIn("<td>123</td>", result)
-            self.assertIn("<td>456s</td>", result)
+            self.assertIn('<td style="text-align:left">1/2</td>', result)
+            self.assertIn('<td style="text-align:left">10e4</td>', result)
+            self.assertIn('<td style="text-align:left">123</td>', result)
+            self.assertIn('<td style="text-align:left">456s</td>', result)
 
             # Test with non-existent file
             result = self.readme.convert_csv_to_html_table(
@@ -580,39 +581,18 @@ This is a test document.""",
         finally:
             Path(tmp_path).unlink()
 
-    def test_is_numeric(self):
-        # Test basic numeric values
-        self.assertTrue(self.readme.is_numeric("123"))
-        self.assertTrue(self.readme.is_numeric("-123"))
-        self.assertTrue(self.readme.is_numeric("123.456"))
-        self.assertTrue(self.readme.is_numeric("-123.456"))
-        self.assertTrue(self.readme.is_numeric("1e-10"))
-        self.assertTrue(self.readme.is_numeric("1 000 000"))
+    def test_invalid_alignment_value(self):
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as tmp:
+            writer = csv.writer(tmp)
+            writer.writerow(["Name", "Score %|align wrong"])
+            writer.writerow(["Test 1", "95.01"])
+            tmp_path = tmp.name
 
-        # Test numeric values with units
-        self.assertFalse(self.readme.is_numeric("123 m"))
-        self.assertFalse(self.readme.is_numeric("123.45 kg"))
-        self.assertFalse(self.readme.is_numeric("1.2e-10 s"))
-        self.assertFalse(self.readme.is_numeric("-15 °C"))
-
-        # Test fractions
-        self.assertTrue(self.readme.is_numeric("1/2"))
-        self.assertTrue(self.readme.is_numeric("-1/2"))
-        self.assertFalse(self.readme.is_numeric("1/2/3"))
-        self.assertFalse(self.readme.is_numeric("1/2.0"))
-        self.assertFalse(self.readme.is_numeric("1.9/2"))
-        self.assertFalse(self.readme.is_numeric("1.9/0.2"))
-
-        # Test non-numeric values
-        self.assertFalse(self.readme.is_numeric("abc"))
-        self.assertFalse(self.readme.is_numeric("123abc"))
-        self.assertFalse(self.readme.is_numeric(""))
-        self.assertFalse(self.readme.is_numeric(" "))
-        self.assertFalse(self.readme.is_numeric("m/s"))
-        self.assertFalse(self.readme.is_numeric("s"))
-        self.assertFalse(self.readme.is_numeric("None"))
-        self.assertFalse(self.readme.is_numeric("1,000,000"))
-        self.assertFalse(self.readme.is_numeric("1.000.000"))
+        try:
+            result = self.readme.convert_csv_to_html_table(f"!table[{tmp_path}]", 0)
+            self.assertIn("Must be 'left' or 'right'", result)
+        finally:
+            Path(tmp_path).unlink()
 
 
 if __name__ == "__main__":
