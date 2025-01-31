@@ -35,12 +35,12 @@ channels:
   - conda-forge
 
 dependencies:
-  - python=3.8
+  - python=3.9
   - cmake>=3.14.0
   - pyg::pyg
   - wget
 
-  - aihabitat::habitat-sim=0.2.2
+  - aihabitat::habitat-sim=0.2.4
   - mkl<2022 # prevents Intel errors when osx-64 environment is running on osx-arm64 platform
   - pytorch::pytorch=1.11.0
   - conda-forge::quaternion=2023.0.3 # later versions missing np.long

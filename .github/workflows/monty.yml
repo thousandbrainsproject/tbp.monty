@@ -236,11 +236,11 @@ jobs:
           shasum -a 256 ~/tbp/tbp.monty/pyproject.toml | awk '{print $1}' > ~/tbp/pyproject.toml.sha
           echo "monty-${RUNNER_OS}-$(cat ~/tbp/environment_arm64.sha)-$(cat ~/tbp/environment.sha)-$(cat ~/tbp/pyproject.toml.sha)" > ~/tbp/conda_env_cache_key.txt
           echo "conda_env_cache_key_sha=$(cat ~/tbp/conda_env_cache_key.txt | shasum -a 256 | awk '{print $1}')" >> $GITHUB_OUTPUT
-      - name: Set up Python 3.8
+      - name: Set up Python 3.9
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.8"
+          python-version: "3.9"
       - name: Restore cache
         id: restore_cache
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
