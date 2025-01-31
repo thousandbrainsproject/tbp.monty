@@ -180,7 +180,7 @@ Which produces the following table:
 
 !table[style-guide.csv]
 
-Note that the CSV header row has bar separated syntax that allows you to specific the alignment of the columns and the hover text.
+Note that the CSV header row has bar separated syntax that allows you to specify the alignment of the columns `left` or `right` and the hover text.
 
 ## Callouts
 
