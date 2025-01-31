@@ -70,7 +70,7 @@ def process_children(
             category_id=cat_id,
             doc=doc,
             parent_id=parent_doc_id,
-            depth=path_prefix.count("/") + 2,
+            file_path=f"{file_path}/{path_prefix}{parent['slug']}",
         )
         print_child(path_prefix.count("/"), doc, created)
         set_do_not_delete(to_be_deleted, child["slug"])

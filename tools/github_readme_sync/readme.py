@@ -25,6 +25,7 @@ from tools.github_readme_sync.colors import GRAY, GREEN, RESET
 from tools.github_readme_sync.constants import (
     IGNORE_DOCS,
     IGNORE_IMAGES,
+    IGNORE_TABLES,
     REGEX_CSV_TABLE,
 )
 from tools.github_readme_sync.req import delete, get, post, put
@@ -180,12 +181,12 @@ class ReadMe:
 
         return category["_id"], False
 
-    def convert_csv_to_html_table(self, body: str, depth: int) -> str:
+    def convert_csv_to_html_table(self, body: str, file_path: str) -> str:
         """Convert CSV table references to HTML tables.
 
         Args:
             body: The document body containing CSV table references
-            depth: The depth of the current file in the hierarchy
+            file_path: The path to the current document being processed
 
         Returns:
             str: The document body with CSV tables converted to HTML format
@@ -193,11 +194,15 @@ class ReadMe:
 
         def replace_match(match):
             csv_path = match.group(1)
-            for _ in range(depth):
-                csv_path = csv_path.replace("../", "", 1)
-            try:
-                csv_path = os.path.abspath(csv_path)
+            table_name = os.path.basename(csv_path)
+            if table_name in IGNORE_TABLES:
+                return match.group(0)
 
+            # Get absolute path of CSV relative to current document
+            csv_path = os.path.join(file_path, csv_path)
+            csv_path = os.path.normpath(csv_path)
+
+            try:
                 with open(csv_path, "r") as f:
                     reader = csv.reader(f)
                     headers = next(reader)
@@ -254,9 +259,9 @@ class ReadMe:
         return REGEX_CSV_TABLE.sub(replace_match, body)
 
     def create_or_update_doc(
-        self, order: int, category_id: str, doc: dict, parent_id: str, depth: int = 0
+        self, order: int, category_id: str, doc: dict, parent_id: str, file_path: str
     ) -> Tuple[str, bool]:
-        body = self.convert_csv_to_html_table(doc["body"], depth)
+        body = self.convert_csv_to_html_table(doc["body"], file_path)
         body = self.correct_image_locations(body)
         body = self.correct_file_locations(body)
         body = self.convert_note_tags(body)

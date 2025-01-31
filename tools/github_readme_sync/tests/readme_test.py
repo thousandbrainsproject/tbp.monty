@@ -301,6 +301,7 @@ This is a test document.""",
             category_id="category-id",
             doc={"title": "New Doc", "body": "This is a new doc.", "slug": "new-doc"},
             parent_id="parent-doc-id",
+            file_path="docs/new-doc.md",
         )
         self.assertTrue(created)
         self.assertEqual(doc_id, "new-doc-id")
@@ -547,7 +548,7 @@ This is a test document.""",
             tmp_path = tmp.name
 
         try:
-            result = self.readme.convert_csv_to_html_table(f"!table[{tmp_path}]", 0)
+            result = self.readme.convert_csv_to_html_table(f"!table[{tmp_path}]", "")
 
             # Check overall structure
             self.assertIn('<div class="data-table"><table>', result)
@@ -575,7 +576,7 @@ This is a test document.""",
 
             # Test with non-existent file
             result = self.readme.convert_csv_to_html_table(
-                "!table[non_existent.csv]", 0
+                "!table[non_existent.csv]", ""
             )
             self.assertTrue(result.startswith("[Failed to load table"))
         finally:
@@ -589,10 +590,44 @@ This is a test document.""",
             tmp_path = tmp.name
 
         try:
-            result = self.readme.convert_csv_to_html_table(f"!table[{tmp_path}]", 0)
+            result = self.readme.convert_csv_to_html_table(f"!table[{tmp_path}]", "")
             self.assertIn("Must be 'left' or 'right'", result)
         finally:
             Path(tmp_path).unlink()
+
+    def test_convert_csv_to_html_table_relative_path(self):
+        # Create a temporary directory structure
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # Create subdirectories
+            data_dir = os.path.join(tmp_dir, "data")
+            docs_dir = os.path.join(tmp_dir, "docs")
+            os.makedirs(data_dir)
+            os.makedirs(docs_dir)
+
+            # Create a CSV file in the data directory
+            csv_path = os.path.join(data_dir, "test.csv")
+            with open(csv_path, "w") as f:
+                writer = csv.writer(f)
+                writer.writerow(["Header 1", "Header 2"])
+                writer.writerow(["Value 1", "Value 2"])
+
+            # Create a mock markdown file path in the docs directory
+            doc_path = os.path.join(docs_dir, "doc.md")
+
+            # Test relative path from doc to csv
+            result = self.readme.convert_csv_to_html_table(
+                f"!table[../../data/test.csv]", doc_path
+            )
+
+            # Check the table structure
+            self.assertIn('<div class="data-table"><table>', result)
+            self.assertIn("<thead>", result)
+            self.assertIn("<th>Header 1</th>", result)
+            self.assertIn("<th>Header 2</th>", result)
+            self.assertIn("<tbody>", result)
+            self.assertIn("<td>Value 1</td>", result)
+            self.assertIn("<td>Value 2</td>", result)
+            self.assertIn("</table></div>", result)
 
 
 if __name__ == "__main__":
