@@ -185,6 +185,12 @@ class ReadMe:
             str: The document body with CSV tables converted to HTML format
         """
 
+        def validate_alignment(align_value: str) -> None:
+            if align_value not in ["left", "right"]:
+                raise ValueError(
+                    f"Invalid alignment value: {align_value}. Must be 'left' or 'right'"
+                )
+
         def replace_match(match):
             csv_path = match.group(1)
             for _ in range(depth):
@@ -215,10 +221,7 @@ class ReadMe:
                                 title_attr = f" title='{hover_text}'"
                             elif part.startswith("align "):
                                 align_value = part[6:]
-                                if align_value not in ["left", "right"]:
-                                    raise ValueError(
-                                        f"Invalid alignment value: {align_value}. Must be 'left' or 'right'"
-                                    )
+                                validate_alignment(align_value)
                                 alignments[i] = (
                                     f" style='text-align:{html.escape(align_value)}'"
                                 )
