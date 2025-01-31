@@ -616,7 +616,7 @@ This is a test document.""",
 
             # Test relative path from doc to csv
             result = self.readme.convert_csv_to_html_table(
-                f"!table[../data/test.csv]", doc_path
+                f"!table[../../data/test.csv]", doc_path
             )
 
             # Check the table structure
