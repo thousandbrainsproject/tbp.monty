@@ -156,6 +156,12 @@ class ReadMe:
         logging.info(f"{GRAY}Deleting doc {slug}{RESET}")
         delete(f"{PREFIX}/docs/{slug}", {"x-readme-version": self.version})
 
+    def validate_csv_align_param(self, align_value: str) -> None:
+        if align_value not in ["left", "right"]:
+            raise ValueError(
+                f"Invalid alignment value: {align_value}. Must be 'left' or 'right'"
+            )
+
     def create_category_if_not_exists(self, slug: str, title: str) -> Tuple[str, bool]:
         category = get(
             f"{PREFIX}/categories/{slug}", {"x-readme-version": self.version}
@@ -184,12 +190,6 @@ class ReadMe:
         Returns:
             str: The document body with CSV tables converted to HTML format
         """
-
-        def validate_alignment(align_value: str) -> None:
-            if align_value not in ["left", "right"]:
-                raise ValueError(
-                    f"Invalid alignment value: {align_value}. Must be 'left' or 'right'"
-                )
 
         def replace_match(match):
             csv_path = match.group(1)
@@ -221,7 +221,7 @@ class ReadMe:
                                 title_attr = f" title='{hover_text}'"
                             elif part.startswith("align "):
                                 align_value = part[6:]
-                                validate_alignment(align_value)
+                                self.validate_csv_align_param(align_value)
                                 alignments[i] = (
                                     f" style='text-align:{html.escape(align_value)}'"
                                 )
