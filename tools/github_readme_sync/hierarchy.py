@@ -22,6 +22,7 @@ from tools.github_readme_sync.constants import (
     IGNORE_DOCS,
     IGNORE_EXTERNAL_URLS,
     IGNORE_IMAGES,
+    IGNORE_TABLES,
     REGEX_CSV_TABLE,
 )
 
@@ -162,6 +163,10 @@ def check_links(path):
     errors = []
 
     for match in table_matches:
+        table_name = os.path.basename(match)
+        if table_name in IGNORE_TABLES:
+            continue
+
         path_to_check = os.path.join(current_dir, match)
         path_to_check = os.path.normpath(path_to_check)
         if not os.path.exists(path_to_check):

@@ -62,7 +62,7 @@ def process_children(
     path_prefix="",
     parent_doc_id=None,
 ):
-    # Process the current level's children
+    # Process the current level's childre
     for i, child in enumerate(parent["children"]):
         doc = load_doc(file_path, f"{path_prefix}{parent['slug']}", child)
         doc_id, created = rdme.create_or_update_doc(
@@ -70,7 +70,7 @@ def process_children(
             category_id=cat_id,
             doc=doc,
             parent_id=parent_doc_id,
-            depth=path_prefix.count("/") + 2,
+            file_path=f"{file_path}/{path_prefix}{parent['slug']}",
         )
         print_child(path_prefix.count("/"), doc, created)
         set_do_not_delete(to_be_deleted, child["slug"])
