@@ -587,6 +587,7 @@ This is a test document.""",
         self.assertTrue(self.readme.is_numeric("123.456"))
         self.assertTrue(self.readme.is_numeric("-123.456"))
         self.assertTrue(self.readme.is_numeric("1e-10"))
+        self.assertTrue(self.readme.is_numeric("1 000 000"))
 
         # Test numeric values with units
         self.assertFalse(self.readme.is_numeric("123 m"))
@@ -606,6 +607,8 @@ This is a test document.""",
         self.assertFalse(self.readme.is_numeric("m/s"))
         self.assertFalse(self.readme.is_numeric("s"))
         self.assertFalse(self.readme.is_numeric("None"))
+        self.assertFalse(self.readme.is_numeric("1,000,000"))
+        self.assertFalse(self.readme.is_numeric("1.000.000"))
 
 
 if __name__ == "__main__":

@@ -20,7 +20,6 @@ from urllib.parse import parse_qs
 
 import nh3
 import yaml
-from pint import UnitRegistry
 
 from tools.github_readme_sync.colors import GRAY, GREEN, RESET
 from tools.github_readme_sync.constants import (
@@ -29,8 +28,6 @@ from tools.github_readme_sync.constants import (
     REGEX_CSV_TABLE,
 )
 from tools.github_readme_sync.req import delete, get, post, put
-
-ureg = UnitRegistry()
 
 PREFIX = "https://dash.readme.com/api/v1"
 GITHUB_RAW = "https://raw.githubusercontent.com"
@@ -178,11 +175,29 @@ class ReadMe:
         return category["_id"], False
 
     def is_numeric(self, s):
-        try:
-            parsed = ureg.parse_expression(s)
-            return isinstance(parsed, (int, float))
-        except Exception as e:
+        if not isinstance(s, str) or not s.strip():
             return False
+
+        # Handle fractions
+        if "/" in s:
+            try:
+                num, denom = s.split("/")
+                float(num)
+                float(denom)
+            except ValueError:
+                return False
+            else:
+                return True
+
+        # Handle scientific notation and regular numbers
+        try:
+            # Remove spaces from numbers like "1 000 000"
+            s = s.replace(" ", "")
+            float(s)
+        except ValueError:
+            return False
+        else:
+            return True
 
     def convert_csv_to_html_table(self, body: str, depth: int) -> str:
         """Convert CSV table references to HTML tables.

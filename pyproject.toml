@@ -73,8 +73,7 @@ github_readme_sync_tool = [
     'colorama',
     'markdown2',
     'python-slugify',
-    'nh3',
-    'pint'
+    'nh3'
 ]
 print_version_tool = [
     'semver'
