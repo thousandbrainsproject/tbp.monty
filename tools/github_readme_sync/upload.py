@@ -62,7 +62,7 @@ def process_children(
     path_prefix="",
     parent_doc_id=None,
 ):
-    # Process the current level's childre
+    # Process the current level's children
     for i, child in enumerate(parent["children"]):
         doc = load_doc(file_path, f"{path_prefix}{parent['slug']}", child)
         doc_id, created = rdme.create_or_update_doc(
