@@ -51,13 +51,6 @@ jobs:
         run: |
           mkdir -p ~/tbp
           ln -s $GITHUB_WORKSPACE/tbp.monty ~/tbp/tbp.monty
-      - name: Get version and branch
-        id: preview_info
-        uses: ./tbp.monty/.github/actions/get_preview_info
-        with:
-          user_login: ${{ github.event.pull_request.user.login }}
-      - name: Echo image path
-        run: echo "Image path is ${{ steps.preview_info.outputs.image_path }}"
       - name: Set up Python 3.8
         uses: actions/setup-python@v5
         with:
@@ -80,6 +73,11 @@ jobs:
           conda env create
           source activate tbp.monty
           pip install -e .[dev,github_readme_sync_tool,print_version_tool]
+      - name: Get version and branch
+        id: preview_info
+        uses: ./tbp.monty/.github/actions/get_preview_info
+        with:
+          user_login: ${{ github.event.pull_request.user.login }}
       - name: Deploy docs
         working-directory: tbp.monty
         run: |
