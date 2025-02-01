@@ -7,7 +7,7 @@ concurrency:
 on:
   pull_request_target:
     branches:
-      - main
+      - use-remote-repo-for-images
     paths:
       - 'docs/**'
       - 'tools/github_readme_sync/**'
