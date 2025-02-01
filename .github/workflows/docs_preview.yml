@@ -5,9 +5,9 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
-      - use-remote-repo-for-images
+      - main
     paths:
       - 'docs/**'
       - 'tools/github_readme_sync/**'
