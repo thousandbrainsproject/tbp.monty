@@ -156,6 +156,31 @@ For example, the following markdown creates the image below:
 > [!WARNING]
 > Caption text is only visible on readme.com
 
+## CSV Data Tables
+
+You can inline CSV data tables in your markdown documents.  The following example shows how to create a table from a CSV file:
+
+```
+!table[../../benchmarks/example-table-for-docs.csv]
+```
+
+The CSV contains the following data:
+
+```csv
+Year,   Avg Global Temp. (°C),  Pirates | align right | hover Pirate Count
+1800,   14.3,                   50 000
+1850,   14.4,                   15 000
+1900,   14.6,                    5 000
+1950,   14.8,                    2 000
+2000,   15.0,                      500
+2020,   15.3,                      200
+```
+
+Which produces the following table:
+
+!table[style-guide.csv]
+
+Note that the CSV header row has bar separated syntax that allows you to specify the alignment of the columns `left` or `right` and the hover text.
 
 ## Callouts
 
