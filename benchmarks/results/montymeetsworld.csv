@@ -1,7 +1,7 @@
-Experiment,% Correct,% Used MLH,Num Matching Steps,Rotation Error (radians),Run Time,Episode Run Time (s)
-randrot_noise_sim_on_scan_monty_world,80.00%,80.83%,412,0.86,39m,18s
-world_image_on_scanned_model,72.92%,83.33%,442,2.15,9m,11s
-dark_world_image_on_scanned_model,35.42%,83.33%,430,1.81,7m,9s
-bright_world_image_on_scanned_model,43.75%,79.17%,428,1.87,10m,11s
-hand_intrusion_world_image_on_scanned_model,39.58%,56.25%,344,2.00,6m,7s
-multi_object_world_image_on_scanned_model,43.75%,52.08%,344,1.90,7m,8s
+Experiment,Correct (%)|align right,Used MLH (%)|align right,Num Match Steps|align right,Rotation Error (degrees)|align right,Run Time (mins)|align right,Episode Run Time (s)|align right
+randrot_noise_sim_on_scan_monty_world,80.00,80.83,412,49.27,39,18
+world_image_on_scanned_model,72.92,83.33,442,123.19,9,11
+dark_world_image_on_scanned_model,35.42,83.33,430,103.71,7,9
+bright_world_image_on_scanned_model,43.75,79.17,428,107.14,10,11
+hand_intrusion_world_image_on_scanned_model,39.58,56.25,344,114.59,6,7
+multi_object_world_image_on_scanned_model,43.75,52.08,344,108.86,7,8

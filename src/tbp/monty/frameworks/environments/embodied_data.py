@@ -23,7 +23,6 @@ from tbp.monty.frameworks.actions.actions import (
     SetAgentPose,
     SetSensorRotation,
 )
-from tbp.monty.frameworks.environment_utils.habitat_utils import get_bounding_corners
 from tbp.monty.frameworks.models.motor_policies import (
     SurfacePolicy,
     SurfacePolicyCurvatureInformed,
@@ -314,7 +313,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             idx: Index of the new object and ints parameters in object_params
         """
         assert idx <= self.n_objects, "idx must be <= self.n_objects"
-        self.dataset.env._env.remove_all_objects()
+        self.dataset.env.remove_all_objects()
 
         # Specify config for the primary target object and then add it
         init_params = self.object_params.copy()
@@ -324,7 +323,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         init_params["semantic_id"] = self.semantic_label_to_id[self.object_names[idx]]
 
         # TODO clean this up with its own specific call i.e. Law of Demeter
-        primary_target_obj = self.dataset.env._env.add_object(
+        primary_target_obj = self.dataset.env.add_object(
             name=self.object_names[idx], **init_params
         )
 
@@ -356,9 +355,6 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
                 except for the object ID
             primary_target_name (str): name of the primary target object
         """
-        # Get the bounding box info for the primary target obj
-        min_corner, max_corner = get_bounding_corners(primary_target_obj)
-
         # Sample distractor objects from those that are not the primary target; this
         # is so that, for now, we can evaluate how well the model stays on the primary
         # target object until it is classified, with no ambiguity about what final
@@ -373,11 +369,11 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             new_obj_label = self.rng.choice(sampling_list)
             new_init_params["semantic_id"] = self.semantic_label_to_id[new_obj_label]
             # TODO clean up the **unpacking used
-            self.dataset.env._env.add_object(
+            self.dataset.env.add_object(
                 name=new_obj_label,
                 **new_init_params,
                 object_to_avoid=True,
-                primary_target_bb=[min_corner, max_corner],
+                primary_target_object=primary_target_obj,
             )
 
     def reset_agent(self):

@@ -1,4 +1,4 @@
-Experiment,%Correct - 1st Epoch,% Correct - >1st Epoch,Mean Objects per Graph,Mean Graphs per Object,Run Time,Episode Run Time (s)
-surf_agent_unsupervised_10distinctobj,70.00%,83.33%,1.43,1.11,20m,12s
-surf_agent_unsupervised_10distinctobj_noise,70.00%,67.78%,1.19,2.11,25m,15s
-surf_agent_unsupervised_10simobj,40.00%,86.67%,2.60,1.30,28m,17s
+Experiment,Correct (%)|align right,Used MLH (%)|align right,Num Match Steps|align right,Rotation Error (degrees)|align right,Run Time (mins)|align right,Episode Run Time (s)|align right
+surf_agent_unsupervised_10distinctobj,70.00,83.33,1.43,63.60,20,12
+surf_agent_unsupervised_10distinctobj_noise,70.00,67.78,1.19,120.89,25,15
+surf_agent_unsupervised_10simobj,40.00,86.67,2.60,74.48,28,17

@@ -451,15 +451,22 @@ class MotorSystemConfigCurInformedSurfaceGoalStateDriven:
 
 @dataclass
 class MontyArgs:
-    # Step based parameters
+    """Step-based parameters for Monty configuration.
+
+    Attributes:
+        num_exploratory_steps: Number of steps allowed for exploration.  Defaults to
+            1000.
+        min_eval_steps: Minimum number of evaluation steps. Defaults to 3.
+        min_train_steps: Minimum number of training steps. Defaults to 3.
+        max_total_steps: Maximum total episode steps before timeout, regardless of
+            whether LMs receive sensory information and perform a true matching step.
+            Defaults to 2500.
+    """
+
     num_exploratory_steps: int = 1_000
     min_eval_steps: int = 3
     min_train_steps: int = 3
-    max_total_steps: int = (
-        2_500  # Total number of episode steps that can be taken before
-    )
-    # timing out, regardless of e.g. whether LMs receive sensory information and
-    # therefore perform a true matching step
+    max_total_steps: int = 2_500
 
 
 @dataclass

@@ -25,7 +25,7 @@ from tools.github_readme_sync.hierarchy import (
     check_hierarchy_file,
     check_links,
     create_hierarchy_file,
-    extract_links,
+    extract_external_links,
 )
 from tools.github_readme_sync.readme import ReadMe
 
@@ -183,7 +183,6 @@ class TestHierarchyFile(unittest.TestCase):
             except SystemExit:
                 pass
 
-        print("here", log.output)
         self.assertTrue(
             any(
                 f"broken link: {self.server_url}/missing" in message
@@ -196,7 +195,7 @@ class TestHierarchyFile(unittest.TestCase):
 
     def test_extract_links_happy_path(self):
         def extract(input_string, expected_output):
-            self.assertEqual(extract_links(input_string), expected_output)
+            self.assertEqual(extract_external_links(input_string), expected_output)
 
         extract("[Link 1](https://a.com)", ["https://a.com"])
         extract(

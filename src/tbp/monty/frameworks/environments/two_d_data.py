@@ -20,8 +20,10 @@ from scipy.ndimage import gaussian_filter
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environment_utils.transforms import DepthTo3DLocations
-from tbp.monty.frameworks.environments.embodied_environment import EmbodiedEnvironment
-from tbp.monty.frameworks.environments.habitat import HabitatActionSpace
+from tbp.monty.frameworks.environments.embodied_environment import (
+    ActionSpace,
+    EmbodiedEnvironment,
+)
 
 __all__ = [
     "OmniglotEnvironment",
@@ -47,6 +49,13 @@ NUMENTA_OBJECTS = [
     "thousand_brains_jp",
     "hot_sauce",
 ]
+
+
+class TwoDDataActionSpace(tuple, ActionSpace):
+    """Action space for 2D data environments."""
+
+    def sample(self):
+        return self.rng.choice(self)
 
 
 class OmniglotEnvironment(EmbodiedEnvironment):
@@ -82,6 +91,11 @@ class OmniglotEnvironment(EmbodiedEnvironment):
     @property
     def action_space(self):
         return None
+
+    def add_object(self, *args, **kwargs):
+        # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
+        #      interface and how the class hierarchy is defined and used.
+        raise NotImplementedError("OmniglotEnvironment does not support adding objects")
 
     def step(self, _action, amount):
         """Retrieve the next observation.
@@ -156,6 +170,13 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         self.character_id = character_id
         self.character_version = version_id
         self.current_image, self.locations = self.load_new_character_data()
+
+    def remove_all_objects(self):
+        # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
+        #      interface and how the class hierarchy is defined and used.
+        raise NotImplementedError(
+            "OmniglotEnvironment does not support removing all objects"
+        )
 
     def reset(self):
         self.step_num = 0
@@ -289,13 +310,20 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
     @property
     def action_space(self):
         # TODO: move this to other action space definitions and clean up.
-        return HabitatActionSpace(
+        return TwoDDataActionSpace(
             [
                 "look_up",
                 "look_down",
                 "turn_left",
                 "turn_right",
             ]
+        )
+
+    def add_object(self, *args, **kwargs):
+        # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
+        #      interface and how the class hierarchy is defined and used.
+        raise NotImplementedError(
+            "SaccadeOnImageEnvironment does not support adding objects"
         )
 
     def step(self, action: Action):
@@ -390,6 +418,13 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             self.current_scene_point_cloud,
             self.current_sf_scene_point_cloud,
         ) = self.get_3d_scene_point_cloud()
+
+    def remove_all_objects(self):
+        # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
+        #      interface and how the class hierarchy is defined and used.
+        raise NotImplementedError(
+            "SaccadeOnImageEnvironment does not support removing all objects"
+        )
 
     def reset(self):
         """Reset environment and extract image patch.

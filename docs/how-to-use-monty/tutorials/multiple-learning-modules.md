@@ -17,12 +17,10 @@ In this tutorial, we will show how Monty can be used to learn and recognize obje
 In this section, we'll show how to perform supervised pretraining with a model containing six sensor modules, of which five are connected in a 1:1 fashion to five learning modules (one sensor module is a viewfinder for experiment setup and visualization and is not connected to a learning module). By default, the sensor modules are arranged in cross shape, where four sensor modules are displaced a small distance from the center sensor module like so:
 ![](../../figures/how-to-use-monty/multi_lm_sensor_arrangement.png)
 
-To follow along, create a file called `multi_lm_train.py` in the `benchmarks/configs/` directory and paste the following code into it.
+To follow along, open the `benchmarks/configs/my_experiments.py` file and paste the code snippets into it.
 
 ```python
 import os
-
-import numpy as np
 
 from tbp.monty.frameworks.config_utils.config_args import (
     FiveLMMontyConfig,
@@ -34,7 +32,6 @@ from tbp.monty.frameworks.config_utils.config_args import (
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
     ExperimentArgs,
-    FiveLMMountHabitatDatasetArgs,
     PredefinedObjectInitializer,
     get_env_dataloader_per_object_by_idx,
 )
@@ -44,6 +41,9 @@ from tbp.monty.frameworks.config_utils.policy_setup_utils import (
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
     MontySupervisedObjectPretrainingExperiment,
+)
+from tbp.monty.simulators.habitat.configs import (
+    FiveLMMountHabitatDatasetArgs,
 )
 
 # Specify directory where an output directory will be created.
@@ -92,10 +92,14 @@ dist_agent_5lm_2obj_train = dict(
     eval_dataloader_class=ED.InformedEnvironmentDataLoader,  # just placeholder
     eval_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=1),
 )
+```
+Finally, add your experiment to `MyExperiments` at the bottom of the file:
 
-CONFIGS = {
-    "dist_agent_5lm_2obj_train": dist_agent_5lm_2obj_train,
-}
+```python
+experiments = MyExperiments(
+    dist_agent_5lm_2obj_train=dist_agent_5lm_2obj_train,
+)
+CONFIGS = asdict(experiments)
 ```
 If you've read the previous tutorials, much of this should look familiar. As in our [pretraining](./pretraining-a-model.md) tutorial, we've configured a `MontySupervisedObjectPretrainingExperiment` with a `PretrainLoggingConfig`. However, we are now using a built-in Monty model configuration called `FiveLMMontyConfig` that specifies everything we need to have five `HabitatDistantPatchSM` sensor modules that each connect to exactly one of five `DisplacementGraphLM` learning modules. `FiveLMMontyConfig` also specifies that each learning module connects to every other learning module through lateral voting connections. Note that `GraphLM` learning modules used in previous tutorials would work fine here, but we're going with the default `DisplacementGraphLM` for convenience (this is a graph-based LM that also stores displacements between points, although these are generally not used during inference at present). To see how this is done, we can take a closer look at the `FiveLMMontyConfig` class which contains the following lines:
 
@@ -130,12 +134,12 @@ We have also specified that we want to use a `MotorSystemConfigNaiveScanSpiral` 
 
 Finally, we have also set the `dataset_args` to `FiveLMMountHabitatDatasetArgs`. This specifies that we have five `HabitatDistantPatchSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see the `FiveLMMountConfig` in `tbp/monty/frameworks/config_utils/make_dataset_configs.py`.
 
-Before running this experiment, you will need to add the following lines to `benchmarks/configs/__init__.py`:
-```python
-from .multi_lm_train import CONFIGS as MULTI_LM_TRAIN
+Before running this experiment, you will need to declare your experiment name as part of the `MyExperiments` dataclass in the `benchmarks/configs/names.py` file:
 
-# Put this line after CONFIGS is initialized
-CONFIGS.update(MULTI_LM_TRAIN)
+```python
+@dataclass
+class MyExperiments:
+    dist_agent_5lm_2obj_train: dict
 ```
 Then navigate to the `benchmarks/` folder in a terminal, and call the `run.py` script like so:
 ```bash
@@ -146,7 +150,7 @@ python run.py -e dist_agent_5lm_2obj_train
 # Setting up and Running a Multi-LM Evaluation Experiment
 
 We will now specify an experiment config to perform inference.
-To follow along, create a file called `multi_lm_eval.py` in the `benchmarks/configs/` directory and paste the following code snippets into it.
+To follow along, open the `benchmarks/configs/my_experiments.py` file and paste the code snippets into it.
 
 ```python
 import copy
@@ -163,7 +167,6 @@ from tbp.monty.frameworks.config_utils.config_args import (
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
     EvalExperimentArgs,
-    FiveLMMountHabitatDatasetArgs,
     PredefinedObjectInitializer,
     get_env_dataloader_per_object_by_idx,
 )
@@ -178,6 +181,9 @@ from tbp.monty.frameworks.models.evidence_matching import (
 )
 from tbp.monty.frameworks.models.goal_state_generation import (
     EvidenceGoalStateGenerator,
+)
+from tbp.monty.simulators.habitat.configs import (
+    FiveLMMountHabitatDatasetArgs,
 )
 
 """
@@ -288,19 +294,20 @@ dist_agent_5lm_2obj_eval = dict(
     ),
 )
 ```
-Finally, add the following lines to the bottom of the file.
+Finally, add your experiment to `MyExperiments` at the bottom of the file:
 
 ```python
-CONFIGS = {
-    "dist_agent_5lm_2obj_eval": dist_agent_5lm_2obj_eval,
-}
+experiments = MyExperiments(
+    dist_agent_5lm_2obj_eval=dist_agent_5lm_2obj_eval,
+)
+CONFIGS = asdict(experiments)
 ```
-Once again, modify `benchmarks/configs/__init__.py` to make this experiment accessible.
-```python
-from .multi_lm_eval import CONFIGS as MULTI_LM_EVAL
+Once again, declare your experiment name as part of the `MyExperiments` dataclass in the `benchmarks/configs/names.py` file:
 
-# Put this line after CONFIGS is initialized
-CONFIGS.update(MULTI_LM_EVAL)
+```python
+@dataclass
+class MyExperiments:
+    dist_agent_5lm_2obj_eval: dict
 ```
 Finally, run the experiment from the `benchmarks/` folder.
 ```bash

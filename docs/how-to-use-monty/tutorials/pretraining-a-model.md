@@ -44,12 +44,10 @@ Most configs come in pairs: a class to instantiate and arguments to instantiate 
 
 # Setting up the Experiment Config for Pretraining
 
-To follow along, create a file called `pretraining_tutorial_train.py` in the `benchmarks/configs/` folder and paste the code snippets into it. Let's set up the training experiment. First, we import everything we need and define names and paths.
+To follow along, open the `benchmarks/configs/my_experiments.py` file and paste the code snippets into it. Let's set up the training experiment. First, we import everything we need and define names and paths.
 
 ```python
 import os
-
-import numpy as np
 
 from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
@@ -62,7 +60,6 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
     ExperimentArgs,
     PredefinedObjectInitializer,
-    SurfaceViewFinderMountHabitatDatasetArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
@@ -72,6 +69,9 @@ from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
     HabitatSurfacePatchSM,
+)
+from tbp.monty.simulators.habitat.configs import (
+    SurfaceViewFinderMountHabitatDatasetArgs,
 )
 
 """
@@ -137,7 +137,7 @@ surf_agent_2obj_train = dict(
         run_name=model_name,
         wandb_handlers=[],
     ),
-    # Specify the Monty model.
+    # Specify the Monty config.
     monty_config=PatchAndViewMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=500),
         # sensory module configs: one surface patch for training (sensor_module_0),
@@ -220,28 +220,30 @@ To get an idea of what each sensor module sees and the information passed on to 
 
 # Running the Pretraining Experiment
 
-Finally, add the following lines to the bottom of the file:
+Finally, add your experiment to `MyExperiments` at the bottom of the file:
 
 ```python
-CONFIGS = dict(
+experiments = MyExperiments(
     surf_agent_2obj_train=surf_agent_2obj_train,
 )
+CONFIGS = asdict(experiments)
 
 ```
-Next, you will need to add the following lines to the `benchmarks/configs/__init__.py` file:
+Next you will need to declare your experiment name as part of the `MyExperiments` dataclass in the `benchmarks/configs/names.py` file:
 
 ```python
-from .pretraining_tutorial_train import CONFIGS as PRETRAINING_TUTORIAL_TRAIN
-
-# Put this line after CONFIGS is initialized
-CONFIGS.update(PRETRAINING_TUTORIAL_TRAIN)
+@dataclass
+class MyExperiments:
+    surf_agent_2obj_train: dict
 ```
 To run this experiment, navigate to the `benchmarks/` folder in a terminal and call the `run.py` script with an experiment name as the -e argument.
 ```shell
 cd benchmarks
 python run.py -e surf_agent_2obj_train
 ```
-Once complete, you can inspect and visualize the learned models. To do so, create a script and paste in the following code
+
+This will take a few minutes to complete and then you can inspect and visualize the learned models. To do so, create a script and paste in the following code. The location and name of the script is unimportant, but we called it `pretraining_tutorial_analysis.py` and placed it outside of the repository at `~/monty_scripts`.
+
 ```python
 import os
 import matplotlib.pyplot as plt
@@ -266,7 +268,7 @@ train_stats, eval_stats, detailed_stats, lm_models = load_stats(
 plot_graph(lm_models["pretrained"][0]["mug"]["patch"], rotation=120)
 plt.show()
 ```
-Replace `"mug"` with `"banana"` in the second to last line to visualize the banana's graph. The location and name of the script is unimportant, but we called it `pretraining_tutorial_analysis.py` and placed it outside of the repository at `~/monty_scripts`. After running the script, you should see a graph of the mug/banana.
+Replace `"mug"` with `"banana"` in the second to last line to visualize the banana's graph. After running the script, you should see a graph of the mug/banana.
 
 ![learned_models](../../figures/how-to-use-monty/pretraining_tutorial_mug_banana.png)
 

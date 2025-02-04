@@ -48,7 +48,7 @@ experiment uses it.
 """
 
 if __name__ == "__main__":
-    cmd_parser = create_rerun_parser(all_configs=CONFIGS)
+    cmd_parser = create_rerun_parser(experiments=list(CONFIGS.keys()))
     cmd_args = cmd_parser.parse_args()
     experiment = cmd_args.experiment
     follow_up_suffix = cmd_args.name

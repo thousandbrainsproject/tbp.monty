@@ -70,6 +70,9 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
     def action_space(self):
         return FakeActionSpace(EXPECTED_ACTIONS_DIST)
 
+    def add_object(self, *args, **kwargs):
+        return None
+
     def step(self, action):
         self._current_state += 1
         obs = {
@@ -81,6 +84,9 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
 
     def get_state(self):
         return None
+
+    def remove_all_objects(self):
+        pass
 
     def reset(self):
         self._current_state = 0
@@ -103,6 +109,9 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
     def action_space(self):
         return FakeActionSpace(EXPECTED_ACTIONS_ABS)
 
+    def add_object(self, *args, **kwargs):
+        return None
+
     def step(self, action):
         self._current_state += 1
         obs = {
@@ -114,6 +123,9 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
 
     def get_state(self):
         return None
+
+    def remove_all_objects(self):
+        pass
 
     def reset(self):
         self._current_state = 0

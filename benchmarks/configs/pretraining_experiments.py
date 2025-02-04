@@ -10,9 +10,11 @@
 
 import copy
 import os
+from dataclasses import asdict
 
 import numpy as np
 
+from benchmarks.configs.names import PretrainingExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     FiveLMMontyConfig,
     MontyArgs,
@@ -27,11 +29,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
     ExperimentArgs,
-    FiveLMMountHabitatDatasetArgs,
-    PatchViewFinderMountHabitatDatasetArgs,
     PredefinedObjectInitializer,
-    SurfaceViewFinderMontyWorldMountHabitatDatasetArgs,
-    SurfaceViewFinderMountHabitatDatasetArgs,
     get_env_dataloader_per_object_by_idx,
     get_object_names_by_idx,
 )
@@ -52,6 +50,12 @@ from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphL
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
     HabitatSurfacePatchSM,
+)
+from tbp.monty.simulators.habitat.configs import (
+    FiveLMMountHabitatDatasetArgs,
+    PatchViewFinderMountHabitatDatasetArgs,
+    SurfaceViewFinderMontyWorldMountHabitatDatasetArgs,
+    SurfaceViewFinderMountHabitatDatasetArgs,
 )
 
 # FOR SUPERVISED PRETRAINING: 14 unique rotations that give good views of the object.
@@ -269,7 +273,7 @@ supervised_pre_training_5lms_all_objects.update(
     ),
 )
 
-CONFIGS = dict(
+experiments = PretrainingExperiments(
     supervised_pre_training_base=supervised_pre_training_base,
     supervised_pre_training_5lms=supervised_pre_training_5lms,
     supervised_pre_training_5lms_all_objects=supervised_pre_training_5lms_all_objects,
@@ -278,3 +282,4 @@ CONFIGS = dict(
     only_surf_agent_training_allobj=only_surf_agent_training_allobj,
     only_surf_agent_training_numenta_lab_obj=only_surf_agent_training_numenta_lab_obj,
 )
+CONFIGS = asdict(experiments)

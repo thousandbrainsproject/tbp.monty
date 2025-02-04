@@ -93,14 +93,18 @@ In your usual interaction with this code base, you will most likely run experime
 
 ## 4.1 Download the YCB Dataset
 
-A lot of our current experiments are based on the [YCB dataset](https://www.ycbbenchmarks.com/) which is a dataset of 77 3D objects that we render in habitat. To download the dataset, run `python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat`.
+A lot of our current experiments are based on the [YCB dataset](https://www.ycbbenchmarks.com/) which is a dataset of 77 3D objects that we render in habitat. To download the dataset, run 
+
+```
+python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat
+```
 
 ## 4.2 Download Pretrained Models
 
 | Models | Archive Format | Download Link |
 | --- | --- | --- |
-| pretrained_ycb_v9 | tgz |  [pretrained_ycb_v10.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.tgz) |
-| pretrained_ycb_v9 | zip |  [pretrained_ycb_v10.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.zip) |
+| pretrained_ycb_v10 | tgz |  [pretrained_ycb_v10.tgz](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.tgz) |
+| pretrained_ycb_v10 | zip |  [pretrained_ycb_v10.zip](https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.zip) |
 
 Unpack the archive in the `~/tbp/results/monty/pretrained_models/` folder. For example:
 
@@ -109,16 +113,16 @@ mkdir -p ~/tbp/results/monty/pretrained_models/
 
 cd ~/tbp/results/monty/pretrained_models/
 
-curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v9.tgz | tar -xzf -
+curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.tgz | tar -xzf -
 ```
 ```plaintext zip
 mkdir -p ~/tbp/results/monty/pretrained_models/
 
 cd ~/tbp/results/monty/pretrained_models/
 
-curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v9.zip
+curl -O https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.zip
 
-unzip pretrained_ycb_v9.zip
+unzip pretrained_ycb_v10.zip
 ```
 
 
@@ -126,7 +130,7 @@ The folder should then have the following structure:
 
 ```
 ~/tbp/results/monty/pretrained_models/
-|-- pretrained_ycb_v9/
+|-- pretrained_ycb_v10/
 |   |-- supervised_pre_training_5lms
 |   |-- supervised_pre_training_5lms_all_objects
 |   |-- ...
@@ -136,8 +140,8 @@ The folder should then have the following structure:
 > To unpack an archive you should be able to double click on it.
 >
 > To unpack via the command line, copy the archive into the `~/tbp/results/monty/pretrained_models/` folder and inside that folder run:
-> - for a `tgz` archive, `tar -xzf pretrained_ycb_v9.tgz`.
-> - for a `zip` archive, `unzip pretrained_ycb_v9.zip`.
+> - for a `tgz` archive, `tar -xzf pretrained_ycb_v10.tgz`.
+> - for a `zip` archive, `unzip pretrained_ycb_v10.zip`.
 
 ## [Optional] Set Environment Variables
 
@@ -149,7 +153,7 @@ If you did not save the pre-trained models in the `~/tbp/results/monty/pretraine
 export MONTY_MODELS=/path/to/your/pretrained/models/dir
 ```
 
-This path should point to the `pretrained_models` folder that contains the`pretrained_ycb_v9`folders.
+This path should point to the `pretrained_models` folder that contains the`pretrained_ycb_v10`folders.
 
 
 ### MONTY_DATA

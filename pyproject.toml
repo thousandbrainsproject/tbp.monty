@@ -96,6 +96,7 @@ experimental_namespace_package = true # recognize tbp.monty as a namespace packa
 ignore = ['DEP002']
 known_first_party = [
     'attr', # transitive dependency bundled with habitat-sim
+    'benchmarks', # benchmark configurations and scripts
     'habitat_sim', # imported via conda (habitat-sim)
     'magnum', # transitive dependency bundled with habitat-sim
     'quaternion', # imported via conda (quaternion)
