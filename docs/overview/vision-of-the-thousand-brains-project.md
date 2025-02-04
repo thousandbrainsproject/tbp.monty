@@ -1,6 +1,9 @@
 ---
 title: Vision of the Thousand Brains Project
 ---
+
+![](../figures/overview/brain_balloons_day.png)
+
 We are developing a platform for building AI and robotics applications using the same principles as the human brain. These principles are fundamentally different from those used in deep learning, which is currently the most prevalent form of AI. Therefore, our platform represents an alternate form of AI, one that we believe will play an ever-increasing role in the future.
 
 # Monty
@@ -9,10 +12,13 @@ We call the implementation described herein "Monty", in reference to Vernon Moun
 
 # Embodied, Sensorimotor Learning
 
+![](../figures/overview/embodied_sensorimotor_learning.png)
+
 One key differentiator between the TBP and other AI technologies is that the TBP is built with embodied, sensorimotor learning at its core. Sensorimotor systems learn by sensing different parts of the world over time while interacting with it. For example, as you move your body, your limbs, and your eyes, the input to your brain changes. In Monty, the learning derived from continuous interaction with an environment represents the foundational knowledge that supports all other functions. This contrasts with the growing approach that sensorimotor interactions are a sub-problem that can be solved by beginning with an architecture trained on a mixture of internet-scale language and multi-media data. In addition to sensorimotor interaction being the core basis for learning, the centrality of sensorimotor learning manifests in the design choice that all levels of processing are sensorimotor. As will become clear, sensory and motor processing are not broken up and handled by distinct architectures, but play a crucial role at every point in Monty where information is processed.
 
 # Reference Frames
 
+![](../figures/overview/reference_frames_illustration.png)
 A second differentiator is that our sensorimotor systems learn structured models, using _reference frames_, coordinate systems within which locations and rotations can be represented. The models keep track of where their sensors are relative to things in the world. They are learned by assigning sensory observations to locations in reference frames. In this way, the models learned by sensorimotor systems are structured, similar to CAD models in a computer. This allows the system to quickly learn the structure of the world and how to manipulate objects to achieve a variety of goals, what is sometimes referred to as a 'world model'. As with sensorimotor learning, reference frames are used throughout all levels of information processing, including the representations of not only environments, but also physical objects and abstract concepts - even the simplest representations in the proposed architecture are represented within a reference frame.
 
 # Human-Like Learning
