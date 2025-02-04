@@ -8,9 +8,11 @@ description: How to get the code running.
 > This is our open-source repository. We call it **Monty** after Vernon Mountcastle, who proposed cortical columns as a repeating functional unit across the neocortex.
 
 > [!WARNING]
-> This code will not run on Windows or Linux, only on MacOS. 
+> This code is currently only supported on MacOS. It will not currently run on Windows or Linux. We are working on fixing this.
 >
-> We are working on fixing this. You can follow this issue to be notified when this is supported: https://github.com/thousandbrainsproject/tbp.monty/issues/52
+> You can follow these issues to be notified when this is supported:
+> - [Windows](https://github.com/thousandbrainsproject/tbp.monty/issues/52)
+> - [Linux](https://github.com/thousandbrainsproject/tbp.monty/issues/85)
 
 # 1. Get the Code
 
