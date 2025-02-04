@@ -85,7 +85,7 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           export README_API_KEY=${{ secrets.README_API_KEY }}
-          export IMAGE_PATH=${{ vars.IMAGE_PATH }}
+          export IMAGE_PATH="${{ steps.preview_info.outputs.image_path }}"
           python -m tools.github_readme_sync.cli upload ../pr_docs/docs "${{ steps.preview_info.outputs.monty_version }}-${{ steps.preview_info.outputs.branch_name }}"
       - name: Update PR comment on success
         if: success()
