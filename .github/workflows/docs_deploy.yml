@@ -1,4 +1,4 @@
-name: Docs Preview
+name: Docs Deploy
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
@@ -15,8 +15,8 @@ on:
       - '.github/actions/get_preview_info/**'
 
 jobs:
-  deploy_docs:
-    name: deploy-docs
+  docs_deploy:
+    name: docs-deploy
     runs-on: ubuntu-latest
     steps:
       - name: Checkout tbp.monty
