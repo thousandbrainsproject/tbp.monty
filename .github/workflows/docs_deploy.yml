@@ -14,8 +14,8 @@ on:
       - '.github/workflows/docs_deploy.yml'
 
 jobs:
-  deploy_docs_preview:
-    name: deploy-docs-preview
+  deploy_docs:
+    name: deploy-docs
     runs-on: ubuntu-latest
     steps:
       - name: Checkout tbp.monty
