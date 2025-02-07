@@ -1,14 +1,13 @@
 name: Cleanup Docs Preview
 
 on:
+  push:
+    branches:
+      - main
   pull_request_target:
     types: [closed]
     branches:
       - main
-    paths:
-      - 'docs/**'
-      - 'tools/github_readme_sync/**'
-      - '.github/workflows/cleanup_docs_preview.yml'
 
 jobs:
   cleanup_docs_preview:
