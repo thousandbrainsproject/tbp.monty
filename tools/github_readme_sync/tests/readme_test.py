@@ -629,6 +629,34 @@ This is a test document.""",
             self.assertIn("<td>Value 2</td>", result)
             self.assertIn("</table></div>", result)
 
+    def test_insert_markdown_snippet(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            docs_dir = os.path.join(tmp_dir, "docs")
+            other_dir = os.path.join(tmp_dir, "other")
+            os.makedirs(docs_dir)
+            os.makedirs(other_dir)
+
+            source_md = os.path.join(other_dir, "source.md")
+            with open(source_md, "w") as f:
+                f.write(
+                    "# Test Header\nThis is test content\n* List item 1\n* List item 2"
+                )
+            doc_path = os.path.join(docs_dir, "doc.md")
+
+            result = self.readme.insert_markdown_snippet(
+                "!snippet[../../other/source.md]", doc_path
+            )
+
+            expected_content = (
+                "# Test Header\nThis is test content\n* List item 1\n* List item 2"
+            )
+            self.assertEqual(result, expected_content)
+
+            result = self.readme.insert_markdown_snippet(
+                "!snippet[../other/nonexistent.md]", doc_path
+            )
+            self.assertIn("File not found", result)
+
 
 if __name__ == "__main__":
     unittest.main()

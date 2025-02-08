@@ -42,6 +42,7 @@ regex_cloudinary_video = re.compile(
     r"\[(.*?)\]\((https://res\.cloudinary\.com/([^/]+)/video/upload/v(\d+)/([^/]+\.mp4))\)",
     re.IGNORECASE,
 )
+regex_markdown_snippet = re.compile(r"!snippet\[(.*?)\]")
 
 # Allowlist of supported CSS properties
 ALLOWED_CSS_PROPERTIES = {"width", "height"}
@@ -261,7 +262,8 @@ class ReadMe:
     def create_or_update_doc(
         self, order: int, category_id: str, doc: dict, parent_id: str, file_path: str
     ) -> Tuple[str, bool]:
-        body = self.convert_csv_to_html_table(doc["body"], file_path)
+        body = self.insert_markdown_snippet(doc["body"], file_path)
+        body = self.convert_csv_to_html_table(body, file_path)
         body = self.correct_image_locations(body)
         body = self.correct_file_locations(body)
         body = self.convert_note_tags(body)
@@ -434,3 +436,26 @@ class ReadMe:
             return f"[block:html]\n{json.dumps(block, indent=2)}\n[/block]"
 
         return regex_cloudinary_video.sub(replace_video, markdown_text)
+
+    def insert_markdown_snippet(self, body: str, file_path: str) -> str:
+        """Insert markdown snippets from referenced files.
+
+        Args:
+            body: The document body containing snippet references
+            file_path: The path to the current document being processed
+
+        Returns:
+            str: The document body with snippets inserted
+        """
+
+        def replace_match(match):
+            snippet_path = os.path.join(file_path, match.group(1))
+            snippet_path = os.path.normpath(snippet_path)
+
+            try:
+                with open(snippet_path, "r") as f:
+                    return f.read()
+            except Exception as e:
+                return f"[File not found or could not be read: {snippet_path}]"
+
+        return regex_markdown_snippet.sub(replace_match, body)

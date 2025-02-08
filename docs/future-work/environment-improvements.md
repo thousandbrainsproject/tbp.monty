@@ -11,4 +11,4 @@ These are the things we would like to implement:
 - [Create dataset and metrics to evaluate categories and generalization](environment-improvements/create-dataset-and-metrics-to-evaluate-categories-and-generalization.md) #generalization
 - [Create dataset and metrics to test new feature-morphology pairs](environment-improvements/create-dataset-and-metrics-to-test-new-feature-morphology-pairs.md) #featsandmorph
 
-Please see the [instructions here](project-roadmap.md#how-you-can-contribute) if you would like to tackle one of these tasks.
+!snippet[../snippets/contributing-tasks.md]
