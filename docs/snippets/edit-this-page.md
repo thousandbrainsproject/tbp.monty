@@ -31,3 +31,5 @@ All our docs are open source. If something is wrong, or unclear, submit a PR to 
 <a class="contribution-button" style="text-decoration:none" href="!!LINK!!" target="_blank">
     <img src="https://raw.githubusercontent.com/primer/octicons/main/icons/git-pull-request-16.svg" width="16" height="16" style="display: inline-block; vertical-align: middle;" alt="Pull request icon">
 <span style="margin-left: 5px;">Make a Contribution</span></a>
+
+[Learn how to contribute to our docs](../contributing/documentation.md)
