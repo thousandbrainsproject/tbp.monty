@@ -26,7 +26,7 @@
 
 #### Help Us Make This Page Better
 
-All our docs are open source. If something is wrong, or unclear, submit a PR to fix it!
+All our docs are open-source. If something is wrong or unclear, submit a PR to fix it!
 
 <a class="contribution-button" style="text-decoration:none" href="!!LINK!!" target="_blank">
     <img src="https://raw.githubusercontent.com/primer/octicons/main/icons/git-pull-request-16.svg" width="16" height="16" style="display: inline-block; vertical-align: middle;" alt="Pull request icon">
