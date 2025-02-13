@@ -76,8 +76,6 @@ world_image_on_scanned_model = dict(
     dataset_args=WorldImageDatasetArgs(
         env_init_args=EnvInitArgsMontyWorldStandardScenes()
     ),
-    train_dataloader_class=ED.SaccadeOnImageDataLoader,
-    train_dataloader_args=WorldImageDataloaderArgs(),
     eval_dataloader_class=ED.SaccadeOnImageDataLoader,
     # TODO: write something akin to PredefinedObjectInitializer to automatically
     # determine these values
