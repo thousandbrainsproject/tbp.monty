@@ -28,7 +28,6 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
     EvalExperimentArgs,
     RandomRotationObjectInitializer,
-    get_env_dataloader_per_object_by_idx,
     get_object_names_by_idx,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
@@ -78,8 +77,6 @@ randrot_noise_sim_on_scan_monty_world = dict(
     ),
     dataset_class=ED.EnvironmentDataset,
     dataset_args=PatchViewFinderMontyWorldMountHabitatDatasetArgs(),
-    train_dataloader_class=ED.InformedEnvironmentDataLoader,
-    train_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=12),
     eval_dataloader_class=ED.InformedEnvironmentDataLoader,
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=get_object_names_by_idx(0, 12, object_list=NUMENTA_OBJECTS),
