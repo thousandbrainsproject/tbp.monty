@@ -262,8 +262,6 @@ base_config_10distinctobj_dist_agent = dict(
     ),
     dataset_class=ED.EnvironmentDataset,
     dataset_args=PatchViewFinderMountHabitatDatasetArgs(),
-    train_dataloader_class=ED.InformedEnvironmentDataLoader,
-    train_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=10),
     eval_dataloader_class=ED.InformedEnvironmentDataLoader,
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
