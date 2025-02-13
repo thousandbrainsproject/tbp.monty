@@ -90,6 +90,22 @@ See [0000_extract_motor_policies_from_dataloader/surfacepolicy_sd.md](0000_extra
 
 See [0000_extract_motor_policies_from_dataloader/surfacepolicycurvatureinformed_sd.md](0000_extract_motor_policies_from_dataloader/surfacepolicycurvatureinformed_sd.md).
 
+### DataLoader algorithms
+
+It is noteworthy that reviewing any of the above policy algorithms does not capture all of the policy interactions. What currently happens is that the `DataLoader` invokes different methods on the `MotorSystem`/`*Policy` when executing. These invocations is what I mean by "DataLoader algorithms." Below, is an examination of how each `DataLoader` interacts with the `MotorSystem`/`*Policy`.
+
+First, the observed pairings of the `DataLoader` and the `MotorSystem`/`*Policy` in the current Monty configurations are:
+- `EnvironmentDataLoaderPerObject`
+    - `BasePolicy` (used in `base_config_test.py`). See [0000_extract_motor_policies_from_dataloader/environmentdataloaderperobject_basepolicy_sd.md](0000_extract_motor_policies_from_dataloader/environmentdataloaderperobject_basepolicy_sd.md).
+- `InformedEnvironmentDataLoader`
+    - `InformedPolicy`
+    - `NaiveScanPolicy`
+    - `SurfacePolicyCurvatureInformed`
+- `SaccadeOnImageDataLoader`
+    - `InformedPolicy`
+- `SaccadeOnImageFromStreamDataLoader`
+    - `InformedPolicy`
+
 ## Future State
 
 ### Random Notes
@@ -138,6 +154,19 @@ See [0000_extract_motor_policies_from_dataloader/surfacepolicycurvatureinformed_
             ...
     ```
 
+* `DataLoader` invoking `pre_episode` on the motor system seems inappropriate. I think it is done since the `DataLoader` is directly activating the motor system, but could likely be reworked once `DataLoader` no longer interacts with the motor system.
+
+* `EnvironmentDataLoaderPerObject.reset_agent` reaching into motor system state for the second time is excessive. Should do it before setting motor system state (althought this may go away if interaction is removed):
+    ```python
+    self._observation, self.motor_system.state = self.dataset.reset()
+    self._counter = 0
+
+    # Make sure to also reset action variables when resetting agent during
+    # pre-episode
+    self._action = None
+    self._amount = None
+    self.motor_system.state[self.motor_system.agent_id]["motor_only_step"] = False
+    ```
 
 # Drawbacks
 
