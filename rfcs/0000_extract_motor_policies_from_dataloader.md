@@ -98,7 +98,7 @@ First, the observed pairings of the `DataLoader` and the `MotorSystem`/`*Policy`
 - `EnvironmentDataLoaderPerObject`
     - `BasePolicy` (used in `base_config_test.py`). See [0000_extract_motor_policies_from_dataloader/environmentdataloaderperobject_basepolicy_sd.md](0000_extract_motor_policies_from_dataloader/environmentdataloaderperobject_basepolicy_sd.md).
 - `InformedEnvironmentDataLoader`
-    - `InformedPolicy`
+    - `InformedPolicy`. See [0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_informedpolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_informedpolicy_sd.md).
     - `NaiveScanPolicy`
     - `SurfacePolicyCurvatureInformed`
 - `SaccadeOnImageDataLoader`
@@ -107,6 +107,40 @@ First, the observed pairings of the `DataLoader` and the `MotorSystem`/`*Policy`
     - `InformedPolicy`
 
 ## Future State
+
+### Immediate changes
+
+#### Access the state before passing it to the motor system
+
+By examining the `DataLoader` algorithms above, we can see the following pattern quite often:
+
+```mermaid
+sequenceDiagram
+    DataLoader ->>+ Dataset : __getitem__(action)
+    Dataset -->>- DataLoader : observation, state
+    DataLoader ->> DataLoader : self._observation = observation
+    DataLoader ->> MotorSystem : self.state = state
+    DataLoader ->>+ MotorSystem : agent_id
+    MotorSystem -->>- DataLoader : agent_id
+    DataLoader ->>+ MotorSystem : self.state[agent_id]["access something"]
+    MotorSystem -->>- DataLoader : something
+    DataLoader ->>+ MotorSystem : self.state[agent_id]["access something else"]
+    MotorSystem -->>- DataLoader : something else
+```
+
+Aside from retrieving the `agent_id` (maybe this can be memoized?), there is no need to keep on accessing the `self.motor_system.state` repeatedly since the `state` is returned to the `DataLoader` by the `Dataset` directly. Instead, make the requisite access in the `DataLoader` and store the needed data. Then, set the motor system state once and don't access it again. This pattern will reduce the current number of interactions without changing any of the functionality.
+
+The result would be:
+```mermaid
+sequenceDiagram
+    DataLoader ->>+ Dataset : __getitem__(action)
+    Dataset -->>- DataLoader : observation, state
+    DataLoader ->> DataLoader : self._observation = observation
+    DataLoader ->>+ MotorSystem : agent_id
+    MotorSystem -->>- DataLoader : agent_id
+    DataLoader ->> MotorSystem : self.state = state
+```
+
 
 ### Random Notes
 
@@ -167,6 +201,10 @@ First, the observed pairings of the `DataLoader` and the `MotorSystem`/`*Policy`
     self._amount = None
     self.motor_system.state[self.motor_system.agent_id]["motor_only_step"] = False
     ```
+
+* `InformedEnvironmentDataLoader.__iter__` and `.__next__` overwrite inherited methods without calling them. This hints that inheritance class hierarchy may not be appropriate here.
+
+* `InformedEnvironmentDataLoader.__iter__` comments that it overwrites the original because we don't want to reset the agent since it was already done in `pre_episode`. However, this is also true for `EnvironmentDataLoaderPerObject`, yet there is no `EnvironmentDataLoaderPerObject.__iter__` that overrides the inherited method. Is this difference significant?
 
 # Drawbacks
 

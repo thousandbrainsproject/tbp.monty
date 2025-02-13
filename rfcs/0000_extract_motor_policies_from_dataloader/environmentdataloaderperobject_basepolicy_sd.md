@@ -96,4 +96,6 @@ sequenceDiagram
     deactivate EDLO
     deactivate EDLO
     EDLO -->>- E : ...
+
+    deactivate E
 ```
