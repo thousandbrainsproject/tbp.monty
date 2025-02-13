@@ -13,6 +13,7 @@ on:
       - 'docs/**'
       - 'tools/github_readme_sync/**'
       - '.github/workflows/docs_preview.yml'
+      - 'benchmarks/results/**'
 
 permissions:
   pull-requests: write
