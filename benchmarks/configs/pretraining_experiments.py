@@ -131,8 +131,6 @@ supervised_pre_training_base = dict(
         object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations_all),
     ),
-    eval_dataloader_class=ED.InformedEnvironmentDataLoader,  # just placeholder
-    eval_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=1),
 )
 
 
