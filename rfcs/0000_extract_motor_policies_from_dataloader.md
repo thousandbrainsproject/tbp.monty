@@ -78,6 +78,67 @@ See [0000_extract_motor_policies_from_dataloader/basepolicy_sd.md](0000_extract_
 
 See [0000_extract_motor_policies_from_dataloader/informedpolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedpolicy_sd.md).
 
+#### NaiveScanPolicy
+
+See [0000_extract_motor_policies_from_dataloader/naivescanpolicy_sd.md](0000_extract_motor_policies_from_dataloader/naivescanpolicy_sd.md).
+
+#### SurfacePolicy
+
+See [0000_extract_motor_policies_from_dataloader/surfacepolicy_sd.md](0000_extract_motor_policies_from_dataloader/surfacepolicy_sd.md).
+
+#### SurfacePolicyCurvatureInformed
+
+See [0000_extract_motor_policies_from_dataloader/surfacepolicycurvatureinformed_sd.md](0000_extract_motor_policies_from_dataloader/surfacepolicycurvatureinformed_sd.md).
+
+## Future State
+
+### Random Notes
+
+* `NaiveScanPolicy` does not seem to use any of the `InformedPolicy` initialization that it invokes.
+
+* `BasePolicy` sets `self.is_predefined` as a signal to `MotorSystem` to switch the `__call__` invocation to `predefined_call`, but uses `self.file_names_per_episode is not None` as the check whether to retrieve actions from a file in `post_episode`.
+
+* `SurfacePolicy.get_next_action` check of `if not hasattr(self, "processed_observations"):` can never be `False` because `InformedPolicy.__init__` initializes `self.processed_observations = None` and:
+    ```python
+    >>> class Obj:
+    ...     def __init__(self):
+    ...             self.potato = None
+    ...
+    >>> o = Obj()
+    >>> hasattr(o, "potato")
+    True
+    >>> class Obj2:
+    ...     def __init__(self):
+    ...             pass
+    ...
+    >>> o2 = Obj2()
+    >>> hasattr(o2, "potato")
+    False
+    ```
+
+* `InformedPolicy`, `NaiveScanPolicy`, `SurfacePolicy`, and `SurfacePolicyCurvatureInformed` do not use `JumpToGoalStateMixin` in their `__call__` methods. The `derive_habitat_goal_state` (which invokes the mixin) is only called in `InformedEnvironmentDataLoader.execute_jump_attempt`.
+
+* `SurfacePolicyCurvatureInformed.avoid_revisiting_locations` has an inconsistent `while loop` exit structure. One branch sets the while loop `searching_for_heading` variable to `False`, while another branch returns out of the while loop with `return None`.
+    ```python
+        if not conflicts:  # We have a valid heading
+            searching_for_heading = False
+
+            logging.debug("The final direction from conflict checking:")
+            logging.debug(self.tangential_vec)
+            self.update_tangential_reps(vec_form=self.tangential_vec)
+
+        elif self.search_counter >= self.max_steps:
+            logging.debug("Abandoning search, no directions without conflict")
+            logging.debug("Therefore using original headng")
+
+            self.update_tangential_reps(vec_form=vec_copy)
+
+            return None
+        else:
+            ...
+    ```
+
+
 # Drawbacks
 
 > Why should we *not* do this? Please consider:

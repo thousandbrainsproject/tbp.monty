@@ -15,20 +15,20 @@ sequenceDiagram
     BP ->> BP : get_random_action(action)
     activate BP
         loop
-            opt if rng.rand() < self.switch_frequency
+            opt rng.rand() < self.switch_frequency
                 BP ->>+ AS: sample(agent_id)
                 AS -->>- BP : action
             end
-            break if not SetAgentPose and not SetSensorRotation
+            break not SetAgentPose and not SetSensorRotation
                 BP -->> BP : action
                 deactivate BP
             end
         end
     BP ->> BP : self.action = action
-    opt if file_names_per_episode is not None
+    opt file_names_per_episode is not None
         BP ->> BP : self.is_predefined = True
     end
-    opt if file_name is not None
+    opt file_name is not None
         create participant RAF as read_action_file
         BP ->>+ RAF : __call__(file_name)
         RAF -->>- BP : actions
@@ -42,7 +42,7 @@ sequenceDiagram
     E ->>+ BP : __call__
     BP ->>+ MS : __call__
     deactivate BP
-    alt if is_predefined
+    alt self.is_predefined
         MS ->>+ BP : predefined_call
         BP -->>- MS : action
     else
@@ -50,11 +50,11 @@ sequenceDiagram
         BP ->> BP : get_random_action(action)
         activate BP
             loop
-                opt if rng.rand() < self.switch_frequency
+                opt rng.rand() < self.switch_frequency
                     BP ->>+ AS: sample(agent_id)
                     AS -->>- BP : action
                 end
-                break if not SetAgentPose and not SetSensorRotation
+                break not SetAgentPose and not SetSensorRotation
                     BP -->> BP : action
                     deactivate BP
                 end
@@ -67,6 +67,13 @@ sequenceDiagram
     MS -->>- E : action
 
     E ->>+ BP : post_episode
+    opt self.file_names_per_episode is not None
+        opt self.episode_count in self.file_names_per_episode
+            BP ->>+ RAF : __call__(file_name)
+            RAF -->>- BP : actions
+            BP ->> BP : self.action_list = actions
+        end
+    end
     BP -->>- E : ...
 
     deactivate E

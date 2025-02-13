@@ -4,11 +4,13 @@ sequenceDiagram
     participant MS as MotorSystem
     participant BP as BasePolicy
     participant JTGS as JumpToGoalStateMixin
+    participant IP as InformedPolicy
 
     activate E
 
-    create participant IP as InformedPolicy
-    E ->>+ IP : __init__
+    create participant NSP as NaiveScanPolicy
+    E ->>+ NSP : __init__
+    NSP ->>+ IP : __init__
     IP ->>+ BP : __init__
     create participant AS as ActionSampler
     BP ->> AS : action_sampler_class(rng, **action_sampler_args)
@@ -44,9 +46,12 @@ sequenceDiagram
         JTGS -->>- IP : ...
     end
     IP ->> IP : self.processed_observations = None
-    IP -->>- E : ...
+    IP -->>- NSP : ...
+    NSP ->> NSP : self._naive_scan_actions = [LookUp, TurnLeft, LookDown, TurnRight]
+    NSP -->>-E : ...
 
-    E ->>+ IP : pre_episode
+    E ->>+ NSP : pre_episode
+    NSP ->>+ IP : pre_episode
     opt self.use_goal_state_driven_actions
         IP ->>+ JTGS : pre_episode
         JTGS ->> JTGS : self.driving_goal_state = None
@@ -54,59 +59,42 @@ sequenceDiagram
     end
     IP ->>+ BP : pre_episode
     BP -->>- IP : ...
-    IP -->>- E : ...
+    IP -->>- NSP : ...
+    NSP -->>- E : ...
 
-
-    create participant PO as processed_observations
-    E ->> PO : ...
-    Note left of IP : The DataLoader creates processed observations <br/>from environment observations.
-
-    E ->> IP : self.processed_observations = processed_observations
-    Note left of IP : The DataLoader sets<br/>the processed observations directly.
-
-    E ->>+ IP : __call__
+    E ->>+ NSP : __call__
+    NSP ->>+ IP : __call__
+    deactivate NSP
     IP ->>+ BP : __call__
     deactivate IP
     BP ->>+ MS : __call__
     deactivate BP
     alt self.is_predefined
-        MS ->>+ IP : predefined_call
+        MS ->>+ NSP : predefined_call
+        NSP ->>+ IP : predefined_call
+        deactivate NSP
         IP ->>+ BP : predefined_call
         deactivate IP
         BP -->>- MS : action
     else
-        MS ->>+ IP : dynamic_call
-        IP ->>+ PO : get_on_object
-        PO -->>- IP : on_object?
-        alt on_object
-            IP ->>+ BP : dynamic_call
-            BP ->> BP : get_random_action(action)
-            activate BP
-                loop
-                    opt rng.rand() < self.switch_frequency
-                        BP ->>+ AS: sample(agent_id)
-                        AS -->>- BP : action
-                    end
-                    break not SetAgentPose and not SetSensorRotation
-                        BP -->> BP : action
-                        deactivate BP
-                    end
-                end
-            BP -->>- IP : action
+        MS ->>+ NSP : dynamic_call
+        alt self.steps_per_action * self.fixed_amount >= 90
+            NSP --x E : raise StopIteration
         else
-            IP ->>+ IP : fixme_undo_last_action
-            IP ->>+ IP : last_action
-            IP -->>- IP : self.action
-            IP -->>- IP : action
+            NSP ->> NSP : check_cycle_action
+            NSP -->>- MS: action
         end
-        IP -->>- MS : action
     end
-    MS ->>+ IP : post_action(action)
+    MS ->>+ NSP : post_action(action)
+    NSP ->>+ IP : post_action(action)
+    deactivate NSP
     IP ->> IP : self.action = action
     IP -->>- MS : ...
     MS -->>- E : action
 
-    E ->>+ IP : post_episode
+    E ->>+ NSP : post_episode
+    NSP ->>+ IP : post_episode
+    deactivate NSP
     IP ->>+ BP : post_episode
     deactivate IP
     opt self.file_names_per_episode is not None
