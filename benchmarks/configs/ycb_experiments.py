@@ -507,6 +507,7 @@ surf_agent_unsupervised_10distinctobj.update(
         learning_module_configs=default_lfs_lm,
     ),
     dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(),
+    train_dataloader_class=ED.InformedEnvironmentDataLoader,
     train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
         object_init_sampler=RandomRotationObjectInitializer(),
