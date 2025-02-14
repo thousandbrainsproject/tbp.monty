@@ -112,9 +112,11 @@ sequenceDiagram
         IEDL ->>+ IEDL : first_step
             IEDL ->>+ IP : agent_id
             IP -->>- IEDL : agent_id
-            IEDL ->> IP : self.state[agent_id]["motor_only_step"]
+            IEDL ->> IP : self.state[agent_id]["motor_only_step"] = False
         deactivate IEDL
-        IEDL -->> E : self._observation
+        break early return
+            IEDL -->> E : self._observation
+        end
     end
     IEDL ->>+ IP : use_goal_state_driven_actions
     IP -->>- IEDL : use_goal_state_driven_actions
@@ -172,8 +174,18 @@ sequenceDiagram
             IEDL ->>+ IP : post_action(action)
             IP -->>- IEDL : ...
         deactivate IEDL
-        IEDL -->> E : self._observation
+        break early return
+            IEDL -->> E : self._observation
+        end
     end
+    IEDL ->>+ IP : __call__
+    IP -->>- IEDL : action
+    IEDL ->>+ DS : __getitem__(action)
+    DS -->>- IEDL : observation, state
+    IEDL ->> IEDL : self._observation = observation
+    IEDL ->> IP : self.state = state
+    IEDL ->> IP : self.state[agent_id]["motor_only_step"] = False
+    IEDL -->> E : self._observation
     deactivate IEDL
 
     E ->>+ IEDL : post_episode
