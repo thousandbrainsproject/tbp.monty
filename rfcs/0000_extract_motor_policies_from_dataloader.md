@@ -100,7 +100,7 @@ First, the observed pairings of the `DataLoader` and the `MotorSystem`/`*Policy`
 - `InformedEnvironmentDataLoader`
     - `InformedPolicy`. See [0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_informedpolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_informedpolicy_sd.md).
     - `NaiveScanPolicy`. The interaction is the same as with the `InformedPolicy`. See [0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_naivescanpolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_naivescanpolicy_sd.md).
-    - `SurfacePolicy`
+    - `SurfacePolicy`. See [0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_surfacepolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_surfacepolicy_sd.md).
     - `SurfacePolicyCurvatureInformed`
 - `SaccadeOnImageDataLoader`
     - `InformedPolicy`
@@ -206,6 +206,31 @@ sequenceDiagram
 * `InformedEnvironmentDataLoader.__iter__` and `.__next__` overwrite inherited methods without calling them. This hints that inheritance class hierarchy may not be appropriate here.
 
 * `InformedEnvironmentDataLoader.__iter__` comments that it overwrites the original because we don't want to reset the agent since it was already done in `pre_episode`. However, this is also true for `EnvironmentDataLoaderPerObject`, yet there is no `EnvironmentDataLoaderPerObject.__iter__` that overrides the inherited method. Is this difference significant?
+
+* `InformedEnvironmentDataLoader.handle_successful_jump` checks `isinstance(self.motor_system, SurfacePolicy)` and directly manipulates the motor system internals if the motor system is a `SurfacePolicy`.
+
+* What is the significance of `InformedEnvironmentDataLoader.first_step` setting `self.state[agent_id]["motor_only_step"] = True` for `SurfacePolicy` and `SurfacePolicyCurvatureInformed` vs `False` for `InformedPolicy`, and `NaiveScanPolicy`? The comment states:
+  > \# For first step of surface-agent policy, always bypass LM processing<br/>
+  > \# For distant-agent policy, we still process the first sensation if it is<br/>
+  > \# on the object
+
+  How necessary is it for the distant-agent to process the first sensation?
+
+* `InformedEnvironmentDataLoader.__next__` call in the last else case updates the motor system state right before overwriting it. Is this necessary?
+    ```python
+    if isinstance(self.motor_system, SurfacePolicy) and self._action is None:
+        self._action = self.motor_system.touch_object(
+            self._observation, view_sensor_id="view_finder"
+        )
+
+        self.motor_system.state[self.motor_system.agent_id][
+            "motor_only_step"
+        ] = True
+
+    self._observation, self.motor_system.state = self.dataset[self._action]
+    ```
+
+* `InformedEnvironmentDataLoader.__next__` checks `isinstance(self.motor_system, SurfacePolicy)` and `isinstance(self.motor_system, SurfacePolicyCurvatureInformed)` to determine whether to touch an object and to set motor_only_step state property.
 
 # Drawbacks
 
