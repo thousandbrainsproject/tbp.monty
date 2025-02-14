@@ -99,7 +99,8 @@ First, the observed pairings of the `DataLoader` and the `MotorSystem`/`*Policy`
     - `BasePolicy` (used in `base_config_test.py`). See [0000_extract_motor_policies_from_dataloader/environmentdataloaderperobject_basepolicy_sd.md](0000_extract_motor_policies_from_dataloader/environmentdataloaderperobject_basepolicy_sd.md).
 - `InformedEnvironmentDataLoader`
     - `InformedPolicy`. See [0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_informedpolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_informedpolicy_sd.md).
-    - `NaiveScanPolicy`
+    - `NaiveScanPolicy`. The interaction is the same as with the `InformedPolicy`. See [0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_naivescanpolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_naivescanpolicy_sd.md).
+    - `SurfacePolicy`
     - `SurfacePolicyCurvatureInformed`
 - `SaccadeOnImageDataLoader`
     - `InformedPolicy`
