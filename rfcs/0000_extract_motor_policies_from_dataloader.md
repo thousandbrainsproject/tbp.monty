@@ -101,7 +101,7 @@ First, the observed pairings of the `DataLoader` and the `MotorSystem`/`*Policy`
     - `InformedPolicy`. See [0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_informedpolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_informedpolicy_sd.md).
     - `NaiveScanPolicy`. The interaction is the same as with the `InformedPolicy`. See [0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_naivescanpolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_naivescanpolicy_sd.md).
     - `SurfacePolicy`. See [0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_surfacepolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_surfacepolicy_sd.md).
-    - `SurfacePolicyCurvatureInformed`
+    - `SurfacePolicyCurvatureInformed`. See [0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_surfacepolicycurvatureinformed_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_surfacepolicycurvatureinformed_sd.md).
 - `SaccadeOnImageDataLoader`
     - `InformedPolicy`
 - `SaccadeOnImageFromStreamDataLoader`

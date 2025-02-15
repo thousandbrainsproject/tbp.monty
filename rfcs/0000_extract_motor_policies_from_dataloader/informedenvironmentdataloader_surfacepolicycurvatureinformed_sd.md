@@ -1,7 +1,7 @@
 ```mermaid
 sequenceDiagram
     participant E as entrypoint
-    participant SP as SurfacePolicy
+    participant SPCI as SurfacePolicyCurvatureInformed
 
     activate E
 
@@ -18,7 +18,7 @@ sequenceDiagram
     EDL ->>+ DS : reset
     DS -->>- EDL : observation, state
     EDL ->> EDL : self._observation = observation
-    EDL ->> SP : self.state = state
+    EDL ->> SPCI : self.state = state
     EDL -->>- EDLO : ...
     EDLO ->>+ EDLO : create_semantic_mapping
     deactivate EDLO
@@ -30,17 +30,17 @@ sequenceDiagram
     E ->>+ IEDL : pre_episode
     IEDL ->>+ EDLO : pre_episode
     EDLO ->>+ EDL : pre_episode
-    EDL ->>+ SP : pre_episode
-    SP -->>- EDL : ...
+    EDL ->>+ SPCI : pre_episode
+    SPCI -->>- EDL : ...
     EDL -->>- EDLO : ...
     EDLO ->>+ EDLO : reset_agent
     EDLO ->>+ DS : reset
     DS -->>- EDLO : observation, state
     EDLO ->> EDLO : self._observation = observation
-    EDLO ->> SP : self.state = state
-    EDLO ->>+ SP : agent_id
-    SP -->>- EDLO : agent_id
-    EDLO ->> SP : self.state[agent_id]["motor_only_step"] = False
+    EDLO ->> SPCI : self.state = state
+    EDLO ->>+ SPCI : agent_id
+    SPCI -->>- EDLO : agent_id
+    EDLO ->> SPCI : self.state[agent_id]["motor_only_step"] = False
     deactivate EDLO
     EDLO -->>- IEDL : ...
     IEDL ->>+ DS : env
@@ -52,44 +52,44 @@ sequenceDiagram
             IEDL ->>+ IEDL : get_good_view("view_finder")
             NOTE right of IEDL : Bookmark get_good_view
                 opt multiple_objects_present
-                    IEDL ->>+ SP : is_on_target_object
-                    SP -->>- IEDL : on_target_object
+                    IEDL ->>+ SPCI : is_on_target_object
+                    SPCI -->>- IEDL : on_target_object
                     opt not on_target_object
-                        IEDL ->>+ SP : orient_to_object
-                        SP -->>- IEDL : actions
+                        IEDL ->>+ SPCI : orient_to_object
+                        SPCI -->>- IEDL : actions
                         loop action in actions
                             IEDL ->>+ DS : __getitem__(action)
                             DS -->>- IEDL : observation, state
                             IEDL ->> IEDL : self._observation = observation
-                            IEDL ->> SP : self.state = state
+                            IEDL ->> SPCI : self.state = state
                         end
                     end
                 end
                 opt allow_translation
-                    IEDL ->>+ SP : move_close_enough
-                    SP -->>- IEDL : action, close_enough
+                    IEDL ->>+ SPCI : move_close_enough
+                    SPCI -->>- IEDL : action, close_enough
                     loop not close_enough
                         IEDL ->>+ DS : __getitem__(action)
                         DS -->>- IEDL : observation, state
                         IEDL ->> IEDL : self._observation = observation
-                        IEDL ->> SP : self.state = state
-                        IEDL ->>+ SP : move_close_enough
-                        SP -->>- IEDL : action, close_enough
+                        IEDL ->> SPCI : self.state = state
+                        IEDL ->>+ SPCI : move_close_enough
+                        SPCI -->>- IEDL : action, close_enough
                     end
                 end
-                IEDL ->>+ SP : is_on_target_object
-                SP -->>- IEDL : on_target_object
+                IEDL ->>+ SPCI : is_on_target_object
+                SPCI -->>- IEDL : on_target_object
                 loop not on_target_object and num_attempts < max_orientation_attempts
-                    IEDL ->>+ SP : orient_to_object
-                    SP -->>- IEDL : actions
+                    IEDL ->>+ SPCI : orient_to_object
+                    SPCI -->>- IEDL : actions
                     loop action in actions
                         IEDL ->>+ DS : __getitem__(action)
                         DS -->>- IEDL : observation, state
                         IEDL ->> IEDL : self._observation = observation
-                        IEDL ->> SP : self.state = state
+                        IEDL ->> SPCI : self.state = state
                     end
-                    IEDL ->>+ SP : is_on_target_object
-                    SP -->>- IEDL : on_target_object
+                    IEDL ->>+ SPCI : is_on_target_object
+                    SPCI -->>- IEDL : on_target_object
                 end
             deactivate IEDL
             loop patch_id in ("patch", "patch_0")
@@ -109,99 +109,99 @@ sequenceDiagram
     E ->>+ IEDL : __next__
     opt self._counter == 0
         IEDL ->>+ IEDL : first_step
-            IEDL ->>+ SP : agent_id
-            SP -->>- IEDL : agent_id
-            IEDL ->> SP : self.state[agent_id]["motor_only_step"] = True
+            IEDL ->>+ SPCI : agent_id
+            SPCI -->>- IEDL : agent_id
+            IEDL ->> SPCI : self.state[agent_id]["motor_only_step"] = True
         deactivate IEDL
         break early return
             IEDL -->> E : self._observation
         end
     end
-    IEDL ->>+ SP : use_goal_state_driven_actions
-    SP -->>- IEDL : use_goal_state_driven_actions
-    IEDL ->>+ SP : driving_goal_state
-    SP -->>- IEDL : driving_goal_state
+    IEDL ->>+ SPCI : use_goal_state_driven_actions
+    SPCI -->>- IEDL : use_goal_state_driven_actions
+    IEDL ->>+ SPCI : driving_goal_state
+    SPCI -->>- IEDL : driving_goal_state
     opt use_goal_state_driven_actions and driving_goal_state is not None
         IEDL ->>+ IEDL : execute_jump_attempt
-            IEDL ->>+ SP : agent_id
-            SP -->>- IEDL : agent_id
-            IEDL ->>+ SP : self.state[agend_id]
-            SP -->>- IEDL : pre_jump_state
-            IEDL ->>+ SP : derive_habitat_goal_state
-            SP -->>- IEDL : target_loc, target_np_quat
+            IEDL ->>+ SPCI : agent_id
+            SPCI -->>- IEDL : agent_id
+            IEDL ->>+ SPCI : self.state[agend_id]
+            SPCI -->>- IEDL : pre_jump_state
+            IEDL ->>+ SPCI : derive_habitat_goal_state
+            SPCI -->>- IEDL : target_loc, target_np_quat
             IEDL ->>+ DS : __getitem__(set_agent_pose)
             DS -->>- IEDL : observation, state
             IEDL ->> IEDL : self._observation = observation
-            IEDL ->> SP : self.state = state
+            IEDL ->> SPCI : self.state = state
             IEDL ->>+ DS : __getitem__(set_agent_rotation)
             DS -->>- IEDL : observation, state
             IEDL ->> IEDL : self._observation = observation
-            IEDL ->> SP : self.state = state
-            IEDL ->>+ SP : get_depth_at_center
-            SP -->>- IEDL : depth_at_center
+            IEDL ->> SPCI : self.state = state
+            IEDL ->>+ SPCI : get_depth_at_center
+            SPCI -->>- IEDL : depth_at_center
             alt depth_at_center < 1.0
                 IEDL ->>+ IEDL : handle_successful_jump
-                    IEDL ->>+ SP : agent_id
-                    SP -->>- IEDL : agent_id
-                    IEDL ->> SP : self.action = MoveTangentially
-                    IEDL ->>+ SP : action_details
-                    SP -->>- IEDL : action_details
-                    IEDL ->> SP : self.action_details["pc_heading"].append("jump")
-                    IEDL ->> SP : self.action_details["avoidance_heading"].append(False)
-                    IEDL ->> SP : self.action_details["z_defined_pc"].append(None)
+                    IEDL ->>+ SPCI : agent_id
+                    SPCI -->>- IEDL : agent_id
+                    IEDL ->> SPCI : self.action = MoveTangentially
+                    IEDL ->>+ SPCI : action_details
+                    SPCI -->>- IEDL : action_details
+                    IEDL ->> SPCI : self.action_details["pc_heading"].append("jump")
+                    IEDL ->> SPCI : self.action_details["avoidance_heading"].append(False)
+                    IEDL ->> SPCI : self.action_details["z_defined_pc"].append(None)
                 deactivate IEDL
             else
                 IEDL ->>+ IEDL : handle_failed_jump
                     IEDL ->>+ DS : __getitem__(set_agent_pose)
                     DS -->>- IEDL : observation, state
                     IEDL ->> IEDL : self._observation = observation
-                    IEDL ->> SP : self.state = state
+                    IEDL ->> SPCI : self.state = state
                     IEDL ->>+ DS : __getitem__(set_sensor_rotation)
                     DS -->>- IEDL : observation, state
                     IEDL ->> IEDL : self._observation = observation
-                    IEDL ->> SP : self.state = state
-                    IEDL ->>+ SP : agent_id
-                    SP -->>- IEDL : agent_id
-                    IEDL ->>+ SP : self.state[agent_id]["position"]
-                    SP -->>- IEDL : position
-                    IEDL ->>+ SP : self.state[agent_id]["rotation"]
-                    SP -->>- IEDL : rotation
-                    IEDL ->>+ SP : self.state[agent_id]["sensors"]
-                    SP -->>- IEDL : sensors
+                    IEDL ->> SPCI : self.state = state
+                    IEDL ->>+ SPCI : agent_id
+                    SPCI -->>- IEDL : agent_id
+                    IEDL ->>+ SPCI : self.state[agent_id]["position"]
+                    SPCI -->>- IEDL : position
+                    IEDL ->>+ SPCI : self.state[agent_id]["rotation"]
+                    SPCI -->>- IEDL : rotation
+                    IEDL ->>+ SPCI : self.state[agent_id]["sensors"]
+                    SPCI -->>- IEDL : sensors
                 deactivate IEDL
             end
-            IEDL ->>+ SP : agent_id
-            SP -->>- IEDL : agent_id
-            IEDL ->> SP : self.state[agent_id]["motor_only_step"] = True
-            IEDL ->>+ SP : action
-            SP -->>- IEDL : action
-            IEDL ->>+ SP : post_action(action)
-            SP -->>- IEDL : ...
+            IEDL ->>+ SPCI : agent_id
+            SPCI -->>- IEDL : agent_id
+            IEDL ->> SPCI : self.state[agent_id]["motor_only_step"] = True
+            IEDL ->>+ SPCI : action
+            SPCI -->>- IEDL : action
+            IEDL ->>+ SPCI : post_action(action)
+            SPCI -->>- IEDL : ...
         deactivate IEDL
         break early return
             IEDL -->> E : self._observation
         end
     end
-    IEDL ->>+ SP : __call__
+    IEDL ->>+ SPCI : __call__
     opt self._action is None
-        IEDL ->>+ SP : touch_object
-        SP -->>- IEDL : action
-        IEDL ->>+ SP : agent_id
-        SP -->>- IEDL : agent_id
-        IEDL ->> SP : self.state[agent_id]["motor_only_step"] = True
+        IEDL ->>+ SPCI : touch_object
+        SPCI -->>- IEDL : action
+        IEDL ->>+ SPCI : agent_id
+        SPCI -->>- IEDL : agent_id
+        IEDL ->> SPCI : self.state[agent_id]["motor_only_step"] = True
     end
     IEDL ->>+ DS : __getitem__(self._action)
     DS -->>- IEDL : observation, state
     IEDL ->> IEDL : self._observation = observation
-    IEDL ->> SP : self.state = state
+    IEDL ->> SPCI : self.state = state
     alt self._action.name != "orient_vertical"
-        IEDL ->>+ SP : agent_id
-        SP -->>- IEDL : agent_id
-        IEDL ->> SP : self.state[agent_id]["motor_only_step"] = True
+        IEDL ->>+ SPCI : agent_id
+        SPCI -->>- IEDL : agent_id
+        IEDL ->> SPCI : self.state[agent_id]["motor_only_step"] = True
     else
-        IEDL ->>+ SP : agent_id
-        SP -->>- IEDL : agent_id
-        IEDL ->> SP : self.state[agent_id]["motor_only_step"] = False
+        IEDL ->>+ SPCI : agent_id
+        SPCI -->>- IEDL : agent_id
+        IEDL ->> SPCI : self.state[agent_id]["motor_only_step"] = False
     end
     IEDL -->> E : self._observation
     deactivate IEDL
@@ -210,8 +210,8 @@ sequenceDiagram
     IEDL ->>+ EDLO : post_episode
     deactivate IEDL
     EDLO ->>+ EDL : post_episode
-    EDL ->>+ SP : post_episode
-    SP -->>- EDL : ...
+    EDL ->>+ SPCI : post_episode
+    SPCI -->>- EDL : ...
     EDL -->>- EDLO : ...
     EDLO ->>+ OIS : post_episode
     OIS -->>- EDLO : ...
