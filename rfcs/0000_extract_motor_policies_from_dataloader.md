@@ -96,14 +96,14 @@ It is noteworthy that reviewing any of the above policy algorithms does not capt
 
 First, the observed pairings of the `DataLoader` and the `MotorSystem`/`*Policy` in the current Monty configurations are:
 - `EnvironmentDataLoaderPerObject`
-    - `BasePolicy` (used in `base_config_test.py`). See [0000_extract_motor_policies_from_dataloader/environmentdataloaderperobject_basepolicy_sd.md](0000_extract_motor_policies_from_dataloader/environmentdataloaderperobject_basepolicy_sd.md).
+    - `BasePolicy` (used in `base_config_test.py`). See [environmentdataloaderperobject_basepolicy_sd.md](0000_extract_motor_policies_from_dataloader/environmentdataloaderperobject_basepolicy_sd.md).
 - `InformedEnvironmentDataLoader`
-    - `InformedPolicy`. See [0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_informedpolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_informedpolicy_sd.md).
-    - `NaiveScanPolicy`. The interaction is the same as with the `InformedPolicy`. See [0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_naivescanpolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_naivescanpolicy_sd.md).
-    - `SurfacePolicy`. See [0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_surfacepolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_surfacepolicy_sd.md).
-    - `SurfacePolicyCurvatureInformed`. See [0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_surfacepolicycurvatureinformed_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_surfacepolicycurvatureinformed_sd.md).
+    - `InformedPolicy`. See [informedenvironmentdataloader_informedpolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_informedpolicy_sd.md).
+    - `NaiveScanPolicy`. The interaction is the same as with the `InformedPolicy`. See [informedenvironmentdataloader_naivescanpolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_naivescanpolicy_sd.md).
+    - `SurfacePolicy`. See [informedenvironmentdataloader_surfacepolicy_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_surfacepolicy_sd.md).
+    - `SurfacePolicyCurvatureInformed`. See [informedenvironmentdataloader_surfacepolicycurvatureinformed_sd.md](0000_extract_motor_policies_from_dataloader/informedenvironmentdataloader_surfacepolicycurvatureinformed_sd.md).
 - `SaccadeOnImageDataLoader`
-    - `InformedPolicy`
+    - `InformedPolicy`. See [saccadeonimagedataloader_informedpolicy_sd.md](0000_extract_motor_policies_from_dataloader/saccadeonimagedataloader_informedpolicy_sd.md).
 - `SaccadeOnImageFromStreamDataLoader`
     - `InformedPolicy`
 
@@ -205,7 +205,7 @@ sequenceDiagram
 
 * `InformedEnvironmentDataLoader.__iter__` and `.__next__` overwrite inherited methods without calling them. This hints that inheritance class hierarchy may not be appropriate here.
 
-* `InformedEnvironmentDataLoader.__iter__` comments that it overwrites the original because we don't want to reset the agent since it was already done in `pre_episode`. However, this is also true for `EnvironmentDataLoaderPerObject`, yet there is no `EnvironmentDataLoaderPerObject.__iter__` that overrides the inherited method. Is this difference significant?
+* `InformedEnvironmentDataLoader.__iter__` and `SaccadeOnImageDataLoader.__iter__` comments that it overwrites the original because we don't want to reset the agent since it was already done in `pre_episode`. However, this is also true for `EnvironmentDataLoaderPerObject`, yet there is no `EnvironmentDataLoaderPerObject.__iter__` that overrides the inherited method. Is this difference significant?
 
 * `InformedEnvironmentDataLoader.handle_successful_jump` checks `isinstance(self.motor_system, SurfacePolicy)` and directly manipulates the motor system internals if the motor system is a `SurfacePolicy`.
 
@@ -231,6 +231,14 @@ sequenceDiagram
     ```
 
 * `InformedEnvironmentDataLoader.__next__` checks `isinstance(self.motor_system, SurfacePolicy)` and `isinstance(self.motor_system, SurfacePolicyCurvatureInformed)` to determine whether to touch an object and to set motor_only_step state property.
+
+* `OmniglotDataLoader` appears unused.
+
+* `SaccadeOnImageDataLoader.__init__` reproduces its grandparent class' (`EnvironmentDataLoader`) constructor inline. This hints at possible improvements to the class hierarchy.
+
+* `SaccadeOnImageDataLoader.__init__` (unlike its parent class) retrieves object names from the `Environment` (`self.dataset.env.scene_names`) instead of being given a parameter on creation.
+
+* `SaccadeOnImageDataLoader` appears to only use `pre_episode` of its parent, overwriting other methods.
 
 # Drawbacks
 
