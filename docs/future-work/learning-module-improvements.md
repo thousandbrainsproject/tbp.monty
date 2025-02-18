@@ -21,4 +21,4 @@ These are the things we would like to implement:
 - [Improve handling of symmetry](learning-module-improvements/improve-handling-of-symmetry.md) #pose
 - [Use Better Priors for Hypothesis Initialization](learning-module-improvements/use-better-priors-for-hypothesis-initialization.md) #numsteps #pose #scale
 
-Please see the [instructions here](project-roadmap.md#how-you-can-contribute) if you would like to tackle one of these tasks.
+!snippet[../snippets/contributing-tasks.md]

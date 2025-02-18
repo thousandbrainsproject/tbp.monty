@@ -174,23 +174,31 @@ class MontyExperiment:
         return model
 
     def load_dataset_and_dataloaders(self, config):
-        # TODO: don't need to bother loading train and eval if only doing one
 
         # Initialize everything needed for dataloader
         dataset_class = config["dataset_class"]
         dataset_args = config["dataset_args"]
         self.dataset = self.load_dataset(dataset_class, dataset_args)
 
-        dataloader_class = config["train_dataloader_class"]
-        dataloader_args = config["train_dataloader_args"]
-        self.train_dataloader = self.create_data_loader(
-            dataloader_class, dataloader_args
-        )
-        dataloader_class = config["eval_dataloader_class"]
-        dataloader_args = config["eval_dataloader_args"]
-        self.eval_dataloader = self.create_data_loader(
-            dataloader_class, dataloader_args
-        )
+        # Initialize train dataloaders if needed
+        if config["experiment_args"]["do_train"]:
+            dataloader_class = config["train_dataloader_class"]
+            dataloader_args = config["train_dataloader_args"]
+            self.train_dataloader = self.create_data_loader(
+                dataloader_class, dataloader_args
+            )
+        else:
+            self.train_dataloader = None
+
+        # Initialize eval dataloaders if needed
+        if config["experiment_args"]["do_eval"]:
+            dataloader_class = config["eval_dataloader_class"]
+            dataloader_args = config["eval_dataloader_args"]
+            self.eval_dataloader = self.create_data_loader(
+                dataloader_class, dataloader_args
+            )
+        else:
+            self.eval_dataloader = None
 
     def load_dataset(self, dataset_class, dataset_args):
         """Instantiate a dataset.

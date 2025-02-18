@@ -14,6 +14,9 @@ outputs:
   monty_date:
     description: 'The current UTC date'
     value: ${{ steps.set_vars.outputs.monty_date }}
+  image_path:
+    description: 'The path for storing images'
+    value: ${{ steps.set_vars.outputs.image_path }}
 runs:
   using: 'composite'
   steps:
@@ -24,6 +27,8 @@ runs:
       run: |
         export PATH="$HOME/miniconda/bin:$PATH"
         source activate tbp.monty
+        BRANCH=${GITHUB_HEAD_REF:-main}
         echo "monty_version=$(python -m tools.print_version.cli minor)" >> $GITHUB_OUTPUT
-        echo "branch_name=${{ inputs.user_login }}-$(echo ${GITHUB_HEAD_REF} | tr -c '[:alnum:]' '-' | sed 's/-*$//')" >> $GITHUB_OUTPUT
+        echo "branch_name=${{ inputs.user_login }}-$(echo ${BRANCH} | tr -c '[:alnum:]' '-' | sed 's/-*$//')" >> $GITHUB_OUTPUT
         echo "monty_date=$(date -u +'%Y-%m-%d %H:%M UTC')" >> $GITHUB_OUTPUT
+        echo "image_path=${{ inputs.user_login }}/tbp.monty/refs/heads/${BRANCH}/docs/figures" >> $GITHUB_OUTPUT

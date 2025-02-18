@@ -8,9 +8,12 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import csv
 import json
 import os
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from tools.github_readme_sync.readme import GITHUB_RAW, ReadMe
@@ -298,6 +301,7 @@ This is a test document.""",
             category_id="category-id",
             doc={"title": "New Doc", "body": "This is a new doc.", "slug": "new-doc"},
             parent_id="parent-doc-id",
+            file_path="docs/new-doc.md",
         )
         self.assertTrue(created)
         self.assertEqual(doc_id, "new-doc-id")
@@ -339,8 +343,6 @@ This is a test document.""",
         ]
 
         for path in markdown_paths:
-            print(path)
-            print(self.readme.correct_image_locations(path))
             self.assertEqual(self.readme.correct_image_locations(path), base_expected)
 
         for path in markdown_paths_not_modified:
@@ -527,6 +529,133 @@ This is a test document.""",
 
         result = self.readme.parse_images(input_text)
         self.assertEqual(result, expected_output)
+
+    def test_convert_csv_to_html_table(self):
+        # Create a temporary CSV file for testing
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as tmp:
+            writer = csv.writer(tmp)
+            writer.writerow(
+                [
+                    "Name",
+                    "Score %|hover Scöre is the 'percentage' correct",
+                    "Time (s)|align right",
+                    "Time (mins)|align left",
+                    "Mixed Column|    align left| hover Mixed Column",
+                ]
+            )
+            writer.writerow(["Test 1", "95.01", "55", "10e4", "123"])
+            writer.writerow(["Test 2", "-87.00", "72", "1/2", "456s"])
+            tmp_path = tmp.name
+
+        try:
+            result = self.readme.convert_csv_to_html_table(f"!table[{tmp_path}]", "")
+
+            # Check overall structure
+            self.assertIn('<div class="data-table"><table>', result)
+            self.assertIn("</table></div>", result)
+
+            # Check headers
+            self.assertIn("<thead>", result)
+            self.assertIn("<th>Name</th>", result)
+            self.assertIn("<th>Time (s)</th>", result)
+            self.assertIn("title=\"Scöre is the 'percentage' correct\"", result)
+            self.assertIn('title="Mixed Column"', result)
+
+            # Check data rows
+            self.assertIn("<tbody>", result)
+            self.assertIn("<td>Test 1</td>", result)
+            self.assertIn("<td>95.01</td>", result)
+            self.assertIn('<td style="text-align:right">55</td>', result)
+            self.assertIn("<td>Test 2</td>", result)
+            self.assertIn("<td>-87.00</td>", result)
+            self.assertIn('<td style="text-align:right">72</td>', result)
+            self.assertIn('<td style="text-align:left">1/2</td>', result)
+            self.assertIn('<td style="text-align:left">10e4</td>', result)
+            self.assertIn('<td style="text-align:left">123</td>', result)
+            self.assertIn('<td style="text-align:left">456s</td>', result)
+
+            # Test with non-existent file
+            result = self.readme.convert_csv_to_html_table(
+                "!table[non_existent.csv]", ""
+            )
+            self.assertTrue(result.startswith("[Failed to load table"))
+        finally:
+            Path(tmp_path).unlink()
+
+    def test_invalid_alignment_value(self):
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".csv") as tmp:
+            writer = csv.writer(tmp)
+            writer.writerow(["Name", "Score %|align wrong"])
+            writer.writerow(["Test 1", "95.01"])
+            tmp_path = tmp.name
+
+        try:
+            result = self.readme.convert_csv_to_html_table(f"!table[{tmp_path}]", "")
+            self.assertIn("Must be 'left' or 'right'", result)
+        finally:
+            Path(tmp_path).unlink()
+
+    def test_convert_csv_to_html_table_relative_path(self):
+        # Create a temporary directory structure
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # Create subdirectories
+            data_dir = os.path.join(tmp_dir, "data")
+            docs_dir = os.path.join(tmp_dir, "docs")
+            os.makedirs(data_dir)
+            os.makedirs(docs_dir)
+
+            # Create a CSV file in the data directory
+            csv_path = os.path.join(data_dir, "test.csv")
+            with open(csv_path, "w") as f:
+                writer = csv.writer(f)
+                writer.writerow(["Header 1", "Header 2"])
+                writer.writerow(["Value 1", "Value 2"])
+
+            # Create a mock markdown file path in the docs directory
+            doc_path = os.path.join(docs_dir, "doc.md")
+
+            # Test relative path from doc to csv
+            result = self.readme.convert_csv_to_html_table(
+                f"!table[../../data/test.csv]", doc_path
+            )
+
+            # Check the table structure
+            self.assertIn('<div class="data-table"><table>', result)
+            self.assertIn("<thead>", result)
+            self.assertIn("<th>Header 1</th>", result)
+            self.assertIn("<th>Header 2</th>", result)
+            self.assertIn("<tbody>", result)
+            self.assertIn("<td>Value 1</td>", result)
+            self.assertIn("<td>Value 2</td>", result)
+            self.assertIn("</table></div>", result)
+
+    def test_insert_markdown_snippet(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            docs_dir = os.path.join(tmp_dir, "docs")
+            other_dir = os.path.join(tmp_dir, "other")
+            os.makedirs(docs_dir)
+            os.makedirs(other_dir)
+
+            source_md = os.path.join(other_dir, "source.md")
+            with open(source_md, "w") as f:
+                f.write(
+                    "# Test Header\nThis is test content\n* List item 1\n* List item 2"
+                )
+            doc_path = os.path.join(docs_dir, "doc.md")
+
+            result = self.readme.insert_markdown_snippet(
+                "!snippet[../../other/source.md]", doc_path
+            )
+
+            expected_content = (
+                "# Test Header\nThis is test content\n* List item 1\n* List item 2"
+            )
+            self.assertEqual(result, expected_content)
+
+            result = self.readme.insert_markdown_snippet(
+                "!snippet[../other/nonexistent.md]", doc_path
+            )
+            self.assertIn("File not found", result)
 
 
 if __name__ == "__main__":

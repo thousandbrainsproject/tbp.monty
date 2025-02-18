@@ -8,16 +8,16 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import argparse
 
 
-def create_cmd_parser(all_configs):
+def create_cmd_parser(experiments: list[str]):
     """Create monty command line argument parser from all available configs.
 
     Args:
-        all_configs: Dict containing all available experiment configurations.
-            Usually each project would have its own list of experiment
-            configurations
+        experiments: List of experiment names available to choose from.
 
     Returns:
         Command line argument parser
@@ -32,7 +32,7 @@ def create_cmd_parser(all_configs):
         "--experiments",
         nargs="+",
         help="Experiment names",
-        choices=list(all_configs.keys()),
+        choices=experiments,
     )
     parser.add_argument(
         "-q",
@@ -50,13 +50,11 @@ def create_cmd_parser(all_configs):
     return parser
 
 
-def create_rerun_parser(all_configs):
+def create_rerun_parser(experiments: list[str]):
     """Create command line argument parser for running.
 
     Args:
-        all_configs: Dict containing all available experiment configurations.
-            Usually each project would have its own list of experiment
-            configurations
+        experiments: List of experiment names available to choose from.
 
     Returns:
         Command line argument parser
@@ -71,7 +69,7 @@ def create_rerun_parser(all_configs):
         "-exp",
         "--experiment",
         help="Name of the experiment you want to repeat episodes from",
-        choices=list(all_configs.keys()),
+        choices=experiments,
     )
     parser.add_argument(
         "-i",
@@ -95,16 +93,14 @@ def create_rerun_parser(all_configs):
     return parser
 
 
-def create_cmd_parser_parallel(all_configs):
+def create_cmd_parser_parallel(experiments: list[str]):
     """Create monty command line argument parser for running episodes in parallel.
 
     This one is designed to run episodes of an experiment in parallel and is used
     by run_parallel.py.
 
     Args:
-        all_configs: Dict containing all available experiment configurations.
-            Usually each project would have its own list of experiment
-            configurations
+        experiments: List of experiment names available to choose from.
 
     Returns:
         Command line argument parser
@@ -118,7 +114,7 @@ def create_cmd_parser_parallel(all_configs):
         "-e",
         "--experiment",
         help="Experiment name",
-        choices=list(all_configs.keys()),
+        choices=experiments,
     )
     parser.add_argument(
         "-n",

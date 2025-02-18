@@ -162,4 +162,4 @@ Where Monty would eventually shine is when it is able to control experimental de
 
 How Monty would *learn* to generalize a mapping between these levels of representations remains outstanding, and relates to how Monty can learn a mapping between different spaces (e.g. meeting a new family, and mapping these people onto an abstract family-tree structure). We are still figuring out exactly how this would work in a simpler case like the family-tree. In the protein case, the rules are much more complex, and so learning this is definitely not something that Monty can do now. However, just like a human scientist, the ultimate aim would be for Monty to learn to do this mapping based on a causal understanding of the world, informed by the above mentioned experiments, and in contrast to an end-to-end black-box function approximation.
 
-You can also read more about [applications of Monty under the suggested criteria](../overview/application-criteria).
+You can also read more about [applications of Monty under the suggested criteria](../overview/application-criteria.md).

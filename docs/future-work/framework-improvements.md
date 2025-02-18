@@ -12,4 +12,4 @@ These are the things we would like to implement:
 - [Make configs easier to use](framework-improvements/make-configs-easier-to-use.md) #infrastructure
 - [Find faster alternative to KDTree search](framework-improvements/find-faster-alternative-to-kdtree-search.md) #speed
 
-Please see the [instructions here](project-roadmap.md#how-you-can-contribute) if you would like to tackle one of these tasks.
+!snippet[../snippets/contributing-tasks.md]

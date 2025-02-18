@@ -10,9 +10,11 @@
 
 import copy
 import os
+from dataclasses import asdict
 
 import numpy as np
 
+from benchmarks.configs.names import PretrainingExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     FiveLMMontyConfig,
     MontyArgs,
@@ -28,7 +30,6 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
     ExperimentArgs,
     PredefinedObjectInitializer,
-    get_env_dataloader_per_object_by_idx,
     get_object_names_by_idx,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
@@ -129,8 +130,6 @@ supervised_pre_training_base = dict(
         object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations_all),
     ),
-    eval_dataloader_class=ED.InformedEnvironmentDataLoader,  # just placeholder
-    eval_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=1),
 )
 
 
@@ -271,7 +270,7 @@ supervised_pre_training_5lms_all_objects.update(
     ),
 )
 
-CONFIGS = dict(
+experiments = PretrainingExperiments(
     supervised_pre_training_base=supervised_pre_training_base,
     supervised_pre_training_5lms=supervised_pre_training_5lms,
     supervised_pre_training_5lms_all_objects=supervised_pre_training_5lms_all_objects,
@@ -280,3 +279,4 @@ CONFIGS = dict(
     only_surf_agent_training_allobj=only_surf_agent_training_allobj,
     only_surf_agent_training_numenta_lab_obj=only_surf_agent_training_numenta_lab_obj,
 )
+CONFIGS = asdict(experiments)

@@ -8,6 +8,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import csv
+import html
 import json
 import logging
 import os
@@ -20,7 +22,12 @@ import nh3
 import yaml
 
 from tools.github_readme_sync.colors import GRAY, GREEN, RESET
-from tools.github_readme_sync.excluded_items import IGNORE_DOCS, IGNORE_IMAGES
+from tools.github_readme_sync.constants import (
+    IGNORE_DOCS,
+    IGNORE_IMAGES,
+    IGNORE_TABLES,
+    REGEX_CSV_TABLE,
+)
 from tools.github_readme_sync.req import delete, get, post, put
 
 PREFIX = "https://dash.readme.com/api/v1"
@@ -35,6 +42,7 @@ regex_cloudinary_video = re.compile(
     r"\[(.*?)\]\((https://res\.cloudinary\.com/([^/]+)/video/upload/v(\d+)/([^/]+\.mp4))\)",
     re.IGNORECASE,
 )
+regex_markdown_snippet = re.compile(r"!snippet\[(.*?)\]")
 
 # Allowlist of supported CSS properties
 ALLOWED_CSS_PROPERTIES = {"width", "height"}
@@ -150,6 +158,12 @@ class ReadMe:
         logging.info(f"{GRAY}Deleting doc {slug}{RESET}")
         delete(f"{PREFIX}/docs/{slug}", {"x-readme-version": self.version})
 
+    def validate_csv_align_param(self, align_value: str) -> None:
+        if align_value not in ["left", "right"]:
+            raise ValueError(
+                f"Invalid alignment value: {align_value}. Must be 'left' or 'right'"
+            )
+
     def create_category_if_not_exists(self, slug: str, title: str) -> Tuple[str, bool]:
         category = get(
             f"{PREFIX}/categories/{slug}", {"x-readme-version": self.version}
@@ -168,10 +182,89 @@ class ReadMe:
 
         return category["_id"], False
 
+    def convert_csv_to_html_table(self, body: str, file_path: str) -> str:
+        """Convert CSV table references to HTML tables.
+
+        Args:
+            body: The document body containing CSV table references
+            file_path: The path to the current document being processed
+
+        Returns:
+            str: The document body with CSV tables converted to HTML format
+        """
+
+        def replace_match(match):
+            csv_path = match.group(1)
+            table_name = os.path.basename(csv_path)
+            if table_name in IGNORE_TABLES:
+                return match.group(0)
+
+            # Get absolute path of CSV relative to current document
+            csv_path = os.path.join(file_path, csv_path)
+            csv_path = os.path.normpath(csv_path)
+
+            try:
+                with open(csv_path, "r") as f:
+                    reader = csv.reader(f)
+                    headers = next(reader)
+                    rows = list(reader)
+
+                    # Build unsafe HTML table
+                    unsafe_html = "<div class='data-table'><table>\n<thead>\n<tr>"
+
+                    # Process headers and build alignment lookup
+                    alignments = {}
+                    for i, header in enumerate(headers):
+                        title_attr = ""
+                        align_style = ""
+                        parts = [p.strip() for p in header.split("|")]
+                        header = parts[0]
+
+                        # Process additional attributes in any order
+                        for part in parts[1:]:
+                            if part.startswith("hover "):
+                                hover_text = html.escape(part[6:])
+                                title_attr = f" title='{hover_text}'"
+                            elif part.startswith("align "):
+                                align_value = part[6:]
+                                self.validate_csv_align_param(align_value)
+                                alignments[i] = (
+                                    f" style='text-align:{html.escape(align_value)}'"
+                                )
+                        unsafe_html += f"<th{title_attr}>{header}</th>"
+                    unsafe_html += "</tr>\n</thead>\n<tbody>\n"
+
+                    # Add rows using stored alignments
+                    for row in rows:
+                        unsafe_html += "<tr>"
+                        for i, cell in enumerate(row):
+                            align_style = alignments.get(i, "")
+                            unsafe_html += f"<td{align_style}>{cell}</td>"
+                        unsafe_html += "</tr>\n"
+
+                    unsafe_html += "</tbody>\n</table></div>"
+
+                    # Clean and return the HTML
+                    return nh3.clean(
+                        unsafe_html,
+                        attributes={
+                            "div": {"class"},
+                            "th": {"title", "style"},
+                            "td": {"style"},
+                        },
+                    )
+
+            except Exception as e:
+                return f"[Failed to load table from {csv_path} - {e}]"
+
+        return REGEX_CSV_TABLE.sub(replace_match, body)
+
     def create_or_update_doc(
-        self, order: int, category_id: str, doc: dict, parent_id: str
+        self, order: int, category_id: str, doc: dict, parent_id: str, file_path: str
     ) -> Tuple[str, bool]:
-        body = self.correct_image_locations(doc["body"])
+        body = self.insert_markdown_snippet(doc["body"], file_path)
+        body = self.convert_csv_to_html_table(body, file_path)
+        body = self.correct_image_locations(body)
         body = self.correct_file_locations(body)
         body = self.convert_note_tags(body)
         body = self.parse_images(body)
@@ -343,3 +436,26 @@ class ReadMe:
             return f"[block:html]\n{json.dumps(block, indent=2)}\n[/block]"
 
         return regex_cloudinary_video.sub(replace_video, markdown_text)
+
+    def insert_markdown_snippet(self, body: str, file_path: str) -> str:
+        """Insert markdown snippets from referenced files.
+
+        Args:
+            body: The document body containing snippet references
+            file_path: The path to the current document being processed
+
+        Returns:
+            str: The document body with snippets inserted
+        """
+
+        def replace_match(match):
+            snippet_path = os.path.join(file_path, match.group(1))
+            snippet_path = os.path.normpath(snippet_path)
+
+            try:
+                with open(snippet_path, "r") as f:
+                    return f.read()
+            except Exception as e:
+                return f"[File not found or could not be read: {snippet_path}]"
+
+        return regex_markdown_snippet.sub(replace_match, body)

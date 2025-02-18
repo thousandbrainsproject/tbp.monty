@@ -11,7 +11,7 @@ These are the things we would like to implement:
 - [Test learning at different speeds depending on level in hierarchy](cmp-hierarchy-improvements/test-learning-at-different-speeds-depending-on-level-in-hierarchy.md) #learning #generalization
 - [Send similarity encoding object ID to next level & test](cmp-hierarchy-improvements/send-similarity-encoding-object-id-to-next-level-test.md) #compositional
 
-Please see the [instructions here](project-roadmap.md#how-you-can-contribute) if you would like to tackle one of these tasks.
+!snippet[../snippets/contributing-tasks.md]
 
 > 📘 Heterarchy vs. Hierarchy
 > 
