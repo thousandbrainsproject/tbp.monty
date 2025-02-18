@@ -18,6 +18,7 @@ jobs:
   docs_deploy:
     name: docs-deploy
     runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     steps:
       - name: Checkout tbp.monty
         uses: actions/checkout@v4
