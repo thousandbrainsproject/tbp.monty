@@ -351,7 +351,11 @@ randrot_noise_10distinctobj_surf_agent.update(
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
     ),
     dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(),
+    logging_config=CSVLoggingConfig(python_log_level="DEBUG"),
 )
+randrot_noise_10distinctobj_surf_agent["monty_config"].learning_module_configs[
+    "learning_module_0"
+]["learning_module_args"]["use_multithreading"] = False
 
 randrot_10distinctobj_surf_agent = copy.deepcopy(base_config_10distinctobj_surf_agent)
 randrot_10distinctobj_surf_agent.update(
