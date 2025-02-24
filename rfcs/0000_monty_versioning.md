@@ -134,3 +134,5 @@ If we publish Monty, then the specific published version could be installed via 
 If we were to adopt the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/#specification) then the version number updates could be automated based on the commit message.
 
 The `tbp` CLI could be extended to include a `version` command that prepares a Pull Request to update the version number.
+
+In the future, integrating into the `main` branch may become cumbersome if the pace of commits to `main` is high. In that case, we will update our versioning strategy. One way to do this is to create a `release` branch that is used for releasing new versions. This note is intended to highlight the possibility, but if we get there, we will get into the details then.
