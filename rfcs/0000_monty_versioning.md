@@ -31,7 +31,11 @@ The current version can be found in [`src/tbp/monty/__init__.py`](https://github
 Here are some constraints related to updating the version:
 
 * We want the current version to be in the source code.
+* We want the current version to be programmatically accessible, e.g., by the `tools.print_version.cli` tool.
 * The `main` branch is protected and changes can be pushed only via Pull Requests.
+
+> [!NOTE]
+> "Current version" can have a counterintuitive meaning due to different interpretations of what "current" means. For the purposes of this RFC, "current" is (somewhat circularly) defined as the version number in the source code.
 
 ### Process
 
@@ -118,3 +122,5 @@ jobs:
 # Future possibilities
 
 If we were to adopt the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/#specification) then the version number updates could be automated based on the commit message.
+
+The `tbp` CLI could be extended to include a `version` command that prepares a Pull Request to update the version number.
