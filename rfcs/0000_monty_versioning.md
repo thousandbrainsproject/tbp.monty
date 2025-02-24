@@ -116,6 +116,14 @@ jobs:
           git push origin --delete ${{ steps.branch.outputs.name }}
 ```
 
+## Accessing specific versions
+
+The most detailed and specific way to access a specific version of `tbp.monty` is to clone the repository and checkout the specific commit.
+
+If we tag the version commit with the corresponding version number, then the version can be accessed by checking out the tag. GitHub has [releases](https://github.com/thousandbrainsproject/tbp.monty/releases) and [tags](https://github.com/thousandbrainsproject/tbp.monty/tags) pages that list the tagged versions.
+
+If we publish Monty, then the specific published version could be installed via a package manager by specifying the published version.
+
 # References
 
 * [Semantic Versioning](https://semver.org/) is a standard for versioning software.
