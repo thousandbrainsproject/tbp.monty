@@ -28,7 +28,7 @@ The current version can be found in [`src/tbp/monty/__init__.py`](https://github
 
 ## Updating the version
 
-### Constraints
+### Proposed constraints
 
 Here are some constraints related to updating the version:
 
@@ -115,6 +115,8 @@ jobs:
         run: |
           git push origin --delete ${{ steps.branch.outputs.name }}
 ```
+
+Release branches are deferred to possible future work. The way release branches would work is that we would never update `__version__` on the main branch. Instead, every time we want to make a new version, we would create a new branch, update `__version__`, and merge it into the release branch. This has some nice properties for automation, however, it interferes with some of the proposed constraints above.
 
 ## Accessing specific versions
 
