@@ -24,6 +24,8 @@ In summary, the version number is `MAJOR.MINOR.PATCH`.
 
 It is worth noting that the `MAJOR` version number `0` is special. When `MAJOR` is `0`, then incrementing the `MINOR` version number ***can include backwards-incompatible changes***. `MAJOR` version number `0` is the usual way of indicating that the software is still in development and not ready for production use.
 
+We will use `MAJOR` version number `0` for the ongoing development of Monty. Incrementing the `MAJOR` version number beyond `0` should be a future RFC, as it will be a significant event.
+
 The current version can be found in [`src/tbp/monty/__init__.py`](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/__init__.py) as the `__version__` variable.
 
 ## Updating the version
