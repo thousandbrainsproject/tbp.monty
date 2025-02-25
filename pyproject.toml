@@ -34,7 +34,7 @@ dynamic = ['version']
 license = { file = 'LICENSE' }
 name = 'tbp.monty'
 readme = 'README.md'
-requires-python = '==3.8'
+requires-python = '>=3.8'
 
 [project.optional-dependencies]
 analysis = [
