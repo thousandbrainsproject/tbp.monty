@@ -51,6 +51,23 @@ One of the benefits of using a Pull Request is that it offers a place to discuss
 
 In the future, release workflows could be triggered by the version number change.
 
+### Expected Workflow
+
+By adopting this versioning scheme and process, the expected workflow is as follows:
+
+
+- commit
+- commit
+- commit
+- commit
+- review all commits above and update the version accordingly (in the future this will also publish Monty)
+- commit
+- commit
+- review all commits above and update the version accordingly (in the future this will also publish Monty)
+- commit
+- ...
+
+
 ### Rejected Alternatives
 
 Automatic version updates based on the commit message are deferred to future work.
@@ -139,4 +156,4 @@ If we were to adopt the [Conventional Commits specification](https://www.convent
 
 The `tbp` CLI could be extended to include a `version` command that prepares a Pull Request to update the version number.
 
-In the future, integrating into the `main` branch may become cumbersome if the pace of commits to `main` is high. In that case, we will update our versioning strategy. One way to do this is to create a `release` branch that is used for releasing new versions. This note is intended to highlight the possibility, but if we get there, we will get into the details then.
+In the future, integrating into the `main` branch may become cumbersome if the pace of commits to `main` is high. In that case, we will update our versioning strategy. One way to do this is to create a `release` branch for each version that is used for releasing that version. This note is intended to highlight the possibility, but if we get there, we will get into the details then.
