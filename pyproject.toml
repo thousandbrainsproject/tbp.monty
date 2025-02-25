@@ -34,7 +34,7 @@ dynamic = ['version']
 license = { file = 'LICENSE' }
 name = 'tbp.monty'
 readme = 'README.md'
-requires-python = '>=3.7, <4'
+requires-python = '>=3.8'
 
 [project.optional-dependencies]
 analysis = [
@@ -128,9 +128,6 @@ junit_family = 'xunit1'
 "pd" = 'import panda as pd'
 "qt" = 'import quaternion as qt'
 "mn" = 'import magnum as mn'
-
-[tool.distutils.bdist_wheel]
-universal = true
 
 [tool.coverage.run]
 branch = true
@@ -347,6 +344,9 @@ max-complexity = 18
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.setuptools.dynamic]
+version = { attr = "tbp.monty.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
