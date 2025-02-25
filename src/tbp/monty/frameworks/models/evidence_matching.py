@@ -176,7 +176,11 @@ class EvidenceGraphLM(GraphLM):
         initial_possible_poses: initial possible poses that should be tested for.
             In ["uniform", "informed", list]. default = "informed".
         evidence_update_threshold: How to decide which hypotheses should be updated.
-            In [int, float, '[int]%', 'mean', 'median', 'all', 'x_percent_threshold'].
+            Given a Most Likely Hypothesis (MLH), this parameter is applied to MLH to
+            determine a minimum evidence threshold in order for other hypotheses to be
+            updated. Any hypotheses falling below the resulting evidence threshold do
+            not get updated. In [int, float, '[int]%', 'mean', 'median', 'all',
+            'x_percent_threshold'].
         vote_evidence_threshold: Only send votes that have a scaled evidence above
             this threshold. Vote evidences are in the range of [-1, 1] so the threshold
             should not be outside this range.
