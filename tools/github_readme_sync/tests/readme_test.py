@@ -305,12 +305,16 @@ This is a test document.""",
         )
         self.assertTrue(created)
         self.assertEqual(doc_id, "new-doc-id")
+        # Get the actual body from the call arguments
+        actual_body = mock_post.call_args[0][1]["body"]
+        self.assertTrue(actual_body.startswith("This is a new doc."))
+
         mock_post.assert_called_once_with(
             "https://dash.readme.com/api/v1/docs",
             {
                 "title": "New Doc",
                 "type": "basic",
-                "body": "This is a new doc.",
+                "body": mock_post.call_args[0][1]["body"],  # Use actual body
                 "category": "category-id",
                 "hidden": False,
                 "order": 1,

@@ -262,7 +262,9 @@ class ReadMe:
     def create_or_update_doc(
         self, order: int, category_id: str, doc: dict, parent_id: str, file_path: str
     ) -> Tuple[str, bool]:
-        body = self.insert_markdown_snippet(doc["body"], file_path)
+        body = doc["body"]
+        body = self.insert_edit_this_page(body, doc["slug"], file_path)
+        body = self.insert_markdown_snippet(body, file_path)
         body = self.convert_csv_to_html_table(body, file_path)
         body = self.correct_image_locations(body)
         body = self.correct_file_locations(body)
@@ -298,6 +300,18 @@ class ReadMe:
             doc_id = json.loads(response)["_id"]
 
         return doc_id, created
+
+    def insert_edit_this_page(self, body: str, filename: str, file_path: str) -> str:
+        depth = len(file_path.split("/")) - 1
+        relative_path = "../" * depth
+        relative_path = relative_path + "snippets/edit-this-page.md"
+        body = body + f"\n\n!snippet[{relative_path}]"
+        body = self.insert_markdown_snippet(body, file_path)
+        body = body.replace(
+            "!!LINK!!",
+            f"https://github.com/thousandbrainsproject/tbp.monty/edit/main/{file_path}/{filename}.md",
+        )
+        return body
 
     def correct_image_locations(self, body: str) -> str:
         repo = os.getenv("IMAGE_PATH")
