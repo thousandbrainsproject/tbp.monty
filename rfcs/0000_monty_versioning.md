@@ -143,7 +143,7 @@ The most detailed and specific way to access a specific version of `tbp.monty` i
 
 If we tag the version commit with the corresponding version number, then the version can be accessed by checking out the tag. GitHub has [releases](https://github.com/thousandbrainsproject/tbp.monty/releases) and [tags](https://github.com/thousandbrainsproject/tbp.monty/tags) pages that list the tagged versions.
 
-If we publish Monty, then the specific published version could be installed via a package manager by specifying the published version.
+If we publish Monty to [PyPI](https://pypi.org/) or [Anaconda](https://anaconda.org/), then the specific published version could be installed via a package manager by specifying the published version.
 
 # References
 
