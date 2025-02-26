@@ -127,6 +127,8 @@ jobs:
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
         run: |
+          echo "target_platform:" > recipe/conda_build_config.yaml
+          echo "  - linux-64" >> recipe/conda_build_config.yaml
           export PATH="$HOME/miniconda/bin:$PATH"
           conda build recipe
 
@@ -143,11 +145,6 @@ jobs:
         with:
           lfs: true
           path: tbp.monty
-      - name: Set up Python 3.8
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.8"
       - name: Install miniconda
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         run: |

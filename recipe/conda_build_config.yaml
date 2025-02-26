@@ -1,2 +1,1 @@
-target_platform:
-  - linux-64
+# will be overridden by the workflow
