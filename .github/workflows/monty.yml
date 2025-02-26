@@ -95,6 +95,43 @@ jobs:
           name: dist
           path: tbp.monty/dist
 
+  build_conda_monty:
+    name: build-conda-monty
+    runs-on:
+      group: tbp.monty
+      labels: tbp-linux-x64-ubuntu2204-2core
+    needs:
+      - install_monty # Needed for the cache key
+      - should_run_monty
+      # - test_monty # TODO: Add test_monty back in, ignoring now for draft testing
+    steps:
+      - name: Restore cache
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/miniconda
+          key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
+      - name: Checkout tbp.monty
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          path: tbp.monty
+      - name: Install conda-build
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          conda install -c conda-forge conda-build
+      - name: Build conda package
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          conda build recipe
+
   check_dependencies_monty:
     name: check-dependencies-monty
     runs-on:

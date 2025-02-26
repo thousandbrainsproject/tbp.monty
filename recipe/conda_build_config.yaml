@@ -1,0 +1,3 @@
+target_platform:
+  - osx-64
+  - linux-64
