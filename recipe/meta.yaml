@@ -23,8 +23,8 @@ requirements:
     - cmake>=3.14.0
     - pyg::pyg
     - wget
-    - aihabitat::habitat-sim=0.2.2 # [linux64 or (osx and arm64)]
-    - mkl<2022 # [osx and arm64]
+    - aihabitat::habitat-sim=0.2.2 # [linux64 or osx]
+    - mkl<2022 # [osx]
     - pytorch::pytorch=1.11.0
     - conda-forge::quaternion=2023.0.3 # later versions missing np.long
     - pytorch::torchvision
