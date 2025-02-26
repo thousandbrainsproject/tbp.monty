@@ -133,7 +133,7 @@ jobs:
 
   build_osx64_conda_monty:
     name: build-osx64-conda-monty
-    runs-on: osx-latest
+    runs-on: macos-latest
     needs:
       - should_run_monty
       # - test_monty # TODO: Add test_monty back in, ignoring now for draft testing
