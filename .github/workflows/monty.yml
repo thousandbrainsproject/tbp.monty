@@ -131,6 +131,48 @@ jobs:
           source activate tbp.monty
           conda build recipe
 
+  build_osx64_conda_monty:
+    name: build-osx64-conda-monty
+    runs-on: osx-latest
+    needs:
+      - should_run_monty
+      # - test_monty # TODO: Add test_monty back in, ignoring now for draft testing
+    steps:
+      - name: Checkout tbp.monty
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          path: tbp.monty
+      - name: Set up Python 3.8
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.8"
+      - name: Install miniconda
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        run: |
+          if [ ! -d ~/miniconda ]
+          then
+            wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh -O ~/miniconda.sh
+            bash ~/miniconda.sh -b -p ~/miniconda
+            rm ~/miniconda.sh
+          fi
+      - name: Install conda-build
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          conda install conda-build
+      - name: Build conda package
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          echo "target_platform:" > recipe/conda_build_config.yaml
+          echo "  - osx-64" >> recipe/conda_build_config.yaml
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          conda build recipe
+
   check_dependencies_monty:
     name: check-dependencies-monty
     runs-on:
