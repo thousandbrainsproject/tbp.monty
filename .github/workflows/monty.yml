@@ -170,7 +170,6 @@ jobs:
           echo "target_platform:" > recipe/conda_build_config.yaml
           echo "  - osx-64" >> recipe/conda_build_config.yaml
           export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
           conda build recipe
 
   check_dependencies_monty:
