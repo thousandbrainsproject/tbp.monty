@@ -122,8 +122,7 @@ jobs:
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          conda install -c aihabitat -c pytorch -c pyg -c conda-forge conda-build
+          conda install conda-build
       - name: Build conda package
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
