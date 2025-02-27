@@ -36,6 +36,9 @@ about:
   license_file: LICENSE
   summary: Monty is a sensorimotor learning framework based on the thousand brains theory of the neocortex.
   description: |
+    On Linux:
     `conda install -c aihabitat -c pytorch -c pyg -c conda-forge thousandbrainsproject::tbp.monty`
+    On MacOS Monty relies on Rosetta to emulate x86_64 architecture, hence `--subdir osx-64` is required:
+    `conda install -c aihabitat -c pytorch -c pyg -c conda-forge thousandbrainsproject::tbp.monty --subdir osx-64`
   dev_url: https://github.com/thousandbrainsproject/tbp.monty
   doc_url: https://thousandbrainsproject.readme.io
