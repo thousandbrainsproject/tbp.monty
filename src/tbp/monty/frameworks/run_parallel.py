@@ -61,24 +61,22 @@ Assumptions and notes:
 def single_train(config):
     os.makedirs(config["logging_config"]["output_dir"], exist_ok=True)
     exp = config["experiment_class"]()
-    exp.setup_experiment(config)
-    print("---------training---------")
-    exp.train()
-    exp.close()
+    with exp:
+        exp.setup_experiment(config)
+        print("---------training---------")
+        exp.train()
 
 
 def single_evaluate(config):
     os.makedirs(config["logging_config"]["output_dir"], exist_ok=True)
     exp = config["experiment_class"]()
-    exp.setup_experiment(config)
-    print("---------evaluating---------")
-    exp.evaluate()
-    if config["logging_config"]["log_parallel_wandb"]:
-        eval_stats = get_episode_stats(exp, "eval")
-        exp.close()
-        return eval_stats
-    else:
-        exp.close()
+    with exp:
+        exp.setup_experiment(config)
+        print("---------evaluating---------")
+        exp.evaluate()
+        if config["logging_config"]["log_parallel_wandb"]:
+            eval_stats = get_episode_stats(exp, "eval")
+            return eval_stats
 
 
 def get_episode_stats(exp, mode):
