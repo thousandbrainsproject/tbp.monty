@@ -19,6 +19,7 @@ runs:
   steps:
     - name: Version updated
       id: version_updated
+      working-directory: ${{ inputs.working_directory }}
       shell: bash
       run: |
         git diff --name-only ${{ inputs.git_sha }}^1 > changed_files.txt
