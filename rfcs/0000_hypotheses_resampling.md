@@ -75,13 +75,15 @@ This is a proposed approach to calculating the new set of hypotheses at every st
 This should take care of dynamically increasing or decreasing the hypotheses count.
 For example, if we want to start by coarse sampling of hypotheses and then increase the number of hypotheses (and vice versa), we should be able to do that here.
 
-I'm introducing three new parameters. The naming of these paramters is preliminary and subject to change.
+I'm introducing three new parameters. The naming of these parameters is preliminary and subject to change.
 
 | Parameter | Description | Range |
 | ----------|-------------|-------|
 | **hypotheses_count_ratio** | A multiplier for the needed number of hypotheses at this new step | [0, inf) |
-| **hypotheses_old_to_new_ratio** | How many new to old hypotheses to be added. `0` means all old, `1` means all new | [0, 1] |
+| **hypotheses_old_to_new_ratio** | How many old to new hypotheses to be added. `0` means all old, `1` means all new | [0, 1] |
 | **hypotheses_informed_to_reenforce_ratio** | How many informed (sampled based on newly observed pose) to reenforced hypotheses (sampled close to existing likely hypotheses) to be added. `0` means all informed, `1` means all reenforced | [0, 1] |
+
+*Note that it is possible to configure these parameters to remove the effect of resampling and return to the current `EvidenceLM` behavior. Simply set `hypotheses_count_ratio=1` to keep the same number of hypotheses and `hypotheses_old_to_new_ratio=0` to sample only from existing hypotheses.*
 
 
 
