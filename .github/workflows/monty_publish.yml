@@ -66,7 +66,7 @@ jobs:
           ANACONDA_TOKEN: ${{ secrets.CONDA_TBP_REPOSITORY_TOKEN }}
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          anaconda --token "::add-mask::$ANACONDA_TOKEN" upload ${{ steps.expected_output_location.outputs.path }}
+          anaconda --token $ANACONDA_TOKEN upload ${{ steps.expected_output_location.outputs.path }}
 
   osx64_conda_monty_publish:
     name: osx64-conda-monty-publish
@@ -121,4 +121,4 @@ jobs:
           ANACONDA_TOKEN: ${{ secrets.CONDA_TBP_REPOSITORY_TOKEN }}
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          anaconda --token "::add-mask::$ANACONDA_TOKEN" upload ${{ steps.expected_output_location.outputs.path }}
+          anaconda --token $ANACONDA_TOKEN upload ${{ steps.expected_output_location.outputs.path }}
