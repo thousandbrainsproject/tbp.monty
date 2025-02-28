@@ -47,6 +47,7 @@ jobs:
       - name: Capture expected output location
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
         id: expected_output_location
+        working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           echo "path=$(conda build recipe --output)" >> $GITHUB_OUTPUT
@@ -60,6 +61,7 @@ jobs:
           conda build recipe
       - name: Upload conda package
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
+        working-directory: tbp.monty
         env:
           ANACONDA_TOKEN: ${{ secrets.CONDA_TBP_REPOSITORY_TOKEN }}
         run: |
@@ -100,6 +102,7 @@ jobs:
       - name: Capture expected output location
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
         id: expected_output_location
+        working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           echo "path=$(conda build recipe --output)" >> $GITHUB_OUTPUT
@@ -113,6 +116,7 @@ jobs:
           conda build recipe
       - name: Upload conda package
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
+        working-directory: tbp.monty
         env:
           ANACONDA_TOKEN: ${{ secrets.CONDA_TBP_REPOSITORY_TOKEN }}
         run: |
