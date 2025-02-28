@@ -39,11 +39,17 @@ jobs:
             bash ~/miniconda.sh -b -p ~/miniconda
             rm ~/miniconda.sh
           fi
-      - name: Install conda-build
+      - name: Install anaconda-client and conda-build
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          conda install conda-build
+          conda install anaconda-client conda-build
+      - name: Capture expected output location
+        if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
+        id: expected_output_location
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          echo "path=$(conda build recipe --output)" >> $GITHUB_OUTPUT
       - name: Build conda package
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
         working-directory: tbp.monty
@@ -52,6 +58,13 @@ jobs:
           echo "  - linux-64" >> recipe/conda_build_config.yaml
           export PATH="$HOME/miniconda/bin:$PATH"
           conda build recipe
+      - name: Upload conda package
+        if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
+        env:
+          ANACONDA_TOKEN: ${{ secrets.CONDA_TBP_REPOSITORY_TOKEN }}
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          anaconda --token "::add-mask::$ANACONDA_TOKEN" upload ${{ steps.expected_output_location.outputs.path }}
 
   osx64_conda_monty_publish:
     name: osx64-conda-monty-publish
@@ -79,11 +92,17 @@ jobs:
             bash ~/miniconda.sh -b -p ~/miniconda
             rm ~/miniconda.sh
           fi
-      - name: Install conda-build
+      - name: Install anaconda-client and conda-build
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          conda install conda-build
+          conda install anaconda-client conda-build
+      - name: Capture expected output location
+        if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
+        id: expected_output_location
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          echo "path=$(conda build recipe --output)" >> $GITHUB_OUTPUT
       - name: Build conda package
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
         working-directory: tbp.monty
@@ -92,3 +111,10 @@ jobs:
           echo "  - osx-64" >> recipe/conda_build_config.yaml
           export PATH="$HOME/miniconda/bin:$PATH"
           conda build recipe
+      - name: Upload conda package
+        if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
+        env:
+          ANACONDA_TOKEN: ${{ secrets.CONDA_TBP_REPOSITORY_TOKEN }}
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          anaconda --token "::add-mask::$ANACONDA_TOKEN" upload ${{ steps.expected_output_location.outputs.path }}
