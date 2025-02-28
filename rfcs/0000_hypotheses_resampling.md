@@ -3,21 +3,26 @@
 
 # Summary
 
-Resample hypotheses at every step in a manner inspired by particle-filters. This is the first step for Monty to interact with multiple objects and recognize compositional objects.
+Resample hypotheses at every step in a manner inspired by particle-filters. This is the first step for Monty to interact with multiple objects and recognize compositional objects. The newly sampled hypotheses will come from:
+1) a subset (uniformly sampled) of new hypotheses initialized based on the current step observation.
+2) a set of newly sampled hypotheses from the distribution of the most likely hypotheses.
+3) a subset of the old hypotheses based on the metric representing the most likely hypotheses.
 
 # High-Level Motivation
 
-In an unsupervised learning experiment setup, Monty may be presented with multiple objects in a single episode. Ideally, we would like to move away from the traditional data loading setup of machine learning where there is a strict definition of an epoch, episode and step. As Monty starts to interact with the real world, the definition of epoch and episode will start to fade away and we'll be left with simple time discretization (i.e., step). The current definitions are:
-* Epoch: Used by the experiment class to denote one full pass through all the objects
+In an unsupervised experiment setup, Monty may be presented with multiple objects in a single episode. Ideally, we would like to move away from the traditional data loading setup of machine learning where there is a strict definition of an epoch, episode and step. As Monty starts to interact with the real world, the definition of epoch and episode will start to fade away and we'll be left with simple time discretization (i.e., step). The current definitions are:
+* Epoch: Used by the experiment class to denote one full pass through all the objects at a specified rotation
 * Episode: Denotes a change in object
 * Step:  Denotes a single sensation and action in the sensorimotor framework.
 
-Real world interactions do not have epochs or episodes (these are only used for performance benchmarks), instead we could imagine the agent wondering around in a multi-object dynamic environment. The objects can be occluded, moving, or even disappearing behind new objects. 
+Real world interactions do not have epochs or episodes (these are only used for performance benchmarks), instead we could imagine the agent wandering around in a multi-object dynamic environment. The objects can be occluded, moving, or even disappearing behind new objects. The objects could also be compositional, such as logo on a coffee mug.
 
-**We want Monty to handle dynamic environments by seamlessly switching from one object to another as it's sensors move around on the different objects.**
+**We want Monty to handle dynamic environments by seamlessly switching from one object to another as it's sensors move around on the different - potentially compositional - objects.**
+
+*We note that for learning, we will continue to assume for now that Monty learns about objects in an isolated manner (i.e. one at a time), whether or not it receives a supervisory signal in the form of an object label. This is akin to a child holding an object and devoting it's attention to it at the exclusion of the rest of the world (something which the nearsightedness of infants may actually assist with). Relaxing this learning assumption would therefore be a separate topic for future work.*
 
 # The Problem
-Monty is designed to receive a weak supervision signal when the episode ends and a new episode begins (change of object). This signal performs a full reset of all states within Monty. This reset includes counters, buffer, goal state generators, learning modules and sensory modules. Additionally, this reset sets Monty back into Matching mode. The below figure shows where this resetting is done. Most resetting happens in the `pre_episode` functions of the Monty and SMs and LMs classes.
+Monty is designed to receive a weak supervision signal during inference when an episode ends and a new episode begins (denoting a change of object). This signal performs a full reset of all states within Monty. This reset includes counters, buffer, goal state generators, learning modules and sensory modules. Additionally, this reset sets Monty back into Matching mode. The below figure shows where this resetting is done. Most resetting happens in the `pre_episode` functions of the Monty and SMs and LMs classes.
 
 ![Monty Reset Logic](0000_hypotheses_resampling/monty_reset_logic.png)
 
@@ -30,6 +35,8 @@ To overcome this, I manually `reset_episode_steps()` such that the `matching_ste
 ![No Resampling](0000_hypotheses_resampling/no_resampling.png)
 
 This reveals the main problem. Monty is still unable to accumulate evidence on the existing hypotheses. The current implementation of Monty uses `_get_all_informed_possible_poses()` to initialize hypotheses after seeing a single pose of the object. This is a smart way to reduce the number of initial hypotheses based on the principal curvature but it assumes that the object doesn't change and that these hypotheses will always be valid. However, when we change the object we would need to update these initial hypotheses based on a new pose observation of the new object. A simple test of sampling additional hypotheses (with informed poses) on the second object pose shows that we are able to accumulate evidence on these new hypotheses. See figure below.
+
+*Note that even when testing a single object, a noisy initial pose observation can affect the quality of the initially sampled hypotheses. Using these incorrect hypotheses (without resampling) will limit Monty's performance until the end of the episode.*
 
 ![Resampling](0000_hypotheses_resampling/resampling_banana_mug.png)
 
@@ -45,7 +52,7 @@ We currently use the total evidence score to decide which hypotheses are more pr
 Why:
 * **Faster**: we don't have to wait for high unbounded evidence to decay enough to realize that a new hypothesis is more likely. We also may not need to worry about initializing new hypotheses with mean evidence, giving them fighting chance against other old hypotheses. Average slope is more fair in this sense.
 * **Accurate resampling**:  If we sample new hypotheses close to the hypotheses with high total accumulated evidence (e.g., particle filter), we could be sampling from the incorrect hypotheses (if we had just switched objects). If we sample close to the hypotheses with high evidence slope, we may converge faster.
-* **Practical**: The total evidence can still be unbounded, it doesn't matter because we only consider the slope. This metric does not care about how much evidence we've accumulated already. It other words, a hypothesis with a high evidence, can be removed if it hasn't accumulated evidence in a while, while a consistently growing hypothesis is less likely to be removed even if it was just added.
+* **Practical**: The total evidence can still be unbounded, it doesn't matter because we only consider the slope. This metric does not care about how much evidence we've accumulated already. In other words, a hypothesis with a high evidence, can be removed if it hasn't accumulated evidence in a while, while a consistently growing hypothesis is less likely to be removed even if it was just added.
 
 ## Assumptions and constraints:
 * Number of hypotheses should not scale up with steps, if anything they should decrease. For now, any sampled hypothesis must replace an old "unlikely" hypothesis.
@@ -55,11 +62,80 @@ Why:
 
 ## The Resampling Procedure
 
-1) For every object, at every new step, get initial hypotheses based on the observed pose.
-2) If principal curvature is not defined, skip
-3) Uniformly sample M percent from these new hypotheses (e.g., M = 20% = 1000 hyp)
-4) Sample N percent from the existing hypotheses distribution of highest evidence slope (e.g., N = 10% = 500 hyp). These sampled hypotheses should be "close" to the most likely hypotheses.
-5) Replace unlikely M+N percent of existing hypotheses (e.g., 30% = 1500 hyp) with these newly sampled hypotheses. The unlikely hypotheses are chosen based on evidence change.
+1) If principal curvature is not defined, skip
+2) For every object, at every new step, get initial hypotheses based on the observed pose.
+3) Calculate the needed hypotheses counts to be sampled based on the defined parameters as shown [here](#The-Resampling-Count-Calculation).
+4) Sample `needed_old_sampled_hyp` from the existing hypotheses based on highest evidence slope. We will keep these old hypotheses and remove the rest.
+5) Uniformly sample `needed_new_informed_hyp` from the new informed hypotheses. We will add these new hypotheses.
+6) Sample `needed_new_reenforced_hyp` from the existing hypotheses distribution of highest evidence slope. These sampled hypotheses should be "close" to the most likely hypotheses.
+
+## The Resampling Count Calculation <a name="The-Resampling-Count-Calculation"></a>
+
+This is a proposed approach to calculating the new set of hypotheses at every step. 
+This should take care of dynamically increasing or decreasing the hypotheses count.
+For example, if we want to start by coarse sampling of hypotheses and then increase the number of hypotheses (and vice versa), we should be able to do that here.
+
+I'm introducing three new parameters. The naming of these paramters is preliminary and subject to change.
+
+| Parameter | Description | Range |
+| ----------|-------------|-------|
+| **hypotheses_count_ratio** | A multiplier for the needed number of hypotheses at this new step | [0, inf) |
+| **hypotheses_old_to_new_ratio** | How many new to old hypotheses to be added. `0` means all old, `1` means all new | [0, 1] |
+| **hypotheses_informed_to_reenforce_ratio** | How many informed (sampled based on newly observed pose) to reenforced hypotheses (sampled close to existing likely hypotheses) to be added. `0` means all informed, `1` means all reenforced | [0, 1] |
+
+
+
+```python
+
+# a multiplier for the needed number of hypotheses at this new step
+hypotheses_count_ratio = 1
+
+# 0 means all sampled from old, 1 means all sampled from new
+hypotheses_old_to_new_ratio = 0.5
+
+
+# 0 means all sampled from informed hypotheses, 1 means all sampled from reenforced hypotheses
+hypotheses_informed_to_reenforce_ratio = 0.5
+
+
+def calculate_new_hypotheses_counts(
+    curr_hypotheses_count, new_informed_hypotheses_count
+):
+    # calculate the total number of hypotheses needed
+    needed_hypotheses_count = curr_hypotheses_count * hypotheses_count_ratio
+
+    # calculate how many old and new hypotheses needed
+    needed_old_sampled_hyp, needed_new_sampled_hyp = (
+        needed_hypotheses_count * (1 - hypotheses_old_to_new_ratio),
+        needed_hypotheses_count * hypotheses_old_to_new_ratio,
+    )
+    if needed_old_sampled_hyp > curr_hypotheses_count:
+        needed_old_sampled_hyp = curr_hypotheses_count
+        needed_new_sampled_hyp = needed_hypotheses_count - curr_hypotheses_count
+
+    # calculate how many informed and re-enforced hypotheses needed
+    needed_new_informed_hyp, needed_new_reenforced_hyp = (
+        needed_new_sampled_hyp * (1 - hypotheses_informed_to_reenforce_ratio),
+        needed_new_sampled_hyp * hypotheses_informed_to_reenforce_ratio,
+    )
+    if needed_new_informed_hyp > new_informed_hypotheses_count:
+        needed_new_informed_hyp = new_informed_hypotheses_count
+        needed_new_reenforced_hyp = (
+            needed_new_sampled_hyp - new_informed_hypotheses_count
+        )
+
+    return (
+        int(needed_old_sampled_hyp),
+        int(needed_new_informed_hyp),
+        int(needed_new_reenforced_hyp),
+    )
+
+
+
+calculate_new_hypotheses_counts(
+    curr_hypotheses_count=100, new_informed_hypotheses_count=100
+)
+```
 
 # Alternatives Considered:
 * Detect change with evidence decay and hard reset?
@@ -72,4 +148,4 @@ Why:
 	* Maybe we should brainstorm about what a terminal state should be in a multi-object environment.
 	* Maybe also brainstorm about ways to more seamlessly switch between matching and exploration? I don't like forcing Monty to always be in matching mode, by doing this it feels that we are making the gap between learning and inference wider.
 * Start designing environments with multiple objects aiming towards compositional models.
-	* Will require motor policy change to allow for moving between objects
+	* Will require motor policy change to allow for moving between objects.
