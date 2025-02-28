@@ -295,25 +295,26 @@ def post_parallel_train(configs: List[Mapping], base_dir: str) -> None:
 
     config = configs[0]
     exp = config["experiment_class"]()
-    exp.setup_experiment(config)
-    exp.model.load_state_dict_from_parallel(parallel_dirs, True)
-    output_dir = os.path.dirname(configs[0]["logging_config"]["output_dir"])
-    if issubclass(
-        configs[0]["experiment_class"], MontySupervisedObjectPretrainingExperiment
-    ):
-        output_dir = os.path.join(output_dir, "pretrained")
-    os.makedirs(output_dir, exist_ok=True)
-    saved_model_file = os.path.join(output_dir, "model.pt")
-    torch.save(exp.model.state_dict(), saved_model_file)
+    with exp:
+        exp.setup_experiment(config)
+        exp.model.load_state_dict_from_parallel(parallel_dirs, True)
+        output_dir = os.path.dirname(configs[0]["logging_config"]["output_dir"])
+        if issubclass(
+            configs[0]["experiment_class"], MontySupervisedObjectPretrainingExperiment
+        ):
+            output_dir = os.path.join(output_dir, "pretrained")
+        os.makedirs(output_dir, exist_ok=True)
+        saved_model_file = os.path.join(output_dir, "model.pt")
+        torch.save(exp.model.state_dict(), saved_model_file)
 
-    if pretraining:
-        pdirs = [os.path.dirname(i) for i in parallel_dirs]
-    else:
-        pdirs = parallel_dirs
+        if pretraining:
+            pdirs = [os.path.dirname(i) for i in parallel_dirs]
+        else:
+            pdirs = parallel_dirs
 
-    for pdir in pdirs:
-        print(f"Removing directory: {pdir}")
-        shutil.rmtree(pdir)
+        for pdir in pdirs:
+            print(f"Removing directory: {pdir}")
+            shutil.rmtree(pdir)
 
 
 def run_episodes_parallel(

@@ -610,20 +610,20 @@ class MontyExperiment:
         """Context manager entry method.
 
         Returns:
-            MontyExperiment self to allow assignment in a with statement
+            MontyExperiment self to allow assignment in a with statement.
         """
-        # TODO - move some of the initialization code from `setup_experiment` into this
+        # TODO: Move some of the initialization code from `setup_experiment` into this.
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_value, exc_traceback):
         """Context manager exit method.
 
         Ensure that we always close the environment if necessary.
 
         Returns:
-            bool to indicate whether to supress any exceptions that were raised
+            bool to indicate whether to supress any exceptions that were raised.
         """
-        # TODO - we call self.close inside `train` and `evaluate`.
-        #   Those should probably be removed
+        # TODO: We call self.close inside `train` and `evaluate`.
+        #   Those should probably be removed.
         self.close()
         return False  # don't silence exceptions inside the with block
