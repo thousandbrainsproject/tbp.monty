@@ -49,14 +49,14 @@ jobs:
         id: expected_output_location
         working-directory: tbp.monty
         run: |
+          echo "target_platform:" > recipe/conda_build_config.yaml
+          echo "  - linux-64" >> recipe/conda_build_config.yaml
           export PATH="$HOME/miniconda/bin:$PATH"
           echo "path=$(conda build recipe --output)" >> $GITHUB_OUTPUT
       - name: Build conda package
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
         working-directory: tbp.monty
         run: |
-          echo "target_platform:" > recipe/conda_build_config.yaml
-          echo "  - linux-64" >> recipe/conda_build_config.yaml
           export PATH="$HOME/miniconda/bin:$PATH"
           conda build recipe
       - name: Upload conda package
@@ -104,14 +104,14 @@ jobs:
         id: expected_output_location
         working-directory: tbp.monty
         run: |
+          echo "target_platform:" > recipe/conda_build_config.yaml
+          echo "  - osx-64" >> recipe/conda_build_config.yaml
           export PATH="$HOME/miniconda/bin:$PATH"
           echo "path=$(conda build recipe --output)" >> $GITHUB_OUTPUT
       - name: Build conda package
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
         working-directory: tbp.monty
         run: |
-          echo "target_platform:" > recipe/conda_build_config.yaml
-          echo "  - osx-64" >> recipe/conda_build_config.yaml
           export PATH="$HOME/miniconda/bin:$PATH"
           conda build recipe
       - name: Upload conda package
