@@ -147,5 +147,6 @@ jobs:
         if: ${{ steps.version_updated.outputs.version_updated == 'true' }}
         working-directory: tbp.monty
         run: |
+          git checkout ${{ github.sha }}
           git tag v${{ steps.version_updated.outputs.version }}
           git push origin v${{ steps.version_updated.outputs.version }}
