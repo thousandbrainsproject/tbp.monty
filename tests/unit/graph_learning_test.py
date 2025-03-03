@@ -659,6 +659,19 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         self.exp.evaluate()
         self.exp.dataset.close()
 
+    def test_expected_observations(self):
+        pprint("...parsing experiment...")
+        config = copy.deepcopy(self.disp_config)
+        self.exp = MontyObjectRecognitionExperiment()
+        self.exp.setup_experiment(config)
+        observations = self.exp.dataset.env._env.get_observations()
+        pprint(observations)
+        assert len(observations) == 1
+        # TODO - this is going to fail but the dict I'm comparing to is large
+        #  and I'd rather avoid hard-coding it just yet.
+        assert observations["agent_id_0"] == {}
+        self.exp.dataset.close()
+
     def test_can_run_feature_experiment(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feature_config)
