@@ -10,7 +10,7 @@ Currently there are two repositories:
 1. `tbp.monty` - This is the main repository for the Monty framework.
 2. `monty_lab` - This is what `nupic.monty/projects` used to be, and is currently a catch-all for code that is not part of the main Monty framework.
 
-The high-level proposal is to break-up `monty_lab` where appropriate, and have a lower threshold for creating new, independent repositories.
+The high-level proposal is to discontinue the use of `monty_lab` (archiving the existing repository), and instead have a very low threshold for creating new, independent repositories for different projects.
 
 More specifically, the proposed structure and description of each repository would be:
 
@@ -21,14 +21,9 @@ More specifically, the proposed structure and description of each repository wou
 - Should not contain configs for various experiments; the only configs in tbp.monty are those used for our benchmark experiments.
 
 `monty_lab`
-- A repository to house discontinued or paused research projects like  `high_dim_coincidence_detection` and `grid_cells`.
-- Local forks of `monty_lab` can be used by contributors to track in-progress work. However, this does not mean that such code, once mature enough to be shared, should necessarily be merged into the main `monty_lab` repository.
-- In general, if the code is likely to be re-used in the future, or forms part of a paper, it should *not* go in `monty_lab` (more on this below).
-- Continuous Integration does not include style or unit-test checks on new code. 
-- When merging a discontinued project, PR review does not need to be as thorough as for code pushed to the main `tbp.monty` repository.
-- Not intended as a code-base that community members can contribute to. As such, issues like bugs are less likely to be noticed and fixed. 
+- This would be archived in its entirety, along with its discontinued / paused research projects like  `high_dim_coincidence_detection` and `grid_cells`.
 
-Additional repositories can then be created as needed. Two typical examples would be:
+New repositories can then be created as needed for future projects that do not belong in `tbp.monty`. Two typical examples are below, although a repository need not be a package or contain code for a paper:
 
 `tbp.name_of_package`
 - E.g. `tbp.floppy`
@@ -39,37 +34,35 @@ Additional repositories can then be created as needed. Two typical examples woul
 
 `tbp.name_of_paper`
 - E.g. `tbp.tbs_for_rapid_robust_learning_and_inference`
-- A repository that contains the code required to replicate results and figures from a paper.
-- A given paper can be broken up into multiple repositories if it makes use of highly distinct frameworks for different parts of the paper, such as Pytorch vs. Monty.
+- A repository that contains the code required to replicate results and figures from a paper. There should be a single repository for each paper.
+- A given paper repository can be broken up using sub-folders if it makes use of highly distinct frameworks for different experiments, such as Pytorch vs. Monty.
+    - For example, the `tbp.tbs_for_rapid_robust_learning_and_inference` repository would contain two sub-folders, `monty` and `pytorch`, corresponding to the different frameworks used for different parts of the paper. Note that these folders can be associated with different conda environments and .gitignore files as desired.
+    - The version number associated with these frameworks should be specified, such that the requirements for replicating results are clear.
 - PR reviews should be of a similar standard to `tbp.monty`. Code (typically configs but also analysis code) should be of a high standard given that it forms the basis of published work.
 
 More concretely, the structure that would be created given our current codebase and work on the "Demonstrating Monty Capabilities" paper (actual title: Thousand Brains Systems for Rapid, Robust Learning and Inference) is as follows:
 
 ```
 tbp.monty/
-monty_lab/
 tbp.floppy/
-tbp.tbs_for_rapid_robust_learning_and_inference_monty/  # Most of the code for the paper, including for generating the figures
-tbp.tbs_for_rapid_robust_learning_and_inference_pytorch/  # Code to generate the results for the Pytorch models used in the paper
+tbp.tbs_for_rapid_robust_learning_and_inference/
 ```
 
 ### Other Guidance
 - When opening a PR, if there is any doubt about the best destination for the code, it is best to discuss this with the team.
 - We should have a low threshold for creating new repositories where appropriate.
+- We should prepend all our repositories with `tbp.` at creation to indicate that they are part of the Thousand Brains Project (depending on where someone has cloned the repository to, this may not always be obvious on their local machine), and to begin carving out a namespace for the TBP in settings like PyPi.
 - It is encouraged to add a description and tags to repositories such that the [overview page of the Thousand Brains Project GitHub organization](https://github.com/orgs/thousandbrainsproject/repositories) provides helpful context.
+- If a repository relates to an old project that is no longer relevant, it can be "archived" using GitHub's archive feature. It is no longer necessary to move this code to `monty_lab` (which will itself be archived going forward). Note that archived repositories keep the `tbp.` prefix.
+- We will create an overview page using [GitHub's profile README feature](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-github-profile/customizing-your-profile/managing-your-profile-readme) to provide helpful context on the key repositories that are part of the Thousand Brains Project. This should be updated from time to time to reflect the most important repositories for newcomers to the TBP.
 
 # Motivation
 
 As the Thousand Brains Project grows, it will be important to have a better way of organizing the codebase. This RFC proposes we establish a sustainable structure that ensures code remains high quality and accessible, while minimizing overhead for contributors.
 
 # Open Questions
-
-- If a given paper is separated into multiple repositories, will this create unecessary challenges for someone who wants to replicate the results (e.g. generating a figure)? We can think about how to structure results folders to make this as easy as possible.
+- None
 
 # Future Possibilities
 
 This proposal also relates to a potential RFC on the creation of a "repository template" that can be reused for new repositories. We might structure these templates based on typical types of repositories (e.g. those that are standalone packages, vs. those that contain the configs and analysis code for a paper).
-
-# Final Comments
-
-This is an RFC, so I'm very open to alternative suggestions for how we can organize the codebase, or any concerns that this proposal raises.
