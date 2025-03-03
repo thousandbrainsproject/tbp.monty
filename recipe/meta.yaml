@@ -1,0 +1,44 @@
+{% set version_match = load_file_regex(
+    load_file="../src/tbp/monty/__init__.py",
+    regex_pattern='__version__\s*=\s*"([^"]+)"',
+    from_recipe_dir=True) %}
+{% set version = version_match[1] %}
+
+package:
+  name: tbp.monty
+  version: {{ version}}
+
+source:
+  path: ../
+
+build:
+  script: python -m pip install .
+
+requirements:
+  host:
+    - python==3.8
+    - pip
+  run:
+    - python==3.8
+    - cmake>=3.14.0
+    - pyg::pyg
+    - wget
+    - aihabitat::habitat-sim=0.2.2 # [linux64 or osx]
+    - mkl<2022 # [osx]
+    - pytorch::pytorch=1.11.0
+    - conda-forge::quaternion=2023.0.3 # later versions missing np.long
+    - pytorch::torchvision
+    - aihabitat::withbullet
+
+about:
+  home: https://github.com/thousandbrainsproject/tbp.monty
+  license: MIT
+  license_file: LICENSE
+  summary: Monty is a sensorimotor learning framework based on the thousand brains theory of the neocortex.
+  description: |
+    On Linux:
+    `conda install -c aihabitat -c pytorch -c pyg -c conda-forge thousandbrainsproject::tbp.monty`
+    On MacOS Monty relies on Rosetta to emulate x86_64 architecture, hence `--subdir osx-64` is required:
+    `conda install -c aihabitat -c pytorch -c pyg -c conda-forge thousandbrainsproject::tbp.monty --subdir osx-64`
+  dev_url: https://github.com/thousandbrainsproject/tbp.monty
+  doc_url: https://thousandbrainsproject.readme.io

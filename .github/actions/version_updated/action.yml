@@ -1,0 +1,26 @@
+name: "Version Updated"
+description: "Determines if the version has been updated."
+
+inputs:
+  git_sha:
+    description: "The git sha to compare against."
+    required: true
+  working_directory:
+    description: "The directory to run the command in."
+    required: true
+
+outputs:
+  version_updated:
+    description: "Whether the version has been updated."
+    value: ${{ steps.version_updated.outputs.version_updated }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Version updated
+      id: version_updated
+      working-directory: ${{ inputs.working_directory }}
+      shell: bash
+      run: |
+        git diff --name-only ${{ inputs.git_sha }}^1 > changed_files.txt
+        ./.github/actions/version_updated/check_version_updated.sh
