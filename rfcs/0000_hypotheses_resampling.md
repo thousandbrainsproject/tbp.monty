@@ -55,7 +55,6 @@ Why:
 * **Practical**: The total evidence can still be unbounded, it doesn't matter because we only consider the slope. This metric does not care about how much evidence we've accumulated already. In other words, a hypothesis with a high evidence, can be removed if it hasn't accumulated evidence in a while, while a consistently growing hypothesis is less likely to be removed even if it was just added.
 
 ## Assumptions and constraints:
-* Number of hypotheses should not scale up with steps, if anything they should decrease. For now, any sampled hypothesis must replace an old "unlikely" hypothesis.
 * Sampling of likely and unlikely hypotheses is based on evidence change instead of absolute evidence.
 * Terminal state calculation is still based on accumulated evidence and `x_percent_threshold`.
 * The resampling procedure only occurs if principal curvature is defined.
@@ -67,7 +66,20 @@ Why:
 3) Calculate the needed hypotheses counts to be sampled based on the defined parameters as shown [here](#The-Resampling-Count-Calculation).
 4) Sample `needed_old_sampled_hyp` from the existing hypotheses based on highest evidence slope. We will keep these old hypotheses and remove the rest.
 5) Uniformly sample `needed_new_informed_hyp` from the new informed hypotheses. We will add these new hypotheses.
-6) Sample `needed_new_reenforced_hyp` from the existing hypotheses distribution of highest evidence slope. These sampled hypotheses should be "close" to the most likely hypotheses.
+6) Sample `needed_new_reinforced_hyp` from the existing hypotheses distribution of highest evidence slope. These sampled hypotheses should be "close" to the most likely hypotheses.
+
+
+## High Level Code Changes
+
+The needed modification will only change the `EvidenceLM` class. More specifically, we would be either be modifying the `_update_evidence` function
+directly or defining another function that calls `_update_evidence` as one of its steps. A rough proposal of the needed changes is shown below.
+
+![code change](0000_hypotheses_resampling/high_level_code_change.png)
+
+*Note that the two types (reinforced and informed) of resampled hypotheses are treated differently. 
+Unlike reinforced hypotheses, the current positions of the informed hypotheses do not need to be rotated and displaced at resampling.
+Informed hypotheses are added after the reinforced (and old) hypotheses are updated/displaced.*
+
 
 ## The Resampling Count Calculation <a name="The-Resampling-Count-Calculation"></a>
 
@@ -81,7 +93,7 @@ I'm introducing three new parameters. The naming of these parameters is prelimin
 | ----------|-------------|-------|
 | **hypotheses_count_ratio** | A multiplier for the needed number of hypotheses at this new step | [0, inf) |
 | **hypotheses_old_to_new_ratio** | How many old to new hypotheses to be added. `0` means all old, `1` means all new | [0, 1] |
-| **hypotheses_informed_to_reenforce_ratio** | How many informed (sampled based on newly observed pose) to reenforced hypotheses (sampled close to existing likely hypotheses) to be added. `0` means all informed, `1` means all reenforced | [0, 1] |
+| **hypotheses_informed_to_reinforce_ratio** | How many informed (sampled based on newly observed pose) to reinforced hypotheses (sampled close to existing likely hypotheses) to be added. `0` means all informed, `1` means all reinforced | [0, 1] |
 
 *Note that it is possible to configure these parameters to remove the effect of resampling and return to the current `EvidenceLM` behavior. Simply set `hypotheses_count_ratio=1` to keep the same number of hypotheses and `hypotheses_old_to_new_ratio=0` to sample only from existing hypotheses.*
 
@@ -96,8 +108,8 @@ hypotheses_count_ratio = 1
 hypotheses_old_to_new_ratio = 0.5
 
 
-# 0 means all sampled from informed hypotheses, 1 means all sampled from reenforced hypotheses
-hypotheses_informed_to_reenforce_ratio = 0.5
+# 0 means all sampled from informed hypotheses, 1 means all sampled from reinforced hypotheses
+hypotheses_informed_to_reinforce_ratio = 0.5
 
 
 def calculate_new_hypotheses_counts(
@@ -116,20 +128,20 @@ def calculate_new_hypotheses_counts(
         needed_new_sampled_hyp = needed_hypotheses_count - curr_hypotheses_count
 
     # calculate how many informed and re-enforced hypotheses needed
-    needed_new_informed_hyp, needed_new_reenforced_hyp = (
-        needed_new_sampled_hyp * (1 - hypotheses_informed_to_reenforce_ratio),
-        needed_new_sampled_hyp * hypotheses_informed_to_reenforce_ratio,
+    needed_new_informed_hyp, needed_new_reinforced_hyp = (
+        needed_new_sampled_hyp * (1 - hypotheses_informed_to_reinforce_ratio),
+        needed_new_sampled_hyp * hypotheses_informed_to_reinforce_ratio,
     )
     if needed_new_informed_hyp > new_informed_hypotheses_count:
         needed_new_informed_hyp = new_informed_hypotheses_count
-        needed_new_reenforced_hyp = (
+        needed_new_reinforced_hyp = (
             needed_new_sampled_hyp - new_informed_hypotheses_count
         )
 
     return (
         int(needed_old_sampled_hyp),
         int(needed_new_informed_hyp),
-        int(needed_new_reenforced_hyp),
+        int(needed_new_reinforced_hyp),
     )
 
 
