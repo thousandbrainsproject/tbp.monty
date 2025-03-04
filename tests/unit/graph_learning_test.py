@@ -548,127 +548,127 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(base_config)
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(base_config)
 
     def test_can_run_train_episode(self):
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(base_config)
-        self.exp.model.set_experiment_mode("train")
-        pprint("...training...")
-        self.exp.pre_epoch()
-        self.exp.run_episode()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(base_config)
+            self.exp.model.set_experiment_mode("train")
+            pprint("...training...")
+            self.exp.pre_epoch()
+            self.exp.run_episode()
 
     def test_right_data_in_buffer(self):
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(base_config)
-        self.exp.model.set_experiment_mode("train")
-        pprint("...training...")
-        self.exp.pre_epoch()
-        self.exp.pre_episode()
-        for step, observation in enumerate(self.exp.dataloader):
-            self.exp.model.step(observation)
-            self.assertEqual(
-                step + 1,
-                len(self.exp.model.learning_modules[0].buffer),
-                "buffer does not contain the right amount of elements.",
-            )
-            self.assertEqual(
-                step + 1,
-                len(
-                    self.exp.model.learning_modules[
-                        0
-                    ].buffer.get_all_locations_on_object(input_channel="first")
-                ),
-                "buffer does not contain the right amount of locations.",
-            )
-            if step == 0:
-                self.assertListEqual(
-                    list(
-                        self.exp.model.learning_modules[0].buffer.get_nth_displacement(
-                            0, input_channel="first"
-                        )
-                    ),
-                    list([0, 0, 0]),
-                    "displacement at step 0 should be 0.",
+        with self.exp:
+            self.exp.setup_experiment(base_config)
+            self.exp.model.set_experiment_mode("train")
+            pprint("...training...")
+            self.exp.pre_epoch()
+            self.exp.pre_episode()
+            for step, observation in enumerate(self.exp.dataloader):
+                self.exp.model.step(observation)
+                self.assertEqual(
+                    step + 1,
+                    len(self.exp.model.learning_modules[0].buffer),
+                    "buffer does not contain the right amount of elements.",
                 )
-            self.assertEqual(
-                step + 1,
-                len(
-                    self.exp.model.learning_modules[0].buffer.displacements["patch"][
-                        "displacement"
-                    ]
-                ),
-                "buffer does not contain the right amount of displacements.",
-            )
-            self.assertSetEqual(
-                set(self.exp.model.sensor_modules[0].features),
-                set(self.exp.model.learning_modules[0].buffer[-1]["patch"].keys()),
-                "buffer doesn't contain all features required for matching.",
-            )
-            if step == 3:
-                break
-        self.exp.dataset.close()
+                self.assertEqual(
+                    step + 1,
+                    len(
+                        self.exp.model.learning_modules[
+                            0
+                        ].buffer.get_all_locations_on_object(input_channel="first")
+                    ),
+                    "buffer does not contain the right amount of locations.",
+                )
+                if step == 0:
+                    self.assertListEqual(
+                        list(
+                            self.exp.model.learning_modules[
+                                0
+                            ].buffer.get_nth_displacement(0, input_channel="first")
+                        ),
+                        list([0, 0, 0]),
+                        "displacement at step 0 should be 0.",
+                    )
+                self.assertEqual(
+                    step + 1,
+                    len(
+                        self.exp.model.learning_modules[0].buffer.displacements[
+                            "patch"
+                        ]["displacement"]
+                    ),
+                    "buffer does not contain the right amount of displacements.",
+                )
+                self.assertSetEqual(
+                    set(self.exp.model.sensor_modules[0].features),
+                    set(self.exp.model.learning_modules[0].buffer[-1]["patch"].keys()),
+                    "buffer doesn't contain all features required for matching.",
+                )
+                if step == 3:
+                    break
 
     def test_can_run_eval_episode(self):
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(base_config)
-        self.exp.model.set_experiment_mode("eval")
-        pprint("...training...")
-        self.exp.pre_epoch()
-        self.exp.run_episode()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(base_config)
+            self.exp.model.set_experiment_mode("eval")
+            pprint("...training...")
+            self.exp.pre_epoch()
+            self.exp.run_episode()
 
     def test_can_run_eval_episode_with_surface_agent(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.surface_agent_eval_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        self.exp.model.set_experiment_mode("eval")
-        pprint("...training...")
-        self.exp.pre_epoch()
-        self.exp.run_episode()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            self.exp.model.set_experiment_mode("eval")
+            pprint("...training...")
+            self.exp.pre_epoch()
+            self.exp.run_episode()
 
     def test_can_run_ppf_experiment(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.ppf_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
+            pprint("...evaluating...")
+            self.exp.evaluate()
 
     def test_can_run_disp_experiment(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.disp_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
+            pprint("...evaluating...")
+            self.exp.evaluate()
 
     def test_can_run_feature_experiment(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feature_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
+            pprint("...evaluating...")
+            self.exp.evaluate()
 
     def test_fixed_actions_disp(self):
         """Runs three test episodes on capsule3DSolid and cubeSolid.
@@ -690,17 +690,20 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_disp)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        # self.exp.model.set_experiment_mode("eval")
-        pprint("...training...")
-        self.exp.train()
-        pprint("...loading and checking train statistics...")
-        train_stats = pd.read_csv(os.path.join(self.exp.output_dir, "train_stats.csv"))
-        self.check_train_results(train_stats)
+        with self.exp:
+            self.exp.setup_experiment(config)
+            # self.exp.model.set_experiment_mode("eval")
+            pprint("...training...")
+            self.exp.train()
+            pprint("...loading and checking train statistics...")
+            train_stats = pd.read_csv(
+                os.path.join(self.exp.output_dir, "train_stats.csv")
+            )
+            self.check_train_results(train_stats)
 
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+            pprint("...evaluating...")
+            self.exp.evaluate()
+
         pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
 
@@ -711,18 +714,21 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_ppf)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        # self.exp.model.set_experiment_mode("eval")
-        pprint("...training...")
-        self.exp.train()
-        pprint("...loading and checking train statistics...")
-        train_stats = pd.read_csv(os.path.join(self.exp.output_dir, "train_stats.csv"))
+        with self.exp:
+            self.exp.setup_experiment(config)
+            # self.exp.model.set_experiment_mode("eval")
+            pprint("...training...")
+            self.exp.train()
+            pprint("...loading and checking train statistics...")
+            train_stats = pd.read_csv(
+                os.path.join(self.exp.output_dir, "train_stats.csv")
+            )
 
-        self.check_train_results(train_stats)
+            self.check_train_results(train_stats)
 
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+            pprint("...evaluating...")
+            self.exp.evaluate()
+
         pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
 
@@ -733,18 +739,21 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_feat)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
-        pprint("...loading and checking train statistics...")
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
+            pprint("...loading and checking train statistics...")
 
-        train_stats = pd.read_csv(os.path.join(self.exp.output_dir, "train_stats.csv"))
+            train_stats = pd.read_csv(
+                os.path.join(self.exp.output_dir, "train_stats.csv")
+            )
 
-        self.check_train_results(train_stats)
+            self.check_train_results(train_stats)
 
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+            pprint("...evaluating...")
+            self.exp.evaluate()
+
         pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
 
@@ -754,11 +763,11 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_feat)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
+        with self.exp:
+            self.exp.setup_experiment(config)
 
-        pprint("...training...")
-        self.exp.train()
-        self.exp.close()
+            pprint("...training...")
+            self.exp.train()
 
         # Create a separate experiment for evaluation to mimic the us case of re-running
         # eval episodes from a pretrained model
@@ -768,12 +777,12 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             "2",  # latest checkpoint
         )
         self.eval_exp_1 = MontyObjectRecognitionExperiment()
-        self.eval_exp_1.setup_experiment(eval_cfg_1)
-        # TODO: update so it only runs one episode
+        with self.eval_exp_1:
+            self.eval_exp_1.setup_experiment(eval_cfg_1)
+            # TODO: update so it only runs one episode
 
-        pprint("...evaluating (first time) ...")
-        self.eval_exp_1.evaluate()
-        self.eval_exp_1.close()
+            pprint("...evaluating (first time) ...")
+            self.eval_exp_1.evaluate()
 
         # Create detailed follow up experiment
         eval_cfg_2 = create_eval_episode_config(
@@ -803,11 +812,11 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
         # If we made it this far, we have the correct parameters. Now run the experiment
         self.eval_exp_2 = MontyObjectRecognitionExperiment()
-        self.eval_exp_2.setup_experiment(eval_cfg_2)
+        with self.eval_exp_2:
+            self.eval_exp_2.setup_experiment(eval_cfg_2)
 
-        pprint("...evaluating (second time) ...")
-        self.eval_exp_2.evaluate()
-        self.eval_exp_2.close()
+            pprint("...evaluating (second time) ...")
+            self.eval_exp_2.evaluate()
 
         ###
         # Check that basic csv stats are the same
@@ -862,11 +871,11 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_feat)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
+        with self.exp:
+            self.exp.setup_experiment(config)
 
-        pprint("...training...")
-        self.exp.train()
-        self.exp.close()
+            pprint("...training...")
+            self.exp.train()
 
         # Create a separate experiment for evaluation to mimic the us case of re-running
         # eval episodes from a pretrained model
@@ -876,11 +885,11 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             "2",  # latest checkpoint
         )
         self.eval_exp_1 = MontyObjectRecognitionExperiment()
-        self.eval_exp_1.setup_experiment(eval_cfg_1)
+        with self.eval_exp_1:
+            self.eval_exp_1.setup_experiment(eval_cfg_1)
 
-        pprint("...evaluating (first time) ...")
-        self.eval_exp_1.evaluate()
-        self.eval_exp_1.close()
+            pprint("...evaluating (first time) ...")
+            self.eval_exp_1.evaluate()
 
         # Create detailed follow up experiment
         eval_cfg_2 = create_eval_config_multiple_episodes(
@@ -922,11 +931,11 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
         # If we made it this far, we have the correct parameters. Now run the experiment
         self.eval_exp_2 = MontyObjectRecognitionExperiment()
-        self.eval_exp_2.setup_experiment(eval_cfg_2)
+        with self.eval_exp_2:
+            self.eval_exp_2.setup_experiment(eval_cfg_2)
 
-        pprint("...evaluating (second time) ...")
-        self.eval_exp_2.evaluate()
-        self.eval_exp_2.close()
+            pprint("...evaluating (second time) ...")
+            self.eval_exp_2.evaluate()
 
         ###
         # Check that basic csv stats are the same
@@ -982,11 +991,11 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_feat)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
+        with self.exp:
+            self.exp.setup_experiment(config)
 
-        pprint("...training...")
-        self.exp.train()
-        self.exp.close()
+            pprint("...training...")
+            self.exp.train()
 
         # Create a separate experiment for evaluation to mimic the us case of re-running
         # eval episodes from a pretrained model
@@ -996,11 +1005,11 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             "2",  # latest checkpoint
         )
         self.eval_exp_1 = MontyObjectRecognitionExperiment()
-        self.eval_exp_1.setup_experiment(eval_cfg_1)
+        with self.eval_exp_1:
+            self.eval_exp_1.setup_experiment(eval_cfg_1)
 
-        pprint("...evaluating (first time) ...")
-        self.eval_exp_1.evaluate()
-        self.eval_exp_1.close()
+            pprint("...evaluating (first time) ...")
+            self.eval_exp_1.evaluate()
 
         # Create detailed follow up experiment
         eval_cfg_2 = create_eval_config_multiple_episodes(
@@ -1030,11 +1039,11 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
         # If we made it this far, we have the correct parameters. Now run the experiment
         self.eval_exp_2 = MontyObjectRecognitionExperiment()
-        self.eval_exp_2.setup_experiment(eval_cfg_2)
+        with self.eval_exp_2:
+            self.eval_exp_2.setup_experiment(eval_cfg_2)
 
-        pprint("...evaluating (second time) ...")
-        self.eval_exp_2.evaluate()
-        self.eval_exp_2.close()
+            pprint("...evaluating (second time) ...")
+            self.eval_exp_2.evaluate()
 
         ###
         # Check that basic csv stats are the same
@@ -1090,11 +1099,11 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_ppf)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        # self.exp.model.set_experiment_mode("eval")
-        pprint("...training...")
-        self.exp.train()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            # self.exp.model.set_experiment_mode("eval")
+            pprint("...training...")
+            self.exp.train()
 
         # We are training for 3 epochs by default, load most recent indexing from 0
         print("Loading a saved checkpoint")
@@ -1104,21 +1113,22 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             "2",  # latest checkpoint
         )
         self.exp2 = MontyObjectRecognitionExperiment()
-        self.exp2.setup_experiment(cfg2)
+        with self.exp2:
+            self.exp2.setup_experiment(cfg2)
 
-        graph_memory_1 = self.exp.model.learning_modules[
-            0
-        ].graph_memory.get_all_models_in_memory()
-        graph_memory_2 = self.exp2.model.learning_modules[
-            0
-        ].graph_memory.get_all_models_in_memory()
+            graph_memory_1 = self.exp.model.learning_modules[
+                0
+            ].graph_memory.get_all_models_in_memory()
+            graph_memory_2 = self.exp2.model.learning_modules[
+                0
+            ].graph_memory.get_all_models_in_memory()
 
-        # Loop over each graph model and check they have the exact same data
-        for obj_name in graph_memory_1.keys():
-            for input_channel in graph_memory_1[obj_name].keys():
-                graph_1 = graph_memory_1[obj_name][input_channel]
-                graph_2 = graph_memory_2[obj_name][input_channel]
-                self.check_graphs_equal(graph_1, graph_2)
+            # Loop over each graph model and check they have the exact same data
+            for obj_name in graph_memory_1.keys():
+                for input_channel in graph_memory_1[obj_name].keys():
+                    graph_1 = graph_memory_1[obj_name][input_channel]
+                    graph_2 = graph_memory_2[obj_name][input_channel]
+                    self.check_graphs_equal(graph_1, graph_2)
 
     def test_time_out(self):
         """Test time_out and pose_time_out detection and logging.
@@ -1133,26 +1143,27 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feature_pred_tests_time_out)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        self.exp.model.set_experiment_mode("train")
-        pprint("...training...")
-        # self.exp.train()
-        for e in range(6):
-            if e % 2 == 0:
-                self.exp.pre_epoch()
-            if e == 2:
-                # Set max steps low & raise mmd to get pose time outs
-                self.exp.max_train_steps = 3
-                self.exp.model.learning_modules[0].max_match_distance = 0.1
-            if e == 4:
-                # set curvature threshold high to get time outs
-                self.exp.model.learning_modules[0].tolerances["patch"][
-                    "principal_curvatures_log"
-                ] = [10, 10]
-            self.exp.run_episode()
-            if e % 2 == 1:
-                self.exp.post_epoch()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            self.exp.model.set_experiment_mode("train")
+            pprint("...training...")
+            # self.exp.train()
+            for e in range(6):
+                if e % 2 == 0:
+                    self.exp.pre_epoch()
+                if e == 2:
+                    # Set max steps low & raise mmd to get pose time outs
+                    self.exp.max_train_steps = 3
+                    self.exp.model.learning_modules[0].max_match_distance = 0.1
+                if e == 4:
+                    # set curvature threshold high to get time outs
+                    self.exp.model.learning_modules[0].tolerances["patch"][
+                        "principal_curvatures_log"
+                    ] = [10, 10]
+                self.exp.run_episode()
+                if e % 2 == 1:
+                    self.exp.post_epoch()
+
         pprint("...check time out logging...")
         train_stats = pd.read_csv(os.path.join(self.exp.output_dir, "train_stats.csv"))
         self.assertEqual(
@@ -1197,20 +1208,21 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_feat)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        self.exp.model.set_experiment_mode("train")
-        pprint("...training...")
-        self.exp.pre_epoch()
-        # Overwrite target with a false name to test confused logging.
-        for e in range(4):
-            self.exp.pre_episode()
-            self.exp.model.primary_target = str(e)
-            for lm in self.exp.model.learning_modules:
-                lm.primary_target = str(e)
-            last_step = self.exp.run_episode_steps()
-            self.exp.post_episode(last_step)
-        self.exp.post_epoch()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            self.exp.model.set_experiment_mode("train")
+            pprint("...training...")
+            self.exp.pre_epoch()
+            # Overwrite target with a false name to test confused logging.
+            for e in range(4):
+                self.exp.pre_episode()
+                self.exp.model.primary_target = str(e)
+                for lm in self.exp.model.learning_modules:
+                    lm.primary_target = str(e)
+                last_step = self.exp.run_episode_steps()
+                self.exp.post_episode(last_step)
+            self.exp.post_epoch()
+
         pprint("...checking run stats...")
         train_stats = pd.read_csv(os.path.join(self.exp.output_dir, "train_stats.csv"))
         for i in [0, 1]:
@@ -1252,70 +1264,71 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feature_pred_tests_off_object)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        # First episode will be used to learn object (no_match is triggered before
-        # min_steps is reached and the sensor moves off the object). In the second
-        # episode the sensor moves off the sphere on episode steps 6+
-        # Eventually, we circle round and come back to the object; recognition
-        # does not take place before then because when off the object, matching
-        # steps are no longer incremented, while it is an unfamiliar part of
-        # the object that we return to
-        self.exp.train()
-        self.assertEqual(
-            len(
-                self.exp.model.learning_modules[0].buffer.get_all_locations_on_object(
-                    input_channel="patch"
-                )
-            ),
-            len(
-                self.exp.model.learning_modules[0].buffer.get_all_features_on_object()[
-                    "patch"
-                ]["pose_vectors"]
-            ),
-            "Did not retrieve same amount of feature and locations on object.",
-        )
-        self.assertEqual(
-            sum(
-                self.exp.model.learning_modules[0].buffer.get_all_features_on_object()[
-                    "patch"
-                ]["on_object"]
-            ),
-            len(
-                self.exp.model.learning_modules[0].buffer.get_all_features_on_object()[
-                    "patch"
-                ]["on_object"]
-            ),
-            "not all retrieved features were collected on the object.",
-        )
-        # Since we don't add observations to the buffer that are off the object
-        # there should only be 8 observations stored for the 12 matching steps
-        # and all of them should be on the object.
-        num_matching_steps = len(
-            self.exp.model.learning_modules[0].buffer.stats["possible_matches"]
-        )
-        self.assertEqual(
-            num_matching_steps,
-            sum(
-                self.exp.model.learning_modules[0].buffer.features["patch"][
-                    "on_object"
-                ][:num_matching_steps]
-            ),
-            "Number of match steps does not match with stored observations on object",
-        )
-
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            # First episode will be used to learn object (no_match is triggered before
+            # min_steps is reached and the sensor moves off the object). In the second
+            # episode the sensor moves off the sphere on episode steps 6+
+            # Eventually, we circle round and come back to the object; recognition
+            # does not take place before then because when off the object, matching
+            # steps are no longer incremented, while it is an unfamiliar part of
+            # the object that we return to
+            self.exp.train()
+            self.assertEqual(
+                len(
+                    self.exp.model.learning_modules[
+                        0
+                    ].buffer.get_all_locations_on_object(input_channel="patch")
+                ),
+                len(
+                    self.exp.model.learning_modules[
+                        0
+                    ].buffer.get_all_features_on_object()["patch"]["pose_vectors"]
+                ),
+                "Did not retrieve same amount of feature and locations on object.",
+            )
+            self.assertEqual(
+                sum(
+                    self.exp.model.learning_modules[
+                        0
+                    ].buffer.get_all_features_on_object()["patch"]["on_object"]
+                ),
+                len(
+                    self.exp.model.learning_modules[
+                        0
+                    ].buffer.get_all_features_on_object()["patch"]["on_object"]
+                ),
+                "not all retrieved features were collected on the object.",
+            )
+            # Since we don't add observations to the buffer that are off the object
+            # there should only be 8 observations stored for the 12 matching steps
+            # and all of them should be on the object.
+            num_matching_steps = len(
+                self.exp.model.learning_modules[0].buffer.stats["possible_matches"]
+            )
+            self.assertEqual(
+                num_matching_steps,
+                sum(
+                    self.exp.model.learning_modules[0].buffer.features["patch"][
+                        "on_object"
+                    ][:num_matching_steps]
+                ),
+                "Number of match steps does not match with stored observations "
+                "on object",
+            )
 
     def test_detailed_logging(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feature_pred_tests_off_object)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
+            pprint("...evaluating...")
+            self.exp.evaluate()
+
         pprint("...loading stats files...")
         train_stats, eval_stats, detailed_stats, lm_models = load_stats(
             self.exp.output_dir,
@@ -1352,7 +1365,8 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         self.assertEqual(
             len(detailed_stats["1"]["LM_0"]["possible_matches"]),
             train_stats.loc[1]["monty_matching_steps"],
-            "matching steps in detailed stats don't match with those in train stats.",
+            "matching steps in detailed stats don't match with those in "
+            "train stats.",
         )
         self.assertEqual(
             sum(np.array(detailed_stats["1"]["LM_0"]["patch"]["on_object"])),
@@ -1367,17 +1381,20 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feat_test_uniform_initial_poses)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
-        pprint("...loading and checking train statistics...")
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
+            pprint("...loading and checking train statistics...")
 
-        train_stats = pd.read_csv(os.path.join(self.exp.output_dir, "train_stats.csv"))
-        self.check_train_results(train_stats)
+            train_stats = pd.read_csv(
+                os.path.join(self.exp.output_dir, "train_stats.csv")
+            )
+            self.check_train_results(train_stats)
 
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+            pprint("...evaluating...")
+            self.exp.evaluate()
+
         pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
         self.check_eval_results(eval_stats)
@@ -1691,16 +1708,19 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.ppf_displacement_5lm_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
 
-        train_stats = pd.read_csv(os.path.join(self.exp.output_dir, "train_stats.csv"))
-        self.check_multilm_train_results(train_stats, num_lms=5, min_done=3)
+            train_stats = pd.read_csv(
+                os.path.join(self.exp.output_dir, "train_stats.csv")
+            )
+            self.check_multilm_train_results(train_stats, num_lms=5, min_done=3)
 
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+            pprint("...evaluating...")
+            self.exp.evaluate()
+
         pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
         self.check_multilm_eval_results(
@@ -1712,19 +1732,22 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feature_5lm_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
 
-        train_stats = pd.read_csv(os.path.join(self.exp.output_dir, "train_stats.csv"))
-        # The following check is brittle and depends on sensor arrangement. Leaving
-        # the rest of the test intact to detect run failures, but disabling checking
-        # of particular results.
-        # self.check_multilm_train_results(train_stats, num_lms=5, min_done=3)
+            train_stats = pd.read_csv(
+                os.path.join(self.exp.output_dir, "train_stats.csv")
+            )
+            # The following check is brittle and depends on sensor arrangement. Leaving
+            # the rest of the test intact to detect run failures, but disabling checking
+            # of particular results.
+            # self.check_multilm_train_results(train_stats, num_lms=5, min_done=3)
 
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+            pprint("...evaluating...")
+            self.exp.evaluate()
+
         pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
         # Just testing 1 episode here. Somehow the second rotation doesn't get

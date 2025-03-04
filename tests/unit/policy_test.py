@@ -452,85 +452,85 @@ class PolicyTest(unittest.TestCase):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.base_dist_agent_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
+            pprint("...evaluating...")
+            self.exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_spiral_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.spiral_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        # TODO: test that no two locations are the same
-        self.exp.train()
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            # TODO: test that no two locations are the same
+            self.exp.train()
+            pprint("...evaluating...")
+            self.exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_dist_agent_hypo_driven_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.dist_agent_hypo_driven_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
+            pprint("...evaluating...")
+            self.exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_surface_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.base_surf_agent_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
+            pprint("...evaluating...")
+            self.exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_curv_informed_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.curv_informed_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
+            pprint("...evaluating...")
+            self.exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_surf_agent_hypo_driven_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.surf_agent_hypo_driven_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
+            pprint("...evaluating...")
+            self.exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_multi_lm_dist_agent_hypo_driven_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.dist_agent_hypo_driven_multi_lm_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
+            pprint("...evaluating...")
+            self.exp.evaluate()
 
     # ==== MORE INVOLVED TESTS OF ACTION POLICIES ====
 
@@ -597,45 +597,44 @@ class PolicyTest(unittest.TestCase):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.poor_initial_view_dist_agent_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        self.exp.model.set_experiment_mode("train")
-        self.exp.pre_epoch()
-        self.exp.pre_episode()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            self.exp.model.set_experiment_mode("train")
+            self.exp.pre_epoch()
+            self.exp.pre_episode()
 
-        pprint("...stepping through observations...")
+            pprint("...stepping through observations...")
 
-        # Check the initial view
-        observation = next(self.exp.dataloader)
-        # TODO M remove the following train-wreck during refactor
-        view = observation[self.exp.model.motor_system.agent_id]["view_finder"]
-        semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
-        perc_on_target_obj = get_perc_on_obj_semantic(semantic, semantic_id=1)
+            # Check the initial view
+            observation = next(self.exp.dataloader)
+            # TODO M remove the following train-wreck during refactor
+            view = observation[self.exp.model.motor_system.agent_id]["view_finder"]
+            semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
+            perc_on_target_obj = get_perc_on_obj_semantic(semantic, semantic_id=1)
 
-        dict_config = config_to_dict(config)
+            dict_config = config_to_dict(config)
 
-        target_perc_on_target_obj = dict_config["monty_config"]["motor_system_config"][
-            "motor_system_args"
-        ]["good_view_percentage"]
+            target_perc_on_target_obj = dict_config["monty_config"][
+                "motor_system_config"
+            ]["motor_system_args"]["good_view_percentage"]
 
-        assert (
-            perc_on_target_obj >= target_perc_on_target_obj
-        ), f"Initial view is not good enough, {perc_on_target_obj}\
-            vs target of {target_perc_on_target_obj}"
+            assert (
+                perc_on_target_obj >= target_perc_on_target_obj
+            ), f"Initial view is not good enough, {perc_on_target_obj}\
+                vs target of {target_perc_on_target_obj}"
 
-        points_on_target_obj = semantic == 1
-        closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
+            points_on_target_obj = semantic == 1
+            closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
 
-        target_closest_point = dict_config["monty_config"]["motor_system_config"][
-            "motor_system_args"
-        ]["desired_object_distance"]
+            target_closest_point = dict_config["monty_config"]["motor_system_config"][
+                "motor_system_args"
+            ]["desired_object_distance"]
 
-        # Utility policy should not have moved too close to the object
-        assert (
-            closest_point_on_target_obj > target_closest_point
-        ), f"Initial view is too close, {closest_point_on_target_obj}\
-            vs target of {target_closest_point}"
-
-        self.exp.dataset.close()
+            # Utility policy should not have moved too close to the object
+            assert (
+                closest_point_on_target_obj > target_closest_point
+            ), f"Initial view is too close, {closest_point_on_target_obj}\
+                vs target of {target_closest_point}"
 
     def test_touch_object_basic_surf_agent(self):
         """Test ability to move a surface agent to touch an object.
@@ -649,47 +648,46 @@ class PolicyTest(unittest.TestCase):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.poor_initial_view_surf_agent_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        self.exp.model.set_experiment_mode("train")
-        self.exp.pre_epoch()
-        self.exp.pre_episode()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            self.exp.model.set_experiment_mode("train")
+            self.exp.pre_epoch()
+            self.exp.pre_episode()
 
-        pprint("...stepping through observations...")
+            pprint("...stepping through observations...")
 
-        # Get a first step to allow the surface agent to touch the object
-        observation_pre_touch = next(self.exp.dataloader)
-        self.exp.model.step(observation_pre_touch)
+            # Get a first step to allow the surface agent to touch the object
+            observation_pre_touch = next(self.exp.dataloader)
+            self.exp.model.step(observation_pre_touch)
 
-        # Check initial view post touch-attempt
-        observation_post_touch = next(self.exp.dataloader)
+            # Check initial view post touch-attempt
+            observation_post_touch = next(self.exp.dataloader)
 
-        # TODO M remove the following train-wreck during refactor
-        view = observation_post_touch[self.exp.model.motor_system.agent_id][
-            "view_finder"
-        ]
-        dict_config = config_to_dict(config)
+            # TODO M remove the following train-wreck during refactor
+            view = observation_post_touch[self.exp.model.motor_system.agent_id][
+                "view_finder"
+            ]
+            dict_config = config_to_dict(config)
 
-        points_on_target_obj = (
-            view["semantic_3d"][:, 3].reshape(view["depth"].shape) == 1
-        )
-        closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
+            points_on_target_obj = (
+                view["semantic_3d"][:, 3].reshape(view["depth"].shape) == 1
+            )
+            closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
 
-        assert (
-            closest_point_on_target_obj < 1.0
-        ), f"Should be within a meter of the object,\
-            closest point at {closest_point_on_target_obj}"
+            assert (
+                closest_point_on_target_obj < 1.0
+            ), f"Should be within a meter of the object,\
+                closest point at {closest_point_on_target_obj}"
 
-        target_closest_point = dict_config["monty_config"]["motor_system_config"][
-            "motor_system_args"
-        ]["desired_object_distance"]
+            target_closest_point = dict_config["monty_config"]["motor_system_config"][
+                "motor_system_args"
+            ]["desired_object_distance"]
 
-        # Utility policy should not have moved too close to the object
-        assert (
-            closest_point_on_target_obj > target_closest_point
-        ), f"Initial position is too close, {closest_point_on_target_obj}\
-            vs target of {target_closest_point}"
-
-        self.exp.dataset.close()
+            # Utility policy should not have moved too close to the object
+            assert (
+                closest_point_on_target_obj > target_closest_point
+            ), f"Initial position is too close, {closest_point_on_target_obj}\
+                vs target of {target_closest_point}"
 
     def test_get_good_view_multi_object(self):
         """Test ability to move a distant agent to a good view of an object.
@@ -706,56 +704,57 @@ class PolicyTest(unittest.TestCase):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.poor_initial_view_multi_object_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
 
-        # Manually go through evaluation (i.e. methods in .evaluate() and run_epoch())
-        self.exp.model.set_experiment_mode("eval")
-        self.exp.pre_epoch()
-        self.exp.pre_episode()
+            # Manually go through evaluation (i.e. methods in .evaluate()
+            # and run_epoch())
+            self.exp.model.set_experiment_mode("eval")
+            self.exp.pre_epoch()
+            self.exp.pre_episode()
 
-        pprint("...stepping through observations...")
-        # Check the initial view
-        observation = next(self.exp.dataloader)
-        # TODO M remove the following train-wreck during refactor
-        view = observation[self.exp.model.motor_system.agent_id]["view_finder"]
-        semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
-        perc_on_target_obj = get_perc_on_obj_semantic(semantic, semantic_id=1)
+            pprint("...stepping through observations...")
+            # Check the initial view
+            observation = next(self.exp.dataloader)
+            # TODO M remove the following train-wreck during refactor
+            view = observation[self.exp.model.motor_system.agent_id]["view_finder"]
+            semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
+            perc_on_target_obj = get_perc_on_obj_semantic(semantic, semantic_id=1)
 
-        dict_config = config_to_dict(config)
-        target_perc_on_target_obj = dict_config["monty_config"]["motor_system_config"][
-            "motor_system_args"
-        ]["good_view_percentage"]
+            dict_config = config_to_dict(config)
+            target_perc_on_target_obj = dict_config["monty_config"][
+                "motor_system_config"
+            ]["motor_system_args"]["good_view_percentage"]
 
-        assert (
-            perc_on_target_obj >= target_perc_on_target_obj
-        ), f"Initial view is not good enough, {perc_on_target_obj}\
-            vs target of {target_perc_on_target_obj}"
+            assert (
+                perc_on_target_obj >= target_perc_on_target_obj
+            ), f"Initial view is not good enough, {perc_on_target_obj}\
+                vs target of {target_perc_on_target_obj}"
 
-        points_on_target_obj = semantic == 1
-        closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
+            points_on_target_obj = semantic == 1
+            closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
 
-        target_closest_point = dict_config["monty_config"]["motor_system_config"][
-            "motor_system_args"
-        ]["desired_object_distance"]
+            target_closest_point = dict_config["monty_config"]["motor_system_config"][
+                "motor_system_args"
+            ]["desired_object_distance"]
 
-        # Utility policy should not have moved too close to the object
-        assert (
-            closest_point_on_target_obj > target_closest_point
-        ), f"Initial view is too close to target, {closest_point_on_target_obj}\
-            vs target of {target_closest_point}"
+            # Utility policy should not have moved too close to the object
+            assert (
+                closest_point_on_target_obj > target_closest_point
+            ), f"Initial view is too close to target, {closest_point_on_target_obj}\
+                vs target of {target_closest_point}"
 
-        # Also calculate closest point on *any* object so that we don't get too close
-        # and clip into objects; NB that any object will have a semantic ID > 0
-        points_on_any_obj = view["semantic"] > 0
-        closest_point_on_any_obj = np.min(view["depth"][points_on_any_obj])
-        assert (
-            closest_point_on_any_obj > target_closest_point / 6
-        ), f"Initial view too cloase to other objects, {closest_point_on_any_obj}\
-            vs target of {target_closest_point / 6}"
-
-        self.exp.dataset.close()
+            # Also calculate closest point on *any* object so that we don't get
+            # too close and clip into objects; NB that any object will have a
+            # semantic ID > 0
+            points_on_any_obj = view["semantic"] > 0
+            closest_point_on_any_obj = np.min(view["depth"][points_on_any_obj])
+            assert (
+                closest_point_on_any_obj > target_closest_point / 6
+            ), f"Initial view too cloase to other objects, {closest_point_on_any_obj}\
+                vs target of {target_closest_point / 6}"
 
     def test_distant_policy_moves_back_to_object(self):
         """Test ability of distant agent to move back to an object.
@@ -769,106 +768,105 @@ class PolicyTest(unittest.TestCase):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_action_distant_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        self.exp.model.set_experiment_mode("train")
-        pprint("...training...")
-        self.exp.pre_epoch()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            self.exp.model.set_experiment_mode("train")
+            pprint("...training...")
+            self.exp.pre_epoch()
 
-        # Only do a single episode
-        self.exp.pre_episode()
+            # Only do a single episode
+            self.exp.pre_episode()
 
-        pprint("...stepping through observations...")
-        # Manually step through part of run_episode function
-        for loader_step, observation in enumerate(self.exp.dataloader):
-            self.exp.model.step(observation)
+            pprint("...stepping through observations...")
+            # Manually step through part of run_episode function
+            for loader_step, observation in enumerate(self.exp.dataloader):
+                self.exp.model.step(observation)
 
-            last_action = self.exp.model.motor_system.last_action()
+                last_action = self.exp.model.motor_system.last_action()
 
-            if loader_step == 3:
-                stored_action = last_action
-                assert not self.exp.model.learning_modules[
-                    0
-                ].buffer.get_last_obs_processed(), "Should be off object"
+                if loader_step == 3:
+                    stored_action = last_action
+                    assert not self.exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), "Should be off object"
 
-            if loader_step == 4:
-                should_have_moved_back = (
-                    "Should have moved back by reversing last movement"
-                )
-                self.assertIsInstance(
-                    last_action, type(stored_action), should_have_moved_back
-                )
-                if isinstance(stored_action, (LookDown, LookUp)):
-                    self.assertEqual(
-                        last_action.rotation_degrees,
-                        -stored_action.rotation_degrees,
-                        should_have_moved_back,
+                if loader_step == 4:
+                    should_have_moved_back = (
+                        "Should have moved back by reversing last movement"
                     )
-                    self.assertEqual(
-                        last_action.constraint_degrees,
-                        stored_action.constraint_degrees,
-                        should_have_moved_back,
+                    self.assertIsInstance(
+                        last_action, type(stored_action), should_have_moved_back
                     )
-                elif isinstance(stored_action, (TurnLeft, TurnRight)):
-                    self.assertEqual(
-                        last_action.rotation_degrees,
-                        -stored_action.rotation_degrees,
-                        should_have_moved_back,
-                    )
-                elif isinstance(stored_action, MoveForward):
-                    self.assertEqual(
-                        last_action.distance,
-                        -stored_action.distance,
-                        should_have_moved_back,
-                    )
-                elif isinstance(stored_action, MoveTangentially):
-                    self.assertEqual(
-                        last_action.distance,
-                        -stored_action.distance,
-                        should_have_moved_back,
-                    )
-                    self.assertEqual(
-                        last_action.direction,
-                        stored_action.direction,
-                        should_have_moved_back,
-                    )
-                elif isinstance(stored_action, OrientHorizontal):
-                    self.assertEqual(
-                        last_action.rotation_degrees,
-                        -stored_action.rotation_degrees,
-                        should_have_moved_back,
-                    )
-                    self.assertEqual(
-                        last_action.left_distance,
-                        -stored_action.left_distance,
-                        should_have_moved_back,
-                    )
-                    self.assertEqual(
-                        last_action.forward_distance,
-                        -stored_action.forward_distance,
-                        should_have_moved_back,
-                    )
-                elif isinstance(stored_action, OrientVertical):
-                    self.assertEqual(
-                        last_action.rotation_degrees,
-                        -stored_action.rotation_degrees,
-                        should_have_moved_back,
-                    )
-                    self.assertEqual(
-                        last_action.down_distance,
-                        -stored_action.down_distance,
-                        should_have_moved_back,
-                    )
-                    self.assertEqual(
-                        last_action.forward_distance,
-                        -stored_action.forward_distance,
-                        should_have_moved_back,
-                    )
-                assert self.exp.model.learning_modules[
-                    0
-                ].buffer.get_last_obs_processed(), "Should be back on object"
-                break  # Don't go into exploratory mode
-
-        self.exp.dataset.close()
+                    if isinstance(stored_action, (LookDown, LookUp)):
+                        self.assertEqual(
+                            last_action.rotation_degrees,
+                            -stored_action.rotation_degrees,
+                            should_have_moved_back,
+                        )
+                        self.assertEqual(
+                            last_action.constraint_degrees,
+                            stored_action.constraint_degrees,
+                            should_have_moved_back,
+                        )
+                    elif isinstance(stored_action, (TurnLeft, TurnRight)):
+                        self.assertEqual(
+                            last_action.rotation_degrees,
+                            -stored_action.rotation_degrees,
+                            should_have_moved_back,
+                        )
+                    elif isinstance(stored_action, MoveForward):
+                        self.assertEqual(
+                            last_action.distance,
+                            -stored_action.distance,
+                            should_have_moved_back,
+                        )
+                    elif isinstance(stored_action, MoveTangentially):
+                        self.assertEqual(
+                            last_action.distance,
+                            -stored_action.distance,
+                            should_have_moved_back,
+                        )
+                        self.assertEqual(
+                            last_action.direction,
+                            stored_action.direction,
+                            should_have_moved_back,
+                        )
+                    elif isinstance(stored_action, OrientHorizontal):
+                        self.assertEqual(
+                            last_action.rotation_degrees,
+                            -stored_action.rotation_degrees,
+                            should_have_moved_back,
+                        )
+                        self.assertEqual(
+                            last_action.left_distance,
+                            -stored_action.left_distance,
+                            should_have_moved_back,
+                        )
+                        self.assertEqual(
+                            last_action.forward_distance,
+                            -stored_action.forward_distance,
+                            should_have_moved_back,
+                        )
+                    elif isinstance(stored_action, OrientVertical):
+                        self.assertEqual(
+                            last_action.rotation_degrees,
+                            -stored_action.rotation_degrees,
+                            should_have_moved_back,
+                        )
+                        self.assertEqual(
+                            last_action.down_distance,
+                            -stored_action.down_distance,
+                            should_have_moved_back,
+                        )
+                        self.assertEqual(
+                            last_action.forward_distance,
+                            -stored_action.forward_distance,
+                            should_have_moved_back,
+                        )
+                    assert self.exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), "Should be back on object"
+                    break  # Don't go into exploratory mode
 
     def test_surface_policy_moves_back_to_object(self):
         """Test ability of surface agent to move back to an object.
@@ -882,33 +880,32 @@ class PolicyTest(unittest.TestCase):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_action_surface_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        self.exp.model.set_experiment_mode("train")
-        pprint("...training...")
-        self.exp.pre_epoch()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            self.exp.model.set_experiment_mode("train")
+            pprint("...training...")
+            self.exp.pre_epoch()
 
-        # Only do a single episode
-        self.exp.pre_episode()
+            # Only do a single episode
+            self.exp.pre_episode()
 
-        pprint("...stepping through observations...")
-        # Take several steps in a fixed direction until we fall off the object, then
-        # ensure we get back on to it
-        for loader_step, observation in enumerate(self.exp.dataloader):
-            self.exp.model.step(observation)
+            pprint("...stepping through observations...")
+            # Take several steps in a fixed direction until we fall off the object, then
+            # ensure we get back on to it
+            for loader_step, observation in enumerate(self.exp.dataloader):
+                self.exp.model.step(observation)
 
-            if loader_step == 24:  # Last step we take before getting back onto the
-                # object
-                assert not self.exp.model.learning_modules[
-                    0
-                ].buffer.get_last_obs_processed(), "Should be off object"
+                if loader_step == 24:  # Last step we take before getting back onto the
+                    # object
+                    assert not self.exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), "Should be off object"
 
-            if loader_step == 25:
-                assert self.exp.model.learning_modules[
-                    0
-                ].buffer.get_last_obs_processed(), "Should be back on object"
-                break  # Don't go into exploratory mode
-
-        self.exp.dataset.close()
+                if loader_step == 25:
+                    assert self.exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), "Should be back on object"
+                    break  # Don't go into exploratory mode
 
     def test_surface_policy_orientation(self):
         """Test ability of surface agent to orient to a point-normal.
@@ -922,46 +919,45 @@ class PolicyTest(unittest.TestCase):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.rotated_cube_view_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        self.exp.model.set_experiment_mode("train")
-        pprint("...training...")
-        self.exp.pre_epoch()
-        self.exp.pre_episode()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            self.exp.model.set_experiment_mode("train")
+            pprint("...training...")
+            self.exp.pre_epoch()
+            self.exp.pre_episode()
 
-        pprint("...stepping through observations...")
-        for loader_step, observation in enumerate(self.exp.dataloader):
-            self.exp.model.step(observation)
-            self.exp.post_step(loader_step, observation)
+            pprint("...stepping through observations...")
+            for loader_step, observation in enumerate(self.exp.dataloader):
+                self.exp.model.step(observation)
+                self.exp.post_step(loader_step, observation)
 
-            if loader_step == 3:  # Surface agent should have re-oriented
-                break
+                if loader_step == 3:  # Surface agent should have re-oriented
+                    break
 
-        # Most recently observed point-normal sent to the learning module
-        current_pose = self.exp.model.learning_modules[0].buffer.get_current_pose(
-            input_channel="first"
-        )
-
-        # Rotate vector representing agent's pointing direction by the agent's current
-        # orientation
-        agent_direction = np.array(
-            hab_utils.quat_rotate_vector(
-                self.exp.model.motor_system.state["agent_id_0"]["rotation"],
-                [
-                    0,
-                    0,
-                    -1,
-                ],  # The initial direction vector corresponding to the agent's
-                # orientation
+            # Most recently observed point-normal sent to the learning module
+            current_pose = self.exp.model.learning_modules[0].buffer.get_current_pose(
+                input_channel="first"
             )
-        )
 
-        assert np.all(
-            np.isclose(
-                current_pose[1], agent_direction * (-1), rtol=1.0e-3, atol=1.0e-2
+            # Rotate vector representing agent's pointing direction by the agent's
+            # current orientation
+            agent_direction = np.array(
+                hab_utils.quat_rotate_vector(
+                    self.exp.model.motor_system.state["agent_id_0"]["rotation"],
+                    [
+                        0,
+                        0,
+                        -1,
+                    ],  # The initial direction vector corresponding to the agent's
+                    # orientation
+                )
             )
-        ), "Agent should be (approximately) looking down on the point-normal"
 
-        self.exp.dataset.close()
+            assert np.all(
+                np.isclose(
+                    current_pose[1], agent_direction * (-1), rtol=1.0e-3, atol=1.0e-2
+                )
+            ), "Agent should be (approximately) looking down on the point-normal"
 
     def test_core_following_principal_curvature(self):
         """Test ability of surface agent to follow principal curvature.

@@ -171,12 +171,12 @@ class RunParallelTest(unittest.TestCase):
         ###
         pprint("...Setting up serial experiment...")
         self.exp = MontySupervisedObjectPretrainingExperiment()
-        self.exp.setup_experiment(self.supervised_pre_training)
-        self.exp.model.set_experiment_mode("train")
+        with self.exp:
+            self.exp.setup_experiment(self.supervised_pre_training)
+            self.exp.model.set_experiment_mode("train")
 
-        pprint("...Training in serial...")
-        self.exp.train()
-        self.exp.dataset.close()
+            pprint("...Training in serial...")
+            self.exp.train()
 
         ###
         # Run training with run_parallel
@@ -242,11 +242,11 @@ class RunParallelTest(unittest.TestCase):
         # In serial like normal
         pprint("...Setting up serial experiment...")
         self.eval_exp = MontyObjectRecognitionExperiment()
-        self.eval_exp.setup_experiment(self.eval_config)
+        with self.eval_exp:
+            self.eval_exp.setup_experiment(self.eval_config)
 
-        pprint("...Evaluating in serial...")
-        self.eval_exp.evaluate()
-        self.eval_exp.dataset.close()
+            pprint("...Evaluating in serial...")
+            self.eval_exp.evaluate()
 
         # Using run_parallel
         pprint("...Setting up parallel experiment...")
@@ -293,11 +293,11 @@ class RunParallelTest(unittest.TestCase):
         # In serial like normal
         pprint("...Setting up serial experiment...")
         self.eval_exp_lt = MontyObjectRecognitionExperiment()
-        self.eval_exp_lt.setup_experiment(self.eval_config_lt)
+        with self.eval_exp_lt:
+            self.eval_exp_lt.setup_experiment(self.eval_config_lt)
 
-        pprint("...Evaluating in serial...")
-        self.eval_exp_lt.evaluate()
-        self.eval_exp_lt.dataset.close()
+            pprint("...Evaluating in serial...")
+            self.eval_exp_lt.evaluate()
 
         # Using run_parallel
         pprint("...Setting up parallel experiment...")
@@ -333,11 +333,11 @@ class RunParallelTest(unittest.TestCase):
         # In serial like normal
         pprint("...Setting up serial experiment...")
         self.eval_exp_gt = MontyObjectRecognitionExperiment()
-        self.eval_exp_gt.setup_experiment(self.eval_config_gt)
+        with self.eval_exp_gt:
+            self.eval_exp_gt.setup_experiment(self.eval_config_gt)
 
-        pprint("...Evaluating in serial...")
-        self.eval_exp_gt.evaluate()
-        self.eval_exp_gt.dataset.close()
+            pprint("...Evaluating in serial...")
+            self.eval_exp_gt.evaluate()
 
         # Using run_parallel
         pprint("...Setting up parallel experiment...")
