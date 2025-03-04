@@ -6,7 +6,7 @@
 Resample hypotheses at every step in a manner inspired by particle-filters. This is the first step for Monty to interact with multiple objects and recognize compositional objects. The newly sampled hypotheses will come from:
 1) **Informed Hypotheses:** a subset (uniformly sampled) of new hypotheses initialized based on the current step observation (i.e., sensed pose).
 2) **Reinforced Hypotheses:** a set of newly sampled hypotheses from the distribution of the most rapidly rising hypotheses.
-3) **Old Hypotheses:** a subset of the old hypotheses, sampled based on the most rapidly rising hypotheses.
+3) **Old Hypotheses:** a subset of the old hypotheses, maintained based on the most rapidly rising hypotheses.
 
 The total of these three hypotheses will be used to replace the existing hypotheses at each **matching step** of `EvidenceLM`.
 
@@ -127,9 +127,9 @@ def calculate_new_hypotheses_counts(
 
     Outputs:
     - `needed_old_sampled_hyp`: The number of existing hypotheses to be kept from the
-        previous step. Should not exceed `curr_hypotheses_count`.
+        previous step. Will not exceed `curr_hypotheses_count`.
     - `needed_new_informed_hyp`: The number of informed hypotheses to be sampled from
-        the pool of informed hypotheses. Should not exceed `new_informed_hypotheses_count`.
+        the pool of informed hypotheses. Will not exceed `new_informed_hypotheses_count`.
     - `needed_new_reinforced_hyp`: The number of needed reinforced hypotheses. Can technically
         be an infinite amount.
     """
