@@ -23,7 +23,7 @@ More specifically, the proposed structure and description of each repository wou
 `monty_lab`
 - This would be archived in its entirety, along with its discontinued / paused research projects like  `high_dim_coincidence_detection` and `grid_cells`.
 
-New repositories can then be created as needed for future projects that do not belong in `tbp.monty`. Two typical examples are below, although a repository need not be a package or contain code for a paper:
+New repositories can then be created as needed for future projects that do not belong in `tbp.monty`. Two typical examples are below, although a repository need not be a package or contain code for a paper. If you are creating a Python package or library, please see the template repositories we have created for this (https://github.com/thousandbrainsproject/tbp.python_package and https://github.com/thousandbrainsproject/tbp.python_library).
 
 `tbp.name_of_package`
 - E.g. `tbp.floppy`
