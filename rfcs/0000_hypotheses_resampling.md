@@ -62,11 +62,10 @@ Why:
 
 ## The Resampling Procedure
 
-1) For every object, at every new step, get initial hypotheses based on the observed pose.
-2) Calculate the needed hypotheses counts to be sampled based on the defined parameters as shown [here](#The-Resampling-Count-Calculation).
-3) Sample `needed_old_sampled_hyp` from the existing hypotheses based on highest evidence slope. We will keep these old hypotheses and remove the rest.
-4) Uniformly sample `needed_new_informed_hyp` from the new informed hypotheses. We will add these new hypotheses.
-5) Sample `needed_new_reinforced_hyp` from the existing hypotheses distribution of highest evidence slope. These sampled hypotheses should be "close" to the most likely hypotheses.
+1) Calculate the needed hypotheses counts to be sampled based on the defined parameters as shown [here](#The-Resampling-Count-Calculation).
+2) Select `needed_old_sampled_hyp` from the existing hypotheses based on highest evidence slope. We will keep these old hypotheses and remove the rest.
+3) Uniformly sample `needed_new_informed_hyp` from the new informed hypotheses based on the observed pose. We will add these new hypotheses.
+4) Sample `needed_new_reinforced_hyp` from the existing hypotheses distribution of highest evidence slope. These sampled hypotheses should be "close" to the most likely hypotheses.
 
 
 ## High Level Code Changes
@@ -91,7 +90,7 @@ I'm introducing three new parameters. The naming of these parameters is prelimin
 
 | Parameter | Description | Range |
 | ----------|-------------|-------|
-| **hypotheses_count_ratio** | A multiplier for the needed number of hypotheses at this new step | [0, inf) |
+| **hypotheses_count_ratio** | A multiplier for the needed number of hypotheses at this new step. `1` means maintain the same number of hypotheses. | [0, inf) |
 | **hypotheses_old_to_new_ratio** | How many old to new hypotheses to be added. `0` means all old, `1` means all new | [0, 1] |
 | **hypotheses_informed_to_reinforced_ratio** | How many informed (sampled based on newly observed pose) to reinforced hypotheses (sampled close to existing likely hypotheses) to be added. `0` means all informed, `1` means all reinforced | [0, 1] |
 
