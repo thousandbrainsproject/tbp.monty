@@ -10,7 +10,7 @@ Currently there are two repositories:
 1. `tbp.monty` - This is the main repository for the Monty framework.
 2. `monty_lab` - This is what `nupic.monty/projects` used to be, and is currently a catch-all for code that is not part of the main Monty framework.
 
-The high-level proposal is to discontinue the use of `monty_lab` (archiving the existing repository), and instead have a very low threshold for creating new, independent repositories for different projects.
+The high-level proposal is to discontinue the use of `monty_lab` as a location for new projects, and instead have a very low threshold for creating new, independent repositories for these.
 
 More specifically, the proposed structure and description of each repository would be:
 
@@ -21,7 +21,7 @@ More specifically, the proposed structure and description of each repository wou
 - Should not contain configs for various experiments; the only configs in tbp.monty are those used for our benchmark experiments.
 
 `monty_lab`
-- This would be archived in its entirety, along with its discontinued / paused research projects like  `high_dim_coincidence_detection` and `grid_cells`.
+- This will still be present to provide access to older projects like `monty_meets_world`. Further additions to this repository however are discouraged, unless they are e.g. to add fixes to code.
 
 New repositories can then be created as needed for future projects that do not belong in `tbp.monty`. Two typical examples are below, although a repository need not be a package or contain code for a paper. If you are creating a Python package or library, please see the template repositories we have created for this (https://github.com/thousandbrainsproject/tbp.python_package and https://github.com/thousandbrainsproject/tbp.python_library).
 
@@ -53,7 +53,7 @@ tbp.tbs_for_rapid_robust_learning_and_inference/
 - We should have a low threshold for creating new repositories where appropriate.
 - We should prepend all our repositories with `tbp.` at creation to indicate that they are part of the Thousand Brains Project (depending on where someone has cloned the repository to, this may not always be obvious on their local machine), and to begin carving out a namespace for the TBP in settings like PyPi.
 - It is encouraged to add a description and tags to repositories such that the [overview page of the Thousand Brains Project GitHub organization](https://github.com/orgs/thousandbrainsproject/repositories) provides helpful context.
-- If a repository relates to an old project that is no longer relevant, it can be "archived" using GitHub's archive feature. It is no longer necessary to move this code to `monty_lab` (which will itself be archived going forward). Note that archived repositories keep the `tbp.` prefix.
+- If a repository relates to an old project that is no longer relevant, it can optionally be "archived" using GitHub's archive feature. This can help reduce the number of active repositories, and note that a repository can be unarchived at any time. It is no longer necessary to move this code to `monty_lab`. Finally, note that archived repositories keep the `tbp.` prefix.
 - We will create an overview page using [GitHub's profile README feature](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-github-profile/customizing-your-profile/managing-your-profile-readme) to provide helpful context on the key repositories that are part of the Thousand Brains Project. This should be updated from time to time to reflect the most important repositories for newcomers to the TBP.
 
 # Motivation
