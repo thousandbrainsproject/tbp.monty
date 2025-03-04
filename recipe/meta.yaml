@@ -26,6 +26,7 @@ requirements:
     - conda-forge::importlib_resources
     - conda-forge::matplotlib
     - conda-forge::mkl<2022 # [osx]
+    - conda-forge::mkl==2024.0.0 # [linux64]
     - conda-forge::numpy
     - conda-forge::pandas
     - conda-forge::pillow
