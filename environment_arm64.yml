@@ -26,7 +26,7 @@
 #     $ conda activate tbp.monty
 #
 # platform: osx-arm64
-name: tbp.monty_test
+name: tbp.monty
 channels:
   - aihabitat
   - pytorch
