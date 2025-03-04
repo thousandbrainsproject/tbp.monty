@@ -29,6 +29,7 @@ dependencies:
   - conda-forge::cmake>=3.14.0
   - conda-forge::importlib_resources
   - conda-forge::matplotlib
+  - conda-forge::mkl==2024.0.0 # see https://github.com/pytorch/pytorch/issues/123097
   - conda-forge::numpy
   - conda-forge::pandas
   - conda-forge::pillow
