@@ -16,18 +16,21 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Artificial Intelligence'
 ]
 dependencies = [
-    'importlib_resources',
-    'matplotlib',
-    'numpy',
-    'pandas',
-    'pillow',
-    'scikit-image',
-    'scikit-learn==1.3.2',
-    'scipy',
-    'sympy',
-    'torch-geometric',
-    'tqdm',
-    'wandb',
+    'habitat_sim', # imported via conda (aihabitat::habitat-sim)
+    'importlib_resources', # imported via conda (conda-forge::importlib_resources)
+    'matplotlib', # imported via conda (conda-forge::matplotlib)
+    'numpy', # imported via conda (conda-forge::numpy)
+    'pandas', # imported via conda (conda-forge::pandas)
+    'pillow', # imported via conda (conda-forge::pillow)
+    'scikit-image', # imported via conda (conda-forge::scikit-image)
+    'scikit-learn==1.3.2', # imported via conda (conda-forge::scikit-learn)
+    'scipy', # imported via conda (conda-forge::scipy)
+    'sympy', # imported via conda (conda-forge::sympy)
+    'torch', # imported via conda (pytorch::pytorch)
+    'torchvision', # imported via conda (pytorch::torchvision)
+    'torch-geometric', # imported via conda (pyg::pyg)
+    'tqdm', # imported via conda (conda-forge::tqdm)
+    'wandb', # imported via conda (conda-forge::wandb)
 ]
 description = 'Thousand Brains Project Monty'
 dynamic = ['version']
@@ -97,13 +100,10 @@ ignore = ['DEP002']
 known_first_party = [
     'attr', # transitive dependency bundled with habitat-sim
     'benchmarks', # benchmark configurations and scripts
-    'habitat_sim', # imported via conda (habitat-sim)
     'magnum', # transitive dependency bundled with habitat-sim
-    'quaternion', # imported via conda (quaternion)
+    'quaternion', # transitive add-on for numpy installed via conda (conda-forge::quaternion)
     'tests',
-    'tools',
-    'torch', # imported via conda (pytorch)
-    'torchvision', # imported via conda (torchvision)
+    'tools'
 ]
 
 [tool.deptry.package_module_name_map]

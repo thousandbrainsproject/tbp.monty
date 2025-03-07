@@ -122,3 +122,31 @@ jobs:
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           anaconda --token $ANACONDA_TOKEN upload ${{ steps.expected_output_location.outputs.path }}
+
+  tag_version_monty_publish:
+    name: tag-version-monty-publish
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on:
+      group: tbp.monty
+      labels: tbp-linux-x64-ubuntu2204-2core
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout tbp.monty
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          path: tbp.monty
+      - name: Version updated
+        id: version_updated
+        uses: ./tbp.monty/.github/actions/version_updated
+        with:
+          git_sha: ${{ github.sha }}
+          working_directory: tbp.monty
+      - name: Tag version
+        if: ${{ steps.version_updated.outputs.version_updated == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          git checkout ${{ github.sha }}
+          git tag v${{ steps.version_updated.outputs.version }}
+          git push origin v${{ steps.version_updated.outputs.version }}

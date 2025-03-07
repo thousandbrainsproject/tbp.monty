@@ -18,20 +18,32 @@ channels:
   - aihabitat
   - pytorch
   - pyg
-  - defaults
   - conda-forge
+  - defaults
 
 dependencies:
   - python=3.8
-  - cmake>=3.14.0
-  - pyg::pyg
-  - wget
 
   - aihabitat::habitat-sim=0.2.2
-  - pytorch::pytorch=1.11.0
-  - conda-forge::quaternion=2023.0.3 # later versions missing np.long
-  - pytorch::torchvision
   - aihabitat::withbullet
+  - conda-forge::cmake>=3.14.0
+  - conda-forge::importlib_resources
+  - conda-forge::matplotlib
+  - conda-forge::mkl==2024.0.0 # see https://github.com/pytorch/pytorch/issues/123097
+  - conda-forge::numpy
+  - conda-forge::pandas
+  - conda-forge::pillow
+  - conda-forge::quaternion=2023.0.3 # later versions missing np.long
+  - conda-forge::scikit-image
+  - conda-forge::scikit-learn=1.3.2
+  - conda-forge::scipy
+  - conda-forge::sympy
+  - conda-forge::tqdm
+  - conda-forge::wandb
+  - conda-forge::wget
+  - pyg::pyg
+  - pytorch::pytorch=1.11.0
+  - pytorch::torchvision
 
   - pip
   - pip:
