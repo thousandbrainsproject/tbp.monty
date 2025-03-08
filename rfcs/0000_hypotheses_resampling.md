@@ -99,7 +99,7 @@ I'm introducing three new parameters. The naming of these parameters is prelimin
 | **hypotheses_old_to_new_ratio** | How many old to new hypotheses to be added. `0` means all old, `1` means all new | [0, 1] |
 | **hypotheses_informed_to_reinforced_ratio** | How many informed (sampled based on newly observed pose) to reinforced hypotheses (sampled close to existing likely hypotheses) to be added. `0` means all informed, `1` means all reinforced | [0, 1] |
 
-*Note that it is possible to configure these parameters to remove the effect of resampling and return to the current `EvidenceGraphLM` behavior. Simply set `hypotheses_count_ratio=1` to keep the same number of hypotheses and `hypotheses_old_to_new_ratio=0` to sample only from existing hypotheses.*
+*Note that it is possible to configure these parameters to remove the effect of resampling and return to the current `EvidenceGraphLM` behavior. Simply set `hypotheses_count_multiplier=1` to keep the same number of hypotheses and `hypotheses_old_to_new_ratio=0` to sample only from existing hypotheses.*
 
 
 
@@ -139,7 +139,7 @@ def calculate_new_hypotheses_counts(
     """
 
     # calculate the total number of hypotheses needed
-    needed = current * hypotheses_count_ratio
+    needed = current * hypotheses_count_multiplier
 
     # calculate how many old and new hypotheses needed
     old_maintained, new_sampled = (
