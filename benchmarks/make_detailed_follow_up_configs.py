@@ -11,15 +11,21 @@
 import os
 import pathlib
 import pickle
+import sys
 
 import pandas as pd
 
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.expanduser(os.path.realpath(__file__))))
+)
 # Load all experiment configurations from local project
-from configs import CONFIGS
-
+from benchmarks.configs.load import load_configs
+from benchmarks.configs.names import NAMES
 from tbp.monty.frameworks.config_utils.cmd_parser import create_rerun_parser
-from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
-from tbp.monty.frameworks.utils.follow_up_configs import (
+from tbp.monty.frameworks.run_env import setup_env
+
+setup_env()
+from tbp.monty.frameworks.utils.follow_up_configs import (  # noqa: E402
     create_eval_config_multiple_episodes,
     recover_output_dir,
 )
@@ -48,15 +54,15 @@ experiment uses it.
 """
 
 if __name__ == "__main__":
-    cmd_parser = create_rerun_parser(experiments=list(CONFIGS.keys()))
+    cmd_parser = create_rerun_parser(experiments=NAMES)
     cmd_args = cmd_parser.parse_args()
     experiment = cmd_args.experiment
     follow_up_suffix = cmd_args.name
     rerun_episodes = cmd_args.episodes
 
     # Load results from experiment and find episodes of interest
+    CONFIGS = load_configs([experiment])
     config = CONFIGS[experiment]
-    config = config_to_dict(config)
     output_dir = recover_output_dir(config, experiment)
 
     if not rerun_episodes:

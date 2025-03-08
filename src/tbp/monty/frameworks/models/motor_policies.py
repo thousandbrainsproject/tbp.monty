@@ -140,6 +140,9 @@ class BasePolicy(MotorSystem):
         # is in addition to, rather than in replacement of, file_name
         if file_names_per_episode is not None:
             self.file_names_per_episode = file_names_per_episode
+            # Have to set this here bc file_names_per_episode is used for loading in
+            # post_episode so won't do anything for the first episode.
+            file_name = file_names_per_episode[0]
             self.is_predefined = True
 
         if file_name is not None:
@@ -168,6 +171,8 @@ class BasePolicy(MotorSystem):
                 return action
 
     def predefined_call(self) -> Action:
+        print(self.episode_step)
+        print(len(self.action_list))
         return self.action_list[self.episode_step % len(self.action_list)]
 
     def post_action(self, action: Action) -> None:
@@ -186,6 +191,7 @@ class BasePolicy(MotorSystem):
         if self.file_names_per_episode is not None:
             if self.episode_count in self.file_names_per_episode:
                 file_name = self.file_names_per_episode[self.episode_count]
+                print(f"reading action file {file_name}.")
                 self.action_list = read_action_file(file_name)
 
     ###
