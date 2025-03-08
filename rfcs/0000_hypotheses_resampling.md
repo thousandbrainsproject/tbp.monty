@@ -8,7 +8,12 @@ Resample hypotheses at every step in a manner inspired by particle-filters. This
 2) **Reinforced Hypotheses:** a set of newly sampled hypotheses from the distribution of the most rapidly rising hypotheses.
 3) **Old Hypotheses:** a subset of the old hypotheses, maintained based on the most rapidly rising hypotheses.
 
-The total of these three hypotheses will be used to replace the existing hypotheses at each **matching step** of `EvidenceLM`.
+The total of these three hypotheses will be used to replace the existing hypotheses at each **matching step** of `EvidenceGraphLM`.
+
+#### Background Material
+* This RFC contributes to the Learning Module improvement: "[Test Particle-Filter-Like resampling of Hypothesis Space](https://thousandbrainsproject.readme.io/docs/test-particle-filter-like-resampling-of-hypothesis-space)"
+* A nice introduction to Particle Filters can be found here: "[Particle Filters](https://www.youtube.com/watch?v=NrzmH_yerBU)"
+
 
 # High-Level Motivation
 
@@ -63,14 +68,14 @@ Why:
 ## The Resampling Procedure
 
 1) Calculate the needed hypotheses counts to be sampled based on the defined parameters as shown [here](#The-Resampling-Count-Calculation).
-2) Select `needed_old_sampled_hyp` from the existing hypotheses based on highest evidence slope. We will keep these old hypotheses and remove the rest.
-3) Uniformly sample `needed_new_informed_hyp` from the new informed hypotheses based on the observed pose. We will add these new hypotheses.
-4) Sample `needed_new_reinforced_hyp` from the existing hypotheses distribution of highest evidence slope. These sampled hypotheses should be "close" to the most likely hypotheses.
+2) Select `old_sampled` from the existing hypotheses based on highest evidence slope. We will keep these old hypotheses and remove the rest.
+3) Uniformly sample `new_informed` from the new informed hypotheses based on the observed pose. We will add these new hypotheses.
+4) Sample `new_reinforced` from the existing hypotheses distribution of highest evidence slope. These sampled hypotheses should be "close" to the most likely hypotheses.
 
 
 ## High Level Code Changes
 
-The needed modification will only change the `EvidenceLM` class. More specifically, we would modify either the `_update_evidence` function
+The needed modification will only change the `EvidenceGraphLM` class. More specifically, we would modify either the `_update_evidence` function
 directly or define another function that calls `_update_evidence` as one of its steps. A rough proposal of the needed changes is shown below.
 
 ![code change](0000_hypotheses_resampling/high_level_code_change.png)
@@ -90,18 +95,18 @@ I'm introducing three new parameters. The naming of these parameters is prelimin
 
 | Parameter | Description | Range |
 | ----------|-------------|-------|
-| **hypotheses_count_ratio** | A multiplier for the needed number of hypotheses at this new step. `1` means maintain the same number of hypotheses. | [0, inf) |
+| **hypotheses_count_multiplier** | A multiplier for the needed number of hypotheses at this new step. `1` means maintain the same number of hypotheses. | [0, inf) |
 | **hypotheses_old_to_new_ratio** | How many old to new hypotheses to be added. `0` means all old, `1` means all new | [0, 1] |
 | **hypotheses_informed_to_reinforced_ratio** | How many informed (sampled based on newly observed pose) to reinforced hypotheses (sampled close to existing likely hypotheses) to be added. `0` means all informed, `1` means all reinforced | [0, 1] |
 
-*Note that it is possible to configure these parameters to remove the effect of resampling and return to the current `EvidenceLM` behavior. Simply set `hypotheses_count_ratio=1` to keep the same number of hypotheses and `hypotheses_old_to_new_ratio=0` to sample only from existing hypotheses.*
+*Note that it is possible to configure these parameters to remove the effect of resampling and return to the current `EvidenceGraphLM` behavior. Simply set `hypotheses_count_ratio=1` to keep the same number of hypotheses and `hypotheses_old_to_new_ratio=0` to sample only from existing hypotheses.*
 
 
 
 ```python
 
 # a multiplier for the needed number of hypotheses at this new step
-hypotheses_count_ratio = 1
+hypotheses_count_multiplier = 1
 
 # 0 means all sampled from old, 1 means all sampled from new
 hypotheses_old_to_new_ratio = 0.5
@@ -112,64 +117,62 @@ hypotheses_informed_to_reinforced_ratio = 0.5
 
 
 def calculate_new_hypotheses_counts(
-    curr_hypotheses_count, new_informed_hypotheses_count
+    current, informed
 ):
     """
     This is a proposed function for calculating the needed count of each type of
     hypotheses ("informed", "reinforced", "old").
 
     Inputs:
-    - `curr_hypotheses_count`: The current number of hypotheses
-    - `new_informed_hypotheses_count`: The total number of informed hypotheses
+    - `current`: The current number of hypotheses
+    - `informed`: The total number of informed hypotheses
         sampled based on the current pose observation. Assuming there are x points
         in the object graph, these can be 2x if the PC is defined or 8x if PC is undefined. 
 
     Outputs:
-    - `needed_old_sampled_hyp`: The number of existing hypotheses to be kept from the
-        previous step. Will not exceed `curr_hypotheses_count`.
-    - `needed_new_informed_hyp`: The number of informed hypotheses to be sampled from
-        the pool of informed hypotheses. Will not exceed `new_informed_hypotheses_count`.
-    - `needed_new_reinforced_hyp`: The number of needed reinforced hypotheses. Can technically
+    - `old_maintained`: The number of existing hypotheses to be kept from the
+        previous step. Will not exceed `current`.
+    - `new_informed`: The number of informed hypotheses to be sampled from
+        the pool of informed hypotheses. Will not exceed `informed`.
+    - `new_reinforced`: The number of needed reinforced hypotheses. Can technically
         be an infinite amount.
     """
 
     # calculate the total number of hypotheses needed
-    needed_hypotheses_count = curr_hypotheses_count * hypotheses_count_ratio
+    needed = current * hypotheses_count_ratio
 
     # calculate how many old and new hypotheses needed
-    needed_old_sampled_hyp, needed_new_sampled_hyp = (
-        needed_hypotheses_count * (1 - hypotheses_old_to_new_ratio),
-        needed_hypotheses_count * hypotheses_old_to_new_ratio,
+    old_maintained, new_sampled = (
+        needed * (1 - hypotheses_old_to_new_ratio),
+        needed * hypotheses_old_to_new_ratio,
     )
     # needed old hypotheses should not exceed the existing hypotheses
-    # if trying to sample more hypotheses, set the available count as ceiling
-    if needed_old_sampled_hyp > curr_hypotheses_count:
-        needed_old_sampled_hyp = curr_hypotheses_count
-        needed_new_sampled_hyp = needed_hypotheses_count - curr_hypotheses_count
+    # if trying to maintain more hypotheses, set the available count as ceiling
+    if old_maintained > current:
+        old_maintained = current
+        new_sampled = needed - current
 
-    # calculate how many informed and re-enforced hypotheses needed
-    needed_new_informed_hyp, needed_new_reinforced_hyp = (
-        needed_new_sampled_hyp * (1 - hypotheses_informed_to_reinforced_ratio),
-        needed_new_sampled_hyp * hypotheses_informed_to_reinforced_ratio,
+    # calculate how many informed and reinforced hypotheses needed
+    new_informed, new_reinforced = (
+        new_sampled * (1 - hypotheses_informed_to_reinforced_ratio),
+        new_sampled * hypotheses_informed_to_reinforced_ratio,
     )
     # needed informed hypotheses should not exceed the available informed hypotheses
     # if trying to sample more hypotheses, set the available count as ceiling
-    if needed_new_informed_hyp > new_informed_hypotheses_count:
-        needed_new_informed_hyp = new_informed_hypotheses_count
-        needed_new_reinforced_hyp = (
-            needed_new_sampled_hyp - new_informed_hypotheses_count
-        )
+    if new_informed > informed:
+        new_informed = informed
+        new_reinforced = new_sampled - informed
 
     return (
-        int(needed_old_sampled_hyp),
-        int(needed_new_informed_hyp),
-        int(needed_new_reinforced_hyp),
+        int(old_maintained),
+        int(new_informed),
+        int(new_reinforced),
     )
 
 
 
 calculate_new_hypotheses_counts(
-    curr_hypotheses_count=100, new_informed_hypotheses_count=100
+    current=100, informed=100
 )
 ```
 
