@@ -126,16 +126,16 @@ class SensorModuleTest(unittest.TestCase):
         print("...parsing experiment...")
         base_config = copy.deepcopy(self.sensor_feature_test)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(base_config)
-        self.exp.model.set_experiment_mode("train")
-        pprint("...training...")
-        self.exp.pre_epoch()
-        self.exp.pre_episode()
-        for step, observation in enumerate(self.exp.dataloader):
-            self.exp.model.step(observation)
-            if step == 1:
-                break
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(base_config)
+            self.exp.model.set_experiment_mode("train")
+            pprint("...training...")
+            self.exp.pre_epoch()
+            self.exp.pre_episode()
+            for step, observation in enumerate(self.exp.dataloader):
+                self.exp.model.step(observation)
+                if step == 1:
+                    break
 
     # @unittest.skip("debugging")
     def test_features_in_sensor(self):
@@ -143,46 +143,46 @@ class SensorModuleTest(unittest.TestCase):
         print("...parsing experiment...")
         base_config = copy.deepcopy(self.sensor_feature_test)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(base_config)
-        self.exp.model.set_experiment_mode("train")
-        pprint("...training...")
-        self.exp.pre_epoch()
-        self.exp.pre_episode()
-        for _, observation in enumerate(self.exp.dataloader):
-            self.exp.model.aggregate_sensory_inputs(observation)
+        with self.exp:
+            self.exp.setup_experiment(base_config)
+            self.exp.model.set_experiment_mode("train")
+            pprint("...training...")
+            self.exp.pre_epoch()
+            self.exp.pre_episode()
+            for _, observation in enumerate(self.exp.dataloader):
+                self.exp.model.aggregate_sensory_inputs(observation)
 
-            pprint(self.exp.model.sensor_module_outputs)
-            for feature in self.tested_features:
-                if feature in ["pose_vectors", "pose_fully_defined", "on_object"]:
-                    self.assertIn(
-                        feature,
-                        self.exp.model.sensor_module_outputs[
-                            0
-                        ].morphological_features.keys(),
-                        f"{feature} not returned by SM",
-                    )
-                else:
-                    self.assertIn(
-                        feature,
-                        self.exp.model.sensor_module_outputs[
-                            0
-                        ].non_morphological_features.keys(),
-                        f"{feature} not returned by SM",
-                    )
-            break
-        self.exp.dataset.close()
+                pprint(self.exp.model.sensor_module_outputs)
+                for feature in self.tested_features:
+                    if feature in ["pose_vectors", "pose_fully_defined", "on_object"]:
+                        self.assertIn(
+                            feature,
+                            self.exp.model.sensor_module_outputs[
+                                0
+                            ].morphological_features.keys(),
+                            f"{feature} not returned by SM",
+                        )
+                    else:
+                        self.assertIn(
+                            feature,
+                            self.exp.model.sensor_module_outputs[
+                                0
+                            ].non_morphological_features.keys(),
+                            f"{feature} not returned by SM",
+                        )
+                break
 
     def test_feature_change_sm(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feature_change_sensor_config)
         self.exp = MontyObjectRecognitionExperiment()
-        self.exp.setup_experiment(config)
-        pprint("...training...")
-        self.exp.train()
-        # TODO: test that only new features are given to LM
-        pprint("...evaluating...")
-        self.exp.evaluate()
-        self.exp.dataset.close()
+        with self.exp:
+            self.exp.setup_experiment(config)
+            pprint("...training...")
+            self.exp.train()
+            # TODO: test that only new features are given to LM
+            pprint("...evaluating...")
+            self.exp.evaluate()
 
 
 if __name__ == "__main__":

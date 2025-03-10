@@ -1,6 +1,6 @@
 # This file may be used to create an environment using:
 #
-# ## Miniconda
+# ## Miniconda or Anaconda
 #     $ conda env create --file environment_arm64.yml --subdir=osx-64
 # If you are using the zsh shell, run:
 #     $ conda init zsh
@@ -13,39 +13,38 @@
 #     $ conda activate tbp.monty
 #     $ conda config --env --set subdir osx-64
 #
-# ## Anaconda (omit --subdir=osx-64)
-#     $ conda env create --file environment_arm64.yml
-# If you are using the zsh shell, run:
-#     $ conda init zsh
-# Or, if you are using a different shell, run:
-#     $ conda init
-# After init, if you do not want conda to change your global shell when
-# you open a new terminal, run:
-#     $ conda config --set auto_activate_base false
-# Finally, activate the environment with:
-#     $ conda activate tbp.monty
-#
 # platform: osx-arm64
 name: tbp.monty
 channels:
   - aihabitat
   - pytorch
   - pyg
-  - defaults
   - conda-forge
+  - defaults
 
 dependencies:
   - python=3.8
-  - cmake>=3.14.0
-  - pyg::pyg
-  - wget
 
   - aihabitat::habitat-sim=0.2.2
-  - mkl<2022 # prevents Intel errors when osx-64 environment is running on osx-arm64 platform
-  - pytorch::pytorch=1.11.0
-  - conda-forge::quaternion=2023.0.3 # later versions missing np.long
-  - pytorch::torchvision
   - aihabitat::withbullet
+  - conda-forge::cmake>=3.14.0
+  - conda-forge::importlib_resources
+  - conda-forge::matplotlib
+  - conda-forge::mkl<2022 # prevents Intel errors when osx-64 environment is running on osx-arm64 platform
+  - conda-forge::numpy
+  - conda-forge::pandas
+  - conda-forge::pillow
+  - conda-forge::quaternion=2023.0.3 # later versions missing np.long
+  - conda-forge::scikit-image
+  - conda-forge::scikit-learn=1.3.2
+  - conda-forge::scipy
+  - conda-forge::sympy
+  - conda-forge::tqdm
+  - conda-forge::wandb
+  - conda-forge::wget
+  - pyg::pyg
+  - pytorch::pytorch=1.11.0
+  - pytorch::torchvision
 
   - pip
   - pip:

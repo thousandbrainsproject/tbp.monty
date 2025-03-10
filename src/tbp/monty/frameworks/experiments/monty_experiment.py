@@ -174,23 +174,30 @@ class MontyExperiment:
         return model
 
     def load_dataset_and_dataloaders(self, config):
-        # TODO: don't need to bother loading train and eval if only doing one
-
         # Initialize everything needed for dataloader
         dataset_class = config["dataset_class"]
         dataset_args = config["dataset_args"]
         self.dataset = self.load_dataset(dataset_class, dataset_args)
 
-        dataloader_class = config["train_dataloader_class"]
-        dataloader_args = config["train_dataloader_args"]
-        self.train_dataloader = self.create_data_loader(
-            dataloader_class, dataloader_args
-        )
-        dataloader_class = config["eval_dataloader_class"]
-        dataloader_args = config["eval_dataloader_args"]
-        self.eval_dataloader = self.create_data_loader(
-            dataloader_class, dataloader_args
-        )
+        # Initialize train dataloaders if needed
+        if config["experiment_args"]["do_train"]:
+            dataloader_class = config["train_dataloader_class"]
+            dataloader_args = config["train_dataloader_args"]
+            self.train_dataloader = self.create_data_loader(
+                dataloader_class, dataloader_args
+            )
+        else:
+            self.train_dataloader = None
+
+        # Initialize eval dataloaders if needed
+        if config["experiment_args"]["do_eval"]:
+            dataloader_class = config["eval_dataloader_class"]
+            dataloader_args = config["eval_dataloader_args"]
+            self.eval_dataloader = self.create_data_loader(
+                dataloader_class, dataloader_args
+            )
+        else:
+            self.eval_dataloader = None
 
     def load_dataset(self, dataset_class, dataset_args):
         """Instantiate a dataset.
@@ -598,3 +605,25 @@ class MontyExperiment:
             logging.debug(f"Removing and closing python log handler: {handler}")
             python_logger.removeHandler(handler)
             handler.close()
+
+    def __enter__(self):
+        """Context manager entry method.
+
+        Returns:
+            MontyExperiment self to allow assignment in a with statement.
+        """
+        # TODO: Move some of the initialization code from `setup_experiment` into this.
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        """Context manager exit method.
+
+        Ensure that we always close the environment if necessary.
+
+        Returns:
+            bool to indicate whether to supress any exceptions that were raised.
+        """
+        # TODO: We call self.close inside `train` and `evaluate`.
+        #   Those should probably be removed.
+        self.close()
+        return False  # don't silence exceptions inside the with block

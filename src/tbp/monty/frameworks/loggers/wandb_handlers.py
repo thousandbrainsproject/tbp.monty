@@ -143,6 +143,24 @@ class BasicWandbTableStatsHandler(WandbHandler):
         wandb.log({stats_table: table}, commit=False)
         self.report_count += 1
 
+class DetailedWandbTableStatsHandler(BasicWandbTableStatsHandler):
+    """Log LM stats and actions to wandb as tables.
+
+    This is a modified version of BasicWandbTableStatsHandler that, in addition to the
+    stats, logs the actions exectuted in each episode to wandb as tables (one table per
+    episode).
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def log_level(cls):
+        return "DETAILED"
+
+    def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
+        super().report_episode(data, output_dir, episode, mode, **kwargs)
+        basic_logs = data["BASIC"]
         # Get actions depending on mode (train or eval)
         action_key = f"{mode}_actions"
         action_data = basic_logs.get(action_key, dict())

@@ -176,7 +176,13 @@ class EvidenceGraphLM(GraphLM):
         initial_possible_poses: initial possible poses that should be tested for.
             In ["uniform", "informed", list]. default = "informed".
         evidence_update_threshold: How to decide which hypotheses should be updated.
-            In [int, float, 'mean', 'median', 'all', 'x_percent_threshold'].
+            When this parameter is either '[int]%' or 'x_percent_threshold', then
+            this parameter is applied to the evidence for the Most Likely Hypothesis
+            (MLH) to determine a minimum evidence threshold in order for other
+            hypotheses to be updated. Any hypotheses falling below the resulting
+            evidence threshold do not get updated. The other options set a fixed
+            threshold that does not take MLH evidence into account. In [int, float,
+            '[int]%', 'mean', 'median', 'all', 'x_percent_threshold'].
         vote_evidence_threshold: Only send votes that have a scaled evidence above
             this threshold. Vote evidences are in the range of [-1, 1] so the threshold
             should not be outside this range.
@@ -1774,16 +1780,27 @@ class EvidenceGraphLM(GraphLM):
             return np.mean(self.evidence[graph_id])
         elif self.evidence_update_threshold == "median":
             return np.median(self.evidence[graph_id])
+        elif isinstance(
+            self.evidence_update_threshold, str
+        ) and self.evidence_update_threshold.endswith("%"):
+            percentage_str = self.evidence_update_threshold.strip("%")
+            percentage = float(percentage_str)
+            assert (
+                percentage >= 0 and percentage <= 100
+            ), "Percentage must be between 0 and 100"
+            max_global_evidence = self.current_mlh["evidence"]
+            x_percent_of_max = max_global_evidence * (percentage / 100)
+            return max_global_evidence - x_percent_of_max
         elif self.evidence_update_threshold == "x_percent_threshold":
             max_global_evidence = self.current_mlh["evidence"]
             x_percent_of_max = max_global_evidence / 100 * self.x_percent_threshold
-            return x_percent_of_max
+            return max_global_evidence - x_percent_of_max
         elif self.evidence_update_threshold == "all":
             return np.min(self.evidence[graph_id])
         else:
             raise Exception(
                 "evidence_update_threshold not in "
-                "[int, float, 'mean', 'median', 'all', 'x_percent_threshold']"
+                "[int, float, '[int]%', 'mean', 'median', 'all', 'x_percent_threshold']"
             )
 
     def _get_node_distance_weights(self, distances):

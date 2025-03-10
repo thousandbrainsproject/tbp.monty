@@ -80,8 +80,8 @@ default_evidence_lm_config = dict(
         max_nneighbors=10,
         # Use this to update all hypotheses at every step as previously
         # evidence_update_threshold="all",
-        # Use this to update all hypotheses > x_percent_threshold (faster)
-        evidence_update_threshold="x_percent_threshold",
+        # Use this to update all hypotheses with evidence > 80% of max evidence (faster)
+        evidence_update_threshold="80%",
         # use_multithreading=False,
         # NOTE: Currently not used when loading pretrained graphs.
         max_graph_size=0.3,  # 30cm

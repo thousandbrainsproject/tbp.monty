@@ -59,6 +59,10 @@ We use GitHub Actions to run our continuous integration workflows.
 
 ## GitHub Actions Naming Convention
 
+### Workflow File Name
+
+The workflow file name is the workflow name in snake_case, e.g., `potato_stuff.yml`.
+
 ### Workflow Name
 
 The workflow name is a human-readable descriptive Capitalized Case name, e.g.,
