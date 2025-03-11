@@ -155,7 +155,6 @@ python -m tools.github_readme_sync.cli check docs
 
 See the [Style Guide](style-guide.md#images) images section for details about creating and referencing images correctly.
 
-
 # VS Code Snippets
 
 > 👍 You have access to VS Code snippets
