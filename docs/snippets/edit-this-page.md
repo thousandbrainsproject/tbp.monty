@@ -27,9 +27,7 @@
 #### Help Us Make This Page Better
 
 All our docs are open-source. If something is wrong or unclear, submit a PR to fix it!
-<div>
-<a class="contribution-button" href="!!LINK!!" target="_blank">
-<div>Make a Contribution</div></a>
-</div>
+
+<a class="contribution-button" href="!!LINK!!" target="_blank"><div>Make a Contribution</div></a>
 
 [Learn how to contribute to our docs](../contributing/documentation.md)
