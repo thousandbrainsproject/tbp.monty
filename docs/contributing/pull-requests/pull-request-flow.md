@@ -1,7 +1,7 @@
 ---
 title: Pull Request Flow
 ---
-![Blue: Contributor responsibility  <br/>Gray: Maintainer responsibility](../../figures/contributing/pull_request_flow.png)
+![Blue: Contributor responsibility  <br>Gray: Maintainer responsibility](../../figures/contributing/pull_request_flow.png)
 
 
 The Pull Request flow begins when you **Create a Pull Request** to our [GitHub repository](https://github.com/thousandbrainsproject/tbp.monty/pulls).

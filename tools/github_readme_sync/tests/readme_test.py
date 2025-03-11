@@ -661,6 +661,32 @@ This is a test document.""",
             )
             self.assertIn("File not found", result)
 
+    def test_sanitize_html_removes_scripts(self):
+        html_with_script = """
+        <div>
+            <h1>Test Content</h1>
+            <p>This is a test paragraph</p>
+            <script>
+                alert('This is a malicious script');
+                document.cookie = "session=stolen";
+            </script>
+            <p>More content after the script</p>
+        </div>
+        """
+
+        sanitized_html = self.readme.sanitize_html(html_with_script)
+
+        # Verify script tag is removed
+        self.assertNotIn("<script>", sanitized_html)
+        self.assertNotIn("</script>", sanitized_html)
+        self.assertNotIn("alert('This is a malicious script')", sanitized_html)
+        self.assertNotIn("document.cookie", sanitized_html)
+
+        # Verify legitimate content is preserved
+        self.assertIn("<h1>Test Content</h1>", sanitized_html)
+        self.assertIn("<p>This is a test paragraph</p>", sanitized_html)
+        self.assertIn("<p>More content after the script</p>", sanitized_html)
+
 
 if __name__ == "__main__":
     unittest.main()

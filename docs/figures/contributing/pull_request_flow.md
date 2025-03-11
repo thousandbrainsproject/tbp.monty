@@ -20,7 +20,7 @@ flowchart LR
   NBCP -- No --> UPR2(Update Pull Request):::contributor
   UPR2 --> NBCP
   NBCP -- Yes --> M(Merge):::maintainer
-  M --> AMCP{Post-merge<br/>checks and tasks<br/>pass?}
+  M --> AMCP{Post-merge<br>checks and tasks<br>pass?}
   AMCP -- No --> RV(((Revert))):::endFail
   AMCP -- Yes --> D(((Done))):::endSuccess
 
