@@ -28,6 +28,6 @@
 
 All our docs are open-source. If something is wrong or unclear, submit a PR to fix it!
 
-<a class="contribution-button" href="!!LINK!!" target="_blank"><div>Make a Contribution</div></a>
+<a class="contribution-button" href="!!LINK!!" target="_blank">Make a Contribution</a>
 
 [Learn how to contribute to our docs](../contributing/documentation.md)
