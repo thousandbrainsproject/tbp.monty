@@ -17,8 +17,7 @@
 .contribution-button:hover {
     background-color: #DDDDDD;
     cursor: pointer;
-    color: #000000;
-    text-decoration:none;
+    color: black;
 }
 </style>
 <br><br>
