@@ -20,17 +20,6 @@
     color: #000000;
     text-decoration:none;
 }
-.contribution-button img {
-    display: inline-block; 
-    vertical-align: middle;
-}
-.contribution-button div {
-    margin-left: 5px;
-}
-.contribution-button span {
-    margin:0;
-    padding:0;
-}
 </style>
 <br><br>
 
@@ -41,7 +30,6 @@
 All our docs are open-source. If something is wrong or unclear, submit a PR to fix it!
 <div>
 <a class="contribution-button" href="!!LINK!!" target="_blank">
-    <img src="https://raw.githubusercontent.com/primer/octicons/main/icons/git-pull-request-16.svg" width="16" height="16" alt="Pull request icon">
 <div>Make a Contribution</div></a>
 </div>
 
