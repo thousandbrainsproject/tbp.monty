@@ -11,9 +11,7 @@ from collections import OrderedDict
 
 
 class ChannelMapper:
-    """
-    This class is used to mark the range of hypotheses that correspond
-    to each input channel.
+    """This class marks the range of hypotheses that correspond to each input channel.
 
     Instead of storing the actual range as a List or Tuple of indices,
     we store the number of hypotheses per input channel and calculate
@@ -24,12 +22,11 @@ class ChannelMapper:
     having to recompute the range of all subsequent channels. We also do not
     need to store "num_hypotheses" as it can be computed with the `total_size`
     property.
-
     """
 
     def __init__(self, channel_sizes=None):
-        """
-        Initialize the ChannelMapper with an ordered dictionary of channel sizes.
+        """Initialize the ChannelMapper with an ordered dictionary of channel sizes.
+
         :param channel_sizes: Dict of {channel_name: size}, maintaining order.
         """
         self.channel_sizes = (
@@ -52,7 +49,11 @@ class ChannelMapper:
         return sum(self.channel_sizes.values())
 
     def get_channel_range(self, channel_name):
-        """Returns the start and end indices of the given channel."""
+        """Returns the start and end indices of the given channel.
+
+        Raises:
+            ValueError: If the channel is not found.
+        """
         if channel_name not in self.channel_sizes:
             raise ValueError(f"Channel '{channel_name}' not found.")
 
@@ -63,9 +64,12 @@ class ChannelMapper:
             start += size
 
     def increase_channel_size(self, channel_name, value):
-        """
-        Increases the size of the specified channel.
+        """Increases the size of the specified channel.
+
         :param value: int, value added or subtracted from channel size.
+
+        Raises:
+            ValueError: If the channel is not found or requested size is negative.
         """
         if channel_name not in self.channel_sizes:
             raise ValueError(f"Channel '{channel_name}' not found.")
@@ -76,9 +80,12 @@ class ChannelMapper:
         self.channel_sizes[channel_name] += value
 
     def set_channel_size(self, channel_name, value):
-        """
-        Set the size of the specified channel.
+        """Set the size of the specified channel.
+
         :param value: int, value to set channel size.
+
+        Raises:
+            ValueError: If the channel is not found or requested size is negative.
         """
         if channel_name not in self.channel_sizes:
             raise ValueError(f"Channel '{channel_name}' not found.")
@@ -89,7 +96,11 @@ class ChannelMapper:
         self.channel_sizes[channel_name] = value
 
     def add_channel(self, channel_name, size, position=None):
-        """Adds a new channel at a specified position (default is at the end)."""
+        """Adds a new channel at a specified position (default is at the end).
+
+        Raises:
+            ValueError: If the channel already exists.
+        """
         if channel_name in self.channel_sizes:
             raise ValueError(f"Channel '{channel_name}' already exists.")
 
@@ -101,15 +112,16 @@ class ChannelMapper:
             self.channel_sizes = OrderedDict(items)
 
     def remove_channel(self, channel_name):
-        """Removes a channel from the mapping."""
+        """Removes a channel from the mapping.
+
+        Raises:
+            ValueError: If the channel is not found.
+        """
         if channel_name not in self.channel_sizes:
             raise ValueError(f"Channel '{channel_name}' not found.")
         del self.channel_sizes[channel_name]
 
     def __repr__(self):
-        """
-        Returns a string representation of the current channel mapping
-        with computed ranges.
-        """
+        """Return a string representation of the current channel mapping."""
         ranges = {ch: self.get_channel_range(ch) for ch in self.channel_sizes}
         return f"ChannelMapper({ranges})"

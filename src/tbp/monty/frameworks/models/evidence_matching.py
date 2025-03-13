@@ -858,8 +858,7 @@ class EvidenceGraphLM(GraphLM):
         new_rot_hypotheses,
         new_evidence,
     ):
-        """
-        Add new hypotheses to hypothesis space.
+        """Add new hypotheses to hypothesis space.
 
         If the hypothesis space doesn't exist, it will be initialized here.
         Otherwise, we will append additional hypotheses to the existing space
