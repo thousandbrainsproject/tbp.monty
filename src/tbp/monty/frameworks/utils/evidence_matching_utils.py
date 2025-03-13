@@ -60,7 +60,7 @@ class ChannelMapper:
         start = 0
         for name, size in self.channel_sizes.items():
             if name == channel_name:
-                return (start, start + size - 1)
+                return (start, start + size)
             start += size
 
     def increase_channel_size(self, channel_name, value):

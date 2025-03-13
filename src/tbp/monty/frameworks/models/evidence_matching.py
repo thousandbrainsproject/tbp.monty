@@ -891,7 +891,7 @@ class EvidenceGraphLM(GraphLM):
         else:
             self.possible_locations[graph_id] = new_loc_hypotheses
             self.possible_poses[graph_id] = new_rot_hypotheses
-            self.evidence[graph_id] = new_evidence
+            self.evidence[graph_id] = new_evidence * self.present_weight
 
             self.channel_hypothesis_mapping[graph_id].add_channel(
                 input_channel, len(new_evidence)
@@ -1405,9 +1405,10 @@ class EvidenceGraphLM(GraphLM):
         Returns:
             Whether the pose is unique.
         """
-        possible_locations = np.array(
-            self.possible_locations[graph_id][possible_object_hypotheses_ids]
-        )
+        possible_locations = np.array(self.possible_locations[graph_id])[
+            possible_object_hypotheses_ids
+        ]
+
         logging.debug(f"{possible_locations.shape[0]} possible locations")
 
         center_location = np.mean(possible_locations, axis=0)
