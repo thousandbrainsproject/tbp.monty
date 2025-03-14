@@ -145,6 +145,8 @@ sequenceDiagram
 
 ### Random Notes
 
+* In motor policies, the order of declaration of `JumpToGoalStateMixin` after parent class is unconventional in that Method Resolution Order is depth-first, left-to-right. Essentially, the mixin would be checked last. Although, this doesn't really surface as mixin is invoked explicitly after an `if` check instead of being invoked in the method resolution order.
+
 * `NaiveScanPolicy` does not seem to use any of the `InformedPolicy` initialization that it invokes.
 
 * `BasePolicy` sets `self.is_predefined` as a signal to `MotorSystem` to switch the `__call__` invocation to `predefined_call`, but uses `self.file_names_per_episode is not None` as the check whether to retrieve actions from a file in `post_episode`.

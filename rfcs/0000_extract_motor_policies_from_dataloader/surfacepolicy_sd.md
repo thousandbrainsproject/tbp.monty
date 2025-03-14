@@ -16,7 +16,11 @@ sequenceDiagram
     BP ->> AS : action_sampler_class(rng, **action_sampler_args)
     BP ->>+ AS : sample(agent_id)
     AS -->>- BP : action
-    BP ->> BP : get_random_action(action)
+    BP ->>+ SP : get_random_action(action)
+    SP ->>+ IP : get_random_action(action)
+    deactivate SP
+    IP ->> BP : get_random_action(action)
+    deactivate IP
     activate BP
         loop
             opt rng.rand() < self.switch_frequency
