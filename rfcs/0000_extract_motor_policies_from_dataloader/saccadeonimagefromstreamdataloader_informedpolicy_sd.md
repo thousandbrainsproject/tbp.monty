@@ -38,7 +38,11 @@ sequenceDiagram
     EDL ->>+ IP : pre_episode
     IP -->>- EDL : ...
     EDL -->>- EDLO : ...
-    EDLO ->>+ EDLO : reset_agent
+    EDLO ->>+ SISDL : reset_agent
+    SISDL ->>+ SIDL : reset_agent
+    deactivate SISDL
+    SIDL ->>+ EDLO : reset_agent
+    deactivate SIDL
     EDLO ->>+ DS : reset
     DS -->>- EDLO : observation, state
     EDLO ->> EDLO : self._observation = observation

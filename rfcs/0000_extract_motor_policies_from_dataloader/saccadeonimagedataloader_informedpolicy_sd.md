@@ -24,6 +24,17 @@ sequenceDiagram
     SIDL ->> SIDL : self.object_names = scene_names
     SIDL -->>- E : ...
 
+    E ->>+ SIDL : pre_epoch
+    SIDL ->>+ EDLO : pre_epoch
+    deactivate SIDL
+    EDLO ->>+ SIDL : change_object_by_idx
+        SIDL ->>+ DS : env
+        DS -->>- SIDL : env
+        SIDL ->>+ ENV : switch_to_object
+        ENV -->>- SIDL : ...
+    SIDL -->>- EDLO : ...
+    EDLO -->>- E : ...
+
     E ->>+ SIDL : pre_episode
     SIDL ->>+ EDLO : pre_episode
     deactivate SIDL
@@ -31,7 +42,9 @@ sequenceDiagram
     EDL ->>+ IP : pre_episode
     IP -->>- EDL : ...
     EDL -->>- EDLO : ...
-    EDLO ->>+ EDLO : reset_agent
+    EDLO ->>+ SIDL : reset_agent
+    SIDL ->>+ EDLO : reset_agent
+    deactivate SIDL
     EDLO ->>+ DS : reset
     DS -->>- EDLO : observation, state
     EDLO ->> EDLO : self._observation = observation
@@ -75,6 +88,10 @@ sequenceDiagram
             ENV -->>- SIDL : ...
         deactivate SIDL
     deactivate SIDL
+    SIDL -->>- E : ...
+
+    E ->>+ SIDL : post_epoch
+    SIDL ->> SIDL : self.epochs += 1
     SIDL -->>- E : ...
 
     deactivate E

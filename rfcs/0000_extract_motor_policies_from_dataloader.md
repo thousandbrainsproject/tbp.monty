@@ -240,7 +240,7 @@ sequenceDiagram
 
 * `SaccadeOnImageDataLoader` appears to only use `pre_episode` of its parent, overwriting other methods.
 
-* `SaccadeOnImageFromStreamDataLoader` overrides its parent's`post_epoch` with the same logic as its parent.
+* `SaccadeOnImageFromStreamDataLoader` overrides its parent's `post_epoch` with the same logic as its parent.
 
 # Drawbacks
 
