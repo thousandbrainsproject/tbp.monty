@@ -26,7 +26,7 @@ As a step toward the above, we do not want the DataLoaders to interface with the
 > - If applicable, provide pseudo plots (even if hand-drawn) showing the intended impact on performance (e.g., the model converges quicker, accuracy is better, etc.).
 > - Discuss how this impacts the ability to read, understand, and maintain Monty code. Code is read and modified far more often than written; will the proposed feature make code easier to maintain?
 >
-> Keep in mind that it may be appropriate to defer some details to the [Reference-level explanation](#reference-level-explanation) section. 
+> Keep in mind that it may be appropriate to defer some details to the [Reference-level explanation](#reference-level-explanation) section.
 >
 > For implementation-oriented RFCs, this section should focus on how developer contributors should think about the change and give examples of its concrete impact. For administrative RFCs, this section should provide an example-driven introduction to the policy and explain its impact in concrete terms.
 
@@ -105,7 +105,7 @@ First, the observed pairings of the `DataLoader` and the `MotorSystem`/`*Policy`
 - `SaccadeOnImageDataLoader`
     - `InformedPolicy`. See [saccadeonimagedataloader_informedpolicy_sd.md](0000_extract_motor_policies_from_dataloader/saccadeonimagedataloader_informedpolicy_sd.md).
 - `SaccadeOnImageFromStreamDataLoader`
-    - `InformedPolicy`
+    - `InformedPolicy`. See [saccadeonimagefromstreamdataloader_informedpolicy_sd.md](0000_extract_motor_policies_from_dataloader/saccadeonimagefromstreamdataloader_informedpolicy_sd.md).
 
 ## Future State
 
@@ -239,6 +239,8 @@ sequenceDiagram
 * `SaccadeOnImageDataLoader.__init__` (unlike its parent class) retrieves object names from the `Environment` (`self.dataset.env.scene_names`) instead of being given a parameter on creation.
 
 * `SaccadeOnImageDataLoader` appears to only use `pre_episode` of its parent, overwriting other methods.
+
+* `SaccadeOnImageFromStreamDataLoader` overrides its parent's`post_epoch` with the same logic as its parent.
 
 # Drawbacks
 
