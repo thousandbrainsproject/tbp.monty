@@ -18,7 +18,13 @@ sequenceDiagram
     BP ->> AS : action_sampler_class(rng, **action_sampler_args)
     BP ->>+ AS : sample(agent_id)
     AS -->>- BP : action
-    BP ->> BP : get_random_action(action)
+    BP ->>+ SPCI : get_random_action(action)
+    SPCI ->>+ SP : get_random_action(action)
+    deactivate SPCI
+    SP ->>+ IP : get_random_action(action)
+    deactivate SP
+    IP ->> BP : get_random_action(action)
+    deactivate IP
     activate BP
         loop
             opt rng.rand() < self.switch_frequency
@@ -104,37 +110,59 @@ sequenceDiagram
             AS -->>- SP : action
             SP ->> SP : self.action = action
         end
-        SP ->>+ SP : get_next_action
-        SP ->>+ SP : last_action
+        SP ->>+ SPCI : get_next_action
+        SPCI ->>+ SP : get_next_action
+        deactivate SPCI
+        SP ->>+ SPCI : last_action
+        SPCI ->>+ SP : last_action
+        deactivate SPCI
         SP ->>+ IP : last_action
         deactivate SP
         IP ->>+ BP : last_action
         deactivate IP
         BP -->>- SP : self.action
         alt last_action is MoveForward
-            SP ->>+ SP : _orient_horizontal
-            SP ->>+ SP : orienting_angle_from_normal("horizontal")
+            SP ->>+ SPCI : _orient_horizontal
+            SPCI ->>+ SP : _orient_horizontal
+            deactivate SPCI
+            SP ->>+ SPCI : orienting_angle_from_normal("horizontal")
+            SPCI ->>+ SP : orienting_angle_from_normal("horizontal")
+            deactivate SPCI
             SP ->>+ PO : get_point_normal
             PO -->>- SP : original_point_normal
-            SP ->>+ SP : get_inverse_agent_rot
+            SP ->>+ SPCI : get_inverse_agent_rot
+            SPCI ->>+ SP : get_inverse_agent_rot
+            deactivate SPCI
             deactivate SP
             deactivate SP
-            SP ->>+ SP : horizontal_distances(rotation_degrees)
+            SP ->>+ SPCI : horizontal_distances(rotation_degrees)
+            SPCI ->>+ SP : horizontal_distances(rotation_degrees)
+            deactivate SPCI
             deactivate SP
             SP -->>- MS : action
         else last_action is OrientHorizontal
-            SP ->>+ SP : _orient_vertical
-            SP ->>+ SP : orienting_angle_from_normal("vertical")
+            SP ->>+ SPCI : _orient_vertical
+            SPCI ->>+ SP : _orient_vertical
+            deactivate SPCI
+            SP ->>+ SPCI : orienting_angle_from_normal("vertical")
+            SPCI ->>+ SP : orienting_angle_from_normal("vertical")
+            deactivate SPCI
             SP ->>+ PO : get_point_normal
             PO -->>- SP : original_point_normal
-            SP ->>+ SP : get_inverse_agent_rot
+            SP ->>+ SPCI : get_inverse_agent_rot
+            SPCI ->>+ SP : get_inverse_agent_rot
+            deactivate SPCI
             deactivate SP
             deactivate SP
-            SP ->>+ SP : vertical_distances(rotation_degrees)
+            SP ->>+ SPCI : vertical_distances(rotation_degrees)
+            SPCI ->>+ SP : vertical_distances(rotation_degrees)
+            deactivate SPCI
             deactivate SP
             SP -->>- MS : action
         else last_action is OrientVertical
-            SP ->>+ SP : _move_tangentially
+            SP ->>+ SPCI : _move_tangentially
+            SPCI ->>+ SP : _move_tangentially
+            deactivate SPCI
             SP ->>+ AS : sample_move_tangentially(agent_id)
             AS -->>- SP : action
             SP ->>+ PO : get_feature_by_name("object_coverage")
@@ -156,6 +184,7 @@ sequenceDiagram
                         SP -->>- SPCI : inverse_quaternion_rotation
                         alt is movement in z-axis
                             SPCI ->>+ SPCI : perform_standard_tang_step
+                            NOTE right of SPCI : Bookmark perform_standard_tang_step
                                 alt self.tangential_angle is not None
                                     SPCI ->>+ SPCI : update_tangential_reps
                                     deactivate SPCI
@@ -165,6 +194,7 @@ sequenceDiagram
                                 end
                                 opt self.following_heading_counter >= self.min_heading_steps
                                     SPCI ->>+ SPCI : avoid_revisiting_locations
+                                    NOTE right of SPCI : Bookmark avoid_revisiting_locations
                                         opt len(self.tangent_locs) > 0
                                             SPCI ->>+ SPCI : get_inverse_agent_rot
                                             SPCI ->>+ SP : get_inverset_agent_rot
@@ -212,7 +242,7 @@ sequenceDiagram
                                 end
                             deactivate SPCI
                             SPCI ->>+ SPCI : avoid_revisiting_locations
-                            NOTE right of SPCI : See above
+                            NOTE right of SPCI : See avoid_revisiting_locations above
                             deactivate SPCI
                             alt self.setting_new_heading
                                 SPCI ->>+ SPCI : reset_pc_buffers
@@ -239,7 +269,7 @@ sequenceDiagram
                         SPCI ->> SPCI : self.using_pc_guide = False
                     end
                     SPCI ->>+ SPCI : perform_standard_tang_step
-                    NOTE right of SPCI : See above
+                    NOTE right of SPCI : See perform_standard_tang_step above
                     deactivate SPCI
                 end
                 SPCI ->>+ SPCI : update_action_details
@@ -250,18 +280,28 @@ sequenceDiagram
             SP ->>+ PO : get_on_object
             PO -->>- SP : on_object?
             alt not on_object?
-                SP ->>+ SP : _orient_horizontal
-                SP ->>+ SP : orienting_angle_from_normal("horizontal")
+                SP ->>+ SPCI : _orient_horizontal
+                SPCI ->>+ SP : _orient_horizontal
+                deactivate SPCI
+                SP ->>+ SPCI : orienting_angle_from_normal("horizontal")
+                SPCI ->>+ SP : orienting_angle_from_normal("horizontal")
+                deactivate SPCI
                 SP ->>+ PO : get_point_normal
                 PO -->>- SP : original_point_normal
-                SP ->>+ SP : get_inverse_agent_rot
+                SP ->>+ SPCI : get_inverse_agent_rot
+                SPCI ->>+ SP : get_inverse_agent_rot
+                deactivate SPCI
                 deactivate SP
                 deactivate SP
-                SP ->>+ SP : horizontal_distances(rotation_degrees)
+                SP ->>+ SPCI : horizontal_distances(rotation_degrees)
+                SPCI ->>+ SP : horizontal_distances(rotation_degrees)
+                deactivate SPCI
                 deactivate SP
                 SP -->>- MS : action
             else
-                SP ->>+ SP : _move_forward
+                SP ->>+ SPCI : _move_forward
+                SPCI ->>+ SP : _move_forward
+                deactivate SPCI
                 SP ->>+ PO : get_feature_by_name("min_depth")
                 PO -->>- SP : min_depth
                 SP -->>- MS : action
