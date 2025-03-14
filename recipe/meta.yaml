@@ -27,7 +27,7 @@ requirements:
     - conda-forge::matplotlib
     - conda-forge::mkl<2022 # [osx]
     - conda-forge::mkl==2024.0.0 # [linux64]
-    - conda-forge::numpy
+    - conda-forge::numpy<=1.23.5 # numpy >=1.24.0 missing np.long
     - conda-forge::pandas
     - conda-forge::pillow
     - conda-forge::quaternion=2023.0.3 # later versions missing np.long
