@@ -20,12 +20,44 @@ sequenceDiagram
     EDL ->> EDL : self._observation = observation
     EDL ->> IP : self.state = state
     EDL -->>- EDLO : ...
-    EDLO ->>+ EDLO : create_semantic_mapping
+    EDLO ->>+ IEDL : create_semantic_mapping
+    IEDL ->>+ EDLO : create_semantic_mapping
+    deactivate IEDL
     deactivate EDLO
     EDLO ->>+ OIS : __call__
     OIS -->>- EDLO : object_params
     EDLO -->>- IEDL : ...
     IEDL -->>- E : ...
+
+    E ->>+ IEDL : pre_epoch
+    IEDL ->>+ EDLO : pre_epoch
+    deactivate IEDL
+    EDLO ->>+ IEDL : change_object_by_idx
+    IEDL ->>+ EDLO : change_object_by_idx
+    deactivate IEDL
+    NOTE right of EDLO : Bookmark change_object_by_idx
+    EDLO ->>+ DS : env
+    DS -->>- EDLO : env
+    EDLO ->>+ ENV : remove_all_objects
+    ENV -->>- EDLO : ...
+    EDLO ->>+ DS : env
+    DS -->>- EDLO : env
+    EDLO ->>+ ENV : add_object
+    ENV -->>- EDLO : primary_target_obj
+    opt self.num_distractors > 0
+        EDLO ->>+ IEDL : add_distractor_objects
+        IEDL ->>+ EDLO : add_distractor_objects
+        deactivate IEDL
+        loop in range(self.num_distractors)
+            EDLO ->>+ DS : env
+            DS -->>- EDLO : env
+            EDLO ->>+ ENV : add_object
+            ENV -->>- EDLO : ...
+        end
+        deactivate EDLO
+    end
+    deactivate EDLO
+    EDLO -->>- E : ...
 
     E ->>+ IEDL : pre_episode
     IEDL ->>+ EDLO : pre_episode
@@ -33,7 +65,9 @@ sequenceDiagram
     EDL ->>+ IP : pre_episode
     IP -->>- EDL : ...
     EDL -->>- EDLO : ...
-    EDLO ->>+ EDLO : reset_agent
+    EDLO ->>+ IEDL : reset_agent
+    IEDL ->>+ EDLO : reset_agent
+    deactivate IEDL
     EDLO ->>+ DS : reset
     DS -->>- EDLO : observation, state
     EDLO ->> EDLO : self._observation = observation
@@ -199,26 +233,25 @@ sequenceDiagram
     OIS -->>- EDLO : ...
     EDLO ->>+ OIS : __call__
     OIS -->>- EDLO : object_params
-    EDLO ->>+ EDLO : cycle_object
-    EDLO ->>+ EDLO : change_object_by_idx
-    EDLO ->>+ DS : env
-    DS -->>- EDLO : env
-    EDLO ->>+ ENV : remove_all_objects
-    ENV -->>- EDLO : ...
-    EDLO ->>+ ENV : add_object
-    ENV -->>- EDLO : primary_target_obj
-    opt self.num_distractors > 0
-        EDLO ->>+ EDLO : add_distractor_objects
-        loop in range(self.num_distractors)
-            EDLO ->>+ DS : env
-            DS -->>- EDLO : env
-            EDLO ->>+ ENV : add_object
-            ENV -->>- EDLO : ...
-        end
-        deactivate EDLO
-    end
+    EDLO ->>+ IEDL : cycle_object
+    IEDL ->>+ EDLO : cycle_object
+    deactivate IEDL
+    EDLO ->>+ IEDL : change_object_by_idx
+    IEDL ->>+ EDLO : change_object_by_idx
+    deactivate IEDL
+    NOTE right of EDLO : See change_object_by_idx above
     deactivate EDLO
     deactivate EDLO
+    EDLO -->>- E : ...
+
+    E ->>+ IEDL : post_epoch
+    IEDL ->>+ EDLO : post_epoch
+    deactivate IEDL
+    EDLO ->> EDLO : self.epochs += 1
+    EDLO ->>+ OIS : post_epoch
+    OIS -->>- EDLO : ...
+    EDLO ->>+ OIS : __call__
+    OIS -->>- EDLO : object_params
     EDLO -->>- E : ...
 
     deactivate E
