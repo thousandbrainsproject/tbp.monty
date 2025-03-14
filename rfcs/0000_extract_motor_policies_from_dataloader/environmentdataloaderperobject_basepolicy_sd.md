@@ -24,6 +24,30 @@ sequenceDiagram
     OIS -->>- EDLO : object_params
     EDLO -->>- E : ...
 
+    E ->>+ EDLO : pre_epoch
+    EDLO ->>+ EDLO : change_object_by_idx
+    NOTE right of EDLO : Bookmark change_object_by_idx
+    EDLO ->>+ DS : env
+    DS -->>- EDLO : env
+    EDLO ->>+ ENV : remove_all_objects
+    ENV -->>- EDLO : ...
+    EDLO ->>+ DS : env
+    DS -->>- EDLO : env
+    EDLO ->>+ ENV : add_object
+    ENV -->>- EDLO : primary_target_obj
+    opt self.num_distractors > 0
+        EDLO ->>+ EDLO : add_distractor_objects
+        loop in range(self.num_distractors)
+            EDLO ->>+ DS : env
+            DS -->>- EDLO : env
+            EDLO ->>+ ENV : add_object
+            ENV -->>- EDLO : ...
+        end
+        deactivate EDLO
+    end
+    deactivate EDLO
+    EDLO -->>- E : ...
+
     E ->>+ EDLO : pre_episode
     EDLO ->>+ EDL : pre_episode
     EDL ->>+ BP : pre_episode
@@ -77,24 +101,17 @@ sequenceDiagram
     OIS -->>- EDLO : object_params
     EDLO ->>+ EDLO : cycle_object
     EDLO ->>+ EDLO : change_object_by_idx
-    EDLO ->>+ DS : env
-    DS -->>- EDLO : env
-    EDLO ->>+ ENV : remove_all_objects
-    ENV -->>- EDLO : ...
-    EDLO ->>+ ENV : add_object
-    ENV -->>- EDLO : primary_target_obj
-    opt self.num_distractors > 0
-        EDLO ->>+ EDLO : add_distractor_objects
-        loop in range(self.num_distractors)
-            EDLO ->>+ DS : env
-            DS -->>- EDLO : env
-            EDLO ->>+ ENV : add_object
-            ENV -->>- EDLO : ...
-        end
-        deactivate EDLO
-    end
+    NOTE right of EDLO : See change_object_by_idx above
     deactivate EDLO
     deactivate EDLO
+    EDLO -->>- E : ...
+
+    E ->>+ EDLO : post_epoch
+    EDLO ->> EDLO : self.epochs += 1
+    EDLO ->>+ OIS : post_epoch
+    OIS -->>- EDLO : ...
+    EDLO ->>+ OIS : __call__
+    OIS -->>- EDLO : object_params
     EDLO -->>- E : ...
 
     deactivate E
