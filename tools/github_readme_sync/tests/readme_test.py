@@ -339,7 +339,7 @@ This is a test document.""",
             "title": "Glossary",
             "body": "Glossary content",
             "slug": "glossary",
-            "description": "A collection of terms and definitions used in the Thousand Brains Project",
+            "description": "A collection of terms",
         }
 
         doc_id, created = self.readme.create_or_update_doc(
@@ -350,16 +350,15 @@ This is a test document.""",
             file_path="docs/glossary.md",
         )
 
-        # Verify the description field is included in the request to readme.io as "excerpt"
         self.assertIn(
             "excerpt",
             mock_post.call_args[0][1],
-            "Excerpt field is missing from the request to readme.io",
+            "Excerpt field is missing",
         )
         self.assertEqual(
             mock_post.call_args[0][1]["excerpt"],
-            "A collection of terms and definitions used in the Thousand Brains Project",
-            "Excerpt field value is incorrect in the request to readme.io",
+            "A collection of terms",
+            "Excerpt field value is incorrect",
         )
 
     @patch.dict(os.environ, {"IMAGE_PATH": "user/repo/refs/head/main/docs/figures"})
