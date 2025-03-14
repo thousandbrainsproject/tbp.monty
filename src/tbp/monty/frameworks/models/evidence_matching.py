@@ -29,7 +29,7 @@ from tbp.monty.frameworks.models.object_model import (
     GridTooSmallError,
 )
 from tbp.monty.frameworks.models.states import State
-from tbp.monty.frameworks.utils.evidence_matching_utils import ChannelMapper
+from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     add_pose_features_to_tolerances,
     get_custom_distances,
@@ -868,8 +868,7 @@ class EvidenceGraphLM(GraphLM):
         # chance. TODO H: Test mean vs. median here.
 
         if graph_id in self.evidence.keys():
-            current_mean_evidence = np.mean(self.evidence[graph_id])
-            new_evidence = new_evidence + current_mean_evidence
+            new_evidence += np.mean(self.evidence[graph_id])
             self.possible_locations[graph_id] = np.vstack(
                 [
                     self.possible_locations[graph_id],
@@ -884,7 +883,7 @@ class EvidenceGraphLM(GraphLM):
             )
             self.evidence[graph_id] = np.hstack([self.evidence[graph_id], new_evidence])
 
-            self.channel_hypothesis_mapping[graph_id].increase_channel_size(
+            self.channel_hypothesis_mapping[graph_id].resize_channel_by(
                 input_channel, len(new_evidence)
             )
 
@@ -960,9 +959,10 @@ class EvidenceGraphLM(GraphLM):
         # get all usable input channels
         input_channels_to_use = [
             ic
-            for ic in list(features.keys())
+            for ic in features.keys()
             if ic in self.get_input_channels_in_graph(graph_id)
         ]
+
         if displacements is None and len(input_channels_to_use) == 0:
             # QUESTION: Do we just want to continue until we get input?
             raise ValueError(
@@ -996,7 +996,7 @@ class EvidenceGraphLM(GraphLM):
                 # Get the IDs in hypothesis space for this channel
                 channel_start, channel_end = self.channel_hypothesis_mapping[
                     graph_id
-                ].get_channel_range(input_channel)
+                ].channel_range(input_channel)
 
                 # Have to do this for all hypotheses so we don't loose the path
                 # information
