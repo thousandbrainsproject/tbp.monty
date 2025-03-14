@@ -1821,6 +1821,7 @@ class EvidenceGraphLM(GraphLM):
             stats["possible_rotations"] = self.get_possible_poses(as_euler=False)
         stats["evidences"] = self.evidence
         stats["symmetry_evidence"] = self.symmetry_evidence
+        stats["goal_states"] = self.gsg.output_goal_state
         return stats
 
 
