@@ -6,7 +6,6 @@ description: This section aims to provide concise definitions of terms commonly 
 
 Implement pattern recognizers to identify patterns such as a specific SDR. One neuron is typically associated with multiple dendrites such that it can identify multiple patterns. In biology, dendrites of a postsynaptic cell receive information from the axons of other presynaptic cells. The axons of these presynaptic cells connect to the dendrites of postsynaptic cells at a junction called a "synapse". An SDR can be thought of as a pattern which is represented by a set of synapses that are collocated on a single dendritic segment.
 
-
 # Displacement
 The spatial difference between two locations. In 3D space, this would be a 3D vector.
 
