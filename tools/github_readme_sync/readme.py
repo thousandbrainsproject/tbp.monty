@@ -279,9 +279,9 @@ class ReadMe:
             "parentDoc": parent_id,
         }
 
-        # Include description field if it exists in the document
+        # Include description field as excerpt if it exists in the document
         if "description" in doc:
-            create_doc_request["description"] = doc["description"]
+            create_doc_request["excerpt"] = doc["description"]
 
         doc_id = self.get_doc_id(doc["slug"])
         created = doc_id is None

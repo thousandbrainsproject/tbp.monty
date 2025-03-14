@@ -328,7 +328,9 @@ This is a test document.""",
     @patch("tools.github_readme_sync.readme.put")
     @patch("tools.github_readme_sync.readme.post")
     @patch.dict(os.environ, {"IMAGE_PATH": "user/repo"})
-    def test_description_field_is_sent_to_readme(self, mock_post, mock_put, mock_get):
+    def test_description_field_is_sent_to_readme_as_excerpt(
+        self, mock_post, mock_put, mock_get
+    ):
         mock_get.return_value = None  # Doc does not exist
         mock_post.return_value = json.dumps({"_id": "glossary-id"})
 
@@ -348,16 +350,16 @@ This is a test document.""",
             file_path="docs/glossary.md",
         )
 
-        # Verify the description field is included in the request to readme.io
+        # Verify the description field is included in the request to readme.io as "excerpt"
         self.assertIn(
-            "description",
+            "excerpt",
             mock_post.call_args[0][1],
-            "Description field is missing from the request to readme.io",
+            "Excerpt field is missing from the request to readme.io",
         )
         self.assertEqual(
-            mock_post.call_args[0][1]["description"],
+            mock_post.call_args[0][1]["excerpt"],
             "A collection of terms and definitions used in the Thousand Brains Project",
-            "Description field value is incorrect in the request to readme.io",
+            "Excerpt field value is incorrect in the request to readme.io",
         )
 
     @patch.dict(os.environ, {"IMAGE_PATH": "user/repo/refs/head/main/docs/figures"})

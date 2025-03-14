@@ -1,6 +1,6 @@
 ---
 title: FAQ - Thousand Brains Project
-description: Frequently asked question about the project.
+description: Frequently asked question about the project 2222
 ---
 # What Kind of Applications Will This Project Tackle?
 
