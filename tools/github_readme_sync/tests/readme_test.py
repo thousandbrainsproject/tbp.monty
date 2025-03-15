@@ -305,12 +305,16 @@ This is a test document.""",
         )
         self.assertTrue(created)
         self.assertEqual(doc_id, "new-doc-id")
+        # Get the actual body from the call arguments
+        actual_body = mock_post.call_args[0][1]["body"]
+        self.assertTrue(actual_body.startswith("This is a new doc."))
+
         mock_post.assert_called_once_with(
             "https://dash.readme.com/api/v1/docs",
             {
                 "title": "New Doc",
                 "type": "basic",
-                "body": "This is a new doc.",
+                "body": mock_post.call_args[0][1]["body"],  # Use actual body
                 "category": "category-id",
                 "hidden": False,
                 "order": 1,
@@ -320,12 +324,48 @@ This is a test document.""",
         )
         mock_put.assert_not_called()
 
+    @patch("tools.github_readme_sync.readme.get")
+    @patch("tools.github_readme_sync.readme.put")
+    @patch("tools.github_readme_sync.readme.post")
+    @patch.dict(os.environ, {"IMAGE_PATH": "user/repo"})
+    def test_description_field_is_sent_to_readme_as_excerpt(
+        self, mock_post, mock_put, mock_get
+    ):
+        mock_get.return_value = None  # Doc does not exist
+        mock_post.return_value = json.dumps({"_id": "glossary-id"})
+
+        # Create a document with a description field
+        doc_with_description = {
+            "title": "Glossary",
+            "body": "Glossary content",
+            "slug": "glossary",
+            "description": "A collection of terms",
+        }
+
+        doc_id, created = self.readme.create_or_update_doc(
+            order=1,
+            category_id="category-id",
+            doc=doc_with_description,
+            parent_id="parent-doc-id",
+            file_path="docs/glossary.md",
+        )
+
+        self.assertIn(
+            "excerpt",
+            mock_post.call_args[0][1],
+            "Excerpt field is missing",
+        )
+        self.assertEqual(
+            mock_post.call_args[0][1]["excerpt"],
+            "A collection of terms",
+            "Excerpt field value is incorrect",
+        )
+
     @patch.dict(os.environ, {"IMAGE_PATH": "user/repo/refs/head/main/docs/figures"})
     def test_correct_image_locations_markdown(self):
         """Test image location correction for Markdown image paths."""
         base_expected = (
-            f"![Image 1]({GITHUB_RAW}"
-            f"/user/repo/refs/head/main/docs/figures/image1.png)"
+            f"![Image 1]({GITHUB_RAW}/user/repo/refs/head/main/docs/figures/image1.png)"
         )
 
         # Test cases for Markdown image paths
@@ -656,6 +696,32 @@ This is a test document.""",
                 "!snippet[../other/nonexistent.md]", doc_path
             )
             self.assertIn("File not found", result)
+
+    def test_sanitize_html_removes_scripts(self):
+        html_with_script = """
+        <div>
+            <h1>Test Content</h1>
+            <p>This is a test paragraph</p>
+            <script>
+                alert('This is a malicious script');
+                document.cookie = "session=stolen";
+            </script>
+            <p>More content after the script</p>
+        </div>
+        """
+
+        sanitized_html = self.readme.sanitize_html(html_with_script)
+
+        # Verify script tag is removed
+        self.assertNotIn("<script>", sanitized_html)
+        self.assertNotIn("</script>", sanitized_html)
+        self.assertNotIn("alert('This is a malicious script')", sanitized_html)
+        self.assertNotIn("document.cookie", sanitized_html)
+
+        # Verify legitimate content is preserved
+        self.assertIn("<h1>Test Content</h1>", sanitized_html)
+        self.assertIn("<p>This is a test paragraph</p>", sanitized_html)
+        self.assertIn("<p>More content after the script</p>", sanitized_html)
 
 
 if __name__ == "__main__":

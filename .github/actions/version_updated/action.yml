@@ -10,6 +10,9 @@ inputs:
     required: true
 
 outputs:
+  version:
+    description: "The version of the project."
+    value: ${{ steps.version_updated.outputs.version }}
   version_updated:
     description: "Whether the version has been updated."
     value: ${{ steps.version_updated.outputs.version_updated }}

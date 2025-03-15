@@ -19,6 +19,7 @@ from tools.github_readme_sync.readme import ReadMe
 
 def upload(new_hierarchy, file_path: str, rdme: ReadMe):
     logging.info(f"Uploading export folder: {file_path}")
+    logging.info(f"URL: https://thousandbrainsproject.readme.io/v{rdme.version}/docs")
     rdme.create_version_if_not_exists()
     to_be_deleted = get_all_categories_docs(rdme)
 

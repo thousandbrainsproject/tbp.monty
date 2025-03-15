@@ -21,6 +21,7 @@ jobs:
       - name: Checkout tbp.monty
         uses: actions/checkout@v4
         with:
+          fetch-depth: 2
           path: tbp.monty
       - name: Version updated
         id: version_updated
@@ -38,19 +39,34 @@ jobs:
             bash ~/miniconda.sh -b -p ~/miniconda
             rm ~/miniconda.sh
           fi
-      - name: Install conda-build
+      - name: Install anaconda-client and conda-build
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          conda install conda-build
-      - name: Build conda package
+          conda install anaconda-client conda-build
+      - name: Capture expected output location
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
+        id: expected_output_location
         working-directory: tbp.monty
         run: |
           echo "target_platform:" > recipe/conda_build_config.yaml
           echo "  - linux-64" >> recipe/conda_build_config.yaml
           export PATH="$HOME/miniconda/bin:$PATH"
+          echo "path=$(conda build recipe --output)" >> $GITHUB_OUTPUT
+      - name: Build conda package
+        if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
           conda build recipe
+      - name: Upload conda package
+        if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
+        working-directory: tbp.monty
+        env:
+          ANACONDA_TOKEN: ${{ secrets.CONDA_TBP_REPOSITORY_TOKEN }}
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          anaconda --token $ANACONDA_TOKEN upload ${{ steps.expected_output_location.outputs.path }}
 
   osx64_conda_monty_publish:
     name: osx64-conda-monty-publish
@@ -60,6 +76,7 @@ jobs:
       - name: Checkout tbp.monty
         uses: actions/checkout@v4
         with:
+          fetch-depth: 2
           path: tbp.monty
       - name: Version updated
         id: version_updated
@@ -77,16 +94,59 @@ jobs:
             bash ~/miniconda.sh -b -p ~/miniconda
             rm ~/miniconda.sh
           fi
-      - name: Install conda-build
+      - name: Install anaconda-client and conda-build
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          conda install conda-build
-      - name: Build conda package
+          conda install anaconda-client conda-build
+      - name: Capture expected output location
         if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
+        id: expected_output_location
         working-directory: tbp.monty
         run: |
           echo "target_platform:" > recipe/conda_build_config.yaml
           echo "  - osx-64" >> recipe/conda_build_config.yaml
           export PATH="$HOME/miniconda/bin:$PATH"
+          echo "path=$(conda build recipe --output)" >> $GITHUB_OUTPUT
+      - name: Build conda package
+        if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
           conda build recipe
+      - name: Upload conda package
+        if: ${{ steps.version_updated.outputs.version_updated == 'true' || github.event_name == 'workflow_dispatch' }}
+        working-directory: tbp.monty
+        env:
+          ANACONDA_TOKEN: ${{ secrets.CONDA_TBP_REPOSITORY_TOKEN }}
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          anaconda --token $ANACONDA_TOKEN upload ${{ steps.expected_output_location.outputs.path }}
+
+  tag_version_monty_publish:
+    name: tag-version-monty-publish
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on:
+      group: tbp.monty
+      labels: tbp-linux-x64-ubuntu2204-2core
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout tbp.monty
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          path: tbp.monty
+      - name: Version updated
+        id: version_updated
+        uses: ./tbp.monty/.github/actions/version_updated
+        with:
+          git_sha: ${{ github.sha }}
+          working_directory: tbp.monty
+      - name: Tag version
+        if: ${{ steps.version_updated.outputs.version_updated == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          git checkout ${{ github.sha }}
+          git tag v${{ steps.version_updated.outputs.version }}
+          git push origin v${{ steps.version_updated.outputs.version }}

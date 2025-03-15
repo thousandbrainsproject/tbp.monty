@@ -6,6 +6,9 @@ description: This section aims to provide concise definitions of terms commonly 
 
 Implement pattern recognizers to identify patterns such as a specific SDR. One neuron is typically associated with multiple dendrites such that it can identify multiple patterns. In biology, dendrites of a postsynaptic cell receive information from the axons of other presynaptic cells. The axons of these presynaptic cells connect to the dendrites of postsynaptic cells at a junction called a "synapse". An SDR can be thought of as a pattern which is represented by a set of synapses that are collocated on a single dendritic segment.
 
+# Displacement
+The spatial difference between two locations. In 3D space, this would be a 3D vector.
+
 # Efference Copy
 
 A copy of the motor command that was output by the policy and sent to the actuators. This copy can be used by learning modules to update their states or make predictions.
@@ -55,8 +58,6 @@ Defines the function used to select actions. Selected actions can be dependent o
 # Pose
 
 An object's location and orientation (in a given reference frame). The location can for example be x, y, z coordinates and the orientation can be represented as a quaternion, Euler angles, or a rotation matrix.
-
-**displacement:** The spatial difference between two locations. In 3D space, this would be a 3D vector.
 
 # Reference Frame
 
