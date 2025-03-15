@@ -324,12 +324,48 @@ This is a test document.""",
         )
         mock_put.assert_not_called()
 
+    @patch("tools.github_readme_sync.readme.get")
+    @patch("tools.github_readme_sync.readme.put")
+    @patch("tools.github_readme_sync.readme.post")
+    @patch.dict(os.environ, {"IMAGE_PATH": "user/repo"})
+    def test_description_field_is_sent_to_readme_as_excerpt(
+        self, mock_post, mock_put, mock_get
+    ):
+        mock_get.return_value = None  # Doc does not exist
+        mock_post.return_value = json.dumps({"_id": "glossary-id"})
+
+        # Create a document with a description field
+        doc_with_description = {
+            "title": "Glossary",
+            "body": "Glossary content",
+            "slug": "glossary",
+            "description": "A collection of terms",
+        }
+
+        doc_id, created = self.readme.create_or_update_doc(
+            order=1,
+            category_id="category-id",
+            doc=doc_with_description,
+            parent_id="parent-doc-id",
+            file_path="docs/glossary.md",
+        )
+
+        self.assertIn(
+            "excerpt",
+            mock_post.call_args[0][1],
+            "Excerpt field is missing",
+        )
+        self.assertEqual(
+            mock_post.call_args[0][1]["excerpt"],
+            "A collection of terms",
+            "Excerpt field value is incorrect",
+        )
+
     @patch.dict(os.environ, {"IMAGE_PATH": "user/repo/refs/head/main/docs/figures"})
     def test_correct_image_locations_markdown(self):
         """Test image location correction for Markdown image paths."""
         base_expected = (
-            f"![Image 1]({GITHUB_RAW}"
-            f"/user/repo/refs/head/main/docs/figures/image1.png)"
+            f"![Image 1]({GITHUB_RAW}/user/repo/refs/head/main/docs/figures/image1.png)"
         )
 
         # Test cases for Markdown image paths

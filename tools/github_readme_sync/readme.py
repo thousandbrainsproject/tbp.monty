@@ -96,10 +96,14 @@ class ReadMe:
 
         front_matter_str = (
             f"---\n"
-            f"""{yaml.dump(front_matter,
-                           Dumper=OrderedDumper,
-                           default_flow_style=False,
-                           width=float('inf')).strip()}\n"""
+            f"""{
+                yaml.dump(
+                    front_matter,
+                    Dumper=OrderedDumper,
+                    default_flow_style=False,
+                    width=float("inf"),
+                ).strip()
+            }\n"""
             f"---\n"
         )
 
@@ -274,6 +278,10 @@ class ReadMe:
             "order": order,
             "parentDoc": parent_id,
         }
+
+        # Include description field as excerpt if it exists in the document
+        if "description" in doc:
+            create_doc_request["excerpt"] = doc["description"]
 
         doc_id = self.get_doc_id(doc["slug"])
         created = doc_id is None
@@ -471,7 +479,7 @@ class ReadMe:
                     f'style="border-radius: 10px;" controls '
                     f'poster="{new_url.replace(".mp4", ".jpg")}">'
                     f'<source src="{new_url}" type="video/mp4">'
-                    f'Your browser does not support the video tag.</video></div>'
+                    f"Your browser does not support the video tag.</video></div>"
                 )
             }
             return f"[block:html]\n{json.dumps(block, indent=2)}\n[/block]"

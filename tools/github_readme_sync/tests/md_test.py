@@ -91,6 +91,27 @@ This is the body of the markdown.
         result["body"] = result["body"].strip()
         self.assertEqual(result, expected)
 
+    def test_description_field_in_frontmatter_is_processed(self):
+        body = """---
+title: Glossary
+description: A collection of terms and definitions used in the Thousand Brains Project
+---
+
+This is the glossary content.
+"""
+        slug = "glossary"
+        result = process_markdown(body, slug)
+        self.assertIn(
+            "description",
+            result,
+            "Description field is missing from processed markdown",
+        )
+        self.assertEqual(
+            result["description"],
+            "A collection of terms and definitions used in the Thousand Brains Project",
+            "Description field value is incorrect",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
