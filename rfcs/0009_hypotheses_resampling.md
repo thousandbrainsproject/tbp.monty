@@ -1,5 +1,5 @@
 - Start Date: 2025-02-27
-- RFC PR: (leave this empty, it will be filled in after RFC is merged)
+- RFC PR: [#196](https://github.com/thousandbrainsproject/tbp.monty/pull/196)
 
 # Summary
 
@@ -31,21 +31,21 @@ Real world interactions do not have epochs or episodes (these are only used for 
 # The Problem
 Monty is designed to receive a weak supervision signal during inference when an episode ends and a new episode begins (denoting a change of object). This signal performs a full reset of all states within Monty. This reset includes counters, buffer, goal state generators, learning modules and sensory modules. Additionally, this reset sets Monty back into Matching mode. The below figure shows where this resetting is done. Most resetting happens in the `pre_episode` functions of the Monty and SMs and LMs classes.
 
-![Monty Reset Logic](0000_hypotheses_resampling/monty_reset_logic.png)
+![Monty Reset Logic](0009_hypotheses_resampling/monty_reset_logic.png)
 
 If we simply disable this resetting signal for the Monty class (and by extension SMs and LMs) between episodes, there will not be enough evidence update in the first step of a new object to get out of a terminal state. Monty will still think it is seeing the old object after getting a single observation of the new object. See the plot below.
 
-![Single Step Terminal State](0000_hypotheses_resampling/terminal_state_reached.png)
+![Single Step Terminal State](0009_hypotheses_resampling/terminal_state_reached.png)
 
 To overcome this, I manually `reset_episode_steps()` such that the `matching_steps` would still be under the `min_eval_steps` and allow Monty time to gather enough evidence on the new object. Additionally, I manually `switch_to_matching_step()` between episodes since the `_compute_possible_matches` function that accumulates evidence is only called during matching, not exploration. This results in the following plot.
 
-![No Resampling](0000_hypotheses_resampling/no_resampling.png)
+![No Resampling](0009_hypotheses_resampling/no_resampling.png)
 
 This reveals the main problem. Monty is still unable to accumulate evidence on the existing hypotheses. The current implementation of Monty uses `_get_all_informed_possible_poses()` to initialize hypotheses after seeing a single pose of the object. This is a smart way to reduce the number of initial hypotheses based on the principal curvature but it assumes that the object doesn't change and that these hypotheses will always be valid. However, when we change the object we would need to update these initial hypotheses based on a new pose observation of the new object. A simple test of sampling additional hypotheses (with informed poses) on the second object pose shows that we are able to accumulate evidence on these new hypotheses. See figure below.
 
 *Note that even when testing a single object, a noisy initial pose observation can affect the quality of the initially sampled hypotheses. Using these incorrect hypotheses (without resampling) will limit Monty's performance until the end of the episode.*
 
-![Resampling](0000_hypotheses_resampling/resampling_banana_mug.png)
+![Resampling](0009_hypotheses_resampling/resampling_banana_mug.png)
 
 # The Proposed Solution
 
@@ -78,7 +78,7 @@ Why:
 The needed modification will only change the `EvidenceGraphLM` class. More specifically, we would modify either the `_update_evidence` function
 directly or define another function that calls `_update_evidence` as one of its steps. A rough proposal of the needed changes is shown below.
 
-![code change](0000_hypotheses_resampling/high_level_code_change.png)
+![code change](0009_hypotheses_resampling/high_level_code_change.png)
 
 *Note that the two types (reinforced and informed) of resampled hypotheses are treated differently. 
 Unlike reinforced hypotheses, the current positions of the informed hypotheses do not need to be rotated and displaced at resampling.
