@@ -589,7 +589,7 @@ class BufferEncoder(json.JSONEncoder):
     def register(
         cls,
         obj_type: type,
-        encoder: Union[Callable, Type[json.JSONEncoder]],
+        encoder: Union[Callable, json.JSONEncoder, Type[json.JSONEncoder]],
     ) -> None:
         """Register an encoder.
 
@@ -597,11 +597,16 @@ class BufferEncoder(json.JSONEncoder):
             obj_type: The type to associate with `encoder`.
             encoder: A function or `JSONEncoder` class that converts objects of type
               `obj_type` into JSON-compliant data.
+
+        Raises:
+            ValueError: If `encoder` is not a `JSONEncoder` subclass or a callable.
         """
         if isinstance(encoder, type) and issubclass(encoder, json.JSONEncoder):
             cls.encoders[obj_type] = encoder().default
-        else:
+        elif callable(encoder):
             cls.encoders[obj_type] = encoder
+        else:
+            raise ValueError(f"Invalid encoder: {encoder}")
 
     @classmethod
     def _find(cls, obj: Any) -> Optional[Callable]:
@@ -656,11 +661,11 @@ class BufferEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
-BufferEncoder.register(torch.Tensor, lambda obj: obj.cpu().numpy())
+BufferEncoder.register(np.generic, lambda obj: obj.item())
 BufferEncoder.register(np.ndarray, lambda obj: obj.tolist())
+BufferEncoder.register(Rotation, lambda obj: obj.as_euler("xyz", degrees=True))
+BufferEncoder.register(torch.Tensor, lambda obj: obj.cpu().numpy())
 BufferEncoder.register(
     quaternion.quaternion, lambda obj: quaternion.as_float_array(obj)
 )
-BufferEncoder.register(Rotation, lambda obj: obj.as_euler("xyz", degrees=True))
-BufferEncoder.register(np.generic, lambda obj: obj.item())
 BufferEncoder.register(Action, ActionJSONEncoder)
