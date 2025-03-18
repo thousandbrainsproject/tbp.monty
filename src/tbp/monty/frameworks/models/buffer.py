@@ -580,11 +580,29 @@ class FeatureAtLocationBuffer(BaseBuffer):
 
 
 class BufferEncoder(json.JSONEncoder):
-    """Encoder to turn the buffer into a JSON compliant format."""
+    """Encoder to turn the buffer into a JSON compliant format.
+
+    This is a singleton class that can be used to register handlers for different types.
+    Without registering any handlers, this class is equivalent to `json.JSONEncoder`.
+
+    Attributes:
+        _encoders: Dictionary of encoders for different types.
+    """
+
+    _encoders = {}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.action_encoder = ActionJSONEncoder(**kwargs)
+
+    @classmethod
+    def register(cls, obj_type, handler):
+        """Register a handler for a specific type.
+
+        Args:
+            obj_type: The type to register the handler for.
+            handler: The handler to register.
+        """
+        cls._encoders[obj_type] = handler
 
     def default(self, obj):
         """Turn non compliant types into right format.
@@ -595,20 +613,18 @@ class BufferEncoder(json.JSONEncoder):
         Returns:
             The object in a JSON compliant format.
         """
-        if isinstance(obj, torch.Tensor):
-            return obj.cpu().numpy()
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        if isinstance(obj, quaternion.quaternion):
-            return quaternion.as_float_array(obj)
-        if isinstance(obj, Rotation):
-            return obj.as_euler("xyz", degrees=True)
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.bool_):
-            return bool(obj)
-        if isinstance(obj, Action):
-            return self.action_encoder.default(obj)
-        # if isinstance(obj, magnum.Vector3):
-        #     return list(obj)
+        for obj_type, handler in self._encoders.items():
+            if isinstance(obj, obj_type):
+                return handler(obj)
+
         return json.JSONEncoder.default(self, obj)
+
+BufferEncoder.register(Action, lambda obj: ActionJSONEncoder().default(obj))
+BufferEncoder.register(np.bool_, lambda obj: bool(obj))
+BufferEncoder.register(np.integer, lambda obj: int(obj))
+BufferEncoder.register(np.ndarray, lambda obj: obj.tolist())
+BufferEncoder.register(
+    quaternion.quaternion, lambda obj: quaternion.as_float_array(obj)
+)
+BufferEncoder.register(Rotation, lambda obj: obj.as_euler("xyz", degrees=True))
+BufferEncoder.register(torch.Tensor, lambda obj: obj.cpu().numpy())
