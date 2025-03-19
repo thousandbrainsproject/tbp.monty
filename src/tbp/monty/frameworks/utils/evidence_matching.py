@@ -45,15 +45,6 @@ class ChannelMapper:
         return list(self.channel_sizes.keys())
 
     @property
-    def dict(self) -> OrderedDictType[str, int]:
-        """Returns the ordered dictionary of channel sizes.
-
-        Returns:
-            OrderedDict[str, int]: Ordered dictionary mapping channel names to sizes.
-        """
-        return self.channel_sizes
-
-    @property
     def total_size(self) -> int:
         """Returns the total number of hypotheses across all channels.
 
@@ -101,24 +92,6 @@ class ChannelMapper:
             )
         self.channel_sizes[channel_name] += value
 
-    def resize_channel(self, channel_name: str, value: int) -> None:
-        """Resizes the channel to a specific amount.
-
-        Args:
-            channel_name (str): The name of the channel.
-            value (int): The value to set the channel size.
-
-        Raises:
-            ValueError: If the channel is not found or the requested size is negative.
-        """
-        if channel_name not in self.channel_sizes:
-            raise ValueError(f"Channel '{channel_name}' not found.")
-        if value <= 0:
-            raise ValueError(
-                f"Channel '{channel_name}' size cannot be negative or zero."
-            )
-        self.channel_sizes[channel_name] = value
-
     def add_channel(
         self, channel_name: str, size: int, position: Optional[int] = None
     ) -> None:
@@ -144,19 +117,6 @@ class ChannelMapper:
             items = list(self.channel_sizes.items())
             items.insert(position, (channel_name, size))
             self.channel_sizes = OrderedDict(items)
-
-    def remove_channel(self, channel_name: str) -> None:
-        """Removes a channel from the mapping.
-
-        Args:
-            channel_name (str): The name of the channel to remove.
-
-        Raises:
-            ValueError: If the channel is not found.
-        """
-        if channel_name not in self.channel_sizes:
-            raise ValueError(f"Channel '{channel_name}' not found.")
-        del self.channel_sizes[channel_name]
 
     def __repr__(self) -> str:
         """Returns a string representation of the current channel mapping.

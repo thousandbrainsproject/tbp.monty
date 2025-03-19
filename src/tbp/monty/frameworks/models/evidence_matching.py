@@ -339,10 +339,11 @@ class EvidenceGraphLM(GraphLM):
         self.evidence = {}
         self.possible_locations = {}
         self.possible_poses = {}
-        # Stores start and end indices of hypotheses in the above arrays for each graph
-        # corresponding to each input channel. This is used to make sure the right
-        # displacement is applied to the right hypotheses. Channel hypotheses are stored
-        # contiguously so we can just specify ranges here.
+        # Initializes a `ChannelMapper` object for each graph_id. The mapper stores the
+        # length of each input_channel in the hypotheses space defined in the above
+        # arrays. This is used to make sure the right displacement is applied to the
+        # right hypotheses. Channel hypotheses are stored contiguously so we can just
+        # specify the lengths of each channel in an ordered data structure.
         self.channel_hypothesis_mapping = {}
 
         self.current_mlh = {
@@ -857,18 +858,23 @@ class EvidenceGraphLM(GraphLM):
         new_loc_hypotheses,
         new_rot_hypotheses,
         new_evidence,
+        add_evidence_mean=True,
     ):
         """Add new hypotheses to hypothesis space.
 
-        If the hypothesis space doesn't exist, it will be initialized here.
-        Otherwise, we will append additional hypotheses to the existing space
-        and initialize its evidence with the mean of existing hypotheses' evidence.
+        If the hypothesis space already exists, we will append new hypotheses to
+        this existing space. Otherwise, we will initialize the space. Note that
+        if `add_evidence_mean` is True, the mean of existing hypotheses evidence
+        will be added to the initial evidence. This is done to give the new input
+        channel a fighting chance.
         """
         # Add current mean evidence to give the new hypotheses a fighting
         # chance. TODO H: Test mean vs. median here.
+        new_evidence = np.array(new_evidence * self.present_weight)
 
-        if graph_id in self.evidence.keys():
-            new_evidence += np.mean(self.evidence[graph_id])
+        if len(self.channel_hypothesis_mapping[graph_id].channels):
+            if add_evidence_mean:
+                new_evidence += np.mean(self.evidence[graph_id])
             self.possible_locations[graph_id] = np.vstack(
                 [
                     self.possible_locations[graph_id],
@@ -890,7 +896,7 @@ class EvidenceGraphLM(GraphLM):
         else:
             self.possible_locations[graph_id] = np.array(new_loc_hypotheses)
             self.possible_poses[graph_id] = np.array(new_rot_hypotheses)
-            self.evidence[graph_id] = np.array(new_evidence * self.present_weight)
+            self.evidence[graph_id] = np.array(new_evidence)
 
             self.channel_hypothesis_mapping[graph_id].add_channel(
                 input_channel, len(new_evidence)
@@ -987,6 +993,7 @@ class EvidenceGraphLM(GraphLM):
                     new_loc_hypotheses=initial_possible_channel_locations,
                     new_rot_hypotheses=initial_possible_channel_rotations,
                     new_evidence=channel_evidence,
+                    add_evidence_mean=(displacements is not None),
                 )
 
             # If the channel exists, update its evidence

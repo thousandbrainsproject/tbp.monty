@@ -39,15 +39,6 @@ class ChannelMapperTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.mapper.resize_channel_by("A", -10)
 
-    def test_resize_channel(self):
-        """Test setting a channel size directly."""
-        self.mapper.resize_channel("C", 20)
-        self.assertEqual(self.mapper.channel_range("C"), (15, 35))
-        self.assertEqual(self.mapper.total_size, 35)
-
-        with self.assertRaises(ValueError):
-            self.mapper.resize_channel("A", -1)
-
     def test_add_channel(self):
         """Test adding a new channel."""
         self.mapper.add_channel("D", 8)
@@ -65,15 +56,6 @@ class ChannelMapperTest(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.mapper.add_channel("Y", 5, position=10)
-
-    def test_remove_channel(self):
-        """Test removing a channel."""
-        self.mapper.remove_channel("B")
-        self.assertNotIn("B", self.mapper.channels)
-        self.assertEqual(self.mapper.total_size, 20)
-
-        with self.assertRaises(ValueError):
-            self.mapper.remove_channel("D")
 
     def test_repr(self):
         """Test string representation of the ChannelMapper."""
