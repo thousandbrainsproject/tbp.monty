@@ -14,7 +14,7 @@ from typing import Any, Callable
 import numpy as np
 import quaternion
 import torch
-from scipy.spatial.transform import Rotation as R
+from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import (
     ActionJSONEncoder,
@@ -141,7 +141,7 @@ class BufferEncoderTest(unittest.TestCase):
             self.assertEqual(val_string, json.dumps(val, cls=BufferEncoder))
 
     def test_scipy_rotation(self):
-        rot = R.from_euler("xyz", [30, 45, 60], degrees=True)
+        rot = Rotation.from_euler("xyz", [30, 45, 60], degrees=True)
         rot_array = rot.as_euler("xyz", degrees=True)
         rot_string = json.dumps(rot_array.tolist())
         self.assertEqual(rot_string, json.dumps(rot, cls=BufferEncoder))
