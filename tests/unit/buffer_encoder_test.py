@@ -28,24 +28,25 @@ from tbp.monty.frameworks.models.buffer import BufferEncoder
 
 class BufferEncoderTest(unittest.TestCase):
     def setUp(self):
+        # Define class and subclass with independent encoders.
         class Dummy:
             def __init__(self, data=0):
                 self.data = data
 
-        class DummySubclass(Dummy):
-            pass
-
         def dummy_encoder(obj: Any) -> Any:
             return obj.data
-
-        def dummy_subclass_encoder(obj):
-            return dict(data=obj.data)
 
         class DummyEncoderClass(json.JSONEncoder):
             def default(self, obj: Any) -> Any:
                 if isinstance(obj, Dummy):
                     return obj.data
                 return super().default(obj)
+
+        class DummySubclass(Dummy):
+            pass
+
+        def dummy_subclass_encoder(obj):
+            return dict(data=obj.data)
 
         self.dummy_class = Dummy
         self.dummy_subclass = DummySubclass
@@ -167,6 +168,7 @@ class BufferEncoderTest(unittest.TestCase):
             a = json.dumps(obj, cls=ActionJSONEncoder)
             b = json.dumps(obj, cls=BufferEncoder)
             self.assertEqual(a, b)
+
 
 if __name__ == "__main__":
     unittest.main()
