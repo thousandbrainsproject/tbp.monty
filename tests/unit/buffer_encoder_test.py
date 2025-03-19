@@ -28,7 +28,17 @@ from tbp.monty.frameworks.models.buffer import BufferEncoder
 
 class BufferEncoderTest(unittest.TestCase):
     def setUp(self):
-        # Define class and subclass with independent encoders.
+        """Set up dummy classes and encoder to test type-hierarchy-aware behavior.
+
+        The structure of the test class hierarchy is:
+        Dummy
+          |- DummySubclass1
+            |- DummySubclass2
+
+        where Dummy and DummySubclass1 will have independent encoders, but
+        DummySubclass2 will not. We want to test that objects of type DummySubclass2
+        are encoded using the encoder for DummySubclass1.
+        """
         class Dummy:
             def __init__(self, data=0):
                 self.data = data
@@ -42,21 +52,26 @@ class BufferEncoderTest(unittest.TestCase):
                     return obj.data
                 return super().default(obj)
 
-        class DummySubclass(Dummy):
+        class DummySubclass1(Dummy):
             pass
 
-        def dummy_subclass_encoder(obj):
+        class DummySubclass2(DummySubclass1):
+            pass
+
+        def dummy_subclass_1_encoder(obj):
             return dict(data=obj.data)
 
         self.dummy_class = Dummy
-        self.dummy_subclass = DummySubclass
+        self.dummy_subclass_1 = DummySubclass1
+        self.dummy_subclass_2 = DummySubclass2
         self.dummy_encoder = dummy_encoder
-        self.dummy_subclass_encoder = dummy_subclass_encoder
+        self.dummy_subclass_1_encoder = dummy_subclass_1_encoder
         self.dummy_encoder_class = DummyEncoderClass
 
         for cls in [
             self.dummy_class,
-            self.dummy_subclass,
+            self.dummy_subclass_1,
+            self.dummy_subclass_2,
         ]:
             BufferEncoder.encoders.pop(cls, None)
 
@@ -81,48 +96,65 @@ class BufferEncoderTest(unittest.TestCase):
             BufferEncoder.register(self.dummy_class, None)
 
     def test_find_class_and_subclass(self):
-        dummy_1 = self.dummy_class(data=0)
-        dummy_2 = self.dummy_subclass(data=1)
+        dummy_0 = self.dummy_class(data=0)
+        dummy_1 = self.dummy_subclass_1(data=1)
+        dummy_2 = self.dummy_subclass_2(data=2)
 
         # Test (not) finding an encoder for a class that has not been registered.
         self.assertIsNone(BufferEncoder._find(dummy_1))
-        self.assertIsNone(BufferEncoder._find(dummy_2))
 
-        # Test finding a newly registered encoder used for class and subclass.
+        # Test finding the encoder to be used by all classes in the hierarchy.
         BufferEncoder.register(self.dummy_class, self.dummy_encoder)
+        self.assertEqual(BufferEncoder._find(dummy_0), self.dummy_encoder)
         self.assertEqual(BufferEncoder._find(dummy_1), self.dummy_encoder)
         self.assertEqual(BufferEncoder._find(dummy_2), self.dummy_encoder)
 
-        # Test finding encoder for a subclass after registering one for it.
-        BufferEncoder.register(self.dummy_subclass, self.dummy_subclass_encoder)
+        # Test finding the correct encoder for subclasses.
+        BufferEncoder.register(self.dummy_subclass_1, self.dummy_subclass_1_encoder)
+        # - Encoder returned for parent class should be unaffected.
+        self.assertEqual(
+            BufferEncoder._find(dummy_0),
+            self.dummy_encoder,
+        )
+        # - Should return Subclass 1 encoder.
+        self.assertEqual(
+            BufferEncoder._find(dummy_1),
+            self.dummy_subclass_1_encoder,
+        )
+        # - Should return Subclass 1 encoder.
         self.assertEqual(
             BufferEncoder._find(dummy_2),
-            self.dummy_subclass_encoder,
-        )
-        self.assertNotEqual(
-            BufferEncoder._find(dummy_1),
-            BufferEncoder._find(dummy_2),
+            self.dummy_subclass_1_encoder,
         )
 
     def test_encode_class_and_subclass(self):
-        dummy_1 = self.dummy_class(data=0)
-        dummy_2 = self.dummy_subclass(data=1)
+        dummy_0 = self.dummy_class(data=0)
+        dummy_1 = self.dummy_subclass_1(data=1)
+        dummy_2 = self.dummy_subclass_2(data=2)
 
-        # Test encode, same for class and subclass.
+        # Test encode, same for class and subclasses.
         BufferEncoder.register(self.dummy_class, self.dummy_encoder)
-        self.assertEqual("0", json.dumps(dummy_1, cls=BufferEncoder))
-        self.assertEqual("1", json.dumps(dummy_2, cls=BufferEncoder))
+        self.assertEqual("0", json.dumps(dummy_0, cls=BufferEncoder))
+        self.assertEqual("1", json.dumps(dummy_1, cls=BufferEncoder))
+        self.assertEqual("2", json.dumps(dummy_2, cls=BufferEncoder))
 
         # Repeat using subclass of JSONEncoder.
         BufferEncoder.encoders.pop(self.dummy_class, None)
         BufferEncoder.register(self.dummy_class, self.dummy_encoder_class)
-        self.assertEqual("0", json.dumps(dummy_1, cls=BufferEncoder))
-        self.assertEqual("1", json.dumps(dummy_2, cls=BufferEncoder))
+        self.assertEqual("0", json.dumps(dummy_0, cls=BufferEncoder))
+        self.assertEqual("1", json.dumps(dummy_1, cls=BufferEncoder))
+        self.assertEqual("2", json.dumps(dummy_2, cls=BufferEncoder))
 
         # Test encoding after setting new encoder for subclass.
-        BufferEncoder.register(self.dummy_subclass, self.dummy_subclass_encoder)
-        expected = json.dumps(self.dummy_subclass_encoder(dummy_2))
-        self.assertEqual(expected, json.dumps(dummy_2, cls=BufferEncoder))
+        BufferEncoder.register(self.dummy_subclass_1, self.dummy_subclass_1_encoder)
+        self.assertEqual(
+            json.dumps(self.dummy_subclass_1_encoder(dummy_1)),
+            json.dumps(dummy_1, cls=BufferEncoder),
+        )
+        self.assertEqual(
+            json.dumps(self.dummy_subclass_1_encoder(dummy_2)),
+            json.dumps(dummy_2, cls=BufferEncoder),
+        )
 
     def test_numpy(self):
         # Test arrays
