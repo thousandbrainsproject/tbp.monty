@@ -73,22 +73,22 @@ class BufferEncoderTest(unittest.TestCase):
             self.dummy_subclass_1,
             self.dummy_subclass_2,
         ]:
-            BufferEncoder.encoders.pop(cls, None)
+            BufferEncoder._encoders.pop(cls, None)
 
     def test_base_state(self):
-        self.assertTrue(hasattr(BufferEncoder, "encoders"))
-        self.assertIsInstance(BufferEncoder.encoders, dict)
-        for key, val in BufferEncoder.encoders.items():
+        self.assertTrue(hasattr(BufferEncoder, "_encoders"))
+        self.assertIsInstance(BufferEncoder._encoders, dict)
+        for key, val in BufferEncoder._encoders.items():
             self.assertIsInstance(key, type)
             self.assertIsInstance(val, Callable)
 
     def test_register(self):
         # Test registering a a function.
         BufferEncoder.register(self.dummy_class, self.dummy_encoder)
-        self.assertEqual(BufferEncoder.encoders[self.dummy_class], self.dummy_encoder)
+        self.assertEqual(BufferEncoder._encoders[self.dummy_class], self.dummy_encoder)
 
         # Test registering a subclass of JSONEncoder.
-        BufferEncoder.encoders.pop(self.dummy_class, None)
+        BufferEncoder._encoders.pop(self.dummy_class, None)
         BufferEncoder.register(self.dummy_class, self.dummy_encoder_class)
 
         # Test attempting to register an invalid encoder.
@@ -139,7 +139,7 @@ class BufferEncoderTest(unittest.TestCase):
         self.assertEqual("2", json.dumps(dummy_2, cls=BufferEncoder))
 
         # Repeat using subclass of JSONEncoder.
-        BufferEncoder.encoders.pop(self.dummy_class, None)
+        BufferEncoder._encoders.pop(self.dummy_class, None)
         BufferEncoder.register(self.dummy_class, self.dummy_encoder_class)
         self.assertEqual("0", json.dumps(dummy_0, cls=BufferEncoder))
         self.assertEqual("1", json.dumps(dummy_1, cls=BufferEncoder))
