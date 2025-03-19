@@ -628,7 +628,7 @@ class BufferEncoder(json.JSONEncoder):
         order in which their encoders were registered.
 
         Args:
-            obj: The object for in need of an encoder.
+            obj: The object in need of an encoder.
 
         Returns:
             An encoder for `obj` if one exists, otherwise `None`.
