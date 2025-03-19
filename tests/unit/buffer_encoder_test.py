@@ -16,6 +16,13 @@ import quaternion
 import torch
 from scipy.spatial.transform import Rotation as R
 
+from tbp.monty.frameworks.actions.actions import (
+    ActionJSONEncoder,
+    LookDown,
+    LookUp,
+    TurnLeft,
+    TurnRight,
+)
 from tbp.monty.frameworks.models.buffer import BufferEncoder
 
 
@@ -37,7 +44,7 @@ class BufferEncoderTest(unittest.TestCase):
         class DummyEncoderClass(json.JSONEncoder):
             def default(self, obj: Any) -> Any:
                 if isinstance(obj, Dummy):
-                    return dummy_encoder(obj)
+                    return obj.data
                 return super().default(obj)
 
         self.dummy_class = Dummy
@@ -60,14 +67,11 @@ class BufferEncoderTest(unittest.TestCase):
             self.assertIsInstance(val, Callable)
 
     def test_register(self):
-        # Test registering an encoder function.
+        # Test registering a a function.
         BufferEncoder.register(self.dummy_class, self.dummy_encoder)
         self.assertEqual(BufferEncoder.encoders[self.dummy_class], self.dummy_encoder)
 
-        # Test registering a subclass of JSONEncoder, though we can't
-        # check whether the stored encoder matches a provided one since the
-        # provided class is instantiated and only the instance's `default` method
-        # is stored.
+        # Test registering a subclass of JSONEncoder.
         BufferEncoder.encoders.pop(self.dummy_class, None)
         BufferEncoder.register(self.dummy_class, self.dummy_encoder_class)
 
@@ -75,7 +79,7 @@ class BufferEncoderTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             BufferEncoder.register(self.dummy_class, None)
 
-    def test_find(self):
+    def test_find_class_and_subclass(self):
         dummy_1 = self.dummy_class(data=0)
         dummy_2 = self.dummy_subclass(data=1)
 
@@ -83,15 +87,12 @@ class BufferEncoderTest(unittest.TestCase):
         self.assertIsNone(BufferEncoder._find(dummy_1))
         self.assertIsNone(BufferEncoder._find(dummy_2))
 
-        # Test finding a newly registered encoder for parent and child objects.
+        # Test finding a newly registered encoder used for class and subclass.
         BufferEncoder.register(self.dummy_class, self.dummy_encoder)
         self.assertEqual(BufferEncoder._find(dummy_1), self.dummy_encoder)
+        self.assertEqual(BufferEncoder._find(dummy_2), self.dummy_encoder)
 
-        # Test finding encoder for a subclass before and after registering its own.
-        self.assertEqual(
-            BufferEncoder._find(dummy_2),
-            self.dummy_encoder,
-        )
+        # Test finding encoder for a subclass after registering one for it.
         BufferEncoder.register(self.dummy_subclass, self.dummy_subclass_encoder)
         self.assertEqual(
             BufferEncoder._find(dummy_2),
@@ -102,11 +103,11 @@ class BufferEncoderTest(unittest.TestCase):
             BufferEncoder._find(dummy_2),
         )
 
-    def test_custom(self):
+    def test_encode_class_and_subclass(self):
         dummy_1 = self.dummy_class(data=0)
         dummy_2 = self.dummy_subclass(data=1)
 
-        # Test encoder parent and child.
+        # Test encode, same for class and subclass.
         BufferEncoder.register(self.dummy_class, self.dummy_encoder)
         self.assertEqual("0", json.dumps(dummy_1, cls=BufferEncoder))
         self.assertEqual("1", json.dumps(dummy_2, cls=BufferEncoder))
@@ -119,45 +120,53 @@ class BufferEncoderTest(unittest.TestCase):
 
         # Test encoding after setting new encoder for subclass.
         BufferEncoder.register(self.dummy_subclass, self.dummy_subclass_encoder)
-        expected = json.dumps(dict(data=dummy_2.data))
+        expected = json.dumps(self.dummy_subclass_encoder(dummy_2))
         self.assertEqual(expected, json.dumps(dummy_2, cls=BufferEncoder))
 
-    def test_torch(self):
-        # Test tensors
-        tensor = torch.tensor([0, 1], dtype=torch.int32)
-        tensor_string = json.dumps(tensor.tolist())
-        self.assertEqual(tensor_string, json.dumps(tensor, cls=BufferEncoder))
-
     def test_numpy(self):
-        # Test numpy arrays
+        # Test arrays
         array = np.array([0, 1], dtype=int)
         array_string = json.dumps(array.tolist())
         self.assertEqual(array_string, json.dumps(array, cls=BufferEncoder))
 
-        # Test numpy ints
+        # Test ints
         for val in array:
             val_string = str(val)
             self.assertEqual(val_string, json.dumps(val, cls=BufferEncoder))
 
-        # Test numpy bools
+        # Test bools
         for val in array.astype(bool):
             val_string = str(val).lower()
             self.assertEqual(val_string, json.dumps(val, cls=BufferEncoder))
 
-    def test_quaternion(self):
-        # Test quaternions
-        quat = quaternion.quaternion(0, 1, 0, 0)
-        quat_array = quaternion.as_float_array(quat)
-        quat_string = json.dumps(quat_array.tolist())
-        self.assertEqual(quat_string, json.dumps(quat, cls=BufferEncoder))
-
-    def test_rotation(self):
-        # Test scipy rotations
+    def test_scipy_rotation(self):
         rot = R.from_euler("xyz", [30, 45, 60], degrees=True)
         rot_array = rot.as_euler("xyz", degrees=True)
         rot_string = json.dumps(rot_array.tolist())
         self.assertEqual(rot_string, json.dumps(rot, cls=BufferEncoder))
 
+    def test_torch_tensors(self):
+        tensor = torch.tensor([0, 1], dtype=torch.int32)
+        tensor_string = json.dumps(tensor.tolist())
+        self.assertEqual(tensor_string, json.dumps(tensor, cls=BufferEncoder))
+
+    def test_quaternion(self):
+        quat = quaternion.quaternion(0, 1, 0, 0)
+        quat_array = quaternion.as_float_array(quat)
+        quat_string = json.dumps(quat_array.tolist())
+        self.assertEqual(quat_string, json.dumps(quat, cls=BufferEncoder))
+
+    def test_action(self):
+        actions = [
+            LookDown(agent_id="test", rotation_degrees=47),
+            LookUp(agent_id="test", rotation_degrees=77),
+            TurnLeft(agent_id="test", rotation_degrees=90),
+            TurnRight(agent_id="test", rotation_degrees=90),
+        ]
+        for obj in actions:
+            a = json.dumps(obj, cls=ActionJSONEncoder)
+            b = json.dumps(obj, cls=BufferEncoder)
+            self.assertEqual(a, b)
 
 if __name__ == "__main__":
     unittest.main()
