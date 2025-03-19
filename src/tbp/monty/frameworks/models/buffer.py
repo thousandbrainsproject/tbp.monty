@@ -583,13 +583,13 @@ class FeatureAtLocationBuffer(BaseBuffer):
 class BufferEncoder(json.JSONEncoder):
     """Encoder to turn the buffer into a JSON compliant format."""
 
-    encoders: Dict[type, Union[Callable, json.JSONEncoder]] = {}
+    _encoders: Dict[type, Union[Callable, json.JSONEncoder]] = {}
 
     @classmethod
     def register(
         cls,
         obj_type: type,
-        encoder: Union[Callable, json.JSONEncoder, Type[json.JSONEncoder]],
+        encoder: Union[Callable, Type[json.JSONEncoder]],
     ) -> None:
         """Register an encoder.
 
@@ -602,9 +602,9 @@ class BufferEncoder(json.JSONEncoder):
             ValueError: If `encoder` is not a `JSONEncoder` subclass or a callable.
         """
         if isinstance(encoder, type) and issubclass(encoder, json.JSONEncoder):
-            cls.encoders[obj_type] = encoder().default
+            cls._encoders[obj_type] = encoder().default
         elif callable(encoder):
-            cls.encoders[obj_type] = encoder
+            cls._encoders[obj_type] = encoder
         else:
             raise ValueError(f"Invalid encoder: {encoder}")
 
@@ -634,14 +634,14 @@ class BufferEncoder(json.JSONEncoder):
             An encoder for `obj` if one exists, otherwise `None`.
         """
         obj_type = type(obj)
-        if obj_type in cls.encoders:
-            return cls.encoders[obj_type]
+        if obj_type in cls._encoders:
+            return cls._encoders[obj_type]
 
         # Traverse the Method Resolution Order (MRO) to find the encoder associated
         # with the "nearest" parent class' encoder.
         for base_cls in obj_type.mro()[1:]:
-            if base_cls in cls.encoders:
-                return cls.encoders[base_cls]
+            if base_cls in cls._encoders:
+                return cls._encoders[base_cls]
 
         # If no encoder is found, return None.
         return None
