@@ -432,8 +432,8 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         if self.output_goal_state is not None:
             # Subtract 1 as the goal-state was actually set (and potentially achieved)
             # on the previous step, we are simply first checking it now
-            match_step = self.parent_lm.buffer.get_num_matching_steps() - 1
 
+            match_step = self.parent_lm.buffer.get_num_matching_steps() - 1
             self.parent_lm.buffer.update_stats(
                 dict(
                     matching_step_when_output_goal_set=match_step,
@@ -443,6 +443,11 @@ class GraphGoalStateGenerator(GoalStateGenerator):
                 append=True,
                 init_list=True,
             )
+            # Also update goal state object in buffer.
+            gs = self.parent_lm.buffer.stats["goal_states"][-1]
+            if gs is not None:
+                gs.info["achieved"] = output_goal_achieved
+                gs.info["matching_step_when_output_goal_set"] = match_step
 
 
 class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
