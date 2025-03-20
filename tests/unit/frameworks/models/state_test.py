@@ -45,6 +45,8 @@ class EncodeGoalStateTest(unittest.TestCase):
                     "scale": 1.0,
                     "evidence": 1.0,
                 },
+                "achieved": False,
+                "matching_step_when_output_goal_set": None,
             },
         }
         self.goal_state = GoalState(**self.goal_state_dict)
