@@ -8,7 +8,7 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from typing import Any, Mapping, Optional
+from typing import Any, Dict, Optional
 
 import numpy as np
 
@@ -235,14 +235,14 @@ class GoalState(State):
     def __init__(
         self,
         location: np.ndarray,
-        morphological_features: Mapping[str, Any],
-        non_morphological_features: Optional[Mapping[str, Any]],
+        morphological_features: Dict[str, Any],
+        non_morphological_features: Optional[Dict[str, Any]],
         confidence: float,
         use_state: bool,
         sender_id: str,
         sender_type: str,
-        goal_tolerances: Optional[Mapping[str, Any]],
-        info: Optional[Mapping] = None,
+        goal_tolerances: Optional[Dict[str, Any]],
+        info: Optional[Dict[str, Any]] = None,
     ):
         """Initialize a goal state.
 
@@ -327,10 +327,10 @@ class GoalState(State):
             self.sender_type in self.allowable_sender_types
         ), f"sender_type must be GSG but is {self.sender_type}"
         # info is optional, but it must be a dictionary.
-        assert isinstance(self.info, Mapping), "info must be a mapping (i.e. a dict)"
+        assert isinstance(self.info, dict), "info must be a dictionary"
 
 
-def encode_goal_state(goal_state: GoalState) -> Mapping:
+def encode_goal_state(goal_state: GoalState) -> Dict[str, Any]:
     """Encode a goal state into a dictionary.
 
     Args:
