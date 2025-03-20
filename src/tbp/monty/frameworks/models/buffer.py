@@ -13,6 +13,7 @@ import copy
 import json
 import logging
 import time
+from typing import Any, Callable, Dict, Optional, Type, Union
 
 import numpy as np
 import quaternion
@@ -582,33 +583,89 @@ class FeatureAtLocationBuffer(BaseBuffer):
 class BufferEncoder(json.JSONEncoder):
     """Encoder to turn the buffer into a JSON compliant format."""
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.action_encoder = ActionJSONEncoder(**kwargs)
+    _encoders: Dict[type, Union[Callable, json.JSONEncoder]] = {}
 
-    def default(self, obj):
-        """Turn non compliant types into right format.
+    @classmethod
+    def register(
+        cls,
+        obj_type: type,
+        encoder: Union[Callable, Type[json.JSONEncoder]],
+    ) -> None:
+        """Register an encoder.
 
         Args:
-            obj: The object to turn into a JSON compliant format.
+            obj_type: The type to associate with `encoder`.
+            encoder: A function or `JSONEncoder` class that converts objects of type
+              `obj_type` into JSON-compliant data.
+
+        Raises:
+            ValueError: If `encoder` is not a `JSONEncoder` subclass or a callable.
+        """
+        if isinstance(encoder, type) and issubclass(encoder, json.JSONEncoder):
+            cls._encoders[obj_type] = encoder().default
+        elif callable(encoder):
+            cls._encoders[obj_type] = encoder
+        else:
+            raise ValueError(f"Invalid encoder: {encoder}")
+
+    @classmethod
+    def _find(cls, obj: Any) -> Optional[Callable]:
+        """Attempt to find an appropriate encoder for an object.
+
+        This method attempts to find an encoder for `obj` in such a way that respects
+        `obj`'s type hierarchy. The returned encoder is either
+         - explicitly registered with `obj`'s type, or
+         - registered with `obj`'s "nearest" parent type if none was registered
+           with `obj`'s type.
+
+        The purpose of type-hierarchy-aware lookup is to prevent an encoder
+        registered with a parent class from being returned when an encoder
+        has been registered for `obj`'s type. For example, if we have a class called
+        `Child` that inherits from `Parent` and they were both registered with
+        encoders, then we will always return the encoder registered for `Child`.
+        This is in contrast to lookup via `isinstance` checks in which case an
+        the `Parent` encoder may be returned for a `Child` instance, depending on the
+        order in which their encoders were registered.
+
+        Args:
+            obj: The object in need of an encoder.
 
         Returns:
-            The object in a JSON compliant format.
+            An encoder for `obj` if one exists, otherwise `None`.
         """
-        if isinstance(obj, torch.Tensor):
-            return obj.cpu().numpy()
-        if isinstance(obj, np.ndarray):
-            return obj.tolist()
-        if isinstance(obj, quaternion.quaternion):
-            return quaternion.as_float_array(obj)
-        if isinstance(obj, Rotation):
-            return obj.as_euler("xyz", degrees=True)
-        if isinstance(obj, np.integer):
-            return int(obj)
-        if isinstance(obj, np.bool_):
-            return bool(obj)
-        if isinstance(obj, Action):
-            return self.action_encoder.default(obj)
-        # if isinstance(obj, magnum.Vector3):
-        #     return list(obj)
+        obj_type = type(obj)
+        if obj_type in cls._encoders:
+            return cls._encoders[obj_type]
+
+        # Traverse the Method Resolution Order (MRO) to find the encoder associated
+        # with the "nearest" parent class' encoder.
+        for base_cls in obj_type.mro()[1:]:
+            if base_cls in cls._encoders:
+                return cls._encoders[base_cls]
+
+        # If no encoder is found, return None.
+        return None
+
+    def default(self, obj: Any) -> Any:
+        """Turn non-compliant types into a JSON-compliant format.
+
+        Args:
+            obj: The object to turn into a JSON-compliant format.
+
+        Returns:
+            The JSON-compliant data.
+        """
+        encoder = self._find(obj)
+        if encoder is not None:
+            return encoder(obj)
         return json.JSONEncoder.default(self, obj)
+
+
+BufferEncoder.register(np.generic, lambda obj: obj.item())
+BufferEncoder.register(np.ndarray, lambda obj: obj.tolist())
+BufferEncoder.register(Rotation, lambda obj: obj.as_euler("xyz", degrees=True))
+BufferEncoder.register(torch.Tensor, lambda obj: obj.cpu().numpy())
+BufferEncoder.register(
+    quaternion.quaternion, lambda obj: quaternion.as_float_array(obj)
+)
+BufferEncoder.register(Action, ActionJSONEncoder)
