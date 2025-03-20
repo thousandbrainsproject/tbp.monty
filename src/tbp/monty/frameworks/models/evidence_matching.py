@@ -17,9 +17,7 @@ import numpy as np
 from scipy.spatial import KDTree
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.models.goal_state_generation import (
-    EvidenceGoalStateGenerator,
-)
+from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
 from tbp.monty.frameworks.models.graph_matching import (
     GraphLM,
     GraphMemory,
@@ -361,10 +359,7 @@ class EvidenceGraphLM(GraphLM):
         """Reset evidence count and other variables."""
         # Now here, as opposed to the displacement and feature-location LMs,
         # possible_matches is a list of IDs, not a dictionary with the object graphs.
-        (
-            self.possible_matches,
-            self.possible_locations,
-        ) = self.graph_memory.get_initial_hypotheses()
+        self.possible_matches = self.graph_memory.get_memory_ids()
 
         if self.tolerances is not None:
             # TODO H: Differentiate between features from different input channels
