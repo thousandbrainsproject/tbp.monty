@@ -17,9 +17,7 @@ import numpy as np
 from scipy.spatial import KDTree
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.models.goal_state_generation import (
-    EvidenceGoalStateGenerator,
-)
+from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
 from tbp.monty.frameworks.models.graph_matching import (
     GraphLM,
     GraphMemory,
@@ -361,10 +359,7 @@ class EvidenceGraphLM(GraphLM):
         """Reset evidence count and other variables."""
         # Now here, as opposed to the displacement and feature-location LMs,
         # possible_matches is a list of IDs, not a dictionary with the object graphs.
-        (
-            self.possible_matches,
-            self.possible_locations,
-        ) = self.graph_memory.get_initial_hypotheses()
+        self.possible_matches = self.graph_memory.get_memory_ids()
 
         if self.tolerances is not None:
             # TODO H: Differentiate between features from different input channels
@@ -1846,24 +1841,6 @@ class EvidenceGraphMemory(GraphMemory):
     # ------------------- Main Algorithm -----------------------
 
     # ------------------ Getters & Setters ---------------------
-    def get_initial_hypotheses(self):
-        possible_matches = self.get_memory_ids()
-        possible_locations = {}
-        for graph_id in possible_matches:
-            # Initialize vertical shape of np array so we can easily stack it. Will be
-            # removed after concatenating loop.
-            all_locations_for_graph = np.zeros(3)
-            for input_channel in self.get_input_channels_in_graph(graph_id):
-                # All locations stored in graph
-                all_locations_for_graph = np.vstack(
-                    [
-                        all_locations_for_graph,
-                        self.get_locations_in_graph(graph_id, input_channel),
-                    ]
-                )
-            possible_locations[graph_id] = all_locations_for_graph[1:]
-        return possible_matches, possible_locations
-
     def get_rotation_features_at_all_nodes(self, graph_id, input_channel):
         """Get rotation features from all N nodes. shape=(N, 3, 3).
 
