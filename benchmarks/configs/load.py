@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from dataclasses import fields
 
+from benchmarks.configs.follow_ups.names import NAMES as FOLLOW_UP_NAMES
 from benchmarks.configs.names import (
     MontyWorldExperiments,
     MontyWorldHabitatExperiments,
@@ -103,3 +104,8 @@ def select_config(experiment: str) -> dict:
         from benchmarks.configs.my_experiments import CONFIGS as MY_EXPERIMENTS
 
         return MY_EXPERIMENTS
+
+    elif experiment in FOLLOW_UP_NAMES:
+        from benchmarks.configs.follow_ups import CONFIGS as FOLLOW_UP_EXPERIMENTS
+
+        return FOLLOW_UP_EXPERIMENTS

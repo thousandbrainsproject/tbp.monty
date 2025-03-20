@@ -11,15 +11,22 @@
 import os
 import pathlib
 import pickle
+import sys
 
 import pandas as pd
 
+sys.path.insert(
+    0, os.path.dirname(os.path.dirname(os.path.expanduser(os.path.realpath(__file__))))
+)
 # Load all experiment configurations from local project
-from configs import CONFIGS
-
+from benchmarks.configs.follow_ups.names import NAMES as FOLLOW_UP_NAMES
+from benchmarks.configs.load import load_config
+from benchmarks.configs.names import NAMES
 from tbp.monty.frameworks.config_utils.cmd_parser import create_rerun_parser
-from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
-from tbp.monty.frameworks.utils.follow_up_configs import (
+from tbp.monty.frameworks.run_env import setup_env
+
+setup_env()
+from tbp.monty.frameworks.utils.follow_up_configs import (  # noqa: E402
     create_eval_config_multiple_episodes,
     recover_output_dir,
 )
@@ -48,15 +55,15 @@ experiment uses it.
 """
 
 if __name__ == "__main__":
-    cmd_parser = create_rerun_parser(experiments=list(CONFIGS.keys()))
+    cmd_parser = create_rerun_parser(experiments=NAMES)
     cmd_args = cmd_parser.parse_args()
     experiment = cmd_args.experiment
     follow_up_suffix = cmd_args.name
     rerun_episodes = cmd_args.episodes
 
     # Load results from experiment and find episodes of interest
+    CONFIGS = load_config(experiment)
     config = CONFIGS[experiment]
-    config = config_to_dict(config)
     output_dir = recover_output_dir(config, experiment)
 
     if not rerun_episodes:
@@ -89,6 +96,12 @@ if __name__ == "__main__":
     with open(file_path, "wb") as f:
         pickle.dump(follow_up_config, f)
 
+    # Add NAMES.extend(["follow_up_name"]) to the follow_ups/names.py file so it can be
+    # loaded by run.py
+    if follow_up_name not in FOLLOW_UP_NAMES:
+        with open(follow_up_dir / "names.py", "a") as f:
+            f.write(f'NAMES.extend(["{follow_up_name}"])\n')
+
     print("\n\n")
     print(f"Config to rerun all episodes saved in {follow_up_dir}/{follow_up_name}")
     print("-" * 50)
@@ -100,6 +113,28 @@ if __name__ == "__main__":
     print("To rerun all episodes in a single experiment, use this command \n")
     print(command)
     print("To print the config to verify it is correct, add the -p flag")
+
+    # Check that config doesn't use goal state generator (actions.txt file doesn't
+    # store those jumps)
+    if follow_up_config["monty_config"]["motor_system_config"]["motor_system_args"][
+        "use_goal_state_driven_actions"
+    ]:
+        print(
+            "Warning: config uses goal state generator. This will not work for ",
+            "exact replication because actions.txt file does not store those jumps.",
+        )
+    # Check that config doesn't add noise to sensor data
+    for sensor_module_config in follow_up_config["monty_config"][
+        "sensor_module_configs"
+    ].values():
+        if (
+            "noise_params" in sensor_module_config["sensor_module_args"].keys()
+            and sensor_module_config["sensor_module_args"]["noise_params"]
+        ):
+            print(
+                "Warning: config adds noise to sensor data. This will not work for ",
+                "exact replication because sensor data will be different.",
+            )
 
     # Possible optimizations:
     # -- output dir is being parsed here and inside create_eval_episode, refactor
