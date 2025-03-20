@@ -71,6 +71,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         self._set_output_goal_state(self._generate_none_goal_state())
         self.parent_lm.buffer.update_stats(
             dict(
+                goal_states=[],
                 matching_step_when_output_goal_set=[],
                 goal_state_achieved=[],
             ),
@@ -822,6 +823,8 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         info = {
             "proposed_surface_loc": proposed_surface_loc,
             "hypothesis_to_test": target_info["hypothesis_to_test"],
+            "achieved": False,
+            "matching_step_when_output_goal_set": None,
         }
 
         motor_goal_state = GoalState(
