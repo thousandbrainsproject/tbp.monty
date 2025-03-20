@@ -462,7 +462,7 @@ class BaseGraphTestCases:
                     self.assertEqual(paths1[obj], paths2[obj])
 
         def convert_to_numpy_and_check_equal(self, list1, list2):
-            if isinstance(list1[0], (list, np.ndarray)):
+            if len(list1) > 0 and isinstance(list1[0], (list, np.ndarray)):
                 for v1, v2 in zip(list1, list2):
                     self.convert_to_numpy_and_check_equal(v1, v2)
 
