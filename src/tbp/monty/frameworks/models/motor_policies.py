@@ -140,6 +140,9 @@ class BasePolicy(MotorSystem):
         # is in addition to, rather than in replacement of, file_name
         if file_names_per_episode is not None:
             self.file_names_per_episode = file_names_per_episode
+            # Have to set this here bc file_names_per_episode is used for loading in
+            # post_episode so won't do anything for the first episode.
+            file_name = file_names_per_episode[0]
             self.is_predefined = True
 
         if file_name is not None:

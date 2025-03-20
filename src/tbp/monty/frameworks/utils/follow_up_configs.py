@@ -191,13 +191,6 @@ def create_eval_config_multiple_episodes(
     # Add detailed handlers
     if DetailedJSONHandler not in new_config["logging_config"]["monty_handlers"]:
         new_config["logging_config"]["monty_handlers"].append(DetailedJSONHandler)
-    if (
-        DetailedWandbMarkedObsHandler
-        not in new_config["logging_config"]["wandb_handlers"]
-    ):
-        new_config["logging_config"]["wandb_handlers"].append(
-            DetailedWandbMarkedObsHandler
-        )
 
     ###
     # Accumulate episode-specific data: actions and object params
@@ -239,5 +232,8 @@ def create_eval_config_multiple_episodes(
             change_every_episode=True,
         )
     )
+    new_config["monty_config"]["motor_system_config"]["motor_system_args"][
+        "file_names_per_episode"
+    ] = file_names_per_episode
 
     return new_config
