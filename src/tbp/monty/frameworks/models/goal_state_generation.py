@@ -813,6 +813,12 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         target_loc = proposed_surface_loc + surface_displacement
 
+        # Extra metadata for logging.
+        info = {
+            "proposed_surface_loc": proposed_surface_loc,
+            "hypothesis_to_test": target_info["hypothesis_to_test"],
+        }
+
         motor_goal_state = GoalState(
             location=np.array(target_loc),
             morphological_features={
@@ -834,6 +840,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             sender_id=self.parent_lm.learning_module_id,
             sender_type="GSG",
             goal_tolerances=None,
+            info=info,
         )
 
         # TODO M consider also using the below sensor-predicted state as an additional
