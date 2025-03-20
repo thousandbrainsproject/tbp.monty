@@ -819,11 +819,13 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         target_loc = proposed_surface_loc + surface_displacement
 
-        # Extra metadata for logging.
+        # Extra metadata for logging. 'achieved' and
+        # 'matching_step_when_output_goal_set' should be updated at the next step.
+        # We initialize them as `None` to inidicate that no valid values have been set.
         info = {
             "proposed_surface_loc": proposed_surface_loc,
             "hypothesis_to_test": target_info["hypothesis_to_test"],
-            "achieved": False,
+            "achieved": None,
             "matching_step_when_output_goal_set": None,
         }
 
