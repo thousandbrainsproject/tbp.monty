@@ -547,16 +547,13 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(base_config)
+        with MontyObjectRecognitionExperiment(base_config) as self.exp:
+            pass
 
     def test_can_run_train_episode(self):
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(base_config)
+        with MontyObjectRecognitionExperiment(base_config) as self.exp:
             self.exp.model.set_experiment_mode("train")
             pprint("...training...")
             self.exp.pre_epoch()
@@ -565,9 +562,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
     def test_right_data_in_buffer(self):
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(base_config)
+        with MontyObjectRecognitionExperiment(base_config) as self.exp:
             self.exp.model.set_experiment_mode("train")
             pprint("...training...")
             self.exp.pre_epoch()
@@ -618,9 +613,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
     def test_can_run_eval_episode(self):
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(base_config)
+        with MontyObjectRecognitionExperiment(base_config) as self.exp:
             self.exp.model.set_experiment_mode("eval")
             pprint("...training...")
             self.exp.pre_epoch()
@@ -629,9 +622,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
     def test_can_run_eval_episode_with_surface_agent(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.surface_agent_eval_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             self.exp.model.set_experiment_mode("eval")
             pprint("...training...")
             self.exp.pre_epoch()
@@ -640,9 +631,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
     def test_can_run_ppf_experiment(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.ppf_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...evaluating...")
@@ -651,9 +640,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
     def test_can_run_disp_experiment(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.disp_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...evaluating...")
@@ -662,9 +649,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
     def test_can_run_feature_experiment(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feature_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...evaluating...")
@@ -689,9 +674,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_disp)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             # self.exp.model.set_experiment_mode("eval")
             pprint("...training...")
             self.exp.train()
@@ -713,9 +696,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         """Like test_fixed_actions_disp but using point pair features for matching."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_ppf)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             # self.exp.model.set_experiment_mode("eval")
             pprint("...training...")
             self.exp.train()
@@ -738,9 +719,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         """Like test_fixed_actions_disp but using point pair features for matching."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_feat)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...loading and checking train statistics...")
@@ -762,10 +741,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
     def test_reproduce_single_episode(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_feat)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
 
@@ -776,11 +752,8 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             self.exp.output_dir,
             "2",  # latest checkpoint
         )
-        self.eval_exp_1 = MontyObjectRecognitionExperiment()
-        with self.eval_exp_1:
-            self.eval_exp_1.setup_experiment(eval_cfg_1)
+        with MontyObjectRecognitionExperiment(eval_cfg_1) as self.eval_exp_1:
             # TODO: update so it only runs one episode
-
             pprint("...evaluating (first time) ...")
             self.eval_exp_1.evaluate()
 
@@ -811,10 +784,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         )
 
         # If we made it this far, we have the correct parameters. Now run the experiment
-        self.eval_exp_2 = MontyObjectRecognitionExperiment()
-        with self.eval_exp_2:
-            self.eval_exp_2.setup_experiment(eval_cfg_2)
-
+        with MontyObjectRecognitionExperiment(eval_cfg_2) as self.eval_exp_2:
             pprint("...evaluating (second time) ...")
             self.eval_exp_2.evaluate()
 
@@ -870,10 +840,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
     def test_reproduce_multiple_episodes(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_feat)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
 
@@ -884,10 +851,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             self.exp.output_dir,
             "2",  # latest checkpoint
         )
-        self.eval_exp_1 = MontyObjectRecognitionExperiment()
-        with self.eval_exp_1:
-            self.eval_exp_1.setup_experiment(eval_cfg_1)
-
+        with MontyObjectRecognitionExperiment(eval_cfg_1) as self.eval_exp_1:
             pprint("...evaluating (first time) ...")
             self.eval_exp_1.evaluate()
 
@@ -927,10 +891,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         )
 
         # If we made it this far, we have the correct parameters. Now run the experiment
-        self.eval_exp_2 = MontyObjectRecognitionExperiment()
-        with self.eval_exp_2:
-            self.eval_exp_2.setup_experiment(eval_cfg_2)
-
+        with MontyObjectRecognitionExperiment(eval_cfg_2) as self.eval_exp_2:
             pprint("...evaluating (second time) ...")
             self.eval_exp_2.evaluate()
 
@@ -987,10 +948,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         """Verify create_eval_config_multiple_episodes for a single episode."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_feat)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
 
@@ -1001,10 +959,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             self.exp.output_dir,
             "2",  # latest checkpoint
         )
-        self.eval_exp_1 = MontyObjectRecognitionExperiment()
-        with self.eval_exp_1:
-            self.eval_exp_1.setup_experiment(eval_cfg_1)
-
+        with MontyObjectRecognitionExperiment(eval_cfg_1) as self.eval_exp_1:
             pprint("...evaluating (first time) ...")
             self.eval_exp_1.evaluate()
 
@@ -1027,10 +982,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         )
 
         # If we made it this far, we have the correct parameters. Now run the experiment
-        self.eval_exp_2 = MontyObjectRecognitionExperiment()
-        with self.eval_exp_2:
-            self.eval_exp_2.setup_experiment(eval_cfg_2)
-
+        with MontyObjectRecognitionExperiment(eval_cfg_2) as self.eval_exp_2:
             pprint("...evaluating (second time) ...")
             self.eval_exp_2.evaluate()
 
@@ -1087,9 +1039,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         # Move this to graph_building_test.py?
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_ppf)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             # self.exp.model.set_experiment_mode("eval")
             pprint("...training...")
             self.exp.train()
@@ -1101,10 +1051,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             config["logging_config"].output_dir,
             "2",  # latest checkpoint
         )
-        self.exp2 = MontyObjectRecognitionExperiment()
-        with self.exp2:
-            self.exp2.setup_experiment(cfg2)
-
+        with MontyObjectRecognitionExperiment(cfg2) as self.exp2:
             graph_memory_1 = self.exp.model.learning_modules[
                 0
             ].graph_memory.get_all_models_in_memory()
@@ -1131,9 +1078,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feature_pred_tests_time_out)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             self.exp.model.set_experiment_mode("train")
             pprint("...training...")
             # self.exp.train()
@@ -1196,9 +1141,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         # anymore. Setting min_steps would also avoid this probably.
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_feat)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             self.exp.model.set_experiment_mode("train")
             pprint("...training...")
             self.exp.pre_epoch()
@@ -1252,9 +1195,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         # to logging of observations when off the object
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feature_pred_tests_off_object)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             # First episode will be used to learn object (no_match is triggered before
             # min_steps is reached and the sensor moves off the object). In the second
@@ -1310,9 +1251,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
     def test_detailed_logging(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feature_pred_tests_off_object)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...evaluating...")
@@ -1369,9 +1308,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         """Test same scenario as test_fixed_actions_feat with uniform poses."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feat_test_uniform_initial_poses)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...loading and checking train statistics...")
@@ -1696,9 +1633,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         """Test 5 displacement LMs voting with two evaluation settings."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.ppf_displacement_5lm_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
 
@@ -1720,9 +1655,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         """Test 5 feature LMs voting with two evaluation settings."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feature_5lm_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
 

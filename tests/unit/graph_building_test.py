@@ -224,9 +224,8 @@ class GraphLearningTest(unittest.TestCase):
 
     def build_and_save_supervised_graph(self):
         pprint("...parsing experiment...")
-        self.exp = MontySupervisedObjectPretrainingExperiment()
-        with self.exp:
-            self.exp.setup_experiment(self.supervised_pre_training_in_habitat)
+        config = self.supervised_pre_training_in_habitat
+        with MontySupervisedObjectPretrainingExperiment(config) as self.exp:
             self.exp.model.set_experiment_mode("train")
 
             pprint("...training...")
@@ -234,9 +233,7 @@ class GraphLearningTest(unittest.TestCase):
 
     def build_and_save_supervised_graph_feat(self):
         pprint("...parsing experiment...")
-        self.exp = MontySupervisedObjectPretrainingExperiment()
-        with self.exp:
-            self.exp.setup_experiment(self.spth_feat)
+        with MontySupervisedObjectPretrainingExperiment(self.spth_feat) as self.exp:
             self.exp.model.set_experiment_mode("train")
 
             pprint("...training...")
@@ -286,9 +283,7 @@ class GraphLearningTest(unittest.TestCase):
         self.build_and_save_supervised_graph()
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.load_habitat_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("checking loaded graphs")
             for graph_id in self.exp.model.learning_modules[
                 0
@@ -307,9 +302,7 @@ class GraphLearningTest(unittest.TestCase):
         self.build_and_save_supervised_graph()
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.load_habitat_for_ppf)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("checking loaded graphs")
             for graph_id in self.exp.model.learning_modules[
                 0
@@ -333,9 +326,7 @@ class GraphLearningTest(unittest.TestCase):
         self.build_and_save_supervised_graph()
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.load_habitat_for_feat)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("checking loaded graphs")
             for graph_id in self.exp.model.learning_modules[
                 0
@@ -358,9 +349,7 @@ class GraphLearningTest(unittest.TestCase):
     def test_can_extend_and_save_feat_graph(self):
         self.build_and_save_supervised_graph_feat()
         config = copy.deepcopy(self.load_habitat_for_feat)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("checking loaded graphs")
             for graph_id in self.exp.model.learning_modules[
                 0
