@@ -451,9 +451,7 @@ class PolicyTest(unittest.TestCase):
     def test_can_run_informed_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.base_dist_agent_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...evaluating...")
@@ -463,9 +461,7 @@ class PolicyTest(unittest.TestCase):
     def test_can_run_spiral_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.spiral_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             # TODO: test that no two locations are the same
             self.exp.train()
@@ -476,9 +472,7 @@ class PolicyTest(unittest.TestCase):
     def test_can_run_dist_agent_hypo_driven_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.dist_agent_hypo_driven_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...evaluating...")
@@ -488,9 +482,7 @@ class PolicyTest(unittest.TestCase):
     def test_can_run_surface_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.base_surf_agent_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...evaluating...")
@@ -500,9 +492,7 @@ class PolicyTest(unittest.TestCase):
     def test_can_run_curv_informed_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.curv_informed_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...evaluating...")
@@ -512,9 +502,7 @@ class PolicyTest(unittest.TestCase):
     def test_can_run_surf_agent_hypo_driven_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.surf_agent_hypo_driven_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...evaluating...")
@@ -524,9 +512,7 @@ class PolicyTest(unittest.TestCase):
     def test_can_run_multi_lm_dist_agent_hypo_driven_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.dist_agent_hypo_driven_multi_lm_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...evaluating...")
@@ -596,9 +582,7 @@ class PolicyTest(unittest.TestCase):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.poor_initial_view_dist_agent_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             self.exp.model.set_experiment_mode("train")
             self.exp.pre_epoch()
             self.exp.pre_episode()
@@ -647,9 +631,7 @@ class PolicyTest(unittest.TestCase):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.poor_initial_view_surf_agent_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             self.exp.model.set_experiment_mode("train")
             self.exp.pre_epoch()
             self.exp.pre_episode()
@@ -703,9 +685,7 @@ class PolicyTest(unittest.TestCase):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.poor_initial_view_multi_object_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
 
@@ -767,9 +747,7 @@ class PolicyTest(unittest.TestCase):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_action_distant_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             self.exp.model.set_experiment_mode("train")
             pprint("...training...")
             self.exp.pre_epoch()
@@ -879,9 +857,7 @@ class PolicyTest(unittest.TestCase):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_action_surface_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             self.exp.model.set_experiment_mode("train")
             pprint("...training...")
             self.exp.pre_epoch()
@@ -918,9 +894,7 @@ class PolicyTest(unittest.TestCase):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.rotated_cube_view_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             self.exp.model.set_experiment_mode("train")
             pprint("...training...")
             self.exp.pre_epoch()
