@@ -43,10 +43,7 @@ def print_config(config):
 
 
 def run(config):
-    exp = config["experiment_class"]()
-    with exp:
-        exp.setup_experiment(config)
-
+    with config["experiment_class"](config) as exp:
         # TODO: Later will want to evaluate every x episodes or epochs
         # this could probably be solved with just setting the logging freqency
         # Since each trainng loop already does everything that eval does.

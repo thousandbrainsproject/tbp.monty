@@ -60,18 +60,14 @@ Assumptions and notes:
 
 def single_train(config):
     os.makedirs(config["logging_config"]["output_dir"], exist_ok=True)
-    exp = config["experiment_class"]()
-    with exp:
-        exp.setup_experiment(config)
+    with config["experiment_class"](config) as exp:
         print("---------training---------")
         exp.train()
 
 
 def single_evaluate(config):
     os.makedirs(config["logging_config"]["output_dir"], exist_ok=True)
-    exp = config["experiment_class"]()
-    with exp:
-        exp.setup_experiment(config)
+    with config["experiment_class"](config) as exp:
         print("---------evaluating---------")
         exp.evaluate()
         if config["logging_config"]["log_parallel_wandb"]:
@@ -294,9 +290,7 @@ def post_parallel_train(configs: List[Mapping], base_dir: str) -> None:
         post_parallel_profile_cleanup(parallel_dirs, base_dir, "train")
 
     config = configs[0]
-    exp = config["experiment_class"]()
-    with exp:
-        exp.setup_experiment(config)
+    with config["experiment_class"](config) as exp:
         exp.model.load_state_dict_from_parallel(parallel_dirs, True)
         output_dir = os.path.dirname(configs[0]["logging_config"]["output_dir"])
         if issubclass(

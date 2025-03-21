@@ -125,9 +125,7 @@ class SensorModuleTest(unittest.TestCase):
         """Check that correct features are returned by sensor module."""
         print("...parsing experiment...")
         base_config = copy.deepcopy(self.sensor_feature_test)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(base_config)
+        with MontyObjectRecognitionExperiment(base_config) as self.exp:
             self.exp.model.set_experiment_mode("train")
             pprint("...training...")
             self.exp.pre_epoch()
@@ -142,9 +140,7 @@ class SensorModuleTest(unittest.TestCase):
         """Check that correct features are returned by sensor module."""
         print("...parsing experiment...")
         base_config = copy.deepcopy(self.sensor_feature_test)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(base_config)
+        with MontyObjectRecognitionExperiment(base_config) as self.exp:
             self.exp.model.set_experiment_mode("train")
             pprint("...training...")
             self.exp.pre_epoch()
@@ -175,9 +171,7 @@ class SensorModuleTest(unittest.TestCase):
     def test_feature_change_sm(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feature_change_sensor_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             # TODO: test that only new features are given to LM
