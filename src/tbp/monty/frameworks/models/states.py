@@ -234,8 +234,8 @@ class GoalState(State):
 
     def __init__(
         self,
-        location: np.ndarray,
-        morphological_features: Dict[str, Any],
+        location: Optional[np.ndarray],
+        morphological_features: Optional[Dict[str, Any]],
         non_morphological_features: Optional[Dict[str, Any]],
         confidence: float,
         use_state: bool,
@@ -247,14 +247,13 @@ class GoalState(State):
         """Initialize a goal state.
 
         Args:
-            location: the location to move to in global/body-centric coordinates.
-              The location is near the target location on the object, but it has a
-              small offset that should place the agent/sensor at short distance from
-              the target location so that the sensor ends up at a reasonable viewing
-              distance from the target rather than on top of it.
-            morphological_features: dictionary of morphological features. Should include
-              `"pose_vectors"` (an array of shape (3,3)), and `"pose_fully_defined"`
-              (bool). The pose vectors are in the global/body-centric reference frame.
+            location: the location to move to in global/body-centric coordinates, or
+              `None` if the location is not specified as part of the goal state.
+              For example, this may be a point on an object's surface or a location
+              nearby from which a sensor would have a good view of the target point.
+            morphological_features: dictionary of morphological features or `None`.
+              For example, it may include pose vectors, whether the pose is fully
+              defined, etc.
             non_morphological_features: a dictionary containing non-morphological
               features at the target location or `None`.
             confidence: a float between 0 and 1 representing the confidence in the goal
