@@ -1,5 +1,4 @@
 # Copyright 2025 Thousand Brains Project
-# Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -7,13 +6,14 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+
 import copy
 import shutil
 import tempfile
-import unittest
 from pathlib import Path
 from pprint import pprint
 from typing import Set
+from unittest import TestCase
 
 import pytest
 
@@ -28,7 +28,10 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     NotYCBEvalObjectList,
     NotYCBTrainObjectList,
 )
-from tbp.monty.frameworks.environments import embodied_data as ed
+from tbp.monty.frameworks.environments.embodied_data import (
+    EnvironmentDataLoaderPerObject,
+    EnvironmentDataset,
+)
 from tbp.monty.frameworks.experiments import MontyExperiment, ProfileExperimentMixin
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsSinglePTZ,
@@ -36,13 +39,39 @@ from tbp.monty.simulators.habitat.configs import (
 )
 
 
+class InheritanceProfileExperimentMixinTest(TestCase):
+    @staticmethod
+    def test_leftmost_subclassing_does_not_error() -> None:
+        class GoodSubclass(ProfileExperimentMixin, MontyExperiment):
+            pass
+
+    @staticmethod
+    def test_non_leftmost_subclassing_raises_error() -> None:
+        with pytest.raises(TypeError):
+            class BadSubclass(MontyExperiment, ProfileExperimentMixin):
+                pass
+
+    @staticmethod
+    def test_missing_experiment_base_raises_error() -> None:
+        with pytest.raises(TypeError):
+            class BadSubclass(ProfileExperimentMixin):
+                pass
+
+    @staticmethod
+    def test_experiment_subclasses_are_properly_detected() -> None:
+        class SubExperiment(MontyExperiment):
+            pass
+
+        class Subclass(ProfileExperimentMixin, SubExperiment):
+            pass
+
+
 class ProfiledExperiment(ProfileExperimentMixin, MontyExperiment):
     pass
 
 
-class ProfileExperimentMixinTest(unittest.TestCase):
+class ProfileExperimentMixinTest(TestCase):
     def setUp(self):
-        """Code that gets executed before every test."""
         self.output_dir = tempfile.mkdtemp()
 
         base = dict(
@@ -52,15 +81,15 @@ class ProfileExperimentMixinTest(unittest.TestCase):
                 output_dir=self.output_dir, python_log_level="DEBUG"
             ),
             monty_config=SingleCameraMontyConfig(),
-            dataset_class=ed.EnvironmentDataset,
+            dataset_class=EnvironmentDataset,
             dataset_args=SinglePTZHabitatDatasetArgs(
                 env_init_args=EnvInitArgsSinglePTZ(data_path=None).__dict__
             ),
-            train_dataloader_class=ed.EnvironmentDataLoaderPerObject,
+            train_dataloader_class=EnvironmentDataLoaderPerObject,
             train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=NotYCBTrainObjectList().objects,
             ),
-            eval_dataloader_class=ed.EnvironmentDataLoaderPerObject,
+            eval_dataloader_class=EnvironmentDataLoaderPerObject,
             eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
                 object_names=NotYCBEvalObjectList().objects,
             ),
@@ -69,7 +98,6 @@ class ProfileExperimentMixinTest(unittest.TestCase):
         self.base_config = base
 
     def tearDown(self):
-        """Code that gets executed after every test."""
         shutil.rmtree(self.output_dir)
 
     def get_profile_files(self) -> Set[str]:
@@ -83,26 +111,20 @@ class ProfileExperimentMixinTest(unittest.TestCase):
         # returning a set so the order doesn't matter
         return set(filenames)
 
-    @staticmethod
-    def test_correct_subclassing_does_not_error() -> None:
-        # this shouldn't raise an exception at evaluation time because
-        # the mixin is the leftmost base class listed
-        class GoodSubclass(ProfileExperimentMixin, MontyExperiment):
-            pass
+    def spot_check_profile_files(self) -> None:
+        """Helper to do some basic asserts on the profile files."""
+        path = Path(self.output_dir, "profile")
+        for file in path.iterdir():
+            if not file.is_file():
+                continue
+            self.assertGreater(file.stat().st_size, 0,
+                               "Empty profile file was unexpectedly generated.")
+            with file.open("r") as f:
+                first_line = f.readline().rstrip("\n")
+                self.assertEqual(first_line,
+                                 ",func,ncalls,ccalls,tottime,cumtime,callers")
 
-    @staticmethod
-    def test_incorrect_subclassing_raises_error() -> None:
-        with pytest.raises(TypeError):
-            class BadSubclass(MontyExperiment, ProfileExperimentMixin):
-                pass
-
-    @staticmethod
-    def test_missing_experiment_base_raises_error() -> None:
-        with pytest.raises(TypeError):
-            class BadSubclass(ProfileExperimentMixin):
-                pass
-
-    def test_can_run_episode(self) -> None:
+    def test_run_episode_is_profiled(self) -> None:
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
         with ProfiledExperiment() as exp:
@@ -116,8 +138,9 @@ class ProfileExperimentMixinTest(unittest.TestCase):
             "profile-setup_experiment.csv",
             "profile-train_epoch_0_episode_0.csv",
         })
+        self.spot_check_profile_files()
 
-    def test_can_run_train_epoch(self) -> None:
+    def test_run_train_epoch_is_profiled(self) -> None:
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
         with ProfiledExperiment() as exp:
@@ -131,8 +154,9 @@ class ProfileExperimentMixinTest(unittest.TestCase):
             "profile-train_epoch_0_episode_1.csv",
             "profile-train_epoch_0_episode_2.csv",
         })
+        self.spot_check_profile_files()
 
-    def test_can_run_eval_epoch(self) -> None:
+    def test_run_eval_epoch_is_profiled(self) -> None:
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
         with ProfiledExperiment() as exp:
@@ -146,3 +170,4 @@ class ProfileExperimentMixinTest(unittest.TestCase):
             "profile-eval_epoch_0_episode_1.csv",
             "profile-eval_epoch_0_episode_2.csv",
         })
+        self.spot_check_profile_files()
