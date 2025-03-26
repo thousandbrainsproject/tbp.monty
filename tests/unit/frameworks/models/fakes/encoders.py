@@ -11,7 +11,7 @@
 import json
 from typing import Any
 
-from tests.unit.frameworks.models.fakes.classes import FakeClass
+from tests.unit.frameworks.models.fakes.encoder_classes import FakeClass
 
 
 class FakeJSONEncoder(json.JSONEncoder):

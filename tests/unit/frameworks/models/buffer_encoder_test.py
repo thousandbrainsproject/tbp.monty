@@ -7,6 +7,7 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import inspect
 import json
 import unittest
 
@@ -15,6 +16,7 @@ import quaternion
 import torch
 from scipy.spatial.transform import Rotation
 
+import tests.unit.frameworks.models.fakes.encoder_classes
 from tbp.monty.frameworks.actions.actions import (
     ActionJSONEncoder,
     LookDown,
@@ -23,7 +25,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
 )
 from tbp.monty.frameworks.models.buffer import BufferEncoder
-from tests.unit.frameworks.models.fakes.classes import (
+from tests.unit.frameworks.models.fakes.encoder_classes import (
     FakeClass,
     FakeMixin,
     FakeSubclass1,
@@ -43,14 +45,10 @@ from tests.unit.frameworks.models.fakes.encoders import (
 class BufferEncoderTest(unittest.TestCase):
     def setUp(self):
         """Ensure BufferEncoder does not contain any encoders created during tests."""
-        for cls in [
-            FakeClass,
-            FakeMixin,
-            FakeSubclass1,
-            FakeSubclass2,
-            FakeSubclass3,
-            FakeSubclass4,
-        ]:
+        for cls in inspect.getmembers(
+            tests.unit.frameworks.models.fakes.encoder_classes,
+            inspect.isclass,
+        ):
             BufferEncoder.unregister(cls)
 
     def test_register_function_encoder(self):
