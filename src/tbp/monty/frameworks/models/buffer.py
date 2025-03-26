@@ -609,6 +609,15 @@ class BufferEncoder(json.JSONEncoder):
             raise ValueError(f"Invalid encoder: {encoder}")
 
     @classmethod
+    def unregister(cls, obj_type: type) -> None:
+        """Unregister an encoder.
+
+        Args:
+            obj_type: The type to unregister the encoder for.
+        """
+        cls._encoders.pop(obj_type, None)
+
+    @classmethod
     def _find(cls, obj: Any) -> Optional[Callable]:
         """Attempt to find an appropriate encoder for an object.
 
