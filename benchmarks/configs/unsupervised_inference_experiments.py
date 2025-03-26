@@ -52,7 +52,7 @@ unsupervised_inference_distinctobj_surf_agent["logging_config"].wandb_handlers =
 unsupervised_inference_distinctobj_dist_agent = copy.deepcopy(
     randrot_noise_10distinctobj_dist_agent
 )
-unsupervised_inference_distinctobj_dist_agent["logging_config"].wandb_handlers = []
+# unsupervised_inference_distinctobj_dist_agent["logging_config"].wandb_handlers = []
 
 
 # === Benchmark Configs === #
@@ -61,7 +61,7 @@ unsupervised_inference_distinctobj_dist_agent["logging_config"].wandb_handlers =
 MONTY_CLASS = MontyForUnsupervisedEvidenceGraphMatching
 
 # Number of Eval steps
-EVAL_STEPS = 30
+EVAL_STEPS = 50
 
 # define surface agent monty configs
 surf_monty_config = copy.deepcopy(

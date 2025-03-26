@@ -7,7 +7,79 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from tbp.monty.frameworks.models.evidence_matching import MontyForEvidenceGraphMatching
+import logging
+
+import numpy as np
+
+from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
+from tbp.monty.frameworks.models.evidence_matching import (
+    EvidenceGraphLM,
+    MontyForEvidenceGraphMatching,
+)
+
+
+class FeatureAtLocationBufferWithReset(FeatureAtLocationBuffer):
+    def __init__(self):
+        super().__init__()
+        self.last_location = {}
+
+    def reset(self):
+        super().__init__()
+
+    def _add_loc_to_location_buffer(self, input_channel, location):
+        super()._add_loc_to_location_buffer(input_channel, location)
+        self.last_location[input_channel] = location
+
+    def get_last_location(self, input_channel):
+        if input_channel not in self.last_location.keys():
+            return None
+        return self.last_location[input_channel]
+
+
+class UnsupervisedEvidenceGraphLM(EvidenceGraphLM):
+    def _add_displacements(self, obs):
+        """Add displacements to the current observation.
+
+        The observation consists of features at a location. To get the displacement we
+        have to look at the previous observation stored in the buffer.
+
+        Args:
+            obs: Observations to add displacements to.
+
+        Returns:
+            Observations with displacements.
+        """
+        not_moved = True
+        for o in obs:
+            last_location = self.buffer.get_last_location(o.sender_id)
+            if last_location is not None:
+                displacement = o.location - last_location
+                not_moved = False
+            else:
+                displacement = np.zeros(3)
+            o.set_displacement(displacement)
+        return obs, not_moved
+
+    def matching_step(self, observations):
+        """Update the possible matches given an observation."""
+        buffer_data, not_moved = self._add_displacements(observations)
+        self.buffer.append(buffer_data)
+        self.buffer.append_input_states(observations)
+
+        if not_moved:
+            logging.debug("we have not moved yet.")
+        else:
+            logging.debug("performing matching step.")
+
+        self._compute_possible_matches(observations, not_moved=not_moved)
+
+        if len(self.get_possible_matches()) == 0:
+            self.set_individual_ts(terminal_state="no_match")
+
+        self.gsg.step_gsg(observations)
+
+        stats = self.collect_stats_to_save()
+        self.buffer.update_stats(stats, append=self.has_detailed_logger)
 
 
 class MontyForUnsupervisedEvidenceGraphMatching(MontyForEvidenceGraphMatching):
@@ -22,6 +94,10 @@ class MontyForUnsupervisedEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         # inside `pre_episode`. Initialization and resetting code should be separate.
         # TODO: Remove initialization logic from `pre_episode`
         self.init_pre_episode = False
+
+        # for lm in self.learning_modules:
+        #     lm.buffer = FeatureAtLocationBufferWithReset()
+        #     lm.buffer.reset()
 
     def pre_episode(self, primary_target, semantic_id_to_label=None):
         # call the parent `pre_episode` at the beginning of the experiment
@@ -45,6 +121,5 @@ class MontyForUnsupervisedEvidenceGraphMatching(MontyForEvidenceGraphMatching):
             # When the buffer is reset, displacements become None (len(buffer) <=1),
             # which causes hypothesis space to be reinitialized and resample informed
             # hypotheses.
-
-            # lm.buffer.reset()
-            # lm.gsg.reset()
+            lm.buffer.reset()
+            lm.gsg.reset()
