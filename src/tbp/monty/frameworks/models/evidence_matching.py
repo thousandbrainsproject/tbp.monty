@@ -875,9 +875,8 @@ class EvidenceGraphLM(GraphLM):
         )
         self.evidence[graph_id] = np.hstack([self.evidence[graph_id], new_evidence])
         # Update channel hypothesis mapping
-        self.channel_hypothesis_mapping[graph_id].add_channel(
-            input_channel, len(new_loc_hypotheses)
-        )
+        channel_mapper = self.channel_hypothesis_mapping[graph_id]
+        channel_mapper.add_channel(input_channel, len(new_loc_hypotheses))
 
     def _update_possible_matches(self, query):
         """Update evidence for each hypothesis instead of removing them."""
@@ -956,7 +955,7 @@ class EvidenceGraphLM(GraphLM):
             initial_possible_locations = []
             initial_possible_rotations = []
             initial_evidence = []
-            self.channel_hypothesis_mapping[graph_id] = ChannelMapper()
+            channel_mapper = ChannelMapper()
             for input_channel in input_channels_to_use:
                 (
                     initial_possible_channel_locations,
@@ -968,9 +967,7 @@ class EvidenceGraphLM(GraphLM):
                 initial_possible_locations.append(initial_possible_channel_locations)
                 initial_possible_rotations.append(initial_possible_channel_rotations)
                 initial_evidence.append(channel_evidence)
-                self.channel_hypothesis_mapping[graph_id].add_channel(
-                    input_channel, len(channel_evidence)
-                )
+                channel_mapper.add_channel(input_channel, len(channel_evidence))
             self.possible_locations[graph_id] = np.concatenate(
                 initial_possible_locations, axis=0
             )
@@ -980,6 +977,7 @@ class EvidenceGraphLM(GraphLM):
             self.evidence[graph_id] = (
                 np.concatenate(initial_evidence, axis=0) * self.present_weight
             )
+            self.channel_hypothesis_mapping[graph_id] = channel_mapper
             logging.debug(
                 f"\nhypothesis space for {graph_id}: {self.evidence[graph_id].shape[0]}"
             )
@@ -995,13 +993,12 @@ class EvidenceGraphLM(GraphLM):
                     f"No input channels observed for {graph_id} that are stored in . "
                     "the model. Not updating evidence."
                 )
+
+            channel_mapper = self.channel_hypothesis_mapping[graph_id]
             for input_channel in input_channels_to_use:
                 # If channel features are observed for the first time, initialize
                 # hypotheses for them.
-                if (
-                    input_channel
-                    not in self.channel_hypothesis_mapping[graph_id].channels
-                ):
+                if input_channel not in channel_mapper.channels:
                     # TODO H: When initializing a hypothesis for a channel later on,
                     # include most likely existing hypothesis from other channels?
                     (
@@ -1023,10 +1020,10 @@ class EvidenceGraphLM(GraphLM):
                 else:
                     # Get the observed displacement for this channel
                     displacement = displacements[input_channel]
-                    # Get the IDs in hypothesis space for this channel
-                    channel_start, channel_end = self.channel_hypothesis_mapping[
-                        graph_id
-                    ].channel_range(input_channel)
+                    # Get the IDs range in hypothesis space for this channel
+                    channel_start, channel_end = channel_mapper.channel_range(
+                        input_channel
+                    )
                     # Have to do this for all hypotheses so we don't loose the path
                     # information
                     rotated_displacements = self.possible_poses[graph_id][
