@@ -29,7 +29,8 @@ class ChannelMapper:
         """Initializes the ChannelMapper with an ordered dictionary of channel sizes.
 
         Args:
-            channel_sizes (Optional[Dict[str, int]]): Dictionary of {channel_name: size}
+            channel_sizes (Optional[Dict[str, int]]): Dictionary of
+                {channel_name: size}.
         """
         self.channel_sizes: OrderedDictType[str, int] = (
             OrderedDict(channel_sizes) if channel_sizes else OrderedDict()
@@ -75,11 +76,12 @@ class ChannelMapper:
             start += size
 
     def resize_channel_by(self, channel_name: str, value: int) -> None:
-        """Resizes the channel by a specific amount.
+        """Increases or decreases the channel by a specific amount.
 
         Args:
             channel_name (str): The name of the channel.
             value (int): The value used to modify the channel size.
+                Use a negative value to decrease the size.
 
         Raises:
             ValueError: If the channel is not found or the requested size is negative.

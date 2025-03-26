@@ -339,11 +339,8 @@ class EvidenceGraphLM(GraphLM):
         self.evidence = {}
         self.possible_locations = {}
         self.possible_poses = {}
-        # Initializes a `ChannelMapper` object for each graph_id. The mapper stores the
-        # length of each input_channel in the hypotheses space defined in the above
-        # arrays. This is used to make sure the right displacement is applied to the
-        # right hypotheses. Channel hypotheses are stored contiguously so we can just
-        # specify the lengths of each channel in an ordered data structure.
+
+        # A dictionary from graph_id to instances of `ChannelMapper`.
         self.channel_hypothesis_mapping = {}
 
         self.current_mlh = {
