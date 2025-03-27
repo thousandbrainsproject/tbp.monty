@@ -29,17 +29,18 @@ from tbp.monty.frameworks.loggers.monty_handlers import (
     BasicCSVStatsHandler,
     DetailedJSONHandler,
 )
-from tbp.monty.frameworks.models.evidence_unsupervised_inference_matching import (
-    MontyForUnsupervisedEvidenceGraphMatching,
+from tbp.monty.frameworks.models.no_reset_evidence_matching import (
+    MontyForNoResetEvidenceGraphMatching,
+    NoResetEvidenceGraphLM,
 )
 
 """
 The configs provided in this file are used for unsupervised inference experiments.
 
 These experiments are simpler versions of the benchmark experiments designed for fast
-prototyping and testing. More specifically, they are configured for less number of
-rotations, less number of objects, and no noise. These configs call
-`MontyForUnsupervisedEvidenceGraphMatching`, which removes explicit reset logic.
+prototyping and testing. More specifically, they are configured for fewer
+rotations, fewer objects, and no noise. These configs call
+`MontyForNoResetEvidenceGraphMatching`, which removes explicit reset logic.
 """
 
 # surface agent benchmark configs
@@ -52,21 +53,27 @@ unsupervised_inference_distinctobj_surf_agent["logging_config"].wandb_handlers =
 unsupervised_inference_distinctobj_dist_agent = copy.deepcopy(
     randrot_noise_10distinctobj_dist_agent
 )
-# unsupervised_inference_distinctobj_dist_agent["logging_config"].wandb_handlers = []
+unsupervised_inference_distinctobj_dist_agent["logging_config"].wandb_handlers = []
 
 
 # === Benchmark Configs === #
 
 # Monty Class to use
-MONTY_CLASS = MontyForUnsupervisedEvidenceGraphMatching
+MONTY_CLASS = MontyForNoResetEvidenceGraphMatching
+
+# LM Class to use
+LM_CLASS = NoResetEvidenceGraphLM
 
 # Number of Eval steps
-EVAL_STEPS = 50
+EVAL_STEPS = 100
 
-# define surface agent monty configs
+# define surface agent monty configs to set the classes and eval steps.
 surf_monty_config = copy.deepcopy(
     unsupervised_inference_distinctobj_surf_agent["monty_config"]
 )
+surf_monty_config.learning_module_configs["learning_module_0"][
+    "learning_module_class"
+] = LM_CLASS
 surf_monty_config.monty_class = MONTY_CLASS
 surf_monty_config.monty_args.min_eval_steps = EVAL_STEPS
 unsupervised_inference_distinctobj_surf_agent.update(
@@ -77,10 +84,13 @@ unsupervised_inference_distinctobj_surf_agent[
 ].max_eval_steps = EVAL_STEPS
 
 
-# define distant agent monty configs
+# define distant agent monty configs to set the classes and eval steps.
 dist_monty_config = copy.deepcopy(
     unsupervised_inference_distinctobj_dist_agent["monty_config"]
 )
+dist_monty_config.learning_module_configs["learning_module_0"][
+    "learning_module_class"
+] = LM_CLASS
 dist_monty_config.monty_class = MONTY_CLASS
 dist_monty_config.monty_args.min_eval_steps = EVAL_STEPS
 unsupervised_inference_distinctobj_dist_agent.update(
