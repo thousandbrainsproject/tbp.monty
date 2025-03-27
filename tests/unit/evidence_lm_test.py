@@ -805,9 +805,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
     def test_can_run_evidence_experiment(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...evaluating...")
@@ -817,9 +815,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Test 3 train and 3 eval epochs with 2 objects and 2 rotations."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             # self.exp.model.set_experiment_mode("eval")
             pprint("...training...")
             self.exp.train()
@@ -862,9 +858,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             self.exp.model.set_experiment_mode("train")
             self.exp.pre_epoch()
             self.exp.pre_episode()
@@ -888,10 +882,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Test logging when moving off the object for some steps during an episode."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_tests_off_object)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             # First episode will be used to learn object (no_match is triggered before
             # min_steps is reached and the sensor moves off the object). In the second
@@ -974,9 +965,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
     def test_evidence_time_out(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_tests_time_out)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...check time out logging...")
@@ -1039,9 +1028,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         # anymore. Setting min_steps would also avoid this probably.
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             self.exp.model.set_experiment_mode("train")
             pprint("...training...")
             self.exp.pre_epoch()
@@ -1094,9 +1081,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Test same scenario as test_fixed_actions_evidence with uniform poses."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_test_uniform_initial_poses)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...loading and checking train statistics...")
@@ -1119,9 +1104,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Test same scenario as test_fixed_actions_evidence with predefined poses."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_possible_poses_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...loading and checking train statistics...")
@@ -1701,9 +1684,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Standard evaluation setup but using only pose features."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.no_features_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...loading and checking train statistics...")
@@ -1725,9 +1706,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Test 5 evidence LMs voting with two evaluation settings."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_5lm_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
 
@@ -1765,9 +1744,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Test 5 evidence LMs voting works with lower min_lms_match setting."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_5lm_3done_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
 
@@ -1796,10 +1773,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_5lm_off_object_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
 
             self.exp.train()
@@ -1867,9 +1841,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_5lm_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             self.exp.model.set_experiment_mode("train")
             self.exp.pre_epoch()
             self.exp.pre_episode()
@@ -1893,9 +1865,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Test that 5LM setup works with BASIC logging and stores correct data."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_5lm_basic_logging)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             for key in [
@@ -1925,9 +1895,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.no_multithreding_5lm_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...loading and checking train statistics...")
@@ -1952,9 +1920,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.maxnn1_5lm_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...loading and checking train statistics...")
@@ -1976,9 +1942,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Standard evaluation setup with 5lm and bounded evidence."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.bounded_evidence_5lm_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             pprint("...loading and checking train statistics...")
@@ -2006,9 +1970,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.noise_mixin_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             # self.exp.model.set_experiment_mode("eval")
             pprint("...training...")
             self.exp.train()
@@ -2050,9 +2012,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.noisy_sensor_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             # self.exp.model.set_experiment_mode("eval")
             pprint("...training...")
             self.exp.train()
@@ -2123,10 +2083,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.two_lms_heterarchy_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-
+        with MontyObjectRecognitionExperiment(config) as self.exp:
             pprint("...training...")
             self.exp.train()
             train_stats = pd.read_csv(
