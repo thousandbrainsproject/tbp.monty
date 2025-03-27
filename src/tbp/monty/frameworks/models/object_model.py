@@ -33,9 +33,7 @@ from tbp.monty.frameworks.utils.object_model_utils import (
     remove_close_points,
     torch_graph_to_numpy,
 )
-from tbp.monty.frameworks.utils.spatial_arithmetics import (
-    apply_rf_transform_to_points,
-)
+from tbp.monty.frameworks.utils.spatial_arithmetics import apply_rf_transform_to_points
 
 
 class GraphObjectModel(ObjectModel):
@@ -366,7 +364,7 @@ class GridObjectModel(GraphObjectModel):
         # For backward compatibility. May remove later on.
         # This will be true if we load a pretrained graph. If True, grids are not
         # filled or used to constrain nodes in graph.
-        self.use_orginal_graph = False
+        self.use_original_graph = False
         self._location_tree = None
 
     # =============== Public Interface Functions ===============
@@ -471,7 +469,7 @@ class GridObjectModel(GraphObjectModel):
             # could also check if is type torch_geometric.data.data.Data
             logging.debug(f"turning graph of type {type(graph)} into numpy graph")
             graph = torch_graph_to_numpy(graph)
-        if self.use_orginal_graph:
+        if self.use_original_graph:
             # Just use pretrained graph. Do not use grids to constrain nodes.
             self._graph = graph
             self._location_tree = KDTree(
