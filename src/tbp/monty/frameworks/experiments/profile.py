@@ -14,6 +14,8 @@ import os
 import pandas as pd
 import wandb
 
+from tbp.monty.frameworks.experiments import MontyExperiment
+
 
 def make_stats_df(stats):
     """Convert cProfile.Profile() stats to dataframe.
@@ -44,6 +46,27 @@ class ProfileExperimentMixin:
 
         NOTE: make sure this class is leftmost in mixin order.
     """
+
+    def __init_subclass__(cls, **kwargs):
+        """Ensure that the mixin is used in the correct way.
+
+        We want to ensure that the mixin is always the leftmost class listed in
+        the base classes when used so that the methods defined here override the ones
+        defined in MontyExperiment or its subclasses. We also want to ensure that
+        any subclasses are actually extending MontyExperiment. This ensures that by
+        raising an error if it is not.
+
+        Raises:
+            TypeError: when the mixin isn't the leftmost base class of the subclass
+            being initialized or the base classes don't include a subclass of
+            MontyExperiment.
+        """
+        super().__init_subclass__(**kwargs)
+        if cls.__bases__[0] is not ProfileExperimentMixin:
+            raise TypeError("ProfileExperimentMixin must be leftmost base class.")
+        if not any([issubclass(b, MontyExperiment) for b in cls.__bases__]):
+            raise TypeError("ProfileExperimentMixin must be mixed in with a subclass "
+                            "of MontyExperiment.")
 
     def make_profile_dir(self):
         self.profile_dir = os.path.join(self.output_dir, "profile")
