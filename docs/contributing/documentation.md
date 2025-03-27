@@ -7,7 +7,7 @@ title: Documentation
 
 # Overview
 
-Our documentation is held in markdown files in the Monty repo under the [`/docs` folder](../../docs/). This documentation is synchronized to readme.com for viewing whenever a change is made. The order of sections, documents, and subdocuments is maintained by a hierarchy file called `/docs/hierarchy.md`. This is a fairly straightforward markdown document that is used to tell readme how to order the categories, documents and sub-documents.
+Our documentation is held in Markdown files in the Monty repo under the [`/docs` folder](https://github.com/thousandbrainsproject/tbp.monty/tree/main/docs/). This documentation is synchronized to readme.com for viewing whenever a change is made. The order of sections, documents, and subdocuments is maintained by a hierarchy file called `/docs/hierarchy.md`. This is a fairly straightforward Markdown document that is used to tell readme how to order the categories, documents and sub-documents.
 
 > 📘 Edits to the documentation need to be submitted in the form of PRs to the Monty repository.
 
@@ -41,7 +41,7 @@ You can add new words to the dictionary by adding them to `.vale/styles/config/v
 
 # Relative Links
 
-Links to other documents should use the standard markdown link syntax, and should be relative to the documents location.
+Links to other documents should use the standard Markdown link syntax, and should be relative to the documents location.
 
 ```markdown
 relative link in the same directory
@@ -55,7 +55,7 @@ These links will work even if you're on a designated version of the documentatio
 
 # Modifying a Document or Sub-Document
 
-This is the simplest flow.  To modify a document simply edit the markdown file in your forked version of the Monty repository and commit the changes by following the normal [Pull Requests](pull-requests.md) process.
+This is the simplest flow.  To modify a document simply edit the Markdown file in your forked version of the Monty repository and commit the changes by following the normal [Pull Requests](pull-requests.md) process.
 
 # Creating a Document
 
@@ -67,7 +67,7 @@ To create a new document, create the new file in the category directory, then ad
 - [some-existing-doc](/my-category/placeholder-example-doc.md)
 ```
 
-Then, create your markdown document `/docs/my-category/new-placeholder-example-doc.md` and add the appropriate Frontmatter.
+Then, create your Markdown document `/docs/my-category/new-placeholder-example-doc.md` and add the appropriate Frontmatter.
 
 ```markdown
 ---
