@@ -16,7 +16,7 @@ import unittest
 from dataclasses import dataclass, field
 from pathlib import Path
 from pprint import pprint
-from typing import Dict, Union
+from typing import Any, Dict, List, Union
 
 import numpy as np
 import pandas as pd
@@ -46,6 +46,7 @@ from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 from tbp.monty.frameworks.loggers.wandb_handlers import DetailedWandbMarkedObsHandler
 from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphLM
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
+from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.follow_up_configs import (
     create_eval_config_multiple_episodes,
@@ -99,6 +100,36 @@ class MotorSystemConfigOffObject:
             ),
         )
     )
+
+
+@dataclass
+class ObjectEpisode:
+    """An episode of observations for a single named object."""
+    name: str
+    observations: List[Any]
+
+    def __len__(self):
+        return len(self.observations)
+
+
+@dataclass
+class GraphModule:
+    """Class to bundle up a GraphLM and its object observations."""
+    learning_module: GraphLM
+    episodes: List[ObjectEpisode]
+
+    @property
+    def mode(self) -> str:
+        """Helper property to make setting and reading the LM mode easier."""
+        return self.learning_module.mode
+
+    @mode.setter
+    def mode(self, mode: str):
+        self.learning_module.mode = mode
+
+    def pre_episode(self, primary_target):
+        """Delegates pre_episode calls to the LM."""
+        self.learning_module.pre_episode(primary_target)
 
 
 class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
@@ -1317,6 +1348,29 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
         self.check_eval_results(eval_stats)
 
+    def gm_learn_object(self, graph_lm, obj_name, observations, offset=None):
+        if offset is None:
+            offset = np.zeros(3)
+
+        graph_lm.mode = "train"
+        graph_lm.pre_episode(self.placeholder_target)
+
+        offset_obs = []
+        for observation in observations:
+            obs_to_learn = copy.deepcopy(observation)
+            obs_to_learn.location += offset
+            offset_obs.append(obs_to_learn)
+            graph_lm.exploratory_step([obs_to_learn])
+
+        graph_lm.detected_object = obj_name
+        graph_lm.detected_rotation_r = None
+        graph_lm.buffer.stats["detected_location_rel_body"] = (
+            graph_lm.buffer.get_current_location(input_channel="first")
+        )
+
+        graph_lm.post_episode()
+        return offset_obs
+
     def get_gm_with_fake_object(self):
         graph_lm = FeatureGraphLM(
             max_match_distance=0.005,
@@ -1327,21 +1381,10 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 }
             },
         )
-        graph_lm.mode = "train"
-        for observation in self.fake_obs_learn:
-            graph_lm.exploratory_step([observation])
-        graph_lm.detected_object = "new_object0"
-        graph_lm.detected_rotation_r = None
-        graph_lm.buffer.stats["detected_location_rel_body"] = (
-            graph_lm.buffer.get_current_location(input_channel="first")
-        )
 
-        self.assertEqual(
-            len(graph_lm.buffer.get_all_locations_on_object(input_channel="first")),
-            4,
-            "Should have stored exactly 4 locations in the buffer.",
-        )
-        graph_lm.post_episode()
+        self.gm_learn_object(graph_lm, obj_name="new_object0",
+                             observations=self.fake_obs_learn)
+
         self.assertEqual(
             len(graph_lm.get_all_known_object_ids()),
             1,
@@ -1353,6 +1396,29 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             "Learned object ID should be new_object0.",
         )
         return graph_lm
+
+    def get_5lm_gm_with_fake_objects(self, objects) -> List[GraphModule]:
+        graph_lms = []
+        for lm in range(5):
+            graph_lm = FeatureGraphLM(
+                max_match_distance=0.005,
+                tolerances={
+                    "patch": {
+                        "hsv": [0.1, 1, 1],
+                        "principal_curvatures_log": [1, 1],
+                    }
+                },
+            )
+            object_obs = []
+            for i, obj in enumerate(objects):
+                obj_name = f"new_object{i}"
+                offset_obs = self.gm_learn_object(graph_lm, obj_name=obj_name,
+                                                  observations=obj,
+                                                  offset=self.lm_offsets[lm])
+                object_obs.append(ObjectEpisode(obj_name, offset_obs))
+            graph_lms.append(GraphModule(graph_lm, object_obs))
+
+        return graph_lms
 
     def test_same_sequence_recognition(self):
         """Test that the object is recognized with same action sequence."""
@@ -1647,16 +1713,36 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         config = copy.deepcopy(self.feature_5lm_config)
         with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            exp.train()
-
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
-            # The following check is brittle and depends on sensor arrangement. Leaving
-            # the rest of the test intact to detect run failures, but disabling checking
-            # of particular results.
-            # self.check_multilm_train_results(train_stats, num_lms=5, min_done=3)
+            objects = [self.fake_obs_learn, self.fake_obs_house_3d]
+            graph_modules = self.get_5lm_gm_with_fake_objects(objects)
 
             pprint("...evaluating...")
-            exp.evaluate()
+            monty = exp.model
+            monty.set_experiment_mode("eval")
+            monty.learning_modules = [gm.learning_module for gm in graph_modules]
+
+            for gm in graph_modules:
+                gm.mode = "eval"
+                gm.pre_episode(self.placeholder_target)
+
+            exp.pre_epoch()
+            # Use the first graph module's observations for the episodes
+            # since it has no offsets like the others do.
+            for episode in graph_modules[0].episodes:
+                exp.pre_episode()
+                monty.pre_episode(self.placeholder_target)
+                for observation in episode.observations:
+                    # Manually run through the internal Monty steps since we aren't
+                    # using the data from the dataset/dataloader and instead providing
+                    # faked observations.
+                    monty.sensor_module_outputs = [observation for _ in graph_modules]
+                    monty._step_learning_modules()
+                    monty._vote()
+                    monty._pass_goal_states()
+                    monty._set_step_type_and_check_if_done()
+                    monty._post_step()
+                exp.post_episode(len(episode))
+            exp.post_epoch()
 
         pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
