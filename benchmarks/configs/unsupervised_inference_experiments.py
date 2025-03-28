@@ -35,12 +35,40 @@ from tbp.monty.frameworks.models.no_reset_evidence_matching import (
 )
 
 """
-The configs provided in this file are used for unsupervised inference experiments.
+These configurations define the experimental setup for testing unsupervised inference
+in dynamic environments, where objects are swapped without resetting Monty's internal
+state. The goal of these experiments is to evaluate Monty's ability to dynamically
+adapt its hypotheses when the underlying object changes — without receiving any
+external signal or supervisory reset.
 
-These experiments are simpler versions of the benchmark experiments designed for fast
-prototyping and testing. More specifically, they are configured for fewer
-rotations, fewer objects, and no noise. These configs call
-`MontyForNoResetEvidenceGraphMatching`, which removes explicit reset logic.
+At a high level, these configs extend existing benchmark experiments
+(`randrot_noise_10distinctobj_{surf,dist}_agent`) but replace the core Monty
+and LM classes with variants that explicitly disable episode-based reset
+logic (`MontyForNoResetEvidenceGraphMatching` and `NoResetEvidenceGraphLM`).
+This ensures that Monty's internal state and evidence accumulation mechanisms
+persist across objects.
+
+In standard experiments, Monty's internal state is reinitialized at the start of
+each episode via a reset signal. This includes resetting evidence scores, hypothesis
+space, and internal counters. In this unsupervised inference setup, that reset signal
+is removed — allowing us to simulate real-world dynamics where object boundaries are
+not clearly marked.
+
+Here are some key characteristics of the available configs:
+    - **Evaluation-only**: No learning or graph updates occur during these runs.
+        Pre-trained object models are loaded from model_path_10distinctobj before
+        the experiment begins.
+    - **Matching phase only**: The defined Monty class runs in matching mode, without
+        switching to exploration mode.
+    - **Controlled number of steps**: Each object is shown for a fixed number of steps
+        i.e., EVAL_STEPS, after which the object is swapped.
+    - **Distant and surface agents**: We provide configs for both distant and surface
+        agents, with 10 random rotations and random noise added to observations.
+    - **Rapid prototyping**: By toggling `APPLY_RAPID_CONFIGS`, users can have more
+        control over the number of objects and rotations for quicker iteration and
+        debugging. This is intended to be removed after RFC 9 is implemented.
+
+
 """
 
 # surface agent benchmark configs
