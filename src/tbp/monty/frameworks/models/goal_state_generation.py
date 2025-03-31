@@ -71,6 +71,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         self._set_output_goal_state(self._generate_none_goal_state())
         self.parent_lm.buffer.update_stats(
             dict(
+                goal_states=[],
                 matching_step_when_output_goal_set=[],
                 goal_state_achieved=[],
             ),
@@ -432,10 +433,15 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         if self.output_goal_state is not None:
             # Subtract 1 as the goal-state was actually set (and potentially achieved)
             # on the previous step, we are simply first checking it now
-            match_step = self.parent_lm.buffer.get_num_matching_steps() - 1
 
+            match_step = self.parent_lm.buffer.get_num_matching_steps() - 1
+            self.output_goal_state.info["achieved"] = output_goal_achieved
+            self.output_goal_state.info["matching_step_when_output_goal_set"] = (
+                match_step
+            )
             self.parent_lm.buffer.update_stats(
                 dict(
+                    goal_states=self.output_goal_state,
                     matching_step_when_output_goal_set=match_step,
                     goal_state_achieved=output_goal_achieved,
                 ),
@@ -813,6 +819,16 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         target_loc = proposed_surface_loc + surface_displacement
 
+        # Extra metadata for logging. 'achieved' and
+        # 'matching_step_when_output_goal_set' should be updated at the next step.
+        # We initialize them as `None` to inidicate that no valid values have been set.
+        info = {
+            "proposed_surface_loc": proposed_surface_loc,
+            "hypothesis_to_test": target_info["hypothesis_to_test"],
+            "achieved": None,
+            "matching_step_when_output_goal_set": None,
+        }
+
         motor_goal_state = GoalState(
             location=np.array(target_loc),
             morphological_features={
@@ -834,6 +850,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             sender_id=self.parent_lm.learning_module_id,
             sender_type="GSG",
             goal_tolerances=None,
+            info=info,
         )
 
         # TODO M consider also using the below sensor-predicted state as an additional
