@@ -102,6 +102,9 @@ surf_monty_config = copy.deepcopy(
 surf_monty_config.learning_module_configs["learning_module_0"][
     "learning_module_class"
 ] = LM_CLASS
+surf_monty_config.sensor_module_configs["sensor_module_1"]["sensor_module_args"][
+    "save_raw_obs"
+] = False
 surf_monty_config.monty_class = MONTY_CLASS
 surf_monty_config.monty_args.min_eval_steps = EVAL_STEPS
 unsupervised_inference_distinctobj_surf_agent.update(
@@ -119,6 +122,9 @@ dist_monty_config = copy.deepcopy(
 dist_monty_config.learning_module_configs["learning_module_0"][
     "learning_module_class"
 ] = LM_CLASS
+dist_monty_config.sensor_module_configs["sensor_module_1"]["sensor_module_args"][
+    "save_raw_obs"
+] = False
 dist_monty_config.monty_class = MONTY_CLASS
 dist_monty_config.monty_args.min_eval_steps = EVAL_STEPS
 unsupervised_inference_distinctobj_dist_agent.update(
@@ -134,7 +140,7 @@ unsupervised_inference_distinctobj_dist_agent[
 # === Rapid Prototyping Configs === #
 
 # This enables or disables rapid prototyping configs
-APPLY_RAPID_CONFIGS = False
+APPLY_RAPID_CONFIGS = True
 
 # Changes the number of rotations per object
 NUM_ROTATIONS = 1
@@ -149,7 +155,7 @@ USE_MULTITHREADING = True
 EVAL_STEPS = 50
 
 # Controls whether to output detailed logs
-DETAILED_LOG = False
+DETAILED_LOG = True
 
 # === End Rapid Prototyping Configs === #
 

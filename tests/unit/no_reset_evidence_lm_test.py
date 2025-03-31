@@ -89,7 +89,7 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             # NOTE: could make unit tests faster by setting monty_log_level="BASIC" for
             # some of them.
             logging_config=LoggingConfig(
-                output_dir=self.output_dir, python_log_level="DEBUG"
+                output_dir=self.output_dir, python_log_level="DEBUG", monty_handlers=[]
             ),
             monty_config=PatchAndViewMontyConfig(
                 monty_class=MontyForEvidenceGraphMatching,

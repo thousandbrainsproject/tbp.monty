@@ -8,13 +8,16 @@
 # https://opensource.org/licenses/MIT.
 
 import logging
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.models.evidence_matching import (
     EvidenceGraphLM,
     MontyForEvidenceGraphMatching,
 )
+from tbp.monty.frameworks.models.states import State
 
 
 class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
@@ -95,12 +98,12 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
         super().__init__(*args, **kwargs)
         self.last_location = {}
 
-    def reset(self):
+    def reset(self) -> None:
         super().reset()
         self.evidence = {}
         self.last_location = {}
 
-    def _add_displacements(self, obs):
+    def _add_displacements(self, obs: List[State]) -> Tuple[List[State], bool]:
         """Add displacements to the current observation.
 
         For each input channel, this function computes the displacement vector by
@@ -109,10 +112,12 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
         has a recorded previous location, we assume movement has occurred.
 
         Args:
-            obs: A list of observations to which displacements will be added.
+            obs (List[State]): A list of observations to which displacements will be
+                added.
 
         Returns:
-            - obs: The list of observations, each updated with a displacement vector.
+            - obs (List[State]): The list of observations, each updated with a
+                displacement vector.
             - not_moved (bool): True if none of the observations had a prior location
               (i.e., no movement detected), False otherwise.
         """
@@ -127,8 +132,16 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
             self.last_location[o.sender_id] = o.location
         return obs, not_moved
 
-    def matching_step(self, observations):
-        """Update the possible matches given an observation."""
+    def matching_step(self, observations: List[State]) -> None:
+        """Perform the matching step given a list of observations.
+
+        This updates the displacement buffer, computes possible matches,
+        steps the goal state generator. Additionally, the stats for the current
+        step are saved in the buffer.
+
+        Args:
+            observations (List[State]): The current step's observations.
+        """
         buffer_data, not_moved = self._add_displacements(observations)
         self.buffer.append(buffer_data)
         self.buffer.append_input_states(observations)
@@ -147,3 +160,66 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
 
         stats = self.collect_stats_to_save()
         self.buffer.update_stats(stats, append=self.has_detailed_logger)
+
+    def _add_detailed_stats(
+        self, stats: Dict[str, Any], get_rotations: bool
+    ) -> Dict[str, Any]:
+        """Add detailed statistics to the logging dictionary.
+
+        This includes metrics like the max evidence score per object, the theoretical
+        limit of Monty i.e., pose error of Monty's best hypothesis on the target object)
+        , and the pose error of the MLH hypothesis on the target object.
+
+        Args:
+            stats (Dict[str, Any]): The existing statistics dictionary to augment.
+            get_rotations (bool): Flag indicating if rotation stats are needed
+                                  (currently unused in implementation).
+
+        Returns:
+            Dict[str, Any]: Updated statistics dictionary.
+        """
+        stats["max_evidence"] = {k: max(v) for k, v in self.evidence.items()}
+        stats["target_object_theoretical_limit"] = (
+            self._target_object_theoretical_limit()
+        )
+        stats["target_object_pose_error"] = self._target_object_pose_error()
+        return stats
+
+    def _target_object_theoretical_limit(self) -> float:
+        """Compute the theoretical minimum rotation error on the target object.
+
+        This considers all possible hypotheses rotations on the target object
+        and compares them to the target's rotation.
+
+        Returns:
+            float: The minimum achievable rotation error (in radians).
+        """
+        poses = self.possible_poses[self.primary_target].copy()
+        hyp_rotations = Rotation.from_matrix(poses).inv().as_quat().tolist()
+        target_rotation = Rotation.from_quat(self.primary_target_rotation_quat)
+
+        min_error = np.pi
+        for rot in hyp_rotations:
+            rot = Rotation.from_quat(rot)
+            error = (rot * target_rotation.inv()).magnitude()
+            min_error = min(min_error, error)
+
+        return min_error
+
+    def _target_object_pose_error(self) -> float:
+        """Compute the actual rotation error between predicted and target pose.
+
+        This compares the most likely hypothesis pose (based on evidence) on the target
+        object with the ground truth rotation of the target object.
+
+        Returns:
+            float: The rotation error (in radians).
+        """
+        target_rot = Rotation.from_quat(self.primary_target_rotation_quat)
+        obj_mlh_id = np.argmax(self.evidence[self.primary_target])
+        obj_rotation = Rotation.from_matrix(
+            self.possible_poses[self.primary_target][obj_mlh_id]
+        )
+
+        error = (obj_rotation * target_rot.inv()).magnitude()
+        return error
