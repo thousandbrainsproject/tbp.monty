@@ -50,7 +50,8 @@ To setup Monty, **use the conda commands below**. Make sure to `cd` into the `tb
 
 Note that the commands are slightly different depending on whether you are setting up the environment on an Intel or ARM64 architecture, and whether you are using the zsh shell or another shell.
 
-> [!NOTE] On Apple Silicon we rely on Rosetta to run Intel binaries on ARM64 and include the `softwareupdate --install-rosetta` command in the commands below.
+> [!NOTE]
+> On Apple Silicon we rely on Rosetta to run Intel binaries on ARM64 and include the `softwareupdate --install-rosetta` command in the commands below.
 
 You can create the environment with the following commands:
 
