@@ -127,8 +127,7 @@ class ProfileExperimentMixinTest(TestCase):
     def test_run_episode_is_profiled(self) -> None:
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        with ProfiledExperiment() as exp:
-            exp.setup_experiment(base_config)
+        with ProfiledExperiment(base_config) as exp:
             pprint("...training...")
             exp.model.set_experiment_mode("train")
             exp.dataloader = exp.train_dataloader
@@ -143,8 +142,7 @@ class ProfileExperimentMixinTest(TestCase):
     def test_run_train_epoch_is_profiled(self) -> None:
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        with ProfiledExperiment() as exp:
-            exp.setup_experiment(base_config)
+        with ProfiledExperiment(base_config) as exp:
             exp.model.set_experiment_mode("train")
             exp.run_epoch()
 
@@ -159,8 +157,7 @@ class ProfileExperimentMixinTest(TestCase):
     def test_run_eval_epoch_is_profiled(self) -> None:
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        with ProfiledExperiment() as exp:
-            exp.setup_experiment(base_config)
+        with ProfiledExperiment(base_config) as exp:
             exp.model.set_experiment_mode("eval")
             exp.run_epoch()
 

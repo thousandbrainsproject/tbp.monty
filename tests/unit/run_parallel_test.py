@@ -171,11 +171,11 @@ class RunParallelTest(unittest.TestCase):
         ###
         pprint("...Setting up serial experiment...")
         config = self.supervised_pre_training
-        with MontySupervisedObjectPretrainingExperiment(config) as self.exp:
-            self.exp.model.set_experiment_mode("train")
+        with MontySupervisedObjectPretrainingExperiment(config) as exp:
+            exp.model.set_experiment_mode("train")
 
             pprint("...Training in serial...")
-            self.exp.train()
+            exp.train()
 
         ###
         # Run training with run_parallel
