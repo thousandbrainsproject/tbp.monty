@@ -52,7 +52,7 @@ class MontyExperiment:
     """
 
     def __init__(self, config):
-        """Initialize the experiment based on the provide configuration.
+        """Initialize the experiment based on the provided configuration.
 
         Args:
             config: config specifying variables of the experiment.
@@ -99,7 +99,7 @@ class MontyExperiment:
         """Initialize the Monty model.
 
         Args:
-            monty_config: confguration for the Monty class.
+            monty_config: configuration for the Monty class.
             model_path: Optional model checkpoint. Can be full file name or just the
                 directory containing the "model.pt" file saved from a previous run.
 
@@ -221,7 +221,7 @@ class MontyExperiment:
         Raises:
             TypeError: If `dataset_class` is not a subclass of `EnvironmentDataset`
         """
-        # Require dataset_class to be EnvironmentDataset now, generalzie later
+        # Require dataset_class to be EnvironmentDataset now, generalize later
         if not issubclass(dataset_class, EnvironmentDataset):
             raise TypeError("dataset class must be EnvironmentDataset (for now)")
 

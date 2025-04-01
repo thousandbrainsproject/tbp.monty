@@ -539,15 +539,15 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         """Code that gets executed after every test."""
         shutil.rmtree(self.output_dir)
 
-    def test_can_set_up(self):
-        """Canary for setup_experiment.
+    def test_can_initialize(self):
+        """Canary to confirm we can initialize an experiment.
 
         This could be part of the setUp method, but it's easier to debug if something
         breaks the setup_experiment method if there's a separate test for it.
         """
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        with MontyObjectRecognitionExperiment(base_config) as exp:
+        with MontyObjectRecognitionExperiment(base_config):
             pass
 
     def test_can_run_train_episode(self):
@@ -675,7 +675,6 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_disp)
         with MontyObjectRecognitionExperiment(config) as exp:
-            # exp.model.set_experiment_mode("eval")
             pprint("...training...")
             exp.train()
             pprint("...loading and checking train statistics...")
@@ -697,7 +696,6 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_ppf)
         with MontyObjectRecognitionExperiment(config) as exp:
-            # exp.model.set_experiment_mode("eval")
             pprint("...training...")
             exp.train()
             pprint("...loading and checking train statistics...")
@@ -752,14 +750,14 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             exp.output_dir,
             "2",  # latest checkpoint
         )
-        with MontyObjectRecognitionExperiment(eval_cfg_1) as self.eval_exp_1:
+        with MontyObjectRecognitionExperiment(eval_cfg_1) as eval_exp_1:
             # TODO: update so it only runs one episode
             pprint("...evaluating (first time) ...")
-            self.eval_exp_1.evaluate()
+            eval_exp_1.evaluate()
 
         # Create detailed follow up experiment
         eval_cfg_2 = create_eval_episode_config(
-            parent_config=self.eval_exp_1.config,  # already converted to dict in exp
+            parent_config=eval_exp_1.config,  # already converted to dict in exp
             parent_config_name="eval_cfg_1",
             episode=0,
             update_run_dir=False,  # we are running direct; no run.py
@@ -784,18 +782,18 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         )
 
         # If we made it this far, we have the correct parameters. Now run the experiment
-        with MontyObjectRecognitionExperiment(eval_cfg_2) as self.eval_exp_2:
+        with MontyObjectRecognitionExperiment(eval_cfg_2) as eval_exp_2:
             pprint("...evaluating (second time) ...")
-            self.eval_exp_2.evaluate()
+            eval_exp_2.evaluate()
 
         ###
         # Check that basic csv stats are the same
         ###
         original_eval_stats_file = os.path.join(
-            self.eval_exp_1.output_dir, "eval_stats.csv"
+            eval_exp_1.output_dir, "eval_stats.csv"
         )
         new_eval_stats_file = os.path.join(
-            self.eval_exp_1.output_dir, "eval_episode_0_rerun", "eval_stats.csv"
+            eval_exp_1.output_dir, "eval_episode_0_rerun", "eval_stats.csv"
         )
 
         original_stats = pd.read_csv(original_eval_stats_file)
@@ -812,10 +810,10 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
         # TODO: Once json file i/o code has been updated, only load single episode
         original_json_file = os.path.join(
-            self.eval_exp_1.output_dir, "detailed_run_stats.json"
+            eval_exp_1.output_dir, "detailed_run_stats.json"
         )
         new_json_file = os.path.join(
-            self.eval_exp_1.output_dir,
+            eval_exp_1.output_dir,
             "eval_episode_0_rerun",
             "detailed_run_stats.json",
         )
@@ -851,13 +849,13 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             exp.output_dir,
             "2",  # latest checkpoint
         )
-        with MontyObjectRecognitionExperiment(eval_cfg_1) as self.eval_exp_1:
+        with MontyObjectRecognitionExperiment(eval_cfg_1) as eval_exp_1:
             pprint("...evaluating (first time) ...")
-            self.eval_exp_1.evaluate()
+            eval_exp_1.evaluate()
 
         # Create detailed follow up experiment
         eval_cfg_2 = create_eval_config_multiple_episodes(
-            parent_config=self.eval_exp_1.config,  # already converted to dict in exp
+            parent_config=eval_exp_1.config,  # already converted to dict in exp
             parent_config_name="eval_cfg_1",
             episodes=[
                 0,
@@ -891,18 +889,18 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         )
 
         # If we made it this far, we have the correct parameters. Now run the experiment
-        with MontyObjectRecognitionExperiment(eval_cfg_2) as self.eval_exp_2:
+        with MontyObjectRecognitionExperiment(eval_cfg_2) as eval_exp_2:
             pprint("...evaluating (second time) ...")
-            self.eval_exp_2.evaluate()
+            eval_exp_2.evaluate()
 
         ###
         # Check that basic csv stats are the same
         ###
         original_eval_stats_file = os.path.join(
-            self.eval_exp_1.output_dir, "eval_stats.csv"
+            eval_exp_1.output_dir, "eval_stats.csv"
         )
         new_eval_stats_file = os.path.join(
-            self.eval_exp_1.output_dir, "eval_rerun_episodes", "eval_stats.csv"
+            eval_exp_1.output_dir, "eval_rerun_episodes", "eval_stats.csv"
         )
 
         original_stats = pd.read_csv(original_eval_stats_file)
@@ -919,10 +917,10 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
         # TODO: Once json file i/o code has been updated, only load single episode
         original_json_file = os.path.join(
-            self.eval_exp_1.output_dir, "detailed_run_stats.json"
+            eval_exp_1.output_dir, "detailed_run_stats.json"
         )
         new_json_file = os.path.join(
-            self.eval_exp_1.output_dir,
+            eval_exp_1.output_dir,
             "eval_rerun_episodes",
             "detailed_run_stats.json",
         )
@@ -959,13 +957,13 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             exp.output_dir,
             "2",  # latest checkpoint
         )
-        with MontyObjectRecognitionExperiment(eval_cfg_1) as self.eval_exp_1:
+        with MontyObjectRecognitionExperiment(eval_cfg_1) as eval_exp_1:
             pprint("...evaluating (first time) ...")
-            self.eval_exp_1.evaluate()
+            eval_exp_1.evaluate()
 
         # Create detailed follow up experiment
         eval_cfg_2 = create_eval_config_multiple_episodes(
-            parent_config=self.eval_exp_1.config,  # already converted to dict in exp
+            parent_config=eval_exp_1.config,  # already converted to dict in exp
             parent_config_name="eval_cfg_1",
             episodes=[0],
             update_run_dir=False,  # we are running direct; no run.py
@@ -982,18 +980,18 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         )
 
         # If we made it this far, we have the correct parameters. Now run the experiment
-        with MontyObjectRecognitionExperiment(eval_cfg_2) as self.eval_exp_2:
+        with MontyObjectRecognitionExperiment(eval_cfg_2) as eval_exp_2:
             pprint("...evaluating (second time) ...")
-            self.eval_exp_2.evaluate()
+            eval_exp_2.evaluate()
 
         ###
         # Check that basic csv stats are the same
         ###
         original_eval_stats_file = os.path.join(
-            self.eval_exp_1.output_dir, "eval_stats.csv"
+            eval_exp_1.output_dir, "eval_stats.csv"
         )
         new_eval_stats_file = os.path.join(
-            self.eval_exp_1.output_dir, "eval_rerun_episodes", "eval_stats.csv"
+            eval_exp_1.output_dir, "eval_rerun_episodes", "eval_stats.csv"
         )
 
         original_stats = pd.read_csv(original_eval_stats_file)
@@ -1010,10 +1008,10 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
         # TODO: Once json file i/o code has been updated, only load single episode
         original_json_file = os.path.join(
-            self.eval_exp_1.output_dir, "detailed_run_stats.json"
+            eval_exp_1.output_dir, "detailed_run_stats.json"
         )
         new_json_file = os.path.join(
-            self.eval_exp_1.output_dir,
+            eval_exp_1.output_dir,
             "eval_rerun_episodes",
             "detailed_run_stats.json",
         )
@@ -1040,7 +1038,6 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_ppf)
         with MontyObjectRecognitionExperiment(config) as exp:
-            # exp.model.set_experiment_mode("eval")
             pprint("...training...")
             exp.train()
 
@@ -1081,7 +1078,6 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         with MontyObjectRecognitionExperiment(config) as exp:
             exp.model.set_experiment_mode("train")
             pprint("...training...")
-            # exp.train()
             for e in range(6):
                 if e % 2 == 0:
                     exp.pre_epoch()
