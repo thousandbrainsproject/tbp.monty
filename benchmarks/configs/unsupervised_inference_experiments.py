@@ -75,13 +75,11 @@ Here are some key characteristics of the available configs:
 unsupervised_inference_distinctobj_surf_agent = copy.deepcopy(
     randrot_noise_10distinctobj_surf_agent
 )
-unsupervised_inference_distinctobj_surf_agent["logging_config"].wandb_handlers = []
 
 # distant agent benchmarks configs
 unsupervised_inference_distinctobj_dist_agent = copy.deepcopy(
     randrot_noise_10distinctobj_dist_agent
 )
-unsupervised_inference_distinctobj_dist_agent["logging_config"].wandb_handlers = []
 
 
 # === Benchmark Configs === #
@@ -93,6 +91,8 @@ MONTY_CLASS = MontyForNoResetEvidenceGraphMatching
 LM_CLASS = NoResetEvidenceGraphLM
 
 # Number of Eval steps
+# This will be used for min_eval_steps and max_eval_steps
+# because we want to run the evaluation for exactly EVAL_STEPS
 EVAL_STEPS = 100
 
 # define surface agent monty configs to set the classes and eval steps.
@@ -201,7 +201,6 @@ if APPLY_RAPID_CONFIGS:
             logging_config=DetailedEvidenceLMLoggingConfig(
                 monty_handlers=monty_handlers,
                 wandb_handlers=[],
-                # python_log_level="WARNING",
             ),
             monty_config=surf_monty_config,
             eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
@@ -223,7 +222,6 @@ if APPLY_RAPID_CONFIGS:
             logging_config=DetailedEvidenceLMLoggingConfig(
                 monty_handlers=monty_handlers,
                 wandb_handlers=[],
-                # python_log_level="WARNING",
             ),
             monty_config=dist_monty_config,
             eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(

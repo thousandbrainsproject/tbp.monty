@@ -83,7 +83,6 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         """Resets buffers for LMs and SMs."""
         for lm in self.learning_modules:
             lm.buffer.reset()
-            lm.gsg.wait_factor = 1
         for sm in self.sensor_modules:
             sm.raw_observations = []
             sm.sm_properties = []
@@ -94,6 +93,7 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.last_location = {}
+        self.gsg.wait_growth_multiplier = 1
 
     def reset(self):
         super().reset()
@@ -107,6 +107,9 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
         subtracting the current location from the last observed location. It then
         updates `self.last_location` for use in the next step. If any observation
         has a recorded previous location, we assume movement has occurred.
+
+        In this unsupervised inference setting, the displacement is set to zero
+        at the beginning of the first episode when the last location is not set.
 
         Args:
             obs: A list of observations to which displacements will be added.

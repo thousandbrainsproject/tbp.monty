@@ -123,7 +123,7 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             )
         )
 
-    def assert_evidence_equal(
+    def assert_dicts_equal(
         self, d1: Dict[Any, np.ndarray], d2: Dict[Any, np.ndarray], msg: str
     ) -> None:
         """Asserts that two dictionaries containing NumPy arrays are equal.
@@ -208,7 +208,7 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
             # second episode
             self.eval_exp.pre_episode()
-            self.assert_evidence_equal(
+            self.assert_dicts_equal(
                 post_episode1_evidence,
                 self.eval_exp.model.learning_modules[0].evidence,
                 "evidence dict should not change between episodes",
