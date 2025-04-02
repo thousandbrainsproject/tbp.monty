@@ -165,21 +165,17 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
         pprint("...parsing experiment...")
         train_config = copy.deepcopy(self.evidence_config)
-        self.train_exp = MontyObjectRecognitionExperiment()
-
-        eval_config = copy.deepcopy(self.unsupervised_evidence_config)
-        self.eval_exp = MontyObjectRecognitionExperiment()
+        self.train_exp = MontyObjectRecognitionExperiment(train_config)
 
         with self.train_exp:
-            self.train_exp.setup_experiment(train_config)
-
             pprint("...training...")
             self.train_exp.model.set_experiment_mode("train")
             self.train_exp.train()
 
-        with self.eval_exp:
-            self.eval_exp.setup_experiment(eval_config)
+        eval_config = copy.deepcopy(self.unsupervised_evidence_config)
+        self.eval_exp = MontyObjectRecognitionExperiment(eval_config)
 
+        with self.eval_exp:
             # load the eval experiment with the pretrained models
             pretrained_models = self.train_exp.model.learning_modules[0].state_dict()
             self.eval_exp.model.learning_modules[0].load_state_dict(pretrained_models)
