@@ -80,6 +80,8 @@ class FeatureAtLocationBuffer(BaseBuffer):
             # module (i.e. information was actually passed from the SM to the LM); note
             # this is incremented in a way that assumes a 1:1 mapping between SMs and
             # LMs
+            "matching_step_when_output_goal_set": [],
+            "goal_state_achieved": [],
         }
         self.start_time = time.time()
 

@@ -94,6 +94,24 @@ An object is classified as detected correctly if the detected object ID is in th
 
 To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning can, by definition, not be parallelized across epochs. Therefore these experiments were run without multiprocessing on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
 
+## Unsupervised Inference
+
+Most benchmark experiments assume a clean separation between objects, and a clearly defined episode structure — where each episode corresponds to a single object, and resets allow Monty to reinitialize its internal states. However, in real-world settings, such boundaries don't exist. Objects may be swapped, occluded, or even combined (e.g., a logo on a mug), and an agent must continuously perceive and adapt without external signals indicating when or whether an object has changed. This capability is essential for scaling to dynamic, real-world environments where compositionality, occlusion, and object transitions are the norm rather than the exception.
+
+To simulate such a scenario, we designed an experimental setup that **swaps the current object without resetting Monty's internal state**. The goal is to test whether Monty can correctly abandon the old hypothesis and begin accumulating evidence on the new object — all without any explicit supervisory signal or internal reset. Unlike typical episodes where Monty’s internal state — including its learning modules, sensory modules, buffers, and hypothesis space — is reinitialized at object boundaries, here the model must dynamically adapt based solely on its stream of observations and internal evidence updates.
+
+More specifically, these experiments are run purely in evaluation mode (i.e., pre-trained object graphs are loaded before the experiment begins) with no training or graph updates taking place. Monty stays in the matching phase, continuously updating its internal hypotheses based on sensory observations. For each object, the model performs a fixed number of matching steps before the object is swapped. At the end of each segment, we evaluate whether Monty’s most likely hypothesis correctly identifies the current object. All experiments are performed on 10 distinct objects from the YCB dataset and 10 random rotations for each object. Random noise is added to sensory observations.
+
+## Results
+
+!table[../../benchmarks/results/ycb_unsupervised_inference.csv]
+
+> [!WARNING]
+> 
+> These benchmark experiments track the progress on [RFC 9: Hypotheses resampling](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0009_hypotheses_resampling.md).
+> 
+> We do not expect these experiments to have good performance until the RFC is implemented and [issue #214](https://github.com/thousandbrainsproject/tbp.monty/issues/214) is resolved.
+
 # Monty-Meets-World
 
 The following experiments evaluate a Monty model on real-world images derived from the RGBD camera of an iPad/iPhone device. The models that the Monty system leverages are based on photogrammetry scans of the same objects in the real world, and Monty learns on these in the simulated Habitat environment; this approach is taken because currently, we cannot track the movements of the iPad through space, and so Monty cannot leverage its typical sensorimotor learning to build the internal models.

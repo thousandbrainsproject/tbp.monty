@@ -27,6 +27,7 @@ NAMES = list()
 
 NAMES.extend(FOLLOW_UP_NAMES)
 
+
 @dataclass
 class MontyWorldExperiments:
     world_image_from_stream_on_scanned_model: dict
@@ -87,6 +88,15 @@ class YcbExperiments:
 
 
 NAMES.extend(field.name for field in fields(YcbExperiments))
+
+
+@dataclass
+class UnsupervisedInferenceExperiments:
+    unsupervised_inference_distinctobj_surf_agent: dict
+    unsupervised_inference_distinctobj_dist_agent: dict
+
+
+NAMES.extend(field.name for field in fields(UnsupervisedInferenceExperiments))
 
 
 @dataclass
