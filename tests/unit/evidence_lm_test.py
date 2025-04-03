@@ -805,36 +805,32 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
     def test_can_run_evidence_experiment(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
     def test_fixed_actions_evidence(self):
         """Test 3 train and 3 eval epochs with 2 objects and 2 rotations."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             # self.exp.model.set_experiment_mode("eval")
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...loading and checking train statistics...")
 
             train_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "train_stats.csv")
+                os.path.join(exp.output_dir, "train_stats.csv")
             )
             self.check_train_results(train_stats)
 
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
 
         self.check_eval_results(eval_stats)
         for key in [
@@ -845,11 +841,11 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         ]:
             self.assertIn(
                 key,
-                self.exp.model.learning_modules[0].buffer.stats.keys(),
+                exp.model.learning_modules[0].buffer.stats.keys(),
                 f"{key} should be stored in buffer when using DETAILED logging.",
             )
         self.assertGreater(
-            len(self.exp.model.learning_modules[0].buffer.stats["possible_matches"]),
+            len(exp.model.learning_modules[0].buffer.stats["possible_matches"]),
             1,
             "When using detailed logging we should store matches at every steps.",
         )
@@ -862,22 +858,20 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-            self.exp.model.set_experiment_mode("train")
-            self.exp.pre_epoch()
-            self.exp.pre_episode()
+        with MontyObjectRecognitionExperiment(config) as exp:
+            exp.model.set_experiment_mode("train")
+            exp.pre_epoch()
+            exp.pre_episode()
             pprint("...removing all objects...")
-            self.exp.dataset.env._env.remove_all_objects()
-            self.exp.dataloader.reset_agent()
+            exp.dataset.env._env.remove_all_objects()
+            exp.dataloader.reset_agent()
             pprint("...training...")
-            last_step = self.exp.run_episode_steps()
-            self.exp.post_episode(last_step)
-            self.exp.post_epoch()
+            last_step = exp.run_episode_steps()
+            exp.post_episode(last_step)
+            exp.post_epoch()
 
         pprint("...checking run stats...")
-        train_stats = pd.read_csv(os.path.join(self.exp.output_dir, "train_stats.csv"))
+        train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
         self.assertEqual(
             train_stats["primary_performance"][0],
             "patch_off_object",
@@ -888,10 +882,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Test logging when moving off the object for some steps during an episode."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_tests_off_object)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
             # First episode will be used to learn object (no_match is triggered before
             # min_steps is reached and the sensor moves off the object). In the second
@@ -902,16 +893,16 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             # a full circle and arrives on the other side of the object. From there
             # we can continue to try and recognize the object.
 
-            self.exp.train()
+            exp.train()
 
         self.assertEqual(
             len(
-                self.exp.model.learning_modules[0].buffer.get_all_locations_on_object(
+                exp.model.learning_modules[0].buffer.get_all_locations_on_object(
                     input_channel="patch"
                 )
             ),
             len(
-                self.exp.model.learning_modules[0].buffer.get_all_features_on_object()[
+                exp.model.learning_modules[0].buffer.get_all_features_on_object()[
                     "patch"
                 ]["pose_vectors"]
             ),
@@ -919,12 +910,12 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         )
         self.assertEqual(
             sum(
-                self.exp.model.learning_modules[0].buffer.get_all_features_on_object()[
+                exp.model.learning_modules[0].buffer.get_all_features_on_object()[
                     "patch"
                 ]["on_object"]
             ),
             len(
-                self.exp.model.learning_modules[0].buffer.get_all_features_on_object()[
+                exp.model.learning_modules[0].buffer.get_all_features_on_object()[
                     "patch"
                 ]["on_object"]
             ),
@@ -934,12 +925,12 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         # there should only be 8 observations stored for the 12 matching steps
         # and all of them should be on the object.
         num_matching_steps = len(
-            self.exp.model.learning_modules[0].buffer.stats["possible_matches"]
+            exp.model.learning_modules[0].buffer.stats["possible_matches"]
         )
         self.assertEqual(
             num_matching_steps,
             sum(
-                self.exp.model.learning_modules[0].buffer.features["patch"][
+                exp.model.learning_modules[0].buffer.features["patch"][
                     "on_object"
                 ][:num_matching_steps]
             ),
@@ -948,24 +939,24 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         )
         # Since min_train_steps==12 we should have taken 13 steps.
         self.assertEqual(
-            self.exp.model.matching_steps,
+            exp.model.matching_steps,
             13,
             "Did not take correct amount of matching steps. Perhaps "
             "process_all_obs or min_train_steps was not applied correctly.",
         )
         self.assertGreater(
-            self.exp.model.episode_steps,
-            self.exp.model.matching_steps + 80,
+            exp.model.episode_steps,
+            exp.model.matching_steps + 80,
             "number of episode steps should be larger than matching steps + "
             "exploration steps since we don't count off object observations as"
             "as matching steps (but do count them as episode steps).",
         )
 
         self.assertGreater(
-            self.exp.model.learning_modules[0].buffer.stats["current_mlh"][-1][
+            exp.model.learning_modules[0].buffer.stats["current_mlh"][-1][
                 "evidence"
             ],
-            self.exp.model.learning_modules[0].buffer.stats["current_mlh"][6][
+            exp.model.learning_modules[0].buffer.stats["current_mlh"][6][
                 "evidence"
             ],
             "evidence should have increased after moving back on the object.",
@@ -974,14 +965,12 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
     def test_evidence_time_out(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_tests_time_out)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...check time out logging...")
             train_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "train_stats.csv")
+                os.path.join(exp.output_dir, "train_stats.csv")
             )
             self.assertEqual(
                 train_stats["individual_ts_performance"][0],
@@ -1006,22 +995,22 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 "unknown object should be logged as confused_mlh at time out",
             )
             self.assertEqual(
-                len(self.exp.model.learning_modules[0].get_all_known_object_ids()),
+                len(exp.model.learning_modules[0].get_all_known_object_ids()),
                 1,
                 "No new objects should be added to memory after time out.",
             )
             self.assertLessEqual(
-                self.exp.model.learning_modules[0]
+                exp.model.learning_modules[0]
                 .get_graph("new_object0", input_channel="first")
                 .x.shape[1],
                 32,  # max_train_steps + exploratory_steps
                 "No new points should be added to an existing graph after time out.",
             )
 
-            self.exp.evaluate()
+            exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
         for i in range(3):
             self.assertEqual(
                 eval_stats["individual_ts_performance"][i],
@@ -1039,24 +1028,22 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         # anymore. Setting min_steps would also avoid this probably.
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-            self.exp.model.set_experiment_mode("train")
+        with MontyObjectRecognitionExperiment(config) as exp:
+            exp.model.set_experiment_mode("train")
             pprint("...training...")
-            self.exp.pre_epoch()
+            exp.pre_epoch()
             # Overwrite target with a false name to test confused logging.
             for e in range(4):
-                self.exp.pre_episode()
-                self.exp.model.primary_target = str(e)
-                for lm in self.exp.model.learning_modules:
+                exp.pre_episode()
+                exp.model.primary_target = str(e)
+                for lm in exp.model.learning_modules:
                     lm.primary_target = str(e)
-                last_step = self.exp.run_episode_steps()
-                self.exp.post_episode(last_step)
-            self.exp.post_epoch()
+                last_step = exp.run_episode_steps()
+                exp.post_episode(last_step)
+            exp.post_epoch()
 
         pprint("...checking run stats...")
-        train_stats = pd.read_csv(os.path.join(self.exp.output_dir, "train_stats.csv"))
+        train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
         for i in [0, 1]:
             self.assertEqual(
                 train_stats["primary_performance"][i],
@@ -1094,24 +1081,22 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Test same scenario as test_fixed_actions_evidence with uniform poses."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_test_uniform_initial_poses)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...loading and checking train statistics...")
 
             train_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "train_stats.csv")
+                os.path.join(exp.output_dir, "train_stats.csv")
             )
             print(train_stats)
             self.check_train_results(train_stats)
 
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
 
         self.check_eval_results(eval_stats)
 
@@ -1119,24 +1104,22 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Test same scenario as test_fixed_actions_evidence with predefined poses."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_possible_poses_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...loading and checking train statistics...")
 
             train_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "train_stats.csv")
+                os.path.join(exp.output_dir, "train_stats.csv")
             )
             print(train_stats)
             self.check_train_results(train_stats)
 
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
 
         self.check_eval_results(eval_stats)
 
@@ -1701,23 +1684,21 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Standard evaluation setup but using only pose features."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.no_features_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...loading and checking train statistics...")
 
             train_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "train_stats.csv")
+                os.path.join(exp.output_dir, "train_stats.csv")
             )
             self.check_train_results(train_stats)
 
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
 
         self.check_eval_results(eval_stats)
 
@@ -1725,39 +1706,36 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Test 5 evidence LMs voting with two evaluation settings."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_5lm_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
 
             train_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "train_stats.csv")
+                os.path.join(exp.output_dir, "train_stats.csv")
             )
             print(train_stats)
             self.check_train_results(train_stats, num_lms=5)
 
             pprint("...evaluating...")
-            # not running self.exp.evaluate here to avoid exp.close being called.
-            self.exp.logger_handler.pre_eval(self.exp.logger_args)
-            self.exp.model.set_experiment_mode("eval")
-            for _ in range(self.exp.n_eval_epochs):
-                self.exp.run_epoch()
-            self.exp.logger_handler.post_eval(self.exp.logger_args)
+            exp.logger_handler.pre_eval(exp.logger_args)
+            exp.model.set_experiment_mode("eval")
+            for _ in range(exp.n_eval_epochs):
+                exp.run_epoch()
+            exp.logger_handler.post_eval(exp.logger_args)
             pprint("...loading and checking eval statistics...")
             eval_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "eval_stats.csv")
+                os.path.join(exp.output_dir, "eval_stats.csv")
             )
             self.check_eval_results(eval_stats, num_lms=5)
 
             pprint("checking that evaluation also works with larger mmd.")
-            for lm in self.exp.model.learning_modules:
+            for lm in exp.model.learning_modules:
                 lm.max_match_distance = 0.01
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
 
         self.check_eval_results(eval_stats, num_lms=5)
 
@@ -1765,24 +1743,22 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Test 5 evidence LMs voting works with lower min_lms_match setting."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_5lm_3done_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
 
             train_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "train_stats.csv")
+                os.path.join(exp.output_dir, "train_stats.csv")
             )
             self.check_multilm_train_results(train_stats, num_lms=5, min_done=3)
             # Same as in previous test we make it a bit more difficult during eval
-            for lm in self.exp.model.learning_modules:
+            for lm in exp.model.learning_modules:
                 lm.max_match_distance = 0.01
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
 
         self.check_multilm_eval_results(eval_stats, num_lms=5, min_done=3)
 
@@ -1796,15 +1772,12 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_5lm_off_object_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
 
-            self.exp.train()
+            exp.train()
             train_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "train_stats.csv")
+                os.path.join(exp.output_dir, "train_stats.csv")
             )
             # Just checking that objects are still recognized correctly when moving off
             # the object.
@@ -1824,10 +1797,10 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                     " overall steps since some steps were off the object.",
                 )
 
-            self.exp.evaluate()
+            exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
 
         self.check_eval_results(eval_stats, num_lms=5)
 
@@ -1867,22 +1840,20 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_5lm_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-            self.exp.model.set_experiment_mode("train")
-            self.exp.pre_epoch()
-            self.exp.pre_episode()
+        with MontyObjectRecognitionExperiment(config) as exp:
+            exp.model.set_experiment_mode("train")
+            exp.pre_epoch()
+            exp.pre_episode()
             pprint("...removing all objects...")
-            self.exp.dataset.env._env.remove_all_objects()
-            self.exp.dataloader.reset_agent()
+            exp.dataset.env._env.remove_all_objects()
+            exp.dataloader.reset_agent()
             pprint("...training...")
-            last_step = self.exp.run_episode_steps()
-            self.exp.post_episode(last_step)
-            self.exp.post_epoch()
+            last_step = exp.run_episode_steps()
+            exp.post_episode(last_step)
+            exp.post_epoch()
 
         pprint("...checking run stats...")
-        train_stats = pd.read_csv(os.path.join(self.exp.output_dir, "train_stats.csv"))
+        train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
         self.assertEqual(
             train_stats["primary_performance"][0],
             "patch_off_object",
@@ -1893,11 +1864,9 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Test that 5LM setup works with BASIC logging and stores correct data."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_5lm_basic_logging)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             for key in [
                 "possible_rotations",
                 "possible_locations",
@@ -1906,13 +1875,13 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             ]:
                 self.assertNotIn(
                     key,
-                    self.exp.model.learning_modules[0].buffer.stats.keys(),
+                    exp.model.learning_modules[0].buffer.stats.keys(),
                     f"{key} should not be stored in buffer when using "
                     f"BASIC logging.",
                 )
             self.assertEqual(
                 len(
-                    self.exp.model.learning_modules[0].buffer.stats["possible_matches"]
+                    exp.model.learning_modules[0].buffer.stats["possible_matches"]
                 ),
                 1,
                 "When using basic logging we don't append stats for every step.",
@@ -1925,23 +1894,21 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.no_multithreding_5lm_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...loading and checking train statistics...")
 
             train_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "train_stats.csv")
+                os.path.join(exp.output_dir, "train_stats.csv")
             )
             self.check_train_results(train_stats, num_lms=5)
 
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
 
         self.check_eval_results(eval_stats, num_lms=5)
 
@@ -1952,23 +1919,21 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.maxnn1_5lm_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...loading and checking train statistics...")
 
             train_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "train_stats.csv")
+                os.path.join(exp.output_dir, "train_stats.csv")
             )
             self.check_train_results(train_stats, num_lms=5)
 
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
 
         self.check_eval_results(eval_stats, num_lms=5)
 
@@ -1976,23 +1941,21 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """Standard evaluation setup with 5lm and bounded evidence."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.bounded_evidence_5lm_evidence)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...loading and checking train statistics...")
 
             train_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "train_stats.csv")
+                os.path.join(exp.output_dir, "train_stats.csv")
             )
             self.check_train_results(train_stats, num_lms=5)
 
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
 
         self.check_eval_results(eval_stats, num_lms=5)
 
@@ -2006,16 +1969,14 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.noise_mixin_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             # self.exp.model.set_experiment_mode("eval")
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...loading and checking train statistics...")
 
             train_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "train_stats.csv")
+                os.path.join(exp.output_dir, "train_stats.csv")
             )
             # NOTE: This might fail if the model becomes more noise robust or
             # better able to deal with few incomplete objects in memory.
@@ -2028,10 +1989,10 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 )
 
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
         for i in range(3):
             self.assertEqual(
                 eval_stats["primary_performance"][i],
@@ -2050,16 +2011,14 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.noisy_sensor_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             # self.exp.model.set_experiment_mode("eval")
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...loading and checking train statistics...")
 
             train_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "train_stats.csv")
+                os.path.join(exp.output_dir, "train_stats.csv")
             )
             # NOTE: This might fail if the model becomes more noise robust or
             # better able to deal with few incomplete objects in memory.
@@ -2072,10 +2031,10 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 )
 
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(self.exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
         for i in range(3):
             self.assertEqual(
                 eval_stats["primary_performance"][i],
@@ -2093,7 +2052,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         LM0 can store smaller models at a higher resolution and receives higher
         frequency input from SM0.
         LM1 can store larger models and a lower resolution and receives lower frequency
-        input from SM1. It also recieves input from LM0 once this one has a high
+        input from SM1. It also receives input from LM0 once this one has a high
         confidence hypothesis.
 
         What happens in this experiment:
@@ -2102,12 +2061,12 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         Episode 5: LM0 recognizes cubeSolid (new_object0) and updates its memory. LM1
             reaches a time out and does not update its memory (but has correct mlh).
         Evaluation:
-            In each episde LM0 first recognizes the correct object. Since LM1 gets such
+            In each episode LM0 first recognizes the correct object. Since LM1 gets such
             low frequency input and stores very few points in its models it reaches
             no_match.
 
         NOTE: LM1 usually reaches no_match even if it knows about the object already. I
-        think this is because for the first few observations it does not store feaures
+        think this is because for the first few observations it does not store features
         from LM0 yet. This would be different with a longer exploration phase that
         builds a full model of the object.
 
@@ -2123,24 +2082,21 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.two_lms_heterarchy_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             train_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "train_stats.csv")
+                os.path.join(exp.output_dir, "train_stats.csv")
             )
             self.check_hierarchical_lm_train_results(train_stats)
 
-            models = load_models_from_dir(self.exp.output_dir)
+            models = load_models_from_dir(exp.output_dir)
             self.check_hierarchical_models(models)
 
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
             eval_stats = pd.read_csv(
-                os.path.join(self.exp.output_dir, "eval_stats.csv")
+                os.path.join(exp.output_dir, "eval_stats.csv")
             )
             self.check_hierarchical_lm_eval_results(eval_stats)
 

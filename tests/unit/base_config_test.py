@@ -79,59 +79,49 @@ class BaseConfigTest(unittest.TestCase):
         """
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        self.exp = MontyExperiment()
-        with self.exp:
-            self.exp.setup_experiment(base_config)
+        with MontyExperiment(base_config) as exp:
+            pass
 
     # @unittest.skip("debugging")
     def test_can_run_episode(self):
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        self.exp = MontyExperiment()
-        with self.exp:
-            self.exp.setup_experiment(base_config)
+        with MontyExperiment(base_config) as exp:
             pprint("...training...")
-            self.exp.model.set_experiment_mode("train")
-            self.exp.dataloader = self.exp.train_dataloader
-            self.exp.run_episode()
+            exp.model.set_experiment_mode("train")
+            exp.dataloader = exp.train_dataloader
+            exp.run_episode()
 
     # @unittest.skip("speed")
     def test_can_run_train_epoch(self):
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        self.exp = MontyExperiment()
-        with self.exp:
-            self.exp.setup_experiment(base_config)
-            self.exp.model.set_experiment_mode("train")
-            self.exp.run_epoch()
+        with MontyExperiment(base_config) as exp:
+            exp.model.set_experiment_mode("train")
+            exp.run_epoch()
 
     # @unittest.skip("debugging")
     def test_can_run_eval_epoch(self):
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        self.exp = MontyExperiment()
-        with self.exp:
-            self.exp.setup_experiment(base_config)
-            self.exp.model.set_experiment_mode("eval")
-            self.exp.run_epoch()
+        with MontyExperiment(base_config) as exp:
+            exp.model.set_experiment_mode("eval")
+            exp.run_epoch()
 
     # @unittest.skip("debugging")
     def test_observation_unpacking(self):
         """Make sure this test uses very small n_actions_per_epoch for speed."""
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        self.exp = MontyExperiment()
-        with self.exp:
-            self.exp.setup_experiment(base_config)
-
+        with MontyExperiment(base_config) as exp:
             monty_module_sids = set(
-                [s.sensor_module_id for s in self.exp.model.sensor_modules]
+                [s.sensor_module_id for s in exp.model.sensor_modules]
             )
 
             # Handle the training loop manually for this interim test
             max_count = 5
             count = 0
-            for observation in self.exp.train_dataloader:
+            for observation in exp.train_dataloader:
                 agent_keys = set(observation.keys())
                 sensor_keys = []
                 for agent in agent_keys:
@@ -147,8 +137,8 @@ class BaseConfigTest(unittest.TestCase):
                     break
 
             # Verify we can skip the loop and just run a single
-            for s in self.exp.model.sensor_modules:
-                s_obs = self.exp.model.get_observations(observation, s.sensor_module_id)
+            for s in exp.model.sensor_modules:
+                s_obs = exp.model.get_observations(observation, s.sensor_module_id)
                 feature = s.step(s_obs)
                 self.assertIn(
                     "rgba",
@@ -168,25 +158,19 @@ class BaseConfigTest(unittest.TestCase):
         self.assertDictEqual(config_1, self.base_config)
 
         pprint("...parsing experiment in save and load test...")
-        self.exp = MontyExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config_1)
-
+        with MontyExperiment(config_1) as exp:
             # change something about exp.state that will be saved via state_dict
             new_attr = False
-            self.exp.model.learning_modules[0].test_attr_2 = new_attr
+            exp.model.learning_modules[0].test_attr_2 = new_attr
 
-            self.exp.save_state_dict()
-            prev_model = self.exp.model
+            exp.save_state_dict()
+            prev_model = exp.model
 
         pprint(f"\n\n\n loading second experiment\n\n\n")
         # checkpoint_dir = self.exp.experiment_args.output_dir
         config_2 = copy.deepcopy(self.base_config)
-        config_2["experiment_args"].model_name_or_path = self.exp.output_dir
-        exp_2 = MontyExperiment()
-        with exp_2:
-            exp_2.setup_experiment(config_2)
-
+        config_2["experiment_args"].model_name_or_path = exp.output_dir
+        with MontyExperiment(config_2) as exp_2:
             # Test 1: untouched attributes are saved and loaded correctly
             prev_attr_1_value = prev_model.learning_modules[0].test_attr_1
             new_attr_1_value = exp_2.model.learning_modules[0].test_attr_1
@@ -197,7 +181,7 @@ class BaseConfigTest(unittest.TestCase):
             self.assertEqual(new_lm.test_attr_2, new_attr, "attrs did not match")
 
             # Use explicit load_state_dict function instead of setup_experiment
-            exp_2.load_state_dict(self.exp.output_dir)
+            exp_2.load_state_dict(exp.output_dir)
 
             # Test 1: untouched attributes are saved and loaded correctly
             prev_attr_1_value = prev_model.learning_modules[0].test_attr_1
@@ -211,17 +195,14 @@ class BaseConfigTest(unittest.TestCase):
     def test_logging_debug_level(self):
         """Check that logs go to a file, we can load them, and they have basic info."""
         base_config = copy.deepcopy(self.base_config)
-        self.exp = MontyExperiment()
-        with self.exp:
-            self.exp.setup_experiment(base_config)
-
+        with MontyExperiment(base_config) as exp:
             # Add some stuff to the logs, verify it shows up
             info_message = "INFO is in the log"
             warning_message = "WARNING is in the log"
             logging.info(info_message)
             logging.warning(warning_message)
 
-            with open(os.path.join(self.exp.output_dir, "log.txt"), "r") as f:
+            with open(os.path.join(exp.output_dir, "log.txt"), "r") as f:
                 log = f.read()
 
             self.assertTrue(info_message in log)
@@ -231,17 +212,14 @@ class BaseConfigTest(unittest.TestCase):
         """Check that if we set logging level to info, debug logs do not show up."""
         base_config = copy.deepcopy(self.base_config)
         base_config["logging_config"].python_log_level = logging.INFO
-        self.exp = MontyExperiment()
-        with self.exp:
-            self.exp.setup_experiment(base_config)
-
+        with MontyExperiment(base_config) as exp:
             # Add some stuff to the logs, verify it shows up
             debug_message = "DEBUG is in the log"
             warning_message = "WARNING is in the log"
             logging.debug(debug_message)
             logging.warning(warning_message)
 
-            with open(os.path.join(self.exp.output_dir, "log.txt"), "r") as f:
+            with open(os.path.join(exp.output_dir, "log.txt"), "r") as f:
                 log = f.read()
 
             self.assertTrue(debug_message not in log)

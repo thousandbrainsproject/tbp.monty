@@ -451,86 +451,72 @@ class PolicyTest(unittest.TestCase):
     def test_can_run_informed_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.base_dist_agent_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_spiral_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.spiral_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
             # TODO: test that no two locations are the same
-            self.exp.train()
+            exp.train()
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_dist_agent_hypo_driven_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.dist_agent_hypo_driven_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_surface_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.base_surf_agent_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_curv_informed_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.curv_informed_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_surf_agent_hypo_driven_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.surf_agent_hypo_driven_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_multi_lm_dist_agent_hypo_driven_policy(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.dist_agent_hypo_driven_multi_lm_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
     # ==== MORE INVOLVED TESTS OF ACTION POLICIES ====
 
@@ -596,19 +582,17 @@ class PolicyTest(unittest.TestCase):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.poor_initial_view_dist_agent_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-            self.exp.model.set_experiment_mode("train")
-            self.exp.pre_epoch()
-            self.exp.pre_episode()
+        with MontyObjectRecognitionExperiment(config) as exp:
+            exp.model.set_experiment_mode("train")
+            exp.pre_epoch()
+            exp.pre_episode()
 
             pprint("...stepping through observations...")
 
             # Check the initial view
-            observation = next(self.exp.dataloader)
+            observation = next(exp.dataloader)
             # TODO M remove the following train-wreck during refactor
-            view = observation[self.exp.model.motor_system.agent_id]["view_finder"]
+            view = observation[exp.model.motor_system.agent_id]["view_finder"]
             semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
             perc_on_target_obj = get_perc_on_obj_semantic(semantic, semantic_id=1)
 
@@ -647,24 +631,22 @@ class PolicyTest(unittest.TestCase):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.poor_initial_view_surf_agent_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-            self.exp.model.set_experiment_mode("train")
-            self.exp.pre_epoch()
-            self.exp.pre_episode()
+        with MontyObjectRecognitionExperiment(config) as exp:
+            exp.model.set_experiment_mode("train")
+            exp.pre_epoch()
+            exp.pre_episode()
 
             pprint("...stepping through observations...")
 
             # Get a first step to allow the surface agent to touch the object
-            observation_pre_touch = next(self.exp.dataloader)
-            self.exp.model.step(observation_pre_touch)
+            observation_pre_touch = next(exp.dataloader)
+            exp.model.step(observation_pre_touch)
 
             # Check initial view post touch-attempt
-            observation_post_touch = next(self.exp.dataloader)
+            observation_post_touch = next(exp.dataloader)
 
             # TODO M remove the following train-wreck during refactor
-            view = observation_post_touch[self.exp.model.motor_system.agent_id][
+            view = observation_post_touch[exp.model.motor_system.agent_id][
                 "view_finder"
             ]
             dict_config = config_to_dict(config)
@@ -703,23 +685,21 @@ class PolicyTest(unittest.TestCase):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.poor_initial_view_multi_object_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
 
             # Manually go through evaluation (i.e. methods in .evaluate()
             # and run_epoch())
-            self.exp.model.set_experiment_mode("eval")
-            self.exp.pre_epoch()
-            self.exp.pre_episode()
+            exp.model.set_experiment_mode("eval")
+            exp.pre_epoch()
+            exp.pre_episode()
 
             pprint("...stepping through observations...")
             # Check the initial view
-            observation = next(self.exp.dataloader)
+            observation = next(exp.dataloader)
             # TODO M remove the following train-wreck during refactor
-            view = observation[self.exp.model.motor_system.agent_id]["view_finder"]
+            view = observation[exp.model.motor_system.agent_id]["view_finder"]
             semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
             perc_on_target_obj = get_perc_on_obj_semantic(semantic, semantic_id=1)
 
@@ -767,26 +747,24 @@ class PolicyTest(unittest.TestCase):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_action_distant_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-            self.exp.model.set_experiment_mode("train")
+        with MontyObjectRecognitionExperiment(config) as exp:
+            exp.model.set_experiment_mode("train")
             pprint("...training...")
-            self.exp.pre_epoch()
+            exp.pre_epoch()
 
             # Only do a single episode
-            self.exp.pre_episode()
+            exp.pre_episode()
 
             pprint("...stepping through observations...")
             # Manually step through part of run_episode function
-            for loader_step, observation in enumerate(self.exp.dataloader):
-                self.exp.model.step(observation)
+            for loader_step, observation in enumerate(exp.dataloader):
+                exp.model.step(observation)
 
-                last_action = self.exp.model.motor_system.last_action()
+                last_action = exp.model.motor_system.last_action()
 
                 if loader_step == 3:
                     stored_action = last_action
-                    assert not self.exp.model.learning_modules[
+                    assert not exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), "Should be off object"
 
@@ -863,7 +841,7 @@ class PolicyTest(unittest.TestCase):
                             -stored_action.forward_distance,
                             should_have_moved_back,
                         )
-                    assert self.exp.model.learning_modules[
+                    assert exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), "Should be back on object"
                     break  # Don't go into exploratory mode
@@ -879,30 +857,28 @@ class PolicyTest(unittest.TestCase):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_action_surface_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-            self.exp.model.set_experiment_mode("train")
+        with MontyObjectRecognitionExperiment(config) as exp:
+            exp.model.set_experiment_mode("train")
             pprint("...training...")
-            self.exp.pre_epoch()
+            exp.pre_epoch()
 
             # Only do a single episode
-            self.exp.pre_episode()
+            exp.pre_episode()
 
             pprint("...stepping through observations...")
             # Take several steps in a fixed direction until we fall off the object, then
             # ensure we get back on to it
-            for loader_step, observation in enumerate(self.exp.dataloader):
-                self.exp.model.step(observation)
+            for loader_step, observation in enumerate(exp.dataloader):
+                exp.model.step(observation)
 
                 if loader_step == 24:  # Last step we take before getting back onto the
                     # object
-                    assert not self.exp.model.learning_modules[
+                    assert not exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), "Should be off object"
 
                 if loader_step == 25:
-                    assert self.exp.model.learning_modules[
+                    assert exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), "Should be back on object"
                     break  # Don't go into exploratory mode
@@ -918,24 +894,22 @@ class PolicyTest(unittest.TestCase):
         """
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.rotated_cube_view_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
-            self.exp.model.set_experiment_mode("train")
+        with MontyObjectRecognitionExperiment(config) as exp:
+            exp.model.set_experiment_mode("train")
             pprint("...training...")
-            self.exp.pre_epoch()
-            self.exp.pre_episode()
+            exp.pre_epoch()
+            exp.pre_episode()
 
             pprint("...stepping through observations...")
-            for loader_step, observation in enumerate(self.exp.dataloader):
-                self.exp.model.step(observation)
-                self.exp.post_step(loader_step, observation)
+            for loader_step, observation in enumerate(exp.dataloader):
+                exp.model.step(observation)
+                exp.post_step(loader_step, observation)
 
                 if loader_step == 3:  # Surface agent should have re-oriented
                     break
 
             # Most recently observed point-normal sent to the learning module
-            current_pose = self.exp.model.learning_modules[0].buffer.get_current_pose(
+            current_pose = exp.model.learning_modules[0].buffer.get_current_pose(
                 input_channel="first"
             )
 
@@ -943,7 +917,7 @@ class PolicyTest(unittest.TestCase):
             # current orientation
             agent_direction = np.array(
                 hab_utils.quat_rotate_vector(
-                    self.exp.model.motor_system.state["agent_id_0"]["rotation"],
+                    exp.model.motor_system.state["agent_id_0"]["rotation"],
                     [
                         0,
                         0,
