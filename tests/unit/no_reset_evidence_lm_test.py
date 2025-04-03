@@ -12,7 +12,6 @@ import copy
 import shutil
 import tempfile
 import unittest
-from pprint import pprint
 from typing import Any, Dict
 
 import numpy as np
@@ -47,7 +46,6 @@ from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
 class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
     def setUp(self):
-        """Code that gets executed before every test."""
         super().setUp()
 
         default_tolerances = {
@@ -153,48 +151,30 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         unsupervised Inference Experiment. Disabling the reset logic does not support
         training at the moment.
         """
-
-        def run_episode(exp):
-            for step, observation in enumerate(exp.dataloader):
-                exp.pre_step(step, observation)
-                exp.model.step(observation)
-                exp.post_step(step, observation)
-                if exp.model.is_done or step >= exp.max_steps:
-                    break
-            return step
-
-        pprint("...parsing experiment...")
         train_config = copy.deepcopy(self.evidence_config)
-        self.train_exp = MontyObjectRecognitionExperiment(train_config)
-
-        with self.train_exp:
-            pprint("...training...")
-            self.train_exp.model.set_experiment_mode("train")
-            self.train_exp.train()
+        with MontyObjectRecognitionExperiment(train_config) as train_exp:
+            train_exp.train()
 
         eval_config = copy.deepcopy(self.unsupervised_evidence_config)
-        self.eval_exp = MontyObjectRecognitionExperiment(eval_config)
-
-        with self.eval_exp:
+        with MontyObjectRecognitionExperiment(eval_config) as eval_exp:
             # load the eval experiment with the pretrained models
-            pretrained_models = self.train_exp.model.learning_modules[0].state_dict()
-            self.eval_exp.model.learning_modules[0].load_state_dict(pretrained_models)
+            pretrained_models = train_exp.model.learning_modules[0].state_dict()
+            eval_exp.model.learning_modules[0].load_state_dict(pretrained_models)
 
-            pprint("...evaluating...")
-            self.eval_exp.model.set_experiment_mode("eval")
-            self.eval_exp.pre_epoch()
+            eval_exp.model.set_experiment_mode("eval")
+            eval_exp.pre_epoch()
 
             # first episode
             self.assertEqual(
-                len(self.eval_exp.model.learning_modules[0].evidence),
+                len(eval_exp.model.learning_modules[0].evidence),
                 0,
                 "evidence dict should be empty before the first episode",
             )
-            self.eval_exp.pre_episode()
-            episode_1_steps = run_episode(self.eval_exp)
-            self.eval_exp.post_episode(episode_1_steps)
+            eval_exp.pre_episode()
+            episode_1_steps = eval_exp.run_episode_steps()
+            eval_exp.post_episode(episode_1_steps)
             post_episode1_evidence = copy.deepcopy(
-                self.eval_exp.model.learning_modules[0].evidence
+                eval_exp.model.learning_modules[0].evidence
             )
             self.assertGreater(
                 len(post_episode1_evidence),
@@ -203,23 +183,22 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             )
 
             # second episode
-            self.eval_exp.pre_episode()
+            eval_exp.pre_episode()
             self.assert_dicts_equal(
                 post_episode1_evidence,
-                self.eval_exp.model.learning_modules[0].evidence,
+                eval_exp.model.learning_modules[0].evidence,
                 "evidence dict should not change between episodes",
             )
-            episode_2_steps = run_episode(self.eval_exp)
-            self.eval_exp.post_episode(episode_2_steps)
+            episode_2_steps = eval_exp.run_episode_steps()
+            eval_exp.post_episode(episode_2_steps)
             self.assertGreater(
-                len(self.eval_exp.model.learning_modules[0].evidence),
+                len(eval_exp.model.learning_modules[0].evidence),
                 0,
                 "evidence dict should contain evidence values",
             )
-            self.eval_exp.post_epoch()
+            eval_exp.post_epoch()
 
     def tearDown(self):
-        """Code that gets executed after every test."""
         shutil.rmtree(self.output_dir)
 
 

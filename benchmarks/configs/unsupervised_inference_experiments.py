@@ -58,8 +58,6 @@ Here are some key characteristics of the available configs:
     - **Evaluation-only**: No learning or graph updates occur during these runs.
         Pre-trained object models are loaded from model_path_10distinctobj before
         the experiment begins.
-    - **Matching phase only**: The defined Monty class runs in matching mode, without
-        switching to exploration mode.
     - **Controlled number of steps**: Each object is shown for a fixed number of steps
         i.e., EVAL_STEPS, after which the object is swapped.
     - **Distant and surface agents**: We provide configs for both distant and surface
@@ -67,8 +65,6 @@ Here are some key characteristics of the available configs:
     - **Rapid prototyping**: By toggling `APPLY_RAPID_CONFIGS`, users can have more
         control over the number of objects and rotations for quicker iteration and
         debugging. This is intended to be removed after RFC 9 is implemented.
-
-
 """
 
 # surface agent benchmark configs
