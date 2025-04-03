@@ -30,9 +30,14 @@ description: This section aims to provide concise definitions of terms commonly 
   https://en.wikipedia.org/wiki/Frame_of_reference
 [Synapse]:
   https://en.wikipedia.org/wiki/Synapse
+[Wikipedia]:
+  https://en.wikipedia.org
 
 [SDR]:
   sparse-distributed-representation-sdr
+
+**Usage Notes:**
+Most of the "See Also" links go to [Wikipedia] entries. These may not be exact matches for TBP's usage, but they provide useful context.
 
 # Dendrites
 
