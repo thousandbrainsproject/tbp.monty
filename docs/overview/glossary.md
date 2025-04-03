@@ -2,46 +2,55 @@
 title: Glossary
 description: This section aims to provide concise definitions of terms commonly used at the Thousand Brains Project and in Monty.
 ---
-[axons]:
+[Axon]:
   https://en.wikipedia.org/wiki/Axon
-[bit array]:
+[Bit array]:
   https://en.wikipedia.org/wiki/Bit_array
-[coordinate system]:
+[Coordinate system]:
   https://en.wikipedia.org/wiki/Coordinate_system
-[cosine similarity]:
+[Cosine similarity]:
   https://en.wikipedia.org/wiki/Cosine_similarity
-[dendrites]:
+[Dendrite]:
   https://en.wikipedia.org/wiki/Dendrite
-[displacement]:
+[Displacement (geometry)]:
   https://en.wikipedia.org/wiki/Displacement_(geometry)
-[efference copy]:
+[Efference copy]:
   https://en.wikipedia.org/wiki/Efference_copy
-[feature]:
+[Feature (machine learning)]:
   https://en.wikipedia.org/wiki/Feature_(machine_learning)
-[inductive bias]:
+[Inductive bias]:
   https://en.wikipedia.org/wiki/Inductive_bias
-[neuron]:
+[Neuron]:
   https://en.wikipedia.org/wiki/Neuron
-[path integration]:
+[Path integration]:
   https://en.wikipedia.org/wiki/Path_integration
-[pattern recognizers]:
+[Pattern recognition]:
   https://en.wikipedia.org/wiki/Pattern_recognition
-[reference frame]:
+[Frame of reference]:
   https://en.wikipedia.org/wiki/Frame_of_reference
-[SDR]:
-  #sparse-distributed-representation-sdr
-[synapse]:
+[Synapse]:
   https://en.wikipedia.org/wiki/Synapse
 
+[SDR]:
+  sparse-distributed-representation-sdr
+
 # Dendrites
-Implement [pattern recognizers] to identify patterns such as a specific [SDR]. One [neuron] is typically associated with multiple [dendrites] such that it can identify multiple patterns. In biology, dendrites of a postsynaptic cell receive information from the [axons] of other presynaptic cells. The axons of these presynaptic cells connect to the dendrites of postsynaptic cells at a junction called a "[synapse]". An SDR can be thought of as a pattern which is represented by a set of synapses that are collocated on a single dendritic segment.
+
+Dendrites implement pattern recognizers, identifying patterns such as a specific [SDR]. One neuron is typically associated with multiple dendrites such that it can identify multiple patterns. In biology, dendrites of a postsynaptic cell receive information from the axons of other presynaptic cells. The axons of these presynaptic cells connect to the dendrites of postsynaptic cells at a junction called a "synapse". An SDR can be thought of as a pattern which is represented by a set of synapses that are collocated on a single dendritic segment.
+
+**See Also:** [Axon], [Dendrite], [Neuron], [Pattern recognition], [Synapse]
 
 # Displacement
-In Monty, the [displacement] is defined as the spatial difference between two locations. In 3D space, this would be a 3D vector.
+
+The displacement is defined as the spatial difference between two locations. In 3D space, this would be a 3D vector.
+
+**See Also:** [Displacement (geometry)]
 
 # Efference Copy
 
-In Monty, an [efference copy] is defined as a copy of the motor command that was output by the policy and sent to the actuators. This copy can be used by learning modules to update their states or make predictions.
+An efference copy duplicates a motor command that was output by the policy and sent to the actuators. This copy can be used by learning modules to update their states or make predictions.
+
+**See Also:** [Efference copy]
 
 # Environment
 
@@ -51,13 +60,17 @@ Monty's environment is defined as the set of entities with which it can interact
 
 In Monty, a [feature] is defined as a characteristic that can be sensed at a specific location. Features may vary depending on the sensory modality (for example, color in vision but not in touch).
 
+**See Also:** [Feature (machine learning)]
+
 # Graph
 
 A set of nodes that are connected to each other with edges. Both nodes and edges can have features associated with them. For instance, all graphs used in the Monty project have a location associated with each node and a variable list of features. An edge can, for example, have a [displacement](#displacement) associated with it.
 
 # Inductive Bias
 
-In Monty, [inductive bias] is defined as an assumption that is built into an algorithm/model. If the assumption holds, this can make the model a lot more efficient than without the inductive bias. However, it will cause problems when the assumption does not hold.
+Inductive bias is an assumption that is built into an algorithm/model. If the assumption holds, this can make the model a lot more efficient than without the inductive bias. However, it will cause problems when the assumption does not hold.
+
+**See Also:** [Inductive bias]
 
 # Learning Module
 
@@ -75,11 +88,13 @@ In Monty, a model (sometimes referred to as [Object Model](../how-monty-works/ho
 
 A useful analogy is to think of **Monty models** as **CAD representations** of objects that exist within the confines of a learning module.
 
-Also see [Do Cortical Columns in the Brain Really Model Whole Objects Like a Coffee Mug in V1?](../how-monty-works/faq-monty.md#do-cortical-columns-in-the-brain-really-model-whole-objects-like-a-coffee-mug-in-v1)
+**See Also:** [Do Cortical Columns in the Brain Really Model Whole Objects Like a Coffee Mug in V1?](../how-monty-works/faq-monty.md#do-cortical-columns-in-the-brain-really-model-whole-objects-like-a-coffee-mug-in-v1)
 
 # Path Integration
 
-In Monty, [path integration] is defined as updating an agent's location by using its own movement and [features](#feature) in the [environment](environment).
+Path integration is defined as updating an agent's location by using its own movement and [features](#feature) in the [environment](environment).
+
+**See Also:** [Path integration]
 
 # Policy
 
@@ -91,7 +106,9 @@ An object's location and orientation (in a given [reference frame](reference_fra
 
 # Reference Frame
 
-In Monty, a [reference frame] is defined as a specific [coordinate system] within which locations and rotations can be represented. For instance, a location may be represented relative to the body (body/ego-centric reference frame) or relative to some point in the world (world/allo-centric reference frame) or relative to an object's center (object-centric reference frame).
+A reference frame is a specific [coordinate system] within which locations and rotations can be represented. For instance, a location may be represented relative to the body (body/ego-centric reference frame) or relative to some point in the world (world/allo-centric reference frame) or relative to an object's center (object-centric reference frame).
+
+**See Also:** [Frame of reference]
 
 # Rigid Body Transformation
 
