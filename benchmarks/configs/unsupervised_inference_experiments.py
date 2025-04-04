@@ -136,7 +136,7 @@ unsupervised_inference_distinctobj_dist_agent[
 # === Rapid Prototyping Configs === #
 
 # This enables or disables rapid prototyping configs
-APPLY_RAPID_CONFIGS = True
+APPLY_RAPID_CONFIGS = False
 
 # Changes the number of rotations per object
 NUM_ROTATIONS = 1

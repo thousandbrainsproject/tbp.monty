@@ -192,7 +192,9 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
         """Compute the theoretical minimum rotation error on the target object.
 
         This considers all possible hypotheses rotations on the target object
-        and compares them to the target's rotation.
+        and compares them to the target's rotation. The theoretical limit conveys the
+        best achievable performance if Monty selects the best hypothesis as its most
+        likely hypothesis (MLH).
 
         Returns:
             float: The minimum achievable rotation error (in radians).
