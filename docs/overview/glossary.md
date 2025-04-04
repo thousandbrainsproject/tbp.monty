@@ -14,14 +14,22 @@ description: This section aims to provide concise definitions of terms commonly 
   https://en.wikipedia.org/wiki/Dendrite
 [Displacement (geometry)]:
   https://en.wikipedia.org/wiki/Displacement_(geometry)
+[Edge]:
+  https://en.wikipedia.org/wiki/Glossary_of_graph_theory#edge
 [Efference copy]:
   https://en.wikipedia.org/wiki/Efference_copy
 [Feature (machine learning)]:
   https://en.wikipedia.org/wiki/Feature_(machine_learning)
+[Glossary of graph theory]:
+  https://en.wikipedia.org/wiki/Glossary_of_graph_theory
+[Graph theory]:
+  https://en.wikipedia.org/wiki/Graph_theory
 [Inductive bias]:
   https://en.wikipedia.org/wiki/Inductive_bias
 [Neuron]:
   https://en.wikipedia.org/wiki/Neuron
+[Node]:
+  https://en.wikipedia.org/wiki/Glossary_of_graph_theory#node
 [Path integration]:
   https://en.wikipedia.org/wiki/Path_integration
 [Pattern recognition]:
@@ -34,7 +42,7 @@ description: This section aims to provide concise definitions of terms commonly 
   https://en.wikipedia.org
 
 [SDR]:
-  sparse-distributed-representation-sdr
+  #sparse-distributed-representation-sdr
 
 **Usage Notes:**
 Most of the "See Also" links go to [Wikipedia] entries. These may not be exact matches for TBP's usage, but they provide useful context.
@@ -43,39 +51,54 @@ Most of the "See Also" links go to [Wikipedia] entries. These may not be exact m
 
 Dendrites implement pattern recognizers, identifying patterns such as a specific [SDR]. One neuron is typically associated with multiple dendrites such that it can identify multiple patterns. In biology, dendrites of a postsynaptic cell receive information from the axons of other presynaptic cells. The axons of these presynaptic cells connect to the dendrites of postsynaptic cells at a junction called a "synapse". An SDR can be thought of as a pattern which is represented by a set of synapses that are collocated on a single dendritic segment.
 
-**See Also:** [Axon], [Dendrite], [Neuron], [Pattern recognition], [Synapse]
+**See Also:**
+  [Axon],
+  [Dendrite],
+  [Neuron],
+  [Pattern recognition],
+  [Synapse]
 
 # Displacement
 
 The displacement is defined as the spatial difference between two locations. In 3D space, this would be a 3D vector.
 
-**See Also:** [Displacement (geometry)]
+**See Also:**
+  [Displacement (geometry)]
 
 # Efference Copy
 
 An efference copy duplicates a motor command that was output by the policy and sent to the actuators. This copy can be used by learning modules to update their states or make predictions.
 
-**See Also:** [Efference copy]
+**See Also:**
+  [Efference copy]
 
 # Environment
 
-Monty's environment is defined as the set of entities with which it can interact (e.g., sense, manipulate). Depending on the environments' state and agents' actions and sensors, the environment returns an observation for each sensor.
+The environment is defined as the set of entities with which Monty can interact (e.g., sense, manipulate) and the results (over time) of the interactions. Depending on the environments' state and agents' actions and sensors, the environment returns an observation for each sensor.
 
 # Features
 
-In Monty, a [feature] is defined as a characteristic that can be sensed at a specific location. Features may vary depending on the sensory modality (for example, color in vision but not in touch).
+A feature is a characteristic that can be sensed at a specific location. Features may vary depending on the sensory modality (for example, color in vision but not in touch).
 
-**See Also:** [Feature (machine learning)]
+**See Also:**
+  [Feature (machine learning)]
 
 # Graph
 
-A set of nodes that are connected to each other with edges. Both nodes and edges can have features associated with them. For instance, all graphs used in the Monty project have a location associated with each node and a variable list of features. An edge can, for example, have a [displacement](#displacement) associated with it.
+A graph is a set of nodes that are connected to each other with edges. Both nodes and edges can have features associated with them. For instance, all graphs used in the Monty project have a location associated with each node and a variable list of features. An edge can, for example, have a [displacement](#displacement) associated with it.
+
+**See Also:**
+  [Edge],
+  [Glossary of graph theory],
+  [Graph theory],
+  [Node]
 
 # Inductive Bias
 
 Inductive bias is an assumption that is built into an algorithm/model. If the assumption holds, this can make the model a lot more efficient than without the inductive bias. However, it will cause problems when the assumption does not hold.
 
-**See Also:** [Inductive bias]
+**See Also:**
+  [Inductive bias]
 
 # Learning Module
 
@@ -93,13 +116,16 @@ In Monty, a model (sometimes referred to as [Object Model](../how-monty-works/ho
 
 A useful analogy is to think of **Monty models** as **CAD representations** of objects that exist within the confines of a learning module.
 
-**See Also:** [Do Cortical Columns in the Brain Really Model Whole Objects Like a Coffee Mug in V1?](../how-monty-works/faq-monty.md#do-cortical-columns-in-the-brain-really-model-whole-objects-like-a-coffee-mug-in-v1)
+**See Also:**
+  [Do Cortical Columns in the Brain Really Model Whole Objects Like a Coffee Mug in V1?]
+  (../how-monty-works/faq-monty.md#do-cortical-columns-in-the-brain-really-model-whole-objects-like-a-coffee-mug-in-v1)
 
 # Path Integration
 
 Path integration is defined as updating an agent's location by using its own movement and [features](#feature) in the [environment](environment).
 
-**See Also:** [Path integration]
+**See Also:**
+  [Path integration]
 
 # Policy
 
@@ -113,7 +139,8 @@ An object's location and orientation (in a given [reference frame](reference_fra
 
 A reference frame is a specific [coordinate system] within which locations and rotations can be represented. For instance, a location may be represented relative to the body (body/ego-centric reference frame) or relative to some point in the world (world/allo-centric reference frame) or relative to an object's center (object-centric reference frame).
 
-**See Also:** [Frame of reference]
+**See Also:**
+  [Frame of reference]
 
 # Rigid Body Transformation
 
