@@ -60,7 +60,7 @@ dev = [
     'pytest-cov==3.0.0',
 
     # Python linter and formatter
-    'ruff==0.7.1',
+    'ruff==0.11.4',
 ]
 generate_api_docs_tool = [
     'docutils>=0.17',
@@ -205,8 +205,6 @@ ignore = [
     "ANN001", # ANN001: Missing type annotation for function argument
     "ANN002", # ANN002: Missing type annotation for `*args`
     "ANN003", # ANN003: Missing type annotation for `**kwargs`
-    # "ANN101", # ANN101: Missing type annotation for `self` in method
-    "ANN102", # ANN102: Missing type annotation for `cls` in classmethod
     "ANN201", # ANN201: Missing return type annotation for public function
     "ANN202", # ANN202: Missing return type annotation for private function
     "ANN204", # ANN204: Missing return type annotation for special method
