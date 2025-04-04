@@ -125,15 +125,13 @@ class SensorModuleTest(unittest.TestCase):
         """Check that correct features are returned by sensor module."""
         print("...parsing experiment...")
         base_config = copy.deepcopy(self.sensor_feature_test)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(base_config)
-            self.exp.model.set_experiment_mode("train")
+        with MontyObjectRecognitionExperiment(base_config) as exp:
+            exp.model.set_experiment_mode("train")
             pprint("...training...")
-            self.exp.pre_epoch()
-            self.exp.pre_episode()
-            for step, observation in enumerate(self.exp.dataloader):
-                self.exp.model.step(observation)
+            exp.pre_epoch()
+            exp.pre_episode()
+            for step, observation in enumerate(exp.dataloader):
+                exp.model.step(observation)
                 if step == 1:
                     break
 
@@ -142,22 +140,20 @@ class SensorModuleTest(unittest.TestCase):
         """Check that correct features are returned by sensor module."""
         print("...parsing experiment...")
         base_config = copy.deepcopy(self.sensor_feature_test)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(base_config)
-            self.exp.model.set_experiment_mode("train")
+        with MontyObjectRecognitionExperiment(base_config) as exp:
+            exp.model.set_experiment_mode("train")
             pprint("...training...")
-            self.exp.pre_epoch()
-            self.exp.pre_episode()
-            for _, observation in enumerate(self.exp.dataloader):
-                self.exp.model.aggregate_sensory_inputs(observation)
+            exp.pre_epoch()
+            exp.pre_episode()
+            for _, observation in enumerate(exp.dataloader):
+                exp.model.aggregate_sensory_inputs(observation)
 
-                pprint(self.exp.model.sensor_module_outputs)
+                pprint(exp.model.sensor_module_outputs)
                 for feature in self.tested_features:
                     if feature in ["pose_vectors", "pose_fully_defined", "on_object"]:
                         self.assertIn(
                             feature,
-                            self.exp.model.sensor_module_outputs[
+                            exp.model.sensor_module_outputs[
                                 0
                             ].morphological_features.keys(),
                             f"{feature} not returned by SM",
@@ -165,7 +161,7 @@ class SensorModuleTest(unittest.TestCase):
                     else:
                         self.assertIn(
                             feature,
-                            self.exp.model.sensor_module_outputs[
+                            exp.model.sensor_module_outputs[
                                 0
                             ].non_morphological_features.keys(),
                             f"{feature} not returned by SM",
@@ -175,14 +171,12 @@ class SensorModuleTest(unittest.TestCase):
     def test_feature_change_sm(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.feature_change_sensor_config)
-        self.exp = MontyObjectRecognitionExperiment()
-        with self.exp:
-            self.exp.setup_experiment(config)
+        with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            self.exp.train()
+            exp.train()
             # TODO: test that only new features are given to LM
             pprint("...evaluating...")
-            self.exp.evaluate()
+            exp.evaluate()
 
 
 if __name__ == "__main__":

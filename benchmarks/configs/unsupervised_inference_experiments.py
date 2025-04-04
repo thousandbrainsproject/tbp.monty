@@ -58,8 +58,6 @@ Here are some key characteristics of the available configs:
     - **Evaluation-only**: No learning or graph updates occur during these runs.
         Pre-trained object models are loaded from model_path_10distinctobj before
         the experiment begins.
-    - **Matching phase only**: The defined Monty class runs in matching mode, without
-        switching to exploration mode.
     - **Controlled number of steps**: Each object is shown for a fixed number of steps
         i.e., EVAL_STEPS, after which the object is swapped.
     - **Distant and surface agents**: We provide configs for both distant and surface
@@ -67,21 +65,17 @@ Here are some key characteristics of the available configs:
     - **Rapid prototyping**: By toggling `APPLY_RAPID_CONFIGS`, users can have more
         control over the number of objects and rotations for quicker iteration and
         debugging. This is intended to be removed after RFC 9 is implemented.
-
-
 """
 
 # surface agent benchmark configs
 unsupervised_inference_distinctobj_surf_agent = copy.deepcopy(
     randrot_noise_10distinctobj_surf_agent
 )
-unsupervised_inference_distinctobj_surf_agent["logging_config"].wandb_handlers = []
 
 # distant agent benchmarks configs
 unsupervised_inference_distinctobj_dist_agent = copy.deepcopy(
     randrot_noise_10distinctobj_dist_agent
 )
-unsupervised_inference_distinctobj_dist_agent["logging_config"].wandb_handlers = []
 
 
 # === Benchmark Configs === #
@@ -93,6 +87,8 @@ MONTY_CLASS = MontyForNoResetEvidenceGraphMatching
 LM_CLASS = NoResetEvidenceGraphLM
 
 # Number of Eval steps
+# This will be used for min_eval_steps and max_eval_steps
+# because we want to run the evaluation for exactly EVAL_STEPS
 EVAL_STEPS = 100
 
 # define surface agent monty configs to set the classes and eval steps.
@@ -207,7 +203,6 @@ if APPLY_RAPID_CONFIGS:
             logging_config=DetailedEvidenceLMLoggingConfig(
                 monty_handlers=monty_handlers,
                 wandb_handlers=[],
-                # python_log_level="WARNING",
             ),
             monty_config=surf_monty_config,
             eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
@@ -229,7 +224,6 @@ if APPLY_RAPID_CONFIGS:
             logging_config=DetailedEvidenceLMLoggingConfig(
                 monty_handlers=monty_handlers,
                 wandb_handlers=[],
-                # python_log_level="WARNING",
             ),
             monty_config=dist_monty_config,
             eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(

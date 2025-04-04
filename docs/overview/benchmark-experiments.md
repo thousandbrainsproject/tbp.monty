@@ -106,7 +106,11 @@ More specifically, these experiments are run purely in evaluation mode (i.e., pr
 
 !table[../../benchmarks/results/ycb_unsupervised_inference.csv]
 
-*Note: These benchmark experiments track the progress on [RFC 9: Hypotheses resampling](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0009_hypotheses_resampling.md)*
+> [!WARNING]
+> 
+> These benchmark experiments track the progress on [RFC 9: Hypotheses resampling](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0009_hypotheses_resampling.md).
+> 
+> We do not expect these experiments to have good performance until the RFC is implemented and [issue #214](https://github.com/thousandbrainsproject/tbp.monty/issues/214) is resolved.
 
 # Monty-Meets-World
 

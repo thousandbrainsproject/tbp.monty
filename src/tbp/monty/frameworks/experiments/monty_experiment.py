@@ -51,19 +51,25 @@ class MontyExperiment:
     the outermost loops for training and evaluating (including run epoch and episode)
     """
 
+    def __init__(self, config):
+        """Initialize the experiment based on the provided configuration.
+
+        Args:
+            config: config specifying variables of the experiment.
+        """
+        # Copy the config and store it so we can modify it freely
+        config = copy.deepcopy(config)
+        config = config_to_dict(config)
+        self.config = config
+
+        self.unpack_experiment_args(config["experiment_args"])
+
     def setup_experiment(self, config):
         """Set up the basic elements of a Monty experiment and initialize counters.
 
         Args:
             config: config specifying variables of the experiment.
         """
-        # Save a copy of the config used to specify the experiment before modifying
-        config = copy.deepcopy(config)
-        # Convert any dataclass back to dict for backward compatibility
-        config = config_to_dict(config)
-        self.config = config
-
-        self.unpack_experiment_args(config["experiment_args"])
         self.model = self.init_model(
             monty_config=config["monty_config"],
             model_path=self.model_path,
@@ -93,7 +99,7 @@ class MontyExperiment:
         """Initialize the Monty model.
 
         Args:
-            monty_config: confguration for the Monty class.
+            monty_config: configuration for the Monty class.
             model_path: Optional model checkpoint. Can be full file name or just the
                 directory containing the "model.pt" file saved from a previous run.
 
@@ -215,7 +221,7 @@ class MontyExperiment:
         Raises:
             TypeError: If `dataset_class` is not a subclass of `EnvironmentDataset`
         """
-        # Require dataset_class to be EnvironmentDataset now, generalzie later
+        # Require dataset_class to be EnvironmentDataset now, generalize later
         if not issubclass(dataset_class, EnvironmentDataset):
             raise TypeError("dataset class must be EnvironmentDataset (for now)")
 
@@ -530,9 +536,6 @@ class MontyExperiment:
             self.run_epoch()
         self.logger_handler.post_train(self.logger_args)
 
-        if not self.do_eval:
-            self.close()
-
     def evaluate(self):
         """Run n_eval_epochs."""
         # TODO: check that number of eval epochs is at least as many as length
@@ -542,7 +545,6 @@ class MontyExperiment:
         for _ in range(self.n_eval_epochs):
             self.run_epoch()
         self.logger_handler.post_eval(self.logger_args)
-        self.close()
 
     def state_dict(self):
         """Return state_dict with total steps."""
@@ -612,7 +614,7 @@ class MontyExperiment:
         Returns:
             MontyExperiment self to allow assignment in a with statement.
         """
-        # TODO: Move some of the initialization code from `setup_experiment` into this.
+        self.setup_experiment(self.config)
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
@@ -623,7 +625,5 @@ class MontyExperiment:
         Returns:
             bool to indicate whether to supress any exceptions that were raised.
         """
-        # TODO: We call self.close inside `train` and `evaluate`.
-        #   Those should probably be removed.
         self.close()
         return False  # don't silence exceptions inside the with block
