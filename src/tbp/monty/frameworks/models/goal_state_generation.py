@@ -473,6 +473,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         min_post_goal_success_steps=np.infty,
         x_percent_scale_factor=0.75,
         desired_object_distance=0.03,
+        wait_growth_multiplier=2,
         **kwargs,
     ) -> None:
         """Initialize the Evidence GSG.
@@ -514,6 +515,8 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
                 may want to aim for an initially farther distance, while the
                 surface-policy may want to stay quite close to the object. Defaults to
                 0.03.
+            wait_growth_multiplier: Multiplier used to increase the `wait_factor`, which
+                in turn controls how long to wait before the next jump attempt.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(parent_lm, goal_tolerances, **kwargs)
@@ -522,6 +525,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         self.min_post_goal_success_steps = min_post_goal_success_steps
         self.x_percent_scale_factor = x_percent_scale_factor
         self.desired_object_distance = desired_object_distance
+        self.wait_growth_multiplier = wait_growth_multiplier
 
     # ======================= Public ==========================
 
@@ -1019,7 +1023,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
                 "Hypothesis jump indicated: sufficient steps elapsed with no jump"
             )
 
-            self.wait_factor *= 2
+            self.wait_factor *= self.wait_growth_multiplier
             return True
 
         else:
