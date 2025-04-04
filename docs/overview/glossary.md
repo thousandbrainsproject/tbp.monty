@@ -2,36 +2,107 @@
 title: Glossary
 description: This section aims to provide concise definitions of terms commonly used at the Thousand Brains Project and in Monty.
 ---
+[Axon]:
+  https://en.wikipedia.org/wiki/Axon
+[Bit array]:
+  https://en.wikipedia.org/wiki/Bit_array
+[Coordinate system]:
+  https://en.wikipedia.org/wiki/Coordinate_system
+[Cosine similarity]:
+  https://en.wikipedia.org/wiki/Cosine_similarity
+[Dendrite]:
+  https://en.wikipedia.org/wiki/Dendrite
+[Displacement (geometry)]:
+  https://en.wikipedia.org/wiki/Displacement_(geometry)
+[Edge]:
+  https://en.wikipedia.org/wiki/Glossary_of_graph_theory#edge
+[Efference copy]:
+  https://en.wikipedia.org/wiki/Efference_copy
+[Feature (machine learning)]:
+  https://en.wikipedia.org/wiki/Feature_(machine_learning)
+[Glossary of graph theory]:
+  https://en.wikipedia.org/wiki/Glossary_of_graph_theory
+[Graph theory]:
+  https://en.wikipedia.org/wiki/Graph_theory
+[Inductive bias]:
+  https://en.wikipedia.org/wiki/Inductive_bias
+[Neuron]:
+  https://en.wikipedia.org/wiki/Neuron
+[Node]:
+  https://en.wikipedia.org/wiki/Glossary_of_graph_theory#node
+[Path integration]:
+  https://en.wikipedia.org/wiki/Path_integration
+[Pattern recognition]:
+  https://en.wikipedia.org/wiki/Pattern_recognition
+[Frame of reference]:
+  https://en.wikipedia.org/wiki/Frame_of_reference
+[Synapse]:
+  https://en.wikipedia.org/wiki/Synapse
+[Wikipedia]:
+  https://en.wikipedia.org
+
+[SDR]:
+  #sparse-distributed-representation-sdr
+
+**Usage Notes:**
+Most of the "See Also" links go to [Wikipedia] entries. These may not be exact matches for TBP's usage, but they provide useful context.
+
 # Dendrites
 
-Implement pattern recognizers to identify patterns such as a specific SDR. One neuron is typically associated with multiple dendrites such that it can identify multiple patterns. In biology, dendrites of a postsynaptic cell receive information from the axons of other presynaptic cells. The axons of these presynaptic cells connect to the dendrites of postsynaptic cells at a junction called a "synapse". An SDR can be thought of as a pattern which is represented by a set of synapses that are collocated on a single dendritic segment.
+Dendrites implement pattern recognizers, identifying patterns such as a specific [SDR]. One neuron is typically associated with multiple dendrites such that it can identify multiple patterns. In biology, dendrites of a postsynaptic cell receive information from the axons of other presynaptic cells. The axons of these presynaptic cells connect to the dendrites of postsynaptic cells at a junction called a "synapse". An SDR can be thought of as a pattern which is represented by a set of synapses that are collocated on a single dendritic segment.
+
+**See Also:**
+  [Axon],
+  [Dendrite],
+  [Neuron],
+  [Pattern recognition],
+  [Synapse]
 
 # Displacement
-The spatial difference between two locations. In 3D space, this would be a 3D vector.
+
+The displacement is defined as the spatial difference between two locations. In 3D space, this would be a 3D vector.
+
+**See Also:**
+  [Displacement (geometry)]
 
 # Efference Copy
 
-A copy of the motor command that was output by the policy and sent to the actuators. This copy can be used by learning modules to update their states or make predictions.
+An efference copy duplicates a motor command that was output by the policy and sent to the actuators. This copy can be used by learning modules to update their states or make predictions.
+
+**See Also:**
+  [Efference copy]
 
 # Environment
 
-Depending on the environments' state and agents' actions and sensors, the environment returns an observation for each sensor.
+The environment is defined as the set of entities with which Monty can interact (e.g., sense, manipulate) and the results (over time) of the interactions. Depending on the environments' state and agents' actions and sensors, the environment returns an observation for each sensor.
 
 # Features
 
-Characteristics that can be sensed at a specific location. Features may vary depending on the sensory modality (for example, color in vision but not in touch).
+A feature is a characteristic that can be sensed at a specific location. Features may vary depending on the sensory modality (for example, color in vision but not in touch).
+
+**See Also:**
+  [Feature (machine learning)]
 
 # Graph
 
-A set of nodes that are connected to each other with edges. Both nodes and edges can have features associated with them. For instance all graphs used in the Monty project have a location associated with each node and a variable list of features. An edge can, for example, have a displacement associated with it.
+A graph is a set of nodes that are connected to each other with edges. Both nodes and edges can have features associated with them. For instance, all graphs used in the Monty project have a location associated with each node and a variable list of features. An edge can, for example, have a [displacement](#displacement) associated with it.
+
+**See Also:**
+  [Edge],
+  [Glossary of graph theory],
+  [Graph theory],
+  [Node]
 
 # Inductive Bias
 
-An assumption that is built into an algorithm/model. If the assumption holds, this can make the model a lot more efficient than without the inductive bias. However, it will cause problems when the assumption does not hold.
+Inductive bias is an assumption that is built into an algorithm/model. If the assumption holds, this can make the model a lot more efficient than without the inductive bias. However, it will cause problems when the assumption does not hold.
+
+**See Also:**
+  [Inductive bias]
 
 # Learning Module
 
-A computational unit that takes features at poses as input and uses this information to learn models of the world. It is also able to recognize objects and their poses from the input if an object has been learned already.
+A computational unit that takes features at [poses](pose) as input and uses this information to learn models of the world. It is also able to recognize objects and their poses from the input if an object has been learned already.
 
 # Model
 
@@ -45,11 +116,16 @@ In Monty, a model (sometimes referred to as [Object Model](../how-monty-works/ho
 
 A useful analogy is to think of **Monty models** as **CAD representations** of objects that exist within the confines of a learning module.
 
-Also see [Do Cortical Columns in the Brain Really Model Whole Objects Like a Coffee Mug in V1?](../how-monty-works/faq-monty.md#do-cortical-columns-in-the-brain-really-model-whole-objects-like-a-coffee-mug-in-v1)
+**See Also:**
+  [Do Cortical Columns in the Brain Really Model Whole Objects Like a Coffee Mug in V1?]
+  (../how-monty-works/faq-monty.md#do-cortical-columns-in-the-brain-really-model-whole-objects-like-a-coffee-mug-in-v1)
 
 # Path Integration
 
-Updating an agent's location by using its own movement and features in the environment.
+Path integration is defined as updating an agent's location by using its own movement and [features](#feature) in the [environment](environment).
+
+**See Also:**
+  [Path integration]
 
 # Policy
 
@@ -57,11 +133,14 @@ Defines the function used to select actions. Selected actions can be dependent o
 
 # Pose
 
-An object's location and orientation (in a given reference frame). The location can for example be x, y, z coordinates and the orientation can be represented as a quaternion, Euler angles, or a rotation matrix.
+An object's location and orientation (in a given [reference frame](reference_frame)). The location can for example be x, y, z coordinates and the orientation can be represented as a quaternion, Euler angles, or a rotation matrix.
 
 # Reference Frame
 
-A specific coordinate system within which locations and rotations can be represented. For instance, a location may be represented relative to the body (body/ego-centric reference frame) or relative to some point in the world (world/allo-centric reference frame) or relative to an object's center (object-centric reference frame).
+A reference frame is a specific [coordinate system] within which locations and rotations can be represented. For instance, a location may be represented relative to the body (body/ego-centric reference frame) or relative to some point in the world (world/allo-centric reference frame) or relative to an object's center (object-centric reference frame).
+
+**See Also:**
+  [Frame of reference]
 
 # Rigid Body Transformation
 
@@ -77,7 +156,7 @@ Learning or inference through interaction with an environment using a closed loo
 
 # Sparse Distributed Representation (SDR)
 
-A binary vector with significantly more 0 bits than 1 bits. Significant overlap between the bit assignments in different SDRs captures similarity in representational space (e.g., similar features).
+In Monty, an SDR is a binary vector (i.e., [bit array]) with significantly more 0 bits than 1 bits. Significant overlap between the bit assignments in different SDRs captures [cosine similarity] in representational space (e.g., similar [features](#feature)).
 
 # Transformation
 
@@ -85,4 +164,4 @@ Applies a displacement/translation and a rotation to a point.
 
 # Voting
 
-Multiple computational units share information about their current state with each other. This can for instance be their current estimate of an object's ID or pose. This information is then used to update each unit's internal state until all units reach a consensus.
+Multiple computational units share information about their current state with each other. This can for instance be their current estimate of an object's ID or [pose](#pose). This information is then used to update each unit's internal state until all units reach a consensus.
