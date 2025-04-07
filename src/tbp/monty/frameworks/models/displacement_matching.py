@@ -187,21 +187,22 @@ class DisplacementGraphLM(GraphLM):
     # ======================= Private ==========================
 
     # ------------------- Main Algorithm -----------------------
-    def _compute_possible_matches(self, observation, not_moved=False):
+    def _compute_possible_matches(self, observation, first_movement_detected=True):
         """Use the current observation to narrown down the possible matches.
 
         This is framed as a prediction problem. We take the current observation
         as a query and try to predict whether after the displacement we will still be
         on the object. In a next step we could also predict the feature that we sense
-        next. The prediction is then compared with he actual obervation (currently
+        next. The prediction is then compared with he actual observation (currently
         just whether we sensed on_object or not). If there is a prediction error, then
         we remove the object from the possible matches.
 
         Args:
             observation: The current observation.
-            not_moved: Whether the agent has moved yet. True on the first step.
+            first_movement_detected: Whether the agent has moved yet. False on the first
+                step.
         """
-        if not_moved:
+        if not first_movement_detected:
             return
         if self.match_attribute == "displacement":
             query = self.buffer.get_current_displacement(input_channel="first")
