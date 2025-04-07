@@ -206,9 +206,6 @@ ignore = [
     "PTH208", # PTH208: os-listdir 
     "RUF022", # RUF022: unsorted-dunder-all
     "TC006", # TC006: runtime-cast-value
-    "I001", # I001: unsorted-imports
-    "F401", # F401: unused-imports
-    "RUF046", # RUF046: unncessary-cast-to-int
     "RUF100", # RUF100: unused-noqa
     ###
     # TODO: ruff=0.7.1 migration introduced errors ignored below, resolve these
