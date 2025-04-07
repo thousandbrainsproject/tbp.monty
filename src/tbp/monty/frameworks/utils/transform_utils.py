@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 
 import numpy as np
-import quaternion  # noqa: F401; required by np.quaternion
 
 
 def find_transform_instance(composed_transform, transform_type):
