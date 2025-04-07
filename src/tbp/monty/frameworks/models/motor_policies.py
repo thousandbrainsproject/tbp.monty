@@ -375,8 +375,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         ]
         if initial_pose:
             assert depth_at_center > 0, (
-                "Object must be initialized such that the agent can visualize it by moving forward"
-            )  # noqa: E501
+                "Object must be initialized such that "
+                "agent can visualize it by moving forward"
+            )
             # TODO investigate - I think this may have always been passing in the
             # original surface-agent policy implementation because the surface
             # sensor clips at 1.0, so even if the object isn't strictly visible (or
