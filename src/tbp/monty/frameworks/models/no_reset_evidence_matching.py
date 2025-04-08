@@ -7,7 +7,6 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import logging
 
 import numpy as np
 
@@ -116,37 +115,23 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
 
         Returns:
             - obs: The list of observations, each updated with a displacement vector.
-            - not_moved (bool): True if none of the observations had a prior location
-              (i.e., no movement detected), False otherwise.
         """
-        not_moved = True
         for o in obs:
             if o.sender_id in self.last_location.keys():
                 displacement = o.location - self.last_location[o.sender_id]
-                not_moved = False
             else:
                 displacement = np.zeros(3)
             o.set_displacement(displacement)
             self.last_location[o.sender_id] = o.location
-        return obs, not_moved
+        return obs
 
-    def matching_step(self, observations):
-        """Update the possible matches given an observation."""
-        buffer_data, not_moved = self._add_displacements(observations)
-        self.buffer.append(buffer_data)
-        self.buffer.append_input_states(observations)
+    def _agent_moved_since_reset(self):
+        """Overwrites the logic of whether the agent has moved since the last reset.
 
-        if not_moved:
-            logging.debug("we have not moved yet.")
-        else:
-            logging.debug("performing matching step.")
+        In unsupervised inference, the first movement is detected on the first
+        episode only. If a `last_location` exists, then first movement has occurred.
 
-        self._compute_possible_matches(observations, not_moved=not_moved)
-
-        if len(self.get_possible_matches()) == 0:
-            self.set_individual_ts(terminal_state="no_match")
-
-        self.gsg.step_gsg(observations)
-
-        stats = self.collect_stats_to_save()
-        self.buffer.update_stats(stats, append=self.has_detailed_logger)
+        Returns:
+            - Whether the agent has moved since the last reset.
+        """
+        return len(self.last_location) > 0
