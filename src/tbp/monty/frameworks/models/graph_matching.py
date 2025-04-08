@@ -642,18 +642,19 @@ class GraphLM(LearningModule):
 
     def matching_step(self, observations):
         """Update the possible matches given an observation."""
+        first_movement_detected = self._agent_moved_since_reset()
         buffer_data = self._add_displacements(observations)
         self.buffer.append(buffer_data)
         self.buffer.append_input_states(observations)
 
-        if len(self.buffer) > 1:
-            not_moved = False
+        if first_movement_detected:
             logging.debug("performing matching step.")
         else:
-            not_moved = True
             logging.debug("we have not moved yet.")
 
-        self._compute_possible_matches(observations, not_moved=not_moved)
+        self._compute_possible_matches(
+            observations, first_movement_detected=first_movement_detected
+        )
 
         if len(self.get_possible_matches()) == 0:
             self.set_individual_ts(terminal_state="no_match")
@@ -766,6 +767,9 @@ class GraphLM(LearningModule):
         else:
             logging.info(f"{self.learning_module_id} did not recognize an object yet.")
         return self.terminal_state
+
+    def _agent_moved_since_reset(self):
+        return len(self.buffer) > 0
 
     # ------------------ Getters & Setters ---------------------
 
@@ -985,22 +989,23 @@ class GraphLM(LearningModule):
     # ======================= Private ==========================
 
     # ------------------- Main Algorithm -----------------------
-    def _compute_possible_matches(self, observations, not_moved=False):
+    def _compute_possible_matches(self, observations, first_movement_detected=True):
         """Use graph memory to get the current possible matches.
 
         Args:
             observations: Observations to use for computing possible matches.
-            not_moved: Whether the observations are not moved.
+            first_movement_detected: Whether the agent has moved since the buffer reset
+                signal.
         """
-        if not_moved:
+        if first_movement_detected:
             query = [
                 self._select_features_to_use(observations),
-                None,
+                self.buffer.get_current_displacement(input_channel="all"),
             ]
         else:
             query = [
                 self._select_features_to_use(observations),
-                self.buffer.get_current_displacement(input_channel="all"),
+                None,
             ]
 
         logging.debug(f"query: {query}")

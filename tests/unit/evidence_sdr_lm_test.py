@@ -21,9 +21,7 @@ from tbp.monty.frameworks.models.evidence_sdr_matching import (
     EvidenceSDRGraphLM,
     EvidenceSDRTargetOverlaps,
 )
-from tbp.monty.frameworks.models.goal_state_generation import (
-    EvidenceGoalStateGenerator,
-)
+from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
 from tbp.monty.frameworks.models.states import State
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
@@ -522,16 +520,14 @@ class EvidenceSDRIntegrationTest(BaseGraphTestCases.BaseGraphTest):
         Note: Observations are fed to the LM without the need to
         suggest new location in this toy example.
         """
+        first_movement_detected = lm._agent_moved_since_reset()
         buffer_data = lm._add_displacements(observations)
         lm.buffer.append(buffer_data)
         lm.buffer.append_input_states(observations)
 
-        if len(lm.buffer) > 1:
-            not_moved = False
-        else:
-            not_moved = True
-
-        lm._compute_possible_matches(observations, not_moved=not_moved)
+        lm._compute_possible_matches(
+            observations, first_movement_detected=first_movement_detected
+        )
 
         if len(lm.get_possible_matches()) == 0:
             lm.set_individual_ts(terminal_state="no_match")
