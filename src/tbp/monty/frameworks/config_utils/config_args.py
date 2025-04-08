@@ -13,7 +13,18 @@ import os
 from dataclasses import dataclass, field
 from itertools import product
 from numbers import Number
-from typing import Callable, Dict, Iterable, List, Mapping, Optional, Union
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Protocol,
+    Union,
+)
 
 import numpy as np
 import wandb
@@ -54,11 +65,11 @@ from tbp.monty.frameworks.models.monty_base import (
 from tbp.monty.frameworks.models.motor_policies import (
     BasePolicy,
     InformedPolicy,
-    MotorSystem,
     NaiveScanPolicy,
     SurfacePolicy,
     SurfacePolicyCurvatureInformed,
 )
+from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
     FeatureChangeSM,
@@ -74,6 +85,17 @@ from tbp.monty.frameworks.models.sensor_modules import (
 # -----------------------
 
 monty_logs_dir = os.getenv("MONTY_LOGS")
+
+
+class Dataclass(Protocol):
+    """A protocol for dataclasses to be used in type hints.
+
+    The reason this exists is because dataclass.dataclass is not a valid type.
+    """
+
+    __dataclass_fields__: ClassVar[Dict[str, Any]]
+    """Checking for presence of __dataclass_fields__ is a hack to check if a class is a
+    dataclass."""
 
 
 @dataclass
@@ -247,153 +269,189 @@ class PretrainLoggingConfig(LoggingConfig):
 
 @dataclass
 class MotorSystemConfig:
-    motor_system_class: MotorSystem = BasePolicy
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_base_policy_config(
-            action_space_type="distant_agent",
-            action_sampler_class=UniformlyDistributedSampler,
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=BasePolicy,
+            policy_args=make_base_policy_config(
+                action_space_type="distant_agent",
+                action_sampler_class=UniformlyDistributedSampler,
+            ),
         )
     )
 
 
 @dataclass
 class MotorSystemConfigRelNoTrans:
-    motor_system_class: MotorSystem = BasePolicy
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_base_policy_config(
-            action_space_type="distant_agent_no_translation",
-            action_sampler_class=UniformlyDistributedSampler,
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=BasePolicy,
+            policy_args=make_base_policy_config(
+                action_space_type="distant_agent_no_translation",
+                action_sampler_class=UniformlyDistributedSampler,
+            ),
         )
     )
 
 
 @dataclass
 class MotorSystemConfigInformedNoTrans:
-    motor_system_class: MotorSystem = InformedPolicy
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_informed_policy_config(
-            action_space_type="distant_agent_no_translation",
-            action_sampler_class=ConstantSampler,
-            rotation_degrees=5.0,
-            use_goal_state_driven_actions=False,
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=InformedPolicy,
+            policy_args=make_informed_policy_config(
+                action_space_type="distant_agent_no_translation",
+                action_sampler_class=ConstantSampler,
+                rotation_degrees=5.0,
+                use_goal_state_driven_actions=False,
+            ),
         )
     )
 
 
 @dataclass
 class MotorSystemConfigInformedNoTransStepS3:
-    motor_system_class: MotorSystem = InformedPolicy
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_informed_policy_config(
-            action_space_type="distant_agent_no_translation",
-            action_sampler_class=ConstantSampler,
-            rotation_degrees=3.0,
-            use_goal_state_driven_actions=False,
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=InformedPolicy,
+            policy_args=make_informed_policy_config(
+                action_space_type="distant_agent_no_translation",
+                action_sampler_class=ConstantSampler,
+                rotation_degrees=3.0,
+                use_goal_state_driven_actions=False,
+            ),
         )
     )
 
 
 @dataclass
 class MotorSystemConfigInformedNoTransStepS1:
-    motor_system_class: MotorSystem = InformedPolicy
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_informed_policy_config(
-            action_space_type="distant_agent_no_translation",
-            action_sampler_class=ConstantSampler,
-            rotation_degrees=1.0,
-            use_goal_state_driven_actions=False,
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=InformedPolicy,
+            policy_args=make_informed_policy_config(
+                action_space_type="distant_agent_no_translation",
+                action_sampler_class=ConstantSampler,
+                rotation_degrees=1.0,
+                use_goal_state_driven_actions=False,
+            ),
         )
     )
 
 
 @dataclass
 class MotorSystemConfigInformedNoTransStepS6:
-    motor_system_class: MotorSystem = InformedPolicy
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_informed_policy_config(
-            action_space_type="distant_agent_no_translation",
-            action_sampler_class=ConstantSampler,
-            rotation_degrees=6.0,
-            use_goal_state_driven_actions=False,
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=InformedPolicy,
+            policy_args=make_informed_policy_config(
+                action_space_type="distant_agent_no_translation",
+                action_sampler_class=ConstantSampler,
+                rotation_degrees=6.0,
+                use_goal_state_driven_actions=False,
+            ),
         )
     )
 
 
 @dataclass
 class MotorSystemConfigInformedNoTransStepS20:
-    motor_system_class: MotorSystem = InformedPolicy
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_informed_policy_config(
-            action_space_type="distant_agent_no_translation",
-            action_sampler_class=ConstantSampler,
-            rotation_degrees=20.0,
-            use_goal_state_driven_actions=False,
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=InformedPolicy,
+            policy_args=make_informed_policy_config(
+                action_space_type="distant_agent_no_translation",
+                action_sampler_class=ConstantSampler,
+                rotation_degrees=20.0,
+                use_goal_state_driven_actions=False,
+            ),
         )
     )
 
 
 @dataclass
 class MotorSystemConfigInformedNoTransCloser:
-    motor_system_class: MotorSystem = InformedPolicy
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_informed_policy_config(
-            action_space_type="distant_agent_no_translation",
-            action_sampler_class=ConstantSampler,
-            rotation_degrees=5.0,
-            good_view_percentage=0.7,
-            use_goal_state_driven_actions=False,
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=InformedPolicy,
+            policy_args=make_informed_policy_config(
+                action_space_type="distant_agent_no_translation",
+                action_sampler_class=ConstantSampler,
+                rotation_degrees=5.0,
+                good_view_percentage=0.7,
+                use_goal_state_driven_actions=False,
+            ),
         )
     )
 
 
 @dataclass
 class MotorSystemConfigInformedNoTransFurtherAway:
-    motor_system_class: MotorSystem = InformedPolicy
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_informed_policy_config(
-            action_space_type="distant_agent_no_translation",
-            action_sampler_class=ConstantSampler,
-            rotation_degrees=5.0,
-            good_view_percentage=0.3,
-            use_goal_state_driven_actions=False,
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=InformedPolicy,
+            policy_args=make_informed_policy_config(
+                action_space_type="distant_agent_no_translation",
+                action_sampler_class=ConstantSampler,
+                rotation_degrees=5.0,
+                good_view_percentage=0.3,
+                use_goal_state_driven_actions=False,
+            ),
         )
     )
 
 
 @dataclass
 class MotorSystemConfigNaiveScanSpiral:
-    motor_system_class: MotorSystem = NaiveScanPolicy
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_naive_scan_policy_config(step_size=5)
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=NaiveScanPolicy,
+            policy_args=make_naive_scan_policy_config(step_size=5),
+        )
     )
 
 
 @dataclass
 class MotorSystemConfigSurface:
-    motor_system_class: MotorSystem = SurfacePolicy
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_surface_policy_config(
-            desired_object_distance=0.025,  # 2.5 cm desired distance
-            alpha=0.1,  # alpha 0.1 means we mostly maintain our heading
-            use_goal_state_driven_actions=False,
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=SurfacePolicy,
+            policy_args=make_surface_policy_config(
+                desired_object_distance=0.025,  # 2.5 cm desired distance
+                alpha=0.1,  # alpha 0.1 means we mostly maintain our heading
+                use_goal_state_driven_actions=False,
+            ),
         )
     )
 
 
 @dataclass
 class MotorSystemConfigCurvatureInformedSurface:
-    motor_system_class: MotorSystem = SurfacePolicyCurvatureInformed
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_curv_surface_policy_config(
-            desired_object_distance=0.025,
-            alpha=0.1,
-            pc_alpha=0.5,
-            # For a description of the below step parameters, see the class
-            # SurfacePolicyCurvatureInformed
-            max_pc_bias_steps=32,
-            min_general_steps=8,
-            min_heading_steps=12,
-            use_goal_state_driven_actions=False,
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=SurfacePolicyCurvatureInformed,
+            policy_args=make_curv_surface_policy_config(
+                desired_object_distance=0.025,
+                alpha=0.1,
+                pc_alpha=0.5,
+                # For a description of the below step parameters, see the class
+                # SurfacePolicyCurvatureInformed
+                max_pc_bias_steps=32,
+                min_general_steps=8,
+                min_heading_steps=12,
+                use_goal_state_driven_actions=False,
+            ),
         )
     )
 
@@ -401,27 +459,33 @@ class MotorSystemConfigCurvatureInformedSurface:
 # Distant-agent ("eye") policy that also performs hypothesis-testing jumps
 @dataclass
 class MotorSystemConfigInformedGoalStateDriven:
-    motor_system_class: MotorSystem = InformedPolicy
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_informed_policy_config(
-            action_space_type="distant_agent_no_translation",
-            action_sampler_class=ConstantSampler,
-            rotation_degrees=5.0,
-            use_goal_state_driven_actions=True,
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=InformedPolicy,
+            policy_args=make_informed_policy_config(
+                action_space_type="distant_agent_no_translation",
+                action_sampler_class=ConstantSampler,
+                rotation_degrees=5.0,
+                use_goal_state_driven_actions=True,
+            ),
         )
     )
 
 
 @dataclass
 class MotorSystemConfigInformedGoalStateDrivenFartherAway:
-    motor_system_class: MotorSystem = InformedPolicy
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_informed_policy_config(
-            action_space_type="distant_agent_no_translation",
-            action_sampler_class=ConstantSampler,
-            rotation_degrees=10.0,  # Relatively large step-size
-            good_view_percentage=0.5,  # Relatively far from the object
-            use_goal_state_driven_actions=True,
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=InformedPolicy,
+            policy_args=make_informed_policy_config(
+                action_space_type="distant_agent_no_translation",
+                action_sampler_class=ConstantSampler,
+                rotation_degrees=10.0,  # Relatively large step-size
+                good_view_percentage=0.5,  # Relatively far from the object
+                use_goal_state_driven_actions=True,
+            ),
         )
     )
 
@@ -430,16 +494,19 @@ class MotorSystemConfigInformedGoalStateDrivenFartherAway:
 # hypothesis-testing jumps
 @dataclass
 class MotorSystemConfigCurInformedSurfaceGoalStateDriven:
-    motor_system_class: MotorSystem = SurfacePolicyCurvatureInformed
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_curv_surface_policy_config(
-            desired_object_distance=0.025,
-            alpha=0.1,
-            pc_alpha=0.5,
-            max_pc_bias_steps=32,
-            min_general_steps=8,
-            min_heading_steps=12,
-            use_goal_state_driven_actions=True,
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=SurfacePolicyCurvatureInformed,
+            policy_args=make_curv_surface_policy_config(
+                desired_object_distance=0.025,
+                alpha=0.1,
+                pc_alpha=0.5,
+                max_pc_bias_steps=32,
+                min_general_steps=8,
+                min_heading_steps=12,
+                use_goal_state_driven_actions=True,
+            ),
         )
     )
 

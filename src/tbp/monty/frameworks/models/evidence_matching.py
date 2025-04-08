@@ -65,7 +65,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
         super()._pass_infos_to_motor_system()
 
         # Check the motor-system can receive goal-states
-        if self.motor_system.use_goal_state_driven_actions:
+        if self.motor_system._policy.use_goal_state_driven_actions:
             best_goal_state = None
             best_goal_confidence = -np.inf
             for current_goal_state in self.gsg_outputs:
@@ -76,7 +76,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                     best_goal_state = current_goal_state
                     best_goal_confidence = current_goal_state.confidence
 
-            self.motor_system.set_driving_goal_state(best_goal_state)
+            self.motor_system._policy.set_driving_goal_state(best_goal_state)
 
     def _combine_votes(self, votes_per_lm):
         """Combine evidence from different lms.
@@ -1079,8 +1079,8 @@ class EvidenceGraphLM(GraphLM):
         assert not np.isnan(np.max(self.evidence[graph_id])), "evidence contains NaN."
         logging.debug(
             f"evidence update for {graph_id} took "
-            f"{np.round(end_time - start_time,2)} seconds."
-            f" New max evidence: {np.round(np.max(self.evidence[graph_id]),3)}"
+            f"{np.round(end_time - start_time, 2)} seconds."
+            f" New max evidence: {np.round(np.max(self.evidence[graph_id]), 3)}"
         )
 
     def _update_evidence_with_vote(self, state_votes, graph_id):
@@ -1169,7 +1169,7 @@ class EvidenceGraphLM(GraphLM):
             The location evidence.
         """
         logging.debug(
-            f"Calculating evidence for {graph_id} using input from " f"{input_channel}"
+            f"Calculating evidence for {graph_id} using input from {input_channel}"
         )
 
         pose_transformed_features = rotate_pose_dependent_features(
@@ -1597,7 +1597,7 @@ class EvidenceGraphLM(GraphLM):
         all_possible_locations = np.zeros((1, 3))
         all_possible_rotations = np.zeros((1, 3, 3))
 
-        logging.debug("Determining possible poses using input from " f"{input_channel}")
+        logging.debug(f"Determining possible poses using input from {input_channel}")
         node_directions = self.graph_memory.get_rotation_features_at_all_nodes(
             graph_id, input_channel
         )
@@ -1739,7 +1739,7 @@ class EvidenceGraphLM(GraphLM):
                 mlh["graph_id"] = "new_object0"
             logging.info(
                 f"current most likely hypothesis: {mlh['graph_id']} "
-                f"with evidence {np.round(mlh['evidence'],2)}"
+                f"with evidence {np.round(mlh['evidence'], 2)}"
             )
         return mlh
 
@@ -1764,9 +1764,9 @@ class EvidenceGraphLM(GraphLM):
         ) and self.evidence_update_threshold.endswith("%"):
             percentage_str = self.evidence_update_threshold.strip("%")
             percentage = float(percentage_str)
-            assert (
-                percentage >= 0 and percentage <= 100
-            ), "Percentage must be between 0 and 100"
+            assert percentage >= 0 and percentage <= 100, (
+                "Percentage must be between 0 and 100"
+            )
             max_global_evidence = self.current_mlh["evidence"]
             x_percent_of_max = max_global_evidence * (percentage / 100)
             return max_global_evidence - x_percent_of_max

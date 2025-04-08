@@ -35,7 +35,8 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorModule,
 )
 from tbp.monty.frameworks.models.monty_base import MontyBase
-from tbp.monty.frameworks.models.motor_policies import MotorSystem
+from tbp.monty.frameworks.models.motor_policies import MotorPolicy
+from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.dataclass_utils import (
     config_to_dict,
     get_subset_of_args,
@@ -134,7 +135,11 @@ class MontyExperiment:
         motor_system_class = motor_system_config["motor_system_class"]
         motor_system_args = motor_system_config["motor_system_args"]
         assert issubclass(motor_system_class, MotorSystem)
-        motor_system = motor_system_class(rng=self.rng, **motor_system_args)
+        policy_class = motor_system_args["policy_class"]
+        policy_args = motor_system_args["policy_args"]
+        assert issubclass(policy_class, MotorPolicy)
+        policy = policy_class(rng=self.rng, **policy_args)
+        motor_system = motor_system_class(policy=policy)
 
         # Get mapping between sensor modules, learning modules and agents
         lm_len = len(learning_modules)

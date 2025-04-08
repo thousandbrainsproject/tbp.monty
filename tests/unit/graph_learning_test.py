@@ -23,6 +23,7 @@ import pandas as pd
 
 from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
 from tbp.monty.frameworks.config_utils.config_args import (
+    Dataclass,
     FiveLMMontyConfig,
     InformedPolicy,
     LoggingConfig,
@@ -45,6 +46,7 @@ from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 from tbp.monty.frameworks.loggers.wandb_handlers import DetailedWandbMarkedObsHandler
 from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphLM
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
+from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.follow_up_configs import (
     create_eval_config_multiple_episodes,
     create_eval_episode_config,
@@ -66,26 +68,32 @@ from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
 @dataclass
 class MotorSystemConfigFixed:
-    motor_system_class: Callable = field(default=InformedPolicy)
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_informed_policy_config(
-            action_space_type="distant_agent_no_translation",
-            action_sampler_class=ConstantSampler,
-            rotation_degrees=5.0,
-            file_name=Path(__file__).parent / "resources/fixed_test_actions.jsonl",
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=InformedPolicy,
+            policy_args=make_informed_policy_config(
+                action_space_type="distant_agent_no_translation",
+                action_sampler_class=ConstantSampler,
+                rotation_degrees=5.0,
+                file_name=Path(__file__).parent / "resources/fixed_test_actions.jsonl",
+            ),
         )
     )
 
 
 @dataclass
 class MotorSystemConfigOffObject:
-    motor_system_class: Callable = field(default=InformedPolicy)
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_informed_policy_config(
-            action_space_type="distant_agent_no_translation",
-            action_sampler_class=ConstantSampler,
-            file_name=Path(__file__).parent
-            / "resources/fixed_test_actions_off_object.jsonl",
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=InformedPolicy,
+            policy_args=make_informed_policy_config(
+                action_space_type="distant_agent_no_translation",
+                action_sampler_class=ConstantSampler,
+                file_name=Path(__file__).parent
+                / "resources/fixed_test_actions_off_object.jsonl",
+            ),
         )
     )
 
@@ -586,9 +594,9 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 if step == 0:
                     self.assertListEqual(
                         list(
-                            exp.model.learning_modules[
-                                0
-                            ].buffer.get_nth_displacement(0, input_channel="first")
+                            exp.model.learning_modules[0].buffer.get_nth_displacement(
+                                0, input_channel="first"
+                            )
                         ),
                         list([0, 0, 0]),
                         "displacement at step 0 should be 0.",
@@ -596,9 +604,9 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 self.assertEqual(
                     step + 1,
                     len(
-                        exp.model.learning_modules[0].buffer.displacements[
-                            "patch"
-                        ]["displacement"]
+                        exp.model.learning_modules[0].buffer.displacements["patch"][
+                            "displacement"
+                        ]
                     ),
                     "buffer does not contain the right amount of displacements.",
                 )
@@ -678,9 +686,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             pprint("...training...")
             exp.train()
             pprint("...loading and checking train statistics...")
-            train_stats = pd.read_csv(
-                os.path.join(exp.output_dir, "train_stats.csv")
-            )
+            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
             self.check_train_results(train_stats)
 
             pprint("...evaluating...")
@@ -699,9 +705,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             pprint("...training...")
             exp.train()
             pprint("...loading and checking train statistics...")
-            train_stats = pd.read_csv(
-                os.path.join(exp.output_dir, "train_stats.csv")
-            )
+            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
 
             self.check_train_results(train_stats)
 
@@ -722,9 +726,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             exp.train()
             pprint("...loading and checking train statistics...")
 
-            train_stats = pd.read_csv(
-                os.path.join(exp.output_dir, "train_stats.csv")
-            )
+            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
 
             self.check_train_results(train_stats)
 
@@ -789,9 +791,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         ###
         # Check that basic csv stats are the same
         ###
-        original_eval_stats_file = os.path.join(
-            eval_exp_1.output_dir, "eval_stats.csv"
-        )
+        original_eval_stats_file = os.path.join(eval_exp_1.output_dir, "eval_stats.csv")
         new_eval_stats_file = os.path.join(
             eval_exp_1.output_dir, "eval_episode_0_rerun", "eval_stats.csv"
         )
@@ -896,9 +896,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         ###
         # Check that basic csv stats are the same
         ###
-        original_eval_stats_file = os.path.join(
-            eval_exp_1.output_dir, "eval_stats.csv"
-        )
+        original_eval_stats_file = os.path.join(eval_exp_1.output_dir, "eval_stats.csv")
         new_eval_stats_file = os.path.join(
             eval_exp_1.output_dir, "eval_rerun_episodes", "eval_stats.csv"
         )
@@ -987,9 +985,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         ###
         # Check that basic csv stats are the same
         ###
-        original_eval_stats_file = os.path.join(
-            eval_exp_1.output_dir, "eval_stats.csv"
-        )
+        original_eval_stats_file = os.path.join(eval_exp_1.output_dir, "eval_stats.csv")
         new_eval_stats_file = os.path.join(
             eval_exp_1.output_dir, "eval_rerun_episodes", "eval_stats.csv"
         )
@@ -1203,27 +1199,27 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             exp.train()
             self.assertEqual(
                 len(
-                    exp.model.learning_modules[
-                        0
-                    ].buffer.get_all_locations_on_object(input_channel="patch")
+                    exp.model.learning_modules[0].buffer.get_all_locations_on_object(
+                        input_channel="patch"
+                    )
                 ),
                 len(
-                    exp.model.learning_modules[
-                        0
-                    ].buffer.get_all_features_on_object()["patch"]["pose_vectors"]
+                    exp.model.learning_modules[0].buffer.get_all_features_on_object()[
+                        "patch"
+                    ]["pose_vectors"]
                 ),
                 "Did not retrieve same amount of feature and locations on object.",
             )
             self.assertEqual(
                 sum(
-                    exp.model.learning_modules[
-                        0
-                    ].buffer.get_all_features_on_object()["patch"]["on_object"]
+                    exp.model.learning_modules[0].buffer.get_all_features_on_object()[
+                        "patch"
+                    ]["on_object"]
                 ),
                 len(
-                    exp.model.learning_modules[
-                        0
-                    ].buffer.get_all_features_on_object()["patch"]["on_object"]
+                    exp.model.learning_modules[0].buffer.get_all_features_on_object()[
+                        "patch"
+                    ]["on_object"]
                 ),
                 "not all retrieved features were collected on the object.",
             )
@@ -1236,9 +1232,9 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             self.assertEqual(
                 num_matching_steps,
                 sum(
-                    exp.model.learning_modules[0].buffer.features["patch"][
-                        "on_object"
-                    ][:num_matching_steps]
+                    exp.model.learning_modules[0].buffer.features["patch"]["on_object"][
+                        :num_matching_steps
+                    ]
                 ),
                 "Number of match steps does not match with stored observations "
                 "on object",
@@ -1289,8 +1285,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         self.assertEqual(
             len(detailed_stats["1"]["LM_0"]["possible_matches"]),
             train_stats.loc[1]["monty_matching_steps"],
-            "matching steps in detailed stats don't match with those in "
-            "train stats.",
+            "matching steps in detailed stats don't match with those in train stats.",
         )
         self.assertEqual(
             sum(np.array(detailed_stats["1"]["LM_0"]["patch"]["on_object"])),
@@ -1309,9 +1304,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             exp.train()
             pprint("...loading and checking train statistics...")
 
-            train_stats = pd.read_csv(
-                os.path.join(exp.output_dir, "train_stats.csv")
-            )
+            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
             self.check_train_results(train_stats)
 
             pprint("...evaluating...")
@@ -1633,9 +1626,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             pprint("...training...")
             exp.train()
 
-            train_stats = pd.read_csv(
-                os.path.join(exp.output_dir, "train_stats.csv")
-            )
+            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
             self.check_multilm_train_results(train_stats, num_lms=5, min_done=3)
 
             pprint("...evaluating...")
@@ -1655,9 +1646,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             pprint("...training...")
             exp.train()
 
-            train_stats = pd.read_csv(
-                os.path.join(exp.output_dir, "train_stats.csv")
-            )
+            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
             # The following check is brittle and depends on sensor arrangement. Leaving
             # the rest of the test intact to detect run failures, but disabling checking
             # of particular results.
