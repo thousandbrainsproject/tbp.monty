@@ -994,7 +994,7 @@ class GraphLM(LearningModule):
 
         Args:
             observations: Observations to use for computing possible matches.
-            first_movement_detected: Whether the agent has moved since the reset
+            first_movement_detected: Whether the agent has moved since the buffer reset
                 signal.
         """
         if first_movement_detected:
