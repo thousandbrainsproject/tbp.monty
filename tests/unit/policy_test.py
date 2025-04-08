@@ -298,8 +298,7 @@ class PolicyTest(unittest.TestCase):
                             rotation_degrees=5.0,
                             use_goal_state_driven_actions=False,
                             switch_frequency=1.0,
-                            good_view_percentage=0.5,  # Make sure we define the required
-                            # good view percentage
+                            good_view_percentage=0.5,
                         ),
                     ),
                 ),
@@ -362,8 +361,7 @@ class PolicyTest(unittest.TestCase):
                             rotation_degrees=5.0,
                             use_goal_state_driven_actions=False,
                             switch_frequency=1.0,
-                            good_view_percentage=0.5,  # Make sure we define the required
-                            # good view percentage
+                            good_view_percentage=0.5,
                         ),
                     ),
                 ),

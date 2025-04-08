@@ -16,7 +16,7 @@ import unittest
 from dataclasses import dataclass, field
 from pathlib import Path
 from pprint import pprint
-from typing import Callable, Dict, Union
+from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
