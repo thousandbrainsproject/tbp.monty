@@ -135,10 +135,10 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             msg (str): The message to display if the assertion fails.
         """
         self.assertEqual(d1.keys(), d2.keys(), msg)
-        for key in d1:
-            self.assertTrue(np.array_equal(d1[key], d2[key]), msg)
+        for key, d1_val in d1.items():
+            self.assertTrue(np.array_equal(d1_val, d2[key]), msg)
 
-    def test_no_reset_evidence_evidence_lm(self):
+    def test_no_reset_evidence_lm(self):
         """Checks that unsupervised LM does not reset the evidence between episodes.
 
         This test uses the `self.unsupervised_evidence_config` which defines
