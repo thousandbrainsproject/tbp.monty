@@ -49,11 +49,6 @@ class MotorSystem(abc.ABC, Callable):
         pass
 
     @abc.abstractmethod
-    def update(self, actions):
-        # TODO: nobody is using this. Is this still valid?
-        pass
-
-    @abc.abstractmethod
     def set_experiment_mode(self, mode):
         pass
 
