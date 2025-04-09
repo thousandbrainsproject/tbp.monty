@@ -17,7 +17,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-monty_root = dirname(dirname(dirname(Path.resolve(__file__))))
+monty_root = dirname(dirname(dirname(Path(__file__).resolve())))
 sys.path.append(monty_root)
 
 from tools.github_readme_sync.colors import RED, RESET  # noqa: E402

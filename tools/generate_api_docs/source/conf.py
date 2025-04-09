@@ -25,7 +25,7 @@ import datetime
 import sys
 from pathlib import Path
 
-source_path = Path.resolve("../../../src")
+source_path = Path("../../../src").resolve()
 sys.path.insert(0, source_path)
 
 # -- Project information -----------------------------------------------------
