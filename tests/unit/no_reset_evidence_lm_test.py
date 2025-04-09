@@ -17,19 +17,30 @@ from typing import Any, Dict
 import numpy as np
 
 from tbp.monty.frameworks.config_utils.config_args import (
-    LoggingConfig, MontyFeatureGraphArgs, PatchAndViewMontyConfig)
+    LoggingConfig,
+    MontyFeatureGraphArgs,
+    PatchAndViewMontyConfig,
+)
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataLoaderPerObjectEvalArgs,
-    EnvironmentDataLoaderPerObjectTrainArgs, ExperimentArgs,
-    PredefinedObjectInitializer)
+    EnvironmentDataLoaderPerObjectTrainArgs,
+    ExperimentArgs,
+    PredefinedObjectInitializer,
+)
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 from tbp.monty.frameworks.models.evidence_matching import (
-    EvidenceGraphLM, MontyForEvidenceGraphMatching)
+    EvidenceGraphLM,
+    MontyForEvidenceGraphMatching,
+)
 from tbp.monty.frameworks.models.no_reset_evidence_matching import (
-    MontyForNoResetEvidenceGraphMatching, NoResetEvidenceGraphLM)
+    MontyForNoResetEvidenceGraphMatching,
+    NoResetEvidenceGraphLM,
+)
 from tbp.monty.simulators.habitat.configs import (
-    EnvInitArgsPatchViewMount, PatchViewFinderMountHabitatDatasetArgs)
+    EnvInitArgsPatchViewMount,
+    PatchViewFinderMountHabitatDatasetArgs,
+)
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
 

@@ -7,14 +7,15 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import logging
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.models.evidence_matching import (
-    EvidenceGraphLM, MontyForEvidenceGraphMatching)
+    EvidenceGraphLM,
+    MontyForEvidenceGraphMatching,
+)
 from tbp.monty.frameworks.models.states import State
 
 

@@ -228,7 +228,7 @@ def check_external(folder, ignore_dirs, rdme):
                 if file_errors:
                     errors[file_path] = file_errors
             except Exception as exc:
-                logging.error(f"{RED}Error processing {file_path}: {exc}{RESET}")
+                logging.exception(f"{RED}Error processing {file_path}: {exc}{RESET}")
 
     report_errors(errors, total_links_checked)
 

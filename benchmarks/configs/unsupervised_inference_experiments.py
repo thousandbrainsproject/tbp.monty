@@ -12,9 +12,12 @@ from dataclasses import asdict
 from benchmarks.configs.names import UnsupervisedInferenceExperiments
 from benchmarks.configs.ycb_experiments import (
     randrot_noise_10distinctobj_dist_agent,
-    randrot_noise_10distinctobj_surf_agent)
+    randrot_noise_10distinctobj_surf_agent,
+)
 from tbp.monty.frameworks.models.no_reset_evidence_matching import (
-    MontyForNoResetEvidenceGraphMatching, NoResetEvidenceGraphLM)
+    MontyForNoResetEvidenceGraphMatching,
+    NoResetEvidenceGraphLM,
+)
 
 """
 These configurations define the experimental setup for testing unsupervised inference
