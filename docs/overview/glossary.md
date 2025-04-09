@@ -38,19 +38,33 @@ description: This section aims to provide concise definitions of terms commonly 
   https://en.wikipedia.org/wiki/Frame_of_reference
 [Open system (systems theory)]:
   https://en.wikipedia.org/wiki/Open_system_(systems_theory)
+[Rotation (mathematics)]:
+  https://en.wikipedia.org/wiki/Rotation_(mathematics)
 [Synapse]:
   https://en.wikipedia.org/wiki/Synapse
+[Translation (geometry)]:
+  https://en.wikipedia.org/wiki/Translation_(geometry)
 [Wikipedia]:
   https://en.wikipedia.org
 
+[displacement]:
+  https://thousandbrainsproject.readme.io/docs/glossary#displacement
 [environment]:
   https://thousandbrainsproject.readme.io/docs/glossary#environment
-[features]
+[features]:
   https://thousandbrainsproject.readme.io/docs/glossary#feature
 [learning module]:
   https://thousandbrainsproject.readme.io/docs/glossary#learning_module
+[model]:
+  https://thousandbrainsproject.readme.io/docs/glossary#model
+[pose]:
+  https://thousandbrainsproject.readme.io/docs/glossary#pose
+[poses]:
+  https://thousandbrainsproject.readme.io/docs/glossary#pose
+[reference frame]:
+  https://thousandbrainsproject.readme.io/docs/glossary#reference_frame
 [reference frames]:
-  https://thousandbrainsproject.readme.io/docs/frame
+  https://thousandbrainsproject.readme.io/docs/glossary#reference_frame
 [SDR]:
   https://thousandbrainsproject.readme.io/docs/glossary#sparse-distributed-representation-sdr
 
@@ -98,7 +112,7 @@ A feature is a characteristic that can be sensed at a specific location. Feature
 
 # Graph
 
-A graph is a set of nodes that are connected to each other with edges. Both nodes and edges can have features associated with them. For instance, all graphs used in the Monty project have a location associated with each node and a variable list of features. An edge can, for example, have a [displacement](#displacement) associated with it.
+A graph is a set of nodes that are connected to each other with edges. Both nodes and edges can have features associated with them. For instance, all graphs used in the Monty project have a location associated with each node and a variable list of features. An edge can, for example, have a [displacement] associated with it.
 
 **See Also:**
   [Edge],
@@ -124,7 +138,7 @@ In Monty, a model (sometimes referred to as an [Object Model](../how-monty-works
 - A single learning module **stores multiple object models** in memory, simultaneously.
 - The Monty system may have **multiple models of the same object** if there are multiple learning modules - this is a desired behavior.
 - Learning modules **update models independently** of each other.
-- Models are structured using [reference frames](#reference-frame), not just a bag of [features].
+- Models are structured using [reference frames] (i.e., they're not just a bag of [features]).
 - Models represent **complete objects**, not just parts of objects. These objects can still become subcomponents of compositional objects but are also objects themselves (like the light bulb in a lamp).
 
 A useful analogy is to think of **Monty models** as **CAD representations** of objects that exist within the confines of a learning module.
@@ -142,22 +156,25 @@ Path integration is defined as updating an agent's location by using its own mov
 
 # Policy
 
-Defines the function used to select actions. Selected actions can be dependent on a model's internal state and on external inputs.
+Defines the function used to select actions. Selected actions can be dependent on a [model]'s internal state and on external inputs.
 
 # Pose
 
-An object's location and orientation (in a given [reference frame](reference_frame)). The location can for example be x, y, z coordinates and the orientation can be represented as a quaternion, Euler angles, or a rotation matrix.
+An object's location and orientation (in a given [reference frame]). The location can for example be x, y, z coordinates and the orientation can be represented as a quaternion, Euler angles, or a rotation matrix.
 
 # Reference Frame
 
-A reference frame is a specific [coordinate system] within which locations and rotations can be represented. For instance, a location may be represented relative to the body (body/ego-centric reference frame) or relative to some point in the world (world/allo-centric reference frame) or relative to an object's center (object-centric reference frame).
+A reference frame is a specific coordinate system within which locations and rotations can be represented. For instance, a location may be represented relative to the body (body/ego-centric reference frame) or relative to some point in the world (world/allo-centric reference frame) or relative to an object's center (object-centric reference frame).
 
 **See Also:**
-  [Frame of reference]
+  [Coordinate system], [Frame of reference]
 
 # Rigid Body Transformation
 
-Applies a displacement/translation and a rotation to a set of points. Every point is transformed in the same way such that the overall shape stays the same (i.e., the relative distance between points is fixed).
+Applies a [displacement] / translation and a rotation to a set of points. Every point is transformed in the same way such that the overall shape stays the same (i.e., the relative distance between points is fixed).
+
+**See Also:**
+  [Displacement (geometry)], [Rotation (mathematics)], [Translation (geometry)]
 
 # Sensor Module
 
@@ -169,12 +186,18 @@ Learning or inference through interaction with an environment using a closed loo
 
 # Sparse Distributed Representation (SDR)
 
-In Monty, an SDR is a binary vector (i.e., [bit array]) with significantly more 0 bits than 1 bits. Significant overlap between the bit assignments in different SDRs captures [cosine similarity] in representational space (e.g., similar [features](#feature)).
+In Monty, an SDR is a binary vector (i.e., bit array) with significantly more 0 bits than 1 bits. Significant overlap between the bit assignments in different SDRs captures cosine similarity in representational space (e.g., similar [features]).
+
+**See Also:**
+  [Bit array], [Cosine similarity]
 
 # Transformation
 
-Applies a displacement/translation and a rotation to a point.
+Applies a [displacement] / translation and a rotation to a point.
+
+**See Also:**
+  [Displacement (geometry)], [Rotation (mathematics)], [Translation (geometry)]
 
 # Voting
 
-Multiple computational units share information about their current state with each other. This can for instance be their current estimate of an object's ID or [pose](#pose). This information is then used to update each unit's internal state until all units reach a consensus.
+Multiple computational units share information about their current state with each other. This can for instance be their current estimate of an object's ID or [pose]. This information is then used to update each unit's internal state until all units reach a consensus.
