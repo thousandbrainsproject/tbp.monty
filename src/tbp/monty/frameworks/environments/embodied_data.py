@@ -748,9 +748,10 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             "motor_only_step"
         ] = True
 
+        # TODO refactor so that the whole of the hypothesis driven jumps
+        # makes cleaner use of self.motor_system()
         # Call post_action (normally taken care of __call__ within
-        # self.motor_system._policy()) - TODO refactor so that the whole of the
-        # hypothesis driven jumps makes cleaner use of self.motor_system()
+        # self.motor_system._policy())
         self.motor_system._policy.post_action(self.motor_system._policy.action)
 
         return self._observation
@@ -776,13 +777,12 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 direction=[0, 0, 0],
             )
 
-            # Store logging information about jump success; when doing refactor
-            # of policy code, TODO cleanup where this is performed, and make
-            # variable names more general; TODO also only log this when
-            # we are doing detailed logging
+            # TODO cleanup where this is performed, and make variable names more general
+            # TODO also only log this when we are doing detailed logging
             # TODO M clean up these action details loggings; this may need to remain
             # local to a "motor-system buffer" given that these are model-free
             # actions that have nothing to do with the LMs
+            # Store logging information about jump success
             self.motor_system._policy.action_details["pc_heading"].append("jump")
             self.motor_system._policy.action_details["avoidance_heading"].append(False)
             self.motor_system._policy.action_details["z_defined_pc"].append(None)
