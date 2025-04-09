@@ -374,9 +374,10 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             observation_shape[0] // 2, observation_shape[1] // 2
         ]
         if initial_pose:
-            assert (
-                depth_at_center > 0
-            ), "Object must be initialized such that the agent can visualize it by moving forward"  # noqa: E501
+            assert depth_at_center > 0, (
+                "Object must be initialized such that "
+                "agent can visualize it by moving forward"
+            )
             # TODO investigate - I think this may have always been passing in the
             # original surface-agent policy implementation because the surface
             # sensor clips at 1.0, so even if the object isn't strictly visible (or
@@ -843,6 +844,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         y_mid, x_mid = image_shape[0] // 2, image_shape[1] // 2
         on_target_object = semantic[y_mid, x_mid] == target_semantic_id
         return on_target_object
+
 
 class NaiveScanPolicy(InformedPolicy):
     """Policy that just moves left and right along the object."""
@@ -1340,9 +1342,9 @@ class SurfacePolicy(InformedPolicy):
         x, y, z = rotated_point_normal
 
         if "horizontal" == orienting:
-            return -np.degrees(np.arctan(x / z)) if z != 0 else -np.sign(x)*90.0
+            return -np.degrees(np.arctan(x / z)) if z != 0 else -np.sign(x) * 90.0
         if "vertical" == orienting:
-            return -np.degrees(np.arctan(y / z)) if z != 0 else -np.sign(y)*90.0
+            return -np.degrees(np.arctan(y / z)) if z != 0 else -np.sign(y) * 90.0
 
 
 ###
@@ -1691,7 +1693,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         # Before updating the representation and removing z-axis direction, check
         # for movements defined in the z-axis
-        if int(np.argmax(np.abs(rotated_form))) == int(2):
+        if int(np.argmax(np.abs(rotated_form))) == 2:
             # TODO decide if in cases where the PC is defined in the z-direction
             # relative to the agent, it might actually make sense to still follow it,
             # i.e. as it should representa a movement tangential to the surface, and
@@ -2204,9 +2206,9 @@ def projected_angle_from_vec(vector):
     for test_theta in test_thetas:
         test_vec = projected_vec_from_angle(test_theta)
         recovered = math.atan2(test_vec[0], test_vec[1])
-        assert (
-            abs(test_theta - recovered) < 0.01
-        ), f"Issue with angle recovery for : {test_theta} vs. {recovered}"
+        assert abs(test_theta - recovered) < 0.01, (
+            f"Issue with angle recovery for : {test_theta} vs. {recovered}"
+        )
 
     return math.atan2(vector[0], vector[1])
 

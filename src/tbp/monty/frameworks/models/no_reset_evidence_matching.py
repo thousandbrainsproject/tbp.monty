@@ -14,9 +14,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.models.evidence_matching import (
-    EvidenceGraphLM,
-    MontyForEvidenceGraphMatching,
-)
+    EvidenceGraphLM, MontyForEvidenceGraphMatching)
 from tbp.monty.frameworks.models.states import State
 
 
@@ -96,6 +94,9 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.last_location = {}
+
+        # it does not make sense for the wait factor to exponentially
+        # grow when objects are swapped without any supervisory signal.
         self.gsg.wait_growth_multiplier = 1
 
     def reset(self) -> None:
@@ -121,48 +122,15 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
         Returns:
             - obs (List[State]): The list of observations, each updated with a
                 displacement vector.
-            - not_moved (bool): True if none of the observations had a prior location
-              (i.e., no movement detected), False otherwise.
         """
-        not_moved = True
         for o in obs:
             if o.sender_id in self.last_location.keys():
                 displacement = o.location - self.last_location[o.sender_id]
-                not_moved = False
             else:
                 displacement = np.zeros(3)
             o.set_displacement(displacement)
             self.last_location[o.sender_id] = o.location
-        return obs, not_moved
-
-    def matching_step(self, observations: List[State]) -> None:
-        """Perform the matching step given a list of observations.
-
-        This updates the displacement buffer, computes possible matches,
-        steps the goal state generator. Additionally, the stats for the current
-        step are saved in the buffer.
-
-        Args:
-            observations (List[State]): The current step's observations.
-        """
-        buffer_data, not_moved = self._add_displacements(observations)
-        self.buffer.append(buffer_data)
-        self.buffer.append_input_states(observations)
-
-        if not_moved:
-            logging.debug("we have not moved yet.")
-        else:
-            logging.debug("performing matching step.")
-
-        self._compute_possible_matches(observations, not_moved=not_moved)
-
-        if len(self.get_possible_matches()) == 0:
-            self.set_individual_ts(terminal_state="no_match")
-
-        self.gsg.step_gsg(observations)
-
-        stats = self.collect_stats_to_save()
-        self.buffer.update_stats(stats, append=self.has_detailed_logger)
+        return obs
 
     def _add_detailed_stats(
         self, stats: Dict[str, Any], get_rotations: bool
@@ -228,3 +196,14 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
 
         error = (obj_rotation * target_rot.inv()).magnitude()
         return error
+
+    def _agent_moved_since_reset(self):
+        """Overwrites the logic of whether the agent has moved since the last reset.
+
+        In unsupervised inference, the first movement is detected on the first
+        episode only. If a `last_location` exists, then first movement has occurred.
+
+        Returns:
+            - Whether the agent has moved since the last reset.
+        """
+        return len(self.last_location) > 0

@@ -17,30 +17,19 @@ from typing import Any, Dict
 import numpy as np
 
 from tbp.monty.frameworks.config_utils.config_args import (
-    LoggingConfig,
-    MontyFeatureGraphArgs,
-    PatchAndViewMontyConfig,
-)
+    LoggingConfig, MontyFeatureGraphArgs, PatchAndViewMontyConfig)
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataLoaderPerObjectEvalArgs,
-    EnvironmentDataLoaderPerObjectTrainArgs,
-    ExperimentArgs,
-    PredefinedObjectInitializer,
-)
+    EnvironmentDataLoaderPerObjectTrainArgs, ExperimentArgs,
+    PredefinedObjectInitializer)
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 from tbp.monty.frameworks.models.evidence_matching import (
-    EvidenceGraphLM,
-    MontyForEvidenceGraphMatching,
-)
+    EvidenceGraphLM, MontyForEvidenceGraphMatching)
 from tbp.monty.frameworks.models.no_reset_evidence_matching import (
-    MontyForNoResetEvidenceGraphMatching,
-    NoResetEvidenceGraphLM,
-)
+    MontyForNoResetEvidenceGraphMatching, NoResetEvidenceGraphLM)
 from tbp.monty.simulators.habitat.configs import (
-    EnvInitArgsPatchViewMount,
-    PatchViewFinderMountHabitatDatasetArgs,
-)
+    EnvInitArgsPatchViewMount, PatchViewFinderMountHabitatDatasetArgs)
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
 
@@ -135,10 +124,10 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             msg (str): The message to display if the assertion fails.
         """
         self.assertEqual(d1.keys(), d2.keys(), msg)
-        for key in d1:
-            self.assertTrue(np.array_equal(d1[key], d2[key]), msg)
+        for key, d1_val in d1.items():
+            self.assertTrue(np.array_equal(d1_val, d2[key]), msg)
 
-    def test_no_reset_evidence_evidence_lm(self):
+    def test_no_reset_evidence_lm(self):
         """Checks that unsupervised LM does not reset the evidence between episodes.
 
         This test uses the `self.unsupervised_evidence_config` which defines
