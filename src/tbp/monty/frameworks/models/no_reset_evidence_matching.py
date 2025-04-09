@@ -92,6 +92,9 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.last_location = {}
+
+        # it does not make sense for the wait factor to exponentially
+        # grow when objects are swapped without any supervisory signal.
         self.gsg.wait_growth_multiplier = 1
 
     def reset(self):
