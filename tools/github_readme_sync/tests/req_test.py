@@ -13,7 +13,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from tools.github_readme_sync.readme import ReadMe
-from tools.github_readme_sync.req import delete, get, post, put
+from tools.github_readme_sync.req import REQUEST_TIMEOUT_SECONDS, delete, get, post, put
 
 
 @patch.dict(os.environ, {"README_API_KEY": "test_api_key"})
@@ -30,7 +30,9 @@ class TestReq(unittest.TestCase):
 
         self.assertEqual(result, {"key": "value"})
         mock_get.assert_called_once_with(
-            url, headers={"Authorization": "Basic test_api_key"}
+            url,
+            headers={"Authorization": "Basic test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
     @patch("requests.get")
@@ -44,7 +46,9 @@ class TestReq(unittest.TestCase):
 
         self.assertIsNone(result)
         mock_get.assert_called_once_with(
-            url, headers={"Authorization": "Basic test_api_key"}
+            url,
+            headers={"Authorization": "Basic test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
     @patch("requests.get")
@@ -61,7 +65,9 @@ class TestReq(unittest.TestCase):
         self.assertIsNone(result)
         self.assertIn("Failed to get https://api.example.com/data", log.output[0])
         mock_get.assert_called_once_with(
-            url, headers={"Authorization": "Basic test_api_key"}
+            url,
+            headers={"Authorization": "Basic test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
     @patch("requests.post")
@@ -80,6 +86,7 @@ class TestReq(unittest.TestCase):
             url,
             json=data,
             headers={"Authorization": "Basic test_api_key", "version": "1.0"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
     @patch("requests.post")
@@ -97,7 +104,10 @@ class TestReq(unittest.TestCase):
         self.assertIsNone(result)
         self.assertIn("Failed to post https://api.example.com/data", log.output[0])
         mock_post.assert_called_once_with(
-            url, json=data, headers={"Authorization": "Basic test_api_key"}
+            url,
+            json=data,
+            headers={"Authorization": "Basic test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
     @patch("requests.put")
@@ -112,7 +122,10 @@ class TestReq(unittest.TestCase):
 
         self.assertTrue(result)
         mock_put.assert_called_once_with(
-            url, json=data, headers={"Authorization": "Basic test_api_key"}
+            url,
+            json=data,
+            headers={"Authorization": "Basic test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
     @patch("requests.put")
@@ -130,7 +143,10 @@ class TestReq(unittest.TestCase):
         self.assertFalse(result)
         self.assertIn("Failed to put https://api.example.com/data", log.output[0])
         mock_put.assert_called_once_with(
-            url, json=data, headers={"Authorization": "Basic test_api_key"}
+            url,
+            json=data,
+            headers={"Authorization": "Basic test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
     @patch("requests.delete")
@@ -144,7 +160,9 @@ class TestReq(unittest.TestCase):
 
         self.assertTrue(result)
         mock_delete.assert_called_once_with(
-            url, headers={"Authorization": "Basic test_api_key"}
+            url,
+            headers={"Authorization": "Basic test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
     @patch("requests.delete")
@@ -158,7 +176,9 @@ class TestReq(unittest.TestCase):
 
         self.assertFalse(result)
         mock_delete.assert_called_once_with(
-            url, headers={"Authorization": "Basic test_api_key"}
+            url,
+            headers={"Authorization": "Basic test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
     @patch("requests.delete")
@@ -175,7 +195,9 @@ class TestReq(unittest.TestCase):
 
         self.assertIn("Successfully deleted version 1.0.0", log.output[0])
         mock_delete.assert_called_once_with(
-            url, headers={"Authorization": "Basic test_api_key"}
+            url,
+            headers={"Authorization": "Basic test_api_key"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
 
 

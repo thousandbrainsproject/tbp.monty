@@ -16,5 +16,5 @@ def get_folders(file_path: str) -> list:
     return [
         name
         for name in os.listdir(file_path)
-        if Path(os.path.join(file_path, name)).is_dir()
+        if Path(file_path).joinpath(name).is_dir()
     ]
