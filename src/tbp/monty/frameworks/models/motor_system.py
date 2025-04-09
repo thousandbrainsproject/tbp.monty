@@ -27,7 +27,7 @@ class MotorSystem:
 
     @property
     def last_action(self) -> Action:
-        """Retrieves the last action taken by the motor system."""
+        """Returns the last action taken by the motor system."""
         return self._policy.last_action
 
     def post_episode(self) -> None:
