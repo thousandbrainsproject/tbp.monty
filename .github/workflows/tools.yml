@@ -35,6 +35,7 @@ jobs:
           do
             echo $changed_file
             if [[ $changed_file == tools/* ]] ||
+               [[ $changed_file == pyproject.toml ]] ||
                [[ $changed_file == .github/workflows/tools.yml ]]; then
               echo "run_test_tools=true" >> $GITHUB_OUTPUT
               exit 0
@@ -50,6 +51,7 @@ jobs:
           do
             echo $changed_file
             if [[ $changed_file == tools/* ]] ||
+               [[ $changed_file == pyproject.toml ]] ||
                [[ $changed_file == .github/workflows/tools.yml ]]; then
               echo "run_test_tools=true" >> $GITHUB_OUTPUT
               exit 0
