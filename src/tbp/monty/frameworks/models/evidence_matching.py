@@ -284,9 +284,8 @@ class EvidenceGraphLM(GraphLM):
         *args,
         **kwargs,
     ):
-        super(EvidenceGraphLM, self).__init__(
-            initialize_base_modules=False, *args, **kwargs
-        )
+        kwargs["initialize_base_modules"] = False
+        super(EvidenceGraphLM, self).__init__(*args, **kwargs)
         # --- LM components ---
         self.graph_memory = EvidenceGraphMemory(
             graph_delta_thresholds=graph_delta_thresholds,
