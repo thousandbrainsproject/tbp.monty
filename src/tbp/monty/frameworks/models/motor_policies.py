@@ -61,7 +61,11 @@ class MotorPolicy(abc.ABC):
 
     @abc.abstractmethod
     def post_action(self, action: Action) -> None:
-        """This post action hook will automatically be called at the end of __call__."""
+        """This post action hook will automatically be called at the end of __call__.
+
+        Args:
+            action (Action): The action to process the hook for.
+        """
         pass
 
     @abc.abstractmethod
@@ -81,7 +85,11 @@ class MotorPolicy(abc.ABC):
 
     @abc.abstractmethod
     def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
-        """Sets the experiment mode."""
+        """Sets the experiment mode.
+
+        Args:
+            mode (Literal["train", "eval"]): The experiment mode to set.
+        """
         pass
 
     def __call__(self) -> Action:
