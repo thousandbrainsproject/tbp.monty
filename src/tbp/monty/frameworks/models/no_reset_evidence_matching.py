@@ -7,7 +7,7 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -105,7 +105,7 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
         self.evidence = {}
         self.last_location = {}
 
-    def _add_displacements(self, obs: List[State]) -> Tuple[List[State], bool]:
+    def _add_displacements(self, obs: List[State]) -> List[State]:
         """Add displacements to the current observation.
 
         For each input channel, this function computes the displacement vector by
