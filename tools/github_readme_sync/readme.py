@@ -259,7 +259,7 @@ class ReadMe:
                         },
                     )
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 return f"[Failed to load table from {csv_path} - {e}]"
 
         return REGEX_CSV_TABLE.sub(replace_match, body)
@@ -506,7 +506,7 @@ class ReadMe:
                     unsafe_content = f.read()
                     return self.sanitize_html(unsafe_content)
 
-            except Exception as e:
+            except Exception:  # noqa: BLE001
                 return f"[File not found or could not be read: {snippet_path}]"
 
         return regex_markdown_snippet.sub(replace_match, body)

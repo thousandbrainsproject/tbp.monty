@@ -227,8 +227,8 @@ def check_external(folder, ignore_dirs, rdme):
                 total_links_checked += links_checked
                 if file_errors:
                     errors[file_path] = file_errors
-            except Exception as exc:
-                logging.error(f"{RED}Error processing {file_path}: {exc}{RESET}")
+            except Exception:
+                logging.exception(f"{RED}Error processing {file_path}: {RESET}")
 
     report_errors(errors, total_links_checked)
 
@@ -303,7 +303,7 @@ def check_readme_link(url, rdme):
         logging.info(log_msg)
         if not response:
             return [f"  broken link: {url} (Not found)"]
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         return [f"  {url}: {str(e)}"]
 
     return []

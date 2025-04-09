@@ -22,9 +22,7 @@ class TestGetFolders(unittest.TestCase):
         mock_listdir.return_value = ["folder1", "folder2", "file1.txt", "file2.txt"]
 
         # Mocking os.path.isdir to return True for folders and False for files
-        mock_isdir.side_effect = lambda x: x.endswith("folder1") or x.endswith(
-            "folder2"
-        )
+        mock_isdir.side_effect = lambda x: x.endswith(("folder1", "folder2"))
 
         # The expected output should only include the folders
         expected_folders = ["folder1", "folder2"]

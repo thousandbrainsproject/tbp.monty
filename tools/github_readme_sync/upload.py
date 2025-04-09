@@ -77,7 +77,7 @@ def process_children(
         set_do_not_delete(to_be_deleted, child["slug"])
 
         # If this child has children, call the function recursively
-        if "children" in child and child["children"]:
+        if child.get("children"):
             process_children(
                 parent=child,
                 cat_id=cat_id,

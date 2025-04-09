@@ -8,6 +8,7 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import contextlib
 import http.server
 import os
 import socketserver
@@ -178,10 +179,8 @@ class TestHierarchyFile(unittest.TestCase):
             f.write(f"[Fragment]({self.server_url}/valid#fragment)\n")
 
         with self.assertLogs(level="ERROR") as log:
-            try:
+            with contextlib.suppress(SystemExit):
                 check_external(self.test_dir, [], ReadMe("0.0"))
-            except SystemExit:
-                pass
 
         self.assertTrue(
             any(
