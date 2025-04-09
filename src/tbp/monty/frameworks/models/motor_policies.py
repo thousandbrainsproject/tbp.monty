@@ -50,7 +50,11 @@ class MotorPolicy(abc.ABC):
 
     @abc.abstractmethod
     def dynamic_call(self) -> Action:
-        """Use this method when actions are not predefined."""
+        """Use this method when actions are not predefined.
+
+        Returns:
+            (Action): The action to take.
+        """
         pass
 
     @property
@@ -80,7 +84,11 @@ class MotorPolicy(abc.ABC):
 
     @abc.abstractmethod
     def predefined_call(self) -> Action:
-        """Use this method when actions are not predefined."""
+        """Use this method when actions are not predefined.
+
+        Returns:
+            (Action): The action to take.
+        """
         pass
 
     @abc.abstractmethod
