@@ -783,12 +783,7 @@ class EvidenceGraphLM(GraphLM):
             "current_mlh": self.get_current_mlh(),
         }
         if self.has_detailed_logger:
-            # Save possible poses once since they don't change during episode
-            get_rotations = False
-            if "possible_rotations" not in self.buffer.stats.keys():
-                get_rotations = True
-
-            stats = self._add_detailed_stats(stats, get_rotations)
+            stats = self._add_detailed_stats(stats)
         return stats
 
     # ======================= Private ==========================
@@ -1799,7 +1794,12 @@ class EvidenceGraphLM(GraphLM):
         # self.buffer.update_stats(vote_data, update_time=False)
         pass
 
-    def _add_detailed_stats(self, stats, get_rotations):
+    def _add_detailed_stats(self, stats):
+        # Save possible poses once since they don't change during episode
+        get_rotations = False
+        if "possible_rotations" not in self.buffer.stats.keys():
+            get_rotations = True
+
         stats["possible_locations"] = self.possible_locations
         if get_rotations:
             stats["possible_rotations"] = self.get_possible_poses(as_euler=False)
