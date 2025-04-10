@@ -131,12 +131,12 @@ class GraphObjectModel(ObjectModel):
 
     @property
     def edge_index(self):
-        if (self._graph is not None) and ("edge_index" in self._graph.keys):
+        if (self._graph is not None) and ("edge_index" in self._graph.keys()): # Had to make this change to pass test
             return self._graph.edge_index
 
     @property
     def edge_attr(self):
-        if (self._graph is not None) and ("edge_attr" in self._graph.keys):
+        if (self._graph is not None) and ("edge_attr" in self._graph.keys()): # Had to make this change to pass test
             return self._graph.edge_attr
 
     @property
@@ -659,30 +659,43 @@ class GridObjectModel(GraphObjectModel):
         self._current_feature_mapping = updated_fm
 
     def _build_graph_from_grids(self):
-        """Build graph from grids by taking the top k voxels with content.
+        try:
+            print("DEBUG: Starting _build_graph_from_grids")
+            top_voxel_idxs = self._get_top_k_voxel_indices()
+            print("DEBUG: top_voxel_idxs", [i.shape for i in top_voxel_idxs])
 
-        Returns:
-            Graph with locations and features at the top k voxels with content.
-        """
-        top_voxel_idxs = self._get_top_k_voxel_indices()
+            dense_loc = self._location_grid.to_dense()
+            dense_feat = self._feature_grid.to_dense()
+            print("DEBUG: dense_loc shape", dense_loc.shape)
 
-        locations_at_ids = self._location_grid.to_dense()[
-            top_voxel_idxs[0], top_voxel_idxs[1], top_voxel_idxs[2]
-        ]
-        features_at_ids = self._feature_grid.to_dense()[
-            top_voxel_idxs[0], top_voxel_idxs[1], top_voxel_idxs[2]
-        ]
-        graph = build_point_cloud_graph(
-            locations=np.array(locations_at_ids),
-            features=np.array(features_at_ids),
-            feature_mapping=self._current_feature_mapping,
-        )
-        # TODO: remove eventually and do search directly in grid?
-        self._location_tree = KDTree(
-            graph.pos,
-            leafsize=40,
-        )
-        return graph
+            max_idx = [i.max().item() for i in top_voxel_idxs]
+            print("DEBUG: max indices:", max_idx)
+
+            locations_at_ids = dense_loc[top_voxel_idxs[0], top_voxel_idxs[1], top_voxel_idxs[2]]
+            features_at_ids = dense_feat[top_voxel_idxs[0], top_voxel_idxs[1], top_voxel_idxs[2]]
+
+            print("DEBUG: locations_at_ids", locations_at_ids.shape)
+            print("DEBUG: Checking for NaNs in locations:", torch.isnan(locations_at_ids).any())
+            print("DEBUG: Checking for NaNs in features:", torch.isnan(features_at_ids).any())
+
+            locations_np = np.array(locations_at_ids)
+            features_np = np.array(features_at_ids)
+
+            graph = build_point_cloud_graph(
+                locations=locations_np,
+                features=features_np,
+                feature_mapping=self._current_feature_mapping,
+            )
+
+            print("DEBUG: graph.pos shape", graph.pos.shape)
+            if np.isnan(graph.pos).any():
+                print("WARNING: NaNs in graph.pos!")
+
+            self._location_tree = KDTree(graph.pos, leafsize=40)
+            return graph
+        except Exception as e:
+            print("EXCEPTION in _build_graph_from_grids:", e)
+            raise
 
     # ------------------------ Helper --------------------------
     def _extract_feature_array(self, feature_dict):
