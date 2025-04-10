@@ -131,12 +131,12 @@ class GraphObjectModel(ObjectModel):
 
     @property
     def edge_index(self):
-        if (self._graph is not None) and ("edge_index" in self._graph.keys):
+        if (self._graph is not None) and ("edge_index" in self._graph.keys()):
             return self._graph.edge_index
 
     @property
     def edge_attr(self):
-        if (self._graph is not None) and ("edge_attr" in self._graph.keys):
+        if (self._graph is not None) and ("edge_attr" in self._graph.keys()):
             return self._graph.edge_attr
 
     @property
