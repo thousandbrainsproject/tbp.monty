@@ -18,7 +18,7 @@ jobs:
     name: build-sphinx-monty
     runs-on:
       group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-8core
+      labels: tbp-linux-x64-ubuntu2204-2core
     needs:
       - check_dependencies_monty # Don't run if dependency check fails
       - check_license_monty # Don't run if license check fails
@@ -348,17 +348,7 @@ jobs:
           export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6
           export KMP_DUPLICATE_LIB_OK=TRUE
           export OMP_NUM_THREADS=1
-          export COVERAGE_FILE=.coverage.${{ github.run_id }}
-          xvfb-run pytest -n 0 --cov=src --cov-append --cov-report= --junitxml=test_results/pytest/results.xml --verbose
-      - name: Combine coverage and generate report
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        working-directory: tbp.monty
-        run: |
-          export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
-          coverage combine
-          coverage html
-          coverage report
+          xvfb-run pytest -n 8 --cov --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose
       - name: Store test results
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/upload-artifact@v4
