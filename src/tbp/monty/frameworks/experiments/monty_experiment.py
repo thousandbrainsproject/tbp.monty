@@ -106,6 +106,10 @@ class MontyExperiment:
 
         Returns:
             Monty class instance
+
+        Raises:
+            ValueError: If `motor_system_class` is not a subclass of `MotorSystem` or
+                `policy_class` is not a subclass of `MotorPolicy`.
         """
         monty_config = copy.deepcopy(monty_config)
 
@@ -134,10 +138,17 @@ class MontyExperiment:
         motor_system_config = monty_config.pop("motor_system_config")
         motor_system_class = motor_system_config["motor_system_class"]
         motor_system_args = motor_system_config["motor_system_args"]
-        assert issubclass(motor_system_class, MotorSystem)
+        if not issubclass(motor_system_class, MotorSystem):
+            raise ValueError(
+                "motor_system_class must be a subclass of MotorSystem, got "
+                f"{motor_system_class}"
+            )
         policy_class = motor_system_args["policy_class"]
         policy_args = motor_system_args["policy_args"]
-        assert issubclass(policy_class, MotorPolicy)
+        if not issubclass(policy_class, MotorPolicy):
+            raise ValueError(
+                f"policy_class must be a subclass of MotorPolicy, got {policy_class}"
+            )
         policy = policy_class(rng=self.rng, **policy_args)
         motor_system = motor_system_class(policy=policy)
 
