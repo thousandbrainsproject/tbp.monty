@@ -488,13 +488,11 @@ class MontyBase(Monty):
     def switch_to_matching_step(self):
         self.step_type = "matching_step"
         self.is_seeking_match = True
-        self.motor_system.step_type = "exploratory_step"
         logging.debug(f"Going into matching mode after {self.episode_steps} steps")
 
     def switch_to_exploratory_step(self):
         self.step_type = "exploratory_step"
         self.is_seeking_match = False
-        self.motor_system.step_type = "exploratory_step"
         logging.info(
             "Going into exploratory mode after" f" {self.matching_steps} steps"
         )

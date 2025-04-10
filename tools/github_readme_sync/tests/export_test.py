@@ -11,6 +11,7 @@
 import os
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock
 
 from tools.github_readme_sync.export import export
@@ -68,15 +69,15 @@ class TestExport(unittest.TestCase):
         self.assertEqual(hierarchy, expected_hierarchy)
 
         # Assert that the directory structure is created as expected
-        self.assertTrue(os.path.isdir(os.path.join(self.test_output_dir, "category-1")))
-        self.assertTrue(os.path.isdir(os.path.join(self.test_output_dir, "category-2")))
+        self.assertTrue(Path(os.path.join(self.test_output_dir, "category-1")).is_dir())
+        self.assertTrue(Path(os.path.join(self.test_output_dir, "category-2")).is_dir())
 
         # Assert that the document files are created as expected
         self.assertTrue(
-            os.path.isfile(os.path.join(self.test_output_dir, "category-1", "doc-1.md"))
+            Path(os.path.join(self.test_output_dir, "category-1", "doc-1.md")).is_file()
         )
         self.assertTrue(
-            os.path.isfile(os.path.join(self.test_output_dir, "category-2", "doc-2.md"))
+            Path(os.path.join(self.test_output_dir, "category-2", "doc-2.md")).is_file()
         )
 
         # Assert the content of the files is correct
