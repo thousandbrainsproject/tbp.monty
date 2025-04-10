@@ -46,7 +46,9 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
+          source activate tbp.monty_py39
+          export KMP_DUPLICATE_LIB_OK=TRUE
+          export OMP_NUM_THREADS=1
           pip install -e .[generate_api_docs_tool]
           cd tools/generate_api_docs
           make apidoc html
@@ -85,7 +87,9 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
+          source activate tbp.monty_py39
+          export KMP_DUPLICATE_LIB_OK=TRUE
+          export OMP_NUM_THREADS=1
           pip install -e .[build]
           python -m build
       - name: Store wheel
@@ -122,7 +126,9 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
+          source activate tbp.monty_py39
+          export KMP_DUPLICATE_LIB_OK=TRUE
+          export OMP_NUM_THREADS=1
           deptry benchmarks src tests
 
   check_license_monty:
@@ -173,7 +179,9 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
+          source activate tbp.monty_py39
+          export KMP_DUPLICATE_LIB_OK=TRUE
+          export OMP_NUM_THREADS=1
           mkdir -p test_results/ruff
           ruff check --verbose src tests benchmarks
 
@@ -204,7 +212,9 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
+          source activate tbp.monty_py39
+          export KMP_DUPLICATE_LIB_OK=TRUE
+          export OMP_NUM_THREADS=1
           mkdir -p test_results/mypy
           mypy --warn-unused-configs src tests benchmarks
 
@@ -236,11 +246,11 @@ jobs:
           shasum -a 256 ~/tbp/tbp.monty/pyproject.toml | awk '{print $1}' > ~/tbp/pyproject.toml.sha
           echo "monty-${RUNNER_OS}-$(cat ~/tbp/environment_arm64.sha)-$(cat ~/tbp/environment.sha)-$(cat ~/tbp/pyproject.toml.sha)" > ~/tbp/conda_env_cache_key.txt
           echo "conda_env_cache_key_sha=$(cat ~/tbp/conda_env_cache_key.txt | shasum -a 256 | awk '{print $1}')" >> $GITHUB_OUTPUT
-      - name: Set up Python 3.8
+      - name: Set up Python 3.9
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.8"
+          python-version: "3.9"
       - name: Restore cache
         id: restore_cache
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
@@ -264,9 +274,11 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          (conda env list | grep tbp.monty) && conda remove --name tbp.monty --all --yes || true
+          (conda env list | grep tbp.monty_py39) && conda remove --name tbp.monty_py39 --all --yes || true
           conda env create
-          source activate tbp.monty
+          source activate tbp.monty_py39
+          export KMP_DUPLICATE_LIB_OK=TRUE
+          export OMP_NUM_THREADS=1
           pip install -e .[dev]
           pip list
           conda list
@@ -342,7 +354,9 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty
+          source activate tbp.monty_py39
+          export KMP_DUPLICATE_LIB_OK=TRUE
+          export OMP_NUM_THREADS=1
           set -e
           mkdir -p test_results/pytest
           export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6
