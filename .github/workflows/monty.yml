@@ -260,6 +260,9 @@ jobs:
             ~/miniconda
           key: ${{ steps.generate_cache_key.outputs.conda_env_cache_key_sha }}
           lookup-only: true
+          # Limit the number of fallback caches to 1 to prevent excessive disk usage
+          restore-keys: |
+            monty-${{ runner.os }}-
       - name: Install miniconda
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
         run: |
@@ -282,6 +285,8 @@ jobs:
           pip install -e .[dev]
           pip list
           conda list
+          # Clean pip cache to save space
+          pip cache purge
       - name: Save cache
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
@@ -332,12 +337,26 @@ jobs:
           path: |
             ~/miniconda
           key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
+          # Limit the number of fallback caches to 1 to prevent excessive disk usage
+          restore-keys: |
+            monty-${{ runner.os }}-
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/checkout@v4
         with:
           lfs: true
           path: tbp.monty
+      - name: Free up disk space
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        run: |
+          df -h
+          echo "Removing unnecessary large directories to free up space"
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo apt clean
+          df -h
       - name: Install xvfb and mesa
         # Use X11 framebuffer and mesa opengl libraries for testing.
         # Not ideal but better than no tests.
@@ -359,6 +378,8 @@ jobs:
           export OMP_NUM_THREADS=1
           set -e
           mkdir -p test_results/pytest
+          # Clean pytest cache to prevent disk space issues
+          python -m pytest --cache-clear
           export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6
           xvfb-run pytest -n 8 --cov --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose
       - name: Store test results
