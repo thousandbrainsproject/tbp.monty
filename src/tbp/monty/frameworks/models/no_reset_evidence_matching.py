@@ -133,31 +133,27 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
             self.last_location[o.sender_id] = o.location
         return obs
 
-    def _add_detailed_stats(
-        self, stats: Dict[str, Any], get_rotations: bool
-    ) -> Dict[str, Any]:
+    def _add_detailed_stats(self, stats: Dict[str, Any]) -> Dict[str, Any]:
         """Add detailed statistics to the logging dictionary.
 
         This includes metrics like the max evidence score per object, the theoretical
-        limit of Monty i.e., pose error of Monty's best hypothesis on the target object)
-        , and the pose error of the MLH hypothesis on the target object.
+        limit of Monty (i.e., pose error of Monty's best potential hypothesis on the
+        target object) , and the pose error of the MLH hypothesis on the target object.
 
         Args:
             stats (Dict[str, Any]): The existing statistics dictionary to augment.
-            get_rotations (bool): Flag indicating if rotation stats are needed
-                                  (currently unused in implementation).
 
         Returns:
             Dict[str, Any]: Updated statistics dictionary.
         """
         stats["max_evidence"] = {k: max(v) for k, v in self.evidence.items()}
         stats["target_object_theoretical_limit"] = (
-            self._target_object_theoretical_limit()
+            self._theoretical_limit_target_object_pose_error()
         )
-        stats["target_object_pose_error"] = self._target_object_pose_error()
+        stats["target_object_pose_error"] = self._mlh_target_object_pose_error()
         return stats
 
-    def _target_object_theoretical_limit(self) -> float:
+    def _theoretical_limit_target_object_pose_error(self) -> float:
         """Compute the theoretical minimum rotation error on the target object.
 
         This considers all possible hypotheses rotations on the target object
@@ -168,19 +164,14 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
         Returns:
             float: The minimum achievable rotation error (in radians).
         """
-        poses = self.possible_poses[self.primary_target].copy()
-        hyp_rotations = Rotation.from_matrix(poses).inv().as_quat().tolist()
+        hyp_rotations = Rotation.from_matrix(
+            self.possible_poses[self.primary_target]
+        ).inv()
         target_rotation = Rotation.from_quat(self.primary_target_rotation_quat)
-
-        min_error = np.pi
-        for rot in hyp_rotations:
-            rot = Rotation.from_quat(rot)
-            error = (rot * target_rotation.inv()).magnitude()
-            min_error = min(min_error, error)
-
+        min_error = (hyp_rotations * target_rotation.inv()).magnitude().min()
         return min_error
 
-    def _target_object_pose_error(self) -> float:
+    def _mlh_target_object_pose_error(self) -> float:
         """Compute the actual rotation error between predicted and target pose.
 
         This compares the most likely hypothesis pose (based on evidence) on the target
@@ -189,13 +180,9 @@ class NoResetEvidenceGraphLM(EvidenceGraphLM):
         Returns:
             float: The rotation error (in radians).
         """
-        target_rot = Rotation.from_quat(self.primary_target_rotation_quat)
-        obj_mlh_id = np.argmax(self.evidence[self.primary_target])
-        obj_rotation = Rotation.from_matrix(
-            self.possible_poses[self.primary_target][obj_mlh_id]
-        )
-
-        error = (obj_rotation * target_rot.inv()).magnitude()
+        obj_rotation = self.get_mlh_for_object(self.primary_target)["rotation"].inv()
+        target_rotation = Rotation.from_quat(self.primary_target_rotation_quat)
+        error = (obj_rotation * target_rotation.inv()).magnitude()
         return error
 
     def _agent_moved_since_reset(self):
