@@ -46,7 +46,7 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty_py39
+          source activate tbp.monty
           export KMP_DUPLICATE_LIB_OK=TRUE
           export OMP_NUM_THREADS=1
           pip install -e .[generate_api_docs_tool]
@@ -87,7 +87,7 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty_py39
+          source activate tbp.monty
           export KMP_DUPLICATE_LIB_OK=TRUE
           export OMP_NUM_THREADS=1
           pip install -e .[build]
@@ -126,7 +126,7 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty_py39
+          source activate tbp.monty
           export KMP_DUPLICATE_LIB_OK=TRUE
           export OMP_NUM_THREADS=1
           deptry benchmarks src tests
@@ -179,7 +179,7 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty_py39
+          source activate tbp.monty
           export KMP_DUPLICATE_LIB_OK=TRUE
           export OMP_NUM_THREADS=1
           mkdir -p test_results/ruff
@@ -212,7 +212,7 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty_py39
+          source activate tbp.monty
           export KMP_DUPLICATE_LIB_OK=TRUE
           export OMP_NUM_THREADS=1
           mkdir -p test_results/mypy
@@ -274,9 +274,9 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          (conda env list | grep tbp.monty_py39) && conda remove --name tbp.monty_py39 --all --yes || true
+          (conda env list | grep tbp.monty) && conda remove --name tbp.monty --all --yes || true
           conda env create
-          source activate tbp.monty_py39
+          source activate tbp.monty
           export KMP_DUPLICATE_LIB_OK=TRUE
           export OMP_NUM_THREADS=1
           pip install -e .[dev]
@@ -354,7 +354,7 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source activate tbp.monty_py39
+          source activate tbp.monty
           export KMP_DUPLICATE_LIB_OK=TRUE
           export OMP_NUM_THREADS=1
           set -e
