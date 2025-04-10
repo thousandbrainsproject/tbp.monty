@@ -60,7 +60,7 @@ class MotorPolicy(abc.ABC):
     @property
     @abc.abstractmethod
     def last_action(self) -> Action:
-        """Retrieves the last action taken by the motor policy."""
+        """Returns the last action taken by the motor policy."""
         pass
 
     @abc.abstractmethod
@@ -84,7 +84,7 @@ class MotorPolicy(abc.ABC):
 
     @abc.abstractmethod
     def predefined_call(self) -> Action:
-        """Use this method when actions are not predefined.
+        """Use this method when actions are predefined.
 
         Returns:
             (Action): The action to take.
