@@ -12,13 +12,12 @@ import argparse
 import logging
 import os
 import sys
-from os.path import dirname
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-monty_root = dirname(dirname(dirname(Path(__file__).resolve())))
-sys.path.append(monty_root)
+monty_root = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(monty_root))
 
 from tools.github_readme_sync.colors import RED, RESET  # noqa: E402
 from tools.github_readme_sync.export import export  # noqa: E402
