@@ -103,7 +103,7 @@ jobs:
     name: check-dependencies-monty
     runs-on:
       group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-2core
+      labels: tbp-linux-x64-ubuntu2204-8core
     needs:
       - install_monty
       - should_run_monty
@@ -156,7 +156,7 @@ jobs:
     name: check-style-monty
     runs-on:
       group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-2core
+      labels: tbp-linux-x64-ubuntu2204-8core
     needs:
       - install_monty
       - should_run_monty
@@ -189,7 +189,7 @@ jobs:
     name: check-types-monty
     runs-on:
       group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-2core
+      labels: tbp-linux-x64-ubuntu2204-8core
     needs:
       - install_monty
       - should_run_monty
