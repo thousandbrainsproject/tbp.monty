@@ -134,7 +134,8 @@ class EnvironmentDataLoader:
 
     def __init__(self, dataset: EnvironmentDataset, motor_system: MotorSystem, rng):
         assert isinstance(dataset, EnvironmentDataset)
-        assert isinstance(motor_system, MotorSystem)
+        if not isinstance(motor_system, MotorSystem):
+            f"motor_system must be an instance of MotorSystem, got {motor_system}"
         self.dataset = dataset
         self.motor_system = motor_system
         self.rng = rng
@@ -859,9 +860,25 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         *args,
         **kwargs,
     ):
-        """Initialize dataloader."""
+        """Initialize dataloader.
+
+        Args:
+            alphabets (List[str]): List of alphabets.
+            characters (List[str]): List of characters.
+            versions: List of versions.
+            dataset (EnvironmentDataset): The environment dataset.
+            motor_system (MotorSystem): The motor system.
+            *args: Additional arguments
+            **kwargs: Additional keyword arguments
+
+        Raises:
+            ValueError: If `motor_system` is not an instance of `MotorSystem`.
+        """
         assert isinstance(dataset, EnvironmentDataset)
-        assert isinstance(motor_system, MotorSystem)
+        if not isinstance(motor_system, MotorSystem):
+            raise ValueError(
+                f"motor_system must be an instance of MotorSystem, got {motor_system}"
+            )
         self.dataset = dataset
         self.motor_system = motor_system
         self._observation, self.motor_system._policy.state = self.dataset.reset()
@@ -933,9 +950,24 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         *args,
         **kwargs,
     ):
-        """Initialize dataloader."""
+        """Initialize dataloader.
+
+        Args:
+            scenes: List of scenes
+            versions: List of versions
+            dataset (EnvironmentDataset): The environment dataset.
+            motor_system (MotorSystem): The motor system.
+            *args: Additional arguments
+            **kwargs: Additional keyword arguments
+
+        Raises:
+            ValueError: If `motor_system` is not an instance of `MotorSystem`.
+        """
         assert isinstance(dataset, EnvironmentDataset)
-        assert isinstance(motor_system, MotorSystem)
+        if not isinstance(motor_system, MotorSystem):
+            raise ValueError(
+                f"motor_system must be an instance of MotorSystem, got {motor_system}"
+            )
         self.dataset = dataset
         self.motor_system = motor_system
         self._observation, self.motor_system._policy.state = self.dataset.reset()
@@ -1012,9 +1044,22 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         *args,
         **kwargs,
     ):
-        """Initialize dataloader."""
+        """Initialize dataloader.
+
+        Args:
+            dataset (EnvironmentDataset): The environment dataset.
+            motor_system (MotorSystem): The motor system.
+            *args: Additional arguments
+            **kwargs: Additional keyword arguments
+
+        Raises:
+            ValueError: If `motor_system` is not an instance of `MotorSystem`.
+        """
         assert isinstance(dataset, EnvironmentDataset)
-        assert isinstance(motor_system, MotorSystem)
+        if not isinstance(motor_system, MotorSystem):
+            raise ValueError(
+                f"motor_system must be an instance of MotorSystem, got {motor_system}"
+            )
         # TODO: call super init instead of duplication code & generally clean up more
         self.dataset = dataset
         self.motor_system = motor_system
