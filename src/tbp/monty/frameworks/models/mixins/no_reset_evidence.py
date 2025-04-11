@@ -13,6 +13,22 @@ from scipy.spatial.transform import Rotation
 
 
 class TheoreticalLimitLMLoggingMixin:
+    """Mixin that adds theoretical limit and pose error logging for learning modules.
+
+    This mixin augments the learning module with methods to compute and log:
+      - The maximum evidence score for each object.
+      - The theoretical lower bound of pose error on the target object, assuming
+        Monty had selected the best possible hypothesis (oracle performance).
+      - The actual pose error of the most likely hypothesis (MLH) on the target object.
+
+    These metrics are useful for analyzing the performance gap between the model's
+    current inference and its best achievable potential given its internal hypotheses.
+
+    Compatible with:
+        - EvidenceGraphLM
+        - NoResetEvidenceGraphLM
+    """
+
     def _add_detailed_stats(self, stats: Dict[str, Any]) -> Dict[str, Any]:
         """Add detailed statistics to the logging dictionary.
 
