@@ -9,10 +9,10 @@
 
 import unittest
 
-from tools.plot.pose_error_over_time import pose_error_over_time
+from tools.plot.pose_error_over_time import plot_pose_error_over_time
 
 
 class TestPoseErrorOverTime(unittest.TestCase):
     def test_exit_1_if_exp_path_does_not_exist(self):
-        exit_code = pose_error_over_time("nonexistent_path")
+        exit_code = plot_pose_error_over_time("nonexistent_path")
         self.assertEqual(exit_code, 1)

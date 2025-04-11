@@ -23,7 +23,7 @@ from tbp.monty.frameworks.utils.logging_utils import load_stats
 logger = logging.getLogger(__name__)
 
 
-def pose_error_over_time(exp_path: str) -> int:
+def plot_pose_error_over_time(exp_path: str) -> int:
     """Plot MLH pose error and theoretical limits over time.
 
     This function visualizes the theoretical pose error limit vs. the actual
@@ -191,5 +191,5 @@ def add_subparser(
         ),
     )
     parser.set_defaults(
-        func=lambda args: sys.exit(pose_error_over_time(args.experiment_log_dir))
+        func=lambda args: sys.exit(plot_pose_error_over_time(args.experiment_log_dir))
     )

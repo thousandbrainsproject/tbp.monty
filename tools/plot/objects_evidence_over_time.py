@@ -23,7 +23,7 @@ from tbp.monty.frameworks.utils.logging_utils import load_stats
 logger = logging.getLogger(__name__)
 
 
-def objects_evidence_over_time(exp_path: str) -> int:
+def plot_objects_evidence_over_time(exp_path: str) -> int:
     """Plot evidence scores for each object over time.
 
     This function visualizes the evidence scores for each object. The plot is produced
@@ -142,5 +142,7 @@ def add_subparser(
         ),
     )
     parser.set_defaults(
-        func=lambda args: sys.exit(objects_evidence_over_time(args.experiment_log_dir))
+        func=lambda args: sys.exit(
+            plot_objects_evidence_over_time(args.experiment_log_dir)
+        )
     )
