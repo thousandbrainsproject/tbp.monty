@@ -12,9 +12,6 @@ from typing import Any, Dict
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.models.evidence_matching import EvidenceGraphLM
-from tbp.monty.frameworks.models.no_reset_evidence_matching import (
-    NoResetEvidenceGraphLM,
-)
 
 
 class TheoreticalLimitLMLoggingMixin:
@@ -31,25 +28,19 @@ class TheoreticalLimitLMLoggingMixin:
 
     Compatible with:
         - EvidenceGraphLM
-        - NoResetEvidenceGraphLM
     """
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """Ensure the mixin is used only with compatible learning modules.
 
         Raises:
-            ValueError: If the mixin is used with a non-compatible learning module.
+            TypeError: If the mixin is used with a non-compatible learning module.
         """
         super().__init_subclass__(**kwargs)
-        if not any(
-            [
-                issubclass(b, (EvidenceGraphLM, NoResetEvidenceGraphLM))
-                for b in cls.__bases__
-            ]
-        ):
-            raise ValueError(
-                "TheoreticalLimitLMLoggingMixin is compatible with EvidenceGraphLM or "
-                f"NoResetEvidenceGraphLM, got {cls}"
+        if not any([issubclass(b, (EvidenceGraphLM)) for b in cls.__bases__]):
+            raise TypeError(
+                "TheoreticalLimitLMLoggingMixin must be mixed in with a subclass of "
+                f"EvidenceGraphLM, got {cls}"
             )
 
     def _add_detailed_stats(self, stats: Dict[str, Any]) -> Dict[str, Any]:
