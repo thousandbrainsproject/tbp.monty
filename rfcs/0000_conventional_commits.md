@@ -42,6 +42,8 @@ Monty code adopts the following `<type>`s:
 - `rfc`: RFC proposal.
 - `revert`: Commit that reverts a previous commit.
 
+Even with the above guidance, sometimes there might be doubt or disagreement on what type to use. If it seems like multiple types are appropriate, maybe there should be multiple pull requests. Otherwise, discuss in the pull request and select a best-fit type.
+
 ### Breaking Changes
 
 A breaking change is communicated by appending `!` after the type/scope. This correlates with `MAJOR` in [RFC 7 - Monty versioning](0007_monty_versioning.md).
