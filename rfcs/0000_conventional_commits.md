@@ -60,6 +60,10 @@ A breaking change is communicated by appending `!` after the type/scope. This co
 
 Monty does not use optional scopes.
 
+### Description
+
+This is the usual one-line message summarizing the commit.
+
 ### Optional Body
 
 Monty, usually, does not use optional body.
