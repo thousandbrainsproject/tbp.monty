@@ -79,6 +79,42 @@ chore: version 0.3.0
 fix: Omniglot environment
 ```
 
+### Commit message with scope
+
+> [!NOTE]
+> We do not use scopes.
+
+```
+feat(motor_sys): add MotorModule
+```
+
+### Commit message with scope and `!` to draw attention to breaking change
+
+> [!NOTE]
+> We do not use scopes.
+
+```
+feat(api)!: on the wire CMP
+```
+
+### Commit message with multi-paragraph body and multiple footers
+
+> [!NOTE]
+> We typically don't use these types of commits.
+
+```
+fix: prevent racing of requests
+
+Introduce a request id and a reference to latest request. Dismiss
+incoming responses other than from latest request.
+
+Remove timeouts which were used to mitigate the racing issue but are
+obsolete now.
+
+Reviewed-by: Z
+Refs: #123
+```
+
 ## Pull Requests
 
 By default, Pull Request titles are used as the suggested commit message when merging. **Maintainers** are responsible for ensuring that any merges to `main` contain a conventional commit message as defined in this RFC.
