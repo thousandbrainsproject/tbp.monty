@@ -65,7 +65,12 @@ from tbp.monty.frameworks.models.evidence_matching import (
 from tbp.monty.frameworks.models.goal_state_generation import (
     EvidenceGoalStateGenerator,
 )
-from tbp.monty.frameworks.models.motor_policies import get_perc_on_obj_semantic
+from tbp.monty.frameworks.models.motor_policies import (
+    InformedPolicy,
+    SurfacePolicy,
+    SurfacePolicyCurvatureInformed,
+    get_perc_on_obj_semantic,
+)
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
 from tbp.monty.frameworks.utils.transform_utils import numpy_to_scipy_quat
@@ -235,14 +240,17 @@ class PolicyTest(unittest.TestCase):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=5),
                 motor_system_config=MotorSystemConfigInformedNoTransStepS20(
-                    motor_system_args=make_informed_policy_config(
-                        action_space_type="distant_agent_no_translation",
-                        action_sampler_class=ConstantSampler,
-                        # Take large steps for a quick experiment
-                        rotation_degrees=20.0,
-                        use_goal_state_driven_actions=False,
-                        switch_frequency=0,  # Overwrite default of 1.0
-                    )
+                    motor_system_args=dict(
+                        policy_class=InformedPolicy,
+                        policy_args=make_informed_policy_config(
+                            action_space_type="distant_agent_no_translation",
+                            action_sampler_class=ConstantSampler,
+                            # Take large steps for a quick experiment
+                            rotation_degrees=20.0,
+                            use_goal_state_driven_actions=False,
+                            switch_frequency=0,  # Overwrite default of 1.0
+                        ),
+                    ),
                 ),
             ),
         )
@@ -253,12 +261,15 @@ class PolicyTest(unittest.TestCase):
             monty_config=SurfaceAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20),
                 motor_system_config=MotorSystemConfigSurface(
-                    motor_system_args=make_surface_policy_config(
-                        desired_object_distance=0.025,
-                        alpha=0.0,  # Overwrite default of 0.1
-                        use_goal_state_driven_actions=False,
-                        translation_distance=0.05,
-                    )
+                    motor_system_args=dict(
+                        policy_class=SurfacePolicy,
+                        policy_args=make_surface_policy_config(
+                            desired_object_distance=0.025,
+                            alpha=0.0,  # Overwrite default of 0.1
+                            use_goal_state_driven_actions=False,
+                            translation_distance=0.05,
+                        ),
+                    ),
                 ),
             ),
             dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(
@@ -279,15 +290,17 @@ class PolicyTest(unittest.TestCase):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20),
                 motor_system_config=MotorSystemConfigInformedNoTransStepS20(
-                    motor_system_args=make_informed_policy_config(
-                        action_space_type="distant_agent_no_translation",
-                        action_sampler_class=ConstantSampler,
-                        rotation_degrees=5.0,
-                        use_goal_state_driven_actions=False,
-                        switch_frequency=1.0,
-                        good_view_percentage=0.5,  # Make sure we define the required
-                        # good view percentage
-                    )
+                    motor_system_args=dict(
+                        policy_class=InformedPolicy,
+                        policy_args=make_informed_policy_config(
+                            action_space_type="distant_agent_no_translation",
+                            action_sampler_class=ConstantSampler,
+                            rotation_degrees=5.0,
+                            use_goal_state_driven_actions=False,
+                            switch_frequency=1.0,
+                            good_view_percentage=0.5,
+                        ),
+                    ),
                 ),
             ),
         )
@@ -299,12 +312,15 @@ class PolicyTest(unittest.TestCase):
             monty_config=SurfaceAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20),
                 motor_system_config=MotorSystemConfigSurface(
-                    motor_system_args=make_surface_policy_config(
-                        desired_object_distance=0.025,
-                        alpha=0.0,
-                        use_goal_state_driven_actions=False,
-                        translation_distance=0.05,
-                    )
+                    motor_system_args=dict(
+                        policy_class=SurfacePolicy,
+                        policy_args=make_surface_policy_config(
+                            desired_object_distance=0.025,
+                            alpha=0.0,
+                            use_goal_state_driven_actions=False,
+                            translation_distance=0.05,
+                        ),
+                    ),
                 ),
             ),
             dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(
@@ -337,15 +353,17 @@ class PolicyTest(unittest.TestCase):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20),
                 motor_system_config=MotorSystemConfigInformedNoTransStepS20(
-                    motor_system_args=make_informed_policy_config(
-                        action_space_type="distant_agent_no_translation",
-                        action_sampler_class=ConstantSampler,
-                        rotation_degrees=5.0,
-                        use_goal_state_driven_actions=False,
-                        switch_frequency=1.0,
-                        good_view_percentage=0.5,  # Make sure we define the required
-                        # good view percentage
-                    )
+                    motor_system_args=dict(
+                        policy_class=InformedPolicy,
+                        policy_args=make_informed_policy_config(
+                            action_space_type="distant_agent_no_translation",
+                            action_sampler_class=ConstantSampler,
+                            rotation_degrees=5.0,
+                            use_goal_state_driven_actions=False,
+                            switch_frequency=1.0,
+                            good_view_percentage=0.5,
+                        ),
+                    ),
                 ),
             ),
         )
@@ -364,12 +382,15 @@ class PolicyTest(unittest.TestCase):
             monty_config=SurfaceAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20),
                 motor_system_config=MotorSystemConfigSurface(
-                    motor_system_args=make_surface_policy_config(
-                        desired_object_distance=0.025,
-                        alpha=0.0,
-                        use_goal_state_driven_actions=False,
-                        translation_distance=0.05,
-                    )
+                    motor_system_args=dict(
+                        policy_class=SurfacePolicy,
+                        policy_args=make_surface_policy_config(
+                            desired_object_distance=0.025,
+                            alpha=0.0,
+                            use_goal_state_driven_actions=False,
+                            translation_distance=0.05,
+                        ),
+                    ),
                 ),
             ),
             dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(
@@ -530,10 +551,10 @@ class PolicyTest(unittest.TestCase):
         motor_system_config = config_to_dict(config_object)
         motor_system_class = motor_system_config["motor_system_class"]
         motor_system_args = motor_system_config["motor_system_args"]
-
-        motor_system = motor_system_class(
-            rng=np.random.RandomState(123), **motor_system_args
-        )
+        policy_class = motor_system_args["policy_class"]
+        policy_args = motor_system_args["policy_args"]
+        policy = policy_class(rng=np.random.RandomState(123), **policy_args)
+        motor_system = motor_system_class(policy=policy)
         motor_system.pre_episode()
 
         return motor_system, motor_system_args
@@ -592,7 +613,7 @@ class PolicyTest(unittest.TestCase):
             # Check the initial view
             observation = next(exp.dataloader)
             # TODO M remove the following train-wreck during refactor
-            view = observation[exp.model.motor_system.agent_id]["view_finder"]
+            view = observation[exp.model.motor_system._policy.agent_id]["view_finder"]
             semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
             perc_on_target_obj = get_perc_on_obj_semantic(semantic, semantic_id=1)
 
@@ -600,7 +621,7 @@ class PolicyTest(unittest.TestCase):
 
             target_perc_on_target_obj = dict_config["monty_config"][
                 "motor_system_config"
-            ]["motor_system_args"]["good_view_percentage"]
+            ]["motor_system_args"]["policy_args"]["good_view_percentage"]
 
             assert (
                 perc_on_target_obj >= target_perc_on_target_obj
@@ -612,7 +633,7 @@ class PolicyTest(unittest.TestCase):
 
             target_closest_point = dict_config["monty_config"]["motor_system_config"][
                 "motor_system_args"
-            ]["desired_object_distance"]
+            ]["policy_args"]["desired_object_distance"]
 
             # Utility policy should not have moved too close to the object
             assert (
@@ -646,7 +667,7 @@ class PolicyTest(unittest.TestCase):
             observation_post_touch = next(exp.dataloader)
 
             # TODO M remove the following train-wreck during refactor
-            view = observation_post_touch[exp.model.motor_system.agent_id][
+            view = observation_post_touch[exp.model.motor_system._policy.agent_id][
                 "view_finder"
             ]
             dict_config = config_to_dict(config)
@@ -663,7 +684,7 @@ class PolicyTest(unittest.TestCase):
 
             target_closest_point = dict_config["monty_config"]["motor_system_config"][
                 "motor_system_args"
-            ]["desired_object_distance"]
+            ]["policy_args"]["desired_object_distance"]
 
             # Utility policy should not have moved too close to the object
             assert (
@@ -699,14 +720,14 @@ class PolicyTest(unittest.TestCase):
             # Check the initial view
             observation = next(exp.dataloader)
             # TODO M remove the following train-wreck during refactor
-            view = observation[exp.model.motor_system.agent_id]["view_finder"]
+            view = observation[exp.model.motor_system._policy.agent_id]["view_finder"]
             semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
             perc_on_target_obj = get_perc_on_obj_semantic(semantic, semantic_id=1)
 
             dict_config = config_to_dict(config)
             target_perc_on_target_obj = dict_config["monty_config"][
                 "motor_system_config"
-            ]["motor_system_args"]["good_view_percentage"]
+            ]["motor_system_args"]["policy_args"]["good_view_percentage"]
 
             assert (
                 perc_on_target_obj >= target_perc_on_target_obj
@@ -718,7 +739,7 @@ class PolicyTest(unittest.TestCase):
 
             target_closest_point = dict_config["monty_config"]["motor_system_config"][
                 "motor_system_args"
-            ]["desired_object_distance"]
+            ]["policy_args"]["desired_object_distance"]
 
             # Utility policy should not have moved too close to the object
             assert (
@@ -760,7 +781,7 @@ class PolicyTest(unittest.TestCase):
             for loader_step, observation in enumerate(exp.dataloader):
                 exp.model.step(observation)
 
-                last_action = exp.model.motor_system.last_action()
+                last_action = exp.model.motor_system.last_action
 
                 if loader_step == 3:
                     stored_action = last_action
@@ -917,7 +938,7 @@ class PolicyTest(unittest.TestCase):
             # current orientation
             agent_direction = np.array(
                 hab_utils.quat_rotate_vector(
-                    exp.model.motor_system.state["agent_id_0"]["rotation"],
+                    exp.model.motor_system._policy.state["agent_id_0"]["rotation"],
                     [
                         0,
                         0,
@@ -948,21 +969,24 @@ class PolicyTest(unittest.TestCase):
         """
         motor_system, motor_system_args = self.initialize_motor_system(
             MotorSystemConfigCurvatureInformedSurface(
-                motor_system_args=make_curv_surface_policy_config(
-                    desired_object_distance=0.025,
-                    alpha=0.1,
-                    pc_alpha=0.5,
-                    max_pc_bias_steps=2,  # Overwrite default value
-                    min_general_steps=8,
-                    min_heading_steps=12,
-                    use_goal_state_driven_actions=False,
-                )
+                motor_system_args=dict(
+                    policy_class=SurfacePolicyCurvatureInformed,
+                    policy_args=make_curv_surface_policy_config(
+                        desired_object_distance=0.025,
+                        alpha=0.1,
+                        pc_alpha=0.5,
+                        max_pc_bias_steps=2,  # Overwrite default value
+                        min_general_steps=8,
+                        min_heading_steps=12,
+                        use_goal_state_driven_actions=False,
+                    ),
+                ),
             )
         )
 
         # Initialize motor-system state
-        motor_system.state = dict(agent_id_0=dict())
-        motor_system.state["agent_id_0"]["rotation"] = qt.quaternion(1, 0, 0, 0)
+        motor_system._policy.state = dict(agent_id_0=dict())
+        motor_system._policy.state["agent_id_0"]["rotation"] = qt.quaternion(1, 0, 0, 0)
 
         # Step 1
         # fake_obs_pc contains observations including the point-normal and principal
@@ -971,77 +995,79 @@ class PolicyTest(unittest.TestCase):
         # also in environmental coordinates, so we compare these
         # Note that the movement is a unit vector because it is a direction, the amount
         # (i.e. size) of the translation is represented separately.
-        motor_system.processed_observations = self.fake_obs_pc[0]
-        direction = motor_system.tangential_direction()
+        motor_system._policy.processed_observations = self.fake_obs_pc[0]
+        direction = motor_system._policy.tangential_direction()
         assert np.all(
             np.isclose(direction, [1, 0, 0])
         ), "Not following correct PC direction"
-        assert (
-            motor_system.following_pc_counter == 1
-        ), "Should have followed PC and incremented counter"
-        assert (
-            motor_system.continuous_pc_steps == 1
-        ), "Should have incremented continuous counter"
+        assert motor_system._policy.following_pc_counter == 1, (
+            "Should have followed PC and incremented counter"
+        )
+        assert motor_system._policy.continuous_pc_steps == 1, (
+            "Should have incremented continuous counter"
+        )
 
         # Step 2
-        motor_system.processed_observations = self.fake_obs_pc[1]
-        direction = motor_system.tangential_direction()
+        motor_system._policy.processed_observations = self.fake_obs_pc[1]
+        direction = motor_system._policy.tangential_direction()
         assert np.all(
             np.isclose(direction, [1, 0, 0])
         ), "Not following correct PC direction"
-        assert (
-            motor_system.following_pc_counter == 2
-        ), "Should have followed PC and incremented counter"
-        assert (
-            motor_system.continuous_pc_steps == 2
-        ), "Should have incremented continuous counter"
+        assert motor_system._policy.following_pc_counter == 2, (
+            "Should have followed PC and incremented counter"
+        )
+        assert motor_system._policy.continuous_pc_steps == 2, (
+            "Should have incremented continuous counter"
+        )
 
         # Step 3: Our bias should change from following minimal to maximal
         # PC
-        motor_system.processed_observations = self.fake_obs_pc[2]
-        direction = motor_system.tangential_direction()
+        motor_system._policy.processed_observations = self.fake_obs_pc[2]
+        direction = motor_system._policy.tangential_direction()
         assert np.all(
             np.isclose(direction, [0, 1, 0])
         ), "Not following correct PC direction"
-        assert (
-            motor_system.following_pc_counter == 1
-        ), "Should have reset following PC counter due to bias change, and incremented"
-        assert (
-            motor_system.continuous_pc_steps == 1
-        ), "Should have reset continous counter due to bias change, and incremented"
+        assert motor_system._policy.following_pc_counter == 1, (
+            "Should have reset following PC counter due to bias change, and incremented"
+        )
+        assert motor_system._policy.continuous_pc_steps == 1, (
+            "Should have reset continous counter due to bias change, and incremented"
+        )
 
         # Step 4
-        motor_system.processed_observations = self.fake_obs_pc[3]
-        direction = motor_system.tangential_direction()
+        motor_system._policy.processed_observations = self.fake_obs_pc[3]
+        direction = motor_system._policy.tangential_direction()
         assert np.all(
             np.isclose(direction, [0, 1, 0])
         ), "Not following correct PC direction"
-        assert (
-            motor_system.following_pc_counter == 2
-        ), "Should have followed PC and incremented counter"
-        assert (
-            motor_system.continuous_pc_steps == 2
-        ), "Should have incremented continuous counter"
+        assert motor_system._policy.following_pc_counter == 2, (
+            "Should have followed PC and incremented counter"
+        )
+        assert motor_system._policy.continuous_pc_steps == 2, (
+            "Should have incremented continuous counter"
+        )
 
         # Step 5: Pass observation *without* a well defined PC direction
-        motor_system.processed_observations = self.fake_obs_pc[4]
-        direction = motor_system.tangential_direction()
+        motor_system._policy.processed_observations = self.fake_obs_pc[4]
+        direction = motor_system._policy.tangential_direction()
         # Note the following movement is a random direction deterministcally set by the
         # random seed
         assert np.all(
             np.isclose(direction, [-0.13745981, 0.99050735, 0])
         ), "Not following correct non-PC direction"
-        assert (
-            motor_system.ignoring_pc_counter == 1
-        ), "Should have reset ignoring_pc_counter, and then incremented"
-        assert (
-            motor_system.continuous_pc_steps == 0
-        ), "Should have reset continuous counter"
-        assert (
-            motor_system.following_pc_counter == 2
-        ), "Should have not changed following_pc_counter"
-        assert motor_system.using_pc_guide is False, "Should not be using PC guide"
-        assert motor_system.prev_angle is None, "Should have reset prev_angle"
+        assert motor_system._policy.ignoring_pc_counter == 1, (
+            "Should have reset ignoring_pc_counter, and then incremented"
+        )
+        assert motor_system._policy.continuous_pc_steps == 0, (
+            "Should have reset continuous counter"
+        )
+        assert motor_system._policy.following_pc_counter == 2, (
+            "Should have not changed following_pc_counter"
+        )
+        assert motor_system._policy.using_pc_guide is False, (
+            "Should not be using PC guide"
+        )
+        assert motor_system._policy.prev_angle is None, "Should have reset prev_angle"
 
         # Step 6 : Follow principal curvature, but the agent is rotated, so the policy
         # needs to ensure PC is still handled correctly (PC and the returned movement
@@ -1049,11 +1075,13 @@ class PolicyTest(unittest.TestCase):
         # the same); note the agent is still orthogonal to the PC directions.
 
         # Update relevant motor-system variables
-        motor_system.ignoring_pc_counter = motor_system_args["min_general_steps"]
-        motor_system.state["agent_id_0"]["rotation"] = qt.quaternion(0, 0, 1, 0)
+        motor_system._policy.ignoring_pc_counter = motor_system_args["policy_args"][
+            "min_general_steps"
+        ]
+        motor_system._policy.state["agent_id_0"]["rotation"] = qt.quaternion(0, 0, 1, 0)
 
-        motor_system.processed_observations = self.fake_obs_pc[5]
-        direction = motor_system.tangential_direction()
+        motor_system._policy.processed_observations = self.fake_obs_pc[5]
+        direction = motor_system._policy.tangential_direction()
         assert np.all(
             np.isclose(direction, [1.0, 0.0, 0])
         ), "Not following correct PC direction"
@@ -1067,122 +1095,134 @@ class PolicyTest(unittest.TestCase):
         """
         motor_system, motor_system_args = self.initialize_motor_system(
             MotorSystemConfigCurvatureInformedSurface(
-                motor_system_args=make_curv_surface_policy_config(
-                    desired_object_distance=0.025,
-                    alpha=0.1,
-                    pc_alpha=0.5,
-                    max_pc_bias_steps=32,
-                    min_general_steps=1,  # Overwrite default value so that we more
-                    # quickly transition into taking PC steps when testing this
-                    min_heading_steps=12,
-                    use_goal_state_driven_actions=False,
-                )
+                motor_system_args=dict(
+                    policy_class=SurfacePolicyCurvatureInformed,
+                    policy_args=make_curv_surface_policy_config(
+                        desired_object_distance=0.025,
+                        alpha=0.1,
+                        pc_alpha=0.5,
+                        max_pc_bias_steps=32,
+                        min_general_steps=1,  # Overwrite default value so that we more
+                        # quickly transition into taking PC steps when testing this
+                        min_heading_steps=12,
+                        use_goal_state_driven_actions=False,
+                    ),
+                ),
             )
         )
 
         # Initialize motor system state
-        motor_system.state = dict(agent_id_0=dict())
-        motor_system.state["agent_id_0"]["rotation"] = qt.quaternion(1, 0, 0, 0)
+        motor_system._policy.state = dict(agent_id_0=dict())
+        motor_system._policy.state["agent_id_0"]["rotation"] = qt.quaternion(1, 0, 0, 0)
 
         # Step 1 : PC-guided information, but we haven't taken the minimum number of
         # non-PC steps, so take random step
-        motor_system.ignoring_pc_counter = 0  # Set to 0 so we skip PC
-        motor_system.processed_observations = self.fake_obs_advanced_pc[0]
+        motor_system._policy.ignoring_pc_counter = 0  # Set to 0 so we skip PC
+        motor_system._policy.processed_observations = self.fake_obs_advanced_pc[0]
         # TODO M clean up how we set this when doing the refactor; currently this is
         # done in graph_matching.py normally
-        motor_system.tangent_locs.append(self.fake_obs_pc[0].location)
-        motor_system.tangent_norms.append([0, 0, 1])
-        direction = motor_system.tangential_direction()
+        motor_system._policy.tangent_locs.append(self.fake_obs_pc[0].location)
+        motor_system._policy.tangent_norms.append([0, 0, 1])
+        direction = motor_system._policy.tangential_direction()
         # Note the following movement is a random direction deterministcally set by the
         # random seed
         assert np.all(
             np.isclose(direction, [0.98165657, 0.19065773, 0])
         ), "Not following correct non-PC direction"
-        assert (
-            motor_system.following_pc_counter == 0
-        ), "Should not have followed PC and incremented counter"
-        assert (
-            motor_system.continuous_pc_steps == 0
-        ), "Should not have incremented continuous counter"
+        assert motor_system._policy.following_pc_counter == 0, (
+            "Should not have followed PC and incremented counter"
+        )
+        assert motor_system._policy.continuous_pc_steps == 0, (
+            "Should not have incremented continuous counter"
+        )
 
         # Step 2 : Given the same observation, but now have taken sufficient non-PC
         # steps, so should follow PC direction
-        motor_system.processed_observations = self.fake_obs_advanced_pc[0]
+        motor_system._policy.processed_observations = self.fake_obs_advanced_pc[0]
         # TODO M clean up how we set this when doing the refactor; currently this is
         # done in graph_matching.py normally
-        motor_system.tangent_locs.append(self.fake_obs_pc[0].location)
-        motor_system.tangent_norms.append([0, 0, 1])
-        direction = motor_system.tangential_direction()
+        motor_system._policy.tangent_locs.append(self.fake_obs_pc[0].location)
+        motor_system._policy.tangent_norms.append([0, 0, 1])
+        direction = motor_system._policy.tangential_direction()
         assert np.all(
             np.isclose(direction, [1, 0, 0])
         ), "Not following correct PC direction"
-        assert (
-            motor_system.following_pc_counter == 1
-        ), "Should have followed PC and incremented counter"
-        assert (
-            motor_system.continuous_pc_steps == 1
-        ), "Should have incremented continuous counter"
+        assert motor_system._policy.following_pc_counter == 1, (
+            "Should have followed PC and incremented counter"
+        )
+        assert motor_system._policy.continuous_pc_steps == 1, (
+            "Should have incremented continuous counter"
+        )
 
         # Step 3 : Following PC direction would cause us to double back on ourself;
         # PC has been aribtrarily flipped vs. previous step, so can just flip it back
-        motor_system.processed_observations = self.fake_obs_advanced_pc[1]
-        motor_system.tangent_locs.append(self.fake_obs_advanced_pc[1].location)
-        motor_system.tangent_norms.append([0, 0, 1])
-        direction = motor_system.tangential_direction()
+        motor_system._policy.processed_observations = self.fake_obs_advanced_pc[1]
+        motor_system._policy.tangent_locs.append(self.fake_obs_advanced_pc[1].location)
+        motor_system._policy.tangent_norms.append([0, 0, 1])
+        direction = motor_system._policy.tangential_direction()
         assert np.all(
             np.isclose(direction, [1, 0, 0])
         ), "Not following correct PC direction"
-        assert (
-            motor_system.following_pc_counter == 2
-        ), "Should have followed PC and incremented counter"
-        assert (
-            motor_system.continuous_pc_steps == 2
-        ), "Should have incremented continuous counter"
+        assert motor_system._policy.following_pc_counter == 2, (
+            "Should have followed PC and incremented counter"
+        )
+        assert motor_system._policy.continuous_pc_steps == 2, (
+            "Should have incremented continuous counter"
+        )
 
         # Step 4 : PC is defined in z-direction, so policy should take a random step
-        motor_system.processed_observations = self.fake_obs_advanced_pc[2]
-        motor_system.tangent_locs.append(self.fake_obs_pc[2].location)
-        motor_system.tangent_norms.append([0, 0, 1])
-        direction = motor_system.tangential_direction()
+        motor_system._policy.processed_observations = self.fake_obs_advanced_pc[2]
+        motor_system._policy.tangent_locs.append(self.fake_obs_pc[2].location)
+        motor_system._policy.tangent_norms.append([0, 0, 1])
+        direction = motor_system._policy.tangential_direction()
         # Note the following movement is a random direction deterministcally set by the
         # random seed
         assert np.all(
             np.isclose(direction, [0.9789808522232504, -0.20395217816987962, 0])
         ), "Not following correct non-PC direction"
         assert (
-            motor_system.ignoring_pc_counter == motor_system_args["min_general_steps"]
+            motor_system._policy.ignoring_pc_counter
+            == motor_system_args["policy_args"]["min_general_steps"]
         ), "Shoulnd't increment ignoring_pc_counter"
-        assert (
-            motor_system.following_pc_counter == 2
-        ), "Should have not changed following_pc_counter"
-        assert motor_system.pc_is_z_defined is True, "Should have detected z-defined PC"
+        assert motor_system._policy.following_pc_counter == 2, (
+            "Should have not changed following_pc_counter"
+        )
+        assert motor_system._policy.pc_is_z_defined is True, (
+            "Should have detected z-defined PC"
+        )
 
         # Step 5 : Following PC direction would cause us to double back on ourself; PC
         # has not been arbitrarily flipped, so policy selects a new heading
-        motor_system.processed_observations = self.fake_obs_advanced_pc[0]
-        motor_system.tangent_locs.append(self.fake_obs_pc[0].location)  # Synthetically
+        motor_system._policy.processed_observations = self.fake_obs_advanced_pc[0]
+        motor_system._policy.tangent_locs.append(
+            self.fake_obs_pc[0].location
+        )  # Synthetically
         # "teleport" the agent back to the first observation and location, such that
         # following PC would cause it to visit the observation 1 again (which it is
         # designed to avoid)
-        motor_system.tangent_norms.append([0, 0, 1])
-        direction = motor_system.tangential_direction()
+        motor_system._policy.tangent_norms.append([0, 0, 1])
+        direction = motor_system._policy.tangential_direction()
         # Note the following movement is a random direction deterministcally set by the
         # random seed
         assert np.all(
             np.isclose(direction, [0.60958557, 0.79272027, 0])
         ), "Not following correct non-PC direction"
-        assert (
-            motor_system.ignoring_pc_counter == 0
-        ), "Should have reset ignoring_pc_counter, and not incremented"
-        assert (
-            motor_system.continuous_pc_steps == 0
-        ), "Should have reset continuous counter"
-        assert (
-            motor_system.following_pc_counter == 2
-        ), "Should have not changed following_pc_counter"
-        assert motor_system.using_pc_guide is False, "Should not be using PC guide"
-        assert motor_system.prev_angle is None, "Should have reset prev_angle"
-        assert motor_system.pc_is_z_defined is False, "Should have reset z-defind flag"
+        assert motor_system._policy.ignoring_pc_counter == 0, (
+            "Should have reset ignoring_pc_counter, and not incremented"
+        )
+        assert motor_system._policy.continuous_pc_steps == 0, (
+            "Should have reset continuous counter"
+        )
+        assert motor_system._policy.following_pc_counter == 2, (
+            "Should have not changed following_pc_counter"
+        )
+        assert motor_system._policy.using_pc_guide is False, (
+            "Should not be using PC guide"
+        )
+        assert motor_system._policy.prev_angle is None, "Should have reset prev_angle"
+        assert motor_system._policy.pc_is_z_defined is False, (
+            "Should have reset z-defind flag"
+        )
 
     def core_evaluate_compute_goal_state_for_target_loc(
         self, lm, motor_system, object_orientation, target_location_on_object
@@ -1256,9 +1296,9 @@ class PolicyTest(unittest.TestCase):
 
         # --- Determine Habitat-coordinates from goal-state ---
 
-        motor_system.set_driving_goal_state(motor_goal_state)
+        motor_system._policy.set_driving_goal_state(motor_goal_state)
 
-        target_loc_hab, target_quat = motor_system.derive_habitat_goal_state()
+        target_loc_hab, target_quat = motor_system._policy.derive_habitat_goal_state()
 
         resulting_rot = Rotation.from_quat(
             numpy_to_scipy_quat(np.array([target_quat.real] + list(target_quat.imag)))

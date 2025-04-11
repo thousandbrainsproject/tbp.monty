@@ -212,7 +212,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
 
         mode = model.experiment_mode
         episode = logger_args[f"{mode}_episodes"]
-        actions = model.motor_system.action_sequence
+        actions = model.motor_system._policy.action_sequence
         logger_time = {k: v for k, v in logger_args.items() if k != "target"}
         self.data["BASIC"][f"{mode}_stats"][episode] = performance_dict
 
@@ -500,14 +500,14 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
         # TODO ensure will work with multiple, independent sensor agents
         buffer_data["motor_system"] = dict()
         buffer_data["motor_system"]["action_sequence"] = (
-            model.motor_system.action_sequence
+            model.motor_system._policy.action_sequence
         )
 
         # Some motor systems store additional data specific to their policy, e.g. when
         # principal curvature has informed movements
-        if hasattr(model.motor_system, "action_details"):
+        if hasattr(model.motor_system._policy, "action_details"):
             buffer_data["motor_system"]["action_details"] = (
-                model.motor_system.action_details
+                model.motor_system._policy.action_details
             )
 
         self.data["DETAILED"][episodes] = buffer_data

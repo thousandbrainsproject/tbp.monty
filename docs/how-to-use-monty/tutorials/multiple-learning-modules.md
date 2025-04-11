@@ -76,7 +76,10 @@ dist_agent_5lm_2obj_train = dict(
     monty_config=FiveLMMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=500),
         motor_system_config=MotorSystemConfigNaiveScanSpiral(
-            motor_system_args=make_naive_scan_policy_config(step_size=5)
+            motor_system_args=dict(
+                policy_class=NaiveScanPolicy,
+                policy_args=make_naive_scan_policy_config(step_size=5),
+            )
         ),
     ),
     # Set up the environment and agent.

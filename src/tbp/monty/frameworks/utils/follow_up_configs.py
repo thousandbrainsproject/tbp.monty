@@ -98,8 +98,8 @@ def create_eval_episode_config(
         output_dir, "reproduce_episode_data", f"eval_episode_{episode}_actions.jsonl"
     )
     new_config["monty_config"]["motor_system_config"]["motor_system_args"][
-        "file_name"
-    ] = motor_file
+        "policy_args"
+    ]["file_name"] = motor_file
 
     # 2) Load object params from this episode into dataloader config
     object_params_file = os.path.join(
@@ -233,7 +233,7 @@ def create_eval_config_multiple_episodes(
         )
     )
     new_config["monty_config"]["motor_system_config"]["motor_system_args"][
-        "file_names_per_episode"
-    ] = file_names_per_episode
+        "policy_args"
+    ]["file_names_per_episode"] = file_names_per_episode
 
     return new_config

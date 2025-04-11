@@ -18,13 +18,14 @@ import unittest
 from dataclasses import dataclass, field
 from pathlib import Path
 from pprint import pprint
-from typing import Callable, Dict, Union
+from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
 
 from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
 from tbp.monty.frameworks.config_utils.config_args import (
+    Dataclass,
     FiveLMMontyConfig,
     InformedPolicy,
     LoggingConfig,
@@ -52,6 +53,7 @@ from tbp.monty.frameworks.models.goal_state_generation import (
     EvidenceGoalStateGenerator,
     GraphGoalStateGenerator,
 )
+from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
     HabitatDistantPatchSM,
@@ -71,26 +73,32 @@ from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
 @dataclass
 class MotorSystemConfigFixed:
-    motor_system_class: Callable = field(default=InformedPolicy)
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_informed_policy_config(
-            action_space_type="distant_agent_no_translation",
-            action_sampler_class=ConstantSampler,
-            rotation_degrees=5.0,
-            file_name=Path(__file__).parent / "resources/fixed_test_actions.jsonl",
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=InformedPolicy,
+            policy_args=make_informed_policy_config(
+                action_space_type="distant_agent_no_translation",
+                action_sampler_class=ConstantSampler,
+                rotation_degrees=5.0,
+                file_name=Path(__file__).parent / "resources/fixed_test_actions.jsonl",
+            ),
         )
     )
 
 
 @dataclass
 class MotorSystemConfigOffObject:
-    motor_system_class: Callable = field(default=InformedPolicy)
-    motor_system_args: Union[Dict, dataclass] = field(
-        default_factory=lambda: make_informed_policy_config(
-            action_space_type="distant_agent_no_translation",
-            action_sampler_class=ConstantSampler,
-            file_name=Path(__file__).parent
-            / "resources/fixed_test_actions_off_object.jsonl",
+    motor_system_class: MotorSystem = MotorSystem
+    motor_system_args: Union[Dict, Dataclass] = field(
+        default_factory=lambda: dict(
+            policy_class=InformedPolicy,
+            policy_args=make_informed_policy_config(
+                action_space_type="distant_agent_no_translation",
+                action_sampler_class=ConstantSampler,
+                file_name=Path(__file__).parent
+                / "resources/fixed_test_actions_off_object.jsonl",
+            ),
         )
     )
 

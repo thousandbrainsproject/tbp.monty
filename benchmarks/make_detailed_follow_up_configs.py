@@ -117,8 +117,8 @@ if __name__ == "__main__":
     # Check that config doesn't use goal state generator (actions.txt file doesn't
     # store those jumps)
     if follow_up_config["monty_config"]["motor_system_config"]["motor_system_args"][
-        "use_goal_state_driven_actions"
-    ]:
+        "policy_args"
+    ]["use_goal_state_driven_actions"]:
         print(
             "Warning: config uses goal state generator. This will not work for ",
             "exact replication because actions.txt file does not store those jumps.",

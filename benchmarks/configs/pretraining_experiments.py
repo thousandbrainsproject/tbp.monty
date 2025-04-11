@@ -46,6 +46,7 @@ from tbp.monty.frameworks.experiments import (
     MontySupervisedObjectPretrainingExperiment,
 )
 from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphLM
+from tbp.monty.frameworks.models.motor_policies import NaiveScanPolicy
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
     HabitatSurfacePatchSM,
@@ -120,7 +121,10 @@ supervised_pre_training_base = dict(
             )
         ),
         motor_system_config=MotorSystemConfigNaiveScanSpiral(
-            motor_system_args=make_naive_scan_policy_config(step_size=5)
+            motor_system_args=dict(
+                policy_class=NaiveScanPolicy,
+                policy_args=make_naive_scan_policy_config(step_size=5),
+            )
         ),  # use spiral policy for more even object coverage during learning
     ),
     dataset_class=ED.EnvironmentDataset,
@@ -254,7 +258,10 @@ supervised_pre_training_5lms.update(
     monty_config=FiveLMMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=500),
         motor_system_config=MotorSystemConfigNaiveScanSpiral(
-            motor_system_args=make_naive_scan_policy_config(step_size=5)
+            motor_system_args=dict(
+                policy_class=NaiveScanPolicy,
+                policy_args=make_naive_scan_policy_config(step_size=5),
+            )
         ),
     ),
     dataset_args=FiveLMMountHabitatDatasetArgs(),

@@ -498,11 +498,11 @@ class MontyForGraphMatching(MontyBase):
         provides locations associated with tangential movements; this can help ensure we
         e.g. avoid revisiting old locations.
         """
-        self.motor_system.processed_observations = infos
+        self.motor_system._policy.processed_observations = infos
 
         # TODO M clean up the below when refactoring the surface-agent policy
-        if hasattr(self.motor_system, "tangent_locs"):
-            last_action = self.motor_system.last_action()
+        if hasattr(self.motor_system._policy, "tangent_locs"):
+            last_action = self.motor_system._policy.last_action
 
             if last_action is not None:
                 if "orient_vertical" == last_action.name:
@@ -510,10 +510,10 @@ class MontyForGraphMatching(MontyBase):
                     # action, rather than some form of corrective movement; these
                     # movements are performed immediately after "orient_vertical"
                     # TODO generalize to multiple sensor modules
-                    self.motor_system.tangent_locs.append(
+                    self.motor_system._policy.tangent_locs.append(
                         self.sensor_modules[0].visited_locs[-1]
                     )
-                    self.motor_system.tangent_norms.append(
+                    self.motor_system._policy.tangent_norms.append(
                         self.sensor_modules[0].visited_normals[-1]
                     )
 

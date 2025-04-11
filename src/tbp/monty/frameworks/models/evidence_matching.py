@@ -65,7 +65,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
         super()._pass_infos_to_motor_system()
 
         # Check the motor-system can receive goal-states
-        if self.motor_system.use_goal_state_driven_actions:
+        if self.motor_system._policy.use_goal_state_driven_actions:
             best_goal_state = None
             best_goal_confidence = -np.inf
             for current_goal_state in self.gsg_outputs:
@@ -76,7 +76,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                     best_goal_state = current_goal_state
                     best_goal_confidence = current_goal_state.confidence
 
-            self.motor_system.set_driving_goal_state(best_goal_state)
+            self.motor_system._policy.set_driving_goal_state(best_goal_state)
 
     def _combine_votes(self, votes_per_lm):
         """Combine evidence from different lms.

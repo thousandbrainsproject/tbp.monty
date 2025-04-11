@@ -18,6 +18,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     Monty,
     SensorModule,
 )
+from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
 
@@ -29,7 +30,7 @@ class MontyBase(Monty):
         self,
         sensor_modules,
         learning_modules,
-        motor_system,
+        motor_system: MotorSystem,
         sm_to_agent_dict,
         sm_to_lm_matrix,
         lm_to_lm_matrix,
@@ -374,7 +375,7 @@ class MontyBase(Monty):
         sm_dict = {
             i: module.state_dict() for i, module in enumerate(self.sensor_modules)
         }
-        motor_system_dict = self.motor_system.state_dict()
+        motor_system_dict = self.motor_system._policy.state_dict()
 
         return dict(
             lm_dict=lm_dict,
@@ -436,11 +437,11 @@ class MontyBase(Monty):
         Returns:
             State of the agent.
         """
-        return self.motor_system.get_agent_state()
+        return self.motor_system._policy.get_agent_state()
 
     @property
     def is_motor_only_step(self):
-        return self.motor_system.is_motor_only_step
+        return self.motor_system._policy.is_motor_only_step
 
     @property
     def is_done(self):

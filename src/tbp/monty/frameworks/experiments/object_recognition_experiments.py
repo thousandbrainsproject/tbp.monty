@@ -136,13 +136,13 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         if self.camera_image:
             self.camera_image.remove()
 
-        view_finder_image = observation[self.model.motor_system.agent_id][sensor_id][
-            "rgba"
-        ]
+        view_finder_image = observation[self.model.motor_system._policy.agent_id][
+            sensor_id
+        ]["rgba"]
         if isinstance(self.dataloader, SaccadeOnImageDataLoader):
             center_pixel_id = np.array([200, 200])
             patch_size = np.array(
-                observation[self.model.motor_system.agent_id]["patch"]["depth"]
+                observation[self.model.motor_system._policy.agent_id]["patch"]["depth"]
             ).shape[0]
             raw_obs = self.model.sensor_modules[0].raw_observations
             if len(raw_obs) > 0:
@@ -158,9 +158,9 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
             )
             # Show a square in the middle as a rough estimate of where the patch is
             if step == 0:
-                image_shape = observation[self.model.motor_system.agent_id][sensor_id][
-                    "rgba"
-                ].shape
+                image_shape = observation[self.model.motor_system._policy.agent_id][
+                    sensor_id
+                ]["rgba"].shape
                 square = plt.Rectangle(
                     (image_shape[1] * 4.5 // 10, image_shape[0] * 4.5 // 10),
                     image_shape[1] / 10,
@@ -178,7 +178,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         if self.depth_image:
             self.depth_image.remove()
         self.depth_image = self.ax[1].imshow(
-            observation[self.model.motor_system.agent_id][sensor_id]["depth"],
+            observation[self.model.motor_system._policy.agent_id][sensor_id]["depth"],
             cmap="viridis_r",
         )
         # self.colorbar.update_normal(self.depth_image)
