@@ -31,6 +31,20 @@ optional arguments:
   --debug               Enable debug logging
 ```
 
+### Examples
+
+The tool can be invoked in multiple ways for convenience:
+
+```
+tbp.monty$ python -m tools.plot.cli pose_error_over_time ~/your_experiment_log_directory
+
+tbp.monty$ python tools/plot/cli.py pose_error_over_time ~/your_experiment_log_directory
+
+tbp.monty/tools$ python plot/cli.py pose_error_over_time ~/your_experiment_log_directory
+
+tbp.monty/tools/plot$ python cli.py pose_error_over_time ~/your_experiment_log_directory
+```
+
 ## Tests
 
 ```

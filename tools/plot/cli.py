@@ -12,10 +12,10 @@ import logging
 import sys
 from pathlib import Path
 
-from tools.plot import objects_evidence_over_time, pose_error_over_time
-
 monty_root = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(monty_root))
+
+from tools.plot import objects_evidence_over_time, pose_error_over_time  # noqa: E402
 
 
 def main():
