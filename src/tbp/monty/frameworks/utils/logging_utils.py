@@ -15,6 +15,7 @@ import os
 from collections import deque
 from itertools import chain
 from sys import getsizeof
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -388,18 +389,29 @@ def get_time_stats(all_ds, all_conditions):
     return time_stats
 
 
-def get_pose_error(detected_pose, target_pose):
-    if type(detected_pose) != list:
-        detected_pose = [detected_pose]
-    target_r = Rotation.from_quat(target_pose)
-    min_error = np.pi
-    for det_r in detected_pose:
-        detected_r = Rotation.from_quat(det_r)
-        difference = detected_r * target_r.inv()
-        error = difference.magnitude()
-        if error < min_error:
-            min_error = error
-    return min_error
+def compute_pose_error(
+    predicted_rotation: Rotation, target_rotation: Rotation
+) -> Union[float, np.ndarray]:
+    """Compute the angular pose error between predicted and target rotations.
+
+    Both inputs must be instances of `scipy.spatial.transform.Rotation`. The
+    `predicted_rotation` may contain a single rotation or a batch of rotations,
+    while `target_rotation` must contain exactly one rotation.
+
+    If `predicted_rotation` contains multiple rotations, the result is a NumPy array
+    of angular errors, each computed with respect to `target_rotation`. If it contains
+    a single rotation, a scalar float is returned.
+
+    Args:
+        predicted_rotation (Rotation): Predicted rotation(s). Can be a single or batched
+            rotation.
+        target_rotation (Rotation): Target rotation. Must represent a single rotation.
+
+    Returns:
+        Union[float, np.ndarray]: Angular error(s) in radians.
+    """
+    error = (predicted_rotation * target_rotation.inv()).magnitude()
+    return error
 
 
 def get_overall_pose_error(stats, lm_id="LM_0"):
@@ -420,7 +432,9 @@ def get_overall_pose_error(stats, lm_id="LM_0"):
         detected = stats[episode][lm_id]["detected_rotation_quat"]
         if detected is not None:  # only checking accuracy on detected objects
             target = stats[episode][lm_id]["target"]["quat_rotation"]
-            err = get_pose_error(detected, target)
+            err = compute_pose_error(
+                Rotation.from_quat(detected), Rotation.from_quat(target)
+            )
             errors.append(err)
     return np.round(np.mean(errors), 4)
 
@@ -434,13 +448,13 @@ def print_overall_stats(stats):
         / len(stats)
         * 100
     )
-    print(f"Detected {np.round(acc,2)}% correctly")
+    print(f"Detected {np.round(acc, 2)}% correctly")
     rt = np.sum(stats["time"])
     rt_per_step = np.mean(stats["time"] / stats["monty_matching_steps"])
     print(
-        f"overall run time: {np.round(rt,2)} seconds ({np.round(rt/60,2)} minutes),"
-        f" {np.round(rt/len(stats),2)} seconds per episode, {np.round(rt_per_step,2)} "
-        "seconds per step."
+        f"overall run time: {np.round(rt, 2)} seconds ({np.round(rt / 60, 2)} minutes),"
+        f" {np.round(rt / len(stats), 2)} seconds per episode,"
+        f" {np.round(rt_per_step, 2)} seconds per step."
     )
 
 
@@ -468,10 +482,10 @@ def print_unsupervised_stats(stats, epoch_len):
         * 100
     )
     print(
-        f"Detected {np.round(first_epoch_acc,2)}% correctly as new object"
+        f"Detected {np.round(first_epoch_acc, 2)}% correctly as new object"
         "in first epoch"
     )
-    print(f"Detected {np.round(later_acc,2)}% correctly after first epoch")
+    print(f"Detected {np.round(later_acc, 2)}% correctly after first epoch")
     print(f"Mean objects per graph: {list(stats['mean_objects_per_graph'])[-1]}")
     print(f"Mean graphs per object: {list(stats['mean_graphs_per_object'])[-1]}")
     print("Merged graphs:")
@@ -480,8 +494,8 @@ def print_unsupervised_stats(stats, epoch_len):
             print("     " + string)
     rt = np.sum(stats["time"])
     print(
-        f"overall run time: {np.round(rt,2)} seconds ({np.round(rt/60,2)} minutes),"
-        f" {np.round(rt/len(stats),2)} seconds per episode."
+        f"overall run time: {np.round(rt, 2)} seconds ({np.round(rt / 60, 2)} minutes),"
+        f" {np.round(rt / len(stats), 2)} seconds per episode."
     )
 
 
@@ -532,7 +546,7 @@ def get_graph_lm_episode_stats(lm):
         dict with stats of one episode.
     """
     primary_performance = "patch_off_object"  # Performance on the primary target in
-    # the environmnet, typically the target object we begin the episode on
+    # the environment, typically the target object we begin the episode on
     stepwise_performance = "patch_off_object"  # Performance relative to the object
     # the learning module is actually receiving sensory input from when it converges
     location = np.array([0, 0, 0])
@@ -574,9 +588,9 @@ def get_graph_lm_episode_stats(lm):
                 else:
                     detected_rotation = lm.buffer.stats["detected_rotation_quat"]
                 rotation_error = np.round(
-                    get_pose_error(
-                        detected_rotation,
-                        lm.primary_target_rotation_quat,
+                    compute_pose_error(
+                        Rotation.from_quat(detected_rotation),
+                        Rotation.from_quat(lm.primary_target_rotation_quat),
                     ),
                     4,
                 )
@@ -615,9 +629,9 @@ def get_graph_lm_episode_stats(lm):
                     else:
                         detected_rotation_ts = lm.buffer.stats["individual_ts_rot"]
                     individual_ts_rotation_error = np.round(
-                        get_pose_error(
-                            detected_rotation_ts,
-                            lm.primary_target_rotation_quat,
+                        compute_pose_error(
+                            Rotation.from_quat(detected_rotation_ts),
+                            Rotation.from_quat(lm.primary_target_rotation_quat),
                         ),
                         4,
                     )
@@ -663,7 +677,7 @@ def add_pose_lm_episode_stats(lm, stats):
     """Add possible poses of lm to episode stats.
 
     Args:
-        lm: LM istance from which to add the statistics.
+        lm: LM instance from which to add the statistics.
         stats: Statistics dictionary to update.
 
     Returns:
@@ -754,9 +768,9 @@ def add_evidence_lm_episode_stats(lm, stats):
     )
     if stats["primary_performance"] == "correct_mlh":
         stats["rotation_error"] = np.round(
-            get_pose_error(
-                last_mlh["rotation"].inv().as_quat(),
-                lm.primary_target_rotation_quat,
+            compute_pose_error(
+                last_mlh["rotation"].inv(),
+                Rotation.from_quat(lm.primary_target_rotation_quat),
             ),
             4,
         )
@@ -841,7 +855,7 @@ def lm_stats_to_dataframe(stats, format_for_wandb=False):
         {0: {LM_0: stats, LM_1: stats...}, 1:...} --> dataframe
 
     Currently we are reporting once per episode, so the loop over episodes is only over
-    a singel key, value pair, but leaving it here because it is backward compatible.
+    a single key, value pair, but leaving it here because it is backward compatible.
 
     Returns:
         dataframe
@@ -901,8 +915,7 @@ def maybe_rename_existing_directory(path, report_count):
     if (report_count == 0) and os.path.exists(path):
         new_path = path + "_old"
         logging.warning(
-            f"Output path {path} already exists. This path will be moved"
-            f"to {new_path}"
+            f"Output path {path} already exists. This path will be moved to {new_path}"
         )
 
         if os.path.exists(new_path):
@@ -952,7 +965,7 @@ def total_size(o):
 
 
     The recursive recipe universally cited on stack exchange and blogs for gauging the
-    size of python objets in memory.
+    size of python objects in memory.
 
     See Also:
         https://code.activestate.com/recipes/577504/
