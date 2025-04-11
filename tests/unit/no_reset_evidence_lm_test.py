@@ -98,7 +98,9 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 learning_module_configs=default_evidence_lm_config,
             ),
             dataset_class=ED.EnvironmentDataset,
-            dataset_args=PatchViewFinderMountHabitatDatasetArgs(),
+            dataset_args=PatchViewFinderMountHabitatDatasetArgs(
+                env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
+            ),
             train_dataloader_class=ED.InformedEnvironmentDataLoader,
             train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
