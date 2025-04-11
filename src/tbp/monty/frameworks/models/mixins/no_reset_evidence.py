@@ -1,0 +1,66 @@
+# Copyright 2025 Thousand Brains Project
+#
+# Copyright may exist in Contributors' modifications
+# and/or contributions to the work.
+#
+# Use of this source code is governed by the MIT
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+
+from typing import Any, Dict
+
+from scipy.spatial.transform import Rotation
+
+
+class TheoreticalLimitLMLoggingMixin:
+    def _add_detailed_stats(self, stats: Dict[str, Any]) -> Dict[str, Any]:
+        """Add detailed statistics to the logging dictionary.
+
+        This includes metrics like the max evidence score per object, the theoretical
+        limit of Monty (i.e., pose error of Monty's best potential hypothesis on the
+        target object) , and the pose error of the MLH hypothesis on the target object.
+
+        Args:
+            stats (Dict[str, Any]): The existing statistics dictionary to augment.
+
+        Returns:
+            Dict[str, Any]: Updated statistics dictionary.
+        """
+        stats["max_evidence"] = {k: max(v) for k, v in self.evidence.items()}
+        stats["target_object_theoretical_limit"] = (
+            self._theoretical_limit_target_object_pose_error()
+        )
+        stats["target_object_pose_error"] = self._mlh_target_object_pose_error()
+        return stats
+
+    def _theoretical_limit_target_object_pose_error(self) -> float:
+        """Compute the theoretical minimum rotation error on the target object.
+
+        This considers all possible hypotheses rotations on the target object
+        and compares them to the target's rotation. The theoretical limit conveys the
+        best achievable performance if Monty selects the best hypothesis as its most
+        likely hypothesis (MLH).
+
+        Returns:
+            float: The minimum achievable rotation error (in radians).
+        """
+        hyp_rotations = Rotation.from_matrix(
+            self.possible_poses[self.primary_target]
+        ).inv()
+        target_rotation = Rotation.from_quat(self.primary_target_rotation_quat)
+        min_error = (hyp_rotations * target_rotation.inv()).magnitude().min()
+        return min_error
+
+    def _mlh_target_object_pose_error(self) -> float:
+        """Compute the actual rotation error between predicted and target pose.
+
+        This compares the most likely hypothesis pose (based on evidence) on the target
+        object with the ground truth rotation of the target object.
+
+        Returns:
+            float: The rotation error (in radians).
+        """
+        obj_rotation = self.get_mlh_for_object(self.primary_target)["rotation"].inv()
+        target_rotation = Rotation.from_quat(self.primary_target_rotation_quat)
+        error = (obj_rotation * target_rotation.inv()).magnitude()
+        return error

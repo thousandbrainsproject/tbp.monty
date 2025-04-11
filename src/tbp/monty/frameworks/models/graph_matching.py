@@ -158,7 +158,7 @@ class MontyForGraphMatching(MontyBase):
         for lm in self.learning_modules:
             lm.update_terminal_condition()
             logging.debug(
-                f"{lm.learning_module_id} has terminal state: " f"{lm.terminal_state}"
+                f"{lm.learning_module_id} has terminal state: {lm.terminal_state}"
             )
             # If any LM is not done yet, we are not done yet
             if lm.terminal_state == "match":
@@ -768,9 +768,6 @@ class GraphLM(LearningModule):
             logging.info(f"{self.learning_module_id} did not recognize an object yet.")
         return self.terminal_state
 
-    def _agent_moved_since_reset(self):
-        return len(self.buffer) > 0
-
     # ------------------ Getters & Setters ---------------------
 
     def set_experiment_mode(self, mode):
@@ -921,16 +918,15 @@ class GraphLM(LearningModule):
 
     def set_individual_ts(self, terminal_state):
         logging.info(
-            f"Setting terminal state of {self.learning_module_id} "
-            f"to {terminal_state}"
+            f"Setting terminal state of {self.learning_module_id} to {terminal_state}"
         )
         self.set_detected_object(terminal_state)
         if terminal_state == "match":
             logging.info(
                 f"{self.learning_module_id}: "
                 f"Detected {self.detected_object} "
-                f"at location {np.round(self.detected_pose[:3],3)},"
-                f" rotation {np.round(self.detected_pose[3:6],3)},"
+                f"at location {np.round(self.detected_pose[:3], 3)},"
+                f" rotation {np.round(self.detected_pose[3:6], 3)},"
                 f" and scale {self.detected_pose[6]}"
             )
             self.buffer.set_individual_ts(self.detected_object, self.detected_pose)
@@ -1041,6 +1037,9 @@ class GraphLM(LearningModule):
                 self.target_to_graph_id[target_object] = set([detected_object])
             else:
                 self.target_to_graph_id[target_object].add(detected_object)
+
+    def _agent_moved_since_reset(self):
+        return len(self.buffer) > 0
 
     # ------------------------ Helper --------------------------
 
