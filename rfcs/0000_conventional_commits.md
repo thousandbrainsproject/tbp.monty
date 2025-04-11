@@ -56,6 +56,18 @@ A breaking change is communicated by appending `!` after the type/scope. This co
 >
 > By default, a version increment is `PATCH`. If there is a `feat` commit present, then the version increment is `MINOR`. If there is a breaking change commit present: `fix!`, `feat!`, `refactor!`, then the version increment is `MINOR` if and only if `MAJOR == 0`, and it is `MAJOR` otherwise.
 
+### Optional Scopes
+
+Monty does not use optional scopes.
+
+### Optional Body
+
+Monty, usually, does not use optional body.
+
+### Optional Footers
+
+Monty sometimes uses `Co-authored-by: ghusername <github_email@example.com>` footer(s) if the pull request has multiple authors.
+
 ## Examples
 
 ### Commit message with `!` to draw attention to breaking change
