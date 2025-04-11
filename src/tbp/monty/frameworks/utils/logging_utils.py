@@ -15,7 +15,6 @@ import os
 from collections import deque
 from itertools import chain
 from sys import getsizeof
-from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -391,16 +390,16 @@ def get_time_stats(all_ds, all_conditions):
 
 def compute_pose_error(
     predicted_rotation: Rotation, target_rotation: Rotation
-) -> Union[float, np.ndarray]:
-    """Compute the angular pose error between predicted and target rotations.
+) -> float:
+    """Computes the minimum angular pose error between predicted and target rotations.
 
     Both inputs must be instances of `scipy.spatial.transform.Rotation`. The
     `predicted_rotation` may contain a single rotation or a batch of rotations,
     while `target_rotation` must contain exactly one rotation.
 
-    If `predicted_rotation` contains multiple rotations, the result is a NumPy array
-    of angular errors, each computed with respect to `target_rotation`. If it contains
-    a single rotation, a scalar float is returned.
+    The pose error is defined as the geodesic distance on SO(3) — the angle of the
+    relative rotation between predicted and target. If `predicted_rotation` contains
+    multiple rotations, this function returns the minimum error among them.
 
     Args:
         predicted_rotation (Rotation): Predicted rotation(s). Can be a single or batched
@@ -408,9 +407,11 @@ def compute_pose_error(
         target_rotation (Rotation): Target rotation. Must represent a single rotation.
 
     Returns:
-        Union[float, np.ndarray]: Angular error(s) in radians.
+        float: The minimum angular error in radians.
     """
     error = (predicted_rotation * target_rotation.inv()).magnitude()
+    if isinstance(error, np.ndarray):
+        error = error.min()
     return error
 
 

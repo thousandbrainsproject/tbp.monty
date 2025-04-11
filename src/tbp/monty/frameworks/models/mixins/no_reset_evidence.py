@@ -74,7 +74,7 @@ class TheoreticalLimitLMLoggingMixin:
         ).inv()
         target_rotation = Rotation.from_quat(self.primary_target_rotation_quat)
         error = compute_pose_error(hyp_rotations, target_rotation)
-        return error.min()
+        return error
 
     def _mlh_target_object_pose_error(self) -> float:
         """Compute the actual rotation error between predicted and target pose.
