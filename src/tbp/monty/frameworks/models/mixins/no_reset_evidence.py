@@ -41,6 +41,13 @@ class TheoreticalLimitLMLoggingMixin:
         best achievable performance if Monty selects the best hypothesis as its most
         likely hypothesis (MLH).
 
+        Note that having a low pose error for the theoretical limit may not be
+        sufficient for deciding on the quality of the hypothesis. Despite good
+        hypotheses being generally correlated with good theoretical limit, it is
+        possible for rotation error to be small (i.e., low geodesic distance to
+        ground-truth rotation), while the hypothesis is on a different location
+        of the object.
+
         Returns:
             float: The minimum achievable rotation error (in radians).
         """
