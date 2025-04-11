@@ -48,13 +48,15 @@ Even with the above guidance, sometimes there might be doubt or disagreement on 
 
 A breaking change is communicated by appending `!` after the type/scope. This correlates with `MAJOR` in [RFC 7 - Monty versioning](0007_monty_versioning.md).
 
-
 > [!NOTE]
 > `fix`, `feat`, and `refactor` types refer only to the **src/tbp/monty** codebase. Adding a new tool is not a feature. Fixing a tool is not a feature. Refactoring a tool is not a refactor of `src/tbp/monty`.
 >
 > By restricting these types to **src/tbp/monty**, it enables us to rapidly distinguish when we need to increment the `tbp.monty` version for publishing. Only `fix`, `feat`, `refactor` commits will be relevant to determine whether a `MINOR` or `MAJOR` version increment is required.
 >
 > By default, a version increment is `PATCH`. If there is a `feat` commit present, then the version increment is `MINOR`. If there is a breaking change commit present: `fix!`, `feat!`, `refactor!`, then the version increment is `MINOR` if and only if `MAJOR == 0`, and it is `MAJOR` otherwise.
+
+> [!NOTE]
+> In Monty, we do not use the `BREAKING CHANGE` optional footer to indicate a breaking change.
 
 ### Optional Scopes
 
