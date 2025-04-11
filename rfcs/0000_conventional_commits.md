@@ -40,6 +40,7 @@ Monty code adopts the following `<type>`s:
 - `test`: Adding or correcting tests.
 - `chore`: The commit is a catch all for work outside of the types identified above. For example, the commit affects infrastructure, tooling, development, or other non-Monty framework code.
 - `rfc`: RFC proposal.
+- `revert`: Commit that reverts a previous commit.
 
 ### Breaking Changes
 
