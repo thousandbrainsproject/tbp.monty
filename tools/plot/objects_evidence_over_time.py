@@ -9,8 +9,8 @@
 
 import argparse
 import logging
-import os
 import sys
+from pathlib import Path
 from typing import Optional
 
 from matplotlib import patches, transforms
@@ -37,7 +37,7 @@ def plot_objects_evidence_over_time(exp_path: str) -> int:
     Returns:
         int: Exit code.
     """
-    if not os.path.exists(exp_path):
+    if not Path(exp_path).exists():
         logger.error(f"Experiment path not found: {exp_path}")
         return 1
 
