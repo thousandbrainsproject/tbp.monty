@@ -41,11 +41,14 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
     def setup_experiment(self, config):
         super().setup_experiment(config)
-        self.sensor_pos = np.array(
-            config["dataset_args"]["env_init_args"]["agents"][0]["agent_args"][
-                "positions"
-            ]
-        )
+        if "agents" in config["dataset_args"]["env_init_args"].keys():
+            self.sensor_pos = np.array(
+                config["dataset_args"]["env_init_args"]["agents"][0]["agent_args"][
+                    "positions"
+                ]
+            )
+        else:
+            self.sensor_pos = np.array([0, 0, 0])
 
     def run_episode(self):
         """Run a supervised episode on one object in one pose.

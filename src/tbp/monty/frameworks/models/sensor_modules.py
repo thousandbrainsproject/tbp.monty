@@ -506,6 +506,8 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
         sensor_position = state["sensors"][self.sensor_module_id + ".rgba"]["position"]
         if "motor_only_step" in state.keys():
             self.motor_only_step = state["motor_only_step"]
+        else:
+            self.motor_only_step = False
 
         agent_rotation = state["rotation"]
         sensor_rotation = state["sensors"][self.sensor_module_id + ".rgba"]["rotation"]
