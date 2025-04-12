@@ -12,12 +12,15 @@ import copy
 import logging
 import threading
 import time
+from typing import Dict, Any, List, Tuple, Optional
 
 import numpy as np
+from numpy.typing import NDArray
 from scipy.spatial import KDTree
 from scipy.spatial.transform import Rotation
+from torch_geometric.data.data import Data
 
-from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
+from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator, GoalStateGenerator
 from tbp.monty.frameworks.models.graph_matching import (
     GraphLM,
     GraphMemory,
@@ -258,29 +261,29 @@ class EvidenceGraphLM(GraphLM):
 
     def __init__(
         self,
-        max_match_distance,
-        tolerances,
-        feature_weights,
-        feature_evidence_increment=1,
-        max_nneighbors=3,
-        initial_possible_poses="informed",
-        evidence_update_threshold="all",
-        vote_evidence_threshold=0.8,
-        past_weight=1,
-        present_weight=1,
-        vote_weight=1,
-        object_evidence_threshold=1,
-        x_percent_threshold=10,
-        path_similarity_threshold=0.1,
-        pose_similarity_threshold=0.35,
-        required_symmetry_evidence=5,
+        max_match_distance: float,
+        tolerances: Dict[str, Any],
+        feature_weights: Dict[str, Any],
+        feature_evidence_increment: int=1,
+        max_nneighbors: int=3,
+        initial_possible_poses: str="informed",
+        evidence_update_threshold: str="all",
+        vote_evidence_threshold: float=0.8,
+        past_weight: int=1,
+        present_weight: int=1,
+        vote_weight: int=1,
+        object_evidence_threshold: int=1,
+        x_percent_threshold: int=10,
+        path_similarity_threshold: float=0.1,
+        pose_similarity_threshold: float=0.35,
+        required_symmetry_evidence: int=5,
         graph_delta_thresholds=None,
-        max_graph_size=0.3,  # 30cm
-        max_nodes_per_graph=2000,
-        num_model_voxels_per_dim=50,  # -> voxel size = 6mm3 (0.006)
-        use_multithreading=True,
-        gsg_class=EvidenceGoalStateGenerator,
-        gsg_args=None,
+        max_graph_size: float=0.3,  # 30cm
+        max_nodes_per_graph: int=2000,
+        num_model_voxels_per_dim: int=50,  # -> voxel size = 6mm3 (0.006)
+        use_multithreading: bool=True,
+        gsg_class: GoalStateGenerator=EvidenceGoalStateGenerator,
+        gsg_args: Dict[str, Any]=None,
         *args,
         **kwargs,
     ):
@@ -492,7 +495,7 @@ class EvidenceGraphLM(GraphLM):
             }
         return vote
 
-    def get_output(self):
+    def get_output(self) -> State:
         """Return the most likely hypothesis in same format as LM input.
 
         The input to an LM at the moment is a dict of features at a location. The
@@ -560,7 +563,7 @@ class EvidenceGraphLM(GraphLM):
         return hypothesized_state
 
     # ------------------ Getters & Setters ---------------------
-    def set_detected_object(self, terminal_state):
+    def set_detected_object(self, terminal_state: str):
         """Set the current graph ID.
 
         If we didn't recognize the object this will be new_object{n} where n is
@@ -599,7 +602,7 @@ class EvidenceGraphLM(GraphLM):
             graph_id = None
         self.detected_object = graph_id
 
-    def get_unique_pose_if_available(self, object_id):
+    def get_unique_pose_if_available(self, object_id: str) -> Optional[NDArray[np.float64]]:
         """Get the most likely pose of an object if narrowed down.
 
         If there is not one unique possible pose or symmetry detected, return None
@@ -665,7 +668,7 @@ class EvidenceGraphLM(GraphLM):
         else:
             return None
 
-    def get_current_mlh(self):
+    def get_current_mlh(self) -> Dict[str, Any]:
         """Return the current most likely hypothesis of the learning module.
 
         Returns:
@@ -673,7 +676,7 @@ class EvidenceGraphLM(GraphLM):
         """
         return self.current_mlh
 
-    def get_mlh_for_object(self, object_id):
+    def get_mlh_for_object(self, object_id: str) -> Dict[str, Any]:
         """Get mlh for a specific object ID.
 
         Note:
@@ -685,7 +688,7 @@ class EvidenceGraphLM(GraphLM):
         """
         return self._calculate_most_likely_hypothesis(object_id)
 
-    def get_top_two_mlh_ids(self):
+    def get_top_two_mlh_ids(self) -> Tuple[str, str]:
         """Retrieve the two most likely object IDs for this LM.
 
         Returns:
@@ -706,14 +709,14 @@ class EvidenceGraphLM(GraphLM):
 
         return top_id, second_id
 
-    def get_top_two_pose_hypotheses_for_graph_id(self, graph_id):
+    def get_top_two_pose_hypotheses_for_graph_id(self, graph_id: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """Return top two hypotheses for a given graph_id."""
         mlh_for_graph = self._calculate_most_likely_hypothesis(graph_id)
         second_mlh_id = np.argsort(self.evidence[graph_id])[-2]
         second_mlh = self._get_mlh_dict_from_id(graph_id, second_mlh_id)
         return mlh_for_graph, second_mlh
 
-    def get_possible_matches(self):
+    def get_possible_matches(self) -> List[str]:
         """Return graph ids with significantly higher evidence than median."""
         return self.possible_matches
 
@@ -740,7 +743,7 @@ class EvidenceGraphLM(GraphLM):
             all_poses = poses
         return all_poses
 
-    def get_possible_hypothesis_ids(self, object_id):
+    def get_possible_hypothesis_ids(self, object_id: str) -> Optional[NDArray[np.int64]]:
         max_obj_evidence = np.max(self.evidence[object_id])
         # TODO: Try out different ways to adapt object_evidence_threshold to number of
         # steps taken so far and number of objects in memory
@@ -756,7 +759,7 @@ class EvidenceGraphLM(GraphLM):
             logging.debug(f"hpid evidence is > {max_obj_evidence} - {x_percent_of_max}")
             return possible_object_hypotheses_ids
 
-    def get_evidence_for_each_graph(self):
+    def get_evidence_for_each_graph(self) -> Tuple[List[str], NDArray[np.float64]]:
         """Return maximum evidence count for a pose on each graph."""
         graph_ids = self.get_all_known_object_ids()
         if graph_ids[0] not in self.evidence.keys():
@@ -771,7 +774,7 @@ class EvidenceGraphLM(GraphLM):
         return self.evidence
 
     # ------------------ Logging & Saving ----------------------
-    def collect_stats_to_save(self):
+    def collect_stats_to_save(self) -> Dict[str, Dict[str, Any]]:
         """Get all stats that this LM should store in the buffer for logging.
 
         Returns:
@@ -788,7 +791,8 @@ class EvidenceGraphLM(GraphLM):
     # ======================= Private ==========================
 
     # ------------------- Main Algorithm -----------------------
-    def _get_initial_hypothesis_space(self, features, graph_id, input_channel):
+    def _get_initial_hypothesis_space(self, features: Dict[str, Dict[str, Any]], graph_id: str, input_channel: str) -> \
+    Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
         if self.initial_possible_poses is None:
             # Get initial poses for all locations informed by pose features
             (
@@ -869,7 +873,7 @@ class EvidenceGraphLM(GraphLM):
         channel_mapper = self.channel_hypothesis_mapping[graph_id]
         channel_mapper.add_channel(input_channel, len(new_loc_hypotheses))
 
-    def _update_possible_matches(self, query):
+    def _update_possible_matches(self, query: List[Dict[str, Dict[str, Any]]]):
         """Update evidence for each hypothesis instead of removing them."""
         thread_list = []
         for graph_id in self.get_all_known_object_ids():
@@ -898,7 +902,7 @@ class EvidenceGraphLM(GraphLM):
         self.possible_matches = self._threshold_possible_matches()
         self.current_mlh = self._calculate_most_likely_hypothesis()
 
-    def _update_evidence(self, features, displacements, graph_id):
+    def _update_evidence(self, features: Dict[str, Dict[str, Any]], displacements, graph_id: str):
         """Update evidence for poses of graph_id.
 
         replaces _update_matches_using_features
@@ -1146,12 +1150,12 @@ class EvidenceGraphLM(GraphLM):
 
     def _calculate_evidence_for_new_locations(
         self,
-        graph_id,
-        input_channel,
-        search_locations,
-        features,
-        hyp_ids_to_test,
-    ):
+        graph_id: str,
+        input_channel: str,
+        search_locations: NDArray[np.float64],
+        features: Dict[str, Dict[str, Any]],
+        hyp_ids_to_test: NDArray[np.int64],
+    ) -> NDArray[np.float64]:
         """Use search locations, sensed features and graph model to calculate evidence.
 
         First, the search locations are used to find the nearest nodes in the graph
@@ -1259,11 +1263,11 @@ class EvidenceGraphLM(GraphLM):
 
     def _get_pose_evidence_matrix(
         self,
-        query_features,
-        node_features,
-        input_channel,
-        node_distance_weights,
-    ):
+        query_features: Dict[str, Any],
+        node_features: Dict[str, NDArray[np.float32]],
+        input_channel: str,
+        node_distance_weights: NDArray[np.float64],
+    ) -> NDArray[np.float64]:
         """Get angle mismatch error of the three pose features for multiple points.
 
         Args:
@@ -1330,8 +1334,8 @@ class EvidenceGraphLM(GraphLM):
         return pose_evidence_weighted
 
     def _calculate_feature_evidence_for_all_nodes(
-        self, query_features, input_channel, graph_id
-    ):
+        self, query_features: Dict[str, Any], input_channel: str, graph_id: str
+    ) -> NDArray[np.float64]:
         """Calculate the feature evidence for all nodes stored in a graph.
 
         Evidence for each feature depends on the difference between observed and stored
@@ -1409,10 +1413,10 @@ class EvidenceGraphLM(GraphLM):
 
     def _check_for_unique_poses(
         self,
-        graph_id,
-        possible_object_hypotheses_ids,
-        most_likely_r,
-    ):
+        graph_id: str,
+        possible_object_hypotheses_ids: NDArray[np.int64],
+        most_likely_r: Rotation,
+    ) -> bool:
         """Check if we have the pose of an object narrowed down.
 
         This method checks two things:
@@ -1459,7 +1463,7 @@ class EvidenceGraphLM(GraphLM):
         pose_is_unique = location_unique and rotation_unique
         return pose_is_unique
 
-    def _check_for_symmetry(self, possible_object_hypotheses_ids, increment_evidence):
+    def _check_for_symmetry(self, possible_object_hypotheses_ids: NDArray[np.int64], increment_evidence: bool) -> bool:
         """Check whether the most likely hypotheses stayed the same over the past steps.
 
         Since the definition of possible_object_hypotheses is a bit murky and depends
@@ -1512,7 +1516,7 @@ class EvidenceGraphLM(GraphLM):
         """
         return self.symmetry_evidence >= self.required_symmetry_evidence
 
-    def _object_pose_to_features(self, pose):
+    def _object_pose_to_features(self, pose: Rotation) -> NDArray[np.float64]:
         """Turn object rotation into pose feature like vectors.
 
         pose is a rotation matrix. We multiply rf spanning unit vectors with rotation.
@@ -1527,7 +1531,7 @@ class EvidenceGraphLM(GraphLM):
             # -> pose.as_matrix().dot(pose_vectors.T).T
             return pose.as_matrix().T
 
-    def _object_id_to_features(self, object_id):
+    def _object_id_to_features(self, object_id: str) -> int:
         """Turn object ID into features that express object similarity.
 
         Returns:
@@ -1539,7 +1543,7 @@ class EvidenceGraphLM(GraphLM):
         return id_feature
 
     # ------------------------ Helper --------------------------
-    def _check_use_features_for_matching(self):
+    def _check_use_features_for_matching(self) -> Dict[str, bool]:
         use_features = dict()
         for input_channel in self.tolerances.keys():
             if input_channel not in self.feature_weights.keys():
@@ -1553,7 +1557,7 @@ class EvidenceGraphLM(GraphLM):
                 use_features[input_channel] = feature_weights_provided
         return use_features
 
-    def _fill_feature_weights_with_default(self, default):
+    def _fill_feature_weights_with_default(self, default: int):
         for input_channel in self.tolerances.keys():
             if input_channel not in self.feature_weights.keys():
                 self.feature_weights[input_channel] = dict()
@@ -1572,8 +1576,8 @@ class EvidenceGraphLM(GraphLM):
                     self.feature_weights[input_channel][key] = default_weights
 
     def _get_all_informed_possible_poses(
-        self, graph_id, sensed_features, input_channel
-    ):
+        self, graph_id: str, sensed_features: Dict[str, Dict[str, Any]], input_channel: str
+    ) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
         """Initialize hypotheses on possible rotations for each location.
 
         Similar to _get_informed_possible_poses but doesn't require looping over nodes
@@ -1643,7 +1647,7 @@ class EvidenceGraphLM(GraphLM):
 
         return all_possible_locations[1:], all_possible_rotations[1:]
 
-    def _threshold_possible_matches(self, x_percent_scale_factor=1.0):
+    def _threshold_possible_matches(self, x_percent_scale_factor: float=1.0) -> List[str]:
         """Return possible matches based on evidence threshold.
 
         Args:
@@ -1693,7 +1697,7 @@ class EvidenceGraphLM(GraphLM):
             pm = graph_ids
         return pm
 
-    def _get_mlh_dict_from_id(self, graph_id, mlh_id):
+    def _get_mlh_dict_from_id(self, graph_id: str, mlh_id: np.int64) -> Dict[str, Any]:
         """Return dict with mlh information for given graph_id and mlh_id.
 
         Args:
@@ -1712,7 +1716,7 @@ class EvidenceGraphLM(GraphLM):
         }
         return mlh_dict
 
-    def _calculate_most_likely_hypothesis(self, graph_id=None):
+    def _calculate_most_likely_hypothesis(self, graph_id: Optional[str]=None) -> Dict[str, Any]:
         """Return pose with highest evidence count.
 
         Args:
@@ -1742,7 +1746,7 @@ class EvidenceGraphLM(GraphLM):
             )
         return mlh
 
-    def _get_evidence_update_threshold(self, graph_id):
+    def _get_evidence_update_threshold(self, graph_id: str) -> np.float64:
         """Determine how much evidence a hypothesis should have to be updated.
 
         Returns:
@@ -1781,7 +1785,7 @@ class EvidenceGraphLM(GraphLM):
                 "[int, float, '[int]%', 'mean', 'median', 'all', 'x_percent_threshold']"
             )
 
-    def _get_node_distance_weights(self, distances):
+    def _get_node_distance_weights(self, distances: NDArray[np.float64]) -> NDArray[np.float64]:
         node_distance_weights = (
             self.max_match_distance - distances
         ) / self.max_match_distance
@@ -1812,9 +1816,9 @@ class EvidenceGraphMemory(GraphMemory):
 
     def __init__(
         self,
-        max_nodes_per_graph,
-        max_graph_size,
-        num_model_voxels_per_dim,
+        max_nodes_per_graph: int,
+        max_graph_size: float,
+        num_model_voxels_per_dim: int,
         *args,
         **kwargs,
     ):
@@ -1829,10 +1833,10 @@ class EvidenceGraphMemory(GraphMemory):
     # ------------------- Main Algorithm -----------------------
 
     # ------------------ Getters & Setters ---------------------
-    def get_initial_hypotheses(self):
+    def get_initial_hypotheses(self) -> List[str]:
         return self.get_memory_ids()
 
-    def get_rotation_features_at_all_nodes(self, graph_id, input_channel):
+    def get_rotation_features_at_all_nodes(self, graph_id: str, input_channel: str) -> NDArray[np.float32]:
         """Get rotation features from all N nodes. shape=(N, 3, 3).
 
         Returns:
@@ -1883,7 +1887,7 @@ class EvidenceGraphMemory(GraphMemory):
                     "Grid too small for given locations. Not adding to memory."
                 )
 
-    def _initialize_model_with_graph(self, graph_id, graph):
+    def _initialize_model_with_graph(self, graph_id: str, graph: Data) -> GridObjectModel:
         model = GridObjectModel(
             object_id=graph_id,
             max_nodes=self.max_nodes_per_graph,
