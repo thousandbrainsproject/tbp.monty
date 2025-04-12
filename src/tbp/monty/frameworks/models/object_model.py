@@ -15,6 +15,7 @@ import numpy as np
 import torch
 import torch_geometric
 import torch_geometric.transforms as T
+from numpy.typing import NDArray
 from scipy.spatial import KDTree
 from sklearn.neighbors import kneighbors_graph
 from torch_geometric.data import Data
@@ -39,7 +40,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import apply_rf_transform_to
 class GraphObjectModel(ObjectModel):
     """Object model class that represents object as graphs."""
 
-    def __init__(self, object_id):
+    def __init__(self, object_id: str):
         """Initialize the object model.
 
         Args:
@@ -333,7 +334,7 @@ class GridObjectModel(GraphObjectModel):
         - remove .norm as attribute and store as feature instead?
     """
 
-    def __init__(self, object_id, max_nodes, max_size, num_voxels_per_dim):
+    def __init__(self, object_id: str, max_nodes: int, max_size: float, num_voxels_per_dim: int):
         """Initialize a grid object model.
 
         Args:
@@ -422,10 +423,10 @@ class GridObjectModel(GraphObjectModel):
 
     def find_nearest_neighbors(
         self,
-        search_locations,
-        num_neighbors,
-        return_distance=False,
-    ):
+        search_locations: NDArray[np.float64],
+        num_neighbors: int,
+        return_distance: bool=False,
+    ) -> NDArray:
         """Find nearest neighbors in graph for list of search locations.
 
         Note:
@@ -463,7 +464,7 @@ class GridObjectModel(GraphObjectModel):
             return nearest_node_ids
 
     # ------------------ Getters & Setters ---------------------
-    def set_graph(self, graph):
+    def set_graph(self, graph: Data):
         """Set self._graph property and convert input graph to right format."""
         if type(graph) is not NumpyGraph:
             # could also check if is type torch_geometric.data.data.Data
