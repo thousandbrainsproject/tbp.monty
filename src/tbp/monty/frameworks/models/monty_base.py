@@ -9,8 +9,10 @@
 # https://opensource.org/licenses/MIT.
 
 import logging
+from typing import List, Dict, Any, Optional
 
 import numpy as np
+from numpy.typing import NDArray
 
 from tbp.monty.frameworks.loggers.exp_logger import TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import (
@@ -28,17 +30,17 @@ class MontyBase(Monty):
 
     def __init__(
         self,
-        sensor_modules,
-        learning_modules,
+        sensor_modules: List[SensorModule],
+        learning_modules: List[LearningModule],
         motor_system: MotorSystem,
-        sm_to_agent_dict,
-        sm_to_lm_matrix,
+        sm_to_agent_dict: Dict[str, Any],
+        sm_to_lm_matrix: List[List[int]],
         lm_to_lm_matrix,
         lm_to_lm_vote_matrix,
-        min_eval_steps,
-        min_train_steps,
-        num_exploratory_steps,
-        max_total_steps,
+        min_eval_steps: int,
+        min_train_steps: int,
+        num_exploratory_steps: int,
+        max_total_steps: int,
     ):
         """Initialize the base class.
 
@@ -136,7 +138,7 @@ class MontyBase(Monty):
     # Basic methods that specify the algorithm
     ###
 
-    def step(self, observation):
+    def step(self, observation: Dict[str, Any]):
         # For the base class, just use matching step. Note that matching_step and
         # exploratory_step are fully implemented by the abstract class.
         if self.step_type == "matching_step":
@@ -146,7 +148,7 @@ class MontyBase(Monty):
         else:
             raise ValueError(f"step type {self.step_type} not found in base monty")
 
-    def aggregate_sensory_inputs(self, observation):
+    def aggregate_sensory_inputs(self, observation: Dict[str, Any]):
         sensor_module_outputs = []
         for sensor_module in self.sensor_modules:
             raw_obs = self.get_observations(observation, sensor_module.sensor_module_id)
@@ -162,7 +164,7 @@ class MontyBase(Monty):
         # TODO: Maybe combine the two?
         self.learning_module_outputs = learning_module_outputs
 
-    def pass_features_directly_to_motor_system(self, observation):
+    def pass_features_directly_to_motor_system(self, observation: Dict[str, Any]):
         """Pass features directly to motor system without stepping LMs."""
         self.aggregate_sensory_inputs(observation)
         self._pass_input_obs_to_motor_system(
@@ -180,7 +182,7 @@ class MontyBase(Monty):
                 self.learning_modules[ii].stepwise_target_object
             )
 
-    def check_reached_max_matching_steps(self, max_steps):
+    def check_reached_max_matching_steps(self, max_steps: int) -> bool:
         """Check if max_steps was reached and deal with time_out.
 
         Returns:
@@ -205,7 +207,7 @@ class MontyBase(Monty):
             sensory_inputs = self._collect_inputs_to_lm(i)
             getattr(self.learning_modules[i], self.step_type, sensory_inputs)
 
-    def _collect_inputs_to_lm(self, lm_id):
+    def _collect_inputs_to_lm(self, lm_id: int):
         """Use sm_to_lm_matrix and lm_to_lm_matrix to collect inputs to LM i.
 
         Args:
@@ -229,7 +231,7 @@ class MontyBase(Monty):
         )
         return sensory_inputs
 
-    def _combine_inputs(self, inputs_from_sms, inputs_from_lms):
+    def _combine_inputs(self, inputs_from_sms: List[State], inputs_from_lms: List) -> Optional[List[State]]:
         """Combine all inputs to an LM into one dict.
 
         An LM only receives input from another LM if it also receives input from
@@ -328,7 +330,7 @@ class MontyBase(Monty):
     # Methods (other than step) that interact with the experiment
     ###
 
-    def set_experiment_mode(self, mode):
+    def set_experiment_mode(self, mode: str):
         assert mode in ["train", "eval"], "mode must be either `train` or `eval`"
         self.experiment_mode = mode
         self.motor_system.set_experiment_mode(mode)
@@ -360,7 +362,7 @@ class MontyBase(Monty):
     # Methods for saving and loading
     ###
 
-    def load_state_dict(self, state_dict):
+    def load_state_dict(self, state_dict: Dict[str, Any]):
         assert len(state_dict["lm_dict"]) == len(self.learning_modules)
         lm_counter = 0
         lm_dict = state_dict["lm_dict"]
@@ -368,7 +370,7 @@ class MontyBase(Monty):
             self.learning_modules[lm_counter].load_state_dict(lm_dict[lm_key])
             lm_counter = lm_counter + 1
 
-    def state_dict(self):
+    def state_dict(self) -> Dict[str, Any]:
         lm_dict = {
             i: module.state_dict() for i, module in enumerate(self.learning_modules)
         }
@@ -390,7 +392,7 @@ class MontyBase(Monty):
     # Helper methods for methods that specify the algorithm
     ###
 
-    def get_observations(self, observations, sensor_module_id):
+    def get_observations(self, observations: Dict[str, Any], sensor_module_id: str) -> Dict[str, NDArray[np.generic]]:
         """Get observations from all agents pertaining to a single sensor module.
 
         Observations are returned in the format
@@ -431,7 +433,7 @@ class MontyBase(Monty):
         sensor_obs = agent_obs[sensor_module_id]
         return sensor_obs
 
-    def get_agent_state(self):
+    def get_agent_state(self) -> Dict[str, Any]:
         """Get state of agent (dict).
 
         Returns:
@@ -440,18 +442,18 @@ class MontyBase(Monty):
         return self.motor_system._policy.get_agent_state()
 
     @property
-    def is_motor_only_step(self):
+    def is_motor_only_step(self) -> bool:
         return self.motor_system._policy.is_motor_only_step
 
     @property
-    def is_done(self):
+    def is_done(self) -> bool:
         return self._is_done
 
     def set_done(self):
         self._is_done = True
 
     @property
-    def min_steps(self):
+    def min_steps(self) -> Optional[int]:
         if self.step_type == "matching_step":
             if self.experiment_mode == "train":
                 return self.min_train_steps
@@ -461,14 +463,14 @@ class MontyBase(Monty):
             return self.num_exploratory_steps
 
     @property
-    def step_type_count(self):
+    def step_type_count(self) -> Optional[int]:
         if self.step_type == "matching_step":
             return self.matching_steps
         elif self.step_type == "exploratory_step":
             return self.exploratory_steps
 
     @property
-    def exceeded_min_steps(self):
+    def exceeded_min_steps(self) -> bool:
         return self.step_type_count > self.min_steps
 
     def reset_episode_steps(self):
@@ -545,7 +547,7 @@ class LearningModuleBase(LearningModule):
 
 
 class SensorModuleBase(SensorModule):
-    def __init__(self, sensor_module_id):
+    def __init__(self, sensor_module_id: str):
         self.sensor_module_id = sensor_module_id
         self.state = None
 
@@ -599,5 +601,5 @@ class SensorModuleBase(SensorModule):
     def post_episode(self):
         pass
 
-    def set_experiment_mode(self, mode):
+    def set_experiment_mode(self, mode: str):
         self.experiment_mode = mode
