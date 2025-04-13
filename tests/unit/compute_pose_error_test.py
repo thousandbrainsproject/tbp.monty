@@ -58,5 +58,5 @@ class TestComputePoseError(unittest.TestCase):
             compute_pose_error(Rotation.identity(), "not a rotation")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
