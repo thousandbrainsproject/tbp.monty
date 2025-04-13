@@ -54,7 +54,7 @@ class TestComputePoseError(unittest.TestCase):
         with self.assertRaises(TypeError):
             compute_pose_error("not a rotation", Rotation.identity())
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(AttributeError):
             compute_pose_error(Rotation.identity(), "not a rotation")
 
 
