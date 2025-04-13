@@ -409,9 +409,7 @@ def compute_pose_error(
     Returns:
         float: The minimum angular error in radians.
     """
-    error = (predicted_rotation * target_rotation.inv()).magnitude()
-    if isinstance(error, np.ndarray):
-        error = error.min()
+    error = np.min((predicted_rotation * target_rotation.inv()).magnitude())
     return error
 
 

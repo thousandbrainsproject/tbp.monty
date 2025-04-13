@@ -12,9 +12,7 @@ import unittest
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.utils.logging_utils import (
-    compute_pose_error,  # Replace with your actual module
-)
+from tbp.monty.frameworks.utils.logging_utils import compute_pose_error
 
 
 class TestComputePoseError(unittest.TestCase):
