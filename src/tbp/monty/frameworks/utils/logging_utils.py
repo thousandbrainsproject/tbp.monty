@@ -449,13 +449,13 @@ def print_overall_stats(stats):
         / len(stats)
         * 100
     )
-    print(f"Detected {np.round(acc, 2)}% correctly")
+    print(f"Detected {np.round(acc,2)}% correctly")
     rt = np.sum(stats["time"])
     rt_per_step = np.mean(stats["time"] / stats["monty_matching_steps"])
     print(
-        f"overall run time: {np.round(rt, 2)} seconds ({np.round(rt / 60, 2)} minutes),"
-        f" {np.round(rt / len(stats), 2)} seconds per episode,"
-        f" {np.round(rt_per_step, 2)} seconds per step."
+        f"overall run time: {np.round(rt,2)} seconds ({np.round(rt/60,2)} minutes),"
+        f" {np.round(rt/len(stats),2)} seconds per episode, {np.round(rt_per_step,2)} "
+        "seconds per step."
     )
 
 
@@ -483,10 +483,10 @@ def print_unsupervised_stats(stats, epoch_len):
         * 100
     )
     print(
-        f"Detected {np.round(first_epoch_acc, 2)}% correctly as new object"
+        f"Detected {np.round(first_epoch_acc,2)}% correctly as new object"
         "in first epoch"
     )
-    print(f"Detected {np.round(later_acc, 2)}% correctly after first epoch")
+    print(f"Detected {np.round(later_acc,2)}% correctly after first epoch")
     print(f"Mean objects per graph: {list(stats['mean_objects_per_graph'])[-1]}")
     print(f"Mean graphs per object: {list(stats['mean_graphs_per_object'])[-1]}")
     print("Merged graphs:")
@@ -495,8 +495,8 @@ def print_unsupervised_stats(stats, epoch_len):
             print("     " + string)
     rt = np.sum(stats["time"])
     print(
-        f"overall run time: {np.round(rt, 2)} seconds ({np.round(rt / 60, 2)} minutes),"
-        f" {np.round(rt / len(stats), 2)} seconds per episode."
+        f"overall run time: {np.round(rt,2)} seconds ({np.round(rt/60,2)} minutes),"
+        f" {np.round(rt/len(stats),2)} seconds per episode."
     )
 
 
@@ -547,7 +547,7 @@ def get_graph_lm_episode_stats(lm):
         dict with stats of one episode.
     """
     primary_performance = "patch_off_object"  # Performance on the primary target in
-    # the environment, typically the target object we begin the episode on
+    # the environmnet, typically the target object we begin the episode on
     stepwise_performance = "patch_off_object"  # Performance relative to the object
     # the learning module is actually receiving sensory input from when it converges
     location = np.array([0, 0, 0])
@@ -678,7 +678,7 @@ def add_pose_lm_episode_stats(lm, stats):
     """Add possible poses of lm to episode stats.
 
     Args:
-        lm: LM instance from which to add the statistics.
+        lm: LM istance from which to add the statistics.
         stats: Statistics dictionary to update.
 
     Returns:
@@ -856,7 +856,7 @@ def lm_stats_to_dataframe(stats, format_for_wandb=False):
         {0: {LM_0: stats, LM_1: stats...}, 1:...} --> dataframe
 
     Currently we are reporting once per episode, so the loop over episodes is only over
-    a single key, value pair, but leaving it here because it is backward compatible.
+    a singel key, value pair, but leaving it here because it is backward compatible.
 
     Returns:
         dataframe
@@ -916,7 +916,8 @@ def maybe_rename_existing_directory(path, report_count):
     if (report_count == 0) and os.path.exists(path):
         new_path = path + "_old"
         logging.warning(
-            f"Output path {path} already exists. This path will be moved to {new_path}"
+            f"Output path {path} already exists. This path will be moved"
+            f"to {new_path}"
         )
 
         if os.path.exists(new_path):
@@ -966,7 +967,7 @@ def total_size(o):
 
 
     The recursive recipe universally cited on stack exchange and blogs for gauging the
-    size of python objects in memory.
+    size of python objets in memory.
 
     See Also:
         https://code.activestate.com/recipes/577504/
