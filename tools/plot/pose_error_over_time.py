@@ -7,115 +7,23 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import os
+import argparse
+import logging
+import sys
+from pathlib import Path
+from typing import Optional
 
 import matplotlib.lines as mlines
-import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib import transforms
-from matplotlib.ticker import MultipleLocator
 
-from tbp.monty.frameworks.environments.ycb import DISTINCT_OBJECTS
 from tbp.monty.frameworks.utils.logging_utils import load_stats
 
-plt.style.use("seaborn-darkgrid")
-
-# fix colors for distinct objects (tab10 supports up to 10 distinct colors)
-cmap = plt.cm.tab10
-num_colors = len(DISTINCT_OBJECTS)
-YCB_COLORS = {obj: cmap(i / num_colors) for i, obj in enumerate(DISTINCT_OBJECTS)}
+logger = logging.getLogger(__name__)
 
 
-def plot_objects_evidence_over_time(exp_path: str) -> None:
-    """Plot evidence scores for each object over time.
-
-    This function visualizes the evidence scores for each object. The plot is produced
-    over a sequence of episodes, and overlays colored rectangles highlighting when a
-    particular target object is active.
-
-    Args:
-        exp_path (str): Path to the experiment directory containing the detailed stats
-            file.
-
-    Raises:
-        FileNotFoundError: If the stats file cannot be found in the specified path.
-    """
-    if not os.path.exists(exp_path):
-        raise FileNotFoundError(f"Experiment path not found: {exp_path}")
-
-    # load detailed stats
-    _, _, detailed_stats, _ = load_stats(exp_path, False, False, True, False)
-
-    classes = {
-        k: [] for k in list(detailed_stats["0"]["LM_0"]["max_evidence"][0].keys())
-    }
-    target_objects = []  # Objects in each segment, e.g., ['strawberry', 'banana']
-    target_transitions = []  # Transition points on the x-axis, e.g., [49, 99]
-
-    for episode_data in detailed_stats.values():
-        evidences_data = episode_data["LM_0"]["max_evidence"]
-
-        # append evidence data to classes
-        for ts in evidences_data:
-            for k, v in ts.items():
-                classes[k].append(v)
-
-        # collect the target object of this episode
-        target_objects.append(episode_data["target"]["primary_target_object"])
-
-        # collect target transition point
-        target_transitions.append(len(evidences_data))
-
-    # Create the plot
-    fig, ax = plt.subplots(figsize=(12, 6))
-
-    # Plot the lines
-    for obj, scores in classes.items():
-        ax.plot(
-            scores,
-            marker="o",
-            linestyle="-",
-            label=obj,
-            color=YCB_COLORS.get(obj, "gray"),
-        )
-
-    # Add colored rectangles indicating the current target object
-    box_height = 0.02
-    prev_x = 0
-    for obj, x in zip(target_objects, target_transitions):
-        rect = patches.Rectangle(
-            (prev_x, 1 - box_height),
-            (x - 1),
-            box_height,
-            transform=transforms.blended_transform_factory(ax.transData, ax.transAxes),
-            edgecolor="black",
-            facecolor=YCB_COLORS.get(obj, "gray"),
-            lw=1,
-            alpha=1.0,
-            clip_on=True,
-        )
-        ax.add_patch(rect)
-        prev_x += x - 1
-
-    # Formatting
-    ax.set_xlabel("Timesteps", fontsize=14)
-    ax.set_ylabel("Evidence Scores", fontsize=14)
-    ax.set_title(
-        "Evidence Scores Over Time with Resampling",
-        fontsize=16,
-        fontweight="bold",
-    )
-    ax.legend(title="Objects", fontsize=10, loc="upper left", bbox_to_anchor=(1, 1))
-    ax.grid(True, linestyle="--", alpha=0.6)
-    ax.xaxis.set_major_locator(MultipleLocator(10))
-
-    # Show plot
-    plt.show()
-
-
-def plot_pose_error_over_time(exp_path: str) -> None:
+def plot_pose_error_over_time(exp_path: str) -> int:
     """Plot MLH pose error and theoretical limits over time.
 
     This function visualizes the theoretical pose error limit vs. the actual
@@ -123,7 +31,6 @@ def plot_pose_error_over_time(exp_path: str) -> None:
     predicted object (`mlo`) matches the target object. It generates a two-row
     plot where the top subplot shows binary correctness (Correct/Wrong) of MLO
     and the bottom subplot shows pose error metrics.
-
     The theoretical limit is calculated by finding the minimum pose error over
     all existing hypotheses in Monty's hypothesis space. This metric conveys the
     best possible performance if Monty selects the best hypothesis as its most
@@ -133,14 +40,17 @@ def plot_pose_error_over_time(exp_path: str) -> None:
         exp_path (str): Path to the experiment directory containing detailed stats
             data.
 
-    Raises:
-        FileNotFoundError: If the given `exp_path` does not exist.
+    Returns:
+        int: Exit code.
     """
-    if not os.path.exists(exp_path):
-        raise FileNotFoundError(f"Experiment path not found: {exp_path}")
+    if not Path(exp_path).exists():
+        logger.error(f"Experiment path not found: {exp_path}")
+        return 1
 
     # load detailed stats
     _, _, detailed_stats, _ = load_stats(exp_path, False, False, True, False)
+
+    plt.style.use("seaborn-darkgrid")
 
     dfs = []
     for ep_data in detailed_stats.values():
@@ -165,7 +75,7 @@ def plot_pose_error_over_time(exp_path: str) -> None:
     df = pd.concat(dfs, ignore_index=True)
 
     # Create stacked subplots: (MLO accuracy, pose error)
-    fig, (ax0, ax1) = plt.subplots(
+    _, (ax0, ax1) = plt.subplots(
         2, 1, figsize=(10, 6), sharex=True, gridspec_kw={"height_ratios": [0.5, 4]}
     )
 
@@ -254,3 +164,32 @@ def plot_pose_error_over_time(exp_path: str) -> None:
 
     plt.tight_layout()
     plt.show()
+
+    return 0
+
+
+def add_subparser(
+    subparsers: argparse._SubParsersAction,
+    parent_parser: Optional[argparse.ArgumentParser] = None,
+) -> None:
+    """Add the pose_error_over_time subparser to the main parser.
+
+    Args:
+        subparsers: The subparsers object from the main parser.
+        parent_parser: Optional parent parser for shared arguments.
+    """
+    parser = subparsers.add_parser(
+        "pose_error_over_time",
+        help="Plot MLH pose error and theoretical limits over time.",
+        parents=[parent_parser] if parent_parser else [],
+    )
+
+    parser.add_argument(
+        "experiment_log_dir",
+        help=(
+            "The directory containing the experiment log with the detailed stats file."
+        ),
+    )
+    parser.set_defaults(
+        func=lambda args: sys.exit(plot_pose_error_over_time(args.experiment_log_dir))
+    )
