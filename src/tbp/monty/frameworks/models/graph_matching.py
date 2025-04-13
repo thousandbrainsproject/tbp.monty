@@ -1346,7 +1346,7 @@ class GraphMemory(LMMemory):
         """Return state_dict."""
         return self.models_in_memory
 
-    def __len__(self) -> int:
+    def __len__(self):
         """Return number of graphs in memory."""
         return len(self.get_memory_ids())
 

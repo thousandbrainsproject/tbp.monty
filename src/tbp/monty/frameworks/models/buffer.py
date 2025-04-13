@@ -592,7 +592,7 @@ class BufferEncoder(json.JSONEncoder):
         cls,
         obj_type: type,
         encoder: Union[Callable, Type[json.JSONEncoder]],
-    ) -> None:
+    ):
         """Register an encoder.
 
         Args:
@@ -611,7 +611,7 @@ class BufferEncoder(json.JSONEncoder):
             raise ValueError(f"Invalid encoder: {encoder}")
 
     @classmethod
-    def unregister(cls, obj_type: type) -> None:
+    def unregister(cls, obj_type: type):
         """Unregister an encoder.
 
         Args:

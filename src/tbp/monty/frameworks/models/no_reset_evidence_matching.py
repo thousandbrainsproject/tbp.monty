@@ -102,7 +102,7 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         # grow when objects are swapped without any supervisory signal.
         self.gsg.wait_growth_multiplier = 1
 
-    def reset(self) -> None:
+    def reset(self):
         super().reset()
         self.evidence = {}
         self.last_location = {}

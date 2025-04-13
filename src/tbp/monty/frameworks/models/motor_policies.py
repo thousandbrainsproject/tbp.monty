@@ -47,7 +47,7 @@ from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
 class MotorPolicy(abc.ABC):
     """The abstract scaffold for motor policies."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         self.is_predefined = False
 
     @abc.abstractmethod
@@ -94,7 +94,7 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
+    def set_experiment_mode(self, mode: Literal["train", "eval"]):
         """Sets the experiment mode.
 
         Args:
@@ -254,7 +254,7 @@ class BasePolicy(MotorPolicy):
         self.timestep = state_dict["timestep"]
         self.episode_step = state_dict["episode_step"]
 
-    def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
+    def set_experiment_mode(self, mode: Literal["train", "eval"]):
         pass
 
 
@@ -266,7 +266,7 @@ class JumpToGoalStateMixin:
     to move there.
     """
 
-    def __init__(self) -> None:
+    def __init__(self):
         self.driving_goal_state = None
 
     def pre_episode(self):

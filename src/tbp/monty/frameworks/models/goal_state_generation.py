@@ -480,7 +480,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         desired_object_distance: float=0.03,
         wait_growth_multiplier: int=2,
         **kwargs,
-    ) -> None:
+    ):
         """Initialize the Evidence GSG.
 
         Args:
