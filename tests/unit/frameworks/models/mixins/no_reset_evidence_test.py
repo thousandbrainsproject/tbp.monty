@@ -20,7 +20,7 @@ from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
 
 class InheritanceTheoreticalLMLoggingMixinTest(TestCase):
     @staticmethod
-    def test_mixin_used_with_compatible_learning_module_does_not_erorr() -> None:
+    def test_mixin_used_with_compatible_learning_module_does_not_error() -> None:
         class Compatible(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
             pass
 
