@@ -9,9 +9,11 @@
 # https://opensource.org/licenses/MIT.
 
 import logging
+from typing import List, Tuple, Dict, Optional, Union, Any
 
 import numpy as np
 import quaternion
+from numpy.typing import NDArray
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
@@ -33,11 +35,11 @@ class DetailedLoggingSM(SensorModuleBase):
 
     def __init__(
         self,
-        sensor_module_id,
-        save_raw_obs,
-        pc1_is_pc2_threshold=10,
-        point_normal_method="TLS",
-        weight_curvature=True,
+        sensor_module_id: str,
+        save_raw_obs: bool,
+        pc1_is_pc2_threshold: int=10,
+        point_normal_method: str="TLS",
+        weight_curvature: bool=True,
     ):
         """Initialize Sensor Module.
 
@@ -62,7 +64,7 @@ class DetailedLoggingSM(SensorModuleBase):
         self.point_normal_method = point_normal_method
         self.weight_curvature = weight_curvature
 
-    def state_dict(self):
+    def state_dict(self) -> Dict[str, List]:
         """Return state_dict."""
         # this is what is saved to detailed stats
         assert len(self.sm_properties) == len(
@@ -118,15 +120,15 @@ class DetailedLoggingSM(SensorModuleBase):
 
     def extract_and_add_features(
         self,
-        features,
-        obs_3d,
-        rgba_feat,
-        depth_feat,
-        center_id,
-        center_row_col,
-        sensor_frame_data,
-        world_camera,
-    ):
+        features: Dict[str, Any],
+        obs_3d: NDArray[np.float64],
+        rgba_feat: NDArray[np.uint8],
+        depth_feat: NDArray[np.float64],
+        center_id: int,
+        center_row_col: int,
+        sensor_frame_data: NDArray[np.float64],
+        world_camera: NDArray[np.float64],
+    ) -> Tuple[Dict[str, Any], Dict[str, Any], bool]:
         """Extract features specified in self.features from sensor patch.
 
         Returns the features in the patch, and True if the point-normal
@@ -212,7 +214,8 @@ class DetailedLoggingSM(SensorModuleBase):
 
         return features, morphological_features, invalid_signals
 
-    def observations_to_comunication_protocol(self, data, on_object_only=True):
+    def observations_to_comunication_protocol(self, data: Dict[str, NDArray[np.generic]],
+                                              on_object_only: bool = True) -> State:
         """Turn raw observations into instance of State class following CMP.
 
         Args:
@@ -307,7 +310,8 @@ class DetailedLoggingSM(SensorModuleBase):
 
         return observed_state
 
-    def _get_point_normals(self, obs_3d, sensor_frame_data, center_id, world_camera):
+    def _get_point_normals(self, obs_3d: NDArray[np.float64], sensor_frame_data: NDArray[np.float64], center_id: int,
+                           world_camera: NDArray[np.float64]) -> Tuple[NDArray[np.float64], bool]:
         if self.point_normal_method == "TLS":
             # Version with Total Least-Squares (TLS) fitting
             point_normal, valid_pn = get_point_normal_total_least_squares(
@@ -341,11 +345,11 @@ class DetailedLoggingSM(SensorModuleBase):
 
 
 class NoiseMixin:
-    def __init__(self, noise_params, **kwargs):
+    def __init__(self, noise_params: Dict[str, Any], **kwargs):
         super().__init__(**kwargs)
         self.noise_params = noise_params
 
-    def add_noise_to_sensor_data(self, sensor_data):
+    def add_noise_to_sensor_data(self, sensor_data: State) -> State:
         """Add noise to features specified in noise_params.
 
         Noise params should have structure {"features":
@@ -401,7 +405,7 @@ class NoiseMixin:
 
         return sensor_data
 
-    def add_noise_to_feat_value(self, feat_name, feat_val):
+    def add_noise_to_feat_value(self, feat_name: str, feat_val: NDArray[np.float64]) -> NDArray[np.float64]:
         if type(feat_val) == bool:
             # Flip boolian variable with probability specified in
             # noise_params
@@ -431,12 +435,12 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
 
     def __init__(
         self,
-        sensor_module_id,
-        features,
-        save_raw_obs=False,
-        pc1_is_pc2_threshold=10,
-        noise_params=None,
-        process_all_obs=False,
+        sensor_module_id: str,
+        features: List[str],
+        save_raw_obs: bool=False,
+        pc1_is_pc2_threshold: int=10,
+        noise_params: Optional[Dict]=None,
+        process_all_obs: bool=False,
     ):
         """Initialize Sensor Module.
 
@@ -500,7 +504,7 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
         self.processed_obs = []
         self.states = []
 
-    def update_state(self, state):
+    def update_state(self, state: Dict[str, Any]):
         """Update information about the sensors location and rotation."""
         agent_position = state["position"]
         sensor_position = state["sensors"][self.sensor_module_id + ".rgba"]["position"]
@@ -516,7 +520,7 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             "rotation": agent_rotation * sensor_rotation,
         }
 
-    def state_dict(self):
+    def state_dict(self) -> Dict[str, Union[List, List[Dict[str, Any]]]]:
         """Return state_dict."""
         assert len(self.sm_properties) == len(
             self.raw_observations
@@ -529,7 +533,7 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             # sensor_states=self.states, # pickle problem with magnum
         )
 
-    def step(self, data):
+    def step(self, data: Dict[str, NDArray[np.generic]]):
         """Turn raw observations into dict of features at location.
 
         Args:
@@ -585,11 +589,11 @@ class FeatureChangeSM(HabitatDistantPatchSM, NoiseMixin):
 
     def __init__(
         self,
-        sensor_module_id,
-        features,
-        delta_thresholds,
-        surf_agent_sm=False,
-        save_raw_obs=False,
+        sensor_module_id: str,
+        features: List[str],
+        delta_thresholds: Dict[str, Any],
+        surf_agent_sm: bool=False,
+        save_raw_obs: bool=False,
         noise_params=None,
     ):
         """Initialize Sensor Module.
@@ -624,7 +628,7 @@ class FeatureChangeSM(HabitatDistantPatchSM, NoiseMixin):
         super().pre_episode()
         self.last_features = None
 
-    def step(self, data):
+    def step(self, data: Dict[str, NDArray[np.generic]]) -> State:
         """Return Features if they changed significantly."""
         patch_observation = super().step(data)  # get extracted features
 
@@ -657,7 +661,7 @@ class FeatureChangeSM(HabitatDistantPatchSM, NoiseMixin):
 
             return patch_observation
 
-    def check_feature_change(self, observed_features):
+    def check_feature_change(self, observed_features: State) -> bool:
         """Check feature change between last transmitted observation.
 
         Args:

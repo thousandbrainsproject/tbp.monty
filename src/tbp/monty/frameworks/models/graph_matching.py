@@ -10,9 +10,11 @@
 
 import logging
 import os
+from typing import Dict, Union, Set, Any, Optional, List, Tuple, TYPE_CHECKING
 
 import numpy as np
 import torch
+from numpy.typing import NDArray
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
@@ -25,7 +27,11 @@ from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule, L
 from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_state_generation import GraphGoalStateGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
-from tbp.monty.frameworks.models.object_model import GraphObjectModel
+from tbp.monty.frameworks.models.object_model import GraphObjectModel, GridObjectModel
+from tbp.monty.frameworks.models.states import State, GoalState
+
+if TYPE_CHECKING:
+    from tbp.monty.frameworks.models.evidence_matching import EvidenceGraphLM
 
 
 class MontyForGraphMatching(MontyBase):
@@ -48,7 +54,7 @@ class MontyForGraphMatching(MontyBase):
 
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
-    def pre_episode(self, primary_target, semantic_id_to_label=None):
+    def pre_episode(self, primary_target: Dict[str, Any], semantic_id_to_label: Optional[Dict[int, str]]=None):
         """Reset values and call sub-pre_episode functions."""
         self._is_done = False
         self.reset_episode_steps()
@@ -93,7 +99,7 @@ class MontyForGraphMatching(MontyBase):
             # made it have possible matches now.
             lm.set_individual_ts(terminal_state=None)
 
-    def check_if_any_lms_updated(self):
+    def check_if_any_lms_updated(self) -> bool:
         """True if any LM received sensory information on the current episode step.
 
         Returns:
@@ -112,7 +118,7 @@ class MontyForGraphMatching(MontyBase):
         """Set LM terminal states to time_out."""
         self._set_time_outs(global_time_out=True)
 
-    def check_terminal_conditions(self):
+    def check_terminal_conditions(self) -> Optional[bool]:
         """Check if all LMs have reached a terminal state.
 
         This could be no_match, match, or time_out. If all LMs have reached one of these
@@ -488,7 +494,7 @@ class MontyForGraphMatching(MontyBase):
                 # a void without any objects), ensuring that we eventually time-out
                 # according to max_total_steps
 
-    def _pass_input_obs_to_motor_system(self, infos):
+    def _pass_input_obs_to_motor_system(self, infos: State):
         """Pass processed observations to motor system.
 
         Give the motor system all information it needs for its policy to decide the
@@ -518,7 +524,7 @@ class MontyForGraphMatching(MontyBase):
                     )
 
     # ------------------------ Helper --------------------------
-    def _set_stepwise_targets(self, lm, sensory_inputs):
+    def _set_stepwise_targets(self, lm: 'EvidenceGraphLM', sensory_inputs: List[State]):
         """Set the "stepwise" target for each learning module.
 
         Based on the current sensory input, set the 'stepwise' target for each
@@ -551,7 +557,7 @@ class MontyForGraphMatching(MontyBase):
         # Add logging information : TODO use the buffer to log this appropriately
         lm.stepwise_targets_list.append(lm.stepwise_target_object)
 
-    def _set_time_outs(self, global_time_out=False):
+    def _set_time_outs(self, global_time_out: bool=False):
         """Set terminal state of LMs that are not done yet to time_out.
 
         Args:
@@ -579,7 +585,7 @@ class GraphLM(LearningModule):
     Subclasses are DisplacementGraphLM, FeatureGraphLM, and EvidenceGraphLM.
     """
 
-    def __init__(self, initialize_base_modules=True):
+    def __init__(self, initialize_base_modules: bool=True):
         """Initialize general Learning Module based on graphs.
 
         Args:
@@ -619,7 +625,7 @@ class GraphLM(LearningModule):
             self.possible_poses,
         ) = self.graph_memory.get_initial_hypotheses()
 
-    def pre_episode(self, primary_target):
+    def pre_episode(self, primary_target: Dict[str, Any]):
         """Set target object var and reset others from last episode.
 
         primary_target : the primary target for the learning module/
@@ -640,7 +646,7 @@ class GraphLM(LearningModule):
         self.detected_pose = [None for _ in range(7)]
         self.detected_rotation_r = None
 
-    def matching_step(self, observations):
+    def matching_step(self, observations: List[State]):
         """Update the possible matches given an observation."""
         first_movement_detected = self._agent_moved_since_reset()
         buffer_data = self._add_displacements(observations)
@@ -721,7 +727,7 @@ class GraphLM(LearningModule):
         """
         pass
 
-    def propose_goal_state(self):
+    def propose_goal_state(self) -> Optional[GoalState]:
         """Return the goal-state proposed by this LM's GSG.
 
         Only returned if the LM/GSG was stepped, otherwise returns None goal-state.
@@ -864,7 +870,7 @@ class GraphLM(LearningModule):
             all_poses = poses
         return all_poses
 
-    def get_object_scale(self, object_id):
+    def get_object_scale(self, object_id: str) -> int:
         """Get object scale. TODO: implement solution for detecting scale.
 
         Returns:
@@ -872,7 +878,7 @@ class GraphLM(LearningModule):
         """
         return 1
 
-    def get_all_known_object_ids(self):
+    def get_all_known_object_ids(self) -> List[str]:
         """Get the IDs of all object models stored in memory.
 
         Returns:
@@ -880,7 +886,7 @@ class GraphLM(LearningModule):
         """
         return self.graph_memory.get_memory_ids()
 
-    def get_graph(self, model_id, input_channel=None):
+    def get_graph(self, model_id: str, input_channel: Optional[str]=None) -> GridObjectModel:
         """Get learned graph from graph memory.
 
         Note:
@@ -893,7 +899,7 @@ class GraphLM(LearningModule):
         """
         return self.graph_memory.get_graph(model_id, input_channel)
 
-    def get_input_channels_in_graph(self, model_id):
+    def get_input_channels_in_graph(self, model_id: str) -> List[str]:
         """Get input channels stored for a graph in graph memory.
 
         Returns:
@@ -916,7 +922,7 @@ class GraphLM(LearningModule):
 
     # ------------------ Logging & Saving ----------------------
 
-    def set_individual_ts(self, terminal_state):
+    def set_individual_ts(self, terminal_state: str):
         logging.info(
             f"Setting terminal state of {self.learning_module_id} to {terminal_state}"
         )
@@ -946,7 +952,7 @@ class GraphLM(LearningModule):
             stats = self._add_detailed_stats(stats)
         return stats
 
-    def add_lm_processing_to_buffer_stats(self, lm_processed):
+    def add_lm_processing_to_buffer_stats(self, lm_processed: bool):
         """Update the buffer stats with whether the LM processed an observation.
 
         Add boolean of whether the LM processed an observation on this particular
@@ -960,7 +966,7 @@ class GraphLM(LearningModule):
             dict(lm_processed_steps=lm_processed), update_time=False
         )
 
-    def state_dict(self):
+    def state_dict(self) -> Dict[str, Dict[str, Union[Set[str], Dict[str, GridObjectModel]]]]:
         """Get the full state dict for logging and saving.
 
         Returns:
@@ -972,7 +978,7 @@ class GraphLM(LearningModule):
             graph_id_to_target=self.graph_id_to_target,
         )
 
-    def load_state_dict(self, state_dict):
+    def load_state_dict(self, state_dict: Dict[str, Dict[str, Union[Set[str], Dict[str, GridObjectModel]]]]):
         """Load state dict.
 
         Args:
@@ -985,7 +991,7 @@ class GraphLM(LearningModule):
     # ======================= Private ==========================
 
     # ------------------- Main Algorithm -----------------------
-    def _compute_possible_matches(self, observations, first_movement_detected=True):
+    def _compute_possible_matches(self, observations: List[State], first_movement_detected: bool=True):
         """Use graph memory to get the current possible matches.
 
         Args:
@@ -1043,7 +1049,7 @@ class GraphLM(LearningModule):
 
     # ------------------------ Helper --------------------------
 
-    def _add_displacements(self, obs):
+    def _add_displacements(self, obs: List[State]) -> List[State]:
         """Add displacements to the current observation.
 
         The observation consists of features at a location. To get the displacement we
@@ -1065,7 +1071,7 @@ class GraphLM(LearningModule):
             o.set_displacement(displacement)
         return obs
 
-    def _select_features_to_use(self, states):
+    def _select_features_to_use(self, states: List[State]) -> Dict[str, Dict[ str, Any]]:
         """Extract the features from observations that are specified in tolerances.
 
         TODO: requires self.tolerances
@@ -1226,7 +1232,7 @@ class GraphMemory(LMMemory):
                 ) = self._get_all_node_features(graph_id, input_channel)
 
     # ------------------ Getters & Setters ---------------------
-    def get_graph(self, graph_id, input_channel=None):
+    def get_graph(self, graph_id: str, input_channel: Optional[str]=None) -> GridObjectModel:
         """Return graph from graph memory.
 
         Args:
@@ -1250,13 +1256,13 @@ class GraphMemory(LMMemory):
             else:
                 raise ValueError(f"{graph_id} has no data stored for {input_channel}.")
 
-    def get_feature_array(self, graph_id):
+    def get_feature_array(self, graph_id: str) -> Dict[str, NDArray[np.float64]]:
         return self.feature_array[graph_id]
 
-    def get_feature_order(self, graph_id):
+    def get_feature_order(self, graph_id: str) -> Dict[str, List[str]]:
         return self.feature_order[graph_id]
 
-    def get_locations_in_graph(self, graph_id, input_channel):
+    def get_locations_in_graph(self, graph_id: str, input_channel: str) -> NDArray[np.float32]:
         return self.get_graph(graph_id, input_channel).pos
 
     def get_all_models_in_memory(self):
@@ -1270,7 +1276,7 @@ class GraphMemory(LMMemory):
         possible_paths = {}
         return possible_matches, possible_paths
 
-    def get_memory_ids(self):
+    def get_memory_ids(self) -> List[str]:
         """Get list of all objects in memory.
 
         Returns:
@@ -1278,10 +1284,10 @@ class GraphMemory(LMMemory):
         """
         return list(self.models_in_memory.keys())
 
-    def get_input_channels_in_graph(self, graph_id):
+    def get_input_channels_in_graph(self, graph_id: str) -> List[str]:
         return list(self.models_in_memory[graph_id].keys())
 
-    def get_graph_node_ids(self, graph_id, input_channel):
+    def get_graph_node_ids(self, graph_id: str, input_channel: str) -> NDArray[np.int64]:
         num_nodes = self.models_in_memory[graph_id][input_channel].x.shape[0]
         node_ids = np.linspace(0, num_nodes - 1, num_nodes, dtype=int)
         return node_ids
@@ -1304,7 +1310,8 @@ class GraphMemory(LMMemory):
                 ]
             )
 
-    def get_features_at_node(self, graph_id, input_channel, node_id, feature_keys=None):
+    def get_features_at_node(self, graph_id: str, input_channel: str, node_id: int,
+                             feature_keys: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Get features at a specific node in the graph.
 
         Args:
@@ -1335,7 +1342,7 @@ class GraphMemory(LMMemory):
                 node_features[key] = feature
         return node_features
 
-    def state_dict(self):
+    def state_dict(self) -> Dict[str, Dict[str, GridObjectModel]]:
         """Return state_dict."""
         return self.models_in_memory
 
@@ -1344,7 +1351,7 @@ class GraphMemory(LMMemory):
         return len(self.get_memory_ids())
 
     # ------------------ Logging & Saving ----------------------
-    def load_state_dict(self, state_dict):
+    def load_state_dict(self, state_dict: Dict[str, Dict[str, GraphObjectModel]]):
         """Load graphs from state dict and add to memory."""
         logging.info("loading models")
         for obj_name, model in state_dict.items():
@@ -1442,7 +1449,7 @@ class GraphMemory(LMMemory):
 
     # ------------------------ Helper --------------------------
 
-    def _get_all_node_features(self, graph_id, input_channel):
+    def _get_all_node_features(self, graph_id: str, input_channel: str) -> Tuple[NDArray[np.float64], List[str]]:
         """Create an array of all features for all nodes in a graph.
 
         This can be used for fast feature matching
@@ -1478,7 +1485,7 @@ class GraphMemory(LMMemory):
                 start_idx = end_idx
         return feature_arrays, feature_order
 
-    def _get_empty_feature_arrays(self, graph_id, input_channel, num_nodes):
+    def _get_empty_feature_arrays(self, graph_id: str, input_channel: str, num_nodes: int) -> NDArray[np.float64]:
         """Get nan array with space for all features per input channel.
 
         The size of the array is calculated by taking the length of all non-pose

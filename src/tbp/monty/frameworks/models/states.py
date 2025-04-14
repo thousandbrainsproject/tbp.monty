@@ -8,9 +8,10 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Tuple, Optional, Union
 
 import numpy as np
+from numpy.typing import NDArray
 
 from tbp.monty.frameworks.models.buffer import BufferEncoder
 
@@ -43,13 +44,13 @@ class State:
 
     def __init__(
         self,
-        location,
-        morphological_features,
-        non_morphological_features,
-        confidence,
-        use_state,
-        sender_id,
-        sender_type,
+        location: Optional[NDArray],
+        morphological_features: Optional[Dict[str, Any]],
+        non_morphological_features: Optional[Dict[str, Any]],
+        confidence: float,
+        use_state: bool,
+        sender_id: str,
+        sender_type: str,
     ):
         """Initialize a state."""
         self.location = location
@@ -109,7 +110,7 @@ class State:
                 rotation, self.morphological_features["pose_vectors"]
             )
 
-    def set_displacement(self, displacement, ppf=None):
+    def set_displacement(self, displacement: NDArray[np.float64], ppf=None):
         """Add displacement (represented as dict) to state.
 
         TODO S: Add this to state or in another place?
@@ -120,7 +121,7 @@ class State:
         if ppf is not None:
             self.displacement["ppf"] = ppf
 
-    def get_feature_by_name(self, feature_name):
+    def get_feature_by_name(self, feature_name: str) -> np.float64:
         if feature_name in self.morphological_features.keys():
             feature_val = self.morphological_features[feature_name]
         elif feature_name in self.non_morphological_features.keys():
@@ -129,7 +130,7 @@ class State:
             raise ValueError(f"Feature {feature_name} not found in state.")
         return feature_val
 
-    def get_nth_pose_vector(self, pose_vector_index):
+    def get_nth_pose_vector(self, pose_vector_index: int) -> NDArray[np.float64]:
         """Return the nth pose vector.
 
         When self.sender_type == "SM", the first pose vector is the point normal and the
@@ -139,7 +140,7 @@ class State:
         """
         return self.morphological_features["pose_vectors"][pose_vector_index]
 
-    def get_point_normal(self):
+    def get_point_normal(self) -> NDArray[np.float64]:
         """Return the point normal vector.
 
         Raises:
@@ -154,7 +155,7 @@ class State:
         """Return the pose vectors."""
         return self.morphological_features["pose_vectors"]
 
-    def get_curvature_directions(self):
+    def get_curvature_directions(self) -> Tuple[NDArray[np.float64], NDArray[np.float64]]:
         """Return the curvature direction vectors.
 
         Raises:
@@ -165,7 +166,7 @@ class State:
         else:
             raise ValueError("Sender type must be SM to get curvature directions.")
 
-    def get_on_object(self):
+    def get_on_object(self) -> Union[bool, float]:
         """Return whether we think we are on the object or not.
 
         This is currently used in the policy to stay on the object.
@@ -234,7 +235,7 @@ class GoalState(State):
 
     def __init__(
         self,
-        location: Optional[np.ndarray],
+        location: Optional[NDArray[np.float64]],
         morphological_features: Optional[Dict[str, Any]],
         non_morphological_features: Optional[Dict[str, Any]],
         confidence: float,

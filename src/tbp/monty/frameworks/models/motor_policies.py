@@ -14,11 +14,13 @@ import json
 import logging
 import math
 import os
-from typing import Dict, List, Literal, Mapping, Tuple, Type, Union, cast
+from typing import Dict, List, Literal, Mapping, Tuple, Type, Union, cast, Optional, Any
 
 import numpy as np
 import quaternion as qt
 import scipy.ndimage
+from numpy.random.mtrand import RandomState
+from numpy.typing import NDArray
 from scipy.spatial.transform import Rotation as rot  # noqa: N813
 
 from tbp.monty.frameworks.actions.action_samplers import ActionSampler
@@ -45,7 +47,7 @@ from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
 class MotorPolicy(abc.ABC):
     """The abstract scaffold for motor policies."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         self.is_predefined = False
 
     @abc.abstractmethod
@@ -64,7 +66,7 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def post_action(self, action: Action) -> None:
+    def post_action(self, action: Action):
         """This post action hook will automatically be called at the end of __call__.
 
         Args:
@@ -73,12 +75,12 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def post_episode(self) -> None:
+    def post_episode(self):
         """Post episode hook."""
         pass
 
     @abc.abstractmethod
-    def pre_episode(self) -> None:
+    def pre_episode(self):
         """Pre episode hook."""
         pass
 
@@ -92,7 +94,7 @@ class MotorPolicy(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
+    def set_experiment_mode(self, mode: Literal["train", "eval"]):
         """Sets the experiment mode.
 
         Args:
@@ -117,11 +119,11 @@ class MotorPolicy(abc.ABC):
 class BasePolicy(MotorPolicy):
     def __init__(
         self,
-        rng,
+        rng: RandomState,
         action_sampler_args: Dict,
         action_sampler_class: Type[ActionSampler],
         agent_id: str,
-        switch_frequency,
+        switch_frequency: float,
         file_name=None,
         file_names_per_episode=None,
     ):
@@ -200,7 +202,7 @@ class BasePolicy(MotorPolicy):
     def predefined_call(self) -> Action:
         return self.action_list[self.episode_step % len(self.action_list)]
 
-    def post_action(self, action: Action) -> None:
+    def post_action(self, action: Action):
         self.action = action
         self.timestep += 1
         self.episode_step += 1
@@ -222,7 +224,7 @@ class BasePolicy(MotorPolicy):
     # Other required abstract methods, methods called by Monty or Dataloader
     ###
 
-    def get_agent_state(self):
+    def get_agent_state(self) -> Dict[str, Any]:
         """Get agent state (dict).
 
         Note:
@@ -234,7 +236,7 @@ class BasePolicy(MotorPolicy):
         return self.state[self.agent_id]
 
     @property
-    def is_motor_only_step(self):
+    def is_motor_only_step(self) -> bool:
         agent_state = self.get_agent_state()
         if "motor_only_step" in agent_state.keys() and agent_state["motor_only_step"]:
             return True
@@ -245,14 +247,14 @@ class BasePolicy(MotorPolicy):
     def last_action(self) -> Action:
         return self.action
 
-    def state_dict(self):
+    def state_dict(self) -> Dict[str, Any]:
         return {"timestep": self.timestep, "episode_step": self.episode_step}
 
     def load_state_dict(self, state_dict):
         self.timestep = state_dict["timestep"]
         self.episode_step = state_dict["episode_step"]
 
-    def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
+    def set_experiment_mode(self, mode: Literal["train", "eval"]):
         pass
 
 
@@ -264,7 +266,7 @@ class JumpToGoalStateMixin:
     to move there.
     """
 
-    def __init__(self) -> None:
+    def __init__(self):
         self.driving_goal_state = None
 
     def pre_episode(self):
@@ -274,7 +276,7 @@ class JumpToGoalStateMixin:
         """Specify the goal-state that the motor-actuator will attempt to satisfy."""
         self.driving_goal_state = goal_state
 
-    def derive_habitat_goal_state(self):
+    def derive_habitat_goal_state(self) -> Tuple[Optional[NDArray[np.float64]], Optional[qt.quaternion]]:
         """Derive the Habitat-compatible goal state.
 
         Take the current driving goal state (in CMP format), and derive the
@@ -334,10 +336,10 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
     def __init__(
         self,
-        min_perc_on_obj,
-        good_view_percentage,
-        desired_object_distance,
-        use_goal_state_driven_actions=False,
+        min_perc_on_obj: float,
+        good_view_percentage: float,
+        desired_object_distance: float,
+        use_goal_state_driven_actions: bool=False,
         **kwargs,
     ):
         """Initialize policy.
@@ -376,7 +378,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         return super().pre_episode()
 
-    def get_depth_at_center(self, raw_observation, view_sensor_id, initial_pose=True):
+    def get_depth_at_center(self, raw_observation: Dict[str, Any], view_sensor_id: str, initial_pose: bool=True):
         """Determine the depth of the central pixel.
 
         Method primarily used by surface-agent, but also by distant agent after
@@ -499,7 +501,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         else:
             raise ValueError(f"Invalid action: {last_action}")
 
-    def post_action(self, action: Action) -> None:
+    def post_action(self, action: Action):
         self.action = action
         self.timestep += 1
         self.episode_step += 1
@@ -507,7 +509,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             state_copy = self.convert_motor_state()
             self.action_sequence.append([action, state_copy])
 
-    def convert_motor_state(self):
+    def convert_motor_state(self) -> Dict[str, Any]:
         """Convert the motor state into something that can be pickled/saved to JSON.
 
         i.e. substitute vector and quaternion objects; note e.g. copy.deepcopy does not
@@ -586,7 +588,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         view_sensor_id: str,
         target_semantic_id: int,
         multiple_objects_present: bool,
-    ) -> Tuple[Union[Action, None], bool]:
+    ) -> Tuple[Optional[Action], bool]:
         """At beginning of episode move close enough to the object.
 
         Used the raw observations returned from the dataloader and not the
@@ -718,9 +720,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
     def compute_look_amounts(
         self,
-        relative_location: np.ndarray,
+        relative_location: NDArray[np.float64],
         sensor_id: str,
-    ) -> Tuple[float, float]:
+    ) -> Tuple[np.float64, np.float64]:
         """Compute the amount to look down and left given a relative location.
 
         This function computes the amount needed to look down and left in order
@@ -766,12 +768,12 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
     def find_location_to_look_at(
         self,
-        sem3d_obs: np.ndarray,
+        sem3d_obs: NDArray[np.float64],
         image_shape: Tuple[int, int],
         target_semantic_id: int,
         multiple_objects_present: bool,
         sensor_id: str,
-    ) -> np.ndarray:
+    ) -> NDArray[np.float64]:
         """Takes in a semantic 3D observation and returns an x,y,z location.
 
         The location is on the object and surrounded by pixels that are also on
@@ -957,9 +959,9 @@ class SurfacePolicy(InformedPolicy):
 
     def __init__(
         self,
-        alpha,
-        min_perc_on_obj=0.25,
-        good_view_percentage=0.5,
+        alpha: float,
+        min_perc_on_obj: float=0.25,
+        good_view_percentage: float=0.5,
         **kwargs,
     ):
         """Initialize policy.
@@ -991,7 +993,7 @@ class SurfacePolicy(InformedPolicy):
 
         return super().pre_episode()
 
-    def touch_object(self, raw_observation, view_sensor_id) -> Action:
+    def touch_object(self, raw_observation: Dict[str, Any], view_sensor_id: str) -> Action:
         """The surface agent's policy for moving onto an object for sensing it.
 
         Like the distant agent's get_good_view, this is called at the beginning
@@ -1105,7 +1107,7 @@ class SurfacePolicy(InformedPolicy):
     ###
     # Methods that define behavior of __call__
     ###
-    def dynamic_call(self) -> Action:
+    def dynamic_call(self) -> Optional[Action]:
         """Return the next action to take.
 
         This requires self.processed_observations to be updated at every step
@@ -1144,7 +1146,7 @@ class SurfacePolicy(InformedPolicy):
 
         return self.get_next_action()
 
-    def _orient_horizontal(self) -> Action:
+    def _orient_horizontal(self) -> OrientHorizontal:
         """Orient the agent horizontally.
 
         Returns:
@@ -1159,7 +1161,7 @@ class SurfacePolicy(InformedPolicy):
             forward_distance=forward_distance,
         )
 
-    def _orient_vertical(self) -> Action:
+    def _orient_vertical(self) -> OrientVertical:
         """Orient the agent vertically.
 
         Returns:
@@ -1200,7 +1202,7 @@ class SurfacePolicy(InformedPolicy):
 
         return action
 
-    def _move_forward(self) -> Action:
+    def _move_forward(self) -> MoveForward:
         """Move forward to touch the object at the right distance.
 
         Returns:
@@ -1215,7 +1217,7 @@ class SurfacePolicy(InformedPolicy):
         )
         return action
 
-    def get_next_action(self):
+    def get_next_action(self) -> Optional[Action]:
         """Retrieve next action from a cycle of four actions.
 
         First move forward to touch the object at the right distance
@@ -1281,7 +1283,7 @@ class SurfacePolicy(InformedPolicy):
 
         return direction
 
-    def horizontal_distances(self, rotation_degrees: float) -> Tuple[float, float]:
+    def horizontal_distances(self, rotation_degrees: np.float64) -> Tuple[np.float64, np.float64]:
         """Compute the horizontal and forward distances to move to.
 
         Compensate for a given rotation of a certain angle.
@@ -1303,7 +1305,7 @@ class SurfacePolicy(InformedPolicy):
 
         return move_left_distance, move_forward_distance
 
-    def vertical_distances(self, rotation_degrees: float) -> Tuple[float, float]:
+    def vertical_distances(self, rotation_degrees: np.float64) -> Tuple[np.float64, np.float64]:
         """Compute the down and forward distances to move to.
 
         Compensate for a given rotation of a certain angle.
@@ -1325,7 +1327,7 @@ class SurfacePolicy(InformedPolicy):
 
         return move_down_distance, move_forward_distance
 
-    def get_inverse_agent_rot(self):
+    def get_inverse_agent_rot(self) -> qt.quaternion:
         """Get the inverse rotation of the agent's current orientation.
 
         Used to transform poses of e.g. point normals or principle curvature from
@@ -1345,7 +1347,7 @@ class SurfacePolicy(InformedPolicy):
         [x, y, z, w] = rot.from_quat([x, y, z, w]).inv().as_quat()
         return qt.quaternion(w, x, y, z)
 
-    def orienting_angle_from_normal(self, orienting: str) -> float:
+    def orienting_angle_from_normal(self, orienting: str) -> Optional[np.float64]:
         """Compute turn angle to face the object.
 
         Based on the point normal, compute the angle that the agent needs
@@ -1396,7 +1398,7 @@ def read_action_file(file: str) -> List[Action]:
     return actions
 
 
-def write_action_file(actions: List[Action], file: str) -> None:
+def write_action_file(actions: List[Action], file: str):
     """Write a list of actions to a file, one per line.
 
     Should be readable by read_action_file.
@@ -1429,7 +1431,7 @@ def get_perc_on_obj(rgba_obs):
     return per_on_obj
 
 
-def get_perc_on_obj_semantic(semantic_obs, semantic_id=0):
+def get_perc_on_obj_semantic(semantic_obs: NDArray[np.int64], semantic_id: int=0) -> np.float64:
     """Get the percentage of pixels in the observation that land on the target object.
 
     If a semantic ID is provided, then only pixels on the target object are counted;
@@ -1492,11 +1494,11 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
     def __init__(
         self,
-        alpha,
-        pc_alpha,
-        max_pc_bias_steps,
-        min_general_steps,
-        min_heading_steps,
+        alpha: float,
+        pc_alpha: float,
+        max_pc_bias_steps: int,
+        min_general_steps: int,
+        min_heading_steps: int,
         **kwargs,
     ):
         """Initialize policy.
@@ -1637,7 +1639,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         else:
             self.action_details["z_defined_pc"].append(None)
 
-    def tangential_direction(self) -> VectorXYZ:
+    def tangential_direction(self) -> NDArray[np.float64]:
         """Set the direction of action to be a direction 0 - 2pi.
 
         This controls the move_tangential action
@@ -1690,7 +1692,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         return tang_movement
 
-    def perform_pc_guided_step(self):
+    def perform_pc_guided_step(self) -> NDArray[np.float64]:
         """Inform steps to take using defined directions of principal curvature.
 
         Use the defined directions of principal curvature to inform (ideally a
@@ -1853,7 +1855,9 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             self.tangential_vec,
         )
 
-    def update_tangential_reps(self, vec_form=None, angle_form=None):
+    def update_tangential_reps(self,
+                               vec_form: Optional[List[Union[np.float64, int]]] = None,
+                               angle_form: Optional[float] = None):
         """Update the angle and vector representation of a tangential heading.
 
         Angle and vector representations are stored as self.tangential_angle and
@@ -1932,7 +1936,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
             logging.debug(f"Updated preference: {self.min_dir_pref}")
 
-    def determine_pc_for_use(self):
+    def determine_pc_for_use(self) -> np.int64:
         """Determine the principal curvature to use for our heading.
 
         Use magnitude (ignoring negatives), as well as the current direction
@@ -1953,8 +1957,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
     def avoid_revisiting_locations(
         self,
-        conflict_divisor=3,
-        max_steps=100,
+        conflict_divisor: int=3,
+        max_steps: int=100,
     ):
         """Avoid revisiting locations.
 
@@ -2061,7 +2065,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
                     self.update_tangential_reps(vec_form=vec_copy)
 
-                    return None
+                    return
 
                 else:
                     # Search continues, but occasionally narrow the region in which we
@@ -2074,7 +2078,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                             f"Updating conflict divisor: {self.conflict_divisor}"
                         )
 
-    def conflict_check(self, rotated_locs, ii):
+    def conflict_check(self, rotated_locs: NDArray[np.float64], ii: int) -> bool:
         """Check for conflict in the current heading.
 
         Target location needs to be similar *and* we need to have a similar point normal
@@ -2116,7 +2120,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         else:
             return False
 
-    def attempt_conflict_resolution(self, vec_copy):
+    def attempt_conflict_resolution(self, vec_copy: List[Union[np.float64, int]]):
         """Try to define direction vector that avoids revisiting previous locations."""
         if self.first_attempt and self.using_pc_guide and self.continuous_pc_steps == 0:
             # On the first PC-guided step in a series, try to choose a direction
@@ -2187,7 +2191,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.prev_angle = self.tangential_angle
 
 
-def theta_change(a, b):
+def theta_change(a: float, b: float) -> float:
     """Determine the min, signed change in orientation between two angles in radians.
 
     Returns:
@@ -2201,7 +2205,7 @@ def theta_change(a, b):
     return min_sep
 
 
-def enforce_pi_bounds(theta):
+def enforce_pi_bounds(theta: float) -> float:
     """Enforce an orientation to be bounded between - pi and + pi.
 
     Returns:
@@ -2215,7 +2219,7 @@ def enforce_pi_bounds(theta):
     return theta
 
 
-def projected_angle_from_vec(vector):
+def projected_angle_from_vec(vector: List[Union[np.float64, int]]) -> float:
     """Determine the rotation about a z-axis (pointing "up").
 
     Note that because of the convention for moving along the y when theta=0, the
@@ -2238,7 +2242,7 @@ def projected_angle_from_vec(vector):
     return math.atan2(vector[0], vector[1])
 
 
-def projected_vec_from_angle(angle):
+def projected_vec_from_angle(angle: float) -> List[Union[np.float64, int]]:
     """Determine the vector in the plane defined by an orientation around the z-axis.
 
     Takes angle in radians, bound between -pi : pi.

@@ -17,7 +17,7 @@ from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 class MotorSystem:
     """The basic motor system implementation."""
 
-    def __init__(self, policy: MotorPolicy) -> None:
+    def __init__(self, policy: MotorPolicy):
         """Initialize the motor system with a motor policy.
 
         Args:
@@ -30,15 +30,15 @@ class MotorSystem:
         """Returns the last action taken by the motor system."""
         return self._policy.last_action
 
-    def post_episode(self) -> None:
+    def post_episode(self):
         """Post episode hook."""
         self._policy.post_episode()
 
-    def pre_episode(self) -> None:
+    def pre_episode(self):
         """Pre episode hook."""
         self._policy.pre_episode()
 
-    def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
+    def set_experiment_mode(self, mode: Literal["train", "eval"]):
         """Sets the experiment mode.
 
         Args:

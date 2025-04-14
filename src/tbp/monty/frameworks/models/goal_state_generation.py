@@ -9,11 +9,16 @@
 # https://opensource.org/licenses/MIT.
 
 import logging
+from typing import Optional, Dict, Union, List, Tuple, Any, TYPE_CHECKING
 
 import numpy as np
+from numpy.typing import NDArray
+
+if TYPE_CHECKING:
+    from tbp.monty.frameworks.models.evidence_matching import EvidenceGraphLM
 
 from tbp.monty.frameworks.models.abstract_monty_classes import GoalStateGenerator
-from tbp.monty.frameworks.models.states import GoalState
+from tbp.monty.frameworks.models.states import State, GoalState
 from tbp.monty.frameworks.utils.communication_utils import get_state_from_channel
 
 
@@ -37,7 +42,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
     Note all goal-states conform to the State-class cortical messaging protocol (CMP).
     """
 
-    def __init__(self, parent_lm, goal_tolerances=None, **kwargs) -> None:
+    def __init__(self, parent_lm: 'EvidenceGraphLM', goal_tolerances: Optional[Dict[str, float]]=None, **kwargs):
         """Initialize the GSG.
 
         Args:
@@ -121,7 +126,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
         self.driving_goal_state = received_goal_state
 
-    def get_output_goal_state(self):
+    def get_output_goal_state(self) -> List[State]:
         """Retrieve the output goal-state of the GSG.
 
         This is the goal-state projected to other LM's GSGs +/- motor-actuators.
@@ -133,7 +138,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
     # ------------------- Main Algorithm -----------------------
 
-    def step_gsg(self, observations):
+    def step_gsg(self, observations: List[State]):
         """Step the GSG.
 
         Check whether the GSG's output and driving goal-states are achieved, and
@@ -198,9 +203,9 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
     def _check_states_different(
         self,
-        state_a,
-        state_b,
-        diff_tolerances,
+        state_a: State,
+        state_b: State,
+        diff_tolerances: Dict[str, float],
     ) -> bool:
         """Check whether two states are different.
 
@@ -315,7 +320,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         else:
             return False
 
-    def _check_input_matches_sensory_prediction(self, observations):
+    def _check_input_matches_sensory_prediction(self, observations: List[State]) -> bool:
         """Check whether the input matches the sensory prediction.
 
         Here the sensory prediction is simply that the input state has changed, as
@@ -467,15 +472,15 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
     def __init__(
         self,
-        parent_lm,
-        goal_tolerances=None,
-        elapsed_steps_factor=10,
-        min_post_goal_success_steps=np.infty,
-        x_percent_scale_factor=0.75,
-        desired_object_distance=0.03,
-        wait_growth_multiplier=2,
+        parent_lm: 'EvidenceGraphLM',
+        goal_tolerances: Optional[Dict[str, float]]=None,
+        elapsed_steps_factor: int=10,
+        min_post_goal_success_steps: int=np.infty,
+        x_percent_scale_factor: float=0.75,
+        desired_object_distance: float=0.03,
+        wait_growth_multiplier: int=2,
         **kwargs,
-    ) -> None:
+    ):
         """Initialize the Evidence GSG.
 
         Args:
@@ -549,7 +554,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
     # ------------------- Main Algorithm -----------------------
 
-    def _generate_goal_state(self, observations) -> list:
+    def _generate_goal_state(self, observations: List[State]) -> GoalState:
         """Use the hypothesis-testing policy to generate a goal-state.
 
         The goal-state will rapidly disambiguate the pose and/or ID of the object the
@@ -580,7 +585,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         return motor_goal_state
 
-    def _compute_graph_mismatch(self):
+    def _compute_graph_mismatch(self) -> Tuple[np.int64, np.float64]:
         """Propose a point for the model to test.
 
         The aim is to propose a point for the model to test, with the aim of performing
@@ -701,7 +706,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         return target_loc_id, target_loc_separation
 
-    def _get_target_loc_info(self, target_loc_id):
+    def _get_target_loc_info(self, target_loc_id: np.int64) -> Dict[str, Union[Dict[str, Any], NDArray[np.float32]]]:
         """Given a target location ID, get the target location and pose vectors.
 
         Note:
@@ -763,8 +768,9 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         return goal_confidence
 
     def _compute_goal_state_for_target_loc(
-        self, observations, target_info, goal_confidence=1.0
-    ):
+            self, observations: State, target_info: Dict[str, Union[Dict[str, Any], NDArray[np.float32]]],
+            goal_confidence: np.float64 = 1.0
+    ) -> GoalState:
         """Specify a goal state for the motor-actuator.
 
         Based on a target location (in object-centric coordinates) and the associated
@@ -886,7 +892,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         return motor_goal_state
 
-    def _check_need_new_output_goal(self, output_goal_achieved) -> bool:
+    def _check_need_new_output_goal(self, output_goal_achieved: bool) -> bool:
         """Determine whether the GSG should generate a new output goal-state.
 
         Unlike the base version, success in achieving the goal-state is not an
@@ -914,7 +920,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         """
         return False
 
-    def _check_conditions_for_hypothesis_test(self):
+    def _check_conditions_for_hypothesis_test(self) -> bool:
         """Check if good chance to discriminate between conflicting object IDs or poses.
 
         Evaluates possible conditions for performing a hypothesis-guided action for
@@ -1029,7 +1035,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         else:
             return False
 
-    def _get_num_steps_post_output_goal_generated(self):
+    def _get_num_steps_post_output_goal_generated(self) -> np.int64:
         """Number of steps since last output goal-state.
 
         Returns:
