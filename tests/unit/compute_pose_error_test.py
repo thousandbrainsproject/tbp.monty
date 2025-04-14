@@ -49,6 +49,43 @@ class TestComputePoseError(unittest.TestCase):
         error = compute_pose_error(rot1, rot2)
         self.assertAlmostEqual(error, np.pi, places=6)
 
+    def test_pose_error_never_exceeds_pi(self):
+        """Test that the pose error is the shortest angular distance (≤ π radians).
+
+        This test verifies that the computed pose error is the minimal angle between
+        two rotations on SO(3). For example, a 10° and 210° rotation around the same
+        axis are 160° apart in the shortest direction, not 200°.
+        """
+        rot1 = Rotation.from_euler("z", 10, degrees=True)
+        rot2 = Rotation.from_euler("z", 210, degrees=True)
+        error = compute_pose_error(rot1, rot2)
+        self.assertAlmostEqual(error, np.deg2rad(160), places=6)
+
+    def test_rotation_object_from_quaternion_list(self):
+        """Test that a Rotation object can be created from a list of quaternions.
+
+        This verifies that:
+        - A list of multiple quaternions can be passed to `Rotation.from_quat()`
+        - The resulting `Rotation` object supports `len()` to count the number of
+            rotations
+        - The object supports indexing to access individual rotations, and the output
+          matches the expected result
+        """
+        quats = [
+            [0, 0, 0, 1],  # Identity
+            [0, 0, 1, 0],  # 180° around Z
+            [0.707, 0, 0, 0.707],  # 90° around X (approx)
+        ]
+        rotations_list = Rotation.from_quat(quats)
+
+        # Verify that the length matches the number of input quaternions
+        self.assertEqual(len(rotations_list), len(quats))
+
+        # Verify that indexing works and yields the expected rotation (180° around Z)
+        expected = [0, 0, 180]
+        actual = rotations_list[1].as_euler("xyz", degrees=True).tolist()
+        self.assertListEqual(actual, expected)
+
     def test_invalid_input_type(self):
         """Test that the function raises an error when given an invalid input type."""
         with self.assertRaises(TypeError):
