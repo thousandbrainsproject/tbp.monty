@@ -9,9 +9,11 @@
 
 As of this writing, we largely adopted the habit of labeling our commits as per https://www.conventionalcommits.org/en/v1.0.0/. 22 of the last 23 commits were done formatted in conventional commit style and currently active PRs authored by the TBP team adopt conventional commits as the pull request name.
 
+Adopting conventional commits allows us to rapidly determine what version ([RFC 7 - Monty versioning](0007_monty_versioning.md)) to assign to new changes.
+
 # Conventional Commit Style
 
-Monty commits use the [conventional commits 1.0.0 standard](https://www.conventionalcommits.org/en/v1.0.0/).
+`tbp.monty` commits use the [conventional commits 1.0.0 standard](https://www.conventionalcommits.org/en/v1.0.0/).
 
 ## Commit Messages
 
@@ -27,7 +29,7 @@ The commit message to `main` branch should be structured as follows:
 
 ### Types
 
-Monty code adopts the following `<type>`s:
+`tbp.monty` code adopts the following `<type>`s:
 
 - `fix`: Fix to a bug in the **src/tbp/monty** codebase. This correlates with `PATCH` in [RFC 7 - Monty versioning](0007_monty_versioning.md).
 - `feat`: Introduction of a new feature to the **scr/tbp/monty** codebase. This correlates with `MINOR` in [RFC 7 - Monty versioning](0007_monty_versioning.md).
@@ -56,11 +58,11 @@ A breaking change is communicated by appending `!` after the type/scope. This co
 > By default, a version increment is `PATCH`. If there is a `feat` commit present, then the version increment is `MINOR`. If there is a breaking change commit present: `fix!`, `feat!`, `refactor!`, then the version increment is `MINOR` if and only if `MAJOR == 0`, and it is `MAJOR` otherwise.
 
 > [!NOTE]
-> In Monty, we do not use the `BREAKING CHANGE` optional footer to indicate a breaking change.
+> In `tbp.monty`, we do not use the `BREAKING CHANGE` optional footer to indicate a breaking change.
 
 ### Optional Scopes
 
-Monty does not use optional scopes.
+`tbp.monty` does not use optional scopes.
 
 ### Description
 
@@ -68,11 +70,11 @@ This is the usual one-line message summarizing the commit.
 
 ### Optional Body
 
-Monty, usually, does not use optional body.
+`tbp.monty`, usually, does not use optional body.
 
 ### Optional Footers
 
-Monty sometimes uses `Co-authored-by: ghusername <github_email@example.com>` footer(s) if the pull request has multiple authors.
+`tbp.monty` sometimes uses `Co-authored-by: ghusername <github_email@example.com>` footer(s) if the pull request has multiple authors.
 
 ## Examples
 
