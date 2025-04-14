@@ -40,7 +40,7 @@ class TheoreticalLimitLMLoggingMixin:
         if not any([issubclass(b, (EvidenceGraphLM)) for b in cls.__bases__]):
             raise TypeError(
                 "TheoreticalLimitLMLoggingMixin must be mixed in with a subclass of "
-                f"EvidenceGraphLM, got {cls}"
+                f"EvidenceGraphLM, got {cls.__bases__}"
             )
 
     def _add_detailed_stats(self, stats: Dict[str, Any]) -> Dict[str, Any]:
