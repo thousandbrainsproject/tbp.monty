@@ -401,6 +401,12 @@ def compute_pose_error(
     relative rotation between predicted and target. If `predicted_rotation` contains
     multiple rotations, this function returns the minimum error among them.
 
+    Note that the `.inv()` operation in this method is due to how geodesic distance
+    between two rotations is calculated, not a side-effect of whether the target
+    rotation is stored in its normal form, or as its inverse. The function therefore
+    assumes that the orientations are already in the same coordinate system before
+    the comparison.
+
     Args:
         predicted_rotation (Rotation): Predicted rotation(s). Can be a single or list of
             rotation.
