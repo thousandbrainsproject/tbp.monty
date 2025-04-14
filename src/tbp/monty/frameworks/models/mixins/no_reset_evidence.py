@@ -11,6 +11,8 @@ from typing import Any, Dict
 
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.models.evidence_matching import EvidenceGraphLM
+
 
 class TheoreticalLimitLMLoggingMixin:
     """Mixin that adds theoretical limit and pose error logging for learning modules.
@@ -26,8 +28,20 @@ class TheoreticalLimitLMLoggingMixin:
 
     Compatible with:
         - EvidenceGraphLM
-        - NoResetEvidenceGraphLM
     """
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Ensure the mixin is used only with compatible learning modules.
+
+        Raises:
+            TypeError: If the mixin is used with a non-compatible learning module.
+        """
+        super().__init_subclass__(**kwargs)
+        if not any([issubclass(b, (EvidenceGraphLM)) for b in cls.__bases__]):
+            raise TypeError(
+                "TheoreticalLimitLMLoggingMixin must be mixed in with a subclass of "
+                f"EvidenceGraphLM, got {cls.__bases__}"
+            )
 
     def _add_detailed_stats(self, stats: Dict[str, Any]) -> Dict[str, Any]:
         """Add detailed statistics to the logging dictionary.
