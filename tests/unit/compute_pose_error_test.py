@@ -31,10 +31,10 @@ class TestComputePoseError(unittest.TestCase):
         error = compute_pose_error(rot1, rot2)
         self.assertAlmostEqual(error, np.deg2rad(10), places=6)
 
-    def test_min_error_from_batch(self):
-        """Test function returns the minimum error from a batch of predicted rotations.
+    def test_min_error_from_list(self):
+        """Test function returns the minimum error from a list of predicted rotations.
 
-        The target rotation is 12°, so the closest in the batch [0°, 10°, 20°] is 10°,
+        The target rotation is 12°, so the closest in the list [0°, 10°, 20°] is 10°,
         with a 2° error.
         """
         rot_batch = Rotation.from_euler("z", [0, 10, 20], degrees=True)

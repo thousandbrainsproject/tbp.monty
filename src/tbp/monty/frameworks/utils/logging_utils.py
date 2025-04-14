@@ -394,15 +394,15 @@ def compute_pose_error(
     """Computes the minimum angular pose error between predicted and target rotations.
 
     Both inputs must be instances of `scipy.spatial.transform.Rotation`. The
-    `predicted_rotation` may contain a single rotation or a batch of rotations,
-    while `target_rotation` must contain exactly one rotation.
+    `predicted_rotation` may contain a single rotation or a list of rotations,
+    while `target_rotation` must be exactly one rotation.
 
     The pose error is defined as the geodesic distance on SO(3) — the angle of the
     relative rotation between predicted and target. If `predicted_rotation` contains
     multiple rotations, this function returns the minimum error among them.
 
     Args:
-        predicted_rotation (Rotation): Predicted rotation(s). Can be a single or batched
+        predicted_rotation (Rotation): Predicted rotation(s). Can be a single or list of
             rotation.
         target_rotation (Rotation): Target rotation. Must represent a single rotation.
 
