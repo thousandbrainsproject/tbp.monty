@@ -1868,7 +1868,7 @@ class EvidenceGraphMemory(GraphMemory):
         for input_channel in model.keys():
             channel_model = model[input_channel]
             try:
-                if type(channel_model) == GraphObjectModel:
+                if isinstance(channel_model, GraphObjectModel):
                     # When loading a model trained with a different LM, need to convert
                     # it to the GridObjectModel (with use_original_graph == True)
                     loaded_graph = channel_model._graph

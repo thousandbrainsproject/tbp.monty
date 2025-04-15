@@ -194,10 +194,6 @@ ignore = [
     "N812", # N812: lowercase imported as non lowercase. Allow "import torch.nn.functional as F"
     "T201", # T201: print found
     "T203", # T203: pprint found
-    ###
-    # TODO: flake8=6.1.0 upgrade introduced errors ignored below, resolve these
-    "E721", # E721: do not compare types, use 'isinstance()'
-    ###
     # TODO: ruff=0.11.4 upgrade introduced the errors ignored below, resolve these
     "LOG015", # LOG015: root-logger-call,
     "PTH208", # PTH208: os-listdir 

@@ -402,7 +402,7 @@ class NoiseMixin:
         return sensor_data
 
     def add_noise_to_feat_value(self, feat_name, feat_val):
-        if type(feat_val) == bool:
+        if isinstance(feat_val, bool):
             # Flip boolian variable with probability specified in
             # noise_params
             if self.rng.random() < self.noise_params["features"][feat_name]:

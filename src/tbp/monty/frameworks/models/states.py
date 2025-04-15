@@ -74,7 +74,7 @@ class State:
         if self.morphological_features is not None:
             for feature in self.morphological_features:
                 feat_val = self.morphological_features[feature]
-                if type(feat_val) == np.ndarray:
+                if isinstance(feat_val, np.ndarray):
                     feat_val = np.round(feat_val, 3)
                 if feature == "pose_vectors":
                     repr_string += f"       {feature}: \n"
@@ -86,7 +86,7 @@ class State:
         if self.non_morphological_features is not None:
             for feature in self.non_morphological_features:
                 feat_val = self.non_morphological_features[feature]
-                if type(feat_val) in [np.ndarray, np.float64]:
+                if isinstance(feat_val, (np.ndarray, np.float64)):
                     feat_val = np.round(feat_val, 3)
                 repr_string += f"       {feature}: {feat_val}\n"
         repr_string += (
@@ -189,9 +189,9 @@ class State:
         ), "pose should be defined by three orthonormal unit vectors but pose_vectors "
         f"shape is {self.morphological_features['pose_vectors'].shape}"
         assert "pose_fully_defined" in self.morphological_features.keys()
-        assert (
-            type(self.morphological_features["pose_fully_defined"]) == bool
-        ), "pose_fully_defined must be a boolean but type is "
+        assert isinstance(self.morphological_features["pose_fully_defined"], bool), (
+            "pose_fully_defined must be a boolean but type is "
+        )
         f"{type(self.morphological_features['pose_fully_defined'])}"
         assert self.location.shape == (
             3,
@@ -199,12 +199,12 @@ class State:
         assert (
             self.confidence >= 0 and self.confidence <= 1
         ), f"Confidence must be in [0,1] but is {self.confidence}"
-        assert (
-            type(self.use_state) == bool
-        ), f"use_state must be a boolean but is {type(self.use_state)}"
-        assert (
-            type(self.sender_id) == str
-        ), f"sender_id must be string but is {type(self.sender_id)}"
+        assert isinstance(self.use_state, bool), (
+            "use_state must be a boolean but is " f"{type(self.use_state)}"
+        )
+        assert isinstance(self.sender_id, str), (
+            "sender_id must be string but is " f"{type(self.sender_id)}"
+        )
         assert (
             self.sender_type in self.allowable_sender_types
         ), f"sender_type must be SM or LM but is\
@@ -302,10 +302,10 @@ class GoalState(State):
                     {self.morphological_features['pose_vectors'].shape}"
             assert "pose_fully_defined" in self.morphological_features.keys()
             assert (
-                type(self.morphological_features["pose_fully_defined"]) == bool
-            ) or self.morphological_features[
-                "pose_fully_defined"
-            ] is None, "pose_fully_defined must be a boolean or None but type is "
+                isinstance(self.morphological_features["pose_fully_defined"], bool)
+            ) or self.morphological_features["pose_fully_defined"] is None, (
+                "pose_fully_defined must be a boolean or None but type is "
+            )
             f"{type(self.morphological_features['pose_fully_defined'])}"
         if self.location is not None:
             assert self.location.shape == (
@@ -315,12 +315,12 @@ class GoalState(State):
         assert (
             self.confidence >= 0 and self.confidence <= 1
         ), f"Confidence must be in [0,1] but is {self.confidence}"
-        assert (
-            type(self.use_state) == bool
-        ), f"use_state must be a boolean but is {type(self.use_state)}"
-        assert (
-            type(self.sender_id) == str
-        ), f"sender_id must be string but is {type(self.sender_id)}"
+        assert isinstance(self.use_state, bool), (
+            "use_state must be a boolean but is " f"{type(self.use_state)}"
+        )
+        assert isinstance(self.sender_id, str), (
+            "sender_id must be string but is " f"{type(self.sender_id)}"
+        )
         # Note *only* GSGs should create GoalState objects
         assert (
             self.sender_type in self.allowable_sender_types

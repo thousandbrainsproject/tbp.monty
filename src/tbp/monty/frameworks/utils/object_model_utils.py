@@ -41,7 +41,7 @@ def torch_graph_to_numpy(torch_graph):
     """
     numpy_graph = dict()
     for key in list(torch_graph.keys):
-        if type(torch_graph[key]) == torch.Tensor:
+        if isinstance(torch_graph[key], torch.Tensor):
             numpy_graph[key] = np.array(torch_graph[key])
         else:
             numpy_graph[key] = torch_graph[key]

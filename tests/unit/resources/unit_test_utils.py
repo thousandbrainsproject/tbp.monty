@@ -541,7 +541,7 @@ class BaseGraphTestCases:
                                         step_old[key3][f_idx], step_new[key3][f_idx]
                                     )
                             else:
-                                if type(step_old[key3]) == str:
+                                if isinstance(step_old[key3], str):
                                     # sm_id can not be compared as array
                                     self.assertEqual(step_old[key3], step_new[key3])
                                 else:

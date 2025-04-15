@@ -25,7 +25,6 @@ from tbp.monty.frameworks.actions.actions import (
 )
 from tbp.monty.frameworks.models.motor_policies import (
     SurfacePolicy,
-    SurfacePolicyCurvatureInformed,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 
@@ -92,7 +91,7 @@ class EnvironmentDataset(Dataset):
         self.env.close()
 
     def apply_transform(self, transform, observation, state):
-        if type(transform) == list:
+        if isinstance(transform, list):
             for t in transform:
                 observation = t(observation, state)
         else:
@@ -470,9 +469,9 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             # TODO refactor so that the motor policy itself is making this update
             # when appropriate, not embodied_data
             if (
-                (type(self.motor_system._policy) == SurfacePolicy)
-                or (type(self.motor_system._policy) == SurfacePolicyCurvatureInformed)
-            ) and self._action.name != "orient_vertical":
+                isinstance(self.motor_system._policy, SurfacePolicy)
+                and self._action.name != "orient_vertical"
+            ):
                 self.motor_system._policy.state[self.motor_system._policy.agent_id][
                     "motor_only_step"
                 ] = True

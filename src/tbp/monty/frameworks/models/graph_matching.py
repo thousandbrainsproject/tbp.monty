@@ -308,7 +308,7 @@ class MontyForGraphMatching(MontyBase):
         """
         combined_votes = []
         for i in range(len(self.learning_modules)):
-            if type(votes_per_lm[0]) == set:
+            if isinstance(votes_per_lm[0], set):
                 # Negative set voting for compatibility with displacement LM
                 # TODO: make this cleaner.
                 vote = None

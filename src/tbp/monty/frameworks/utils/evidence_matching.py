@@ -110,7 +110,7 @@ class ChannelMapper:
         if channel_name in self.channel_sizes:
             raise ValueError(f"Channel '{channel_name}' already exists.")
 
-        if type(position) == int and position >= len(self.channel_sizes):
+        if isinstance(position, int) and position >= len(self.channel_sizes):
             raise ValueError(f"Position index '{position}' is out of bounds.")
 
         if position is None:

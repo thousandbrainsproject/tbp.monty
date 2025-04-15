@@ -344,7 +344,7 @@ def rotate_pose_dependent_features(features, ref_frame_rots):
         3,
         3,
     ), f"pose_vectors in features need to be 3x3 matrices."
-    if type(ref_frame_rots) == Rotation:
+    if isinstance(ref_frame_rots, Rotation):
         rotated_pv = ref_frame_rots.apply(old_pv)
     else:
         # Transpose pose vectors so each vector is a column (otherwise .dot matmul
