@@ -379,16 +379,16 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
 
     def reset_agent(self):
         logging.debug("resetting agent------")
-        self._observation, self.motor_system._policy.state = self.dataset.reset()
+        self._observation, state = self.dataset.reset()
         self._counter = 0
 
         # Make sure to also reset action variables when resetting agent during
         # pre-episode
         self._action = None
         self._amount = None
-        self.motor_system._policy.state[self.motor_system._policy.agent_id][
-            "motor_only_step"
-        ] = False
+        state[self.motor_system._policy.agent_id]["motor_only_step"] = False
+
+        self.motor_system._policy.state = state
 
         return self._observation
 
@@ -457,13 +457,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                     self._observation, view_sensor_id="view_finder"
                 )
 
-                self.motor_system._policy.state[self.motor_system._policy.agent_id][
-                    "motor_only_step"
-                ] = True
-
-            self._observation, self.motor_system._policy.state = self.dataset[
-                self._action
-            ]
+            self._observation, state = self.dataset[self._action]
 
             # Check whether sensory information is just for feeding back to motor policy
             # TODO refactor so that the motor policy itself is making this update
@@ -472,13 +466,11 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 isinstance(self.motor_system._policy, SurfacePolicy)
                 and self._action.name != "orient_vertical"
             ):
-                self.motor_system._policy.state[self.motor_system._policy.agent_id][
-                    "motor_only_step"
-                ] = True
+                state[self.motor_system._policy.agent_id]["motor_only_step"] = True
             else:
-                self.motor_system._policy.state[self.motor_system._policy.agent_id][
-                    "motor_only_step"
-                ] = False
+                state[self.motor_system._policy.agent_id]["motor_only_step"] = False
+
+            self.motor_system._policy.state = state
 
             self._counter += 1  # TODO clean up incrementing of counter
 
@@ -701,16 +693,11 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             self.motor_system._policy.derive_habitat_goal_state()
         )
 
-        # Update observations and motor system-state based on new pose
         set_agent_pose = SetAgentPose(
             agent_id=self.motor_system._policy.agent_id,
             location=target_loc,
             rotation_quat=target_np_quat,
         )
-        self._observation, self.motor_system._policy.state = self.dataset[
-            set_agent_pose
-        ]
-
         # As above, but now also accounting for resetting the sensor pose; this
         # is necessary for the distant agent, which pivots the camera around
         # like a ball-and-socket joint; note the surface agent does not
@@ -720,6 +707,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             agent_id=self.motor_system._policy.agent_id,
             rotation_quat=quaternion.one,
         )
+        _, _ = self.dataset[set_agent_pose]
         self._observation, self.motor_system._policy.state = self.dataset[
             set_sensor_rotation
         ]
@@ -803,42 +791,35 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             location=pre_jump_state["position"],
             rotation_quat=pre_jump_state["rotation"],
         )
-        self._observation, self.motor_system._policy.state = self.dataset[
-            set_agent_pose
-        ]
-
         # All sensors are updated globally by actions, and are therefore
         # identical
         set_sensor_rotation = SetSensorRotation(
             agent_id=self.motor_system._policy.agent_id,
             rotation_quat=pre_jump_state["sensors"][first_sensor]["rotation"],
         )
-        self._observation, self.motor_system._policy.state = self.dataset[
-            set_sensor_rotation
-        ]
+        _, _ = self.dataset[set_agent_pose]
+        self._observation, state = self.dataset[set_sensor_rotation]
 
         assert np.all(
-            self.motor_system._policy.state[self.motor_system._policy.agent_id][
-                "position"
-            ]
+            state[self.motor_system._policy.agent_id]["position"]
             == pre_jump_state["position"]
         ), "Failed to return agent to location"
         assert np.all(
-            self.motor_system._policy.state[self.motor_system._policy.agent_id][
-                "rotation"
-            ]
+            state[self.motor_system._policy.agent_id]["rotation"]
             == pre_jump_state["rotation"]
         ), "Failed to return agent to orientation"
 
-        for current_sensor in self.motor_system._policy.state[
-            self.motor_system._policy.agent_id
-        ]["sensors"].keys():
+        for current_sensor in state[self.motor_system._policy.agent_id][
+            "sensors"
+        ].keys():
             assert np.all(
-                self.motor_system._policy.state[self.motor_system._policy.agent_id][
-                    "sensors"
-                ][current_sensor]["rotation"]
+                state[self.motor_system._policy.agent_id]["sensors"][current_sensor][
+                    "rotation"
+                ]
                 == pre_jump_state["sensors"][current_sensor]["rotation"]
             ), "Failed to return sensor to orientation"
+
+        self.motor_system._policy.state = state
 
         # TODO explore reverting to an attempt with touch_object here,
         # only moving back to our starting location if this is unsuccessful
