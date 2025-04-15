@@ -228,7 +228,6 @@ ignore = [
     "ISC003", # ISC003: Explicitly concatenated string should be implicitly concatenated
     "N804", # N804: First argument of a class method should be named `cls`
     "NPY002", # NPY002: Replace legacy `np.random.normal` call with `np.random.Generator`
-    "NPY201", # NPY201: `np.infty` will be removed in NumPy 2.0. Use `numpy.inf` instead.
     "PD002", # PD002: `inplace=True` should be avoided; it has inconsistent behavior
     "PD901", # PD901: Avoid using the generic variable name `df` for DataFrames
     "PERF203", # PERF203: `try`-`except` within a loop incurs performance overhead
