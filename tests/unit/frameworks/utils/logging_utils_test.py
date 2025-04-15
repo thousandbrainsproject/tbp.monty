@@ -37,9 +37,9 @@ class TestComputePoseError(unittest.TestCase):
         The target rotation is 12°, so the closest in the list [0°, 10°, 20°] is 10°,
         with a 2° error.
         """
-        rot_batch = Rotation.from_euler("z", [0, 10, 20], degrees=True)
+        rotations_list = Rotation.from_euler("z", [0, 10, 20], degrees=True)
         target = Rotation.from_euler("z", 12, degrees=True)
-        error = compute_pose_error(rot_batch, target)
+        error = compute_pose_error(rotations_list, target)
         self.assertAlmostEqual(error, np.deg2rad(2), places=6)
 
     def test_180_degree_rotation(self):
