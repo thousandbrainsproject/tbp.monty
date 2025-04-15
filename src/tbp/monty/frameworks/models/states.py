@@ -200,10 +200,10 @@ class State:
             self.confidence >= 0 and self.confidence <= 1
         ), f"Confidence must be in [0,1] but is {self.confidence}"
         assert isinstance(self.use_state, bool), (
-            "use_state must be a boolean but is " f"{type(self.use_state)}"
+            f"use_state must be a boolean but is {type(self.use_state)}"
         )
         assert isinstance(self.sender_id, str), (
-            "sender_id must be string but is " f"{type(self.sender_id)}"
+            f"sender_id must be string but is {type(self.sender_id)}"
         )
         assert (
             self.sender_type in self.allowable_sender_types
@@ -316,10 +316,10 @@ class GoalState(State):
             self.confidence >= 0 and self.confidence <= 1
         ), f"Confidence must be in [0,1] but is {self.confidence}"
         assert isinstance(self.use_state, bool), (
-            "use_state must be a boolean but is " f"{type(self.use_state)}"
+            f"use_state must be a boolean but is {type(self.use_state)}"
         )
         assert isinstance(self.sender_id, str), (
-            "sender_id must be string but is " f"{type(self.sender_id)}"
+            f"sender_id must be string but is {type(self.sender_id)}"
         )
         # Note *only* GSGs should create GoalState objects
         assert (
