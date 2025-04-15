@@ -17,6 +17,9 @@ Adopting conventional commits allows us to rapidly determine what version ([RFC 
 
 ## Commit Messages
 
+> [!NOTE]
+> The following commit message guidance applies only to commits made to the `main` branch when a Pull Request is merged. This guidance does not apply to commit messages elsewhere, for example, on your working branch while working on a Pull Request.
+
 The commit message to `main` branch should be structured as follows:
 
 ```
