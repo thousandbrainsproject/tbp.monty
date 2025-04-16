@@ -693,16 +693,17 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             self.motor_system._policy.derive_habitat_goal_state()
         )
 
+        # Update observations and motor system-state based on new pose, accounting
+        # for resetting both the agent, as well as the poses of its coupled sensors;
+        # this is necessary for the distant agent, which pivots the camera around
+        # like a ball-and-socket joint; note the surface agent does not
+        # modify this from the the unit quaternion and [0, 0, 0] position
+        # anyways; further note this is globally applied to all sensors.
         set_agent_pose = SetAgentPose(
             agent_id=self.motor_system._policy.agent_id,
             location=target_loc,
             rotation_quat=target_np_quat,
         )
-        # As above, but now also accounting for resetting the sensor pose; this
-        # is necessary for the distant agent, which pivots the camera around
-        # like a ball-and-socket joint; note the surface agent does not
-        # modify this from the the unit quaternion and [0, 0, 0] position
-        # anyways; further note this is globally applied to all sensors
         set_sensor_rotation = SetSensorRotation(
             agent_id=self.motor_system._policy.agent_id,
             rotation_quat=quaternion.one,
