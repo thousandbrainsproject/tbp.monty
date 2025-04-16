@@ -18,7 +18,6 @@ import math
 import os
 from typing import (
     TYPE_CHECKING,
-    Any,
     Dict,
     List,
     Literal,
@@ -629,7 +628,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         view_sensor_id: str,
         target_semantic_id: int,
         multiple_objects_present: bool,
-    ) -> Tuple[Union[Action, None], bool]:
+    ) -> Tuple[Action | None, bool]:
         """At beginning of episode move close enough to the object.
 
         Used the raw observations returned from the dataloader and not the
@@ -645,7 +644,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 close to these when moving forward
 
         Returns:
-            Tuple[Union[Action, None], bool]: The next action to take and whether the
+            Tuple[Action | None, bool]: The next action to take and whether the
                 episode is done.
 
         Raises:
