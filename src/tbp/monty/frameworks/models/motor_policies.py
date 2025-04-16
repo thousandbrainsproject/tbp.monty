@@ -25,7 +25,6 @@ from typing import (
     Optional,
     Tuple,
     Type,
-    Union,
     cast,
 )
 
