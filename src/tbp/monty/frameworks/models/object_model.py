@@ -216,10 +216,10 @@ class GraphObjectModel(ObjectModel):
             both_feat = np.vstack([old_feat, new_feat])
             all_features[feature] = both_feat
 
-            for feature in self.feature_ids_in_graph:
-                if feature not in features.keys() and feature != "node_ids":
+            for graph_feature in self.feature_ids_in_graph:
+                if graph_feature not in features.keys() and graph_feature != "node_ids":
                     raise NotImplementedError(
-                        f"{feature} is represented in graph but",
+                        f"{graph_feature} is represented in graph but",
                         " was not observed at this step. Implement padding with nan.",
                     )
 

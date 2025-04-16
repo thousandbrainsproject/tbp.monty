@@ -69,8 +69,10 @@ def from_dataclass_dict(datadict):
     kwargs = {}
     for k, v in datadict.items():
         if isinstance(v, dict):
-            v = from_dataclass_dict(v)
-        kwargs[k] = v
+            nested_value = from_dataclass_dict(v)
+        else:
+            nested_value = v
+        kwargs[k] = nested_value
 
     if _DATACLASS_TYPE not in kwargs:
         # Not a dataclass dict
