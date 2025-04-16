@@ -31,6 +31,8 @@
   - [running-inference-with-a-pretrained-model](how-to-use-monty/tutorials/running-inference-with-a-pretrained-model.md)
   - [unsupervised-continual-learning](how-to-use-monty/tutorials/unsupervised-continual-learning.md)
   - [multiple-learning-modules](how-to-use-monty/tutorials/multiple-learning-modules.md)
+  - [using-monty-in-a-custom-application](how-to-use-monty/tutorials/using-monty-in-a-custom-application.md)
+  - [using-monty-for-robotics](how-to-use-monty/tutorials/using-monty-for-robotics.md)
 - [common-issues-and-how-to-fix-them](how-to-use-monty/common-issues-and-how-to-fix-them.md)
 
 # how-monty-works: How Monty Works

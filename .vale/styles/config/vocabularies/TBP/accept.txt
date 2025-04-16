@@ -174,3 +174,4 @@ Goodale
 Hebbian
 Hopfield
 Arcimboldo
+[Hh]ackathon

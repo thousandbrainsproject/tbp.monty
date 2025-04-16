@@ -7,3 +7,5 @@ These tutorials will help you get familiar with Monty. Topics and experiments in
 - [Running Inference with a Pretrained Model](tutorials/running-inference-with-a-pretrained-model.md): Demonstrates how to load a pretrained model and use it to perform object and pose recognition.
 - [Unsupervised Continual Learning](tutorials/unsupervised-continual-learning.md): Demonstrates how to use Monty for unsupervised continual learning to learn new objects from scratch.
 - [Multiple Learning Modules](tutorials/multiple-learning-modules.md): Shows how to perform pretraining and inference using multiple sensor modules and multiple learning modules.
+- [Using Monty in a Custom Application](tutorials/using-monty-in-a-custom-application.md) [No Habitat Required]: Guides you through the process of letting Monty learn and perform inference in an environment of your choice. Talks about requirements, what needs to be defined, and which classes to customize.
+- [Using Monty for Robotics](tutorials/using-monty-for-robotics.md) [No Habitat Required]: Building on the previous tutorial, this goes into depth on how to use Monty with physical sensors and actuators (aka robots :robot:). 
