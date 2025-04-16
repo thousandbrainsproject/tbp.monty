@@ -8,13 +8,27 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import abc
 import copy
 import json
 import logging
 import math
 import os
-from typing import Dict, List, Literal, Mapping, Tuple, Type, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 import numpy as np
 import quaternion as qt
@@ -41,6 +55,9 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
 
+if TYPE_CHECKING:
+    from tbp.monty.frameworks.models.motor_system import MotorSystemState
+
 
 class MotorPolicy(abc.ABC):
     """The abstract scaffold for motor policies."""
@@ -49,8 +66,12 @@ class MotorPolicy(abc.ABC):
         self.is_predefined = False
 
     @abc.abstractmethod
-    def dynamic_call(self) -> Action:
+    def dynamic_call(self, state: Optional[MotorSystemState] = None) -> Action:
         """Use this method when actions are not predefined.
+
+        Args:
+            state (Optional[MotorSystemState]): The state of the motor system.
+                Defaults to None.
 
         Returns:
             (Action): The action to take.
@@ -100,8 +121,12 @@ class MotorPolicy(abc.ABC):
         """
         pass
 
-    def __call__(self) -> Action:
+    def __call__(self, state: Optional[MotorSystemState] = None) -> Action:
         """Select either dynamic or predefined call.
+
+        Args:
+            state (Optional[MotorSystemState]): The state of the motor system.
+                Defaults to None.
 
         Returns:
             (Action): The action to take.
@@ -109,7 +134,7 @@ class MotorPolicy(abc.ABC):
         if self.is_predefined:
             action = self.predefined_call()
         else:
-            action = self.dynamic_call()
+            action = self.dynamic_call(state)
         self.post_action(action)
         return action
 
@@ -180,7 +205,18 @@ class BasePolicy(MotorPolicy):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self) -> Action:
+    def dynamic_call(self, _: Optional[MotorSystemState] = None) -> Action:
+        """Return a random action.
+
+        The MotorSystemState is ignored.
+
+        Args:
+            _: Optional[MotorSystemState]: The state of the motor system.
+                Defaults to None.
+
+        Returns:
+            (Action): The action to take.
+        """
         return self.get_random_action(self.action)
 
     def get_random_action(self, action: Action) -> Action:
@@ -414,15 +450,22 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self) -> Action:
+    def dynamic_call(self, state: Optional[MotorSystemState] = None) -> Action:
         """Return the next action and amount.
 
         This requires self.processed_observations to be updated at every step
         in the Monty class. self.processed_observations contains the features
         extracted by the sensor module for the guiding sensor (patch).
+
+        Args:
+            state (Optional[MotorSystemState]): The state of the motor system.
+                Defaults to None.
+
+        Returns:
+            (Action): The action to take.
         """
         return (
-            super().dynamic_call()
+            super().dynamic_call(state)
             if self.processed_observations.get_on_object()
             else self.fixme_undo_last_action()
         )
@@ -901,7 +944,21 @@ class NaiveScanPolicy(InformedPolicy):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self) -> Action:
+    def dynamic_call(self, _: Optional[MotorSystemState] = None) -> Action:
+        """Return the next action in the spiral being executed.
+
+        The MotorSystemState is ignored.
+
+        Args:
+            _: Optional[MotorSystemState]: The state of the motor system.
+                Defaults to None.
+
+        Returns:
+            (Action): The action to take.
+
+        Raises:
+            StopIteration: If the spiral has completed.
+        """
         if self.steps_per_action * self.fixed_amount >= 90:
             # Raise "StopIteration" to notify the dataloader we need to stop
             # the experiment. This exception is automatically handled by any
@@ -1105,12 +1162,16 @@ class SurfacePolicy(InformedPolicy):
     ###
     # Methods that define behavior of __call__
     ###
-    def dynamic_call(self) -> Action:
+    def dynamic_call(self, _: Optional[MotorSystemState] = None) -> Action:
         """Return the next action to take.
 
         This requires self.processed_observations to be updated at every step
         in the Monty class. self.processed_observations contains the features
         extracted by the sensor module for the guiding sensor (patch).
+
+        Args:
+            _: Optional[MotorSystemState]: The state of the motor system.
+                Defaults to None.
 
         Returns:
             Action to take.

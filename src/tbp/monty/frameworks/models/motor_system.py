@@ -8,22 +8,51 @@
 # https://opensource.org/licenses/MIT.
 
 
-from typing import Literal
+from typing import Any, Dict, Literal, Optional, TypedDict
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 
 
+class SensorState(TypedDict):
+    """The proprioceptive state of a sensor."""
+
+    position: Any  # TODO: Stop using magnum.Vector3 and decide on Monty standard
+    """The sensor's position relative to the agent."""
+    rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
+    """The sensor's rotation relative to the agent."""
+
+
+class AgentState(TypedDict):
+    """The proprioceptive state of an agent."""
+
+    sensors: Dict[str, SensorState]
+    """The proprioceptive state of the agent's sensors."""
+    position: Any  # TODO: Stop using magnum.Vector3 and decide on Monty standard
+    """The agent's position relative to some global reference frame."""
+    rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
+    """The agent's rotation relative to some global reference frame."""
+
+
+MotorSystemState = Dict[str, AgentState]
+"""The proprioceptive state of the motor system."""
+
+
 class MotorSystem:
     """The basic motor system implementation."""
 
-    def __init__(self, policy: MotorPolicy) -> None:
+    def __init__(
+        self, policy: MotorPolicy, state: Optional[MotorSystemState] = None
+    ) -> None:
         """Initialize the motor system with a motor policy.
 
         Args:
             policy (MotorPolicy): The motor policy to use.
+            state (Optional[MotorSystemState]): The initial state of the motor system.
+                Defaults to None.
         """
         self._policy = policy
+        self._state = state
 
     @property
     def last_action(self) -> Action:
@@ -54,5 +83,5 @@ class MotorSystem:
         Returns:
             (Action): The action to take.
         """
-        action = self._policy()
+        action = self._policy(self._state)
         return action
