@@ -76,7 +76,7 @@ class BasePolicyTest(unittest.TestCase):
         }
         self.assertTrue(self.policy.is_motor_only_step(state))
 
-    def test_is_motor_only_step_returns_false_if_motor_only_step_is_false_in_agent_state(
+    def test_is_motor_only_step_returns_false_if_motor_only_step_is_false_in_agent_state(  # noqa: E501
         self,
     ):
         state: MotorSystemState = {
