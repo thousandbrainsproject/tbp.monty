@@ -734,7 +734,9 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # makes cleaner use of self.motor_system()
         # Call post_action (normally taken care of __call__ within
         # self.motor_system._policy())
-        self.motor_system._policy.post_action(self.motor_system._policy.action)
+        self.motor_system._policy.post_action(
+            self.motor_system._policy.action, self.motor_system._state
+        )
 
         return self._observation
 
