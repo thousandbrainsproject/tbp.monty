@@ -502,9 +502,8 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         self.action = action
         self.timestep += 1
         self.episode_step += 1
-        if not self.use_goal_state_driven_actions:
-            state_copy = self.convert_motor_state()
-            self.action_sequence.append([action, state_copy])
+        state_copy = self.convert_motor_state()
+        self.action_sequence.append([action, state_copy])
 
     def convert_motor_state(self):
         """Convert the motor state into something that can be pickled/saved to JSON.
