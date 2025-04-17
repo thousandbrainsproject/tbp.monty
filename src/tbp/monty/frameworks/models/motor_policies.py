@@ -1202,7 +1202,7 @@ class SurfacePolicy(InformedPolicy):
             action.distance = action.distance / 4
             logging.debug(f"Near edge so only moving by {action.distance}")
 
-        action.direction = self.tangential_direction()
+        action.direction = self.tangential_direction(self.state)
 
         return action
 
@@ -1253,7 +1253,7 @@ class SurfacePolicy(InformedPolicy):
             else:
                 return self._move_forward()
 
-    def tangential_direction(self) -> VectorXYZ:
+    def tangential_direction(self, state: MotorSystemState) -> VectorXYZ:
         """Set the direction of the action to be a direction 0 - 2pi.
 
         - start at 0 (go up) in the reference frame of the agent; i.e. based on
@@ -1264,6 +1264,9 @@ class SurfacePolicy(InformedPolicy):
         - random action -pi - +pi is given by (rand() - 0.5) * 2pi
         - These are combined and weighted by the alpha parameter
 
+        Args:
+            state: The current state of the motor system.
+
         Returns:
             VectorXYZ: direction of the action
         """
@@ -1273,7 +1276,7 @@ class SurfacePolicy(InformedPolicy):
         )
 
         direction = qt.rotate_vectors(
-            self.state[self.agent_id]["rotation"],
+            state[self.agent_id]["rotation"],
             [
                 np.cos(self.tangential_angle - np.pi / 2),
                 np.sin(self.tangential_angle + np.pi / 2),
@@ -1643,7 +1646,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         else:
             self.action_details["z_defined_pc"].append(None)
 
-    def tangential_direction(self) -> VectorXYZ:
+    def tangential_direction(self, state: MotorSystemState) -> VectorXYZ:
         """Set the direction of action to be a direction 0 - 2pi.
 
         This controls the move_tangential action
@@ -1653,6 +1656,9 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         Tangential movements are the primary means of progressively exploring
         an object's surface
+
+        Args:
+            state: The current state of the motor system.
 
         Returns:
             VectorXYZ: direction of the action
