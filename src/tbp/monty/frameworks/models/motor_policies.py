@@ -38,7 +38,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
     VectorXYZ,
 )
-from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
+from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
 
@@ -248,7 +248,7 @@ class BasePolicy(MotorPolicy):
     # Other required abstract methods, methods called by Monty or Dataloader
     ###
 
-    def get_agent_state(self, state: MotorSystemState):
+    def get_agent_state(self, state: MotorSystemState) -> AgentState:
         """Get agent state (dict).
 
         Note:
@@ -258,16 +258,16 @@ class BasePolicy(MotorPolicy):
             state (MotorSystemState): The current state of the motor system.
 
         Returns:
-            Agent state.
+            (AgentState): Agent state.
         """
         return state[self.agent_id]
 
     def is_motor_only_step(self, state: MotorSystemState):
         """Check if the current step is a motor-only step.
 
-        # TODO: This information is currently stored in motor system state, but
-        # should be stored in the policy state instead as it is tracking policy
-        # state, not motor system state. This will remove MotorSystemState param.
+        TODO: This information is currently stored in motor system state, but
+        should be stored in the policy state instead as it is tracking policy
+        state, not motor system state. This will remove MotorSystemState param.
 
         Args:
             state (MotorSystemState): The current state of the motor system.
