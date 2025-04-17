@@ -1220,7 +1220,7 @@ class SurfacePolicy(InformedPolicy):
             action.distance = action.distance / 4
             logging.debug(f"Near edge so only moving by {action.distance}")
 
-        action.direction = self.tangential_direction(state)
+        action.direction = self.tangential_direction(self.state)
 
         return action
 
