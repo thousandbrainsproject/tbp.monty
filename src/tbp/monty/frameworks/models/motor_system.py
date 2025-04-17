@@ -8,10 +8,34 @@
 # https://opensource.org/licenses/MIT.
 
 
-from typing import Literal
+from typing import Any, Dict, Literal, TypedDict
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
+
+
+class SensorState(TypedDict):
+    """The proprioceptive state of a sensor."""
+
+    position: Any  # TODO: Stop using magnum.Vector3 and decide on Monty standard
+    """The sensor's position relative to the agent."""
+    rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
+    """The sensor's rotation relative to the agent."""
+
+
+class AgentState(TypedDict):
+    """The proprioceptive state of an agent."""
+
+    sensors: Dict[str, SensorState]
+    """The proprioceptive state of the agent's sensors."""
+    position: Any  # TODO: Stop using magnum.Vector3 and decide on Monty standard
+    """The agent's position relative to some global reference frame."""
+    rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
+    """The agent's rotation relative to some global reference frame."""
+
+
+MotorSystemState = Dict[str, AgentState]
+"""The proprioceptive state of the motor system."""
 
 
 class MotorSystem:
