@@ -208,7 +208,6 @@ class BasePolicy(MotorPolicy):
 
     def pre_episode(self):
         self.episode_step = 0
-        self.is_exploring = False
         self.action_sequence = []
 
     def post_episode(self):
@@ -503,9 +502,8 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         self.action = action
         self.timestep += 1
         self.episode_step += 1
-        if self.is_exploring is False:
-            state_copy = self.convert_motor_state()
-            self.action_sequence.append([action, state_copy])
+        state_copy = self.convert_motor_state()
+        self.action_sequence.append([action, state_copy])
 
     def convert_motor_state(self):
         """Convert the motor state into something that can be pickled/saved to JSON.
