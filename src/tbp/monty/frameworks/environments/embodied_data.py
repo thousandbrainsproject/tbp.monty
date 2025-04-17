@@ -454,7 +454,9 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 and self._action is None
             ):
                 self._action = self.motor_system._policy.touch_object(
-                    self._observation, view_sensor_id="view_finder"
+                    self._observation,
+                    view_sensor_id="view_finder",
+                    state=self.motor_system._policy.state,
                 )
 
             self._observation, state = self.dataset[self._action]
