@@ -138,14 +138,14 @@ class EnvironmentDataLoader:
         self.dataset = dataset
         self.motor_system = motor_system
         self.rng = rng
-        self._observation, self.motor_system._policy.state = self.dataset.reset()
+        self._observation, self.motor_system._state = self.dataset.reset()
         self._action = None
         self._amount = None
         self._counter = 0
 
     def __iter__(self):
         # Reset the environment before iterating
-        self._observation, self.motor_system._policy.state = self.dataset.reset()
+        self._observation, self.motor_system._state = self.dataset.reset()
         self._action = None
         self._amount = None
         self._counter = 0
@@ -159,7 +159,7 @@ class EnvironmentDataLoader:
         else:
             action = self.motor_system()
             self._action = action
-            self._observation, self.motor_system._policy.state = self.dataset[action]
+            self._observation, self.motor_system._state = self.dataset[action]
             self._counter += 1
             return self._observation
 
@@ -388,7 +388,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         self._amount = None
         state[self.motor_system._policy.agent_id]["motor_only_step"] = False
 
-        self.motor_system._policy.state = state
+        self.motor_system._state = state
 
         return self._observation
 
@@ -456,7 +456,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 self._action = self.motor_system._policy.touch_object(
                     self._observation,
                     view_sensor_id="view_finder",
-                    state=self.motor_system._policy.state,
+                    state=self.motor_system._state,
                 )
 
             self._observation, state = self.dataset[self._action]
@@ -472,7 +472,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             else:
                 state[self.motor_system._policy.agent_id]["motor_only_step"] = False
 
-            self.motor_system._policy.state = state
+            self.motor_system._state = state
 
             self._counter += 1  # TODO clean up incrementing of counter
 
@@ -506,7 +506,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # For first step of surface-agent policy, always bypass LM processing
         # For distant-agent policy, we still process the first sensation if it is
         # on the object
-        self.motor_system._policy.state[self.motor_system._policy.agent_id][
+        self.motor_system._state[self.motor_system._policy.agent_id][
             "motor_only_step"
         ] = isinstance(self.motor_system._policy, SurfacePolicy)
 
@@ -572,11 +572,10 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                     sensor_id,
                     target_semantic_id=self.primary_target["semantic_id"],
                     multiple_objects_present=multiple_objects_present,
+                    state=self.motor_system._state,
                 )
                 for action in actions:
-                    self._observation, self.motor_system._policy.state = self.dataset[
-                        action
-                    ]
+                    self._observation, self.motor_system._state = self.dataset[action]
 
         if allow_translation:
             # Move closer to the object, if not already close enough
@@ -589,9 +588,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             # Continue moving to a close distance to the object
             while not close_enough:
                 logging.debug("moving closer!")
-                self._observation, self.motor_system._policy.state = self.dataset[
-                    action
-                ]
+                self._observation, self.motor_system._state = self.dataset[action]
                 action, close_enough = self.motor_system._policy.move_close_enough(
                     self._observation,
                     sensor_id,
@@ -612,11 +609,10 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 sensor_id,
                 target_semantic_id=self.primary_target["semantic_id"],
                 multiple_objects_present=multiple_objects_present,
+                state=self.motor_system._state,
             )
             for action in actions:
-                self._observation, self.motor_system._policy.state = self.dataset[
-                    action
-                ]
+                self._observation, self.motor_system._state = self.dataset[action]
             on_target_object = self.motor_system._policy.is_on_target_object(
                 self._observation,
                 sensor_id,
@@ -642,7 +638,6 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         Returns:
             Whether the sensor is on the object.
-
         """
         self.get_good_view("view_finder")
         for patch_id in ("patch", "patch_0"):
@@ -670,9 +665,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # Store the current location and orientation of the agent
         # If the hypothesis-guided jump is unsuccesful (e.g. to empty space,
         # or inside an object, we return here)
-        pre_jump_state = self.motor_system._policy.state[
-            self.motor_system._policy.agent_id
-        ]
+        pre_jump_state = self.motor_system._state[self.motor_system._policy.agent_id]
 
         # Check that all sensors have identical rotations - this is because actions
         # currently update them all together; if this changes, the code needs
@@ -711,9 +704,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             rotation_quat=quaternion.one,
         )
         _, _ = self.dataset[set_agent_pose]
-        self._observation, self.motor_system._policy.state = self.dataset[
-            set_sensor_rotation
-        ]
+        self._observation, self.motor_system._state = self.dataset[set_sensor_rotation]
 
         # Check depth-at-center to see if the object is in front of us
         # As for methods such as touch_object, we use the view-finder
@@ -735,7 +726,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # and we provide the observation to the next step of the motor policy
         self._counter += 1
 
-        self.motor_system._policy.state[self.motor_system._policy.agent_id][
+        self.motor_system._state[self.motor_system._policy.agent_id][
             "motor_only_step"
         ] = True
 
@@ -822,7 +813,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 == pre_jump_state["sensors"][current_sensor]["rotation"]
             ), "Failed to return sensor to orientation"
 
-        self.motor_system._policy.state = state
+        self.motor_system._state = state
 
         # TODO explore reverting to an attempt with touch_object here,
         # only moving back to our starting location if this is unsuccessful
@@ -864,7 +855,7 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
             )
         self.dataset = dataset
         self.motor_system = motor_system
-        self._observation, self.motor_system._policy.state = self.dataset.reset()
+        self._observation, self.motor_system._state = self.dataset.reset()
         self._action = None
         self._amount = None
         self._counter = 0
@@ -953,7 +944,7 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
             )
         self.dataset = dataset
         self.motor_system = motor_system
-        self._observation, self.motor_system._policy.state = self.dataset.reset()
+        self._observation, self.motor_system._state = self.dataset.reset()
         self._action = None
         self._amount = None
         self._counter = 0
@@ -1046,7 +1037,7 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         # TODO: call super init instead of duplication code & generally clean up more
         self.dataset = dataset
         self.motor_system = motor_system
-        self._observation, self.motor_system._policy.state = self.dataset.reset()
+        self._observation, self.motor_system._state = self.dataset.reset()
         self._action = None
         self._amount = None
         self._counter = 0

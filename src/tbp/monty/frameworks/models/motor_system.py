@@ -8,22 +8,28 @@
 # https://opensource.org/licenses/MIT.
 
 
-from typing import Literal
+from typing import Literal, Optional
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
+from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 
 
 class MotorSystem:
     """The basic motor system implementation."""
 
-    def __init__(self, policy: MotorPolicy) -> None:
+    def __init__(
+        self, policy: MotorPolicy, state: Optional[MotorSystemState] = None
+    ) -> None:
         """Initialize the motor system with a motor policy.
 
         Args:
             policy (MotorPolicy): The motor policy to use.
+            state (Optional[MotorSystemState]): The initial state of the motor system.
+                Defaults to None.
         """
         self._policy = policy
+        self._state = state
 
     @property
     def last_action(self) -> Action:
@@ -54,5 +60,5 @@ class MotorSystem:
         Returns:
             (Action): The action to take.
         """
-        action = self._policy()
+        action = self._policy(self._state)
         return action

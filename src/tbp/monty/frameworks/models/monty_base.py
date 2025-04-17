@@ -437,11 +437,11 @@ class MontyBase(Monty):
         Returns:
             State of the agent.
         """
-        return self.motor_system._policy.get_agent_state()
+        return self.motor_system._policy.get_agent_state(self.motor_system._state)
 
     @property
     def is_motor_only_step(self):
-        return self.motor_system._policy.is_motor_only_step
+        return self.motor_system._policy.is_motor_only_step(self.motor_system._state)
 
     @property
     def is_done(self):
