@@ -1049,9 +1049,7 @@ class PolicyTest(unittest.TestCase):
 
         # Step 5: Pass observation *without* a well defined PC direction
         motor_system._policy.processed_observations = self.fake_obs_pc[4]
-        direction = motor_system._policy.tangential_direction(
-            motor_system._policy.state
-        )
+        direction = motor_system._policy.tangential_direction(motor_system._state)
         # Note the following movement is a random direction deterministcally set by the
         # random seed
         assert np.all(np.isclose(direction, [-0.13745981, 0.99050735, 0])), (
@@ -1125,9 +1123,7 @@ class PolicyTest(unittest.TestCase):
         # done in graph_matching.py normally
         motor_system._policy.tangent_locs.append(self.fake_obs_pc[0].location)
         motor_system._policy.tangent_norms.append([0, 0, 1])
-        direction = motor_system._policy.tangential_direction(
-            motor_system._policy.state
-        )
+        direction = motor_system._policy.tangential_direction(motor_system._state)
         # Note the following movement is a random direction deterministcally set by the
         # random seed
         assert np.all(np.isclose(direction, [0.98165657, 0.19065773, 0])), (
@@ -1178,9 +1174,7 @@ class PolicyTest(unittest.TestCase):
         motor_system._policy.processed_observations = self.fake_obs_advanced_pc[2]
         motor_system._policy.tangent_locs.append(self.fake_obs_pc[2].location)
         motor_system._policy.tangent_norms.append([0, 0, 1])
-        direction = motor_system._policy.tangential_direction(
-            motor_system._policy.state
-        )
+        direction = motor_system._policy.tangential_direction(motor_system._state)
         # Note the following movement is a random direction deterministcally set by the
         # random seed
         assert np.all(
@@ -1207,9 +1201,7 @@ class PolicyTest(unittest.TestCase):
         # following PC would cause it to visit the observation 1 again (which it is
         # designed to avoid)
         motor_system._policy.tangent_norms.append([0, 0, 1])
-        direction = motor_system._policy.tangential_direction(
-            motor_system._policy.state
-        )
+        direction = motor_system._policy.tangential_direction(motor_system._state)
         # Note the following movement is a random direction deterministcally set by the
         # random seed
         assert np.all(np.isclose(direction, [0.60958557, 0.79272027, 0])), (

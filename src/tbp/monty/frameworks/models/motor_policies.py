@@ -248,7 +248,7 @@ class BasePolicy(MotorPolicy):
     # Other required abstract methods, methods called by Monty or Dataloader
     ###
 
-    def get_agent_state(self, state: MotorSystemState) -> AgentState:
+    def get_agent_state(self, state: MotorSystemState):
         """Get agent state (dict).
 
         Note:
@@ -1220,7 +1220,7 @@ class SurfacePolicy(InformedPolicy):
             action.distance = action.distance / 4
             logging.debug(f"Near edge so only moving by {action.distance}")
 
-        action.direction = self.tangential_direction(self.state)
+        action.direction = self.tangential_direction(state)
 
         return action
 
