@@ -74,8 +74,9 @@ class MotorPolicy(abc.ABC):
     ) -> None:
         """This post action hook will automatically be called at the end of __call__.
 
-        TODO: Remove state parameter as it is only used to serialize the state and
-              should be done within the motor system.
+        TODO: Remove state parameter as it is only used to serialize the state in
+              InformedPolicy.convert_motor_state(state) and should be done within the
+              motor system.
 
         Args:
             action (Action): The action to process the hook for.
