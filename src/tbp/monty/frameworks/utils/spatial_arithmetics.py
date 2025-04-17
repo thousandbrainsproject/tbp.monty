@@ -40,8 +40,8 @@ def rot_mats_to_quats(rot_mats, invert=False):
         Quaternions
     """
     quats = []
-    for mat in rot_mats:
-        rotation = Rotation.from_matrix(mat)
+    for rotation_matrix in rot_mats:
+        rotation = Rotation.from_matrix(rotation_matrix)
         if invert:
             rotation = rotation.inv()
         quats.append(rotation.as_quat())
