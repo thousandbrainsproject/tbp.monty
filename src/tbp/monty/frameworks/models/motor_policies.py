@@ -38,6 +38,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
     VectorXYZ,
 )
+from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
 
@@ -989,7 +990,9 @@ class SurfacePolicy(InformedPolicy):
 
         return super().pre_episode()
 
-    def touch_object(self, raw_observation, view_sensor_id) -> Action:
+    def touch_object(
+        self, raw_observation, view_sensor_id: str, state: MotorSystemState
+    ) -> Action:
         """The surface agent's policy for moving onto an object for sensing it.
 
         Like the distant agent's get_good_view, this is called at the beginning
@@ -1006,6 +1009,11 @@ class SurfacePolicy(InformedPolicy):
         a point, then orienting down, and finally random orientations along the surface
         of a fixed sphere.
 
+        Args:
+            raw_observation: The raw observation from the simulator.
+            view_sensor_id: The ID of the viewfinder sensor.
+            state: The current state of the motor system.
+
         Returns:
             Action to take.
         """
@@ -1015,9 +1023,9 @@ class SurfacePolicy(InformedPolicy):
             distance = (
                 depth_at_center
                 - self.desired_object_distance
-                - self.state["agent_id_0"]["sensors"][f"{view_sensor_id}.depth"][
-                    "position"
-                ][2]
+                - state["agent_id_0"]["sensors"][f"{view_sensor_id}.depth"]["position"][
+                    2
+                ]
             )
             logging.debug(f"Move to touch visible object, forward by {distance}")
 
