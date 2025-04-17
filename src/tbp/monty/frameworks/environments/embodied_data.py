@@ -650,6 +650,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         Returns:
             Whether the sensor is on the object.
+
         """
         self.get_good_view("view_finder")
         for patch_id in ("patch", "patch_0"):
