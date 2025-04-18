@@ -14,6 +14,9 @@ import unittest
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+    make_sensor_positions_on_grid,
+)
 from tbp.monty.frameworks.models.states import State
 
 
@@ -51,6 +54,11 @@ class BaseGraphTestCases:
                 State(**fo_2),
                 State(**fo_3),
             ]
+
+            self.lm_offsets = make_sensor_positions_on_grid(
+                n_sensors=5,
+                add_view_finder=False
+            )
 
             # Create a symmetric synthetic object, where the location of the last
             # feature differs from the base-synthetic object, resulting in
@@ -137,6 +145,17 @@ class BaseGraphTestCases:
                 )
 
             self.fake_obs_house_trans = [State(**obs_dic) for obs_dic in config_list]
+
+            fo_house_5 = copy.deepcopy(fo_house)
+            fo_house_5["location"] = np.array([0.5, 1.5, 1.0])
+            self.fake_obs_house_3d = [
+                State(**fo_house),
+                State(**fo_house_1),
+                State(**fo_house_2),
+                State(**fo_house_3),
+                # replacing fo_house_4 with fo_house_5
+                State(**fo_house_5),
+            ]
 
             self.placeholder_target = {
                 "object": "placeholder",
