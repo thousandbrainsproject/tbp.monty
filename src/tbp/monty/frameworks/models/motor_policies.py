@@ -196,14 +196,14 @@ class BasePolicy(MotorPolicy):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, _: Optional[MotorSystemState] = None) -> Action:
+    def dynamic_call(self, _state: Optional[MotorSystemState] = None) -> Action:
         """Return a random action.
 
         The MotorSystemState is ignored.
 
         Args:
-            state (Optional[MotorSystemState]): The current state of the motor system.
-                Defaults to None.
+            _state (Optional[MotorSystemState]): The current state of the motor system.
+                Defaults to None. Unused.
 
         Returns:
             (Action): A random action.
@@ -957,14 +957,14 @@ class NaiveScanPolicy(InformedPolicy):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, _: Optional[MotorSystemState] = None) -> Action:
+    def dynamic_call(self, _state: Optional[MotorSystemState] = None) -> Action:
         """Return the next action in the spiral being executed.
 
         The MotorSystemState is ignored.
 
         Args:
-            _ (Optional[MotorSystemState]): The current state of the motor system.
-                Defaults to None.
+            _state (Optional[MotorSystemState]): The current state of the motor system.
+                Defaults to None. Unused.
 
         Returns:
             (Action): The action to take.
