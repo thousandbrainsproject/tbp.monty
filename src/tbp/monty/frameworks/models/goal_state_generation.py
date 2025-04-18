@@ -470,7 +470,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         parent_lm,
         goal_tolerances=None,
         elapsed_steps_factor=10,
-        min_post_goal_success_steps=np.infty,
+        min_post_goal_success_steps=np.inf,
         x_percent_scale_factor=0.75,
         desired_object_distance=0.03,
         wait_growth_multiplier=2,

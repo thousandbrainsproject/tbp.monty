@@ -68,9 +68,7 @@ def from_dataclass_dict(datadict):
     # Check for nested dataclass
     kwargs = {}
     for k, v in datadict.items():
-        if isinstance(v, dict):
-            v = from_dataclass_dict(v)
-        kwargs[k] = v
+        kwargs[k] = from_dataclass_dict(v) if isinstance(v, dict) else v
 
     if _DATACLASS_TYPE not in kwargs:
         # Not a dataclass dict

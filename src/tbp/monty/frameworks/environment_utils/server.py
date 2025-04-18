@@ -12,6 +12,10 @@ import http.server
 import os
 import re
 
+from tbp.monty.frameworks.run_env import setup_env
+
+setup_env()
+
 # This class is used for the monty meets world demo to live stream data from the iPad
 # camera to a server that Monty can then read from.
 
@@ -55,5 +59,13 @@ class MontyRequestHandler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    server = http.server.HTTPServer(("0.0.0.0", 8080), MontyRequestHandler)
+    # throw an error if the ip address is not set
+    ip_address = os.environ.get("MONTY_SERVER_IP_ADDRESS")
+    assert ip_address is not None, (
+        "MONTY_SERVER_IP_ADDRESS must be set. Set it to your WiFi's IP address by "
+        "running `export MONTY_SERVER_IP_ADDRESS=<your_wifi_ip_address>`",
+    )
+    port = 8080
+    server = http.server.HTTPServer((ip_address, port), MontyRequestHandler)
+    print(f"Waiting for data at {ip_address}:{port}...")
     server.serve_forever()

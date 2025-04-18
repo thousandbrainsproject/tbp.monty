@@ -756,7 +756,7 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
         while not os.path.exists(current_rgb_path):
             if wait_count % 10 == 0:
                 # Print every 10 seconds
-                print("Waiting for new rgb data...")
+                print("Waiting for new RGBD data...")
             time.sleep(1)
             wait_count += 1
 

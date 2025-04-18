@@ -108,10 +108,9 @@ class HabitatEnvironment(EmbodiedEnvironment):
         super().__init__()
         self._agents = []
         for config in agents:
-            if is_dataclass(config):
-                config = asdict(config)
-            agent_type = config["agent_type"]
-            args = config["agent_args"]
+            cfg_dict = asdict(config) if is_dataclass(config) else config
+            agent_type = cfg_dict["agent_type"]
+            args = cfg_dict["agent_args"]
             if is_dataclass(args):
                 args = asdict(args)
             agent = agent_type(**args)
@@ -126,9 +125,8 @@ class HabitatEnvironment(EmbodiedEnvironment):
 
         if objects is not None:
             for obj in objects:
-                if is_dataclass(obj):
-                    obj = asdict(obj)
-                self._env.add_object(**obj)
+                obj_dict = asdict(obj) if is_dataclass(obj) else obj
+                self._env.add_object(**obj_dict)
 
     @property
     def action_space(self):

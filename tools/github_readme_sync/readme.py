@@ -219,10 +219,10 @@ class ReadMe:
 
                     # Process headers and build alignment lookup
                     alignments = {}
-                    for i, header in enumerate(headers):
+                    for i, unparsed_header in enumerate(headers):
                         title_attr = ""
                         align_style = ""
-                        parts = [p.strip() for p in header.split("|")]
+                        parts = [p.strip() for p in unparsed_header.split("|")]
                         header = parts[0]
 
                         # Process additional attributes in any order
