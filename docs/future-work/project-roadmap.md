@@ -27,6 +27,21 @@ Some of the tasks are under active development by our team or scheduled to be ta
 
 We also have two stars that mark the current top two priorities of the TBP team.
 
+## Current Quarterly Goals
+To get a more concrete idea of our goals and roadmap for Q2 - 2025, have a look at this video:
+[block:embed]
+{
+  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2F4by5MeJ1IT8%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D4by5MeJ1IT8&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2F4by5MeJ1IT8%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
+  "url": "https://www.youtube.com/watch?v=4by5MeJ1IT8",
+  "title": "2025/04 - Q2 Roadmap",
+  "favicon": "https://www.youtube.com/favicon.ico",
+  "image": "https://i.ytimg.com/vi/4by5MeJ1IT8/hqdefault.jpg",
+  "provider": "https://www.youtube.com/",
+  "href": "https://www.youtube.com/watch?v=4by5MeJ1IT8",
+  "typeOfEmbed": "youtube"
+}
+[/block]
+
 # How You Can Contribute
 
 We are happy if one of the tasks on this list piques your interest and you would like to contribute by tackling it!

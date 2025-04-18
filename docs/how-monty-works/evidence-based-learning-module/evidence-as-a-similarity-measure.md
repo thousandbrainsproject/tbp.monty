@@ -62,3 +62,17 @@ The error in overlap bits cannot be used to optimize the object SDRs directly si
 # Implementation in Monty
 
 The encoding algorithm is implemented as an LM Mixin by the name `EvidenceSDRLMMixin`. This Mixin overrides the initialization of the LM, and the`post_episode` function to collect evidence values after each episode and use them to optimize a set of object representations. We define the `EvidenceSDRGraphLM`, which incorporates the Mixin and can be used as a drop-in replacement for `EvidenceGraphLM`when defining an experiment config.
+
+Want to dive deeper into this topic? Have a look at this presentation:
+[block:embed]
+{
+  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2FqHdl8tlzY3k%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DqHdl8tlzY3k&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2FqHdl8tlzY3k%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"640\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
+  "url": "https://www.youtube.com/watch?v=qHdl8tlzY3k",
+  "title": "2024/08 - Encoding Object Similarity in SDRs",
+  "favicon": "https://www.youtube.com/favicon.ico",
+  "image": "https://i.ytimg.com/vi/qHdl8tlzY3k/hqdefault.jpg",
+  "provider": "https://www.youtube.com/",
+  "href": "https://www.youtube.com/watch?v=qHdl8tlzY3k",
+  "typeOfEmbed": "youtube"
+}
+[/block]

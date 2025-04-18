@@ -55,7 +55,7 @@ If you would like to receive updates, follow us on [Bluesky](https://bsky.app/pr
 If you have further questions or suggestions for collaborations, don't hesitate to contact us directly at **info@thousandbrains.org**.
 
 # Citing the Project
-If you're writing a publication that references the Thousand Brains Project, please cite our TBP white paper:
+If you're writing a publication that references the Thousand Brains Project, please cite our [TBP white paper](https://arxiv.org/abs/2412.18354):
 ```
 @misc{thousandbrainsproject2024,
       title={The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence},

@@ -211,3 +211,12 @@ If you want to run an experiment with parallel processing to make use of multipl
 ```shell
 python benchmarks/run_parallel.py -e my_experiment
 ```
+
+# 5. What Next?
+A good next step to get more familiar with our approach and the Monty code base is to go through our [tutorials](./tutorials.md). They include follow-along code and detailed explanations on how Monty experiments are structured, how Monty can be configured in different ways, and what happens when you run a Monty experiment.
+
+If you would like to contribute to the project, you can have a look at the many potential [ways to contribute](../contributing/contributing.md), particularly [ways to contribute code](../contributing/ways-to-contribute-to-code.md).
+
+You can also have a look at the [capabilities of Monty](../overview/vision-of-the-thousand-brains-project/capabilities-of-the-system.md) and our [project roadmap](../future-work/project-roadmap.md) to get an idea of what Monty is currently capable of and what features our team is actively working on.
+
+If you run into any issues or questions, please head over to our [Discourse forum](https://thousandbrains.discourse.group/) or [open an Issue](../contributing/contributing.md#report-an-issue). We are always happy to help!

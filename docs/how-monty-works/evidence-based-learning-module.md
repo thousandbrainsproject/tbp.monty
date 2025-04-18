@@ -1,6 +1,20 @@
 ---
 title: Evidence Based Learning Module
 ---
+
+[block:embed]
+{
+  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2FbkwY4ru1xCg%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DbkwY4ru1xCg&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2FbkwY4ru1xCg%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
+  "url": "https://www.youtube.com/watch?v=bkwY4ru1xCg",
+  "title": "2023/01 - A Comprehensive Overview of Monty and the Evidence-Based Learning Module",
+  "favicon": "https://www.youtube.com/favicon.ico",
+  "image": "https://i.ytimg.com/vi/bkwY4ru1xCg/hqdefault.jpg",
+  "provider": "https://www.youtube.com/",
+  "href": "https://www.youtube.com/watch?v=bkwY4ru1xCg",
+  "typeOfEmbed": "youtube"
+}
+[/block]
+
 We explain the evidence-based learning module in detail here since it is the current default LM. However, a lot of the following content applies to all graph-based LMs or LMs in general.
 
 The next sections will go into some more detail on how the hypothesis initialization and update works in the evidence LM. We use the movement on a colored cylinder shown in the figure below as an example.
@@ -48,6 +62,20 @@ The evidence value from this step is **added to the previously accumulated evide
 At the next step, the previous steps' search locations become the new location hypotheses. This means that the next displacement starts where the previous displacement ended given the hypothesis.
 
 Evidence updates are **performed for all objects in memory**. This can be done **in parallel** since the updates are independent of each other.
+
+For more details, you can have a look at this deep dive into the evidence base learning module:
+[block:embed]
+{
+  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2FVKWhQJzNpks%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DVKWhQJzNpks&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2FVKWhQJzNpks%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
+  "url": "https://www.youtube.com/watch?v=VKWhQJzNpks",
+  "title": "2025/02 - Deep Dive on the EvidenceLM",
+  "favicon": "https://www.youtube.com/favicon.ico",
+  "image": "https://i.ytimg.com/vi/VKWhQJzNpks/hqdefault.jpg",
+  "provider": "https://www.youtube.com/",
+  "href": "https://www.youtube.com/watch?v=VKWhQJzNpks",
+  "typeOfEmbed": "youtube"
+}
+[/block]
 
 # Search Radius and Distance Weighting
 
