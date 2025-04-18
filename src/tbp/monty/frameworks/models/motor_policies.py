@@ -452,7 +452,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         For other actions, raise ValueError explicitly.
 
         Raises:
-            ValueError: If the last action is not supported
+            TypeError: If the last action is not supported
 
         TODO These instance checks are undesirable and should be removed in the future.
         I am using these for now to express the implicit assumptions in the code.
@@ -496,7 +496,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 direction=last_action.direction,
             )
         else:
-            raise ValueError(f"Invalid action: {last_action}")
+            raise TypeError(f"Invalid action: {last_action}")
 
     def post_action(self, action: Action) -> None:
         self.action = action

@@ -601,14 +601,14 @@ class BufferEncoder(json.JSONEncoder):
               `obj_type` into JSON-compliant data.
 
         Raises:
-            ValueError: If `encoder` is not a `JSONEncoder` subclass or a callable.
+            TypeError: If `encoder` is not a `JSONEncoder` subclass or a callable.
         """
         if isinstance(encoder, type) and issubclass(encoder, json.JSONEncoder):
             cls._encoders[obj_type] = encoder().default
         elif callable(encoder):
             cls._encoders[obj_type] = encoder
         else:
-            raise ValueError(f"Invalid encoder: {encoder}")
+            raise TypeError(f"Invalid encoder: {encoder}")
 
     @classmethod
     def unregister(cls, obj_type: type) -> None:
