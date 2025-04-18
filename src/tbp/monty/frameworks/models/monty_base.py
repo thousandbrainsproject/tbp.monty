@@ -203,7 +203,7 @@ class MontyBase(Monty):
     def _step_learning_modules(self):
         for i in range(len(self.learning_modules)):
             sensory_inputs = self._collect_inputs_to_lm(i)
-            getattr(self.learning_modules[i], self.step_type, sensory_inputs)
+            getattr(self.learning_modules[i], self.step_type)(sensory_inputs)
 
     def _collect_inputs_to_lm(self, lm_id):
         """Use sm_to_lm_matrix and lm_to_lm_matrix to collect inputs to LM i.
