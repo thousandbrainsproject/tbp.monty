@@ -158,11 +158,11 @@ def get_angle_torch(v1, v2):
 
 
 def check_orthonormal(matrix):
-    is_orthogonal = np.mean(np.abs((np.linalg.inv(matrix) - matrix.T))) < 0.01
+    is_orthogonal = np.mean(np.abs(np.linalg.inv(matrix) - matrix.T)) < 0.01
     if not is_orthogonal:
         logging.debug(
             "not orthogonal. Error: "
-            f"{np.mean(np.abs((np.linalg.inv(matrix) - matrix.T)))}"
+            f"{np.mean(np.abs(np.linalg.inv(matrix) - matrix.T))}"
         )
     is_normal = np.mean(np.abs(np.linalg.norm(matrix, axis=1) - [1, 1, 1])) < 0.01
     if not is_normal:

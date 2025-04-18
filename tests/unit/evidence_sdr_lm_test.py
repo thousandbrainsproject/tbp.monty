@@ -299,7 +299,7 @@ class EvidenceSDRUnitTest(unittest.TestCase):
             after_sdrs = encoder.sdrs.copy()[:3]
 
             # compare the older sdrs before and after training with new objects
-            sdr_persistence.append((np.mean(np.diag(before_sdrs @ after_sdrs.T))))
+            sdr_persistence.append(np.mean(np.diag(before_sdrs @ after_sdrs.T)))
 
         # test increasing stability
         for i in range(len(sdr_persistence) - 1):

@@ -831,7 +831,7 @@ class EvidenceGraphLM(GraphLM):
             # add evidence if features match
             evidence = np.array(nwmf_stacked) * self.feature_evidence_increment
         else:
-            evidence = np.zeros((initial_possible_channel_rotations.shape[0]))
+            evidence = np.zeros(initial_possible_channel_rotations.shape[0])
         return (
             initial_possible_channel_locations,
             initial_possible_channel_rotations,
@@ -1280,7 +1280,7 @@ class EvidenceGraphLM(GraphLM):
         """
         # TODO S: simplify by looping over pose vectors
         evidences_shape = node_distance_weights.shape[:2]
-        pose_evidence_weighted = np.zeros((evidences_shape))
+        pose_evidence_weighted = np.zeros(evidences_shape)
         # TODO H: at higher level LMs we may want to look at all pose vectors.
         # Currently we skip the third since the second curv dir is always 90 degree
         # from the first.

@@ -246,7 +246,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
     def motor_to_locations(self, motor):
         motor = [d[:, 0:2] for d in motor]
         motor = [space_motor_to_img(d) for d in motor]
-        locations = np.zeros((2))
+        locations = np.zeros(2)
         for stroke in motor:
             locations = np.vstack([locations, stroke])
         return locations[1:]

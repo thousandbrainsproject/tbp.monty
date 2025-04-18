@@ -304,7 +304,6 @@ ignore = [
     "UP008", # UP008: Use `super()` instead of `super(__class__, self)`
     "UP015", # UP015: Unnecessary open mode parameters
     "UP031", # UP031: Use format specifiers instead of percent format
-    "UP034", # UP034: Avoid extraneous parentheses
 ]
 
 [tool.ruff.lint.flake8-copyright]

@@ -128,9 +128,9 @@ def plot_sample_animation(all_obs, patch_obs, viz_obs):
         # obj_obs = obs[np.where(obs[:, 3] > 0)]
         plot_obs = np.append(plot_obs, obs, axis=0)
     res = plot_obs.shape[0] // num_steps
-    obj_obs = plot_obs[np.where((plot_obs[:res, 3] > 0))]  # & (plot_obs[:res, 2] < 0))
+    obj_obs = plot_obs[np.where(plot_obs[:res, 3] > 0)]  # & (plot_obs[:res, 2] < 0))
 
-    scale_obs = plot_obs[np.where((plot_obs[:, 3] > 0))]
+    scale_obs = plot_obs[np.where(plot_obs[:, 3] > 0)]
     p1 = ax3.scatter(
         -obj_obs[:, 1],
         obj_obs[:, 0],
@@ -164,7 +164,7 @@ def plot_sample_animation(all_obs, patch_obs, viz_obs):
 
         point_idx = int((i + 1) * res)
         obj_obs = plot_obs[
-            np.where((plot_obs[:point_idx, 3] > 0))  # & (plot_obs[:point_idx, 2] < 0)
+            np.where(plot_obs[:point_idx, 3] > 0)  # & (plot_obs[:point_idx, 2] < 0)
         ]
         p1._offsets3d = (-obj_obs[:, 1], obj_obs[:, 0], obj_obs[:, 2])
         p1.set_array(obj_obs[:, 2])
@@ -261,7 +261,7 @@ def plot_detection_animation(
     for obs in all_obs[1:]:
         plot_obs = np.append(plot_obs, obs, axis=0)
     res = plot_obs.shape[0] // num_steps
-    obj_obs = plot_obs[np.where((plot_obs[:res, 3] > 0))]
+    obj_obs = plot_obs[np.where(plot_obs[:res, 3] > 0)]
     # For scaling the plot the same way as the model graph
     ax3.scatter(
         -model.pos[:, 1], model.pos[:, 0], model.pos[:, 2], c="white", alpha=0.1
@@ -308,7 +308,7 @@ def plot_detection_animation(
         im2.set_array(patch_obs[i])
 
         point_idx = int((i + 1) * res)
-        obj_obs = plot_obs[np.where((plot_obs[:point_idx, 3] > 0))]
+        obj_obs = plot_obs[np.where(plot_obs[:point_idx, 3] > 0)]
         p1._offsets3d = (-obj_obs[:, 1], obj_obs[:, 0], obj_obs[:, 2])
         p1.set_array(obj_obs[:, 2])
 
