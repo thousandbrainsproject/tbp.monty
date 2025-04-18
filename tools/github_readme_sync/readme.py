@@ -83,7 +83,7 @@ class ReadMe:
         response = get(f"{PREFIX}/docs/{slug}", {"x-readme-version": self.version})
 
         if not response:
-            raise Exception(f"Failed to fetch document: {response}")
+            raise ValueError(f"Failed to fetch document: {response}")
 
         front_matter = OrderedDict()
         front_matter["title"] = response.get("title")
