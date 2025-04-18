@@ -85,7 +85,7 @@ class HabitatSimTest(unittest.TestCase):
         with HabitatSim(agents=agents) as sim:
             # Check agent configuration
             actual_agent_config = sim.get_agent(agent_id).agent_config
-            self.assertEquals(actual_agent_config, agent_config)
+            self.assertEqual(actual_agent_config, agent_config)
 
             # Check if 2 sensors were created for the agent (RGB and Depth)
             obs = sim.get_observations()
@@ -115,7 +115,7 @@ class HabitatSimTest(unittest.TestCase):
             for agent in agents:
                 actual_agent_config = sim.get_agent(agent.agent_id).agent_config
                 agent_config = agent.get_spec()
-                self.assertEquals(actual_agent_config, agent_config)
+                self.assertEqual(actual_agent_config, agent_config)
 
             # Check if 2 sensors were created for each agent
             obs = sim.get_observations()
