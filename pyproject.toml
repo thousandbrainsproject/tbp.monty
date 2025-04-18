@@ -302,7 +302,6 @@ ignore = [
     "UP006", # UP006: Use `type` instead of `Type` for type annotation
     "UP008", # UP008: Use `super()` instead of `super(__class__, self)`
     "UP015", # UP015: Unnecessary open mode parameters
-    "UP031", # UP031: Use format specifiers instead of percent format
 ]
 
 [tool.ruff.lint.flake8-copyright]

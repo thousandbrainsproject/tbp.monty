@@ -54,7 +54,7 @@ class MontyRequestHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
         # Return object id
-        reply_body = 'Saved "%s"\n' % new_filename
+        reply_body = f'Saved "{new_filename}"\n'
         self.wfile.write(reply_body.encode("utf-8"))
 
 
