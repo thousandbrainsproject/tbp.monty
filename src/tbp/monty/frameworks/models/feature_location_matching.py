@@ -159,13 +159,17 @@ class FeatureGraphLM(GraphLM):
 
                 # Check that object is still in matches after ID update
                 if possible_obj in self.possible_matches:
-                    # TODO: better way to dynamically adapt k
-                    if vote_data["pos_location_votes"][possible_obj].shape[0] < 5:
+                    # TODO: this is a terrible, hardcoded solution. We should get the
+                    # actual number of LMs here.
+                    num_lms = 5
+                    if vote_data["pos_location_votes"][possible_obj].shape[0] < (
+                        num_lms - 1
+                    ):
                         k = vote_data["pos_location_votes"][possible_obj].shape[0]
-                        print(f"only received {k} votes")
+                        logging.info(f"only received {k} votes")
                     else:
-                        k = 5
-
+                        # k should not be > num_lms - 1
+                        k = num_lms - 1
                     vote_location_tree = KDTree(
                         vote_data["pos_location_votes"][possible_obj],
                         leaf_size=2,
