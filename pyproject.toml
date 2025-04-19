@@ -298,7 +298,6 @@ ignore = [
     "TD005", # TD005: Missing issue description after `TODO`
     "TRY002", # TRY002: Create your own exception
     "TRY003", # TRY003: Avoid specifying long messages outside the exception class
-    "TRY004", # TRY004: Prefer `TypeError` exception for invalid type
     "UP006", # UP006: Use `type` instead of `Type` for type annotation
     "UP008", # UP008: Use `super()` instead of `super(__class__, self)`
     "UP015", # UP015: Unnecessary open mode parameters

@@ -217,7 +217,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             :class:`EnvironmentDataLoaderPerObjectTrainArgs`
 
         Raises:
-            ValueError: If `object_names` is not a list or dictionary
+            TypeError: If `object_names` is not a list or dictionary
         """
         super(EnvironmentDataLoaderPerObject, self).__init__(*args, **kwargs)
         if isinstance(object_names, list):
@@ -236,7 +236,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             )
             self.num_distractors = object_names["num_distractors"]
         else:
-            raise ValueError("Object names should be a list or dictionary")
+            raise TypeError("Object names should be a list or dictionary")
         self.create_semantic_mapping()
 
         self.object_init_sampler = object_init_sampler
@@ -853,11 +853,11 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
             **kwargs: Additional keyword arguments
 
         Raises:
-            ValueError: If `motor_system` is not an instance of `MotorSystem`.
+            TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
         assert isinstance(dataset, EnvironmentDataset)
         if not isinstance(motor_system, MotorSystem):
-            raise ValueError(
+            raise TypeError(
                 f"motor_system must be an instance of MotorSystem, got {motor_system}"
             )
         self.dataset = dataset
@@ -942,11 +942,11 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
             **kwargs: Additional keyword arguments
 
         Raises:
-            ValueError: If `motor_system` is not an instance of `MotorSystem`.
+            TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
         assert isinstance(dataset, EnvironmentDataset)
         if not isinstance(motor_system, MotorSystem):
-            raise ValueError(
+            raise TypeError(
                 f"motor_system must be an instance of MotorSystem, got {motor_system}"
             )
         self.dataset = dataset
@@ -1034,11 +1034,11 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
             **kwargs: Additional keyword arguments
 
         Raises:
-            ValueError: If `motor_system` is not an instance of `MotorSystem`.
+            TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
         assert isinstance(dataset, EnvironmentDataset)
         if not isinstance(motor_system, MotorSystem):
-            raise ValueError(
+            raise TypeError(
                 f"motor_system must be an instance of MotorSystem, got {motor_system}"
             )
         # TODO: call super init instead of duplication code & generally clean up more
