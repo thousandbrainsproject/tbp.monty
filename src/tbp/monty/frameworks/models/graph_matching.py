@@ -504,7 +504,7 @@ class MontyForGraphMatching(MontyBase):
             last_action = self.motor_system._policy.last_action
 
             if last_action is not None:
-                if "orient_vertical" == last_action.name:
+                if last_action.name == "orient_vertical":
                     # Only append locations associated with performing a tangential
                     # action, rather than some form of corrective movement; these
                     # movements are performed immediately after "orient_vertical"
