@@ -7,6 +7,9 @@ description: What can you use Monty for?
 
 # Potential Applications
 
+> ⚠️ This is a Research Project
+> Note that Monty is still a research project, not a full-fledged platform that you can just plug into your existing infrastructure. Although we are actively working on making Monty easy to use and are excited about people who want to test our approach in their applications, we want to be clear that we are not offering an out-of-the-box solution at the moment. There are many [capabilities](./vision-of-the-thousand-brains-project/capabilities-of-the-system.md) that are still on our [research roadmap](../future-work/project-roadmap.md) and the [tbp.monty](https://github.com/thousandbrainsproject/tbp.monty) code base is still in major version zero, meaning that our public API is not stable and could change at any time.
+
 Any application where you have **moving sensors** is a potential application for Monty. This could be physical movement of sensors on a robot. It could also be simulated movement such as our [simulations in Habitat](../how-monty-works/environment-agent.md) or the sensor patch cropped out of a larger 2D image in the [Monty meets world](benchmark-experiments#monty-meets-world) experiments. It could also be movement through conceptual space or another non-physical space such as navigating the internet.
 
 Applications where we anticipate Monty to particularly shine are:
