@@ -68,7 +68,7 @@ class BufferEncoderTest(unittest.TestCase):
         )
 
     def test_register_invalid_encoder_raises_value_error(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             BufferEncoder.register(FakeClass, None)
 
     def test_unregister_unregisters_encoder(self):
