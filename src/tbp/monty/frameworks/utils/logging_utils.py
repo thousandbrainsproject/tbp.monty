@@ -134,7 +134,7 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
 
     if episodes is not None:
         str_episodes = [str(i) for i in episodes]
-        if not list(detailed_json.keys()) == str_episodes:
+        if list(detailed_json.keys()) != str_episodes:
             print(
                 "WARNING: episode keys did not equal json keys. This can happen if "
                 "json file was not appended to in episode order. To manually load the"

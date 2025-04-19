@@ -283,7 +283,6 @@ ignore = [
     "SIM114", # SIM114: Combine `if` branches using logical `or` operator
     "SIM117", # SIM117: Use a single `with` statement with multiple contexts instead of nested `with` statements
     "SIM118", # SIM118: Use `key in dict` instead of `key in dict.keys()`
-    "SIM201", # SIM201: Use {left} != {right} instead of not {left} == {right}
     "SIM910", # SIM910: Use {expected} instead of {actual}
     "SLF001", # SLF001: Private member accessed: {access}
     "SLOT001", # SLOT001: Subclasses of `tuple` should define `__slots__`
