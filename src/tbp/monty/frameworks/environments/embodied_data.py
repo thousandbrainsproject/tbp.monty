@@ -27,6 +27,7 @@ from tbp.monty.frameworks.models.motor_policies import (
     SurfacePolicy,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
+from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 
 from .embodied_environment import EmbodiedEnvironment
 
@@ -85,7 +86,7 @@ class EnvironmentDataset(Dataset):
 
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-        return observation, state
+        return observation, MotorSystemState(state) if state else None
 
     def close(self):
         self.env.close()
@@ -103,7 +104,7 @@ class EnvironmentDataset(Dataset):
         state = self.env.get_state()
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-        return observation, state
+        return observation, MotorSystemState(state) if state else None
 
     def __len__(self):
         return math.inf

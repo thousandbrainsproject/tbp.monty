@@ -75,7 +75,7 @@ class MotorPolicy(abc.ABC):
         """This post action hook will automatically be called at the end of __call__.
 
         TODO: Remove state parameter as it is only used to serialize the state in
-              InformedPolicy.convert_motor_state(state) and should be done within the
+              state.convert_motor_state() and should be done within the
               motor system.
 
         Args:
@@ -552,78 +552,8 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         self.action = action
         self.timestep += 1
         self.episode_step += 1
-        state_copy = self.convert_motor_state(state)
+        state_copy = state.convert_motor_state() if state else None
         self.action_sequence.append([action, state_copy])
-
-    def convert_motor_state(self, state: MotorSystemState):
-        """Convert the motor state into something that can be pickled/saved to JSON.
-
-        i.e. substitute vector and quaternion objects; note e.g. copy.deepcopy does not
-        work.
-
-        TODO ?clean this up with a recursive algorithm, or use BufferEncoder in
-        buffer.py
-
-        Args:
-            state (MotorSystemState): The current state of the motor system.
-
-        Returns:
-            (dict): Copy of the motor state.
-        """
-        state_copy = dict()
-        for key in state.keys():
-            state_copy[key] = dict()
-            for key_inner in state[key].keys():
-                if type(state[key][key_inner]) is dict:
-                    state_copy[key][key_inner] = dict()
-                    # We need to go deeper
-                    for key_inner_inner in state[key][key_inner].keys():
-                        state_copy[key][key_inner][key_inner_inner] = dict()
-                        if type(state[key][key_inner][key_inner_inner]) is dict:
-                            # We need to go even deeper...
-                            # (**Hans Zimmer music intensifies**)
-                            for key_i_i_i in state[key][key_inner][key_inner_inner]:
-                                state_copy[key][key_inner][key_inner_inner][
-                                    key_i_i_i
-                                ] = dict()
-                                try:
-                                    state_copy[key][key_inner][key_inner_inner][
-                                        key_i_i_i
-                                    ] = np.array(
-                                        [
-                                            x
-                                            for x in state[key][key_inner][
-                                                key_inner_inner
-                                            ][key_i_i_i]
-                                        ]
-                                    )
-                                except TypeError:
-                                    # Quaternions
-                                    state_copy[key][key_inner][key_inner_inner][
-                                        key_i_i_i
-                                    ] = [
-                                        state[key][key_inner][key_inner_inner][
-                                            key_i_i_i
-                                        ].real
-                                    ] + [
-                                        x
-                                        for x in state[key][key_inner][key_inner_inner][
-                                            key_i_i_i
-                                        ].imag
-                                    ]
-                elif type(state[key][key_inner]) is bool:
-                    pass
-                else:
-                    try:
-                        state_copy[key][key_inner] = np.array(
-                            [x for x in state[key][key_inner]]
-                        )
-                    except TypeError:
-                        # Quaternions
-                        state_copy[key][key_inner] = [state[key][key_inner].real] + [
-                            x for x in state[key][key_inner].imag
-                        ]
-        return state_copy
 
     ###
     # Methods called by Dataloader and associated helper methods
