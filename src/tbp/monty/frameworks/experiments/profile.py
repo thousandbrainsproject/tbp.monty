@@ -64,7 +64,7 @@ class ProfileExperimentMixin:
         super().__init_subclass__(**kwargs)
         if cls.__bases__[0] is not ProfileExperimentMixin:
             raise TypeError("ProfileExperimentMixin must be leftmost base class.")
-        if not any([issubclass(b, MontyExperiment) for b in cls.__bases__]):
+        if not any(issubclass(b, MontyExperiment) for b in cls.__bases__):
             raise TypeError("ProfileExperimentMixin must be mixed in with a subclass "
                             "of MontyExperiment.")
 

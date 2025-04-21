@@ -115,7 +115,7 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
         else:
             return (counter >= start) and (counter < stop)
 
-    detailed_json = dict()
+    detailed_json = {}
     stop = stop or np.inf
     with open(json_file, "r") as f:
         line_counter = 0
@@ -169,7 +169,7 @@ def matches_to_target_str(possible_matches, graph_to_target):
         targets = graph_to_target[match]
         possible_match_sources.update(targets)
 
-    sorted_targets = sorted(list(possible_match_sources))
+    sorted_targets = sorted(possible_match_sources)
     str_targets = "-".join(sorted_targets)
     return dict(possible_match_sources=str_targets)
 
@@ -726,7 +726,7 @@ def get_stats_per_lm(model, target):
     Returns:
         performance_dict: dict with stats per lm
     """
-    performance_dict = dict()
+    performance_dict = {}
     primary_target_dict = target_data_to_dict(target)
     for i, lm in enumerate(model.learning_modules):
         lm_stats = get_graph_lm_episode_stats(lm)
@@ -814,7 +814,7 @@ def target_data_to_dict(target):
     Returns:
         output_dict: dict with target params
     """
-    output_dict = dict()
+    output_dict = {}
     output_dict["primary_target_object"] = target["object"]
     output_dict["primary_target_position"] = target["position"]
     output_dict["primary_target_rotation_euler"] = target["euler_rotation"]
@@ -867,7 +867,7 @@ def lm_stats_to_dataframe(stats, format_for_wandb=False):
     """
     df_list = []
     for episode in stats.values():
-        lm_dict = dict()
+        lm_dict = {}
         # Loop over things like LM_*, SM_*, motor_system and get only LM_*
         for key in episode.keys():
             if isinstance(key, str):

@@ -196,7 +196,7 @@ def create_eval_config_multiple_episodes(
     # Accumulate episode-specific data: actions and object params
     ###
 
-    file_names_per_episode = dict()
+    file_names_per_episode = {}
     target_objects = []
     target_positions = []
     target_rotations = []

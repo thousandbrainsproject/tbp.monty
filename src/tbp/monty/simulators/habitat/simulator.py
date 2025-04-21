@@ -107,7 +107,7 @@ class HabitatSim(HabitatActuator):
         agent_configs = []
         self._agents = agents
         self._action_space = set()
-        self._agent_id_to_index = dict()
+        self._agent_id_to_index = {}
 
         self._object_counter = 0  # Track the number of objects added to an environment
 

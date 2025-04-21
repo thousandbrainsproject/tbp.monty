@@ -643,7 +643,7 @@ class EvidenceSDRLMMixin:
         Returns:
             A dictionary indicating whether to use features for each input channel.
         """
-        use_features = dict()
+        use_features = {}
         for input_channel in self.tolerances.keys():
             if input_channel not in self.feature_weights.keys():
                 use_features[input_channel] = False

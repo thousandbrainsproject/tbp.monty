@@ -39,7 +39,7 @@ def torch_graph_to_numpy(torch_graph):
     Returns:
         NumpyGraph.
     """
-    numpy_graph = dict()
+    numpy_graph = {}
     for key in list(torch_graph.keys):
         if isinstance(torch_graph[key], torch.Tensor):
             numpy_graph[key] = np.array(torch_graph[key])

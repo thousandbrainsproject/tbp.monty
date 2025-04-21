@@ -570,7 +570,7 @@ class SingleCameraMontyConfig(MontyConfig):
         default_factory=lambda: dict(
             learning_module_1=dict(
                 learning_module_class=LearningModuleBase,
-                learning_module_args=dict(),
+                learning_module_args={},
             )
         )
     )
@@ -601,11 +601,11 @@ class BaseMountMontyConfig(MontyConfig):
         default_factory=lambda: dict(
             learning_module_0=dict(
                 learning_module_class=LearningModuleBase,
-                learning_module_args=dict(),
+                learning_module_args={},
             ),
             learning_module_1=dict(
                 learning_module_class=LearningModuleBase,
-                learning_module_args=dict(),
+                learning_module_args={},
             ),
         )
     )

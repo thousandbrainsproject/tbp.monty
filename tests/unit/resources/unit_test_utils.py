@@ -454,8 +454,8 @@ class BaseGraphTestCases:
 
         def check_possible_paths_or_poses(self, stats_1, stats_2, key):
             for paths1, paths2 in zip(stats_1[key], stats_2[key]):
-                possible_objects_1 = set(list(paths1.keys()))
-                possible_objects_2 = set(list(paths2.keys()))
+                possible_objects_1 = set(paths1.keys())
+                possible_objects_2 = set(paths2.keys())
                 self.assertEqual(possible_objects_1, possible_objects_2)
                 for obj in possible_objects_1:
                     # I refuse to go deeper

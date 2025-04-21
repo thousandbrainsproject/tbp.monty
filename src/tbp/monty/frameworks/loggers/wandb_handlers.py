@@ -60,7 +60,7 @@ class WandbWrapper(MontyHandler):
         for handler in self.wandb_handlers:
             handler.report_episode(data, output_dir, episode, mode=mode, **kwargs)
 
-        wandb.log(dict())  # TODO: What is this for?
+        wandb.log({})  # TODO: What is this for?
 
     @classmethod
     def log_level(cls):
@@ -119,14 +119,14 @@ class BasicWandbTableStatsHandler(WandbHandler):
         basic_logs = data["BASIC"]
         mode_key = f"{mode}_stats"
         stats_table = f"{mode}_stats_table"
-        stats = basic_logs.get(mode_key, dict())
+        stats = basic_logs.get(mode_key, {})
 
         # if len(stats) > 0:
         df = lm_stats_to_dataframe(stats, format_for_wandb=True)
 
         # Filter df to only include columns without variable length entries, like
         # possible_object_poses
-        const_columns = list(set(list(df.columns)) - set(self.variable_length_columns))
+        const_columns = list(set(df.columns) - set(self.variable_length_columns))
         const_df = df[const_columns]
 
         # shorthand for self.train_table = df or self.eval_table = df
@@ -163,7 +163,7 @@ class DetailedWandbTableStatsHandler(BasicWandbTableStatsHandler):
         basic_logs = data["BASIC"]
         # Get actions depending on mode (train or eval)
         action_key = f"{mode}_actions"
-        action_data = basic_logs.get(action_key, dict())
+        action_data = basic_logs.get(action_key, {})
 
         assert len(action_data) == 1, "why do we have keys for multiple or no episodes"
         # Log one table of actions per episode
@@ -202,7 +202,7 @@ class BasicWandbChartStatsHandler(WandbHandler):
     def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
         basic_logs = data["BASIC"]
         mode_key = f"{mode}_overall_stats"
-        stats = basic_logs.get(mode_key, dict())
+        stats = basic_logs.get(mode_key, {})
         wandb.log(stats[episode], step=episode, commit=False)
 
     def get_safe_columns_per_lm(self, stats):
@@ -214,7 +214,7 @@ class BasicWandbChartStatsHandler(WandbHandler):
         Returns:
             The formatted stats.
         """
-        safe_stats = dict()
+        safe_stats = {}
         for lm, lm_dict in stats.items():
             safe_lm_dict = {
                 lm_col: lm_val
@@ -238,7 +238,7 @@ class DetailedWandbHandler(WandbHandler):
         self.report_key = "raw_rgba"
 
     def get_episode_frames(self, episode_stats):
-        frames_per_sm = dict()
+        frames_per_sm = {}
         sm_ids = [sm for sm in episode_stats.keys() if sm.startswith("SM_")]
         for sm in sm_ids:
             observations = episode_stats[sm]["raw_observations"]

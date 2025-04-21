@@ -38,7 +38,7 @@ class TheoreticalLimitLMLoggingMixin:
             TypeError: If the mixin is used with a non-compatible learning module.
         """
         super().__init_subclass__(**kwargs)
-        if not any([issubclass(b, (EvidenceGraphLM)) for b in cls.__bases__]):
+        if not any(issubclass(b, (EvidenceGraphLM)) for b in cls.__bases__):
             raise TypeError(
                 "TheoreticalLimitLMLoggingMixin must be mixed in with a subclass of "
                 f"EvidenceGraphLM, got {cls.__bases__}"

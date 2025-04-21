@@ -112,7 +112,7 @@ class EnvInitArgsMontyWorldMultiObjectScenes:
 @dataclass
 class OmniglotDatasetArgs:
     env_init_func: Callable = field(default=OmniglotEnvironment)
-    env_init_args: Dict = field(default_factory=lambda: dict())
+    env_init_args: Dict = field(default_factory=lambda: {})
     transform: Union[Callable, list, None] = None
 
     def __post_init__(self):
@@ -143,7 +143,7 @@ class WorldImageDatasetArgs:
 @dataclass
 class WorldImageFromStreamDatasetArgs:
     env_init_func: Callable = field(default=SaccadeOnImageFromStreamEnvironment)
-    env_init_args: Dict = field(default_factory=lambda: dict())
+    env_init_args: Dict = field(default_factory=lambda: {})
     transform: Union[Callable, list, None] = None
 
     def __post_init__(self):
@@ -411,16 +411,11 @@ def get_omniglot_train_dataloader(num_versions, alphabet_ids, data_path=None):
     all_version_idx = []
     for a_idx in alphabet_ids:
         alphabet = alphabet_folders[a_idx]
-        characters_in_a = [
-            c for c in os.listdir(data_path + "images_background/" + alphabet)
-        ]
+        characters_in_a = list(os.listdir(data_path + "images_background/" + alphabet))
         for c_idx, character in enumerate(characters_in_a):
-            versions_of_char = [
-                v
-                for v in os.listdir(
+            versions_of_char = list(os.listdir(
                     data_path + "images_background/" + alphabet + "/" + character
-                )
-            ]
+                ))
             for v_idx in range(len(versions_of_char)):
                 if v_idx < num_versions:
                     all_alphabet_idx.append(a_idx)
@@ -466,17 +461,12 @@ def get_omniglot_eval_dataloader(
     all_version_idx = []
     for a_idx in alphabet_ids:
         alphabet = alphabet_folders[a_idx]
-        characters_in_a = [
-            c for c in os.listdir(data_path + "images_background/" + alphabet)
-        ]
+        characters_in_a = list(os.listdir(data_path + "images_background/" + alphabet))
         for c_idx, character in enumerate(characters_in_a):
             if num_versions is None:
-                versions_of_char = [
-                    v
-                    for v in os.listdir(
+                versions_of_char = list(os.listdir(
                         data_path + "images_background/" + alphabet + "/" + character
-                    )
-                ]
+                    ))
                 num_versions = len(versions_of_char) - start_at_version
 
             for v_idx in range(num_versions + start_at_version):
@@ -827,7 +817,7 @@ def make_sensor_positions_on_grid(
             angles = np.arctan2(i_mid - inds[:, 1], inds[:, 0] - i_mid)
             sorting_inds = np.argsort(angles)
             inds = inds[sorting_inds]
-            indices.extend([row for row in inds])
+            indices.extend(list(inds))
 
     elif order_by == "spiral":
         indices = [(i_mid, i_mid)]

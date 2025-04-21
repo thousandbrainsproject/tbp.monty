@@ -118,7 +118,7 @@ class FeatureGraphLM(GraphLM):
         """
         possible_matches = self.get_possible_matches()
         all_objects = self.get_all_known_object_ids()
-        object_id_vote = dict()
+        object_id_vote = {}
         for obj in all_objects:
             object_id_vote[obj] = obj in possible_matches
         logging.info(
@@ -341,7 +341,7 @@ class FeatureGraphLM(GraphLM):
         Args:
             query: current features at location.
         """
-        consistent_objects = dict()
+        consistent_objects = {}
         for graph_id in self.possible_matches:
             consistent = self._update_matches_using_features(
                 query[0], query[1], graph_id

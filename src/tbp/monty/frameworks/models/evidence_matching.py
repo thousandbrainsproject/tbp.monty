@@ -86,7 +86,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
         """
         combined_votes = []
         for i in range(len(self.learning_modules)):
-            lm_state_votes = dict()
+            lm_state_votes = {}
             if votes_per_lm[i] is not None:
                 receiving_lm_pose = votes_per_lm[i]["sensed_pose_rel_body"]
                 for j in self.lm_to_lm_vote_matrix[i]:
@@ -294,7 +294,7 @@ class EvidenceGraphLM(GraphLM):
             num_model_voxels_per_dim=num_model_voxels_per_dim,
         )
         if gsg_args is None:
-            gsg_args = dict()
+            gsg_args = {}
         self.gsg = gsg_class(self, **gsg_args)
         self.gsg.reset()
         # --- Matching Params ---
@@ -459,7 +459,7 @@ class EvidenceGraphLM(GraphLM):
             # Get pose of first sensor stored in buffer.
             sensed_pose = self.buffer.get_current_pose(input_channel="first")
 
-            possible_states = dict()
+            possible_states = {}
             evidences = get_scaled_evidences(self.get_all_evidences())
             for graph_id in evidences.keys():
                 interesting_hyp = np.where(
@@ -726,7 +726,7 @@ class EvidenceGraphLM(GraphLM):
         """
         poses = self.possible_poses.copy()
         if as_euler:
-            all_poses = dict()
+            all_poses = {}
             for obj in poses.keys():
                 euler_poses = []
                 for pose in poses[obj]:
@@ -1535,12 +1535,12 @@ class EvidenceGraphLM(GraphLM):
         """
         # TODO H: Make this based on object similarity
         # For now just taking sum of character ids in object name
-        id_feature = sum([ord(i) for i in object_id])
+        id_feature = sum(ord(i) for i in object_id)
         return id_feature
 
     # ------------------------ Helper --------------------------
     def _check_use_features_for_matching(self):
-        use_features = dict()
+        use_features = {}
         for input_channel in self.tolerances.keys():
             if input_channel not in self.feature_weights.keys():
                 use_features[input_channel] = False
@@ -1556,7 +1556,7 @@ class EvidenceGraphLM(GraphLM):
     def _fill_feature_weights_with_default(self, default):
         for input_channel in self.tolerances.keys():
             if input_channel not in self.feature_weights.keys():
-                self.feature_weights[input_channel] = dict()
+                self.feature_weights[input_channel] = {}
             for key in self.tolerances[input_channel].keys():
                 if key not in self.feature_weights[input_channel].keys():
                     if hasattr(self.tolerances[input_channel][key], "shape"):
@@ -1864,7 +1864,7 @@ class EvidenceGraphMemory(GraphMemory):
             graph_id: id of graph that should be added
 
         """
-        self.models_in_memory[graph_id] = dict()
+        self.models_in_memory[graph_id] = {}
         for input_channel in model.keys():
             channel_model = model[input_channel]
             try:
@@ -1919,7 +1919,7 @@ class EvidenceGraphMemory(GraphMemory):
             model.build_model(locations=locations, features=features)
 
             if graph_id not in self.models_in_memory:
-                self.models_in_memory[graph_id] = dict()
+                self.models_in_memory[graph_id] = {}
             self.models_in_memory[graph_id][input_channel] = model
 
             logging.info(f"Added new graph with id {graph_id} to memory.")

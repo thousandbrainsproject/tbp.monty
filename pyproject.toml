@@ -185,7 +185,6 @@ select = [
 ignore = [
     ###
     # Original inherited flake8 ignores
-    "C4", # C4XX: ignore all Flake8 comprehensions
     "D1", # D1XX: Missing Docstrings
     "ERA001", # ERA001: Found commented out code
     "F541", # F541: f-string is missing placeholders
@@ -196,7 +195,7 @@ ignore = [
     "T203", # T203: pprint found
     # TODO: ruff=0.11.4 upgrade introduced the errors ignored below, resolve these
     "LOG015", # LOG015: root-logger-call,
-    "PTH208", # PTH208: os-listdir 
+    "PTH208", # PTH208: os-listdir
     "RUF022", # RUF022: unsorted-dunder-all
     "TC006", # TC006: runtime-cast-value
     ###
@@ -302,6 +301,10 @@ ignore = [
     "UP008", # UP008: Use `super()` instead of `super(__class__, self)`
     "UP015", # UP015: Unnecessary open mode parameters
 ]
+
+[tool.ruff.lint.flake8-comprehensions]
+# Our configurations use this all the time
+allow-dict-calls-with-keyword-arguments = true
 
 [tool.ruff.lint.flake8-copyright]
 author = "Thousand Brains Project"

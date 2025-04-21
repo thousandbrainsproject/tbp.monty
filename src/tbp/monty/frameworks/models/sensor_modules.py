@@ -238,7 +238,7 @@ class DetailedLoggingSM(SensorModuleBase):
         half_obs_dim = obs_dim // 2
         center_id = half_obs_dim + obs_dim * half_obs_dim
         # Extract all specified features
-        features = dict()
+        features = {}
         if "object_coverage" in self.features:
             # Last dimension is semantic ID (integer >0 if on any object)
             features["object_coverage"] = sum(obs_3d[:, 3] > 0) / len(obs_3d[:, 3])
@@ -265,7 +265,7 @@ class DetailedLoggingSM(SensorModuleBase):
             )
         else:
             invalid_signals = True
-            morphological_features = dict()
+            morphological_features = {}
 
         obs_3d_center = obs_3d[center_id]
         x, y, z, semantic_id = obs_3d_center

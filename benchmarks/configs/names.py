@@ -23,7 +23,7 @@ from dataclasses import dataclass, fields
 
 from benchmarks.configs.follow_ups.names import NAMES as FOLLOW_UP_NAMES
 
-NAMES = list()
+NAMES = []
 
 NAMES.extend(FOLLOW_UP_NAMES)
 

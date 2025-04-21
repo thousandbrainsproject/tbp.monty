@@ -33,7 +33,7 @@ def load_configs(experiments: list[str]) -> dict:
     Returns:
         The imported configuration groups for the given experiments.
     """
-    configs = dict()
+    configs = {}
 
     for experiment in experiments:
         configs.update(select_config(experiment))

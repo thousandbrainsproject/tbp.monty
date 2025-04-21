@@ -171,7 +171,7 @@ def config_to_dict(config):
 def get_subset_of_args(arguments, function):
     dict_args = config_to_dict(arguments)
     _fields = extract_fields(function)
-    common_fields = dict()
+    common_fields = {}
     for field in _fields:
         field_name = field[0]
         if field_name in dict_args:

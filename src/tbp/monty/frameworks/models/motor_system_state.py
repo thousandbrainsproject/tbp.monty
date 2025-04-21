@@ -65,32 +65,31 @@ class MotorSystemState(Dict[str, Any]):
         Returns:
             (dict): Copy of the motor state.
         """
-        state_copy = dict()
+        state_copy = {}
         for key in self.keys():
-            state_copy[key] = dict()
+            state_copy[key] = {}
             for key_inner in self[key].keys():
                 if type(self[key][key_inner]) is dict:
-                    state_copy[key][key_inner] = dict()
+                    state_copy[key][key_inner] = {}
                     # We need to go deeper
                     for key_inner_inner in self[key][key_inner].keys():
-                        state_copy[key][key_inner][key_inner_inner] = dict()
+                        state_copy[key][key_inner][key_inner_inner] = {}
                         if type(self[key][key_inner][key_inner_inner]) is dict:
                             # We need to go even deeper...
                             # (**Hans Zimmer music intensifies**)
                             for key_i_i_i in self[key][key_inner][key_inner_inner]:
                                 state_copy[key][key_inner][key_inner_inner][
                                     key_i_i_i
-                                ] = dict()
+                                ] = {}
                                 try:
                                     state_copy[key][key_inner][key_inner_inner][
                                         key_i_i_i
                                     ] = np.array(
-                                        [
-                                            x
-                                            for x in self[key][key_inner][
-                                                key_inner_inner
-                                            ][key_i_i_i]
-                                        ]
+                                        list(
+                                            self[key][key_inner][key_inner_inner][
+                                                key_i_i_i
+                                            ]
+                                        )
                                     )
                                 except TypeError:
                                     # Quaternions
@@ -100,22 +99,21 @@ class MotorSystemState(Dict[str, Any]):
                                         self[key][key_inner][key_inner_inner][
                                             key_i_i_i
                                         ].real
-                                    ] + [
-                                        x
-                                        for x in self[key][key_inner][key_inner_inner][
+                                    ] + list(
+                                        self[key][key_inner][key_inner_inner][
                                             key_i_i_i
                                         ].imag
-                                    ]
+                                    )
                 elif type(self[key][key_inner]) is bool:
                     pass
                 else:
                     try:
                         state_copy[key][key_inner] = np.array(
-                            [x for x in self[key][key_inner]]
+                            list(self[key][key_inner])
                         )
                     except TypeError:
                         # Quaternions
-                        state_copy[key][key_inner] = [self[key][key_inner].real] + [
-                            x for x in self[key][key_inner].imag
-                        ]
+                        state_copy[key][key_inner] = [self[key][key_inner].real] + list(
+                            self[key][key_inner].imag
+                        )
         return state_copy

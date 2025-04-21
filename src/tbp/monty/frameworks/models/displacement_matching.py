@@ -537,7 +537,7 @@ class DisplacementGraphMemory(GraphMemory):
         if self.match_attribute == "PPF":
             model.add_ppf_to_graph()
         if graph_id not in self.models_in_memory:
-            self.models_in_memory[graph_id] = dict()
+            self.models_in_memory[graph_id] = {}
         self.models_in_memory[graph_id][input_channel] = model
         logging.info(f"Added new graph with id {graph_id} to memory.")
 

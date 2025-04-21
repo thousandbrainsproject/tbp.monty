@@ -87,7 +87,7 @@ def get_episode_stats(exp, mode):
 
 
 def get_overall_stats(stats):
-    overall_stats = dict()
+    overall_stats = {}
     # combines correct and correct_mlh
     overall_stats["overall/percent_correct"] = np.mean(stats["episode/correct"]) * 100
     overall_stats["overall/percent_confused"] = np.mean(stats["episode/confused"]) * 100
@@ -129,7 +129,7 @@ def get_overall_stats(stats):
 
 
 def sample_params_to_init_args(params):
-    new_params = dict()
+    new_params = {}
     new_params["positions"] = [params["position"]]
     new_params["scales"] = [params["scale"]]
     new_params["rotations"] = [params["euler_rotation"]]
@@ -361,7 +361,7 @@ def run_episodes_parallel(
                 p.map(single_train, configs)
             else:
                 if configs[0]["logging_config"]["log_parallel_wandb"]:
-                    all_episode_stats = dict()
+                    all_episode_stats = {}
                     for result in p.imap(single_evaluate, configs):
                         run.log(result)
                         if not all_episode_stats:  # first episode

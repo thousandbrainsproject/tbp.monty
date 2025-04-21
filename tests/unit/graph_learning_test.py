@@ -598,7 +598,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                                 0
                             ].buffer.get_nth_displacement(0, input_channel="first")
                         ),
-                        list([0, 0, 0]),
+                        [0, 0, 0],
                         "displacement at step 0 should be 0.",
                     )
                 self.assertEqual(

@@ -50,12 +50,12 @@ class FeatureAtLocationBuffer(BaseBuffer):
 
     def __init__(self):
         """Initialize buffer dicts for locations, features, displacements and stats."""
-        self.locations = dict()
-        self.features = dict()
+        self.locations = {}
+        self.features = {}
         self.on_object = []
         self.input_states = []
 
-        self.displacements = dict()
+        self.displacements = {}
 
         self.stats = {
             "detected_path": None,
@@ -91,7 +91,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
         Returns:
             The features observed at time step idx.
         """
-        features_at_idx = dict()
+        features_at_idx = {}
         for input_channel in self.features.keys():
             features_at_idx[input_channel] = {
                 attribute: self.features[input_channel][attribute][idx]
@@ -121,7 +121,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             input_channel = state.sender_id
             self._add_loc_to_location_buffer(input_channel, state.location)
             if input_channel not in self.features.keys():
-                self.features[input_channel] = dict()
+                self.features[input_channel] = {}
             for attr in state.morphological_features.keys():
                 attr_val = state.morphological_features[attr]
                 self._add_attr_to_feature_buffer(input_channel, attr, attr_val)
@@ -295,7 +295,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             The current displacement.
         """
         if input_channel == "all" or input_channel is None:
-            all_disps = dict()
+            all_disps = {}
             for input_channel in self.displacements.keys():
                 all_disps[input_channel] = self.get_current_displacement(input_channel)
             return all_disps
@@ -344,7 +344,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
         Returns:
             All observed features that were on the object.
         """
-        all_features_on_object = dict()
+        all_features_on_object = {}
         # Number of steps where at least one input was on the object
         global_on_object_ids = np.where(self.on_object)[0]
         logging.debug(
@@ -362,7 +362,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
                 "on object observations"
             )
 
-            channel_features_on_object = dict()
+            channel_features_on_object = {}
             for feature in self.features[input_channel].keys():
                 # Pad end of array with 0s if last steps of episode were off object
                 # for this channel
@@ -544,7 +544,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             disp_val: Value of the displacement.
         """
         if input_channel not in self.displacements.keys():
-            self.displacements[input_channel] = dict()
+            self.displacements[input_channel] = {}
         if disp_name not in self.displacements[input_channel].keys():
             self.displacements[input_channel][disp_name] = (
                 np.empty((len(self.locations), len(disp_val))) * np.nan

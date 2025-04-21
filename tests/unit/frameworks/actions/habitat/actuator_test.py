@@ -75,7 +75,7 @@ class HabitatAcutatorTest(unittest.TestCase):
 @patch("tests.unit.frameworks.actions.habitat.actuator_test.FakeHabitat.get_agent")
 class HabitatActuatorsTest(unittest.TestCase):
     def setUp(self):
-        self.action_space = dict()
+        self.action_space = {}
         mock_agent_config = Mock(spec=AgentConfiguration)
         mock_agent_config.action_space = self.action_space
         self.mock_agent = Mock(spec=Agent)

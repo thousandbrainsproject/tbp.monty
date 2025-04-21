@@ -184,15 +184,15 @@ class MontyForGraphMatching(MontyBase):
 
     # ------------------ Logging & Saving ----------------------
     def load_state_dict_from_parallel(self, parallel_dirs, save=False):
-        lm_dict = dict()
+        lm_dict = {}
         for pdir in parallel_dirs:
             state_dict = torch.load(os.path.join(pdir, "model.pt"))
             for lm in state_dict["lm_dict"].keys():
                 if lm not in lm_dict:
                     lm_dict[lm] = dict(
-                        graph_memory=dict(),
-                        target_to_graph_id=dict(),
-                        graph_id_to_target=dict(),
+                        graph_memory={},
+                        target_to_graph_id={},
+                        graph_id_to_target={},
                     )
 
                 lm_dict[lm]["graph_memory"].update(
@@ -318,10 +318,10 @@ class MontyForGraphMatching(MontyBase):
                     else:
                         vote = vote.union(set(votes_per_lm[j]))
             else:
-                neg_object_id_votes = dict()
-                pos_object_id_votes = dict()
-                lm_object_location_votes = dict()
-                lm_object_rotation_votes = dict()
+                neg_object_id_votes = {}
+                pos_object_id_votes = {}
+                lm_object_location_votes = {}
+                lm_object_rotation_votes = {}
                 receiving_lm_pose = votes_per_lm[i]["sensed_pose_rel_body"]
                 for j in self.lm_to_lm_vote_matrix[i]:
                     lm_object_id_vote = votes_per_lm[j]["object_id_vote"]
@@ -600,8 +600,8 @@ class GraphLM(LearningModule):
         self.mode = None  # initialize to neither training nor testing
         # Dictionaries to tell which objects were involved in building a graph
         # and which graphs correspond to each target object
-        self.target_to_graph_id = dict()
-        self.graph_id_to_target = dict()
+        self.target_to_graph_id = {}
+        self.graph_id_to_target = {}
         self.primary_target = None
         self.detected_object = None
         self.detected_pose = [None for _ in range(7)]
@@ -819,7 +819,7 @@ class GraphLM(LearningModule):
 
     def get_possible_locations(self):
         possible_paths = self.get_possible_paths()
-        possible_locations = dict()
+        possible_locations = {}
         for obj in possible_paths.keys():
             possible_paths_obj = np.array(possible_paths[obj])
             if len(possible_paths_obj.shape) > 1:
@@ -848,7 +848,7 @@ class GraphLM(LearningModule):
         """
         poses = self.possible_poses.copy()
         if as_euler:
-            all_poses = dict()
+            all_poses = {}
             for obj in poses.keys():
                 euler_poses = []
                 for path in poses[obj]:
@@ -1029,12 +1029,12 @@ class GraphLM(LearningModule):
         """Update dicts that keep track which graphs were built from which objects."""
         if detected_object is not None:
             if detected_object not in self.graph_id_to_target.keys():
-                self.graph_id_to_target[detected_object] = set([target_object])
+                self.graph_id_to_target[detected_object] = {target_object}
             else:
                 self.graph_id_to_target[detected_object].add(target_object)
 
             if target_object not in self.target_to_graph_id.keys():
-                self.target_to_graph_id[target_object] = set([detected_object])
+                self.target_to_graph_id[target_object] = {detected_object}
             else:
                 self.target_to_graph_id[target_object].add(detected_object)
 
@@ -1074,10 +1074,10 @@ class GraphLM(LearningModule):
         Returns:
             Features to use.
         """
-        features_to_use = dict()
+        features_to_use = {}
         for state in states:
             input_channel = state.sender_id
-            features_to_use[input_channel] = dict()
+            features_to_use[input_channel] = {}
             for feature in state.morphological_features.keys():
                 # in evidence matching pose_vectors are always added to tolerances
                 # since they are requires for matching.
@@ -1298,10 +1298,8 @@ class GraphMemory(LMMemory):
             return self.models_in_memory[graph_id][input_channel].x.shape[0]
         else:
             return sum(
-                [
-                    self.get_num_nodes_in_graph(graph_id, input_channel)
+                self.get_num_nodes_in_graph(graph_id, input_channel)
                     for input_channel in self.get_input_channels_in_graph(graph_id)
-                ]
             )
 
     def get_features_at_node(self, graph_id, input_channel, node_id, feature_keys=None):
@@ -1397,7 +1395,7 @@ class GraphMemory(LMMemory):
             graph_delta_thresholds=graph_delta_thresholds,
         )
         if graph_id not in self.models_in_memory:
-            self.models_in_memory[graph_id] = dict()
+            self.models_in_memory[graph_id] = {}
         self.models_in_memory[graph_id][input_channel] = model
 
         logging.info(f"Added new graph with id {graph_id} to memory.")

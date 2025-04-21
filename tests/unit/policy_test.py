@@ -985,7 +985,7 @@ class PolicyTest(unittest.TestCase):
         )
 
         # Initialize motor-system state
-        motor_system._state = dict(agent_id_0=dict())
+        motor_system._state = dict(agent_id_0={})
         motor_system._state["agent_id_0"]["rotation"] = qt.quaternion(1, 0, 0, 0)
 
         # Step 1
@@ -1112,7 +1112,7 @@ class PolicyTest(unittest.TestCase):
         )
 
         # Initialize motor system state
-        motor_system._state = dict(agent_id_0=dict())
+        motor_system._state = dict(agent_id_0={})
         motor_system._state["agent_id_0"]["rotation"] = qt.quaternion(1, 0, 0, 0)
 
         # Step 1 : PC-guided information, but we haven't taken the minimum number of

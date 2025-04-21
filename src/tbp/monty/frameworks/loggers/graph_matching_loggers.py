@@ -61,18 +61,18 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
         self.handlers = handlers
         self.data = dict(
             BASIC=dict(
-                train_stats=dict(),
-                train_overall_stats=dict(),
-                train_targets=dict(),
-                train_actions=dict(),
-                train_timing=dict(),
-                eval_stats=dict(),
-                eval_overall_stats=dict(),
-                eval_actions=dict(),
-                eval_targets=dict(),
-                eval_timing=dict(),
+                train_stats={},
+                train_overall_stats={},
+                train_targets={},
+                train_actions={},
+                train_timing={},
+                eval_stats={},
+                eval_overall_stats={},
+                eval_actions={},
+                eval_targets={},
+                eval_timing={},
             ),
-            DETAILED=dict(),
+            DETAILED={},
         )
         self.overall_train_stats = dict(
             num_episodes=0,
@@ -156,18 +156,18 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
     def flush(self):
         self.data = dict(
             BASIC=dict(
-                train_stats=dict(),
-                train_overall_stats=dict(),
-                train_targets=dict(),
-                train_actions=dict(),
-                train_timing=dict(),
-                eval_stats=dict(),
-                eval_overall_stats=dict(),
-                eval_actions=dict(),
-                eval_targets=dict(),
-                eval_timing=dict(),
+                train_stats={},
+                train_overall_stats={},
+                train_targets={},
+                train_actions={},
+                train_timing={},
+                eval_stats={},
+                eval_overall_stats={},
+                eval_actions={},
+                eval_targets={},
+                eval_timing={},
             ),
-            DETAILED=dict(),
+            DETAILED={},
         )
 
     def log_episode(self, logger_args, output_dir, model):
@@ -446,8 +446,8 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
         """Initialize stats dicts."""
         super().__init__(handlers)
 
-        self.train_episodes_to_total = dict()
-        self.eval_episodes_to_total = dict()
+        self.train_episodes_to_total = {}
+        self.eval_episodes_to_total = {}
 
     def log_episode(self, logger_args, output_dir, model):
         mode = model.experiment_mode
@@ -481,9 +481,9 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
         self.train_episodes_to_total[logger_args["train_episodes"]] = episodes
         self.eval_episodes_to_total[logger_args["eval_episodes"]] = episodes
 
-        buffer_data = dict()
+        buffer_data = {}
         for i, lm in enumerate(model.learning_modules):
-            lm_dict = dict()
+            lm_dict = {}
             lm_dict.update(logger_args)
             lm_dict.update({"locations": lm.buffer.locations})
             lm_dict.update(lm.buffer.features)
@@ -498,7 +498,7 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
                 buffer_data[f"SM_{i}"] = sm.state_dict()
 
         # TODO ensure will work with multiple, independent sensor agents
-        buffer_data["motor_system"] = dict()
+        buffer_data["motor_system"] = {}
         buffer_data["motor_system"]["action_sequence"] = (
             model.motor_system._policy.action_sequence
         )
@@ -526,8 +526,8 @@ class SelectiveEvidenceLogger(BasicGraphMatchingLogger):
         """Initialize stats dicts."""
         super().__init__(handlers)
 
-        self.train_episodes_to_total = dict()
-        self.eval_episodes_to_total = dict()
+        self.train_episodes_to_total = {}
+        self.eval_episodes_to_total = {}
 
     def log_episode(self, logger_args, output_dir, model):
         mode = model.experiment_mode
@@ -555,9 +555,9 @@ class SelectiveEvidenceLogger(BasicGraphMatchingLogger):
         self.train_episodes_to_total[logger_args["train_episodes"]] = episodes
         self.eval_episodes_to_total[logger_args["eval_episodes"]] = episodes
 
-        buffer_data = dict()
+        buffer_data = {}
         for i, lm in enumerate(model.learning_modules):
-            lm_dict = dict()
+            lm_dict = {}
             lm_dict.update(
                 {
                     # Save evidences and hypotheses only for last step to save storage
