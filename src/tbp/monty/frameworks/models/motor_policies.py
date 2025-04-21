@@ -8,12 +8,15 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import abc
 import copy
 import json
 import logging
 import math
 import os
+from dataclasses import dataclass, field
 from typing import Dict, List, Literal, Mapping, Optional, Tuple, Type, Union, cast
 
 import numpy as np
@@ -351,6 +354,371 @@ class JumpToGoalStateMixin:
 
         else:
             return None, None
+
+
+@dataclass
+class PositioningProcedureResult:
+    """Result of a positioning procedure.
+
+    For more on the terminated/truncated terminology, see https://farama.org/Gymnasium-Terminated-Truncated-Step-API.
+    """
+
+    actions: List[Action] = field(default_factory=list)
+    """Actions to take."""
+    success: bool = False
+    """Whether the procedure succeeded in its positioning goal."""
+    terminated: bool = False
+    """Whether the procedure reached a terminal state with success or failure."""
+    truncated: bool = False
+    """Whether the procedure was truncated due to a limit on the number of attempts or
+    other criteria."""
+
+
+class PositioningProcedure(BasePolicy):
+    """Policy to position the agent in the scene.
+
+    TODO: Remove from MotorPolicy hierarchy and refactor to standalone
+          PositioningProcedure hierarchy when they get separated.
+    """
+
+    @abc.abstractmethod
+    def positioning_call(
+        self,
+        observation: Mapping,
+        state: Optional[MotorSystemState] = None,
+    ) -> PositioningProcedureResult:
+        """Return a list of actions to position the agent in the scene.
+
+        TODO: When this becomes a PositioningProcedure it can be a __call__ method.
+
+        Args:
+            observation (Optional[Mapping]): The observation to use for positioning.
+            state (Optional[MotorSystemState]): The current state of the motor system.
+
+        Returns:
+            (PositioningProcedureResult): Any actions to take, whether the procedure
+                succeeded, whether the procedure terminated, and whether the procedure
+                truncated.
+        """
+        pass
+
+
+class GetGoodView(PositioningProcedure):
+    """Positioning procedure to get a good view of the object before an episode."""
+
+    def __init__(
+        self,
+        desired_object_distance: float,
+        good_view_percentage: float,
+        multiple_objects_present: bool,
+        sensor_id: str,
+        target_semantic_id: int,
+        allow_translation: bool = True,
+        max_orientation_attempts: int = 1,
+        **kwargs,
+    ) -> None:
+        """Initialize the GetGoodView policy.
+
+        Args:
+            desired_object_distance (float): The desired distance to the object.
+            good_view_percentage (float): The percentage of the sensor that should be
+                filled with the object.
+            multiple_objects_present (bool): Whether there are multiple objects in
+                the scene.
+            sensor_id (str): The ID of the sensor to use for positioning.
+            target_semantic_id (int): The semantic ID of the target object.
+            allow_translation (bool): Whether to allow movement toward the object via
+                the motor systems's move_close_enough method. If False, only
+                orientienting movements are performed. Defaults to True.
+            max_orientation_attempts (int): The maximum number of orientation attempts
+                allowed before giving up and truncating the procedure indicating that
+                the sensor is not on the target object.
+            **kwargs: Additional keyword arguments.
+        """
+        super().__init__(**kwargs)
+        self._desired_object_distance = desired_object_distance
+        self._good_view_percentage = good_view_percentage
+        self._multiple_objects_present = multiple_objects_present
+        self._sensor_id = sensor_id
+        self._target_semantic_id = target_semantic_id
+        self._allow_translation = allow_translation
+        self._max_orientation_attempts = max_orientation_attempts
+
+        self._num_orientation_attempts = 0
+
+    def compute_look_amounts(
+        self, relative_location: np.ndarray, state: Optional[MotorSystemState] = None
+    ) -> Tuple[float, float]:
+        """Compute the amount to look down and left given a relative location.
+
+        This function computes the amount needed to look down and left in order
+        for the sensor to be aimed at the target. The returned amounts are relative
+        to the agent's current position and rotation.
+
+        TODO: Test whether this function works when the agent is facing in the
+        positive z-direction. It may be fine, but there were some adjustments to
+        accommodate the z-axis positive direction pointing opposite the body's initial
+        orientation (e.g., using negative  `z` in
+        `left_amount = -np.degrees(np.arctan2(x_rot, -z_rot)))`.
+
+        Args:
+            relative_location: the x,y,z coordinates of the target with respect
+            to the sensor.
+            state (Optional[MotorSystemState]): The current state of the motor system.
+                Defaults to None.
+
+        Returns:
+            down_amount: Amount to look down (degrees).
+            left_amount: Amount to look left (degrees).
+        """
+        # Get the sensor's rotation relative to the world.
+        agent_state = self.get_agent_state(state)
+        # - The agent's rotation relative to the world.
+        agent_rotation = agent_state["rotation"]
+        # - The sensor's rotation relative to the agent.
+        sensor_rotation = agent_state["sensors"][f"{self._sensor_id}.depth"]["rotation"]
+        # - The sensor's rotation relative to the world.
+        sensor_rotation_rel_world = agent_rotation * sensor_rotation
+
+        # Invert the location to align it with sensor's rotation.
+        w, x, y, z = qt.as_float_array(sensor_rotation_rel_world)
+        rotation = rot.from_quat([x, y, z, w])
+        rotated_location = rotation.inv().apply(relative_location)
+
+        # Calculate the necessary rotation amounts.
+        x_rot, y_rot, z_rot = rotated_location
+        left_amount = -np.degrees(np.arctan2(x_rot, -z_rot))
+        distance_horiz = np.sqrt(x_rot**2 + z_rot**2)
+        down_amount = -np.degrees(np.arctan2(y_rot, distance_horiz))
+
+        return down_amount, left_amount
+
+    def find_location_to_look_at(
+        self,
+        sem3d_obs: np.ndarray,
+        image_shape: Tuple[int, int],
+        state: Optional[MotorSystemState] = None,
+    ) -> np.ndarray:
+        """Find the location to look at in the observation.
+
+        Takes in a semantic 3D observation and returns an x,y,z location.
+
+        The location is on the object and surrounded by pixels that are also on
+        the object. This is done by smoothing the on_object image and then
+        taking the maximum of this smoothed image.
+
+        Args:
+            sem3d_obs (np.ndarray): The location of each pixel and the semantic ID
+                associated with that location.
+            image_shape (Tuple[int, int]): The shape of the camera image.
+            state (Optional[MotorSystemState]): The current state of the motor system.
+                Defaults to None.
+
+        Returns:
+            (np.ndarray): The x,y,z coordinates of the target with respect
+                to the sensor.
+        """
+        sem3d_obs_image = sem3d_obs.reshape((image_shape[0], image_shape[1], 4))
+        on_object_image = sem3d_obs_image[:, :, 3]
+
+        if not self._multiple_objects_present:
+            on_object_image[on_object_image > 0] = self._target_semantic_id
+
+        on_object_image = on_object_image == self._target_semantic_id
+        on_object_image = on_object_image.astype(float)
+
+        # TODO add unit test that we make sure find_location_to_look at functions
+        # as expected, which can otherwise break if e.g. on_object_image is passed
+        # as an int or boolean rather than float
+        kernel_size = on_object_image.shape[0] // 16
+        smoothed_on_object_image = scipy.ndimage.gaussian_filter(
+            on_object_image, kernel_size, mode="constant"
+        )
+        idx_loc_to_look_at = np.argmax(smoothed_on_object_image * on_object_image)
+        idx_loc_to_look_at = np.unravel_index(idx_loc_to_look_at, on_object_image.shape)
+        location_to_look_at = sem3d_obs_image[
+            idx_loc_to_look_at[0], idx_loc_to_look_at[1], :3
+        ]
+        camera_location = self.get_agent_state(state)["sensors"][
+            f"{self._sensor_id}.depth"
+        ]["position"]
+        agent_location = self.get_agent_state(state)["position"]
+        # Get the location of the object relative to sensor.
+        relative_location = location_to_look_at - (camera_location + agent_location)
+
+        return relative_location
+
+    def is_on_target_object(self, observation: Mapping) -> bool:
+        """Check if a sensor is on the target object.
+
+        Args:
+            observation (Mapping): The observation to use for positioning.
+
+        Returns:
+            bool: Whether the sensor is on the target object.
+        """
+        # Reconstruct the 2D semantic/surface map embedded in 'semantic_3d'.
+        image_shape = observation[self.agent_id][self._sensor_id]["depth"].shape[0:2]
+        semantic_3d = observation[self.agent_id][self._sensor_id]["semantic_3d"]
+        semantic = semantic_3d[:, 3].reshape(image_shape).astype(int)
+        if not self._multiple_objects_present:
+            semantic[semantic > 0] = self._target_semantic_id
+
+        # Check if the central pixel is on the target object.
+        y_mid, x_mid = image_shape[0] // 2, image_shape[1] // 2
+        on_target_object = semantic[y_mid, x_mid] == self._target_semantic_id
+        return on_target_object
+
+    def move_close_enough(self, observation: Mapping) -> Action | None:
+        """Move closer to the object until we are close enough.
+
+        Args:
+            observation (Mapping): The observation to use for positioning.
+
+        Returns:
+            (Action | None): The next action to take, or None if we are already close
+                enough to the object.
+
+        Raises:
+            ValueError: If the object is not visible.
+        """
+        # Reconstruct 2D semantic map.
+        depth_image = observation[self.agent_id][self._sensor_id]["depth"]
+        semantic_3d = observation[self.agent_id][self._sensor_id]["semantic_3d"]
+        semantic_image = semantic_3d[:, 3].reshape(depth_image.shape).astype(int)
+
+        if not self._multiple_objects_present:
+            semantic_image[semantic_image > 0] = self._target_semantic_id
+
+        points_on_target_obj = semantic_image == self._target_semantic_id
+        n_points_on_target_obj = points_on_target_obj.sum()
+
+        # For multi-object experiments, handle the possibility that object is no
+        # longer visible.
+        if self._multiple_objects_present and n_points_on_target_obj == 0:
+            logging.debug("Object not visible, cannot move closer")
+            return None
+
+        if n_points_on_target_obj > 0:
+            closest_point_on_target_obj = np.min(depth_image[points_on_target_obj])
+            logging.debug(
+                "closest target object point: " + str(closest_point_on_target_obj)
+            )
+        else:
+            raise ValueError(
+                "May be initializing experiment with no visible target object"
+            )
+
+        perc_on_target_obj = get_perc_on_obj_semantic(
+            semantic_image, semantic_id=self._target_semantic_id
+        )
+        logging.debug("% on target object: " + str(perc_on_target_obj))
+
+        # Also calculate closest point on *any* object so that we don't get too close
+        # and clip into objects; NB that any object will have a semantic ID > 0
+        points_on_any_obj = semantic_image > 0
+        closest_point_on_any_obj = np.min(depth_image[points_on_any_obj])
+        logging.debug("closest point on any object: " + str(closest_point_on_any_obj))
+
+        if perc_on_target_obj < self._good_view_percentage:
+            if closest_point_on_target_obj > self._desired_object_distance:
+                if self._multiple_objects_present and (
+                    closest_point_on_any_obj < self._desired_object_distance / 4
+                ):
+                    logging.debug(
+                        "Getting too close to other objects, not moving forward."
+                    )
+                    return None
+                else:
+                    logging.debug("Moving forward")
+                    return MoveForward(agent_id=self.agent_id, distance=0.01)
+            else:
+                logging.debug("Close enough.")
+                return None
+        else:
+            logging.debug("Enough percent visible.")
+            return None
+
+    def orient_to_object(
+        self, observation: Mapping, state: Optional[MotorSystemState] = None
+    ) -> List[Action]:
+        """Rotate sensors so that they are centered on the object using the view finder.
+
+        The view finder needs to be in the same position as the sensor patch
+        and the object needs to be somewhere in the view finders view.
+
+        Args:
+            observation (Mapping): The observation to use for positioning.
+            state (Optional[MotorSystemState]): The current state of the motor system.
+                Defaults to None.
+
+        Returns:
+            (List[Action]): A list of actions of length two composed of actions needed
+                to get us onto the target object.
+        """
+        # Reconstruct 2D semantic map.
+        depth_image = observation[self.agent_id][self._sensor_id]["depth"]
+        obs_dim = depth_image.shape[0:2]
+        sem3d_obs = observation[self.agent_id][self._sensor_id]["semantic_3d"]
+        sem_obs = sem3d_obs[:, 3].reshape(obs_dim).astype(int)
+
+        if not self._multiple_objects_present:
+            sem_obs[sem_obs > 0] = self._target_semantic_id
+
+        logging.debug("Searching for object")
+        relative_location = self.find_location_to_look_at(
+            sem3d_obs,
+            image_shape=obs_dim,
+            state=state,
+        )
+        down_amount, left_amount = self.compute_look_amounts(
+            relative_location, state=state
+        )
+        return [
+            LookDown(agent_id=self.agent_id, rotation_degrees=down_amount),
+            TurnLeft(agent_id=self.agent_id, rotation_degrees=left_amount),
+        ]
+
+    def positioning_call(
+        self,
+        observation: Mapping,
+        state: Optional[MotorSystemState] = None,
+    ) -> PositioningProcedureResult:
+        if self._multiple_objects_present:
+            on_target_object = self.is_on_target_object(observation)
+            if not on_target_object:
+                return PositioningProcedureResult(
+                    actions=self.orient_to_object(observation, state)
+                )
+
+        if self._allow_translation:
+            action = self.move_close_enough(observation)
+            if action is not None:
+                logging.debug("Moving closer to object.")
+                return PositioningProcedureResult(actions=[action])
+
+        on_target_object = self.is_on_target_object(observation)
+        if (
+            not on_target_object
+            and self._num_orientation_attempts < self._max_orientation_attempts
+        ):
+            self._num_orientation_attempts += 1
+            return PositioningProcedureResult(
+                actions=self.orient_to_object(observation, state)
+            )
+
+        if on_target_object:
+            return PositioningProcedureResult(
+                success=True,
+                terminated=True,
+                truncated=False,
+            )
+        else:
+            return PositioningProcedureResult(
+                success=False,
+                terminated=False,
+                truncated=True,
+            )
 
 
 class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
