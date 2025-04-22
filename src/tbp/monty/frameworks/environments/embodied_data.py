@@ -590,8 +590,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
             self.motor_system._policy = GetGoodView(
                 agent_id=self.motor_system._policy.agent_id,
-                desired_object_distance=0.03,
-                good_view_percentage=0.5,
+                desired_object_distance=_configured_policy.desired_object_distance,
+                good_view_percentage=_configured_policy.good_view_percentage,
                 multiple_objects_present=self.num_distractors > 0,
                 sensor_id=sensor_id,
                 target_semantic_id=self.primary_target["semantic_id"],
@@ -600,7 +600,14 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 # TODO: Remaining arguments are unused but required by BasePolicy.
                 #       These will be removed when PositioningProcedure is split from
                 #       BasePolicy
-                rng=self.rng,
+                #
+                # Note that if we use rng=self.rng below, then the following test will
+                # fail:
+                #   tests/unit/evidence_lm_test.py::EvidenceLMTest::test_two_lm_heterarchy_experiment  # noqa: E501
+                # The test result seems to be coupled to the random seed and the
+                # specific sequence of rng calls (rng is called once on GetGoodView
+                # initialization).
+                rng=np.random.RandomState(),
                 action_sampler_args=dict(actions=[LookUp]),
                 action_sampler_class=UniformlyDistributedSampler,
                 switch_frequency=0.0,
