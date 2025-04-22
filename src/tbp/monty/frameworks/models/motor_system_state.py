@@ -12,7 +12,10 @@ import numpy as np
 
 
 class SensorState(TypedDict):
-    """The proprioceptive state of a sensor."""
+    """The proprioceptive state of a sensor.
+
+    TODO: Change into dataclass
+    """
 
     position: Any  # TODO: Stop using magnum.Vector3 and decide on Monty standard
     """The sensor's position relative to the agent."""
@@ -21,7 +24,10 @@ class SensorState(TypedDict):
 
 
 class AgentState(TypedDict):
-    """The proprioceptive state of an agent."""
+    """The proprioceptive state of an agent.
+
+    TODO: Change into dataclass
+    """
 
     sensors: Dict[str, SensorState]
     """The proprioceptive state of the agent's sensors."""
@@ -31,8 +37,21 @@ class AgentState(TypedDict):
     """The agent's rotation relative to some global reference frame."""
 
 
-class MotorSystemState(Dict[str, AgentState]):
-    """The proprioceptive state of the motor system."""
+class ProprioceptiveState(Dict[str, AgentState]):
+    """The proprioceptive state of the motor system.
+
+    TODO: Change into dataclass
+    """
+
+
+class MotorSystemState(Dict[str, Any]):
+    """The state of the motor system.
+
+    TODO: Currently, ProprioceptiveState can be cast to MotorSystemState since
+          MotorSystemState is a generic dictionary. In the future, make
+          ProprioceptiveState a param on MotorSystemState to more clearly distinguish
+          between the two.
+    """
 
     def convert_motor_state(self):
         """Convert the motor state into something that can be pickled/saved to JSON.

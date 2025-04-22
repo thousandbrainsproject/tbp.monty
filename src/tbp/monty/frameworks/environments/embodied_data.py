@@ -27,7 +27,10 @@ from tbp.monty.frameworks.models.motor_policies import (
     SurfacePolicy,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
-from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
+from tbp.monty.frameworks.models.motor_system_state import (
+    MotorSystemState,
+    ProprioceptiveState,
+)
 
 from .embodied_environment import EmbodiedEnvironment
 
@@ -86,7 +89,7 @@ class EnvironmentDataset(Dataset):
 
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-        return observation, MotorSystemState(state) if state else None
+        return observation, ProprioceptiveState(state) if state else None
 
     def close(self):
         self.env.close()
@@ -104,7 +107,7 @@ class EnvironmentDataset(Dataset):
         state = self.env.get_state()
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-        return observation, MotorSystemState(state) if state else None
+        return observation, ProprioceptiveState(state) if state else None
 
     def __len__(self):
         return math.inf
@@ -139,14 +142,16 @@ class EnvironmentDataLoader:
         self.dataset = dataset
         self.motor_system = motor_system
         self.rng = rng
-        self._observation, self.motor_system._state = self.dataset.reset()
+        self._observation, state = self.dataset.reset()
+        self.motor_system._state = MotorSystemState(state)
         self._action = None
         self._amount = None
         self._counter = 0
 
     def __iter__(self):
         # Reset the environment before iterating
-        self._observation, self.motor_system._state = self.dataset.reset()
+        self._observation, state = self.dataset.reset()
+        self.motor_system._state = MotorSystemState(state)
         self._action = None
         self._amount = None
         self._counter = 0
@@ -160,7 +165,8 @@ class EnvironmentDataLoader:
         else:
             action = self.motor_system()
             self._action = action
-            self._observation, self.motor_system._state = self.dataset[action]
+            self._observation, state = self.dataset[action]
+            self.motor_system._state = MotorSystemState(state)
             self._counter += 1
             return self._observation
 
@@ -381,6 +387,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
     def reset_agent(self):
         logging.debug("resetting agent------")
         self._observation, state = self.dataset.reset()
+        state = MotorSystemState(state)
         self._counter = 0
 
         # Make sure to also reset action variables when resetting agent during
@@ -461,6 +468,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 )
 
             self._observation, state = self.dataset[self._action]
+            state = MotorSystemState(state)
 
             # Check whether sensory information is just for feeding back to motor policy
             # TODO refactor so that the motor policy itself is making this update
@@ -576,7 +584,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                     state=self.motor_system._state,
                 )
                 for action in actions:
-                    self._observation, self.motor_system._state = self.dataset[action]
+                    self._observation, state = self.dataset[action]
+                    self.motor_system._state = MotorSystemState(state)
 
         if allow_translation:
             # Move closer to the object, if not already close enough
@@ -589,7 +598,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             # Continue moving to a close distance to the object
             while not close_enough:
                 logging.debug("moving closer!")
-                self._observation, self.motor_system._state = self.dataset[action]
+                self._observation, state = self.dataset[action]
+                self.motor_system._state = MotorSystemState(state)
                 action, close_enough = self.motor_system._policy.move_close_enough(
                     self._observation,
                     sensor_id,
@@ -613,7 +623,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 state=self.motor_system._state,
             )
             for action in actions:
-                self._observation, self.motor_system._state = self.dataset[action]
+                self._observation, state = self.dataset[action]
+                self.motor_system._state = MotorSystemState(state)
             on_target_object = self.motor_system._policy.is_on_target_object(
                 self._observation,
                 sensor_id,
@@ -706,7 +717,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             rotation_quat=quaternion.one,
         )
         _, _ = self.dataset[set_agent_pose]
-        self._observation, self.motor_system._state = self.dataset[set_sensor_rotation]
+        self._observation, state = self.dataset[set_sensor_rotation]
+        self.motor_system._state = MotorSystemState(state)
 
         # Check depth-at-center to see if the object is in front of us
         # As for methods such as touch_object, we use the view-finder
@@ -817,7 +829,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 == pre_jump_state["sensors"][current_sensor]["rotation"]
             ), "Failed to return sensor to orientation"
 
-        self.motor_system._state = state
+        self.motor_system._state = MotorSystemState(state)
 
         # TODO explore reverting to an attempt with touch_object here,
         # only moving back to our starting location if this is unsuccessful
@@ -859,7 +871,8 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
             )
         self.dataset = dataset
         self.motor_system = motor_system
-        self._observation, self.motor_system._state = self.dataset.reset()
+        self._observation, state = self.dataset.reset()
+        self.motor_system._state = MotorSystemState(state)
         self._action = None
         self._amount = None
         self._counter = 0
@@ -948,7 +961,8 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
             )
         self.dataset = dataset
         self.motor_system = motor_system
-        self._observation, self.motor_system._state = self.dataset.reset()
+        self._observation, state = self.dataset.reset()
+        self.motor_system._state = MotorSystemState(state)
         self._action = None
         self._amount = None
         self._counter = 0
@@ -1041,7 +1055,8 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         # TODO: call super init instead of duplication code & generally clean up more
         self.dataset = dataset
         self.motor_system = motor_system
-        self._observation, self.motor_system._state = self.dataset.reset()
+        self._observation, state = self.dataset.reset()
+        self.motor_system._state = MotorSystemState(state)
         self._action = None
         self._amount = None
         self._counter = 0
