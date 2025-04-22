@@ -17,13 +17,17 @@ import numpy as np
 import quaternion
 from torch.utils.data import Dataset
 
+from tbp.monty.frameworks.actions.action_samplers import UniformlyDistributedSampler
 from tbp.monty.frameworks.actions.actions import (
     Action,
+    LookUp,
     MoveTangentially,
     SetAgentPose,
     SetSensorRotation,
 )
 from tbp.monty.frameworks.models.motor_policies import (
+    GetGoodView,
+    InformedPolicy,
     SurfacePolicy,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -43,6 +47,8 @@ __all__ = [
     "SaccadeOnImageDataLoader",
     "SaccadeOnImageFromStreamDataLoader",
 ]
+
+USE_GET_GOOD_VIEW_POSITIONING_PROCEDURE = True
 
 
 class EnvironmentDataset(Dataset):
@@ -451,8 +457,11 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         # Check if any LM's have output a goal-state (such as hypothesis-testing
         # goal-state)
+
+
         elif (
-            self.motor_system._policy.use_goal_state_driven_actions
+            isinstance(self.motor_system._policy, InformedPolicy)
+            and self.motor_system._policy.use_goal_state_driven_actions
             and self.motor_system._policy.driving_goal_state is not None
         ):
             return self.execute_jump_attempt()
@@ -576,6 +585,44 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         TODO M : move most of this to the motor systems, shouldn't be in embodied_data
             class
         """
+        if USE_GET_GOOD_VIEW_POSITIONING_PROCEDURE:
+            _configured_policy = self.motor_system._policy
+
+            self.motor_system._policy = GetGoodView(
+                agent_id=self.motor_system._policy.agent_id,
+                desired_object_distance=0.03,
+                good_view_percentage=0.5,
+                multiple_objects_present=self.num_distractors > 0,
+                sensor_id=sensor_id,
+                target_semantic_id=self.primary_target["semantic_id"],
+                allow_translation=allow_translation,
+                max_orientation_attempts=max_orientation_attempts,
+                # TODO: Remaining arguments are unused but required by BasePolicy.
+                #       These will be removed when PositioningProcedure is split from
+                #       BasePolicy
+                rng=self.rng,
+                action_sampler_args=dict(actions=[LookUp]),
+                action_sampler_class=UniformlyDistributedSampler,
+                switch_frequency=0.0,
+            )
+            result = self.motor_system._policy.positioning_call(
+                self._observation, self.motor_system._state
+            )
+            while not result.terminated and not result.truncated:
+                for action in result.actions:
+                    self._observation, state = self.dataset[action]
+                    self.motor_system._state = (
+                        MotorSystemState(state) if state else None
+                    )
+
+                result = self.motor_system._policy.positioning_call(
+                    self._observation, self.motor_system._state
+                )
+
+            self.motor_system._policy = _configured_policy
+
+            return result.success
+
         # TODO break up this method so that there is less code duplication
         # Start by ensuring the center of the patch is covering the primary target
         # object before we start moving forward; only done for multi-object experiments

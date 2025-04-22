@@ -17,7 +17,7 @@ import logging
 import math
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Literal, Mapping, Optional, Tuple, Type, Union, cast
+from typing import Dict, List, Literal, Mapping, Optional, Tuple, Type, cast
 
 import numpy as np
 import quaternion as qt
@@ -407,7 +407,27 @@ class PositioningProcedure(BasePolicy):
 
 
 class GetGoodView(PositioningProcedure):
-    """Positioning procedure to get a good view of the object before an episode."""
+    """Positioning procedure to get a good view of the object before an episode.
+
+    Used to position the distant agent so that it finds the initial view of an object
+    at the beginning of an episode with respect to a given sensor (the surface agent
+    is positioned using the TouchObject positioning procedure instead). Also currently
+    used by the distant agent after a "jump" has been initialized by a model-based
+    policy.
+
+    First, the agent is moved towards the target object until the object fills a minimum
+    of percentage (given by `good_view_percentage`) of the sensor's field of view or the
+    closest point of the object is less than `desired_object_distance` from the sensor.
+    This makes sure that big and small objects all fill similar amount of space in the
+    sensor's field of view. Otherwise small objects may be too small to perform saccades
+    or the sensor ends up inside of big objects. This step is performed by default but
+    can be skipped by setting `allow_translation=False`.
+
+    Second, the agent will then be oriented towards the object so that the sensor's
+    central pixel is on-object. In the case of multi-object experiments,
+    (i.e., when `multiple_objects_present=True`), there is an additional orientation
+    step performed prior to the translational movement step.
+    """
 
     def __init__(
         self,
@@ -928,7 +948,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         view_sensor_id: str,
         target_semantic_id: int,
         multiple_objects_present: bool,
-    ) -> Tuple[Union[Action, None], bool]:
+    ) -> Tuple[Action | None, bool]:
         """At beginning of episode move close enough to the object.
 
         Used the raw observations returned from the dataloader and not the
@@ -944,7 +964,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 close to these when moving forward
 
         Returns:
-            Tuple[Union[Action, None], bool]: The next action to take and whether the
+            Tuple[Action | None, bool]: The next action to take and whether the
                 episode is done.
 
         Raises:
