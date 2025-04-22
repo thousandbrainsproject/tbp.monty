@@ -375,10 +375,13 @@ class PositioningProcedureResult:
 
 
 class PositioningProcedure(BasePolicy):
-    """Policy to position the agent in the scene.
+    """Positioning procedure to position the agent in the scene.
 
     TODO: Remove from MotorPolicy hierarchy and refactor to standalone
           PositioningProcedure hierarchy when they get separated.
+
+    The positioning_call method should be repeatedly called until the procedure result
+    indicates that the procedure has terminated or truncated.
     """
 
     @abc.abstractmethod
@@ -708,17 +711,9 @@ class GetGoodView(PositioningProcedure):
             )
 
         if on_target_object:
-            return PositioningProcedureResult(
-                success=True,
-                terminated=True,
-                truncated=False,
-            )
+            return PositioningProcedureResult(success=True, terminated=True)
         else:
-            return PositioningProcedureResult(
-                success=False,
-                terminated=False,
-                truncated=True,
-            )
+            return PositioningProcedureResult(truncated=True)
 
 
 class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
