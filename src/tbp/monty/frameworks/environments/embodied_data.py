@@ -48,8 +48,6 @@ __all__ = [
     "SaccadeOnImageFromStreamDataLoader",
 ]
 
-USE_GET_GOOD_VIEW_POSITIONING_PROCEDURE = True
-
 
 class EnvironmentDataset(Dataset):
     """Wraps an embodied environment with a :class:`torch.utils.data.Dataset`.
@@ -439,8 +437,18 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
     iv) Supports hypothesis-testing "jump" policy
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self, use_get_good_view_positioning_procedure: bool = False, *args, **kwargs
+    ):
         super(InformedEnvironmentDataLoader, self).__init__(*args, **kwargs)
+        self._use_get_good_view_positioning_procedure = (
+            use_get_good_view_positioning_procedure
+        )
+        """Feature flag to use the GetGoodView positioning procedure.
+
+        This is a temporary feature flag to allow for testing the GetGoodView
+        positioning procedure.
+        """
 
     def __iter__(self):
         # Overwrite original because we don't want to reset agent at this stage
@@ -585,7 +593,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         TODO M : move most of this to the motor systems, shouldn't be in embodied_data
             class
         """
-        if USE_GET_GOOD_VIEW_POSITIONING_PROCEDURE:
+        if self._use_get_good_view_positioning_procedure:
             _configured_policy = self.motor_system._policy
 
             self.motor_system._policy = GetGoodView(
