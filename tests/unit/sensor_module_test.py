@@ -21,8 +21,6 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PatchAndViewMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataLoaderPerObjectEvalArgs,
-    EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
     InformedEnvironmentDataLoaderEvalArgs,
     InformedEnvironmentDataLoaderTrainArgs,

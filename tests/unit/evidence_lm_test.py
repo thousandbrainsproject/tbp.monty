@@ -1960,7 +1960,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             config,
             create_config_with_get_good_view_positioning_procedure(config),
         ]:
-            with MontyObjectRecognitionExperiment(config) as exp:
+            with MontyObjectRecognitionExperiment(c) as exp:
                 pprint("...training...")
                 exp.train()
                 pprint("...loading and checking train statistics...")
