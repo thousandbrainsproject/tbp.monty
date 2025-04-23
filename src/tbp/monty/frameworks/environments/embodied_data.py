@@ -623,9 +623,9 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             )
             while not result.terminated and not result.truncated:
                 for action in result.actions:
-                    self._observation, state = self.dataset[action]
+                    self._observation, proprio_state = self.dataset[action]
                     self.motor_system._state = (
-                        MotorSystemState(state) if state else None
+                        MotorSystemState(proprio_state) if proprio_state else None
                     )
 
                 result = self.motor_system._policy.positioning_call(
