@@ -103,8 +103,9 @@ class MotorSystemConfigOffObject:
 
 
 @dataclass
-class ObjectEpisode:
+class EpisodeObservations:
     """An episode of observations for a single named object."""
+
     name: str
     observations: List[Any]
 
@@ -113,10 +114,16 @@ class ObjectEpisode:
 
 
 @dataclass
-class GraphModule:
-    """Class to bundle up a GraphLM and its object observations."""
+class TrainedGraphLM:
+    """Class to bundle up a GraphLM and the object observations it was trained on.
+
+    Used by the tests below to bundle the trained GraphLMs with the object observations
+    it was trained on. See `GraphLearningTest::get_5lm_gm_with_fake_objects` for
+    more details.
+    """
+
     learning_module: GraphLM
-    episodes: List[ObjectEpisode]
+    episodes: List[EpisodeObservations]
 
     @property
     def mode(self) -> str:
@@ -126,6 +133,19 @@ class GraphModule:
     @mode.setter
     def mode(self, mode: str):
         self.learning_module.mode = mode
+
+    def num_observations(self, episode_num: int) -> int:
+        """Number of observations in the specified episode.
+
+        Returns:
+            the number of observations in the episode
+        """
+        return len(self.episodes[episode_num].observations)
+
+    @property
+    def num_episodes(self) -> int:
+        """Number of episodes/objects this LM was trained on."""
+        return len(self.episodes)
 
     def pre_episode(self, primary_target):
         """Delegates pre_episode calls to the LM."""
@@ -1348,7 +1368,9 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
         self.check_eval_results(eval_stats)
 
-    def gm_learn_object(self, graph_lm, obj_name, observations, offset=None):
+    def gm_learn_object(
+        self, graph_lm: FeatureGraphLM, obj_name, observations, offset=None
+    ):
         if offset is None:
             offset = np.zeros(3)
 
@@ -1382,8 +1404,9 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             },
         )
 
-        self.gm_learn_object(graph_lm, obj_name="new_object0",
-                             observations=self.fake_obs_learn)
+        self.gm_learn_object(
+            graph_lm, obj_name="new_object0", observations=self.fake_obs_learn
+        )
 
         self.assertEqual(
             len(graph_lm.get_all_known_object_ids()),
@@ -1397,7 +1420,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         )
         return graph_lm
 
-    def get_5lm_gm_with_fake_objects(self, objects) -> List[GraphModule]:
+    def get_5lm_gm_with_fake_objects(self, objects) -> List[TrainedGraphLM]:
         graph_lms = []
         for lm in range(5):
             graph_lm = FeatureGraphLM(
@@ -1412,11 +1435,14 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             object_obs = []
             for i, obj in enumerate(objects):
                 obj_name = f"new_object{i}"
-                offset_obs = self.gm_learn_object(graph_lm, obj_name=obj_name,
-                                                  observations=obj,
-                                                  offset=self.lm_offsets[lm])
-                object_obs.append(ObjectEpisode(obj_name, offset_obs))
-            graph_lms.append(GraphModule(graph_lm, object_obs))
+                offset_obs = self.gm_learn_object(
+                    graph_lm,
+                    obj_name=obj_name,
+                    observations=obj,
+                    offset=self.lm_offsets[lm],
+                )
+                object_obs.append(EpisodeObservations(obj_name, offset_obs))
+            graph_lms.append(TrainedGraphLM(graph_lm, object_obs))
 
         return graph_lms
 
@@ -1714,34 +1740,38 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
             objects = [self.fake_obs_learn, self.fake_obs_house_3d]
-            graph_modules = self.get_5lm_gm_with_fake_objects(objects)
+            trained_modules = self.get_5lm_gm_with_fake_objects(objects)
 
             pprint("...evaluating...")
             monty = exp.model
             monty.set_experiment_mode("eval")
-            monty.learning_modules = [gm.learning_module for gm in graph_modules]
+            monty.learning_modules = [tm.learning_module for tm in trained_modules]
 
-            for gm in graph_modules:
-                gm.mode = "eval"
-                gm.pre_episode(self.placeholder_target)
+            for tm in trained_modules:
+                tm.mode = "eval"
 
             exp.pre_epoch()
-            # Use the first graph module's observations for the episodes
-            # since it has no offsets like the others do.
-            for episode in graph_modules[0].episodes:
+            for episode_num in range(tm.num_episodes):
                 exp.pre_episode()
+                # Normally the experiment `pre_episode` method would call the model
+                # `pre_episode` method, but it expects to feed data from a dataset/
+                # dataloader to the model, and we aren't using that, so we call it
+                # again with the correct target value.
                 monty.pre_episode(self.placeholder_target)
-                for observation in episode.observations:
+                for step in range(tm.num_observations(episode_num)):
                     # Manually run through the internal Monty steps since we aren't
                     # using the data from the dataset/dataloader and instead providing
                     # faked observations.
-                    monty.sensor_module_outputs = [observation for _ in graph_modules]
+                    monty.sensor_module_outputs = [
+                        lm.episodes[episode_num].observations[step]
+                        for lm in trained_modules
+                    ]
                     monty._step_learning_modules()
                     monty._vote()
                     monty._pass_goal_states()
                     monty._set_step_type_and_check_if_done()
                     monty._post_step()
-                exp.post_episode(len(episode))
+                exp.post_episode(tm.num_observations(episode_num))
             exp.post_epoch()
 
         pprint("...loading and checking eval statistics...")

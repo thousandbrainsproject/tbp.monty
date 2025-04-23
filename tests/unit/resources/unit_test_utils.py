@@ -57,7 +57,7 @@ class BaseGraphTestCases:
 
             self.lm_offsets = make_sensor_positions_on_grid(
                 n_sensors=5,
-                add_view_finder=False
+                add_view_finder=False,
             )
 
             # Create a symmetric synthetic object, where the location of the last
