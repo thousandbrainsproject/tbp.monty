@@ -100,6 +100,7 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           ruff check tools
+          ruff format --check tools
       - name: Check types
         if: ${{ steps.should_run.outputs.run_test_tools == 'true' }}
         working-directory: tbp.monty

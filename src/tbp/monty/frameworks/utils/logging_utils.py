@@ -453,13 +453,14 @@ def print_overall_stats(stats):
         / len(stats)
         * 100
     )
-    print(f"Detected {np.round(acc,2)}% correctly")
+    print(f"Detected {np.round(acc, 2)}% correctly")
     rt = np.sum(stats["time"])
     rt_per_step = np.mean(stats["time"] / stats["monty_matching_steps"])
     print(
-        f"overall run time: {np.round(rt,2)} seconds ({np.round(rt/60,2)} minutes),"
-        f" {np.round(rt/len(stats),2)} seconds per episode, {np.round(rt_per_step,2)} "
-        "seconds per step."
+        f"overall run time: {np.round(rt, 2)} seconds "
+        f"({np.round(rt / 60, 2)} minutes), "
+        f"{np.round(rt / len(stats), 2)} seconds per episode, "
+        f"{np.round(rt_per_step, 2)} seconds per step."
     )
 
 
@@ -487,10 +488,10 @@ def print_unsupervised_stats(stats, epoch_len):
         * 100
     )
     print(
-        f"Detected {np.round(first_epoch_acc,2)}% correctly as new object"
+        f"Detected {np.round(first_epoch_acc, 2)}% correctly as new object"
         "in first epoch"
     )
-    print(f"Detected {np.round(later_acc,2)}% correctly after first epoch")
+    print(f"Detected {np.round(later_acc, 2)}% correctly after first epoch")
     print(f"Mean objects per graph: {list(stats['mean_objects_per_graph'])[-1]}")
     print(f"Mean graphs per object: {list(stats['mean_graphs_per_object'])[-1]}")
     print("Merged graphs:")
@@ -499,8 +500,8 @@ def print_unsupervised_stats(stats, epoch_len):
             print("     " + string)
     rt = np.sum(stats["time"])
     print(
-        f"overall run time: {np.round(rt,2)} seconds ({np.round(rt/60,2)} minutes),"
-        f" {np.round(rt/len(stats),2)} seconds per episode."
+        f"overall run time: {np.round(rt, 2)} seconds ({np.round(rt / 60, 2)} minutes),"
+        f" {np.round(rt / len(stats), 2)} seconds per episode."
     )
 
 
@@ -920,8 +921,7 @@ def maybe_rename_existing_directory(path, report_count):
     if (report_count == 0) and os.path.exists(path):
         new_path = path + "_old"
         logging.warning(
-            f"Output path {path} already exists. This path will be moved"
-            f"to {new_path}"
+            f"Output path {path} already exists. This path will be movedto {new_path}"
         )
 
         if os.path.exists(new_path):

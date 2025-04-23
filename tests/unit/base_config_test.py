@@ -114,9 +114,7 @@ class BaseConfigTest(unittest.TestCase):
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
         with MontyExperiment(base_config) as exp:
-            monty_module_sids = {
-                s.sensor_module_id for s in exp.model.sensor_modules
-            }
+            monty_module_sids = {s.sensor_module_id for s in exp.model.sensor_modules}
 
             # Handle the training loop manually for this interim test
             max_count = 5

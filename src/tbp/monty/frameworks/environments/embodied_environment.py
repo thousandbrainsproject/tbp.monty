@@ -19,6 +19,7 @@ __all__ = ["EmbodiedEnvironment", "ActionSpace"]
 VectorXYZ = Tuple[float, float, float]
 QuaternionWXYZ = Tuple[float, float, float, float]
 
+
 class ActionSpace(collections.abc.Container):
     """Represents the environment action space."""
 

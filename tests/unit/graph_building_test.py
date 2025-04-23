@@ -287,9 +287,7 @@ class GraphLearningTest(unittest.TestCase):
         config = copy.deepcopy(self.load_habitat_config)
         with MontyObjectRecognitionExperiment(config) as exp:
             pprint("checking loaded graphs")
-            for graph_id in exp.model.learning_modules[
-                0
-            ].get_all_known_object_ids():
+            for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
                     graph_id, input_channel="first"
                 )
@@ -306,9 +304,7 @@ class GraphLearningTest(unittest.TestCase):
         config = copy.deepcopy(self.load_habitat_for_ppf)
         with MontyObjectRecognitionExperiment(config) as exp:
             pprint("checking loaded graphs")
-            for graph_id in exp.model.learning_modules[
-                0
-            ].get_all_known_object_ids():
+            for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
                     graph_id, input_channel="first"
                 )
@@ -330,9 +326,7 @@ class GraphLearningTest(unittest.TestCase):
         config = copy.deepcopy(self.load_habitat_for_feat)
         with MontyObjectRecognitionExperiment(config) as exp:
             pprint("checking loaded graphs")
-            for graph_id in exp.model.learning_modules[
-                0
-            ].get_all_known_object_ids():
+            for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
                     graph_id, input_channel="first"
                 )
@@ -353,9 +347,7 @@ class GraphLearningTest(unittest.TestCase):
         config = copy.deepcopy(self.load_habitat_for_feat)
         with MontyObjectRecognitionExperiment(config) as exp:
             pprint("checking loaded graphs")
-            for graph_id in exp.model.learning_modules[
-                0
-            ].get_all_known_object_ids():
+            for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
                     graph_id, input_channel="first"
                 )

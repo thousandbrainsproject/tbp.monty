@@ -38,5 +38,6 @@ class TestGetFolders(unittest.TestCase):
         # Assert that the result matches the expected folders
         self.assertEqual(sorted(result), sorted(expected_folders))
 
+
 if __name__ == "__main__":
     unittest.main()

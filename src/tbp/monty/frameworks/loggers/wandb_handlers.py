@@ -143,6 +143,7 @@ class BasicWandbTableStatsHandler(WandbHandler):
         wandb.log({stats_table: table}, commit=False)
         self.report_count += 1
 
+
 class DetailedWandbTableStatsHandler(BasicWandbTableStatsHandler):
     """Log LM stats and actions to wandb as tables.
 

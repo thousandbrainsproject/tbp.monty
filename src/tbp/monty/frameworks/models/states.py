@@ -68,7 +68,7 @@ class State:
         """Return a string representation of the object."""
         repr_string = (
             f"State from {self.sender_id}:\n"
-            f"   Location: {np.round(self.location,3)}.\n"
+            f"   Location: {np.round(self.location, 3)}.\n"
             f"   Morphological Features: \n"
         )
         if self.morphological_features is not None:
@@ -178,9 +178,9 @@ class State:
             return True
 
     def _check_all_attributes(self):
-        assert (
-            "pose_vectors" in self.morphological_features.keys()
-        ), "pose_vectors should be in morphological_features but keys are "
+        assert "pose_vectors" in self.morphological_features.keys(), (
+            "pose_vectors should be in morphological_features but keys are "
+        )
         f"{self.morphological_features.keys()}"
         # TODO S: may want to test length and angle between vectors as well
         assert self.morphological_features["pose_vectors"].shape == (
@@ -193,22 +193,21 @@ class State:
             "pose_fully_defined must be a boolean but type is "
         )
         f"{type(self.morphological_features['pose_fully_defined'])}"
-        assert self.location.shape == (
-            3,
-        ), f"Location must be a 3D vector but shape is {self.location.shape}"
-        assert (
-            self.confidence >= 0 and self.confidence <= 1
-        ), f"Confidence must be in [0,1] but is {self.confidence}"
+        assert self.location.shape == (3,), (
+            f"Location must be a 3D vector but shape is {self.location.shape}"
+        )
+        assert self.confidence >= 0 and self.confidence <= 1, (
+            f"Confidence must be in [0,1] but is {self.confidence}"
+        )
         assert isinstance(self.use_state, bool), (
             f"use_state must be a boolean but is {type(self.use_state)}"
         )
         assert isinstance(self.sender_id, str), (
             f"sender_id must be string but is {type(self.sender_id)}"
         )
-        assert (
-            self.sender_type in self.allowable_sender_types
-        ), f"sender_type must be SM or LM but is\
-            {self.sender_type}"
+        assert self.sender_type in self.allowable_sender_types, (
+            f"sender_type must be SM or LM but is {self.sender_type}"
+        )
 
 
 class GoalState(State):
@@ -288,18 +287,20 @@ class GoalState(State):
     def _check_all_attributes(self):
         """Overwrite base attribute check to also allow for None values."""
         if self.morphological_features is not None:
-            assert (
-                "pose_vectors" in self.morphological_features.keys()
-            ), "pose_vectors should be in morphological_features but keys are "
+            assert "pose_vectors" in self.morphological_features.keys(), (
+                "pose_vectors should be in morphological_features but keys are "
+            )
             f"{self.morphological_features.keys()}"
             assert np.any(
                 self.morphological_features["pose_vectors"] == np.nan
             ) or self.morphological_features["pose_vectors"].shape == (
                 3,
                 3,
-            ), f"pose should be undefined, or defined by three orthonormal unit vectors\
-                but pose_vectors shape is\
-                    {self.morphological_features['pose_vectors'].shape}"
+            ), (
+                "pose should be undefined, or defined by three orthonormal unit "
+                "vectors but pose_vectors shape is "
+                f"{self.morphological_features['pose_vectors'].shape}"
+            )
             assert "pose_fully_defined" in self.morphological_features.keys()
             assert (
                 isinstance(self.morphological_features["pose_fully_defined"], bool)
@@ -308,13 +309,13 @@ class GoalState(State):
             )
             f"{type(self.morphological_features['pose_fully_defined'])}"
         if self.location is not None:
-            assert self.location.shape == (
-                3,
-            ), f"Location must be a 3D vector but shape is {self.location.shape}"
+            assert self.location.shape == (3,), (
+                f"Location must be a 3D vector but shape is {self.location.shape}"
+            )
 
-        assert (
-            self.confidence >= 0 and self.confidence <= 1
-        ), f"Confidence must be in [0,1] but is {self.confidence}"
+        assert self.confidence >= 0 and self.confidence <= 1, (
+            f"Confidence must be in [0,1] but is {self.confidence}"
+        )
         assert isinstance(self.use_state, bool), (
             f"use_state must be a boolean but is {type(self.use_state)}"
         )
@@ -322,9 +323,9 @@ class GoalState(State):
             f"sender_id must be string but is {type(self.sender_id)}"
         )
         # Note *only* GSGs should create GoalState objects
-        assert (
-            self.sender_type in self.allowable_sender_types
-        ), f"sender_type must be GSG but is {self.sender_type}"
+        assert self.sender_type in self.allowable_sender_types, (
+            f"sender_type must be GSG but is {self.sender_type}"
+        )
         # info is optional, but it must be a dictionary.
         assert isinstance(self.info, dict), "info must be a dictionary"
 

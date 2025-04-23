@@ -65,8 +65,10 @@ class ProfileExperimentMixin:
         if cls.__bases__[0] is not ProfileExperimentMixin:
             raise TypeError("ProfileExperimentMixin must be leftmost base class.")
         if not any(issubclass(b, MontyExperiment) for b in cls.__bases__):
-            raise TypeError("ProfileExperimentMixin must be mixed in with a subclass "
-                            "of MontyExperiment.")
+            raise TypeError(
+                "ProfileExperimentMixin must be mixed in with a subclass "
+                "of MontyExperiment."
+            )
 
     def make_profile_dir(self):
         self.profile_dir = os.path.join(self.output_dir, "profile")

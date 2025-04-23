@@ -496,9 +496,7 @@ class MontyBase(Monty):
     def switch_to_exploratory_step(self):
         self.step_type = "exploratory_step"
         self.is_seeking_match = False
-        logging.info(
-            "Going into exploratory mode after" f" {self.matching_steps} steps"
-        )
+        logging.info(f"Going into exploratory mode after {self.matching_steps} steps")
 
 
 class LearningModuleBase(LearningModule):

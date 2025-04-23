@@ -575,11 +575,9 @@ def show_previous_possible_paths_with_nodes(ax, path_stats, step, object_n):
 def update_text(text_ax, num_possible_paths, unique_poses):
     num_unique_poses = unique_poses.shape[0]
     if num_unique_poses > 4:
-        text_ax.set_text(
-            f"# paths: {num_possible_paths}\n" f"# poses: {num_unique_poses}"
-        )
+        text_ax.set_text(f"# paths: {num_possible_paths}\n# poses: {num_unique_poses}")
     else:
-        text = f"# paths: {num_possible_paths}\n" f"# poses: {num_unique_poses}"
+        text = f"# paths: {num_possible_paths}\n# poses: {num_unique_poses}"
         for pose in unique_poses:
             text = text + "\n" + str(pose)
         text_ax.set_text(text)
@@ -1264,8 +1262,8 @@ def plot_evidence_at_step(
         f"target: \n{lm_stats['target']['object']}"
         f" with rotation {mlhr}\n"
         "\ncurrent most likely hypothesis:\n"
-        f"{mlh['graph_id']} with rotation {np.round(mlh['rotation'],1)}"
-        f"\nevidence: {np.round(mlh['evidence'],2)}"
+        f"{mlh['graph_id']} with rotation {np.round(mlh['rotation'], 1)}"
+        f"\nevidence: {np.round(mlh['evidence'], 2)}"
     )
     ax.text(0, 0.5, text)
     plt.axis("off")
@@ -1509,9 +1507,9 @@ class PolicyPlot:
                     "action_details"
                 ]["avoidance_heading"]
             )
-            assert len(self.tangential_locs) == len(
-                self.new_headings
-            ), "Mismatch in number of heading-markers"
+            assert len(self.tangential_locs) == len(self.new_headings), (
+                "Mismatch in number of heading-markers"
+            )
 
         else:
             self.pc_headings = np.zeros(len(self.tangential_locs))

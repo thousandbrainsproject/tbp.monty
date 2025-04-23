@@ -190,7 +190,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         mlh_id = mlh["graph_id"].split("_")
         for word in mlh_id:
             new_text += r"$\bf{" + word + "}$ "
-        new_text += f"with evidence {np.round(mlh['evidence'],2)}\n\n"
+        new_text += f"with evidence {np.round(mlh['evidence'], 2)}\n\n"
         pms = self.model.learning_modules[0].get_possible_matches()
         graph_ids, evidences = self.model.learning_modules[
             0
@@ -203,12 +203,12 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
             new_text += "2nd MLH: "
             for word in second_id:
                 new_text += r"$\bf{" + word + "}$ "
-            new_text += f"with evidence {np.round(evidences[top_indices[1]],2)}\n\n"
+            new_text += f"with evidence {np.round(evidences[top_indices[1]], 2)}\n\n"
 
         new_text += r"$\bf{Possible}$ $\bf{matches:}$"
         for gid, ev in zip(graph_ids, evidences):
             if gid in pms:
-                new_text += f"\n{gid}: {np.round(ev,1)}"
+                new_text += f"\n{gid}: {np.round(ev, 1)}"
 
         self.text = self.ax[0].text(0, pos + 30, new_text, va="top")
 

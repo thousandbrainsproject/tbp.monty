@@ -255,9 +255,9 @@ class HabitatSim(HabitatActuator):
         obj.rotation = sim_utils.quat_to_magnum(rotation)
 
         if object_to_avoid:
-            assert (
-                self.sim_enable_physics
-            ), "Sim-level physics must be enabled to support collision detection"
+            assert self.sim_enable_physics, (
+                "Sim-level physics must be enabled to support collision detection"
+            )
             # Temporarily enable *object* physics for collision detection
             obj.motion_type = habitat_sim.physics.MotionType.DYNAMIC
             obj = self.find_non_colliding_positions(

@@ -175,7 +175,8 @@ jobs:
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           mkdir -p test_results/ruff
-          ruff check --verbose src tests benchmarks
+          ruff check src tests benchmarks
+          ruff format --check src tests benchmarks
 
   check_types_monty:
     name: check-types-monty

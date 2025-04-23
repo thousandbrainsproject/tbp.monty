@@ -563,7 +563,7 @@ class GridObjectModel(GraphObjectModel):
         if percent_in_bounds < 0.9:
             logging.info(
                 "Too many observations outside of grid "
-                f"({np.round(percent_in_bounds*100,2)}%). Skipping update of grids."
+                f"({np.round(percent_in_bounds * 100, 2)}%). Skipping update of grids."
             )
             raise GridTooSmallError
         voxel_ids_of_new_obs = location_grid_ids[locations_in_bounds]

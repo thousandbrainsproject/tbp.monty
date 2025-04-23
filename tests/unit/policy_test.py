@@ -623,10 +623,10 @@ class PolicyTest(unittest.TestCase):
                 "motor_system_config"
             ]["motor_system_args"]["policy_args"]["good_view_percentage"]
 
-            assert (
-                perc_on_target_obj >= target_perc_on_target_obj
-            ), f"Initial view is not good enough, {perc_on_target_obj}\
-                vs target of {target_perc_on_target_obj}"
+            assert perc_on_target_obj >= target_perc_on_target_obj, (
+                f"Initial view is not good enough, {perc_on_target_obj} "
+                f"vs target of {target_perc_on_target_obj}"
+            )
 
             points_on_target_obj = semantic == 1
             closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
@@ -636,10 +636,10 @@ class PolicyTest(unittest.TestCase):
             ]["policy_args"]["desired_object_distance"]
 
             # Utility policy should not have moved too close to the object
-            assert (
-                closest_point_on_target_obj > target_closest_point
-            ), f"Initial view is too close, {closest_point_on_target_obj}\
-                vs target of {target_closest_point}"
+            assert closest_point_on_target_obj > target_closest_point, (
+                f"Initial view is too close, {closest_point_on_target_obj} "
+                f"vs target of {target_closest_point}"
+            )
 
     def test_touch_object_basic_surf_agent(self):
         """Test ability to move a surface agent to touch an object.
@@ -677,20 +677,20 @@ class PolicyTest(unittest.TestCase):
             )
             closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
 
-            assert (
-                closest_point_on_target_obj < 1.0
-            ), f"Should be within a meter of the object,\
-                closest point at {closest_point_on_target_obj}"
+            assert closest_point_on_target_obj < 1.0, (
+                f"Should be within a meter of the object, "
+                f"closest point at {closest_point_on_target_obj}"
+            )
 
             target_closest_point = dict_config["monty_config"]["motor_system_config"][
                 "motor_system_args"
             ]["policy_args"]["desired_object_distance"]
 
             # Utility policy should not have moved too close to the object
-            assert (
-                closest_point_on_target_obj > target_closest_point
-            ), f"Initial position is too close, {closest_point_on_target_obj}\
-                vs target of {target_closest_point}"
+            assert closest_point_on_target_obj > target_closest_point, (
+                f"Initial position is too close, {closest_point_on_target_obj} "
+                f"vs target of {target_closest_point}"
+            )
 
     def test_get_good_view_multi_object(self):
         """Test ability to move a distant agent to a good view of an object.
@@ -729,10 +729,10 @@ class PolicyTest(unittest.TestCase):
                 "motor_system_config"
             ]["motor_system_args"]["policy_args"]["good_view_percentage"]
 
-            assert (
-                perc_on_target_obj >= target_perc_on_target_obj
-            ), f"Initial view is not good enough, {perc_on_target_obj}\
-                vs target of {target_perc_on_target_obj}"
+            assert perc_on_target_obj >= target_perc_on_target_obj, (
+                f"Initial view is not good enough, {perc_on_target_obj} "
+                f"vs target of {target_perc_on_target_obj}"
+            )
 
             points_on_target_obj = semantic == 1
             closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
@@ -742,20 +742,20 @@ class PolicyTest(unittest.TestCase):
             ]["policy_args"]["desired_object_distance"]
 
             # Utility policy should not have moved too close to the object
-            assert (
-                closest_point_on_target_obj > target_closest_point
-            ), f"Initial view is too close to target, {closest_point_on_target_obj}\
-                vs target of {target_closest_point}"
+            assert closest_point_on_target_obj > target_closest_point, (
+                f"Initial view is too close to target, {closest_point_on_target_obj} "
+                f"vs target of {target_closest_point}"
+            )
 
             # Also calculate closest point on *any* object so that we don't get
             # too close and clip into objects; NB that any object will have a
             # semantic ID > 0
             points_on_any_obj = view["semantic"] > 0
             closest_point_on_any_obj = np.min(view["depth"][points_on_any_obj])
-            assert (
-                closest_point_on_any_obj > target_closest_point / 6
-            ), f"Initial view too cloase to other objects, {closest_point_on_any_obj}\
-                vs target of {target_closest_point / 6}"
+            assert closest_point_on_any_obj > target_closest_point / 6, (
+                f"Initial view too close to other objects, {closest_point_on_any_obj} "
+                f"vs target of {target_closest_point / 6}"
+            )
 
     def test_distant_policy_moves_back_to_object(self):
         """Test ability of distant agent to move back to an object.
@@ -997,9 +997,9 @@ class PolicyTest(unittest.TestCase):
         # (i.e. size) of the translation is represented separately.
         motor_system._policy.processed_observations = self.fake_obs_pc[0]
         direction = motor_system._policy.tangential_direction(motor_system._state)
-        assert np.all(
-            np.isclose(direction, [1, 0, 0])
-        ), "Not following correct PC direction"
+        assert np.all(np.isclose(direction, [1, 0, 0])), (
+            "Not following correct PC direction"
+        )
         assert motor_system._policy.following_pc_counter == 1, (
             "Should have followed PC and incremented counter"
         )
@@ -1010,9 +1010,9 @@ class PolicyTest(unittest.TestCase):
         # Step 2
         motor_system._policy.processed_observations = self.fake_obs_pc[1]
         direction = motor_system._policy.tangential_direction(motor_system._state)
-        assert np.all(
-            np.isclose(direction, [1, 0, 0])
-        ), "Not following correct PC direction"
+        assert np.all(np.isclose(direction, [1, 0, 0])), (
+            "Not following correct PC direction"
+        )
         assert motor_system._policy.following_pc_counter == 2, (
             "Should have followed PC and incremented counter"
         )
@@ -1024,9 +1024,9 @@ class PolicyTest(unittest.TestCase):
         # PC
         motor_system._policy.processed_observations = self.fake_obs_pc[2]
         direction = motor_system._policy.tangential_direction(motor_system._state)
-        assert np.all(
-            np.isclose(direction, [0, 1, 0])
-        ), "Not following correct PC direction"
+        assert np.all(np.isclose(direction, [0, 1, 0])), (
+            "Not following correct PC direction"
+        )
         assert motor_system._policy.following_pc_counter == 1, (
             "Should have reset following PC counter due to bias change, and incremented"
         )
@@ -1037,9 +1037,9 @@ class PolicyTest(unittest.TestCase):
         # Step 4
         motor_system._policy.processed_observations = self.fake_obs_pc[3]
         direction = motor_system._policy.tangential_direction(motor_system._state)
-        assert np.all(
-            np.isclose(direction, [0, 1, 0])
-        ), "Not following correct PC direction"
+        assert np.all(np.isclose(direction, [0, 1, 0])), (
+            "Not following correct PC direction"
+        )
         assert motor_system._policy.following_pc_counter == 2, (
             "Should have followed PC and incremented counter"
         )
@@ -1052,9 +1052,9 @@ class PolicyTest(unittest.TestCase):
         direction = motor_system._policy.tangential_direction(motor_system._state)
         # Note the following movement is a random direction deterministcally set by the
         # random seed
-        assert np.all(
-            np.isclose(direction, [-0.13745981, 0.99050735, 0])
-        ), "Not following correct non-PC direction"
+        assert np.all(np.isclose(direction, [-0.13745981, 0.99050735, 0])), (
+            "Not following correct non-PC direction"
+        )
         assert motor_system._policy.ignoring_pc_counter == 1, (
             "Should have reset ignoring_pc_counter, and then incremented"
         )
@@ -1082,9 +1082,9 @@ class PolicyTest(unittest.TestCase):
 
         motor_system._policy.processed_observations = self.fake_obs_pc[5]
         direction = motor_system._policy.tangential_direction(motor_system._state)
-        assert np.all(
-            np.isclose(direction, [1.0, 0.0, 0])
-        ), "Not following correct PC direction"
+        assert np.all(np.isclose(direction, [1.0, 0.0, 0])), (
+            "Not following correct PC direction"
+        )
 
     def test_advanced_following_principal_curvature(self):
         """Test more edge-case elements of the following-PC policy.
@@ -1126,9 +1126,9 @@ class PolicyTest(unittest.TestCase):
         direction = motor_system._policy.tangential_direction(motor_system._state)
         # Note the following movement is a random direction deterministcally set by the
         # random seed
-        assert np.all(
-            np.isclose(direction, [0.98165657, 0.19065773, 0])
-        ), "Not following correct non-PC direction"
+        assert np.all(np.isclose(direction, [0.98165657, 0.19065773, 0])), (
+            "Not following correct non-PC direction"
+        )
         assert motor_system._policy.following_pc_counter == 0, (
             "Should not have followed PC and incremented counter"
         )
@@ -1144,9 +1144,9 @@ class PolicyTest(unittest.TestCase):
         motor_system._policy.tangent_locs.append(self.fake_obs_pc[0].location)
         motor_system._policy.tangent_norms.append([0, 0, 1])
         direction = motor_system._policy.tangential_direction(motor_system._state)
-        assert np.all(
-            np.isclose(direction, [1, 0, 0])
-        ), "Not following correct PC direction"
+        assert np.all(np.isclose(direction, [1, 0, 0])), (
+            "Not following correct PC direction"
+        )
         assert motor_system._policy.following_pc_counter == 1, (
             "Should have followed PC and incremented counter"
         )
@@ -1160,9 +1160,9 @@ class PolicyTest(unittest.TestCase):
         motor_system._policy.tangent_locs.append(self.fake_obs_advanced_pc[1].location)
         motor_system._policy.tangent_norms.append([0, 0, 1])
         direction = motor_system._policy.tangential_direction(motor_system._state)
-        assert np.all(
-            np.isclose(direction, [1, 0, 0])
-        ), "Not following correct PC direction"
+        assert np.all(np.isclose(direction, [1, 0, 0])), (
+            "Not following correct PC direction"
+        )
         assert motor_system._policy.following_pc_counter == 2, (
             "Should have followed PC and incremented counter"
         )
@@ -1204,9 +1204,9 @@ class PolicyTest(unittest.TestCase):
         direction = motor_system._policy.tangential_direction(motor_system._state)
         # Note the following movement is a random direction deterministcally set by the
         # random seed
-        assert np.all(
-            np.isclose(direction, [0.60958557, 0.79272027, 0])
-        ), "Not following correct non-PC direction"
+        assert np.all(np.isclose(direction, [0.60958557, 0.79272027, 0])), (
+            "Not following correct non-PC direction"
+        )
         assert motor_system._policy.ignoring_pc_counter == 0, (
             "Should have reset ignoring_pc_counter, and not incremented"
         )
@@ -1348,18 +1348,18 @@ class PolicyTest(unittest.TestCase):
         ), "Goal-state location is not as expected"
 
         # Pointing down
-        assert np.all(
-            np.isclose(motor_goal_direction, [0, -1.0, 0])
-        ), "Goal-state pose is not as expected"
+        assert np.all(np.isclose(motor_goal_direction, [0, -1.0, 0])), (
+            "Goal-state pose is not as expected"
+        )
 
         assert np.all(
             np.isclose(target_loc_hab, [0.1, 1.6 + surface_displacement, 0.2])
         ), "Habitat target location is not as expected"
 
         # Pointing down
-        assert np.all(
-            np.isclose(agent_direction_hab, [0, -1.0, 0])
-        ), "Habitat pose is not as expected"
+        assert np.all(np.isclose(agent_direction_hab, [0, -1.0, 0])), (
+            "Habitat pose is not as expected"
+        )
 
         # === Second, harder example ===
 
@@ -1382,9 +1382,9 @@ class PolicyTest(unittest.TestCase):
         ), "Goal-state location is not as expected"
 
         # Pointing up, because object is flipped in y-axis
-        assert np.all(
-            np.isclose(motor_goal_direction_2, [0, 1.0, 0])
-        ), "Goal-state pose is not as expected"
+        assert np.all(np.isclose(motor_goal_direction_2, [0, 1.0, 0])), (
+            "Goal-state pose is not as expected"
+        )
 
         # Surface displacement is negative, because object is flipped in x-axis
         assert np.all(
@@ -1392,9 +1392,9 @@ class PolicyTest(unittest.TestCase):
         ), "Habitat target location is not as expected"
 
         # Pointing up, because object is flipped in y-axis
-        assert np.all(
-            np.isclose(agent_direction_hab_2, [0, 1.0, 0])
-        ), "Habitat pose is not as expected"
+        assert np.all(np.isclose(agent_direction_hab_2, [0, 1.0, 0])), (
+            "Habitat pose is not as expected"
+        )
 
         # === Third, hardest example ===
 

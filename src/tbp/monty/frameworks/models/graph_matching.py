@@ -64,8 +64,7 @@ class MontyForGraphMatching(MontyBase):
             sm.pre_episode()
 
         logging.debug(
-            f"Models in memory: \
-            {self.learning_modules[0].get_all_known_object_ids()}"
+            f"Models in memory: {self.learning_modules[0].get_all_known_object_ids()}"
         )
 
     def send_vote_to_lm(self, lm, lm_id, combined_votes):
@@ -1299,7 +1298,7 @@ class GraphMemory(LMMemory):
         else:
             return sum(
                 self.get_num_nodes_in_graph(graph_id, input_channel)
-                    for input_channel in self.get_input_channels_in_graph(graph_id)
+                for input_channel in self.get_input_channels_in_graph(graph_id)
             )
 
     def get_features_at_node(self, graph_id, input_channel, node_id, feature_keys=None):

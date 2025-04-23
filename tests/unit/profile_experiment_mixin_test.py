@@ -48,12 +48,14 @@ class InheritanceProfileExperimentMixinTest(TestCase):
     @staticmethod
     def test_non_leftmost_subclassing_raises_error() -> None:
         with pytest.raises(TypeError):
+
             class BadSubclass(MontyExperiment, ProfileExperimentMixin):
                 pass
 
     @staticmethod
     def test_missing_experiment_base_raises_error() -> None:
         with pytest.raises(TypeError):
+
             class BadSubclass(ProfileExperimentMixin):
                 pass
 
@@ -117,12 +119,14 @@ class ProfileExperimentMixinTest(TestCase):
         for file in path.iterdir():
             if not file.is_file():
                 continue
-            self.assertGreater(file.stat().st_size, 0,
-                               "Empty profile file was unexpectedly generated.")
+            self.assertGreater(
+                file.stat().st_size, 0, "Empty profile file was unexpectedly generated."
+            )
             with file.open("r") as f:
                 first_line = f.readline().rstrip("\n")
-                self.assertEqual(first_line,
-                                 ",func,ncalls,ccalls,tottime,cumtime,callers")
+                self.assertEqual(
+                    first_line, ",func,ncalls,ccalls,tottime,cumtime,callers"
+                )
 
     def test_run_episode_is_profiled(self) -> None:
         pprint("...parsing experiment...")
@@ -133,10 +137,13 @@ class ProfileExperimentMixinTest(TestCase):
             exp.dataloader = exp.train_dataloader
             exp.run_episode()
 
-        self.assertSetEqual(self.get_profile_files(), {
-            "profile-setup_experiment.csv",
-            "profile-train_epoch_0_episode_0.csv",
-        })
+        self.assertSetEqual(
+            self.get_profile_files(),
+            {
+                "profile-setup_experiment.csv",
+                "profile-train_epoch_0_episode_0.csv",
+            },
+        )
         self.spot_check_profile_files()
 
     def test_run_train_epoch_is_profiled(self) -> None:
@@ -146,12 +153,15 @@ class ProfileExperimentMixinTest(TestCase):
             exp.model.set_experiment_mode("train")
             exp.run_epoch()
 
-        self.assertSetEqual(self.get_profile_files(), {
-            "profile-setup_experiment.csv",
-            "profile-train_epoch_0_episode_0.csv",
-            "profile-train_epoch_0_episode_1.csv",
-            "profile-train_epoch_0_episode_2.csv",
-        })
+        self.assertSetEqual(
+            self.get_profile_files(),
+            {
+                "profile-setup_experiment.csv",
+                "profile-train_epoch_0_episode_0.csv",
+                "profile-train_epoch_0_episode_1.csv",
+                "profile-train_epoch_0_episode_2.csv",
+            },
+        )
         self.spot_check_profile_files()
 
     def test_run_eval_epoch_is_profiled(self) -> None:
@@ -161,10 +171,13 @@ class ProfileExperimentMixinTest(TestCase):
             exp.model.set_experiment_mode("eval")
             exp.run_epoch()
 
-        self.assertSetEqual(self.get_profile_files(), {
-            "profile-setup_experiment.csv",
-            "profile-eval_epoch_0_episode_0.csv",
-            "profile-eval_epoch_0_episode_1.csv",
-            "profile-eval_epoch_0_episode_2.csv",
-        })
+        self.assertSetEqual(
+            self.get_profile_files(),
+            {
+                "profile-setup_experiment.csv",
+                "profile-eval_epoch_0_episode_0.csv",
+                "profile-eval_epoch_0_episode_1.csv",
+                "profile-eval_epoch_0_episode_2.csv",
+            },
+        )
         self.spot_check_profile_files()

@@ -15,6 +15,7 @@ import requests
 
 REQUEST_TIMEOUT_SECONDS = 60
 
+
 def get(url: str, headers=None):
     headers = headers or {}
     headers["Authorization"] = f"Basic {os.getenv('README_API_KEY')}"

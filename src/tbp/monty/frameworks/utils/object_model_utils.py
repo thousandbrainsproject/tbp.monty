@@ -75,9 +75,9 @@ def already_in_list(
         < graph_delta_thresholds["distance"]
     )
 
-    assert (
-        "on_object" not in graph_delta_thresholds.keys()
-    ), "Don't pass feature-change SM delta_thresholds for graph_delta_thresholds"
+    assert "on_object" not in graph_delta_thresholds.keys(), (
+        "Don't pass feature-change SM delta_thresholds for graph_delta_thresholds"
+    )
 
     # Iterate through old graph points that do match distance-wise, performing
     # additional checks
@@ -101,9 +101,9 @@ def already_in_list(
                     match_hue = features[feature][feature_idx][0]
                     current_hue = features[feature][query_id][0]
 
-                    assert np.all(
-                        np.array(graph_delta_thresholds[feature][1:]) == 1
-                    ), "Only considering hue"
+                    assert np.all(np.array(graph_delta_thresholds[feature][1:]) == 1), (
+                        "Only considering hue"
+                    )
 
                     hue_d = min(
                         abs(current_hue - match_hue),

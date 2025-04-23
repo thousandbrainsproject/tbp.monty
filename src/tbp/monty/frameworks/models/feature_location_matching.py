@@ -194,7 +194,7 @@ class FeatureGraphLM(GraphLM):
                             self.possible_poses[possible_obj].pop(path_id)
                             removed_locations = np.vstack([removed_locations, location])
                     logging.info(
-                        f"removed {removed_locations.shape[0]-1} locations from "
+                        f"removed {removed_locations.shape[0] - 1} locations from "
                         f"possible matches for {possible_obj}"
                     )
                     # NOTE: could also use votes to add hypotheses -> increase
@@ -424,13 +424,13 @@ class FeatureGraphLM(GraphLM):
             self.possible_poses[graph_id] = new_possible_poses
             if len(self.possible_poses[graph_id]) < 10:
                 logging.info(
-                    f"possible poses after matching for \
-                        {graph_id}: {self.get_possible_poses()[graph_id]}"
+                    f"possible poses after matching for "
+                    f"{graph_id}: {self.get_possible_poses()[graph_id]}"
                 )
         self.possible_paths[graph_id] = new_possible_paths
         logging.debug(
-            f"possible paths after matching for \
-                {graph_id}: {len(self.possible_paths[graph_id])}"
+            f"possible paths after matching for "
+            f"{graph_id}: {len(self.possible_paths[graph_id])}"
         )
         return len(self.possible_paths[graph_id]) > 0
 

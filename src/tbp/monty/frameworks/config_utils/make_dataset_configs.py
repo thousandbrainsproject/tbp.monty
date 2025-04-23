@@ -413,9 +413,11 @@ def get_omniglot_train_dataloader(num_versions, alphabet_ids, data_path=None):
         alphabet = alphabet_folders[a_idx]
         characters_in_a = list(os.listdir(data_path + "images_background/" + alphabet))
         for c_idx, character in enumerate(characters_in_a):
-            versions_of_char = list(os.listdir(
+            versions_of_char = list(
+                os.listdir(
                     data_path + "images_background/" + alphabet + "/" + character
-                ))
+                )
+            )
             for v_idx in range(len(versions_of_char)):
                 if v_idx < num_versions:
                     all_alphabet_idx.append(a_idx)
@@ -464,9 +466,11 @@ def get_omniglot_eval_dataloader(
         characters_in_a = list(os.listdir(data_path + "images_background/" + alphabet))
         for c_idx, character in enumerate(characters_in_a):
             if num_versions is None:
-                versions_of_char = list(os.listdir(
+                versions_of_char = list(
+                    os.listdir(
                         data_path + "images_background/" + alphabet + "/" + character
-                    ))
+                    )
+                )
                 num_versions = len(versions_of_char) - start_at_version
 
             for v_idx in range(num_versions + start_at_version):

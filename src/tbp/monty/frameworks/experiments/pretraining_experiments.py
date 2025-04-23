@@ -30,6 +30,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
     NOTE: This is not really an experiment, it is more a pretraining step to generate
     models that can then be loaded at the beginning of an experiment.
     """
+
     def __init__(self, config):
         # If we just add "pretrained" to dir at save time, then logs are stored in one
         # place and models in another. Changing the config ensures every reference to

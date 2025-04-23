@@ -65,9 +65,9 @@ class DetailedLoggingSM(SensorModuleBase):
     def state_dict(self):
         """Return state_dict."""
         # this is what is saved to detailed stats
-        assert len(self.sm_properties) == len(
-            self.raw_observations
-        ), "Should have a SM value for every set of observations."
+        assert len(self.sm_properties) == len(self.raw_observations), (
+            "Should have a SM value for every set of observations."
+        )
 
         return dict(
             raw_observations=self.raw_observations, sm_properties=self.sm_properties
@@ -242,9 +242,9 @@ class DetailedLoggingSM(SensorModuleBase):
         if "object_coverage" in self.features:
             # Last dimension is semantic ID (integer >0 if on any object)
             features["object_coverage"] = sum(obs_3d[:, 3] > 0) / len(obs_3d[:, 3])
-            assert (
-                features["object_coverage"] <= 1.0
-            ), "Coverage cannot be greater than 100%"
+            assert features["object_coverage"] <= 1.0, (
+                "Coverage cannot be greater than 100%"
+            )
 
         if obs_3d[center_id][3] or (
             not on_object_only and features["object_coverage"] > 0
@@ -483,9 +483,9 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             "coords_for_TM",
         ]
         for feature in features:
-            assert (
-                feature in possible_features
-            ), f"{feature} not part of {possible_features}"
+            assert feature in possible_features, (
+                f"{feature} not part of {possible_features}"
+            )
 
         self.features = features
         self.processed_obs = []
@@ -518,9 +518,9 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
 
     def state_dict(self):
         """Return state_dict."""
-        assert len(self.sm_properties) == len(
-            self.raw_observations
-        ), "Should have a SM value for every set of observations."
+        assert len(self.sm_properties) == len(self.raw_observations), (
+            "Should have a SM value for every set of observations."
+        )
 
         return dict(
             raw_observations=self.raw_observations,
@@ -702,7 +702,7 @@ class FeatureChangeSM(HabitatDistantPatchSM, NoiseMixin):
                 delta_change_sv = np.abs(last_feat[1:] - current_feat[1:])
                 for i, dc in enumerate(delta_change_sv):
                     if dc > self.delta_thresholds[feature][i + 1]:
-                        logging.debug(f"new point because of {feature} - {i+1}")
+                        logging.debug(f"new point because of {feature} - {i + 1}")
                         return True
 
             elif feature == "pose_vectors":

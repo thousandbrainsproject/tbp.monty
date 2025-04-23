@@ -108,7 +108,7 @@ class EncoderSDR:
     ):
         if sdr_on_bits >= sdr_length or sdr_on_bits <= 0:
             logging.warning(
-                f"Invalid sparsity: sdr_on_bits set to 2% ({round(sdr_length*0.02)})"
+                f"Invalid sparsity: sdr_on_bits set to 2% ({round(sdr_length * 0.02)})"
             )
             sdr_on_bits = round(sdr_length * 0.02)
 
