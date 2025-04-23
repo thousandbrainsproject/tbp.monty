@@ -465,8 +465,6 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         # Check if any LM's have output a goal-state (such as hypothesis-testing
         # goal-state)
-
-
         elif (
             isinstance(self.motor_system._policy, InformedPolicy)
             and self.motor_system._policy.use_goal_state_driven_actions

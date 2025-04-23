@@ -43,11 +43,12 @@ def create_config_with_get_good_view_positioning_procedure(config):
             use_get_good_view_positioning_procedure feature flag enabled.
     """
     config_with_get_good_view_positioning_procedure = copy.deepcopy(config)
-    eval_dataloader_args = copy.deepcopy(to_dict(config["eval_dataloader_args"]))
-    eval_dataloader_args["use_get_good_view_positioning_procedure"] = True
-    config_with_get_good_view_positioning_procedure["eval_dataloader_args"] = (
-        InformedEnvironmentDataLoaderEvalArgs(**eval_dataloader_args)
-    )
+    if hasattr(config, "eval_dataloader_args"):
+        eval_dataloader_args = copy.deepcopy(to_dict(config["eval_dataloader_args"]))
+        eval_dataloader_args["use_get_good_view_positioning_procedure"] = True
+        config_with_get_good_view_positioning_procedure["eval_dataloader_args"] = (
+            InformedEnvironmentDataLoaderEvalArgs(**eval_dataloader_args)
+        )
     train_dataloader_args = copy.deepcopy(to_dict(config["train_dataloader_args"]))
     train_dataloader_args["use_get_good_view_positioning_procedure"] = True
     config_with_get_good_view_positioning_procedure["train_dataloader_args"] = (
