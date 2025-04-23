@@ -911,7 +911,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         ]:
             with MontyObjectRecognitionExperiment(c) as exp:
                 pprint("...training...")
-                # First episode will be used to learn object (no_match is triggered before  # noqa: E501
+                # First episode will be used to learn object (no_match is triggered before
                 # min_steps is reached and the sensor moves off the object). In the second  # noqa: E501
                 # episode the sensor moves off the sphere on episode steps 6+
 
