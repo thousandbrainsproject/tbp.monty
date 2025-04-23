@@ -355,6 +355,13 @@ class EnvironmentDataloaderMultiObjectArgs:
     object_init_sampler: Callable
 
 
+@dataclass
+class InformedEnvironmentDataloaderMultiObjectArgs(
+    EnvironmentDataloaderMultiObjectArgs
+):
+    use_get_good_view_positioning_procedure: bool = False
+
+
 def get_object_names_by_idx(
     start, stop, list_of_indices=None, object_list=SHUFFLED_YCB_OBJECTS
 ):
