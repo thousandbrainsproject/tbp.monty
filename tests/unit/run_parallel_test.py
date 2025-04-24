@@ -166,218 +166,226 @@ class RunParallelTest(unittest.TestCase):
                 self.assertEqual(ptarget[key], starget[key])
 
     def test_parallel_runs_n_epochs_lt(self):
-        for use_get_good_view_positioning_procedure in [False, True]:
-            #####
-            # Train
-            #####
+        #####
+        # Train
+        #####
 
-            ###
-            # Run training like normal in serial
-            ###
-            pprint("...Setting up serial experiment...")
-            config = self.supervised_pre_training
-            if use_get_good_view_positioning_procedure:
-                config = create_config_with_get_good_view_positioning_procedure(config)
-            with MontySupervisedObjectPretrainingExperiment(config) as exp:
-                exp.model.set_experiment_mode("train")
+        ###
+        # Run training like normal in serial
+        ###
+        pprint("...Setting up serial experiment...")
+        config = self.supervised_pre_training
+        with MontySupervisedObjectPretrainingExperiment(config) as exp:
+            exp.model.set_experiment_mode("train")
 
-                pprint("...Training in serial...")
-                exp.train()
+            pprint("...Training in serial...")
+            exp.train()
 
-            ###
-            # Run training with run_parallel
-            ###
-            pprint("...Setting up parallel experiment...")
-            run_parallel(
-                exp=self.supervised_pre_training,
-                experiment="unittest_supervised_pre_training",
-                num_parallel=1,
-                quiet_habitat_logs=True,
-                print_cfg=False,
-                is_unittest=True,
+        ###
+        # Run training with run_parallel
+        ###
+        pprint("...Setting up parallel experiment...")
+        run_parallel(
+            exp=self.supervised_pre_training,
+            experiment="unittest_supervised_pre_training",
+            num_parallel=1,
+            quiet_habitat_logs=True,
+            print_cfg=False,
+            is_unittest=True,
+        )
+
+        ###
+        # Compare results
+        ###
+        parallel_model = torch.load(
+            os.path.join(
+                self.output_dir,
+                "unittest_supervised_pre_training",
+                "pretrained",
+                "model.pt",
             )
+        )
+        serial_model = torch.load(
+            os.path.join(self.output_dir, "pretrained", "model.pt")
+        )
 
-            ###
-            # Compare results
-            ###
-            parallel_model = torch.load(
-                os.path.join(
-                    self.output_dir,
-                    "unittest_supervised_pre_training",
-                    "pretrained",
-                    "model.pt",
-                )
+        # Same objects
+        self.assertEqual(
+            parallel_model["lm_dict"][0].keys(), serial_model["lm_dict"][0].keys()
+        )
+
+        # Same number of features
+        self.assertEqual(
+            parallel_model["lm_dict"][0]["graph_memory"]["capsule3DSolid"][
+                "patch"
+            ].x.size(1),
+            serial_model["lm_dict"][0]["graph_memory"]["capsule3DSolid"][
+                "patch"
+            ].x.size(1),
+        )
+
+        # Same number of data points
+        self.assertEqual(
+            parallel_model["lm_dict"][0]["graph_memory"]["capsule3DSolid"][
+                "patch"
+            ].num_nodes,
+            serial_model["lm_dict"][0]["graph_memory"]["capsule3DSolid"][
+                "patch"
+            ].num_nodes,
+        )
+
+        #####
+        # Testing
+        #####
+
+        ###
+        # n_eval_epochs = len(rotations)
+        ###
+
+        # In serial like normal
+        pprint("...Setting up serial experiment...")
+        config = self.eval_config
+        with MontyObjectRecognitionExperiment(config) as eval_exp:
+            pprint("...Evaluating in serial...")
+            eval_exp.evaluate()
+
+        # Using run_parallel
+        pprint("...Setting up parallel experiment...")
+        run_parallel(
+            exp=self.eval_config,
+            experiment="unittest_eval_eq",
+            num_parallel=1,
+            quiet_habitat_logs=True,
+            print_cfg=False,
+            is_unittest=True,
+        )
+
+        eval_dir = os.path.join(self.output_dir, "eval")
+        parallel_eval_dir = os.path.join(eval_dir, "unittest_eval_eq")
+        serial_repro_dir = os.path.join(eval_dir, "reproduce_episode_data")
+        parallel_repro_dir = os.path.join(parallel_eval_dir, "reproduce_episode_data")
+
+        # Check that reproducibility logger has same files for both
+        self.check_reproducibility_logs(serial_repro_dir, parallel_repro_dir)
+
+        # Check that csv files are the same
+        # Note that you can't easily do this if they actually run in parallel because
+        # you don't know the execution order so it will have the same data, just
+        # different order
+
+        scsv = pd.read_csv(os.path.join(eval_dir, "eval_stats.csv"))
+        pcsv = pd.read_csv(os.path.join(parallel_eval_dir, "eval_stats.csv"))
+
+        # We have to drop these columns because they are not the same in the parallel
+        # and serial runs. In particular, 'stepwise_performance' and
+        # 'stepwise_target_object' are derived from the mapping between semantic IDs to
+        #  names which depend on the number of objects in the data loader, and data
+        # loaders only have one object in parallel experiments.
+        for col in ["time", "stepwise_performance", "stepwise_target_object"]:
+            scsv.drop(columns=col, inplace=True)
+            pcsv.drop(columns=col, inplace=True)
+
+        self.assertTrue(pcsv.equals(scsv))
+
+        ###
+        # n_eval_epochs < len(rotations)
+        ###
+
+        # In serial like normal
+        pprint("...Setting up serial experiment...")
+        config = self.eval_config_lt
+        with MontyObjectRecognitionExperiment(config) as eval_exp_lt:
+            pprint("...Evaluating in serial...")
+            eval_exp_lt.evaluate()
+
+        # Using run_parallel
+        pprint("...Setting up parallel experiment...")
+        run_parallel(
+            exp=self.eval_config_lt,
+            experiment="unittest_eval_lt",
+            num_parallel=1,
+            quiet_habitat_logs=True,
+            print_cfg=False,
+            is_unittest=True,
+        )
+
+        eval_dir_lt = self.output_dir_lt
+        parallel_eval_dir_lt = os.path.join(eval_dir_lt, "unittest_eval_lt")
+        serial_repro_dir_lt = os.path.join(eval_dir_lt, "reproduce_episode_data")
+        parallel_repro_dir_lt = os.path.join(
+            parallel_eval_dir_lt, "reproduce_episode_data"
+        )
+
+        # Check that reproducibility logger has same files for both
+        self.check_reproducibility_logs(serial_repro_dir_lt, parallel_repro_dir_lt)
+
+        scsv_lt = pd.read_csv(os.path.join(eval_dir_lt, "eval_stats.csv"))
+        pcsv_lt = pd.read_csv(os.path.join(parallel_eval_dir_lt, "eval_stats.csv"))
+
+        # Remove columns that are not the same in the parallel and serial runs.
+        for col in ["time", "stepwise_performance", "stepwise_target_object"]:
+            scsv_lt.drop(columns=col, inplace=True)
+            pcsv_lt.drop(columns=col, inplace=True)
+
+        self.assertTrue(pcsv_lt.equals(scsv_lt))
+
+        # In serial like normal
+        pprint("...Setting up serial experiment...")
+        config = self.eval_config_gt
+        with MontyObjectRecognitionExperiment(config) as eval_exp_gt:
+            pprint("...Evaluating in serial...")
+            eval_exp_gt.evaluate()
+
+        # Using run_parallel
+        pprint("...Setting up parallel experiment...")
+        run_parallel(
+            exp=self.eval_config_gt,
+            experiment="unittest_eval_gt",
+            num_parallel=1,
+            quiet_habitat_logs=True,
+            print_cfg=False,
+            is_unittest=True,
+        )
+
+        eval_dir_gt = self.output_dir_gt
+        parallel_eval_dir_gt = os.path.join(eval_dir_gt, "unittest_eval_gt")
+        serial_repro_dir_gt = os.path.join(eval_dir_gt, "reproduce_episode_data")
+        parallel_repro_dir_gt = os.path.join(
+            parallel_eval_dir_gt, "reproduce_episode_data"
+        )
+
+        # Check that reproducibility logger has same files for both
+        self.check_reproducibility_logs(serial_repro_dir_gt, parallel_repro_dir_gt)
+
+        scsv_gt = pd.read_csv(os.path.join(eval_dir_gt, "eval_stats.csv"))
+        pcsv_gt = pd.read_csv(os.path.join(parallel_eval_dir_gt, "eval_stats.csv"))
+
+        for col in ["time", "stepwise_performance", "stepwise_target_object"]:
+            scsv_gt.drop(columns=col, inplace=True)
+            pcsv_gt.drop(columns=col, inplace=True)
+
+        self.assertTrue(pcsv_gt.equals(scsv_gt))
+
+        shutil.rmtree(self.output_dir)
+
+
+class RunParallelTestWithGetGoodViewPositioningProcedure(RunParallelTest):
+    def setUp(self):
+        super().setUp()
+        self.supervised_pre_training = (
+            create_config_with_get_good_view_positioning_procedure(
+                self.supervised_pre_training
             )
-            serial_model = torch.load(
-                os.path.join(self.output_dir, "pretrained", "model.pt")
-            )
-
-            # Same objects
-            self.assertEqual(
-                parallel_model["lm_dict"][0].keys(), serial_model["lm_dict"][0].keys()
-            )
-
-            # Same number of features
-            self.assertEqual(
-                parallel_model["lm_dict"][0]["graph_memory"]["capsule3DSolid"][
-                    "patch"
-                ].x.size(1),
-                serial_model["lm_dict"][0]["graph_memory"]["capsule3DSolid"][
-                    "patch"
-                ].x.size(1),
-            )
-
-            # Same number of data points
-            self.assertEqual(
-                parallel_model["lm_dict"][0]["graph_memory"]["capsule3DSolid"][
-                    "patch"
-                ].num_nodes,
-                serial_model["lm_dict"][0]["graph_memory"]["capsule3DSolid"][
-                    "patch"
-                ].num_nodes,
-            )
-
-            #####
-            # Testing
-            #####
-
-            ###
-            # n_eval_epochs = len(rotations)
-            ###
-
-            # In serial like normal
-            pprint("...Setting up serial experiment...")
-            config = self.eval_config
-            if use_get_good_view_positioning_procedure:
-                config = create_config_with_get_good_view_positioning_procedure(config)
-            with MontyObjectRecognitionExperiment(config) as eval_exp:
-                pprint("...Evaluating in serial...")
-                eval_exp.evaluate()
-
-            # Using run_parallel
-            pprint("...Setting up parallel experiment...")
-            run_parallel(
-                exp=self.eval_config,
-                experiment="unittest_eval_eq",
-                num_parallel=1,
-                quiet_habitat_logs=True,
-                print_cfg=False,
-                is_unittest=True,
-            )
-
-            eval_dir = os.path.join(self.output_dir, "eval")
-            parallel_eval_dir = os.path.join(eval_dir, "unittest_eval_eq")
-            serial_repro_dir = os.path.join(eval_dir, "reproduce_episode_data")
-            parallel_repro_dir = os.path.join(
-                parallel_eval_dir, "reproduce_episode_data"
-            )
-
-            # Check that reproducibility logger has same files for both
-            self.check_reproducibility_logs(serial_repro_dir, parallel_repro_dir)
-
-            # Check that csv files are the same
-            # Note that you can't easily do this if they actually run in parallel because  # noqa: E501
-            # you don't know the execution order so it will have the same data, just
-            # different order
-
-            scsv = pd.read_csv(os.path.join(eval_dir, "eval_stats.csv"))
-            pcsv = pd.read_csv(os.path.join(parallel_eval_dir, "eval_stats.csv"))
-
-            # We have to drop these columns because they are not the same in the parallel  # noqa: E501
-            # and serial runs. In particular, 'stepwise_performance' and
-            # 'stepwise_target_object' are derived from the mapping between semantic IDs to   # noqa: E501
-            #  names which depend on the number of objects in the data loader, and data
-            # loaders only have one object in parallel experiments.
-            for col in ["time", "stepwise_performance", "stepwise_target_object"]:
-                scsv.drop(columns=col, inplace=True)
-                pcsv.drop(columns=col, inplace=True)
-
-            self.assertTrue(pcsv.equals(scsv))
-
-            ###
-            # n_eval_epochs < len(rotations)
-            ###
-
-            # In serial like normal
-            pprint("...Setting up serial experiment...")
-            config = self.eval_config_lt
-            if use_get_good_view_positioning_procedure:
-                config = create_config_with_get_good_view_positioning_procedure(config)
-            with MontyObjectRecognitionExperiment(config) as eval_exp_lt:
-                pprint("...Evaluating in serial...")
-                eval_exp_lt.evaluate()
-
-            # Using run_parallel
-            pprint("...Setting up parallel experiment...")
-            run_parallel(
-                exp=self.eval_config_lt,
-                experiment="unittest_eval_lt",
-                num_parallel=1,
-                quiet_habitat_logs=True,
-                print_cfg=False,
-                is_unittest=True,
-            )
-
-            eval_dir_lt = self.output_dir_lt
-            parallel_eval_dir_lt = os.path.join(eval_dir_lt, "unittest_eval_lt")
-            serial_repro_dir_lt = os.path.join(eval_dir_lt, "reproduce_episode_data")
-            parallel_repro_dir_lt = os.path.join(
-                parallel_eval_dir_lt, "reproduce_episode_data"
-            )
-
-            # Check that reproducibility logger has same files for both
-            self.check_reproducibility_logs(serial_repro_dir_lt, parallel_repro_dir_lt)
-
-            scsv_lt = pd.read_csv(os.path.join(eval_dir_lt, "eval_stats.csv"))
-            pcsv_lt = pd.read_csv(os.path.join(parallel_eval_dir_lt, "eval_stats.csv"))
-
-            # Remove columns that are not the same in the parallel and serial runs.
-            for col in ["time", "stepwise_performance", "stepwise_target_object"]:
-                scsv_lt.drop(columns=col, inplace=True)
-                pcsv_lt.drop(columns=col, inplace=True)
-
-            self.assertTrue(pcsv_lt.equals(scsv_lt))
-
-            # In serial like normal
-            pprint("...Setting up serial experiment...")
-            config = self.eval_config_gt
-            if use_get_good_view_positioning_procedure:
-                config = create_config_with_get_good_view_positioning_procedure(config)
-            with MontyObjectRecognitionExperiment(config) as eval_exp_gt:
-                pprint("...Evaluating in serial...")
-                eval_exp_gt.evaluate()
-
-            # Using run_parallel
-            pprint("...Setting up parallel experiment...")
-            run_parallel(
-                exp=self.eval_config_gt,
-                experiment="unittest_eval_gt",
-                num_parallel=1,
-                quiet_habitat_logs=True,
-                print_cfg=False,
-                is_unittest=True,
-            )
-
-            eval_dir_gt = self.output_dir_gt
-            parallel_eval_dir_gt = os.path.join(eval_dir_gt, "unittest_eval_gt")
-            serial_repro_dir_gt = os.path.join(eval_dir_gt, "reproduce_episode_data")
-            parallel_repro_dir_gt = os.path.join(
-                parallel_eval_dir_gt, "reproduce_episode_data"
-            )
-
-            # Check that reproducibility logger has same files for both
-            self.check_reproducibility_logs(serial_repro_dir_gt, parallel_repro_dir_gt)
-
-            scsv_gt = pd.read_csv(os.path.join(eval_dir_gt, "eval_stats.csv"))
-            pcsv_gt = pd.read_csv(os.path.join(parallel_eval_dir_gt, "eval_stats.csv"))
-
-            for col in ["time", "stepwise_performance", "stepwise_target_object"]:
-                scsv_gt.drop(columns=col, inplace=True)
-                pcsv_gt.drop(columns=col, inplace=True)
-
-            self.assertTrue(pcsv_gt.equals(scsv_gt))
-
-            shutil.rmtree(self.output_dir)
+        )
+        self.eval_config = create_config_with_get_good_view_positioning_procedure(
+            self.eval_config
+        )
+        self.eval_config_lt = create_config_with_get_good_view_positioning_procedure(
+            self.eval_config_lt
+        )
+        self.eval_config_gt = create_config_with_get_good_view_positioning_procedure(
+            self.eval_config_gt
+        )
 
 
 if __name__ == "__main__":

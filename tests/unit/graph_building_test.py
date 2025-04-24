@@ -226,22 +226,14 @@ class GraphLearningTest(unittest.TestCase):
             "node ids not stored in graph",
         )
 
-    def build_and_save_supervised_graph(
-        self, use_get_good_view_positioning_procedure=False
-    ):
+    def build_and_save_supervised_graph(self):
         """Builds and saves a supervised graph.
-
-        Args:
-            use_get_good_view_positioning_procedure (bool): Whether to use the
-                GetGoodView positioning procedure.
 
         Returns:
             exp (MontySupervisedObjectPretrainingExperiment): The experiment.
         """
         pprint("...parsing experiment...")
         config = self.supervised_pre_training_in_habitat
-        if use_get_good_view_positioning_procedure:
-            config = create_config_with_get_good_view_positioning_procedure(config)
         with MontySupervisedObjectPretrainingExperiment(config) as exp:
             exp.model.set_experiment_mode("train")
 
@@ -249,22 +241,14 @@ class GraphLearningTest(unittest.TestCase):
             exp.train()
         return exp
 
-    def build_and_save_supervised_graph_feat(
-        self, use_get_good_view_positioning_procedure=False
-    ):
+    def build_and_save_supervised_graph_feat(self):
         """Builds and saves a supervised graph with feature matching.
-
-        Args:
-            use_get_good_view_positioning_procedure (bool): Whether to use the
-                GetGoodView positioning procedure.
 
         Returns:
             exp (MontySupervisedObjectPretrainingExperiment): The experiment.
         """
         pprint("...parsing experiment...")
         config = self.spth_feat
-        if use_get_good_view_positioning_procedure:
-            config = create_config_with_get_good_view_positioning_procedure(config)
         with MontySupervisedObjectPretrainingExperiment(config) as exp:
             exp.model.set_experiment_mode("train")
 
@@ -281,151 +265,148 @@ class GraphLearningTest(unittest.TestCase):
         self.assertEqual(get_correct_k_n(5, 2), None)
 
     def test_can_build_graph_habitat_supervised(self):
-        for use_get_good_view_positioning_procedure in [False, True]:
-            exp = self.build_and_save_supervised_graph(
-                use_get_good_view_positioning_procedure
-            )
-            pprint("...Checking graphs...")
+        exp = self.build_and_save_supervised_graph()
+        pprint("...Checking graphs...")
 
-            self.assertListEqual(
-                self.supervised_pre_training_in_habitat[
-                    "train_dataloader_args"
-                ].object_names,
-                exp.model.learning_modules[0].get_all_known_object_ids(),
-                "Object ids of learned objects and graphs in memory.",
+        self.assertListEqual(
+            self.supervised_pre_training_in_habitat[
+                "train_dataloader_args"
+            ].object_names,
+            exp.model.learning_modules[0].get_all_known_object_ids(),
+            "Object ids of learned objects and graphs in memory.",
+        )
+        for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
+            graph = exp.model.learning_modules[0].get_graph(
+                graph_id, input_channel="first"
             )
+            # Make sure that all features that are extracted by the SM are stored in
+            # the graph.
+            self.check_graph_formatting(
+                graph,
+                features_to_check=exp.model.sensor_modules[0].features,
+            )
+            self.assertIsNot(
+                graph.edge_index,
+                None,
+                "graph contains no edges",
+            )
+            self.assertEqual(
+                graph.edge_attr.shape[1],
+                3,
+                "Edge attributes don't store 3d displacements",
+            )
+
+    def test_can_load_disp_graph(self):
+        self.build_and_save_supervised_graph()
+        pprint("...parsing experiment...")
+        config = copy.deepcopy(self.load_habitat_config)
+        with MontyObjectRecognitionExperiment(config) as exp:
+            pprint("checking loaded graphs")
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
                     graph_id, input_channel="first"
                 )
-                # Make sure that all features that are extracted by the SM are stored in
-                # the graph.
                 self.check_graph_formatting(
                     graph,
                     features_to_check=exp.model.sensor_modules[0].features,
                 )
-                self.assertIsNot(
-                    graph.edge_index,
-                    None,
-                    "graph contains no edges",
+            pprint("...evaluating on loaded models...")
+            exp.evaluate()
+
+    def test_can_load_disp_graph_for_ppf_matching(self):
+        self.build_and_save_supervised_graph()
+        pprint("...parsing experiment...")
+        config = copy.deepcopy(self.load_habitat_for_ppf)
+        with MontyObjectRecognitionExperiment(config) as exp:
+            pprint("checking loaded graphs")
+            for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
+                graph = exp.model.learning_modules[0].get_graph(
+                    graph_id, input_channel="first"
+                )
+                self.check_graph_formatting(
+                    graph,
+                    features_to_check=exp.model.sensor_modules[0].features,
+                )
+                self.assertEqual(
+                    graph.edge_attr.shape[1],
+                    4,
+                    "Edge attributes don't store 4d PPF (should be added when loading)",
+                )
+            pprint("...evaluating on loaded models...")
+            exp.evaluate()
+
+    def test_can_load_disp_graph_for_feature_matching(self):
+        self.build_and_save_supervised_graph()
+        pprint("...parsing experiment...")
+        config = copy.deepcopy(self.load_habitat_for_feat)
+        with MontyObjectRecognitionExperiment(config) as exp:
+            pprint("checking loaded graphs")
+            for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
+                graph = exp.model.learning_modules[0].get_graph(
+                    graph_id, input_channel="first"
+                )
+                self.check_graph_formatting(
+                    graph,
+                    features_to_check=exp.model.sensor_modules[0].features,
                 )
                 self.assertEqual(
                     graph.edge_attr.shape[1],
                     3,
                     "Edge attributes don't store 3d displacements",
                 )
-
-    def test_can_load_disp_graph(self):
-        for use_get_good_view_positioning_procedure in [False, True]:
-            self.build_and_save_supervised_graph(
-                use_get_good_view_positioning_procedure
-            )
-            pprint("...parsing experiment...")
-            config = copy.deepcopy(self.load_habitat_config)
-            if use_get_good_view_positioning_procedure:
-                config = create_config_with_get_good_view_positioning_procedure(config)
-            with MontyObjectRecognitionExperiment(config) as exp:
-                pprint("checking loaded graphs")
-                for graph_id in exp.model.learning_modules[
-                    0
-                ].get_all_known_object_ids():
-                    graph = exp.model.learning_modules[0].get_graph(
-                        graph_id, input_channel="first"
-                    )
-                    self.check_graph_formatting(
-                        graph,
-                        features_to_check=exp.model.sensor_modules[0].features,
-                    )
-                pprint("...evaluating on loaded models...")
-                exp.evaluate()
-
-    def test_can_load_disp_graph_for_ppf_matching(self):
-        for use_get_good_view_positioning_procedure in [False, True]:
-            self.build_and_save_supervised_graph(
-                use_get_good_view_positioning_procedure
-            )
-            pprint("...parsing experiment...")
-            config = copy.deepcopy(self.load_habitat_for_ppf)
-            if use_get_good_view_positioning_procedure:
-                config = create_config_with_get_good_view_positioning_procedure(config)
-            with MontyObjectRecognitionExperiment(config) as exp:
-                pprint("checking loaded graphs")
-                for graph_id in exp.model.learning_modules[
-                    0
-                ].get_all_known_object_ids():
-                    graph = exp.model.learning_modules[0].get_graph(
-                        graph_id, input_channel="first"
-                    )
-                    self.check_graph_formatting(
-                        graph,
-                        features_to_check=exp.model.sensor_modules[0].features,
-                    )
-                    self.assertEqual(
-                        graph.edge_attr.shape[1],
-                        4,
-                        "Edge attributes don't store 4d PPF (should be added when loading)",  # noqa: E501
-                    )
-                pprint("...evaluating on loaded models...")
-                exp.evaluate()
-
-    def test_can_load_disp_graph_for_feature_matching(self):
-        for use_get_good_view_positioning_procedure in [False, True]:
-            self.build_and_save_supervised_graph(
-                use_get_good_view_positioning_procedure
-            )
-            pprint("...parsing experiment...")
-            config = copy.deepcopy(self.load_habitat_for_feat)
-            if use_get_good_view_positioning_procedure:
-                config = create_config_with_get_good_view_positioning_procedure(config)
-            with MontyObjectRecognitionExperiment(config) as exp:
-                pprint("checking loaded graphs")
-                for graph_id in exp.model.learning_modules[
-                    0
-                ].get_all_known_object_ids():
-                    graph = exp.model.learning_modules[0].get_graph(
-                        graph_id, input_channel="first"
-                    )
-                    self.check_graph_formatting(
-                        graph,
-                        features_to_check=exp.model.sensor_modules[0].features,
-                    )
-                    self.assertEqual(
-                        graph.edge_attr.shape[1],
-                        3,
-                        "Edge attributes don't store 3d displacements",
-                    )
-                pprint("...evaluating on loaded models...")
-                exp.evaluate()
+            pprint("...evaluating on loaded models...")
+            exp.evaluate()
 
     def test_can_extend_and_save_feat_graph(self):
-        for use_get_good_view_positioning_procedure in [False, True]:
-            self.build_and_save_supervised_graph_feat(
-                use_get_good_view_positioning_procedure
+        self.build_and_save_supervised_graph_feat()
+        config = copy.deepcopy(self.load_habitat_for_feat)
+        with MontyObjectRecognitionExperiment(config) as exp:
+            pprint("checking loaded graphs")
+            for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
+                graph = exp.model.learning_modules[0].get_graph(
+                    graph_id, input_channel="first"
+                )
+                self.check_graph_formatting(
+                    graph,
+                    features_to_check=exp.model.sensor_modules[0].features,
+                )
+                # TODO: not sure if we want this check. Right now it doesn't but I
+                # also don't see a reason why it couldn't in the future.
+                self.assertIs(
+                    graph.edge_attr,
+                    None,
+                    "feature at location graph should not contain edges.",
+                )
+            pprint("...evaluating on loaded models...")
+            exp.train()
+
+
+class GraphLearningTestWithGetGoodViewPositioningProcedure(GraphLearningTest):
+    def setUp(self):
+        super().setUp()
+        self.supervised_pre_training_in_habitat = (
+            create_config_with_get_good_view_positioning_procedure(
+                self.supervised_pre_training_in_habitat
             )
-            config = copy.deepcopy(self.load_habitat_for_feat)
-            if use_get_good_view_positioning_procedure:
-                config = create_config_with_get_good_view_positioning_procedure(config)
-            with MontyObjectRecognitionExperiment(config) as exp:
-                pprint("checking loaded graphs")
-                for graph_id in exp.model.learning_modules[
-                    0
-                ].get_all_known_object_ids():
-                    graph = exp.model.learning_modules[0].get_graph(
-                        graph_id, input_channel="first"
-                    )
-                    self.check_graph_formatting(
-                        graph,
-                        features_to_check=exp.model.sensor_modules[0].features,
-                    )
-                    # TODO: not sure if we want this check. Right now it doesn't but I
-                    # also don't see a reason why it couldn't in the future.
-                    self.assertIs(
-                        graph.edge_attr,
-                        None,
-                        "feature at location graph should not contain edges.",
-                    )
-                pprint("...evaluating on loaded models...")
-                exp.train()
+        )
+        self.load_habitat_config = (
+            create_config_with_get_good_view_positioning_procedure(
+                self.load_habitat_config
+            )
+        )
+        self.load_habitat_for_ppf = (
+            create_config_with_get_good_view_positioning_procedure(
+                self.load_habitat_for_ppf
+            )
+        )
+        self.load_habitat_for_feat = (
+            create_config_with_get_good_view_positioning_procedure(
+                self.load_habitat_for_feat
+            )
+        )
+        self.spth_feat = create_config_with_get_good_view_positioning_procedure(
+            self.spth_feat
+        )
 
 
 if __name__ == "__main__":

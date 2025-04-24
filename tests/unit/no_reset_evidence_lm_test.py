@@ -172,64 +172,70 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         unsupervised Inference Experiment. Disabling the reset logic does not support
         training at the moment.
         """
-        for use_get_good_view_positioning_procedure in [False, True]:
-            train_config = copy.deepcopy(self.pretraining_configs)
-            if use_get_good_view_positioning_procedure:
-                train_config = create_config_with_get_good_view_positioning_procedure(
-                    train_config
-                )
-            with MontySupervisedObjectPretrainingExperiment(train_config) as train_exp:
-                train_exp.train()
+        train_config = copy.deepcopy(self.pretraining_configs)
+        with MontySupervisedObjectPretrainingExperiment(train_config) as train_exp:
+            train_exp.train()
 
-            eval_config = copy.deepcopy(self.unsupervised_evidence_config)
-            if use_get_good_view_positioning_procedure:
-                eval_config = create_config_with_get_good_view_positioning_procedure(
-                    eval_config
-                )
-            with MontyObjectRecognitionExperiment(eval_config) as eval_exp:
-                # load the eval experiment with the pretrained models
-                pretrained_models = train_exp.model.learning_modules[0].state_dict()
-                eval_exp.model.learning_modules[0].load_state_dict(pretrained_models)
+        eval_config = copy.deepcopy(self.unsupervised_evidence_config)
+        with MontyObjectRecognitionExperiment(eval_config) as eval_exp:
+            # load the eval experiment with the pretrained models
+            pretrained_models = train_exp.model.learning_modules[0].state_dict()
+            eval_exp.model.learning_modules[0].load_state_dict(pretrained_models)
 
-                eval_exp.model.set_experiment_mode("eval")
-                eval_exp.pre_epoch()
+            eval_exp.model.set_experiment_mode("eval")
+            eval_exp.pre_epoch()
 
-                # first episode
-                self.assertEqual(
-                    len(eval_exp.model.learning_modules[0].evidence),
-                    0,
-                    "evidence dict should be empty before the first episode",
-                )
-                eval_exp.pre_episode()
-                episode_1_steps = eval_exp.run_episode_steps()
-                eval_exp.post_episode(episode_1_steps)
-                post_episode1_evidence = copy.deepcopy(
-                    eval_exp.model.learning_modules[0].evidence
-                )
-                self.assertGreater(
-                    len(post_episode1_evidence),
-                    0,
-                    "evidence dict should now contain evidence values of the first episode",  # noqa: E501
-                )
+            # first episode
+            self.assertEqual(
+                len(eval_exp.model.learning_modules[0].evidence),
+                0,
+                "evidence dict should be empty before the first episode",
+            )
+            eval_exp.pre_episode()
+            episode_1_steps = eval_exp.run_episode_steps()
+            eval_exp.post_episode(episode_1_steps)
+            post_episode1_evidence = copy.deepcopy(
+                eval_exp.model.learning_modules[0].evidence
+            )
+            self.assertGreater(
+                len(post_episode1_evidence),
+                0,
+                "evidence dict should now contain evidence values of the first episode",
+            )
 
-                # second episode
-                eval_exp.pre_episode()
-                self.assert_dicts_equal(
-                    post_episode1_evidence,
-                    eval_exp.model.learning_modules[0].evidence,
-                    "evidence dict should not change between episodes",
-                )
-                episode_2_steps = eval_exp.run_episode_steps()
-                eval_exp.post_episode(episode_2_steps)
-                self.assertGreater(
-                    len(eval_exp.model.learning_modules[0].evidence),
-                    0,
-                    "evidence dict should contain evidence values",
-                )
-                eval_exp.post_epoch()
+            # second episode
+            eval_exp.pre_episode()
+            self.assert_dicts_equal(
+                post_episode1_evidence,
+                eval_exp.model.learning_modules[0].evidence,
+                "evidence dict should not change between episodes",
+            )
+            episode_2_steps = eval_exp.run_episode_steps()
+            eval_exp.post_episode(episode_2_steps)
+            self.assertGreater(
+                len(eval_exp.model.learning_modules[0].evidence),
+                0,
+                "evidence dict should contain evidence values",
+            )
+            eval_exp.post_epoch()
 
     def tearDown(self):
         shutil.rmtree(self.output_dir)
+
+
+class NoResetEvidenceLMTestWithGetGoodViewPositioningProcedure(NoResetEvidenceLMTest):
+    def setUp(self):
+        super().setUp()
+        self.pretraining_configs = (
+            create_config_with_get_good_view_positioning_procedure(
+                self.pretraining_configs
+            )
+        )
+        self.unsupervised_evidence_config = (
+            create_config_with_get_good_view_positioning_procedure(
+                self.unsupervised_evidence_config
+            )
+        )
 
 
 if __name__ == "__main__":
