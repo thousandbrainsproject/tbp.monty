@@ -17,7 +17,18 @@ import logging
 import math
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Literal, Mapping, Optional, Tuple, Type, cast
+from typing import (
+    Any,
+    Dict,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+    override,
+)
 
 import numpy as np
 import quaternion as qt
@@ -476,7 +487,8 @@ class GetGoodView(PositioningProcedure):
 
         This function computes the amount needed to look down and left in order
         for the sensor to be aimed at the target. The returned amounts are relative
-        to the agent's current position and rotation.
+        to the agent's current position and rotation. Looking up and right is done
+        by returning negative amounts.
 
         TODO: Test whether this function works when the agent is facing in the
         positive z-direction. It may be fine, but there were some adjustments to
@@ -494,21 +506,14 @@ class GetGoodView(PositioningProcedure):
             down_amount: Amount to look down (degrees).
             left_amount: Amount to look left (degrees).
         """
-        # Get the sensor's rotation relative to the world.
-        agent_state = self.get_agent_state(state)
-        # - The agent's rotation relative to the world.
-        agent_rotation = agent_state["rotation"]
-        # - The sensor's rotation relative to the agent.
-        sensor_rotation = agent_state["sensors"][f"{self._sensor_id}.depth"]["rotation"]
-        # - The sensor's rotation relative to the world.
-        sensor_rotation_rel_world = agent_rotation * sensor_rotation
+        sensor_rotation_rel_world = self.sensor_rotation_relative_to_world(state)
 
-        # Invert the location to align it with sensor's rotation.
+        # Invert the sensor rotation and apply it to the relative location
         w, x, y, z = qt.as_float_array(sensor_rotation_rel_world)
         rotation = rot.from_quat([x, y, z, w])
         rotated_location = rotation.inv().apply(relative_location)
 
-        # Calculate the necessary rotation amounts.
+        # Calculate the necessary rotation amounts and convert them to degrees.
         x_rot, y_rot, z_rot = rotated_location
         left_amount = -np.degrees(np.arctan2(x_rot, -z_rot))
         distance_horiz = np.sqrt(x_rot**2 + z_rot**2)
@@ -702,6 +707,7 @@ class GetGoodView(PositioningProcedure):
             TurnLeft(agent_id=self.agent_id, rotation_degrees=left_amount),
         ]
 
+    @override
     def positioning_call(
         self,
         observation: Mapping,
@@ -734,6 +740,23 @@ class GetGoodView(PositioningProcedure):
             return PositioningProcedureResult(success=True, terminated=True)
         else:
             return PositioningProcedureResult(truncated=True)
+
+    def sensor_rotation_relative_to_world(self, state: MotorSystemState) -> Any:
+        """Derives the positioning sensor's rotation relative to the world.
+
+        Args:
+            state (MotorSystemState): The current state of the motor system.
+
+        Returns:
+            (Any): The positioning sensor's rotation relative to the world.
+        """
+        agent_state = self.get_agent_state(state)
+        # Retrieve agent's rotation relative to the world.
+        agent_rotation = agent_state["rotation"]
+        # Retrieve sensor's rotation relative to the agent.
+        sensor_rotation = agent_state["sensors"][f"{self._sensor_id}.depth"]["rotation"]
+        # Derive sensor's rotation relative to the world.
+        return agent_rotation * sensor_rotation
 
 
 class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
