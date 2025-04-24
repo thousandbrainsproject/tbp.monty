@@ -733,8 +733,8 @@ class PolicyTest(unittest.TestCase):
             ]["motor_system_args"]["policy_args"]["good_view_percentage"]
 
             assert perc_on_target_obj >= target_perc_on_target_obj, (
-                f"Initial view is not good enough, {perc_on_target_obj}\
-                vs target of {target_perc_on_target_obj}"
+                f"Initial view is not good enough, {perc_on_target_obj} "
+                f"vs target of {target_perc_on_target_obj}"
             )
 
             points_on_target_obj = semantic == 1
