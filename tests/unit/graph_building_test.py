@@ -248,8 +248,7 @@ class GraphLearningTest(unittest.TestCase):
             exp (MontySupervisedObjectPretrainingExperiment): The experiment.
         """
         pprint("...parsing experiment...")
-        config = self.spth_feat
-        with MontySupervisedObjectPretrainingExperiment(config) as exp:
+        with MontySupervisedObjectPretrainingExperiment(self.spth_feat) as exp:
             exp.model.set_experiment_mode("train")
 
             pprint("...training...")

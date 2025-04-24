@@ -893,8 +893,8 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         config = copy.deepcopy(self.evidence_tests_off_object)
         with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
-            # First episode will be used to learn object (no_match is triggered before  # noqa: E501
-            # min_steps is reached and the sensor moves off the object). In the second  # noqa: E501
+            # First episode will be used to learn object (no_match is triggered before
+            # min_steps is reached and the sensor moves off the object). In the second
             # episode the sensor moves off the sphere on episode steps 6+
 
             # Since process_all_obs == False by default, the off_object points are
@@ -1766,7 +1766,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
             exp.train()
             train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
-            # Just checking that objects are still recognized correctly when moving off  # noqa: E501
+            # Just checking that objects are still recognized correctly when moving off
             # the object.
             self.check_train_results(train_stats, num_lms=5)
             # now lets check the number of steps

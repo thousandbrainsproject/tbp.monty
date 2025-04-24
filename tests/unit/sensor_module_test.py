@@ -153,11 +153,7 @@ class SensorModuleTest(unittest.TestCase):
 
                 pprint(exp.model.sensor_module_outputs)
                 for feature in self.tested_features:
-                    if feature in [
-                        "pose_vectors",
-                        "pose_fully_defined",
-                        "on_object",
-                    ]:
+                    if feature in ["pose_vectors", "pose_fully_defined", "on_object"]:
                         self.assertIn(
                             feature,
                             exp.model.sensor_module_outputs[

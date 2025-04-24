@@ -627,8 +627,8 @@ class PolicyTest(unittest.TestCase):
             ]["motor_system_args"]["policy_args"]["good_view_percentage"]
 
             assert perc_on_target_obj >= target_perc_on_target_obj, (
-                f"Initial view is not good enough, {perc_on_target_obj}\
-                vs target of {target_perc_on_target_obj}"
+                f"Initial view is not good enough, {perc_on_target_obj} "
+                f"vs target of {target_perc_on_target_obj}"
             )
 
             points_on_target_obj = semantic == 1
@@ -640,8 +640,8 @@ class PolicyTest(unittest.TestCase):
 
             # Utility policy should not have moved too close to the object
             assert closest_point_on_target_obj > target_closest_point, (
-                f"Initial view is too close, {closest_point_on_target_obj}\
-                vs target of {target_closest_point}"
+                f"Initial view is too close, {closest_point_on_target_obj} "
+                f"vs target of {target_closest_point}"
             )
 
     def test_touch_object_basic_surf_agent(self):
@@ -681,8 +681,8 @@ class PolicyTest(unittest.TestCase):
             closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
 
             assert closest_point_on_target_obj < 1.0, (
-                f"Should be within a meter of the object,\
-                closest point at {closest_point_on_target_obj}"
+                f"Should be within a meter of the object, "
+                f"closest point at {closest_point_on_target_obj}"
             )
 
             target_closest_point = dict_config["monty_config"]["motor_system_config"][
@@ -691,8 +691,8 @@ class PolicyTest(unittest.TestCase):
 
             # Utility policy should not have moved too close to the object
             assert closest_point_on_target_obj > target_closest_point, (
-                f"Initial position is too close, {closest_point_on_target_obj}\
-                vs target of {target_closest_point}"
+                f"Initial position is too close, {closest_point_on_target_obj} "
+                f"vs target of {target_closest_point}"
             )
 
     def test_get_good_view_multi_object(self):
@@ -756,8 +756,8 @@ class PolicyTest(unittest.TestCase):
             points_on_any_obj = view["semantic"] > 0
             closest_point_on_any_obj = np.min(view["depth"][points_on_any_obj])
             assert closest_point_on_any_obj > target_closest_point / 6, (
-                f"Initial view too cloase to other objects, {closest_point_on_any_obj}"
-                f" vs target of {target_closest_point / 6}"
+                f"Initial view too close to other objects, {closest_point_on_any_obj} "
+                f"vs target of {target_closest_point / 6}"
             )
 
     def test_distant_policy_moves_back_to_object(self):
@@ -953,10 +953,7 @@ class PolicyTest(unittest.TestCase):
 
             assert np.all(
                 np.isclose(
-                    current_pose[1],
-                    agent_direction * (-1),
-                    rtol=1.0e-3,
-                    atol=1.0e-2,
+                    current_pose[1], agent_direction * (-1), rtol=1.0e-3, atol=1.0e-2
                 )
             ), "Agent should be (approximately) looking down on the point-normal"
 
