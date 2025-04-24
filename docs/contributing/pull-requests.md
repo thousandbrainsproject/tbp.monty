@@ -43,13 +43,13 @@ Before submitting a Pull Request, you should set up your development environment
 ## Additional Recommendations for Code Changes
 
 - It is recommended to **add unit tests for any new feature** you implement. This makes sure that your feature continues to function as intended when other people (or you) make future changes to the code. To get a detailed coverage report use `pytest --cov --cov-report html`.
-- **Run `pytest` and `ruff check`** to make sure your changes don't break any existing code and adhere to our [style requirements](style-guide.md). If your code doesn't pass these, it can not be merged.
+- **Run `pytest`, `ruff check`, and `ruff format`** to make sure your changes don't break any existing code and adhere to our [style requirements](style-guide.md). If your code doesn't pass these, it can not be merged.
 - Make sure that your **code is properly documented**. Please refer to our [Style Guide](style-guide.md) for instructions on how to format your comments.
 - If applicable, please also **update or add to the documentation on readme.com**. For instructions on how to do this, see our [guide on contributing documentation](documentation.md).
 - **Use callbacks for logging**, and don’t put control logic into logging functions.
 - Note that the random seed in Monty is handled using a generator object that is passed
   where needed, i.e. by initializing the random number generator with
-  ```
+  ```python
   rng = np.random.RandomState(experiment_args["seed"])
   ```
   This rng is then passed to the various classes, and can be accessed in the sensor
