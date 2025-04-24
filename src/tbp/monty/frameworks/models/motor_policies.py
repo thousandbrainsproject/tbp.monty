@@ -27,7 +27,6 @@ from typing import (
     Tuple,
     Type,
     cast,
-    override,
 )
 
 import numpy as np
@@ -707,7 +706,6 @@ class GetGoodView(PositioningProcedure):
             TurnLeft(agent_id=self.agent_id, rotation_degrees=left_amount),
         ]
 
-    @override
     def positioning_call(
         self,
         observation: Mapping,
