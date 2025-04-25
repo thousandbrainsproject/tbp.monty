@@ -15,6 +15,7 @@ import numpy as np
 import quaternion as qt
 import scipy
 
+from tbp.monty.exceptions import NoDepthSensorPresentError
 from tbp.monty.frameworks.models.states import State
 
 __all__ = [
@@ -90,7 +91,7 @@ class AddNoiseToRawDepthImage:
             observation, same as input, with added gaussian noise to depth values.
 
         Raises:
-            RuntimeError: if no depth sensor is present.
+            NoDepthSensorPresentError: if no depth sensor is present.
         """
         # loop over sensor modules
         for sm in observation[self.agent_id].keys():
@@ -102,7 +103,9 @@ class AddNoiseToRawDepthImage:
                 )
                 observation[self.agent_id][sm]["depth"] += noise
             else:
-                raise RuntimeError("NO DEPTH SENSOR PRESENT. Don't use this transform")
+                raise NoDepthSensorPresentError(
+                    "NO DEPTH SENSOR PRESENT. Don't use this transform"
+                )
         return observation
 
 
@@ -141,7 +144,7 @@ class GaussianSmoothing:
             observation, same as input, with smoothed depth values.
 
         Raises:
-            RuntimeError: if no depth sensor is present.
+            NoDepthSensorPresentError: if no depth sensor is present.
         """
         # loop over sensor modules
         for sm in observation[self.agent_id].keys():
@@ -153,7 +156,9 @@ class GaussianSmoothing:
                 )
                 observation[self.agent_id][sm]["depth"] = filtered_img
             else:
-                raise RuntimeError("NO DEPTH SENSOR PRESENT. Don't use this transform")
+                raise NoDepthSensorPresentError(
+                    "NO DEPTH SENSOR PRESENT. Don't use this transform"
+                )
         return observation
 
     def create_kernel(self):
