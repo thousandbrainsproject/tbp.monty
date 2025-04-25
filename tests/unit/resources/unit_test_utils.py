@@ -153,7 +153,7 @@ class BaseGraphTestCases:
                 State(**fo_house_1),
                 State(**fo_house_2),
                 State(**fo_house_3),
-                # replacing fo_house_4 with fo_house_5
+                # replacing fo_house_4 with fo_house_5 to make its pose unambiguous
                 State(**fo_house_5),
             ]
 
