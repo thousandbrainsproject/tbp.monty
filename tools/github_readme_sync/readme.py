@@ -82,8 +82,11 @@ class ReadMe:
     def get_doc_by_slug(self, slug: str) -> str:
         response = get(f"{PREFIX}/docs/{slug}", {"x-readme-version": self.version})
 
-        if not response:
-            raise ValueError(f"Failed to fetch document: {response}")
+        if response.status_code == 404:
+            return None
+        if response.status_code < 200 or response.status_code >= 300:
+            logging.error(f"Failed to get {url} {response.text}")
+            return None
 
         front_matter = OrderedDict()
         front_matter["title"] = response.get("title")
