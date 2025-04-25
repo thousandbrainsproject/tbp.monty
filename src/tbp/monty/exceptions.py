@@ -12,3 +12,8 @@ class NoDepthSensorPresentError(RuntimeError):
     """Raised when a depth sensor is expected but not found."""
 
     pass
+
+class InvalidEvidenceUpdateThresholdError(ValueError):
+    """Raised when the evidence update threshold is invalid."""
+
+    pass
