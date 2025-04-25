@@ -85,7 +85,7 @@ class ReadMe:
         if response.status_code == 404:
             return None
         if response.status_code < 200 or response.status_code >= 300:
-            logging.error(f"Failed to get {url} {response.text}")
+            logging.error(f"Failed to get {response.url} {response.text}")
             return None
 
         front_matter = OrderedDict()
