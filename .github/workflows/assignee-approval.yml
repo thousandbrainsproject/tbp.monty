@@ -5,7 +5,8 @@ on:
     types: [submitted]
 
 jobs:
-  check-assignees-approval:
+  check_assignees_approval:
+    name: check-assignees-approval
     runs-on: ubuntu-latest
     permissions:
       pull-requests: read
@@ -37,8 +38,8 @@ jobs:
               repo,
               pull_number,
             });
-            
             const assignees = pr.assignees.map(a => a.login);
+            
             // Check for no maintainers
             if (assignees.length === 0) {
               core.setFailed("No assignees listed.");
@@ -50,29 +51,33 @@ jobs:
               !maintainers.includes(assignee)
             );
             if (nonMaintainers.length !== 0) {
-              core.setFailed(`Non maintainers in assignee list: ${nonMaintainers.join(", ")}`);
+              core.setFailed(`Non-maintainers in assignee list: ${nonMaintainers.join(", ")}`);
               return;
             }
             
-            // Check that last review was an approval
             const { data: reviews } = await github.rest.pulls.listReviews({
               owner,
               repo,
               pull_number,
             });
-            const latestReviews = {};
-            for (const review of reviews) {
-              latestReviews[review.user.login] = review.state;
-            }
+
+            // Collect the latest review states only for reviewers on the maintainer list
+            const latestReviews = reviews
+              .filter(r => maintainers.includes(r.user.login))
+              .reduce((result, review) => {
+                result[review.user.login] = review.state;
+                return result;
+              }, {});
             
-            console.log("Latest review states: ", latestReviews);
+            console.log("Latest assignee review states: ", latestReviews);
             
             const notApproved = assignees.filter(assignee => 
               latestReviews[assignee] !== 'APPROVED'
             );
             
             if (notApproved.length > 0) {
-              core.setFailed(`The following assignees have not approved: ${notApproved.join(", ")}`);
+              core.setFailed(`The following assignees have not approved: ${notApproved.join(", ")}\n` +
+                             "Note: the latest review for each assignee must be an approval.");
             } else {
-              console.log("All assignees have approved the pull request.");
+              console.log(`All assignees have approved: ${assignees.join(", ")}`);
             }
