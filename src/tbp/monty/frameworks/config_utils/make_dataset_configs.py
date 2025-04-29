@@ -312,6 +312,11 @@ class EnvironmentDataloaderPerObjectArgs:
 
 
 @dataclass
+class InformedEnvironmentDataLoaderPerObjectArgs(EnvironmentDataloaderPerObjectArgs):
+    use_get_good_view_positioning_procedure: bool = False
+
+
+@dataclass
 class EnvironmentDataLoaderPerObjectTrainArgs(EnvironmentDataloaderPerObjectArgs):
     object_names: List = field(default_factory=lambda: DefaultTrainObjectList().objects)
     object_init_sampler: Callable = field(default_factory=DefaultObjectInitializer)

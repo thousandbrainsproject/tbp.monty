@@ -724,6 +724,8 @@ class GetGoodView(PositioningProcedure):
                 logging.debug("Moving closer to object.")
                 return PositioningProcedureResult(actions=[action])
 
+        self._allow_translation = False
+
         on_target_object = self.is_on_target_object(observation)
         if (
             not on_target_object
