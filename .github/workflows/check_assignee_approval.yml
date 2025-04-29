@@ -1,6 +1,8 @@
 name: Check Assignees Approval
 
 on:
+  pull_request:
+    types: [opened, assigned, review_requested, review_request_removed]
   pull_request_review:
     types: [submitted]
 
@@ -28,25 +30,19 @@ jobs:
               "ramyamounir",
             ];
             
-            const pull_number = context.payload.pull_request.number;
+            const pr = context.payload.pull_request;
             const { owner, repo } = context.repo;
             
-            console.log(`Checking approvals for PR #${pull_number}`);
+            console.log(`Checking approvals for PR #${pr.number}`);
             
-            const { data: pr } = await github.rest.pulls.get({
-              owner,
-              repo,
-              pull_number,
-            });
+            // 1. Check for no maintainers in assignees
             const assignees = pr.assignees.map(a => a.login);
-            
-            // Check for no maintainers
             if (assignees.length === 0) {
               core.setFailed("No assignees listed.");
               return;
             }
             
-            // Check for non maintainers
+            // 2. Check for non maintainers in assignees
             const nonMaintainers = assignees.filter(assignee =>
               !maintainers.includes(assignee)
             );
@@ -55,13 +51,23 @@ jobs:
               return;
             }
             
+            // 3. Check for pending assignee reviews
+            const requestedReviewers = pr.requested_reviewers
+              .map(r => r.login)
+              .filter(r => assignees.includes(r))
+            
+            if (requestedReviewers.length > 0) {
+              core.setFailed(`The following assignees have not submitted a review: ${requestedReviewers.join(", ")}\n` +
+                             "Note: re-review requests are included in this.");
+              return;
+            }
+            
+            // 4. Check latest review states
             const { data: reviews } = await github.rest.pulls.listReviews({
               owner,
               repo,
-              pull_number,
+              pull_number: pr.number,
             });
-
-            // Collect the latest review states only for reviewers on the maintainer list
             const latestReviews = reviews
               .filter(r => maintainers.includes(r.user.login))
               .reduce((result, review) => {
@@ -71,13 +77,13 @@ jobs:
             
             console.log("Latest assignee review states: ", latestReviews);
             
-            const notApproved = assignees.filter(assignee => 
+            const notApproved = assignees.filter(assignee =>
               latestReviews[assignee] !== 'APPROVED'
             );
-            
             if (notApproved.length > 0) {
               core.setFailed(`The following assignees have not approved: ${notApproved.join(", ")}\n` +
                              "Note: the latest review for each assignee must be an approval.");
-            } else {
-              console.log(`All assignees have approved: ${assignees.join(", ")}`);
-            }
+              return;
+            } 
+            
+            console.log(`All assignees have approved: ${assignees.join(", ")}`);
