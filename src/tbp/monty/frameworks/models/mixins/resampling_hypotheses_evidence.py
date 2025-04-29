@@ -27,6 +27,18 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 class ResamplingHypothesesEvidenceMixin:
     """Mixin that adds resampling capability to EvidenceGraph learning modules.
 
+    This mixin enables updating of the hypothesis space by resampling and rebuilding
+    the hypothesis space at every step. We resample hypotheses from the existing
+    hypothesis space, as well as new hypotheses informed by the sensed pose.
+
+    The resampling process is governed by two main parameters:
+      - `hypotheses_count_multiplier`: scales the total number of hypotheses every step.
+      - `hypotheses_existing_to_new_ratio`: controls the proportion of existing vs.
+          informed hypotheses during resampling.
+
+    Raises:
+        TypeError: If used in a class that is not a subclass of `EvidenceGraphLM`.
+
     Compatible with:
         - EvidenceGraphLM
     """
@@ -34,10 +46,8 @@ class ResamplingHypothesesEvidenceMixin:
     def __init__(
         self,
         *args: object,
-        sampling_parameters: Dict[str, float],
         hypotheses_count_multiplier=1.0,
-        hypotheses_old_to_new_ratio=0.0,
-        hypotheses_informed_to_offspring_ratio=0.0,
+        hypotheses_existing_to_new_ratio=0.0,
         **kwargs: object,
     ):
         super().__init__(*args, **kwargs)
@@ -45,15 +55,8 @@ class ResamplingHypothesesEvidenceMixin:
         # Controls the shrinking or growth of hypothesis space size
         self.hypotheses_count_multiplier = hypotheses_count_multiplier
 
-        # Controls the ratio of old to newly sampled hypotheses
-        self.hypotheses_old_to_new_ratio = hypotheses_old_to_new_ratio
-
-        # Controls the ratio of new informed to new offspring hypotheses
-        # TODO This is set to 0 to sample only informed, offspring hypotheses are
-        # currently not supported.
-        self.hypotheses_informed_to_offspring_ratio = (
-            hypotheses_informed_to_offspring_ratio
-        )
+        # Controls the ratio of existing to newly sampled hypotheses
+        self.hypotheses_existing_to_new_ratio = hypotheses_existing_to_new_ratio
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """Ensure the mixin is used only with compatible learning modules.
@@ -70,18 +73,19 @@ class ResamplingHypothesesEvidenceMixin:
 
     def _update_evidence(
         self,
-        features: Dict[str, ...],
-        displacements: Optional[Dict[str, ...]],
+        features: Dict,
+        displacements: Optional[Dict],
         graph_id: str,
     ) -> None:
         """Update evidence of hypotheses space with resampling.
 
         Updates existing hypotheses space by:
-            1. Calculating sample count for old and informed hypotheses
-            2. Sampling hypotheses for old and informed hypotheses types
-            3. Displacing (and updating evidence of) old hypotheses using
+            1. Calculating sample count for existing and informed hypotheses
+            2. Sampling hypotheses for existing and informed hypotheses types
+            3. Displacing (and updating evidence of) existing hypotheses using
                 given displacements
-            4. Concatenating all samples (old + new) to rebuild the hypothesis space
+            4. Concatenating all samples (existing + new) to rebuild the hypothesis
+                space
 
         This process is repeated for each input channel in the graph.
 
@@ -104,34 +108,34 @@ class ResamplingHypothesesEvidenceMixin:
 
         for input_channel in input_channels_to_use:
             # === GET SAMPLE COUNT ===
-            old_count, informed_count = self._sample_count(
+            existing_count, informed_count = self._sample_count(
                 input_channel, features, graph_id
             )
 
             # === SAMPLE HYPOTHESES ===
-            old_locations, old_rotations, old_evidence = self._sample_old(
-                features, graph_id, old_count, input_channel
+            existing_locations, existing_rotations, existing_evidence = (
+                self._sample_existing(features, graph_id, existing_count, input_channel)
             )
             informed_locations, informed_rotations, informed_evidence = (
                 self._sample_informed(features, graph_id, informed_count, input_channel)
             )
 
             # === DISPLACE HYPOTHESES ===
-            if old_count > 0:
-                old_locations, old_evidence = self._displace_hypotheses(
+            if existing_count > 0:
+                existing_locations, existing_evidence = self._displace_hypotheses(
                     features,
-                    old_locations,
-                    old_rotations,
-                    old_evidence,
+                    existing_locations,
+                    existing_rotations,
+                    existing_evidence,
                     displacements,
                     graph_id,
                     input_channel,
                 )
 
             # === CONCATENATE HYPOTHESES ===
-            channel_locations = np.vstack([old_locations, informed_locations])
-            channel_rotations = np.vstack([old_rotations, informed_rotations])
-            channel_evidence = np.hstack([old_evidence, informed_evidence])
+            channel_locations = np.vstack([existing_locations, informed_locations])
+            channel_rotations = np.vstack([existing_rotations, informed_rotations])
+            channel_evidence = np.hstack([existing_evidence, informed_evidence])
 
             # === RE-BUILD HYPOTHESIS SPACE ===
             self._replace_hypotheses_in_hpspace(
@@ -151,9 +155,9 @@ class ResamplingHypothesesEvidenceMixin:
         )
 
     def _sample_count(
-        self, input_channel: str, features: Dict[str, ...], graph_id: str
+        self, input_channel: str, features: Dict, graph_id: str
     ) -> Tuple[int, int]:
-        """Calculates the number of old and informed hypotheses needed.
+        """Calculates the number of existing and informed hypotheses needed.
 
         Args:
             input_channel (str): The channel for which to calculate hypothesis count.
@@ -161,15 +165,15 @@ class ResamplingHypothesesEvidenceMixin:
             graph_id (str): Identifier of the graph being queried.
 
         Returns:
-            Tuple[int, int]: A tuple containing the number of old and new hypotheses
-                needed. Old hypotheses are maintained from existing ones while new
-                hypotheses are fully informed by pose sensory information.
+            Tuple[int, int]: A tuple containing the number of existing and new
+                hypotheses needed. Existing hypotheses are maintained from existing ones
+                while new hypotheses are fully informed by pose sensory information.
 
         Notes:
             This function takes into account the following ratios:
               - `hypotheses_count_multiplier`: multiplier for total count calculation.
-              - `hypotheses_old_to_new_ratio`: ratio between old and new hypotheses
-                to be sampled.
+              - `hypotheses_existing_to_new_ratio`: ratio between existing and new
+                hypotheses to be sampled.
         """
         graph_num_points = self.graph_memory.get_locations_in_graph(
             graph_id, input_channel
@@ -189,15 +193,15 @@ class ResamplingHypothesesEvidenceMixin:
         current = self.channel_hypothesis_mapping[graph_id].channel_size(input_channel)
         needed = current * self.hypotheses_count_multiplier
 
-        # calculate how many old and new hypotheses needed
-        old_maintained, new_sampled = (
-            needed * (1 - self.hypotheses_old_to_new_ratio),
-            needed * self.hypotheses_old_to_new_ratio,
+        # calculate how many existing and new hypotheses needed
+        existing_maintained, new_informed = (
+            needed * (1 - self.hypotheses_existing_to_new_ratio),
+            needed * self.hypotheses_existing_to_new_ratio,
         )
-        # needed old hypotheses should not exceed the existing hypotheses
+        # needed existing hypotheses should not exceed the existing hypotheses
         # if trying to maintain more hypotheses, set the available count as ceiling
-        if old_maintained > current:
-            old_maintained = current
+        if existing_maintained > current:
+            existing_maintained = current
             new_informed = needed - current
 
         # needed informed hypotheses should not exceed the available informed hypotheses
@@ -206,13 +210,13 @@ class ResamplingHypothesesEvidenceMixin:
             new_informed = full_informed_count
 
         return (
-            int(old_maintained),
+            int(existing_maintained),
             int(new_informed),
         )
 
     def _sample_informed(
         self,
-        features: Dict[str, ...],
+        features: Dict,
         graph_id: str,
         informed_count: int,
         input_channel: str,
@@ -253,11 +257,11 @@ class ResamplingHypothesesEvidenceMixin:
 
         return selected_locations, selected_rotations, selected_evidence
 
-    def _sample_old(
+    def _sample_existing(
         self,
-        features: Dict[str, ...],
+        features: Dict,
         graph_id: str,
-        old_count: int,
+        existing_count: int,
         input_channel: str,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Samples the specified number of existing hypotheses.
@@ -265,7 +269,7 @@ class ResamplingHypothesesEvidenceMixin:
         Args:
             features (dict): Input features.
             graph_id (str): Identifier of the graph being queried.
-            old_count (int): Number of existing hypotheses to sample.
+            existing_count (int): Number of existing hypotheses to sample.
             input_channel: The channel for which hypotheses are sampled.
 
         Returns:
@@ -276,23 +280,23 @@ class ResamplingHypothesesEvidenceMixin:
             Currently samples based on available count instead of evidence slope.
         """
         # Return empty arrays for no hypotheses to sample
-        if old_count == 0:
+        if existing_count == 0:
             return np.zeros((0, 3)), np.zeros((0, 3, 3)), np.zeros(0)
 
         # TODO implement sampling based on evidence slope.
-        selected_locations = self.possible_locations[graph_id][:old_count]
-        selected_rotations = self.possible_poses[graph_id][:old_count]
-        selected_evidence = self.evidence[graph_id][:old_count]
+        selected_locations = self.possible_locations[graph_id][:existing_count]
+        selected_rotations = self.possible_poses[graph_id][:existing_count]
+        selected_evidence = self.evidence[graph_id][:existing_count]
 
         return selected_locations, selected_rotations, selected_evidence
 
     def _displace_hypotheses(
         self,
-        features: Dict[str, ...],
+        features: Dict,
         locations: np.ndarray,
         rotations: np.ndarray,
         evidence: np.ndarray,
-        displacement: Dict[str, ...],
+        displacement: Dict,
         graph_id: str,
         input_channel: str,
     ) -> Tuple[np.ndarray, np.ndarray]:
@@ -335,13 +339,13 @@ class ResamplingHypothesesEvidenceMixin:
 
     def _calculate_evidence_for_new_locations(
         self,
-        graph_id,
-        input_channel,
-        search_locations,
-        rotations,
-        features,
+        graph_id: str,
+        input_channel: str,
+        search_locations: np.ndarray,
+        rotations: np.ndarray,
+        features: Dict,
     ):
-        """Use search locations, sensed features and graph model to calculate evidence.
+        """Calculate evidence for locations based on graph model and sensed features.
 
         First, the search locations are used to find the nearest nodes in the graph
         model. Then we calculate the error between the stored pose features and the
@@ -429,9 +433,6 @@ class ResamplingHypothesesEvidenceMixin:
         new_evidence: np.ndarray,
     ) -> None:
         """Updates the hypothesis space for a given input channel in a graph.
-
-        This function replaces existing or adds new hypotheses to the possible
-        locations, poses and evidence arrays based on the provided information.
 
         Args:
             graph_id (str): The ID of the current graph to update.
