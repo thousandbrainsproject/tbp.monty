@@ -9,7 +9,7 @@
 
 import logging
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 
@@ -42,9 +42,15 @@ class ResamplingHypothesesEvidenceMixin:
     ):
         super().__init__(*args, **kwargs)
 
-        # sampling parameters
+        # Controls the shrinking or growth of hypothesis space size
         self.hypotheses_count_multiplier = hypotheses_count_multiplier
+
+        # Controls the ratio of old to newly sampled hypotheses
         self.hypotheses_old_to_new_ratio = hypotheses_old_to_new_ratio
+
+        # Controls the ratio of new informed to new offspring hypotheses
+        # TODO This is set to 0 to sample only informed, offspring hypotheses are
+        # currently not supported.
         self.hypotheses_informed_to_offspring_ratio = (
             hypotheses_informed_to_offspring_ratio
         )
@@ -62,8 +68,28 @@ class ResamplingHypothesesEvidenceMixin:
                 f"EvidenceGraphLM, got {cls.__bases__}"
             )
 
-    def _update_evidence(self, features, displacements, graph_id):
-        """Resamples hypotheses and updates existing evidence."""
+    def _update_evidence(
+        self,
+        features: Dict[str, ...],
+        displacements: Optional[Dict[str, ...]],
+        graph_id: str,
+    ) -> None:
+        """Update evidence of hypotheses space with resampling.
+
+        Updates existing hypotheses space by:
+            1. Calculating sample count for old and informed hypotheses
+            2. Sampling hypotheses for old and informed hypotheses types
+            3. Displacing (and updating evidence of) old hypotheses using
+                given displacements
+            4. Concatenating all samples (old + new) to rebuild the hypothesis space
+
+        This process is repeated for each input channel in the graph.
+
+        Args:
+            features (dict): input features
+            displacements (dict or None): given displacements
+            graph_id (str): identifier of the graph being updated
+        """
         start_time = time.time()
 
         if graph_id not in self.channel_hypothesis_mapping:
@@ -78,7 +104,7 @@ class ResamplingHypothesesEvidenceMixin:
 
         for input_channel in input_channels_to_use:
             # === GET SAMPLE COUNT ===
-            old_count, informed_count, _ = self._sample_count(
+            old_count, informed_count = self._sample_count(
                 input_channel, features, graph_id
             )
 
@@ -124,8 +150,27 @@ class ResamplingHypothesesEvidenceMixin:
             f" New max evidence: {np.round(np.max(self.evidence[graph_id]), 3)}"
         )
 
-    def _sample_count(self, input_channel, features, graph_id):
-        """Returns the number of needed hypotheses."""
+    def _sample_count(
+        self, input_channel: str, features: Dict[str, ...], graph_id: str
+    ) -> Tuple[int, int]:
+        """Calculates the number of old and informed hypotheses needed.
+
+        Args:
+            input_channel (str): The channel for which to calculate hypothesis count.
+            features (dict): Input features containing pose information.
+            graph_id (str): Identifier of the graph being queried.
+
+        Returns:
+            Tuple[int, int]: A tuple containing the number of old and new hypotheses
+                needed. Old hypotheses are maintained from existing ones while new
+                hypotheses are fully informed by pose sensory information.
+
+        Notes:
+            This function takes into account the following ratios:
+              - `hypotheses_count_multiplier`: multiplier for total count calculation.
+              - `hypotheses_old_to_new_ratio`: ratio between old and new hypotheses
+                to be sampled.
+        """
         graph_num_points = self.graph_memory.get_locations_in_graph(
             graph_id, input_channel
         ).shape[0]
@@ -136,15 +181,12 @@ class ResamplingHypothesesEvidenceMixin:
             else graph_num_points * 8
         )
 
+        # if hypothesis space does not exist, we initialize with informed hypotheses
         if input_channel not in self.channel_hypothesis_mapping[graph_id].channels:
-            return 0, full_informed_count, 0
-
-        channel_range = self.channel_hypothesis_mapping[graph_id].channel_range(
-            input_channel
-        )
-        current = channel_range[1] - channel_range[0]
+            return 0, full_informed_count
 
         # calculate the total number of hypotheses needed
+        current = self.channel_hypothesis_mapping[graph_id].channel_size(input_channel)
         needed = current * self.hypotheses_count_multiplier
 
         # calculate how many old and new hypotheses needed
@@ -156,71 +198,118 @@ class ResamplingHypothesesEvidenceMixin:
         # if trying to maintain more hypotheses, set the available count as ceiling
         if old_maintained > current:
             old_maintained = current
-            new_sampled = needed - current
+            new_informed = needed - current
 
-        # calculate how many informed and offspring hypotheses needed
-        new_informed, new_offspring = (
-            new_sampled * (1 - self.hypotheses_informed_to_offspring_ratio),
-            new_sampled * self.hypotheses_informed_to_offspring_ratio,
-        )
         # needed informed hypotheses should not exceed the available informed hypotheses
         # if trying to sample more hypotheses, set the available count as ceiling
         if new_informed > full_informed_count:
             new_informed = full_informed_count
-            new_offspring = new_sampled - full_informed_count
 
         return (
             int(old_maintained),
             int(new_informed),
-            int(new_offspring),
         )
 
-    def _sample_informed(self, features, graph_id, informed_count, input_channel):
+    def _sample_informed(
+        self,
+        features: Dict[str, ...],
+        graph_id: str,
+        informed_count: int,
+        input_channel: str,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Samples the specified number of fully informed hypotheses.
+
+        Args:
+            features (dict): Input features.
+            graph_id (str): Identifier of the graph being queried.
+            informed_count (int): Number of fully informed hypotheses to sample.
+            input_channel: The channel for which hypotheses are sampled.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray, np.ndarray]: Tuple containing
+                selected locations, rotations, and evidence data.
+
+        """
+        # Return empty arrays for no hypotheses to sample
         if informed_count == 0:
-            selected_locations = np.zeros((0, 3))
-            selected_rotations = np.zeros((0, 3, 3))
-            selected_evidence = np.zeros(0)
-        else:
-            (
-                initial_possible_channel_locations,
-                initial_possible_channel_rotations,
-                channel_evidence,
-            ) = self._get_initial_hypothesis_space(features, graph_id, input_channel)
+            return np.zeros((0, 3)), np.zeros((0, 3, 3)), np.zeros(0)
 
-            # Get the indices of the top `informed_count` values in `channel_evidence`
-            top_indices = np.argsort(channel_evidence)[
-                -informed_count:
-            ]  # Get top indices
+        # TODO override `_get_initial_hypothesis_space` to postpone the rotation
+        # calculation until after the points have been sampled based on
+        # `_calculate_feature_evidence_for_all_nodes`.
+        (
+            initial_possible_channel_locations,
+            initial_possible_channel_rotations,
+            channel_evidence,
+        ) = self._get_initial_hypothesis_space(features, graph_id, input_channel)
 
-            # Select the corresponding entries from the original arrays
-            selected_locations = initial_possible_channel_locations[top_indices]
-            selected_rotations = initial_possible_channel_rotations[top_indices]
-            selected_evidence = channel_evidence[top_indices]
+        # Get the indices of the top `informed_count` values in `channel_evidence`
+        top_indices = np.argsort(channel_evidence)[-informed_count:]  # Get top indices
+
+        # Select the corresponding entries from the original arrays
+        selected_locations = initial_possible_channel_locations[top_indices]
+        selected_rotations = initial_possible_channel_rotations[top_indices]
+        selected_evidence = channel_evidence[top_indices]
 
         return selected_locations, selected_rotations, selected_evidence
 
-    def _sample_old(self, features, graph_id, old_count, input_channel):
+    def _sample_old(
+        self,
+        features: Dict[str, ...],
+        graph_id: str,
+        old_count: int,
+        input_channel: str,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Samples the specified number of existing hypotheses.
+
+        Args:
+            features (dict): Input features.
+            graph_id (str): Identifier of the graph being queried.
+            old_count (int): Number of existing hypotheses to sample.
+            input_channel: The channel for which hypotheses are sampled.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray, np.ndarray]: Tuple containing
+                selected locations, rotations, and evidence scores.
+
+        Notes:
+            Currently samples based on available count instead of evidence slope.
+        """
+        # Return empty arrays for no hypotheses to sample
         if old_count == 0:
-            selected_locations = np.zeros((0, 3))
-            selected_rotations = np.zeros((0, 3, 3))
-            selected_evidence = np.zeros(0)
-        else:
-            selected_locations = self.possible_locations[graph_id][:old_count]
-            selected_rotations = self.possible_poses[graph_id][:old_count]
-            selected_evidence = self.evidence[graph_id][:old_count]
+            return np.zeros((0, 3)), np.zeros((0, 3, 3)), np.zeros(0)
+
+        # TODO implement sampling based on evidence slope.
+        selected_locations = self.possible_locations[graph_id][:old_count]
+        selected_rotations = self.possible_poses[graph_id][:old_count]
+        selected_evidence = self.evidence[graph_id][:old_count]
 
         return selected_locations, selected_rotations, selected_evidence
 
     def _displace_hypotheses(
         self,
-        features,
-        locations,
-        rotations,
-        evidence,
-        displacement,
-        graph_id,
-        input_channel,
-    ):
+        features: Dict[str, ...],
+        locations: np.ndarray,
+        rotations: np.ndarray,
+        evidence: np.ndarray,
+        displacement: Dict[str, ...],
+        graph_id: str,
+        input_channel: str,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Updates existing hypotheses by displacing them.
+
+        Args:
+            features (dict): Input features
+            locations (np.ndarray): Hypothesized sensor locations for each hypothesis
+            rotations (np.ndarray): Hypothesized object rotations for each hypothesis
+            evidence (np.ndarray): Current evidence value for each hypothesis
+            displacement (dict): Sensor displacements for input channels
+            graph_id (str): The ID of the current graph
+            input_channel (str): The channel involved in hypotheses updating.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: Updated sensor locations and evidence values.
+        """
         evidence_threshold = self._get_evidence_update_threshold(graph_id)
 
         rotated_displacements = rotations.dot(displacement[input_channel])
@@ -333,12 +422,25 @@ class ResamplingHypothesesEvidenceMixin:
 
     def _replace_hypotheses_in_hpspace(
         self,
-        graph_id,
-        input_channel,
-        new_loc_hypotheses,
-        new_rot_hypotheses,
-        new_evidence,
-    ):
+        graph_id: str,
+        input_channel: str,
+        new_loc_hypotheses: np.ndarray,
+        new_rot_hypotheses: np.ndarray,
+        new_evidence: np.ndarray,
+    ) -> None:
+        """Updates the hypothesis space for a given input channel in a graph.
+
+        This function replaces existing or adds new hypotheses to the possible
+        locations, poses and evidence arrays based on the provided information.
+
+        Args:
+            graph_id (str): The ID of the current graph to update.
+            input_channel (str): Channel's name involved in updating the space
+            new_loc_hypotheses (np.ndarray): New sensor locations hypotheses
+            new_rot_hypotheses (np.ndarray): New object poses hypotheses
+            new_evidence (np.ndarray): New evidence values for the input channel
+        """
+        # add a new channel to the mapping if the hypotheses space doesn't exist
         if input_channel not in self.channel_hypothesis_mapping[graph_id].channels:
             self.possible_locations[graph_id] = np.array(new_loc_hypotheses)
             self.possible_poses[graph_id] = np.array(new_rot_hypotheses)
@@ -347,36 +449,39 @@ class ResamplingHypothesesEvidenceMixin:
             self.channel_hypothesis_mapping[graph_id].add_channel(
                 input_channel, len(new_evidence)
             )
-        else:
-            channel_start_ix, channel_end_ix = self.channel_hypothesis_mapping[
-                graph_id
-            ].channel_range(input_channel)
-            channel_size = channel_end_ix - channel_start_ix
+            return
 
-            self.possible_locations[graph_id] = np.concatenate(
-                [
-                    self.possible_locations[graph_id][:channel_start_ix],
-                    np.array(new_loc_hypotheses),
-                    self.possible_locations[graph_id][channel_end_ix:],
-                ]
-            )
+        channel_start_ix, channel_end_ix = self.channel_hypothesis_mapping[
+            graph_id
+        ].channel_range(input_channel)
+        channel_size = self.channel_hypothesis_mapping[graph_id].channel_size(
+            input_channel
+        )
 
-            self.possible_poses[graph_id] = np.concatenate(
-                [
-                    self.possible_poses[graph_id][:channel_start_ix],
-                    np.array(new_rot_hypotheses),
-                    self.possible_poses[graph_id][channel_end_ix:],
-                ]
-            )
+        self.possible_locations[graph_id] = np.concatenate(
+            [
+                self.possible_locations[graph_id][:channel_start_ix],
+                np.array(new_loc_hypotheses),
+                self.possible_locations[graph_id][channel_end_ix:],
+            ]
+        )
 
-            self.evidence[graph_id] = np.concatenate(
-                [
-                    self.evidence[graph_id][:channel_start_ix],
-                    np.array(new_evidence),
-                    self.evidence[graph_id][channel_end_ix:],
-                ]
-            )
+        self.possible_poses[graph_id] = np.concatenate(
+            [
+                self.possible_poses[graph_id][:channel_start_ix],
+                np.array(new_rot_hypotheses),
+                self.possible_poses[graph_id][channel_end_ix:],
+            ]
+        )
 
-            self.channel_hypothesis_mapping[graph_id].resize_channel_by(
-                input_channel, len(new_evidence) - channel_size
-            )
+        self.evidence[graph_id] = np.concatenate(
+            [
+                self.evidence[graph_id][:channel_start_ix],
+                np.array(new_evidence),
+                self.evidence[graph_id][channel_end_ix:],
+            ]
+        )
+
+        self.channel_hypothesis_mapping[graph_id].resize_channel_by(
+            input_channel, len(new_evidence) - channel_size
+        )
