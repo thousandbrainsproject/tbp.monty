@@ -68,10 +68,10 @@ Once your Pull Request is **Approved**, if you make any unexpected commits that 
 
 **Maintainers** will **Merge** your **Approved** Pull Request.
 
-> [!CAUTION]
+> [!NOTE]
 > _**Maintainers**_
 >
-> _The commit message for the merge commit should comply with [RFC 10 Conventional Commits](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0010_conventional_commits.md)_
+> _The commit message for the merge commit should comply with [RFC 10 Conventional Commits](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0010_conventional_commits.md)._
 >
 > _We use the following commit types:_
 >
