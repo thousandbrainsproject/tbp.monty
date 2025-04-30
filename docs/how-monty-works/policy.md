@@ -60,7 +60,7 @@ Some more details on the positioning procedures are provided below.
 - The key parameter is `desired_object_distance`, which reflects the effective length of the agent and its sensors as it moves along the surface of the object.
 
 ### Planned Changes to the Positioning Procedures
-As the positioning procedures were implemented in the early development of Monty, there are a number of aspects which we plan to adjust in the near future, and which should be reflected in any new positioining procedures.
+As the positioning procedures were implemented in the early development of Monty, there are a number of aspects which we plan to adjust in the near future, and which should be reflected in any new positioning procedures.
 1) Positioning procedures should only be called in `pre_episode`, i.e. before the episode begins.
 2) Positioning procedures may make use of privileged information such as the view-finder and semantic-sensor, which are not available to the learning module. However, consistent with point (1), these should not be leveraged during learning or inference by the Monty agent.
 
