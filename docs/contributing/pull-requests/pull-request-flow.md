@@ -68,6 +68,29 @@ Once your Pull Request is **Approved**, if you make any unexpected commits that 
 
 **Maintainers** will **Merge** your **Approved** Pull Request.
 
+> [!CAUTION]
+> _**Maintainers**_
+>
+> _The commit message for the merge commit should comply with [RFC 10 Conventional Commits](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0010_conventional_commits.md)_
+>
+> _We use the following commit types:_
+>
+> * _`fix`: Fix to a bug in the **src/tbp/monty** codebase. This correlates with `PATCH` in [RFC 7 Monty versioning](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0007_monty_versioning.md)._
+> * _`feat`: Introduction of a new feature to the **scr/tbp/monty** codebase. This correlates with `MINOR` in [RFC 7 Monty versioning](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0007_monty_versioning.md)._
+> * _`build`: Change to the build system or external dependencies._
+> * _`ci`: Change to our GitHub Actions confguration files and scripts._
+> * _`docs`: Documentation only update._
+> * _`perf`: Performance improvement._
+> * _`refactor`: A **src/tbp/monty** code change that neither fixes a bug nor adds a feature._
+> * _`style`: Change that does not affect the meaning of the code (white-space, formatting, etc.)._
+> * _`test`: Adding or correcting tests._
+> * _`chore`: The commit is a catch all for work outside of the types identified above. For example, the commit affects infrastructure, tooling, development, or other non-Monty framework code._
+> * _`rfc`: RFC proposal._
+> * _`revert`: Commit that reverts a previous commit._
+>
+> _Breaking changes are communicated by appending `!` after the type. This correlates with `MAJOR` in [RFC 7 Monty versioning](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0007_monty_versioning.md)._
+
+
 After **Merge**, automated post-merge checks and tasks will run. If these fail, the Pull Request will be **Reverted**. If they succeed, you are **Done** 🥳🎉🎊.
 
 ## Revert
