@@ -554,160 +554,59 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         allow_translation: bool = True,
         max_orientation_attempts: int = 1,
     ) -> bool:
-        """Policy to get a good view of the object before an episode starts.
-
-        Used by the distant agent to find the initial view of an object at the
-        beginning of an episode with respect to a given sensor (the surface agent
-        makes use of the `touch_object` method instead). Also currently used
-        by the distant agent after a "jump" has been initialized by a model-based
-        policy.
-
-        First, the agent moves towards object until it fills a minimum of percentage
-        (given by `motor_system._policy.good_view_percentage`) of the sensor's field of
-        view or the closest point of the object is less than a given distance
-        (`motor_system._policy.desired_object_distance`) from the sensor. This makes
-        sure that big and small objects all fill similar amount of space in the sensor's
-        field of view. Otherwise small objects may be too small to perform saccades or
-        the sensor ends up inside of big objects. This step is performed by default
-        but can be skipped by setting `allow_translation=False`.
-
-        Second, the agent will then be oriented towards the object so that the
-        sensor's central pixel is on-object. In the case of multi-object experiments,
-        (i.e., when `num_distractors > 0`), there is an additional orientation step
-        performed prior to the translational movement step.
+        """Invoke the GetGoodView positioning procedure.
 
         Args:
-            sensor_id: The name of the sensor used to inform movements.
-            allow_translation: Whether to allow movement toward the object via
-                the motor systems's `move_close_enough` method. If `False`, only
-                orientienting movements are performed. Default is `True`.
-            max_orientation_attempts: The maximum number of orientation attempts
-                allowed before giving up and returning `False` indicating that the
-                sensor is not on the target object.
+            sensor_id (str): The ID of the sensor to use for positioning.
+            allow_translation (bool): Whether to allow movement toward the object via
+                the motor systems's move_close_enough method. If False, only
+                orientienting movements are performed. Defaults to True.
+            max_orientation_attempts (int): The maximum number of orientation attempts
+                allowed before giving up and truncating the procedure indicating that
+                the sensor is not on the target object.
 
         Returns:
-            Whether the sensor is on the target object.
-
-        TODO M : move most of this to the motor systems, shouldn't be in embodied_data
-            class
+            bool: Whether the sensor is on the target object.
         """
-        if self._use_get_good_view_positioning_procedure:
-            positioning_procedure = GetGoodView(
-                agent_id=self.motor_system._policy.agent_id,
-                desired_object_distance=self.motor_system._policy.desired_object_distance,
-                good_view_percentage=self.motor_system._policy.good_view_percentage,
-                multiple_objects_present=self.num_distractors > 0,
-                sensor_id=sensor_id,
-                target_semantic_id=self.primary_target["semantic_id"],
-                allow_translation=allow_translation,
-                max_orientation_attempts=max_orientation_attempts,
-                # TODO: Remaining arguments are unused but required by BasePolicy.
-                #       These will be removed when PositioningProcedure is split from
-                #       BasePolicy
-                #
-                # Note that if we use rng=self.rng below, then the following test will
-                # fail:
-                #   tests/unit/evidence_lm_test.py::EvidenceLMTest::test_two_lm_heterarchy_experiment  # noqa: E501
-                # The test result seems to be coupled to the random seed and the
-                # specific sequence of rng calls (rng is called once on GetGoodView
-                # initialization).
-                rng=np.random.RandomState(),
-                action_sampler_args=dict(actions=[LookUp]),
-                action_sampler_class=UniformlyDistributedSampler,
-                switch_frequency=0.0,
-            )
+        positioning_procedure = GetGoodView(
+            agent_id=self.motor_system._policy.agent_id,
+            desired_object_distance=self.motor_system._policy.desired_object_distance,
+            good_view_percentage=self.motor_system._policy.good_view_percentage,
+            multiple_objects_present=self.num_distractors > 0,
+            sensor_id=sensor_id,
+            target_semantic_id=self.primary_target["semantic_id"],
+            allow_translation=allow_translation,
+            max_orientation_attempts=max_orientation_attempts,
+            # TODO: Remaining arguments are unused but required by BasePolicy.
+            #       These will be removed when PositioningProcedure is split from
+            #       BasePolicy
+            #
+            # Note that if we use rng=self.rng below, then the following test will
+            # fail:
+            #   tests/unit/evidence_lm_test.py::EvidenceLMTest::test_two_lm_heterarchy_experiment  # noqa: E501
+            # The test result seems to be coupled to the random seed and the
+            # specific sequence of rng calls (rng is called once on GetGoodView
+            # initialization).
+            rng=np.random.RandomState(),
+            action_sampler_args=dict(actions=[LookUp]),
+            action_sampler_class=UniformlyDistributedSampler,
+            switch_frequency=0.0,
+        )
+        result = positioning_procedure.positioning_call(
+            self._observation, self.motor_system._state
+        )
+        while not result.terminated and not result.truncated:
+            for action in result.actions:
+                self._observation, proprio_state = self.dataset[action]
+                self.motor_system._state = (
+                    MotorSystemState(proprio_state) if proprio_state else None
+                )
+
             result = positioning_procedure.positioning_call(
                 self._observation, self.motor_system._state
             )
-            while not result.terminated and not result.truncated:
-                for action in result.actions:
-                    self._observation, proprio_state = self.dataset[action]
-                    self.motor_system._state = (
-                        MotorSystemState(proprio_state) if proprio_state else None
-                    )
 
-                result = positioning_procedure.positioning_call(
-                    self._observation, self.motor_system._state
-                )
-
-            return result.success
-
-        # TODO break up this method so that there is less code duplication
-        # Start by ensuring the center of the patch is covering the primary target
-        # object before we start moving forward; only done for multi-object experiments
-        multiple_objects_present = self.num_distractors > 0
-        if multiple_objects_present:
-            on_target_object = self.motor_system._policy.is_on_target_object(
-                self._observation,
-                sensor_id,
-                target_semantic_id=self.primary_target["semantic_id"],
-                multiple_objects_present=multiple_objects_present,
-            )
-            if not on_target_object:
-                actions = self.motor_system._policy.orient_to_object(
-                    self._observation,
-                    sensor_id,
-                    target_semantic_id=self.primary_target["semantic_id"],
-                    multiple_objects_present=multiple_objects_present,
-                    state=self.motor_system._state,
-                )
-                for action in actions:
-                    self._observation, proprio_state = self.dataset[action]
-                    self.motor_system._state = (
-                        MotorSystemState(proprio_state) if proprio_state else None
-                    )
-
-        if allow_translation:
-            # Move closer to the object, if not already close enough
-            action, close_enough = self.motor_system._policy.move_close_enough(
-                self._observation,
-                sensor_id,
-                target_semantic_id=self.primary_target["semantic_id"],
-                multiple_objects_present=multiple_objects_present,
-            )
-            # Continue moving to a close distance to the object
-            while not close_enough:
-                logging.debug("moving closer!")
-                self._observation, proprio_state = self.dataset[action]
-                self.motor_system._state = (
-                    MotorSystemState(proprio_state) if proprio_state else None
-                )
-                action, close_enough = self.motor_system._policy.move_close_enough(
-                    self._observation,
-                    sensor_id,
-                    target_semantic_id=self.primary_target["semantic_id"],
-                    multiple_objects_present=multiple_objects_present,
-                )
-
-        on_target_object = self.motor_system._policy.is_on_target_object(
-            self._observation,
-            sensor_id,
-            target_semantic_id=self.primary_target["semantic_id"],
-            multiple_objects_present=multiple_objects_present,
-        )
-        num_attempts = 0
-        while not on_target_object and num_attempts < max_orientation_attempts:
-            actions = self.motor_system._policy.orient_to_object(
-                self._observation,
-                sensor_id,
-                target_semantic_id=self.primary_target["semantic_id"],
-                multiple_objects_present=multiple_objects_present,
-                state=self.motor_system._state,
-            )
-            for action in actions:
-                self._observation, proprio_state = self.dataset[action]
-                self.motor_system._state = (
-                    MotorSystemState(proprio_state) if proprio_state else None
-                )
-            on_target_object = self.motor_system._policy.is_on_target_object(
-                self._observation,
-                sensor_id,
-                target_semantic_id=self.primary_target["semantic_id"],
-                multiple_objects_present=multiple_objects_present,
-            )
-            num_attempts += 1
-
-        return on_target_object
+        return result.success
 
     def get_good_view_with_patch_refinement(self) -> bool:
         """Policy to get a good view of the object for the central patch.

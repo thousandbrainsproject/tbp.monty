@@ -26,9 +26,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PretrainLoggingConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+    EnvironmentDataLoaderPerObjectEvalArgs,
+    EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
-    InformedEnvironmentDataLoaderEvalArgs,
-    InformedEnvironmentDataLoaderTrainArgs,
     PredefinedObjectInitializer,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
@@ -41,9 +41,6 @@ from tbp.monty.frameworks.run_parallel import main as run_parallel
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsPatchViewMount,
     PatchViewFinderMountHabitatDatasetArgs,
-)
-from tests.unit.feature_flags import (
-    create_config_with_get_good_view_positioning_procedure,
 )
 from tests.unit.graph_learning_test import MotorSystemConfigFixed
 
@@ -78,14 +75,14 @@ class RunParallelTest(unittest.TestCase):
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=InformedEnvironmentDataLoaderTrainArgs(
+            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     rotations=self.train_rotations
                 ),
             ),
             eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=InformedEnvironmentDataLoaderEvalArgs(
+            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
                 object_names=[],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -104,7 +101,7 @@ class RunParallelTest(unittest.TestCase):
                 n_eval_epochs=len(self.eval_rotations),
                 model_name_or_path=os.path.join(self.output_dir, "pretrained"),
             ),
-            eval_dataloader_args=InformedEnvironmentDataLoaderEvalArgs(
+            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     rotations=self.eval_rotations
@@ -364,25 +361,6 @@ class RunParallelTest(unittest.TestCase):
         self.assertTrue(pcsv_gt.equals(scsv_gt))
 
         shutil.rmtree(self.output_dir)
-
-
-class RunParallelTestWithGetGoodViewPositioningProcedure(RunParallelTest):
-    def setUp(self):
-        super().setUp()
-        self.supervised_pre_training = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.supervised_pre_training
-            )
-        )
-        self.eval_config = create_config_with_get_good_view_positioning_procedure(
-            self.eval_config
-        )
-        self.eval_config_lt = create_config_with_get_good_view_positioning_procedure(
-            self.eval_config_lt
-        )
-        self.eval_config_gt = create_config_with_get_good_view_positioning_procedure(
-            self.eval_config_gt
-        )
 
 
 if __name__ == "__main__":
