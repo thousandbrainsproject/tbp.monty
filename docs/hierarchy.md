@@ -136,4 +136,8 @@
 - [oss-communication-improvements](future-work/oss-communication-improvements.md)
   - [organize-start-podcast-series](future-work/oss-communication-improvements/organize-start-podcast-series.md)
   - [make-more-condensed-videos-about-the-project-monty](future-work/oss-communication-improvements/make-more-condensed-videos-about-the-project-monty.md)
+# theory: Neuroscience Theory
+- [theory-overview](theory/theory-overview.md)
+- [recent-progress](theory/recent-progress.md)
+  - [object-behaviors](theory/recent-progress/object-behaviors.md)
 <!-- vale on -->
