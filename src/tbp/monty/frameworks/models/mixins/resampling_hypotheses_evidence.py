@@ -20,6 +20,8 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_relevant_curvature,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    align_multiple_orthonormal_vectors,
+    get_more_directions_in_plane,
     rotate_pose_dependent_features,
 )
 
@@ -70,6 +72,12 @@ class ResamplingHypothesesEvidenceMixin:
                 "ResamplingHypothesesEvidenceMixin must be mixed in with a subclass of "
                 f"EvidenceGraphLM, got {cls.__bases__}"
             )
+
+    def _num_hyps_per_node(self, features, input_channel):
+        if self.initial_possible_poses is None:
+            return 2 if features[input_channel]["pose_fully_defined"] else 8
+        else:
+            return len(self.initial_possible_poses)
 
     def _update_evidence(
         self,
@@ -178,12 +186,8 @@ class ResamplingHypothesesEvidenceMixin:
         graph_num_points = self.graph_memory.get_locations_in_graph(
             graph_id, input_channel
         ).shape[0]
-
-        full_informed_count = (
-            graph_num_points * 2
-            if features["patch"]["pose_fully_defined"]
-            else graph_num_points * 8
-        )
+        num_hyps_per_node = self._num_hyps_per_node(features, input_channel)
+        full_informed_count = graph_num_points * num_hyps_per_node
 
         # if hypothesis space does not exist, we initialize with informed hypotheses
         if input_channel not in self.channel_hypothesis_mapping[graph_id].channels:
@@ -200,9 +204,12 @@ class ResamplingHypothesesEvidenceMixin:
         )
         # needed existing hypotheses should not exceed the existing hypotheses
         # if trying to maintain more hypotheses, set the available count as ceiling
+        # We also need to make new_informed divisible by the number of hypotheses per
+        # graph node because we will sample by node evidence first.
         if existing_maintained > current:
             existing_maintained = current
             new_informed = needed - current
+            new_informed -= new_informed % num_hyps_per_node
 
         # needed informed hypotheses should not exceed the available informed hypotheses
         # if trying to sample more hypotheses, set the available count as ceiling
@@ -215,6 +222,99 @@ class ResamplingHypothesesEvidenceMixin:
         )
 
     def _sample_informed(
+        self,
+        features: Dict,
+        graph_id: str,
+        informed_count: int,
+        input_channel: str,
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Samples the specified number of fully informed hypotheses.
+
+        Args:
+            features (dict): Input features.
+            graph_id (str): Identifier of the graph being queried.
+            informed_count (int): Number of fully informed hypotheses to sample.
+            input_channel: The channel for which hypotheses are sampled.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray, np.ndarray]: Tuple containing
+                selected locations, rotations, and evidence data.
+
+        """
+        # Return empty arrays for no hypotheses to sample
+        if informed_count == 0:
+            return np.zeros((0, 3)), np.zeros((0, 3, 3)), np.zeros(0)
+
+        num_hyps_per_node = self._num_hyps_per_node(features, input_channel)
+
+        # === Calculate selected evidence by top-k indices === #
+        if self.use_features_for_matching[input_channel]:
+            node_feature_evidence = self._calculate_feature_evidence_for_all_nodes(
+                features, input_channel, graph_id
+            )
+            top_indices = np.argsort(node_feature_evidence)[
+                -int(informed_count // num_hyps_per_node) :
+            ]
+            node_feature_evidence_filtered = node_feature_evidence[top_indices]
+        else:
+            num_nodes = self.graph_memory.get_num_nodes_in_graph(graph_id)
+            top_indices = np.arange(num_nodes)[
+                : int(informed_count // num_hyps_per_node)
+            ]
+            node_feature_evidence_filtered = np.zeros(len(top_indices))
+
+        selected_evidence = np.tile(node_feature_evidence_filtered, num_hyps_per_node)
+
+        # === Calculate selected locations by top-k indices === #
+        all_channel_locations_filtered = self.graph_memory.get_locations_in_graph(
+            graph_id, input_channel
+        )[top_indices]
+        selected_locations = np.tile(
+            all_channel_locations_filtered, (num_hyps_per_node, 1)
+        )
+
+        # === Calculate selected rotations by top-k indices === #
+        if self.initial_possible_poses is None:
+            node_directions_filtered = (
+                self.graph_memory.get_rotation_features_at_all_nodes(
+                    graph_id, input_channel
+                )[top_indices]
+            )
+            sensed_directions = features[input_channel]["pose_vectors"]
+            if num_hyps_per_node == 2:
+                possible_s_d = [
+                    sensed_directions.copy(),
+                    sensed_directions.copy(),
+                ]
+                possible_s_d[1][1:] = possible_s_d[1][1:] * -1
+            else:
+                possible_s_d = get_more_directions_in_plane(
+                    sensed_directions, num_hyps_per_node
+                )
+
+            selected_rotations = np.vstack(
+                [
+                    align_multiple_orthonormal_vectors(
+                        node_directions_filtered, s_d, as_scipy=False
+                    )
+                    for s_d in possible_s_d
+                ]
+            )
+
+        else:
+            selected_rotations = np.vstack(
+                [
+                    np.tile(
+                        rotation.as_matrix()[np.newaxis, ...],
+                        (len(top_indices), 1, 1),
+                    )
+                    for rotation in self.initial_possible_poses
+                ]
+            )
+
+        return selected_locations, selected_rotations, selected_evidence
+
+    def _sample_informed_inefficient(
         self,
         features: Dict,
         graph_id: str,
@@ -486,3 +586,9 @@ class ResamplingHypothesesEvidenceMixin:
         self.channel_hypothesis_mapping[graph_id].resize_channel_by(
             input_channel, len(new_evidence) - channel_size
         )
+
+
+class ResamplingEvidenceGraphLM(ResamplingHypothesesEvidenceMixin, EvidenceGraphLM):
+    """Class to test applying the resampling mixin to EvidenceGraphLM."""
+
+    pass
