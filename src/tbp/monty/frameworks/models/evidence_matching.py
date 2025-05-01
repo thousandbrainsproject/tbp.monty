@@ -24,6 +24,7 @@ from tbp.monty.frameworks.models.graph_matching import (
 )
 from tbp.monty.frameworks.models.mixins.evidence_matching import (
     DefaultEvidenceUpdater,
+    EvidenceLMProtocol,
     EvidenceUpdaterProtocol,
 )
 from tbp.monty.frameworks.models.states import State
@@ -144,7 +145,9 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
             lm.current_mlh["evidence"] = lm.object_evidence_threshold + 1
 
 
-class FixmeAbstractEvidenceGraphLM(GraphLM, EvidenceUpdaterProtocol):
+class FixmeAbstractEvidenceGraphLM(
+    GraphLM, EvidenceLMProtocol, EvidenceUpdaterProtocol
+):
     """Learning module that accumulates evidence for objects and poses.
 
     Matching Attributes:
