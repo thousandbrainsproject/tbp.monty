@@ -478,6 +478,7 @@ class GetGoodView(PositioningProcedure):
         self._max_orientation_attempts = max_orientation_attempts
 
         self._num_orientation_attempts = 0
+        self._executed_multiple_objects_orientation = False
 
     def compute_look_amounts(
         self, relative_location: np.ndarray, state: Optional[MotorSystemState] = None
@@ -711,7 +712,13 @@ class GetGoodView(PositioningProcedure):
         observation: Mapping,
         state: Optional[MotorSystemState] = None,
     ) -> PositioningProcedureResult:
-        if self._multiple_objects_present:
+        if (
+            self._multiple_objects_present
+            and not self._executed_multiple_objects_orientation
+        ):
+            # Setting this flag to True here ensures that this state machine state is
+            # not revisited.
+            self._executed_multiple_objects_orientation = True
             on_target_object = self.is_on_target_object(observation)
             if not on_target_object:
                 return PositioningProcedureResult(
@@ -723,6 +730,10 @@ class GetGoodView(PositioningProcedure):
             if action is not None:
                 logging.debug("Moving closer to object.")
                 return PositioningProcedureResult(actions=[action])
+
+        # Setting this flag to False here ensures that this state machine state is
+        # not revisited.
+        self._allow_translation = False
 
         on_target_object = self.is_on_target_object(observation)
         if (

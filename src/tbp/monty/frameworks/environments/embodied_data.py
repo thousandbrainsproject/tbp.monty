@@ -592,12 +592,10 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             class
         """
         if self._use_get_good_view_positioning_procedure:
-            _configured_policy = self.motor_system._policy
-
-            self.motor_system._policy = GetGoodView(
+            positioning_procedure = GetGoodView(
                 agent_id=self.motor_system._policy.agent_id,
-                desired_object_distance=_configured_policy.desired_object_distance,
-                good_view_percentage=_configured_policy.good_view_percentage,
+                desired_object_distance=self.motor_system._policy.desired_object_distance,
+                good_view_percentage=self.motor_system._policy.good_view_percentage,
                 multiple_objects_present=self.num_distractors > 0,
                 sensor_id=sensor_id,
                 target_semantic_id=self.primary_target["semantic_id"],
@@ -618,7 +616,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 action_sampler_class=UniformlyDistributedSampler,
                 switch_frequency=0.0,
             )
-            result = self.motor_system._policy.positioning_call(
+            result = positioning_procedure.positioning_call(
                 self._observation, self.motor_system._state
             )
             while not result.terminated and not result.truncated:
@@ -628,11 +626,9 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                         MotorSystemState(proprio_state) if proprio_state else None
                     )
 
-                result = self.motor_system._policy.positioning_call(
+                result = positioning_procedure.positioning_call(
                     self._observation, self.motor_system._state
                 )
-
-            self.motor_system._policy = _configured_policy
 
             return result.success
 
