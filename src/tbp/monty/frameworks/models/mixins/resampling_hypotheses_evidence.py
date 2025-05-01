@@ -230,6 +230,25 @@ class ResamplingHypothesesEvidenceMixin:
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Samples the specified number of fully informed hypotheses.
 
+        This method selects hypotheses that are most likely to be informative based on
+        feature evidence. Specifically, it identifies the top-k nodes with the highest
+        evidence scores and samples hypotheses only from those nodes, making the process
+        more efficient than uniformly sampling from all graph nodes.
+
+        The sampling includes:
+          - Selecting the top-k node indices based on evidence scores, where k is
+             determined by the `informed_count` and the number of hypotheses per node.
+          - Fetching the 3D locations of only the selected top-k nodes.
+          - Generating rotations for each hypothesis using one of two strategies:
+            (a) If `initial_possible_poses` is set, rotations are uniformly sampled or
+                user-defined.
+            (b) Otherwise, alignments are computed between stored node poses and
+                sensed directions.
+
+        This targeted sampling improves efficiency by avoiding unnecessary computation
+        for nodes with low evidence, especially beneficial when informed sampling occurs
+        at every step.
+
         Args:
             features (dict): Input features.
             graph_id (str): Identifier of the graph being queried.
@@ -334,13 +353,13 @@ class ResamplingHypothesesEvidenceMixin:
                 selected locations, rotations, and evidence data.
 
         """
+        # TODO: Remove this function after approving the more efficient version
+        # `_sample_informed`.
+
         # Return empty arrays for no hypotheses to sample
         if informed_count == 0:
             return np.zeros((0, 3)), np.zeros((0, 3, 3)), np.zeros(0)
 
-        # TODO override `_get_initial_hypothesis_space` to postpone the rotation
-        # calculation until after the points have been sampled based on
-        # `_calculate_feature_evidence_for_all_nodes`.
         (
             initial_possible_channel_locations,
             initial_possible_channel_rotations,
