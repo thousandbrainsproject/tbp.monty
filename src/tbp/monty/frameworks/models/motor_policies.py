@@ -716,6 +716,8 @@ class GetGoodView(PositioningProcedure):
             self._multiple_objects_present
             and not self._executed_multiple_objects_orientation
         ):
+            # Current implementation only orients to the object once in the case
+            # where there are multiple objects.
             self._executed_multiple_objects_orientation = True
             on_target_object = self.is_on_target_object(observation)
             if not on_target_object:
@@ -729,6 +731,8 @@ class GetGoodView(PositioningProcedure):
                 logging.debug("Moving closer to object.")
                 return PositioningProcedureResult(actions=[action])
 
+        # If we get here, the current implementation will not attempt to move
+        # closer to the object again.
         self._allow_translation = False
 
         on_target_object = self.is_on_target_object(observation)
