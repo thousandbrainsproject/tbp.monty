@@ -24,6 +24,7 @@ from tbp.monty.frameworks.loggers.graph_matching_loggers import (
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule, LMMemory
 from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_state_generation import GraphGoalStateGenerator
+from tbp.monty.frameworks.models.mixins.evidence_matching import GraphLMProtocol
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 
@@ -572,7 +573,7 @@ class MontyForGraphMatching(MontyBase):
             self._is_done = True
 
 
-class GraphLM(LearningModule):
+class GraphLM(LearningModule, GraphLMProtocol):
     """General Learning Module that contains a graph memory.
 
     Subclasses are DisplacementGraphLM, FeatureGraphLM, and EvidenceGraphLM.
