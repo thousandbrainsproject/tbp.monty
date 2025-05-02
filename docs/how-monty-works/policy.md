@@ -52,7 +52,7 @@ Some more details on the positioning procedures are provided below.
 - This is called by the distant agent in the pre-episode period, and makes use of the view-finder. To estimate whether it is on an object, it can either make use of the semantic-sensor (which provides ground-truth information about whether an object is in view and its label), or it can approximate this information using a heuristic based on depth-differences.
 - Information in the view-finder is used to orient the view-finder, and the associated sensor-patch(es) onto the object, before moving closer to the object as required.
 - Contains additional logic for handling multiple objects, in particular making sure the agent *begins* on the target object in an experiment where there are distractor objects. This is less relevant for the surface agent, as currently multi-object experiments are only for the distant agent.
-- Key parameters that determine the behavior of the utility function are `good_view_percentage` and `desired_object_distance`. The primary check of the algorithm is to compare `perc_on_target_obj` (the percent of the view-finder's visual field that is filled by the object) against the desired `good_view_percentage`.  `closest_point_on_target_obj` simply serves to ensure we don't get too close to the object
+- Key parameters that determine the behavior of the positioning procedure are `good_view_percentage` and `desired_object_distance`. The primary check of the algorithm is to compare `perc_on_target_obj` (the percent of the view-finder's visual field that is filled by the object) against the desired `good_view_percentage`.  `closest_point_on_target_obj` simply serves to ensure we don't get too close to the object
 
 ### Touch Object
 - This can be called by the surface agent when determining the next action (even within an episode), and makes use of the view-finder, but not the semantic-sensor.
@@ -64,7 +64,7 @@ As the positioning procedures were implemented in the early development of Monty
 1) Positioning procedures should only be called in `pre_episode`, i.e. before the episode begins.
 2) Positioning procedures may make use of privileged information such as the view-finder and semantic-sensor, which are not available to the learning module. However, consistent with point (1), these should not be leveraged during learning or inference by the Monty agent.
 
-These requirements are currently not enforced in the use of `GetGoodView` and `touch_object` when an agent jumps to a location using a model-based policy. Similarly, `touch_object` is used by the surface agent if it loses contact with the object and cannot find it. Appropriately separating out the role of utility functions via the above requirements will clarify their role, and enable policies that do not make use of privileged information, but which serve similar purposes during an experiment.
+These requirements are currently not enforced in the use of `GetGoodView` and `touch_object` when an agent jumps to a location using a model-based policy. Similarly, `touch_object` is used by the surface agent if it loses contact with the object and cannot find it. Appropriately separating out the role of positioning procedures via the above requirements will clarify their role, and enable policies that do not make use of privileged information, but which serve similar purposes during an experiment.
 
 
 # Input-Driven and Hypothesis-Driven Policies
