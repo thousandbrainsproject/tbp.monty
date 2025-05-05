@@ -295,7 +295,9 @@ class ResamplingHypothesesEvidenceMixin:
             top_indices = np.argsort(node_feature_evidence)[
                 -int(informed_count // num_hyps_per_node) :
             ]
-            node_feature_evidence_filtered = node_feature_evidence[top_indices]
+            node_feature_evidence_filtered = (
+                node_feature_evidence[top_indices] * self.feature_evidence_increment
+            )
         else:
             num_nodes = self.graph_memory.get_num_nodes_in_graph(graph_id)
             top_indices = np.arange(num_nodes)[

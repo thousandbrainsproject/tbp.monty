@@ -466,7 +466,26 @@ def find_step_on_new_object(
         return None
 
 
-def possible_sensed_directions(sensed_directions, num_hyps_per_node):
+def possible_sensed_directions(
+    sensed_directions: np.ndarray, num_hyps_per_node: int
+) -> np.ndarray:
+    """Returns the possible sensed directions for all nodes.
+
+    This function determines the possible sensed directions for a given set of sensed
+    direction. It relies on two different behaviors depending on the value of
+    num_hyps_per_node.
+
+    If num_hyps_per_node equals 2, then pose is well defined (i.e., PC1 != PC2).
+    Otherwise, this function is samples additional poses in the plane perpendicular
+    to the sensed point normal.
+
+    Arguments:
+        sensed_directions: An array of sensed directions.
+        num_hyps_per_node: Number of rotations to get for each node.
+
+    Returns:
+        possible_s_d : Possible sensed direction for all nodes at each rotation
+    """
     if num_hyps_per_node == 2:
         possible_s_d = [
             sensed_directions.copy(),

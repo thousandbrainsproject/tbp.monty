@@ -65,9 +65,11 @@ class FeatureGraphLM(GraphLM):
             pose_similarity_threshold: difference between two poses to be considered
                 unique when checking for the terminal condition (in radians).
             required_symmetry_evidence: number of steps with unchanged possible poses
-                to classify an object as symetric and go into terminal condition.
+                to classify an object as symmetric and go into terminal condition.
             initial_possible_poses: initial possible poses that should be tested for.
                 In ["uniform", "informed", list]. default = "informed".
+            umbilical_num_poses: Number of samples rotations in the direction
+                of the plane perpendicular to the point normal.
         """
         super(FeatureGraphLM, self).__init__()
         self.graph_memory = FeatureGraphMemory(

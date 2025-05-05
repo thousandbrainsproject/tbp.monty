@@ -174,6 +174,8 @@ class EvidenceGraphLM(GraphLM):
             radius of a hypothesis for calculating the evidence.
         initial_possible_poses: initial possible poses that should be tested for.
             In ["uniform", "informed", list]. default = "informed".
+        umbilical_num_poses: Number of samples rotations in the direction
+            of the plane perpendicular to the point normal.
         evidence_update_threshold: How to decide which hypotheses should be updated.
             When this parameter is either '[int]%' or 'x_percent_threshold', then
             this parameter is applied to the evidence for the Most Likely Hypothesis
@@ -1608,11 +1610,11 @@ class EvidenceGraphLM(GraphLM):
             "pose_fully_defined" in sensed_features[input_channel].keys()
             and not sensed_features[input_channel]["pose_fully_defined"]
         ):
-            possible_s_d = possible_sensed_directions(sensed_directions, 2)
-        else:
             possible_s_d = possible_sensed_directions(
                 sensed_directions, self.umbilical_num_poses
             )
+        else:
+            possible_s_d = possible_sensed_directions(sensed_directions, 2)
 
         for s_d in possible_s_d:
             # Since we have orthonormal vectors and know their correspondence we can
