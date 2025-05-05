@@ -138,7 +138,7 @@ Remove timeouts which were used to mitigate the racing issue but are
 obsolete now.
 
 Reviewed-by: Z
-Refs: #123
+Refs: #129
 ```
 
 ## Pull Requests
