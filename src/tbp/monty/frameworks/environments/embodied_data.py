@@ -437,9 +437,6 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
     iv) Supports hypothesis-testing "jump" policy
     """
 
-    def __init__(self, *args, **kwargs):
-        super(InformedEnvironmentDataLoader, self).__init__(*args, **kwargs)
-
     def __iter__(self):
         # Overwrite original because we don't want to reset agent at this stage
         # (already done in pre-episode)
