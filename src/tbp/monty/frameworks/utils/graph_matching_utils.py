@@ -15,6 +15,8 @@ from itertools import permutations
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.utils.spatial_arithmetics import get_more_directions_in_plane
+
 
 def get_correct_k_n(k_n, num_datapoints):
     """Determine k_n given the number of datapoints.
@@ -462,3 +464,17 @@ def find_step_on_new_object(
         return np.where(conv)[0][0] + n_steps_off_primary_target - 1
     else:
         return None
+
+
+def possible_sensed_directions(sensed_directions, num_hyps_per_node):
+    if num_hyps_per_node == 2:
+        possible_s_d = [
+            sensed_directions.copy(),
+            sensed_directions.copy(),
+        ]
+        possible_s_d[1][1:] = possible_s_d[1][1:] * -1
+    else:
+        possible_s_d = get_more_directions_in_plane(
+            sensed_directions, num_hyps_per_node
+        )
+    return possible_s_d

@@ -18,10 +18,10 @@ from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_custom_distances,
     get_relevant_curvature,
+    possible_sensed_directions,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_multiple_orthonormal_vectors,
-    get_more_directions_in_plane,
     rotate_pose_dependent_features,
 )
 
@@ -38,11 +38,15 @@ class ResamplingHypothesesEvidenceMixin:
       - `hypotheses_existing_to_new_ratio`: controls the proportion of existing vs.
           informed hypotheses during resampling.
 
-    Raises:
-        TypeError: If used in a class that is not a subclass of `EvidenceGraphLM`.
+    To reproduce the original behavior of `EvidenceGraphLM` sampling a fixed number of
+    hypotheses only at the beginning of the episode, you can set
+    `hypotheses_count_multiplier=1.0` and `hypotheses_existing_to_new_ratio=0.0`.
 
     Compatible with:
         - EvidenceGraphLM
+
+    Raises:
+        TypeError: If used in a class that is not a subclass of `EvidenceGraphLM`.
     """
 
     def __init__(
@@ -75,7 +79,11 @@ class ResamplingHypothesesEvidenceMixin:
 
     def _num_hyps_per_node(self, features, input_channel):
         if self.initial_possible_poses is None:
-            return 2 if features[input_channel]["pose_fully_defined"] else 8
+            return (
+                2
+                if features[input_channel]["pose_fully_defined"]
+                else self.umbilical_num_poses
+            )
         else:
             return len(self.initial_possible_poses)
 
@@ -104,10 +112,12 @@ class ResamplingHypothesesEvidenceMixin:
         """
         start_time = time.time()
 
+        # Initialize a `ChannelMapper` to keep track of input channel range
+        # of hypotheses for a specific graph_id
         if graph_id not in self.channel_hypothesis_mapping:
             self.channel_hypothesis_mapping[graph_id] = ChannelMapper()
 
-        # get all usable input channels
+        # Get all usable input channels
         input_channels_to_use = [
             ic
             for ic in features.keys()
@@ -129,6 +139,8 @@ class ResamplingHypothesesEvidenceMixin:
             )
 
             # === DISPLACE HYPOTHESES ===
+            # We only displace existing hypotheses since the newly resampled hypotheses
+            # should not be affected by the displacement from the last sensory input.
             if existing_count > 0:
                 existing_locations, existing_evidence = self._displace_hypotheses(
                     features,
@@ -175,7 +187,8 @@ class ResamplingHypothesesEvidenceMixin:
         Returns:
             Tuple[int, int]: A tuple containing the number of existing and new
                 hypotheses needed. Existing hypotheses are maintained from existing ones
-                while new hypotheses are fully informed by pose sensory information.
+                while new hypotheses will be initialized, informed by pose sensory
+                information.
 
         Notes:
             This function takes into account the following ratios:
@@ -189,30 +202,34 @@ class ResamplingHypothesesEvidenceMixin:
         num_hyps_per_node = self._num_hyps_per_node(features, input_channel)
         full_informed_count = graph_num_points * num_hyps_per_node
 
-        # if hypothesis space does not exist, we initialize with informed hypotheses
+        # If hypothesis space does not exist, we initialize with informed hypotheses
         if input_channel not in self.channel_hypothesis_mapping[graph_id].channels:
             return 0, full_informed_count
 
-        # calculate the total number of hypotheses needed
+        # Calculate the total number of hypotheses needed
         current = self.channel_hypothesis_mapping[graph_id].channel_size(input_channel)
         needed = current * self.hypotheses_count_multiplier
 
-        # calculate how many existing and new hypotheses needed
+        # Calculate how many existing and new hypotheses needed
         existing_maintained, new_informed = (
             needed * (1 - self.hypotheses_existing_to_new_ratio),
             needed * self.hypotheses_existing_to_new_ratio,
         )
-        # needed existing hypotheses should not exceed the existing hypotheses
+
+        # Needed existing hypotheses should not exceed the existing hypotheses
         # if trying to maintain more hypotheses, set the available count as ceiling
-        # We also need to make new_informed divisible by the number of hypotheses per
-        # graph node because we will sample by node evidence first.
+
+        # We make sure that `new_informed` is divisible by the number of hypotheses
+        # per graph node. This allows for sampling the graph nodes first (according
+        # to evidence) then multiply by the `num_hyps_per_node`, as shown in
+        # `_sample_informed`.
         if existing_maintained > current:
             existing_maintained = current
             new_informed = needed - current
             new_informed -= new_informed % num_hyps_per_node
 
-        # needed informed hypotheses should not exceed the available informed hypotheses
-        # if trying to sample more hypotheses, set the available count as ceiling
+        # Needed informed hypotheses should not exceed the available informed hypotheses
+        # If trying to sample more hypotheses, set the available count as ceiling
         if new_informed > full_informed_count:
             new_informed = full_informed_count
 
@@ -271,6 +288,10 @@ class ResamplingHypothesesEvidenceMixin:
             node_feature_evidence = self._calculate_feature_evidence_for_all_nodes(
                 features, input_channel, graph_id
             )
+            # Find the indices to nodes with highest evidence scores. The sorting
+            # is done in ascending order, so extract the indices from the end of
+            # the argsort array. We get the needed number of informed nodes not
+            # the number of needed hypotheses.
             top_indices = np.argsort(node_feature_evidence)[
                 -int(informed_count // num_hyps_per_node) :
             ]
@@ -300,17 +321,9 @@ class ResamplingHypothesesEvidenceMixin:
                 )[top_indices]
             )
             sensed_directions = features[input_channel]["pose_vectors"]
-            if num_hyps_per_node == 2:
-                possible_s_d = [
-                    sensed_directions.copy(),
-                    sensed_directions.copy(),
-                ]
-                possible_s_d[1][1:] = possible_s_d[1][1:] * -1
-            else:
-                possible_s_d = get_more_directions_in_plane(
-                    sensed_directions, num_hyps_per_node
-                )
-
+            possible_s_d = possible_sensed_directions(
+                sensed_directions, num_hyps_per_node
+            )
             selected_rotations = np.vstack(
                 [
                     align_multiple_orthonormal_vectors(
@@ -394,9 +407,6 @@ class ResamplingHypothesesEvidenceMixin:
         Returns:
             Tuple[np.ndarray, np.ndarray, np.ndarray]: Tuple containing
                 selected locations, rotations, and evidence scores.
-
-        Notes:
-            Currently samples based on available count instead of evidence slope.
         """
         # Return empty arrays for no hypotheses to sample
         if existing_count == 0:
@@ -560,7 +570,7 @@ class ResamplingHypothesesEvidenceMixin:
             new_rot_hypotheses (np.ndarray): New object poses hypotheses
             new_evidence (np.ndarray): New evidence values for the input channel
         """
-        # add a new channel to the mapping if the hypotheses space doesn't exist
+        # Add a new channel to the mapping if the hypotheses space doesn't exist
         if input_channel not in self.channel_hypothesis_mapping[graph_id].channels:
             self.possible_locations[graph_id] = np.array(new_loc_hypotheses)
             self.possible_poses[graph_id] = np.array(new_rot_hypotheses)
@@ -578,6 +588,10 @@ class ResamplingHypothesesEvidenceMixin:
             input_channel
         )
 
+        # This concatenation operation for location, poses and evidence replaces
+        # the existing hypothesis space. The new hypothesis space in inserted
+        # in place of the existing hypothesis space by referencing the channel
+        # start and end indices.
         self.possible_locations[graph_id] = np.concatenate(
             [
                 self.possible_locations[graph_id][:channel_start_ix],
