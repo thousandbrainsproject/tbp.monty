@@ -802,8 +802,8 @@ class EvidenceGraphLM(GraphLM):
                 graph_id, input_channel
             )
             # Initialize fixed possible poses (without using pose features)
-            for node_id in range(len(all_channel_locations)):
-                for rotation in self.initial_possible_poses:
+            for rotation in self.initial_possible_poses:
+                for node_id in range(len(all_channel_locations)):
                     initial_possible_channel_locations.append(
                         all_channel_locations[node_id]
                     )
