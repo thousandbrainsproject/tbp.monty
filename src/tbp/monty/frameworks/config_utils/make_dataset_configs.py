@@ -312,30 +312,15 @@ class EnvironmentDataloaderPerObjectArgs:
 
 
 @dataclass
-class InformedEnvironmentDataLoaderPerObjectArgs(EnvironmentDataloaderPerObjectArgs):
-    use_get_good_view_positioning_procedure: bool = False
-
-
-@dataclass
 class EnvironmentDataLoaderPerObjectTrainArgs(EnvironmentDataloaderPerObjectArgs):
     object_names: List = field(default_factory=lambda: DefaultTrainObjectList().objects)
     object_init_sampler: Callable = field(default_factory=DefaultObjectInitializer)
 
 
 @dataclass
-class InformedEnvironmentDataLoaderTrainArgs(EnvironmentDataLoaderPerObjectTrainArgs):
-    use_get_good_view_positioning_procedure: bool = False
-
-
-@dataclass
 class EnvironmentDataLoaderPerObjectEvalArgs(EnvironmentDataloaderPerObjectArgs):
     object_names: List = field(default_factory=lambda: DefaultTrainObjectList().objects)
     object_init_sampler: Callable = field(default_factory=DefaultObjectInitializer)
-
-
-@dataclass
-class InformedEnvironmentDataLoaderEvalArgs(EnvironmentDataLoaderPerObjectEvalArgs):
-    use_get_good_view_positioning_procedure: bool = False
 
 
 @dataclass
@@ -362,13 +347,6 @@ class FixedRotationEnvironmentDataLoaderPerObjectEvalArgs(
 class EnvironmentDataloaderMultiObjectArgs:
     object_names: Dict  # Note Dict and not List
     object_init_sampler: Callable
-
-
-@dataclass
-class InformedEnvironmentDataloaderMultiObjectArgs(
-    EnvironmentDataloaderMultiObjectArgs
-):
-    use_get_good_view_positioning_procedure: bool = False
 
 
 def get_object_names_by_idx(

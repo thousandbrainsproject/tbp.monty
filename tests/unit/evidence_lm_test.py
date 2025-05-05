@@ -35,9 +35,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
     TwoLMStackedMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+    EnvironmentDataLoaderPerObjectEvalArgs,
+    EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
-    InformedEnvironmentDataLoaderEvalArgs,
-    InformedEnvironmentDataLoaderTrainArgs,
     PredefinedObjectInitializer,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
@@ -67,9 +67,6 @@ from tbp.monty.simulators.habitat.configs import (
     NoisyPatchViewFinderMountHabitatDatasetArgs,
     PatchViewFinderMountHabitatDatasetArgs,
     TwoLMStackedDistantMountHabitatDatasetArgs,
-)
-from tests.unit.feature_flags import (
-    create_config_with_get_good_view_positioning_procedure,
 )
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
@@ -167,12 +164,12 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=InformedEnvironmentDataLoaderTrainArgs(
+            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
             eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=InformedEnvironmentDataLoaderEvalArgs(
+            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
                 object_names=["capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -214,7 +211,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 learning_module_configs=default_evidence_lm_config,
             ),
             train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=InformedEnvironmentDataLoaderTrainArgs(
+            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=["capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     rotations=[[0, 0, 0]],
@@ -2069,89 +2066,6 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.evaluate()
             eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
             self.check_hierarchical_lm_eval_results(eval_stats)
-
-
-class EvidenceLMTestWithGetGoodViewPositioningProcedure(EvidenceLMTest):
-    def setUp(self):
-        super().setUp()
-        self.evidence_config = create_config_with_get_good_view_positioning_procedure(
-            self.evidence_config
-        )
-        self.fixed_actions_evidence = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.fixed_actions_evidence
-            )
-        )
-        self.evidence_tests_off_object = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.evidence_tests_off_object
-            )
-        )
-        self.evidence_tests_time_out = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.evidence_tests_time_out
-            )
-        )
-        self.evidence_test_uniform_initial_poses = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.evidence_test_uniform_initial_poses
-            )
-        )
-        self.fixed_possible_poses_evidence = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.fixed_possible_poses_evidence
-            )
-        )
-        self.no_features_evidence = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.no_features_evidence
-            )
-        )
-        self.no_multithreding_5lm_evidence = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.no_multithreding_5lm_evidence
-            )
-        )
-        self.evidence_5lm_config = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.evidence_5lm_config
-            )
-        )
-        self.evidence_5lm_basic_logging = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.evidence_5lm_basic_logging
-            )
-        )
-        self.evidence_5lm_3done_config = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.evidence_5lm_3done_config
-            )
-        )
-        self.evidence_5lm_off_object_config = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.evidence_5lm_off_object_config
-            )
-        )
-        self.maxnn1_5lm_evidence = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.maxnn1_5lm_evidence
-            )
-        )
-        self.bounded_evidence_5lm_evidence = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.bounded_evidence_5lm_evidence
-            )
-        )
-        self.noise_mixin_config = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.noise_mixin_config
-            )
-        )
-        self.two_lms_heterarchy_config = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.two_lms_heterarchy_config
-            )
-        )
 
 
 if __name__ == "__main__":

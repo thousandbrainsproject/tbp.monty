@@ -24,9 +24,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PretrainLoggingConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+    EnvironmentDataLoaderPerObjectEvalArgs,
+    EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
-    InformedEnvironmentDataLoaderEvalArgs,
-    InformedEnvironmentDataLoaderTrainArgs,
     PredefinedObjectInitializer,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
@@ -40,9 +40,6 @@ from tbp.monty.frameworks.utils.graph_matching_utils import get_correct_k_n
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsPatchViewMount,
     PatchViewFinderMountHabitatDatasetArgs,
-)
-from tests.unit.feature_flags import (
-    create_config_with_get_good_view_positioning_procedure,
 )
 
 
@@ -78,14 +75,14 @@ class GraphLearningTest(unittest.TestCase):
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=InformedEnvironmentDataLoaderTrainArgs(
+            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     rotations=self.habitat_learned_rotations
                 ),
             ),
             eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=InformedEnvironmentDataLoaderEvalArgs(
+            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
                 object_names=[],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -115,14 +112,14 @@ class GraphLearningTest(unittest.TestCase):
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=InformedEnvironmentDataLoaderTrainArgs(
+            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     rotations=self.habitat_learned_rotations
                 ),
             ),
             eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=InformedEnvironmentDataLoaderEvalArgs(
+            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -378,34 +375,6 @@ class GraphLearningTest(unittest.TestCase):
                 )
             pprint("...evaluating on loaded models...")
             exp.train()
-
-
-class GraphLearningTestWithGetGoodViewPositioningProcedure(GraphLearningTest):
-    def setUp(self):
-        super().setUp()
-        self.supervised_pre_training_in_habitat = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.supervised_pre_training_in_habitat
-            )
-        )
-        self.load_habitat_config = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.load_habitat_config
-            )
-        )
-        self.load_habitat_for_ppf = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.load_habitat_for_ppf
-            )
-        )
-        self.load_habitat_for_feat = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.load_habitat_for_feat
-            )
-        )
-        self.spth_feat = create_config_with_get_good_view_positioning_procedure(
-            self.spth_feat
-        )
 
 
 if __name__ == "__main__":
