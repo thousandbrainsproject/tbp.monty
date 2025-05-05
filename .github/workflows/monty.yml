@@ -341,7 +341,7 @@ jobs:
           source activate tbp.monty
           set -e
           mkdir -p test_results/pytest
-          xvfb-run pytest --cov --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose
+          xvfb-run pytest --cov --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose --capture=no
       - name: Store test results
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/upload-artifact@v4
