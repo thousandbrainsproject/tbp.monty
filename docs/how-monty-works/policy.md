@@ -36,35 +36,35 @@ Note that the differences between the agents and action spaces are in some sense
 ![Surface-agent and distant-agent action spaces contrasted. The distant-agent agent generally remains in one location while tilting its camera along two axes. The surface-agent agent can change its location but has to remain perpendicular and close to the object’s surface. Note that the action space can be independent of sensory modalities; for example, the surface agent can still have an RGB camera for detecting colors.](../figures/how-monty-works/touch_vs_vision.png#width=500px)
 
 
-# Utility Functions/Policies
+# Positioning Procedures
 
-Before an experiment starts, the agent is moved to an appropriate starting position relative to the object. This serves to setup the conditions desired by the human operator for the Monty agent, and is analogous to a neurophysiologist lifting an animal to place it in a particular location and orientation in a lab environment. As such, these are considered utility functions or "policies", in that they are not driven by the intelligence of the Monty system, although they currently make use of its internal action spaces. Furthermore, sensory observations that occur during the execution of a utility policy are not sent to the learning module(s) of the Monty system, as they have access to privileged information, such as a wider field-of-view camera. Two such policies exist, one for the distant agent (`get_good_view`), and one for the surface agent (`touch_object`).
+Before an experiment starts, the agent is positioned to an appropriate starting position relative to the object. This serves to setup the conditions desired by the human operator for the Monty agent, and is analogous to a neurophysiologist lifting an animal to place it in a particular location and orientation in a lab environment. As such, these are considered positioning procedures, in that they are not driven by the intelligence of the Monty system, although they currently make use of its internal action spaces. Furthermore, sensory observations that occur during the execution of a positioning procedure are not sent to the learning module(s) of the Monty system, as they have access to privileged information, such as a wider field-of-view camera. Two such positioning procedures exist, one for the distant agent (`GetGoodView`), and one for the surface agent (`touch_object`).
 
-For the former, the distant agent is moved to a "good view" such that small and large objects in the data set cover approximately a similar space in the camera image (see figure below). **To determine a good view we use the view-finder** which is a camera without zoom and which sees a larger picture than the sensor patch. Without `get_good_view`, small objects such as the dice may be smaller than the sensor patch, thereby preventing any movement of the sensor patch on the object (without adjusting the action amount). For large objects, there is a risk that the agent is initialized inside the object as shown in the second image in the first row of the below figure. 
+For the former, the distant agent is moved to a "good view" such that small and large objects in the data set cover approximately a similar space in the camera image (see figure below). **To determine a good view we use the view-finder** which is a camera without zoom and which sees a larger picture than the sensor patch. Without `GetGoodView`, small objects such as the dice may be smaller than the sensor patch, thereby preventing any movement of the sensor patch on the object (without adjusting the action amount). For large objects, there is a risk that the agent is initialized inside the object as shown in the second image in the first row of the below figure.
 
-![Using the same object and agent positions for all objects leads to objects covering different amounts of the sensor view (left). The get_good_view function of the motor system is called once at the beginning of each episode and makes sure that each object covers a similar amount of space in the view-finder (right).](../figures/how-monty-works/get_good_view.png)
+![Using the same object and agent positions for all objects leads to objects covering different amounts of the sensor view (left). The GetGoodView positioning procedure is called once at the beginning of each episode and makes sure that each object covers a similar amount of space in the view-finder (right).](../figures/how-monty-works/get_good_view.png)
 
 `touch_object` serves a similar purpose - the surface agent is moved sufficiently close such that it is essentially on the surface of the object. This will be important in future work when the surface agent has access to sensory inputs, such as texture, that require maintaining physical contact with an object.
 
-Some more details on the utility functions are provided below.
+Some more details on the positioning procedures are provided below.
 
-### Get Good View
+### GetGoodView
 - This is called by the distant agent in the pre-episode period, and makes use of the view-finder. To estimate whether it is on an object, it can either make use of the semantic-sensor (which provides ground-truth information about whether an object is in view and its label), or it can approximate this information using a heuristic based on depth-differences.
 - Information in the view-finder is used to orient the view-finder, and the associated sensor-patch(es) onto the object, before moving closer to the object as required.
 - Contains additional logic for handling multiple objects, in particular making sure the agent *begins* on the target object in an experiment where there are distractor objects. This is less relevant for the surface agent, as currently multi-object experiments are only for the distant agent.
-- Key parameters that determine the behavior of the utility function are `good_view_percentage` and `desired_object_distance`. The primary check of the algorithm is to compare `perc_on_target_obj` (the percent of the view-finder's visual field that is filled by the object) against the desired `good_view_percentage`.  `closest_point_on_target_obj` simply serves to ensure we don't get too close to the object
+- Key parameters that determine the behavior of the positioning procedure are `good_view_percentage` and `desired_object_distance`. The primary check of the algorithm is to compare `perc_on_target_obj` (the percent of the view-finder's visual field that is filled by the object) against the desired `good_view_percentage`.  `closest_point_on_target_obj` simply serves to ensure we don't get too close to the object
 
 ### Touch Object
 - This can be called by the surface agent when determining the next action (even within an episode), and makes use of the view-finder, but not the semantic-sensor.
 - Contains a search-loop function that will orient around to find an object, even if it is not visible in the view-finder.
 - The key parameter is `desired_object_distance`, which reflects the effective length of the agent and its sensors as it moves along the surface of the object.
 
-### Planned Changes to the Utility Functions
-As the utility functions were implemented in the early development of Monty, there are a number of aspects which we plan to adjust in the near future, and which should be reflected in any new utility functions.
-1) Utility functions should only be called in `pre_episode`, i.e. before the episode begins.
-2) Utility functions may make use of privileged information such as the view-finder and semantic-sensor, which are not available to the learning module. However, consistent with point (1), these should not be leveraged during learning or inference by the Monty agent.
+### Planned Changes to the Positioning Procedures
+As the positioning procedures were implemented in the early development of Monty, there are a number of aspects which we plan to adjust in the near future, and which should be reflected in any new positioning procedures.
+1) Positioning procedures should only be called in `pre_episode`, i.e. before the episode begins.
+2) Positioning procedures may make use of privileged information such as the view-finder and semantic-sensor, which are not available to the learning module. However, consistent with point (1), these should not be leveraged during learning or inference by the Monty agent.
 
-These requirements are currently not enforced in the use of `get_good_view` and `touch_object` when an agent jumps to a location using a model-based policy. Similarly, `touch_object` is used by the surface agent if it loses contact with the object and cannot find it. Appropriately separating out the role of utility functions via the above requirements will clarify their role, and enable policies that do not make use of privileged information, but which serve similar purposes during an experiment.
+These requirements are currently not enforced in the use of `GetGoodView` and `touch_object` when an agent jumps to a location using a model-based policy. Similarly, `touch_object` is used by the surface agent if it loses contact with the object and cannot find it. Appropriately separating out the role of positioning procedures via the above requirements will clarify their role, and enable policies that do not make use of privileged information, but which serve similar purposes during an experiment.
 
 
 # Input-Driven and Hypothesis-Driven Policies

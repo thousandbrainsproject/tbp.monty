@@ -23,6 +23,10 @@ jobs:
         with:
           fetch-depth: 2
           path: tbp.monty
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Version updated
         id: version_updated
         if: ${{ github.event_name != 'workflow_dispatch' }}
@@ -35,7 +39,7 @@ jobs:
         run: |
           if [ ! -d ~/miniconda ]
           then
-            wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
+            wget https://repo.anaconda.com/miniconda/Miniconda3-py312_25.3.1-1-Linux-x86_64.sh -O ~/miniconda.sh
             bash ~/miniconda.sh -b -p ~/miniconda
             rm ~/miniconda.sh
           fi
@@ -78,6 +82,10 @@ jobs:
         with:
           fetch-depth: 2
           path: tbp.monty
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Version updated
         id: version_updated
         if: ${{ github.event_name != 'workflow_dispatch' }}
@@ -90,7 +98,7 @@ jobs:
         run: |
           if [ ! -d ~/miniconda ]
           then
-            wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh -O ~/miniconda.sh
+            wget https://repo.anaconda.com/miniconda/Miniconda3-py312_25.3.1-1-MacOSX-arm64.sh -O ~/miniconda.sh
             bash ~/miniconda.sh -b -p ~/miniconda
             rm ~/miniconda.sh
           fi

@@ -33,9 +33,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
     SurfaceAndViewMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+    EnvironmentDataLoaderPerObjectEvalArgs,
+    EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
-    InformedEnvironmentDataLoaderEvalArgs,
-    InformedEnvironmentDataLoaderTrainArgs,
     PredefinedObjectInitializer,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
@@ -63,9 +63,6 @@ from tbp.monty.simulators.habitat.configs import (
     FiveLMMountHabitatDatasetArgs,
     PatchViewFinderMountHabitatDatasetArgs,
     SurfaceViewFinderMountHabitatDatasetArgs,
-)
-from tests.unit.feature_flags import (
-    create_config_with_get_good_view_positioning_procedure,
 )
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
@@ -173,12 +170,12 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=InformedEnvironmentDataLoaderTrainArgs(
+            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
             eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=InformedEnvironmentDataLoaderEvalArgs(
+            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
                 object_names=["capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -361,7 +358,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 ),
             ),
             # always show objects in same orientation
-            train_dataloader_args=InformedEnvironmentDataLoaderTrainArgs(
+            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     rotations=[[0.0, 0.0, 0.0]]
@@ -372,14 +369,14 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         feature_pred_tests_offset = copy.deepcopy(fixed_actions_feat)
         feature_pred_tests_offset.update(
             train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=InformedEnvironmentDataLoaderTrainArgs(
+            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     positions=[[0.0, 1.5, 0.0]]
                 ),
             ),
             eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=InformedEnvironmentDataLoaderEvalArgs(
+            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
                 object_names=["capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -450,7 +447,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 ),
             ),
             train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=InformedEnvironmentDataLoaderTrainArgs(
+            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=["capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     rotations=[[0, 0, 0]],
@@ -1781,71 +1778,6 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         # LM but didn't want to dig too deep into that for now.
         self.check_multilm_eval_results(
             eval_stats, num_lms=5, min_done=3, num_episodes=1
-        )
-
-
-class GraphLearningTestWithGetGoodViewPositioningProcedure(GraphLearningTest):
-    def setUp(self):
-        super().setUp()
-        self.base_config = create_config_with_get_good_view_positioning_procedure(
-            self.base_config
-        )
-        self.surface_agent_eval_config = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.surface_agent_eval_config
-            )
-        )
-        self.ppf_config = create_config_with_get_good_view_positioning_procedure(
-            self.ppf_config
-        )
-        self.disp_config = create_config_with_get_good_view_positioning_procedure(
-            self.disp_config
-        )
-        self.feature_config = create_config_with_get_good_view_positioning_procedure(
-            self.feature_config
-        )
-        self.fixed_actions_disp = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.fixed_actions_disp
-            )
-        )
-        self.fixed_actions_ppf = create_config_with_get_good_view_positioning_procedure(
-            self.fixed_actions_ppf
-        )
-        self.fixed_actions_feat = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.fixed_actions_feat
-            )
-        )
-        self.feature_pred_tests_time_out = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.feature_pred_tests_time_out
-            )
-        )
-        self.feature_pred_tests_confused = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.feature_pred_tests_confused
-            )
-        )
-        self.feature_pred_tests_off_object = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.feature_pred_tests_off_object
-            )
-        )
-        self.feat_test_uniform_initial_poses = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.feat_test_uniform_initial_poses
-            )
-        )
-        self.ppf_displacement_5lm_config = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.ppf_displacement_5lm_config
-            )
-        )
-        self.feature_5lm_config = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.feature_5lm_config
-            )
         )
 
 

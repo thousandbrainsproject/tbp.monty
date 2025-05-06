@@ -21,9 +21,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PatchAndViewMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+    EnvironmentDataLoaderPerObjectEvalArgs,
+    EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
-    InformedEnvironmentDataLoaderEvalArgs,
-    InformedEnvironmentDataLoaderTrainArgs,
     PredefinedObjectInitializer,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
@@ -35,9 +35,6 @@ from tbp.monty.frameworks.models.sensor_modules import (
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsPatchViewMount,
     PatchViewFinderMountHabitatDatasetArgs,
-)
-from tests.unit.feature_flags import (
-    create_config_with_get_good_view_positioning_procedure,
 )
 
 
@@ -57,12 +54,12 @@ class SensorModuleTest(unittest.TestCase):
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=InformedEnvironmentDataLoaderTrainArgs(
+            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
             eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=InformedEnvironmentDataLoaderEvalArgs(
+            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
                 object_names=["capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -180,22 +177,6 @@ class SensorModuleTest(unittest.TestCase):
             # TODO: test that only new features are given to LM
             pprint("...evaluating...")
             exp.evaluate()
-
-
-class SensorModuleTestWithGetGoodViewPositioningProcedure(SensorModuleTest):
-    def setUp(self):
-        super().setUp()
-        self.base = create_config_with_get_good_view_positioning_procedure(self.base)
-        self.sensor_feature_test = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.sensor_feature_test
-            )
-        )
-        self.feature_change_sensor_config = (
-            create_config_with_get_good_view_positioning_procedure(
-                self.feature_change_sensor_config
-            )
-        )
 
 
 if __name__ == "__main__":
