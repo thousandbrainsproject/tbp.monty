@@ -415,9 +415,18 @@ class ResamplingHypothesesEvidenceMixin:
             return np.zeros((0, 3)), np.zeros((0, 3, 3)), np.zeros(0)
 
         # TODO implement sampling based on evidence slope.
-        selected_locations = self.possible_locations[graph_id][:existing_count]
-        selected_rotations = self.possible_poses[graph_id][:existing_count]
-        selected_evidence = self.evidence[graph_id][:existing_count]
+        channel_start_ix, channel_end_ix = self.channel_hypothesis_mapping[
+            graph_id
+        ].channel_range(input_channel)
+        selected_locations = self.possible_locations[graph_id][
+            channel_start_ix:channel_end_ix
+        ][:existing_count]
+        selected_rotations = self.possible_poses[graph_id][
+            channel_start_ix:channel_end_ix
+        ][:existing_count]
+        selected_evidence = self.evidence[graph_id][channel_start_ix:channel_end_ix][
+            :existing_count
+        ]
 
         return selected_locations, selected_rotations, selected_evidence
 
