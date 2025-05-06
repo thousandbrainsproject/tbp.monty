@@ -437,19 +437,6 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
     iv) Supports hypothesis-testing "jump" policy
     """
 
-    def __init__(
-        self, use_get_good_view_positioning_procedure: bool = False, *args, **kwargs
-    ):
-        super(InformedEnvironmentDataLoader, self).__init__(*args, **kwargs)
-        self._use_get_good_view_positioning_procedure = (
-            use_get_good_view_positioning_procedure
-        )
-        """Feature flag to use the GetGoodView positioning procedure.
-
-        This is a temporary feature flag to allow for testing the GetGoodView
-        positioning procedure.
-        """
-
     def __iter__(self):
         # Overwrite original because we don't want to reset agent at this stage
         # (already done in pre-episode)
