@@ -288,7 +288,7 @@ class ResamplingHypothesesEvidenceMixin:
             node_feature_evidence = self._calculate_feature_evidence_for_all_nodes(
                 features, input_channel, graph_id
             )
-            # Find the indices to nodes with highest evidence scores. The sorting
+            # Find the indices for the nodes with highest evidence scores. The sorting
             # is done in ascending order, so extract the indices from the end of
             # the argsort array. We get the needed number of informed nodes not
             # the number of needed hypotheses.

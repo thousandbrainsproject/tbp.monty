@@ -472,12 +472,14 @@ def possible_sensed_directions(
     """Returns the possible sensed directions for all nodes.
 
     This function determines the possible sensed directions for a given set of sensed
-    direction. It relies on two different behaviors depending on the value of
+    directions. It relies on two different behaviors depending on the value of
     num_hyps_per_node.
-
-    If num_hyps_per_node equals 2, then pose is well defined (i.e., PC1 != PC2).
-    Otherwise, this function is samples additional poses in the plane perpendicular
-    to the sensed point normal.
+        - If num_hyps_per_node equals 2: then pose is well defined (i.e., PC1 != PC2).
+            A well defined pose does not distinguish between mirrored directions of PC1
+            and PC2 (e.g., object can be upside down), therefore we sample both
+            directions.
+        - If num_hyps_per_node is not 2: this function samples additional poses in
+            the plane perpendicular to the sensed point normal.
 
     Arguments:
         sensed_directions: An array of sensed directions.

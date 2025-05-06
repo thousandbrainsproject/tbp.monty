@@ -175,7 +175,8 @@ class EvidenceGraphLM(GraphLM):
         initial_possible_poses: initial possible poses that should be tested for.
             In ["uniform", "informed", list]. default = "informed".
         umbilical_num_poses: Number of samples rotations in the direction
-            of the plane perpendicular to the point normal.
+            of the plane perpendicular to the point normal. These are sampled at
+            umbilical points(i.e., points where PC directions are undefined)
         evidence_update_threshold: How to decide which hypotheses should be updated.
             When this parameter is either '[int]%' or 'x_percent_threshold', then
             this parameter is applied to the evidence for the Most Likely Hypothesis
