@@ -939,7 +939,7 @@ class PolicyTest(unittest.TestCase):
                         0
                     ].buffer.get_last_obs_processed(), "Should be off object"
 
-                if loader_step == 30:  # MoveForward from SurfacePolicy cycle start
+                if loader_step == 30:  # OrientVertical from SurfacePolicy cycle
                     assert exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), "Should be back on object"
