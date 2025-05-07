@@ -908,10 +908,10 @@ class PolicyTest(unittest.TestCase):
                 # | 24 | OrientHorizontal | True        | False          | touch_object
                 # | 25 | OrientVertical   | True        | False          | touch_object
                 # | 26 | MoveTangentially | True        | False          | dynamic_call
-                # | 27 | OrientVeritcal   | True        | False          | touch_object
+                # | 27 | OrientVertical   | True        | False          | touch_object
                 # | 28 | MoveForward      | True        | False          | touch_object
                 # | 29 | OrientHorizontal | True        | False          | dynamic_call
-                # | 30 | OrientVeritcal   | True        | True           | dynamic_call
+                # | 30 | OrientVertical   | True        | True           | dynamic_call
                 #
                 # Note that 26 (MoveTangentially) is a bug, in that SurfacePolicy
                 # dynamic_call assumes that it is in the middle of the
