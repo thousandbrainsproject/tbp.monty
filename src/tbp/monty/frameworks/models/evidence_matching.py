@@ -1143,7 +1143,12 @@ class EvidenceGraphLM(GraphLM):
             current_mean_evidence = np.mean(self.evidence[graph_id])
             new_evidence = new_evidence + current_mean_evidence
 
-        # Update the hypothesis space with new locations, poses, and evidence scores
+        # The mapper update function calls below automatically resize the
+        # arrays they update. Afterward, we must update the channel indices
+        # in the mapper via resize_channel_to to stay in sync with
+        # the now resized arrays. We do not resize before array updates
+        # because then, during the update, the indices would not correspond
+        # to the data in the arrays.
         self.possible_locations[graph_id] = mapper.update(
             self.possible_locations[graph_id],
             input_channel,
@@ -1160,7 +1165,6 @@ class EvidenceGraphLM(GraphLM):
             np.array(new_evidence),
         )
 
-        # Resize the hypothesis space for the given input_channel to the new size
         mapper.resize_channel_to(input_channel, len(new_evidence))
 
     def _update_evidence_with_vote(self, state_votes, graph_id):
