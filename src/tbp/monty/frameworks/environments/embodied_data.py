@@ -151,7 +151,6 @@ class EnvironmentDataLoader:
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
         self._action = None
-        self._amount = None
         self._counter = 0
 
     def __iter__(self):
@@ -161,7 +160,6 @@ class EnvironmentDataLoader:
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
         self._action = None
-        self._amount = None
         self._counter = 0
         return self
 
@@ -403,7 +401,6 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         # Make sure to also reset action variables when resetting agent during
         # pre-episode
         self._action = None
-        self._amount = None
         motor_system_state[self.motor_system._policy.agent_id]["motor_only_step"] = (
             False
         )
@@ -838,7 +835,6 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
         self._action = None
-        self._amount = None
         self._counter = 0
 
         self.alphabets = alphabets
@@ -930,7 +926,6 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
         self._action = None
-        self._amount = None
         self._counter = 0
 
         self.scenes = scenes
@@ -1026,7 +1021,6 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
         self._action = None
-        self._amount = None
         self._counter = 0
         self.current_scene = 0
         self.episodes = 0
