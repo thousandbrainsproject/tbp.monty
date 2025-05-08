@@ -119,6 +119,8 @@ More specifically, these experiments are run purely in evaluation mode (i.e., pr
 > 
 > We do not expect these experiments to have good performance until the RFC is implemented and [issue #214](https://github.com/thousandbrainsproject/tbp.monty/issues/214) is resolved.
 
+These experiments are currently run without multiprocessing (using `run.py`).
+
 # Monty-Meets-World
 
 The following experiments evaluate a Monty model on real-world images derived from the RGBD camera of an iPad/iPhone device. The models that the Monty system leverages are based on photogrammetry scans of the same objects in the real world, and Monty learns on these in the simulated Habitat environment; this approach is taken because currently, we cannot track the movements of the iPad through space, and so Monty cannot leverage its typical sensorimotor learning to build the internal models. 
