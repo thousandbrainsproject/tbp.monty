@@ -177,7 +177,14 @@ class ChannelMapper:
         """Inserts data into the original array at the position of the given channel.
 
         This function inserts new data at the index range previously associated with
-        the provided channel.
+        the provided channel. We split the original array around the input channel
+        range, then concatenate the before and after splits with the data to be
+        inserted.
+
+        For example, if original has the shape (20, 3), channel start index is 10,
+        channel end index is 13, and the data has the shape (5, 3). We would concatenate
+        as such: (original[0:10], data, original[13:]). This will result in an array of
+        the shape (22, 3), i.e., we removed 3 rows and added new 5 rows.
 
         Args:
             original (np.ndarray): The original array.
