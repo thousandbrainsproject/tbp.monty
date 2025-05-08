@@ -988,7 +988,7 @@ class EvidenceGraphLM(GraphLM):
                 # hypotheses should not be affected by the displacement from the last
                 # sensory input.
                 channel_possible_locations, channel_hypotheses_evidence = (
-                    self._displace_hypotheses(
+                    self._displace_hypotheses_and_compute_evidence(
                         features,
                         channel_possible_locations,
                         channel_possible_poses,
@@ -1015,7 +1015,7 @@ class EvidenceGraphLM(GraphLM):
             f" New max evidence: {np.round(np.max(self.evidence[graph_id]), 3)}"
         )
 
-    def _displace_hypotheses(
+    def _displace_hypotheses_and_compute_evidence(
         self,
         features: Dict,
         channel_possible_locations: np.ndarray,
