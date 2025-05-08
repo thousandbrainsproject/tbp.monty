@@ -460,7 +460,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # NOTE: terminal conditions are now handled in experiment.run_episode loop
         else:
             self._action = self.motor_system()
-            attempting_to_touch_object = False
+            attempting_to_find_object = False
 
             # If entirely off object, use vision (i.e. view-finder)
             # TODO refactor so that this check is done in the motor-policy, and we
@@ -470,7 +470,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 isinstance(self.motor_system._policy, SurfacePolicy)
                 and self._action is None
             ):
-                attempting_to_touch_object = True
+                attempting_to_find_object = True
                 self._action = self.motor_system._policy.touch_object(
                     self._observation,
                     view_sensor_id="view_finder",
@@ -483,17 +483,17 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             # TODO: Refactor this so that all of this is contained within the
             #       SurfacePolicy and/or positioning procedure.
             if isinstance(self.motor_system._policy, SurfacePolicy):
-                # When we are attempting to touch the object, we are always performing
+                # When we are attempting to find the object, we are always performing
                 # a motor-only step.
                 motor_system_state[self.motor_system._policy.agent_id][
                     "motor_only_step"
-                ] = attempting_to_touch_object
+                ] = attempting_to_find_object
 
                 if (
-                    not attempting_to_touch_object
+                    not attempting_to_find_object
                     and self._action.name != OrientVertical.action_name()
                 ):
-                    # We are not attempting to touch the object, which means that we
+                    # We are not attempting to find the object, which means that we
                     # are executing the SurfacePolicy.dynamic_call action cycle.
                     # Out of the four actions in the
                     # MoveForward->OrientHorizontal->OrientVertical->MoveTangentially
