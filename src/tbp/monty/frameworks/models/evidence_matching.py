@@ -966,40 +966,45 @@ class EvidenceGraphLM(GraphLM):
                 # displacement is not None), include most likely existing hypothesis
                 # from other channels?
                 (
-                    locations,
-                    rotations,
-                    evidence,
+                    channel_possible_locations,
+                    channel_possible_poses,
+                    channel_hypotheses_evidence,
                 ) = self._get_initial_hypothesis_space(
                     features, graph_id, input_channel
                 )
             # Retrieve existing hypothesis space for a specific input channel
             else:
-                channel_start_ix, channel_end_ix = mapper.channel_range(input_channel)
-                locations = mapper.extract(
+                channel_possible_locations = mapper.extract(
                     self.possible_locations[graph_id], input_channel
                 )
-                rotations = mapper.extract(self.possible_poses[graph_id], input_channel)
-                evidence = mapper.extract(self.evidence[graph_id], input_channel)
+                channel_possible_poses = mapper.extract(
+                    self.possible_poses[graph_id], input_channel
+                )
+                channel_hypotheses_evidence = mapper.extract(
+                    self.evidence[graph_id], input_channel
+                )
 
                 # We only displace existing hypotheses since the newly sampled
                 # hypotheses should not be affected by the displacement from the last
                 # sensory input.
-                locations, evidence = self._displace_hypotheses(
-                    features,
-                    locations,
-                    rotations,
-                    evidence,
-                    displacements,
-                    graph_id,
-                    input_channel,
+                channel_possible_locations, channel_hypotheses_evidence = (
+                    self._displace_hypotheses(
+                        features,
+                        channel_possible_locations,
+                        channel_possible_poses,
+                        channel_hypotheses_evidence,
+                        displacements,
+                        graph_id,
+                        input_channel,
+                    )
                 )
 
             self._replace_hypotheses_in_hpspace(
                 graph_id=graph_id,
                 input_channel=input_channel,
-                new_loc_hypotheses=locations,
-                new_rot_hypotheses=rotations,
-                new_evidence=evidence,
+                new_locations_hypotheses=channel_possible_locations,
+                new_poses_hypotheses=channel_possible_poses,
+                new_evidence=channel_hypotheses_evidence,
             )
 
         end_time = time.time()
@@ -1013,9 +1018,9 @@ class EvidenceGraphLM(GraphLM):
     def _displace_hypotheses(
         self,
         features: Dict,
-        locations: np.ndarray,
-        rotations: np.ndarray,
-        evidence: np.ndarray,
+        channel_possible_locations: np.ndarray,
+        channel_possible_poses: np.ndarray,
+        channel_hypotheses_evidence: np.ndarray,
         displacement: Dict,
         graph_id: str,
         input_channel: str,
@@ -1029,9 +1034,12 @@ class EvidenceGraphLM(GraphLM):
 
         Args:
             features (dict): Input features
-            locations (np.ndarray): Hypothesized sensor locations for each hypothesis
-            rotations (np.ndarray): Hypothesized object rotations for each hypothesis
-            evidence (np.ndarray): Current evidence value for each hypothesis
+            channel_possible_locations (np.ndarray): Hypothesized sensor locations for
+                each hypothesis
+            channel_possible_poses (np.ndarray): Hypothesized object rotations for each
+                hypothesis
+            channel_hypotheses_evidence (np.ndarray): Current evidence value for each
+                hypothesis
             displacement (dict): Sensor displacements for input channels
             graph_id (str): The ID of the current graph
             input_channel (str): The channel involved in hypotheses updating.
@@ -1043,11 +1051,11 @@ class EvidenceGraphLM(GraphLM):
         evidence_threshold = self._get_evidence_update_threshold(graph_id)
 
         # Have to do this for all hypotheses so we don't loose the path information
-        rotated_displacements = rotations.dot(displacement[input_channel])
-        search_locations = locations + rotated_displacements
+        rotated_displacements = channel_possible_poses.dot(displacement[input_channel])
+        search_locations = channel_possible_locations + rotated_displacements
 
         # Get indices of hypotheses with evidence > threshold
-        hyp_ids_to_test = np.where(evidence >= evidence_threshold)[0]
+        hyp_ids_to_test = np.where(channel_hypotheses_evidence >= evidence_threshold)[0]
         num_hypotheses_to_test = hyp_ids_to_test.shape[0]
         if num_hypotheses_to_test > 0:
             logging.info(
@@ -1063,7 +1071,7 @@ class EvidenceGraphLM(GraphLM):
                 graph_id,
                 input_channel,
                 search_locations[hyp_ids_to_test],
-                rotations[hyp_ids_to_test],
+                channel_possible_poses[hyp_ids_to_test],
                 features,
             )
             min_update = np.clip(np.min(new_evidence), 0, np.inf)
@@ -1071,15 +1079,16 @@ class EvidenceGraphLM(GraphLM):
             # Alternatives (no update to other Hs or adding avg) left in
             # here in case we want to revert back to those.
             # avg_update = np.mean(new_evidence)
-            # evidence_to_add = np.zeros_like(self.evidence[graph_id])
-            evidence_to_add = np.ones_like(evidence) * min_update
+            # evidence_to_add = np.zeros_like(channel_hypotheses_evidence)
+            evidence_to_add = np.ones_like(channel_hypotheses_evidence) * min_update
             evidence_to_add[hyp_ids_to_test] = new_evidence
 
             # If past and present weight add up to 1, equivalent to
             # np.average and evidence will be bound to [-1, 2]. Otherwise it
             # keeps growing.
             evidence = (
-                evidence * self.past_weight + evidence_to_add * self.present_weight
+                channel_hypotheses_evidence * self.past_weight
+                + evidence_to_add * self.present_weight
             )
         return search_locations, evidence
 
@@ -1087,8 +1096,8 @@ class EvidenceGraphLM(GraphLM):
         self,
         graph_id: str,
         input_channel: str,
-        new_loc_hypotheses: np.ndarray,
-        new_rot_hypotheses: np.ndarray,
+        new_locations_hypotheses: np.ndarray,
+        new_poses_hypotheses: np.ndarray,
         new_evidence: np.ndarray,
     ) -> None:
         """Updates the hypothesis space for a given input channel in a graph.
@@ -1105,8 +1114,8 @@ class EvidenceGraphLM(GraphLM):
         Args:
             graph_id (str): The ID of the current graph to update.
             input_channel (str): Channel's name involved in updating the space
-            new_loc_hypotheses (np.ndarray): New sensor locations hypotheses
-            new_rot_hypotheses (np.ndarray): New object poses hypotheses
+            new_locations_hypotheses (np.ndarray): New sensor locations hypotheses
+            new_poses_hypotheses (np.ndarray): New object poses hypotheses
             new_evidence (np.ndarray): New evidence values for the input channel
 
         Note:
@@ -1121,8 +1130,8 @@ class EvidenceGraphLM(GraphLM):
         # Add a new channel to the mapping if the hypotheses space doesn't exist
         if input_channel not in mapper.channels:
             if len(mapper.channels) == 0:
-                self.possible_locations[graph_id] = np.array(new_loc_hypotheses)
-                self.possible_poses[graph_id] = np.array(new_rot_hypotheses)
+                self.possible_locations[graph_id] = np.array(new_locations_hypotheses)
+                self.possible_poses[graph_id] = np.array(new_poses_hypotheses)
                 self.evidence[graph_id] = np.array(new_evidence)
 
                 mapper.add_channel(input_channel, len(new_evidence))
@@ -1140,12 +1149,12 @@ class EvidenceGraphLM(GraphLM):
         self.possible_locations[graph_id] = mapper.update(
             self.possible_locations[graph_id],
             input_channel,
-            np.array(new_loc_hypotheses),
+            np.array(new_locations_hypotheses),
         )
         self.possible_poses[graph_id] = mapper.update(
             self.possible_poses[graph_id],
             input_channel,
-            np.array(new_rot_hypotheses),
+            np.array(new_poses_hypotheses),
         )
         self.evidence[graph_id] = mapper.update(
             self.evidence[graph_id],
@@ -1221,7 +1230,7 @@ class EvidenceGraphLM(GraphLM):
         graph_id: str,
         input_channel: str,
         search_locations: np.ndarray,
-        rotations: np.ndarray,
+        channel_possible_poses: np.ndarray,
         features: Dict,
     ):
         """Use search locations, sensed features and graph model to calculate evidence.
@@ -1245,7 +1254,7 @@ class EvidenceGraphLM(GraphLM):
 
         pose_transformed_features = rotate_pose_dependent_features(
             features[input_channel],
-            rotations,
+            channel_possible_poses,
         )
         # Get max_nneighbors nearest nodes to search locations.
         nearest_node_ids = self.get_graph(
