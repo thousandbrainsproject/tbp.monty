@@ -1086,11 +1086,11 @@ class EvidenceGraphLM(GraphLM):
             # If past and present weight add up to 1, equivalent to
             # np.average and evidence will be bound to [-1, 2]. Otherwise it
             # keeps growing.
-            evidence = (
+            channel_hypotheses_evidence = (
                 channel_hypotheses_evidence * self.past_weight
                 + evidence_to_add * self.present_weight
             )
-        return search_locations, evidence
+        return search_locations, channel_hypotheses_evidence
 
     def _replace_hypotheses_in_hpspace(
         self,
