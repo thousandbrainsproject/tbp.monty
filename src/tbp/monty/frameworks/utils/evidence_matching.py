@@ -56,20 +56,6 @@ class ChannelMapper:
         """
         return sum(self.channel_sizes.values())
 
-    def channel_size(self, channel_name: str) -> int:
-        """Returns the total number of hypotheses for a specific channel.
-
-        Returns:
-            int: Size of channel
-
-        Raises:
-            ValueError: If the channel is not found.
-        """
-        if channel_name not in self.channel_sizes:
-            raise ValueError(f"Channel '{channel_name}' not found.")
-
-        return self.channel_sizes[channel_name]
-
     def channel_range(self, channel_name: str) -> Tuple[int, int]:
         """Returns the start and end indices of the given channel.
 
@@ -160,7 +146,8 @@ class ChannelMapper:
             channel (str): The name of the channel to extract.
 
         Returns:
-            np.ndarray: The extracted slice of the original array.
+            np.ndarray: The extracted slice of the original array. Returns a view, not
+                a copy of the original array.
 
         Raises:
             ValueError: If the channel is not found.
@@ -179,7 +166,8 @@ class ChannelMapper:
         This function inserts new data at the index range previously associated with
         the provided channel. We split the original array around the input channel
         range, then concatenate the before and after splits with the data to be
-        inserted.
+        inserted. This accommodates 'data' being of a different size than the current
+        channel size.
 
         For example, if original has the shape (20, 3), channel start index is 10,
         channel end index is 13, and the data has the shape (5, 3). We would concatenate
@@ -192,7 +180,8 @@ class ChannelMapper:
             data (np.ndarray): The new data to insert.
 
         Returns:
-            np.ndarray: The resulting array after insertion.
+            np.ndarray: The resulting array after insertion. Returns a new copy not a
+                view.
 
         Raises:
             ValueError: If the channel is not found.

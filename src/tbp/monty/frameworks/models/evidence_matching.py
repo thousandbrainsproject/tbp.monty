@@ -14,7 +14,7 @@ import copy
 import logging
 import threading
 import time
-from typing import Dict, Tuple
+from typing import Tuple
 
 import numpy as np
 from scipy.spatial import KDTree
@@ -903,8 +903,8 @@ class EvidenceGraphLM(GraphLM):
 
     def _update_evidence(
         self,
-        features: Dict,
-        displacements: Dict | None,
+        features: dict,
+        displacements: dict | None,
         graph_id: str,
     ) -> None:
         """Update evidence based on sensor displacement and sensed features.
@@ -932,8 +932,8 @@ class EvidenceGraphLM(GraphLM):
 
         # Get all usable input channels
         # NOTE: We might also want to check the confidence in the input channel
-        # features. This information is currently not available here. Once we
-        # pull the observation class into the LM we could add this (TODO S).
+        # features. This information is currently not available here.
+        # TODO S: Once we pull the observation class into the LM we could add this.
         input_channels_to_use = [
             ic
             for ic in features.keys()
@@ -1017,11 +1017,11 @@ class EvidenceGraphLM(GraphLM):
 
     def _displace_hypotheses_and_compute_evidence(
         self,
-        features: Dict,
+        features: dict,
         channel_possible_locations: np.ndarray,
         channel_possible_poses: np.ndarray,
         channel_hypotheses_evidence: np.ndarray,
-        displacement: Dict,
+        displacement: dict,
         graph_id: str,
         input_channel: str,
     ) -> Tuple[np.ndarray, np.ndarray]:
@@ -1138,12 +1138,12 @@ class EvidenceGraphLM(GraphLM):
                 return
 
             # Add current mean evidence to give the new hypotheses a fighting
-            # chance. TODO H: Test mean vs. median here.
+            # chance.
+            # TODO H: Test mean vs. median here.
             current_mean_evidence = np.mean(self.evidence[graph_id])
             new_evidence = new_evidence + current_mean_evidence
 
-        # This mapper.update function replaces the hypothesis space with a new one
-        # at the specified input channel range.
+        # Update the hypothesis space with new locations, poses, and evidence scores
         self.possible_locations[graph_id] = mapper.update(
             self.possible_locations[graph_id],
             input_channel,
@@ -1159,6 +1159,8 @@ class EvidenceGraphLM(GraphLM):
             input_channel,
             np.array(new_evidence),
         )
+
+        # Resize the hypothesis space for the given input_channel to the new size
         mapper.resize_channel_to(input_channel, len(new_evidence))
 
     def _update_evidence_with_vote(self, state_votes, graph_id):
@@ -1229,7 +1231,7 @@ class EvidenceGraphLM(GraphLM):
         input_channel: str,
         search_locations: np.ndarray,
         channel_possible_poses: np.ndarray,
-        features: Dict,
+        features: dict,
     ):
         """Use search locations, sensed features and graph model to calculate evidence.
 
