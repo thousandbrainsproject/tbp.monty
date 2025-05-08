@@ -1142,10 +1142,8 @@ class EvidenceGraphLM(GraphLM):
             current_mean_evidence = np.mean(self.evidence[graph_id])
             new_evidence = new_evidence + current_mean_evidence
 
-        # This concatenation operation for location, poses and evidence replaces
-        # the existing hypothesis space. The new hypothesis space in inserted
-        # in place of the existing hypothesis space by referencing the channel
-        # start and end indices.
+        # This mapper.update function replaces the hypothesis space with a new one
+        # at the specified input channel range.
         self.possible_locations[graph_id] = mapper.update(
             self.possible_locations[graph_id],
             input_channel,
