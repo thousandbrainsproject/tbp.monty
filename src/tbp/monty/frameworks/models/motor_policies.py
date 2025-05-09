@@ -1107,7 +1107,7 @@ class SurfacePolicy(InformedPolicy):
 
     def touch_object(
         self, raw_observation, view_sensor_id: str, state: MotorSystemState
-    ) -> Action:
+    ) -> MoveForward | OrientHorizontal | OrientVertical:
         """The surface agent's policy for moving onto an object for sensing it.
 
         Like the distant agent's get_good_view, this is called at the beginning
@@ -1126,11 +1126,11 @@ class SurfacePolicy(InformedPolicy):
 
         Args:
             raw_observation: The raw observation from the simulator.
-            view_sensor_id: The ID of the viewfinder sensor.
-            state: The current state of the motor system.
+            view_sensor_id (str): The ID of the viewfinder sensor.
+            state (MotorSystemState): The current state of the motor system.
 
         Returns:
-            Action to take.
+            (MoveForward | OrientHorizontal | OrientVertical): Action to take.
         """
         # If the viewfinder sees the object within range, then move to it
         depth_at_center = self.get_depth_at_center(raw_observation, view_sensor_id)
