@@ -1144,8 +1144,7 @@ class SurfacePolicy(InformedPolicy):
             )
             logging.debug(f"Move to touch visible object, forward by {distance}")
 
-            self.action = MoveForward(agent_id=self.agent_id, distance=distance)
-            return self.action
+            return MoveForward(agent_id=self.agent_id, distance=distance)
 
         logging.debug("Surface policy searching for object...")
 
@@ -1207,21 +1206,21 @@ class SurfacePolicy(InformedPolicy):
         self.touch_search_amount += rotation_degrees  # Accumulate total rotations
         # for touch-search
 
-        if orientation == "vertical":
-            self.action = OrientVertical(
+        return (
+            OrientVertical(
                 agent_id=self.agent_id,
                 rotation_degrees=rotation_degrees,
                 down_distance=move_lat_amount,
                 forward_distance=move_forward_amount,
             )
-        else:
-            self.action = OrientHorizontal(
+            if orientation == "vertical"
+            else OrientHorizontal(
                 agent_id=self.agent_id,
                 rotation_degrees=rotation_degrees,
                 left_distance=move_lat_amount,
                 forward_distance=move_forward_amount,
             )
-        return self.action
+        )
 
     ###
     # Methods that define behavior of __call__
