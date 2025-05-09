@@ -892,58 +892,116 @@ class PolicyTest(unittest.TestCase):
             for loader_step, observation in enumerate(exp.dataloader):
                 exp.model.step(observation)
 
-                # |Step| Action           | Motor-only? | Obs processed? | Source
-                # |----|------------------|-------------|----------------|-------------
-                # | 13 | OrientHorizontal | True        | False          | touch_object
-                # | 14 | OrientHorizontal | True        | False          | touch_object
-                # | 15 | OrientHorizontal | True        | False          | touch_object
-                # | 16 | OrientHorizontal | True        | False          | touch_object
-                # | 17 | OrientHorizontal | True        | False          | touch_object
-                # | 18 | OrientHorizontal | True        | False          | touch_object
-                # | 19 | OrientHorizontal | True        | False          | touch_object
-                # | 20 | OrientHorizontal | True        | False          | touch_object
-                # | 21 | OrientHorizontal | True        | False          | touch_object
-                # | 22 | OrientHorizontal | True        | False          | touch_object
-                # | 23 | OrientHorizontal | True        | False          | touch_object
-                # | 24 | OrientHorizontal | True        | False          | touch_object
-                # | 25 | OrientVertical   | True        | False          | touch_object
-                # | 26 | MoveTangentially | True        | False          | dynamic_call
-                # | 27 | OrientVertical   | True        | False          | touch_object
-                # | 28 | MoveForward      | True        | False          | touch_object
-                # | 29 | OrientHorizontal | True        | False          | dynamic_call
-                # | 30 | OrientVertical   | True        | True           | dynamic_call
-                #
-                # Note that 26 (MoveTangentially) is a bug, in that SurfacePolicy
-                # dynamic_call assumes that it is in the middle of the
-                # MoveForward->OrientHorizontal->OrientVertical->MoveTangentially
-                # cycle, but in fact it is not.
-                # As a result, the sensor falls off the object again.
+                #  Step | Action           | Motor-only? | Obs processed? | Source
+                # ------|------------------|-------------|----------------|-------------
+                #  1    | MoveForward      | True        | False          | dynamic_call
+                #  2    | OrientHorizontal | True        | False          | dynamic_call
+                #  3    | OrientVertical   | False       | True           | dynamic_call
+                #  4    | MoveTangentially | True        | False          | dynamic_call
+                #  5    | MoveForward      | True        | False          | dynamic_call
+                #  6    | OrientHorizontal | True        | False          | dynamic_call
+                #  7    | OrientVertical   | False       | True           | dynamic_call
+                #  8    | MoveTangentially | True        | False          | dynamic_call
+                #  9    | MoveForward      | True        | False          | dynamic_call
+                #  10   | OrientHorizontal | True        | False          | dynamic_call
+                #  11   | OrientVertical   | False       | True           | dynamic_call
+                #  12   | MoveTangentially | True        | False          | dynamic_call
+                # falls off object
+                #  13   | OrientHorizontal | True        | False          | touch_object
+                #  14   | OrientHorizontal | True        | False          | touch_object
+                #  15   | OrientHorizontal | True        | False          | touch_object
+                #  16   | OrientHorizontal | True        | False          | touch_object
+                #  17   | OrientHorizontal | True        | False          | touch_object
+                #  18   | OrientHorizontal | True        | False          | touch_object
+                #  19   | OrientHorizontal | True        | False          | touch_object
+                #  20   | OrientHorizontal | True        | False          | touch_object
+                #  21   | OrientHorizontal | True        | False          | touch_object
+                #  22   | OrientHorizontal | True        | False          | touch_object
+                #  23   | OrientHorizontal | True        | False          | touch_object
+                #  24   | OrientHorizontal | True        | False          | touch_object
+                #  25   | OrientVertical   | True        | False          | touch_object
+                # back on object
+                #  26   | OrientHorizontal | True        | False          | dynamic_call
+                #  27   | OrientVertical   | False       | True           | dynamic_call
+                #  28   | MoveTangentially | True        | False          | dynamic_call
+                # falls off object
+                #  29   | OrientHorizontal | True        | False          | touch_object
+                #  30   | OrientHorizontal | True        | False          | touch_object
+                #  31   | OrientHorizontal | True        | False          | touch_object
+                #  32   | OrientHorizontal | True        | False          | touch_object
+                #  33   | OrientHorizontal | True        | False          | touch_object
+                #  34   | OrientHorizontal | True        | False          | touch_object
+                #  35   | OrientHorizontal | True        | False          | touch_object
+                #  36   | OrientHorizontal | True        | False          | touch_object
+                #  37   | OrientHorizontal | True        | False          | touch_object
+                #  38   | OrientHorizontal | True        | False          | touch_object
+                #  39   | OrientHorizontal | True        | False          | touch_object
+                #  40   | OrientHorizontal | True        | False          | touch_object
+                #  41   | OrientVertical   | True        | False          | touch_object
+                #  42   | MoveForward      | True        | False          | touch_object
+                # back on object
+                #  43   | OrientHorizontal | True        | False          | dynamic_call
+                #  44   | OrientVertical   | False       | True           | dynamic_call
+                #  45   | MoveTangentially | True        | False          | dynamic_call
+                # falls off object
+                #  46   | OrientHorizontal | True        | False          | touch_object
+                #  47   | OrientHorizontal | True        | False          | touch_object
+                #  48   | OrientHorizontal | True        | False          | touch_object
+                #  49   | OrientHorizontal | True        | False          | touch_object
+                #  50   | OrientHorizontal | True        | False          | touch_object
+                #  51   | OrientHorizontal | True        | False          | touch_object
+                #  52   | OrientHorizontal | True        | False          | touch_object
+                #  53   | OrientHorizontal | True        | False          | touch_object
+                #  54   | OrientHorizontal | True        | False          | touch_object
+                #  55   | OrientHorizontal | True        | False          | touch_object
+                #  56   | OrientHorizontal | True        | False          | touch_object
+                #  57   | OrientHorizontal | True        | False          | touch_object
+                #  58   | OrientVertical   | True        | False          | touch_object
+                # back on object
+                #  59   | OrientHorizontal | True        | False          | dynamic_call
+                #  60   | OrientVertical   | False       | True           | dynamic_call
+                #  61   | MoveTangentially | True        | False          | dynamic_call
+                # falls off object
+                #  62   | OrientHorizontal | True        | False          | touch_object
 
-                if 13 <= loader_step <= 25:  # Motor-only touch_object steps
+                # Motor-only touch_object steps
+                if (
+                    13 <= loader_step <= 25
+                    or 29 <= loader_step <= 42
+                    or 46 <= loader_step <= 58
+                    or loader_step == 62
+                ):
                     assert not exp.model.learning_modules[
                         0
-                    ].buffer.get_last_obs_processed(), "Should be off object"
+                    ].buffer.get_last_obs_processed(), (
+                        "Should be off object, motor-only step"
+                    )
+                if loader_step == 62:
+                    break  # Finish test
 
-                if loader_step == 26:  # Incorrect motor-only MoveTangentially
+                # First on-object steps are always OrientHorizontal motor-only steps
+                if loader_step in [26, 43, 59]:
                     assert not exp.model.learning_modules[
                         0
-                    ].buffer.get_last_obs_processed(), "Should be off object"
+                    ].buffer.get_last_obs_processed(), (
+                        "Should be on object, motor-only step"
+                    )
 
-                if 27 <= loader_step <= 28:  # Motor-only touch_object steps
-                    assert not exp.model.learning_modules[
-                        0
-                    ].buffer.get_last_obs_processed(), "Should be off object"
-
-                if loader_step == 29:  # OrientHorizontal from SurfacePolicy cycle start
-                    assert not exp.model.learning_modules[
-                        0
-                    ].buffer.get_last_obs_processed(), "Should be off object"
-
-                if loader_step == 30:  # OrientVertical from SurfacePolicy cycle
+                # Second on-object steps are always OrientVertical that send data to LM
+                if loader_step in [27, 44, 60]:
                     assert exp.model.learning_modules[
                         0
-                    ].buffer.get_last_obs_processed(), "Should be back on object"
-                    break  # Don't go into exploratory mode
+                    ].buffer.get_last_obs_processed(), (
+                        "Should be on object, sending data to LM"
+                    )
+
+                # Third on-object steps are always MoveTangentially motor-only steps
+                if loader_step in [28, 45, 61]:
+                    assert not exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), (
+                        "Should be on object, motor-only step"
+                    )
 
     def test_surface_policy_orientation(self):
         """Test ability of surface agent to orient to a point-normal.
