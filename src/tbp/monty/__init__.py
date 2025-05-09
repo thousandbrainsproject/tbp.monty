@@ -8,4 +8,4 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
