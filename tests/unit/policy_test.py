@@ -976,7 +976,7 @@ class PolicyTest(unittest.TestCase):
                     ].buffer.get_last_obs_processed(), (
                         "Should be off object, motor-only step"
                     )
-                if loader_step == 26:
+                if loader_step == 62:
                     break  # Finish test
 
                 # First on-object steps are always OrientHorizontal motor-only steps
