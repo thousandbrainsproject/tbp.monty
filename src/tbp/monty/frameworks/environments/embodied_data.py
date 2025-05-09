@@ -476,6 +476,14 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                     view_sensor_id="view_finder",
                     state=self.motor_system._state,
                 )
+            else:
+                # TODO: Encapsulate this reset inside TouchObject positioning
+                #       procedure once it exists.
+                #       This is a hack to reset the current touch_object
+                #       positioning procedure state so that the next time
+                #       SurfacePolicy falls off the object, it will try to find
+                #       the object using its full repertoire of actions.
+                self.motor_system._policy.touch_search_amount = 0
 
             self._observation, proprioceptive_state = self.dataset[self._action]
             motor_system_state = MotorSystemState(proprioceptive_state)
