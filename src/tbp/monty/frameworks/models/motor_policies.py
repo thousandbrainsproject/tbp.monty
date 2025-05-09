@@ -1226,7 +1226,9 @@ class SurfacePolicy(InformedPolicy):
     ###
     # Methods that define behavior of __call__
     ###
-    def dynamic_call(self, state: Optional[MotorSystemState] = None) -> Action:
+    def dynamic_call(
+        self, state: Optional[MotorSystemState] = None
+    ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
         """Return the next action to take.
 
         This requires self.processed_observations to be updated at every step
@@ -1238,7 +1240,8 @@ class SurfacePolicy(InformedPolicy):
                 Defaults to None.
 
         Returns:
-            (Action): The action to take.
+            (OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None):
+                The action to take.
         """
         # Check if we have poor visualization of the object
         if self.processed_observations.get_feature_by_name("object_coverage") < 0.1:
@@ -1269,7 +1272,7 @@ class SurfacePolicy(InformedPolicy):
 
         return self.get_next_action(state)
 
-    def _orient_horizontal(self, state: MotorSystemState) -> Action:
+    def _orient_horizontal(self, state: MotorSystemState) -> OrientHorizontal:
         """Orient the agent horizontally.
 
         Args:
@@ -1289,7 +1292,7 @@ class SurfacePolicy(InformedPolicy):
             forward_distance=forward_distance,
         )
 
-    def _orient_vertical(self, state: MotorSystemState) -> Action:
+    def _orient_vertical(self, state: MotorSystemState) -> OrientVertical:
         """Orient the agent vertically.
 
         Args:
@@ -1309,7 +1312,7 @@ class SurfacePolicy(InformedPolicy):
             forward_distance=forward_distance,
         )
 
-    def _move_tangentially(self, state: MotorSystemState) -> Action:
+    def _move_tangentially(self, state: MotorSystemState) -> MoveTangentially:
         """Move tangentially along the object surface.
 
         Args:
@@ -1338,7 +1341,7 @@ class SurfacePolicy(InformedPolicy):
 
         return action
 
-    def _move_forward(self) -> Action:
+    def _move_forward(self) -> MoveForward:
         """Move forward to touch the object at the right distance.
 
         Returns:
@@ -1353,7 +1356,9 @@ class SurfacePolicy(InformedPolicy):
         )
         return action
 
-    def get_next_action(self, state: MotorSystemState):
+    def get_next_action(
+        self, state: MotorSystemState
+    ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
         """Retrieve next action from a cycle of four actions.
 
         First move forward to touch the object at the right distance
