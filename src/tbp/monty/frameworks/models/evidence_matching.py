@@ -919,9 +919,6 @@ class EvidenceGraphLM(GraphLM):
             features (dict): input features
             displacements (dict or None): given displacements
             graph_id (str): identifier of the graph being updated
-
-        Raises:
-            ValueError: If no input channels are found to initializing hypotheses
         """
         start_time = time.time()
 
@@ -941,17 +938,11 @@ class EvidenceGraphLM(GraphLM):
         ]
 
         if len(input_channels_to_use) == 0:
-            if displacements is None:
-                # QUESTION: Do we just want to continue until we get input?
-                raise ValueError(
-                    "No input channels found to initializing hypotheses. Make sure"
-                    " there is at least one channel that is also stored in the graph."
-                )
-            else:
-                logging.info(
-                    f"No input channels observed for {graph_id} that are stored in . "
-                    "the model. Not updating evidence."
-                )
+            logging.info(
+                f"No input channels observed for {graph_id} that are stored in . "
+                "the model. Not updating evidence."
+            )
+            return
 
         for input_channel in input_channels_to_use:
             # Extract channel mapper
@@ -1002,8 +993,8 @@ class EvidenceGraphLM(GraphLM):
             self._replace_hypotheses_in_hpspace(
                 graph_id=graph_id,
                 input_channel=input_channel,
-                new_locations_hypotheses=channel_possible_locations,
-                new_poses_hypotheses=channel_possible_poses,
+                new_location_hypotheses=channel_possible_locations,
+                new_pose_hypotheses=channel_possible_poses,
                 new_evidence=channel_hypotheses_evidence,
             )
 
@@ -1096,8 +1087,8 @@ class EvidenceGraphLM(GraphLM):
         self,
         graph_id: str,
         input_channel: str,
-        new_locations_hypotheses: np.ndarray,
-        new_poses_hypotheses: np.ndarray,
+        new_location_hypotheses: np.ndarray,
+        new_pose_hypotheses: np.ndarray,
         new_evidence: np.ndarray,
     ) -> None:
         """Updates the hypothesis space for a given input channel in a graph.
@@ -1114,8 +1105,8 @@ class EvidenceGraphLM(GraphLM):
         Args:
             graph_id (str): The ID of the current graph to update.
             input_channel (str): Channel's name involved in updating the space
-            new_locations_hypotheses (np.ndarray): New sensor locations hypotheses
-            new_poses_hypotheses (np.ndarray): New object poses hypotheses
+            new_location_hypotheses (np.ndarray): New sensor locations hypotheses
+            new_pose_hypotheses (np.ndarray): New object poses hypotheses
             new_evidence (np.ndarray): New evidence values for the input channel
 
         Note:
@@ -1130,8 +1121,8 @@ class EvidenceGraphLM(GraphLM):
         # Add a new channel to the mapping if the hypotheses space doesn't exist
         if input_channel not in mapper.channels:
             if len(mapper.channels) == 0:
-                self.possible_locations[graph_id] = np.array(new_locations_hypotheses)
-                self.possible_poses[graph_id] = np.array(new_poses_hypotheses)
+                self.possible_locations[graph_id] = np.array(new_location_hypotheses)
+                self.possible_poses[graph_id] = np.array(new_pose_hypotheses)
                 self.evidence[graph_id] = np.array(new_evidence)
 
                 mapper.add_channel(input_channel, len(new_evidence))
@@ -1152,12 +1143,12 @@ class EvidenceGraphLM(GraphLM):
         self.possible_locations[graph_id] = mapper.update(
             self.possible_locations[graph_id],
             input_channel,
-            np.array(new_locations_hypotheses),
+            np.array(new_location_hypotheses),
         )
         self.possible_poses[graph_id] = mapper.update(
             self.possible_poses[graph_id],
             input_channel,
-            np.array(new_poses_hypotheses),
+            np.array(new_pose_hypotheses),
         )
         self.evidence[graph_id] = mapper.update(
             self.evidence[graph_id],
