@@ -67,7 +67,8 @@ generate_api_docs_tool = [
     'sphinx',
     'sphinx-autobuild',
     'myst-parser',
-    'pydata_sphinx_theme'
+    'pydata_sphinx_theme',
+    'snowballstemmer<3'
 ]
 github_readme_sync_tool = [
     'requests',

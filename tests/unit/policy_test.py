@@ -892,13 +892,54 @@ class PolicyTest(unittest.TestCase):
             for loader_step, observation in enumerate(exp.dataloader):
                 exp.model.step(observation)
 
-                if loader_step == 24:  # Last step we take before getting back onto the
-                    # object
+                # |Step| Action           | Motor-only? | Obs processed? | Source
+                # |----|------------------|-------------|----------------|-------------
+                # | 13 | OrientHorizontal | True        | False          | touch_object
+                # | 14 | OrientHorizontal | True        | False          | touch_object
+                # | 15 | OrientHorizontal | True        | False          | touch_object
+                # | 16 | OrientHorizontal | True        | False          | touch_object
+                # | 17 | OrientHorizontal | True        | False          | touch_object
+                # | 18 | OrientHorizontal | True        | False          | touch_object
+                # | 19 | OrientHorizontal | True        | False          | touch_object
+                # | 20 | OrientHorizontal | True        | False          | touch_object
+                # | 21 | OrientHorizontal | True        | False          | touch_object
+                # | 22 | OrientHorizontal | True        | False          | touch_object
+                # | 23 | OrientHorizontal | True        | False          | touch_object
+                # | 24 | OrientHorizontal | True        | False          | touch_object
+                # | 25 | OrientVertical   | True        | False          | touch_object
+                # | 26 | MoveTangentially | True        | False          | dynamic_call
+                # | 27 | OrientVertical   | True        | False          | touch_object
+                # | 28 | MoveForward      | True        | False          | touch_object
+                # | 29 | OrientHorizontal | True        | False          | dynamic_call
+                # | 30 | OrientVertical   | True        | True           | dynamic_call
+                #
+                # Note that 26 (MoveTangentially) is a bug, in that SurfacePolicy
+                # dynamic_call assumes that it is in the middle of the
+                # MoveForward->OrientHorizontal->OrientVertical->MoveTangentially
+                # cycle, but in fact it is not.
+                # As a result, the sensor falls off the object again.
+
+                if 13 <= loader_step <= 25:  # Motor-only touch_object steps
                     assert not exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), "Should be off object"
 
-                if loader_step == 25:
+                if loader_step == 26:  # Incorrect motor-only MoveTangentially
+                    assert not exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), "Should be off object"
+
+                if 27 <= loader_step <= 28:  # Motor-only touch_object steps
+                    assert not exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), "Should be off object"
+
+                if loader_step == 29:  # OrientHorizontal from SurfacePolicy cycle start
+                    assert not exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), "Should be off object"
+
+                if loader_step == 30:  # OrientVertical from SurfacePolicy cycle
                     assert exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), "Should be back on object"
