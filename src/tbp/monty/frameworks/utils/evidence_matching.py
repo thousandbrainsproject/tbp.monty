@@ -164,10 +164,11 @@ class ChannelMapper:
         """Inserts data into the original array at the position of the given channel.
 
         This function inserts new data at the index range previously associated with
-        the provided channel. We split the original array around the input channel
-        range, then concatenate the before and after splits with the data to be
-        inserted. This accommodates 'data' being of a different size than the current
-        channel size.
+        the provided channel. If the new data is of the same shape as the existing
+        channel data shape, we simply replace the data at the channel range indices.
+        Otherwise, We split the original array around the input channel range, then
+        concatenate the before and after splits with the data to be inserted. This
+        accommodates 'data' being of a different size than the current channel size.
 
         For example, if original has the shape (20, 3), channel start index is 10,
         channel end index is 13, and the data has the shape (5, 3). We would concatenate
@@ -180,8 +181,9 @@ class ChannelMapper:
             data (np.ndarray): The new data to insert.
 
         Returns:
-            np.ndarray: The resulting array after insertion. Returns a new copy not a
-                view.
+            np.ndarray: The resulting array after insertion. Can return a new copy or a
+                view, depending on whether the inserted data is of the same size as the
+                existing channel.
 
         Raises:
             ValueError: If the channel is not found.
@@ -190,7 +192,15 @@ class ChannelMapper:
             raise ValueError(f"Channel '{channel}' not found.")
 
         start, end = self.channel_range(channel)
-        return np.concatenate([original[:start], data, original[end:]], axis=0)
+
+        if self.channel_sizes[channel] == data.shape[0]:
+            # returns a view not a copy
+            original[start:end] = data
+        else:
+            # returns a copy not a view
+            original = np.concatenate([original[:start], data, original[end:]], axis=0)
+
+        return original
 
     def __repr__(self) -> str:
         """Returns a string representation of the current channel mapping.
