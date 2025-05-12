@@ -841,37 +841,6 @@ class EvidenceGraphLM(GraphLM):
             evidence,
         )
 
-    def _add_hypotheses_to_hpspace(
-        self,
-        graph_id,
-        input_channel,
-        new_loc_hypotheses,
-        new_rot_hypotheses,
-        new_evidence,
-    ):
-        """Add new hypotheses to hypothesis space."""
-        # Add current mean evidence to give the new hypotheses a fighting
-        # chance. TODO H: Test mean vs. median here.
-        current_mean_evidence = np.mean(self.evidence[graph_id])
-        new_evidence = new_evidence + current_mean_evidence
-        # Add new hypotheses to hypothesis space
-        self.possible_locations[graph_id] = np.vstack(
-            [
-                self.possible_locations[graph_id],
-                new_loc_hypotheses,
-            ]
-        )
-        self.possible_poses[graph_id] = np.vstack(
-            [
-                self.possible_poses[graph_id],
-                new_rot_hypotheses,
-            ]
-        )
-        self.evidence[graph_id] = np.hstack([self.evidence[graph_id], new_evidence])
-        # Update channel hypothesis mapping
-        channel_mapper = self.channel_hypothesis_mapping[graph_id]
-        channel_mapper.add_channel(input_channel, len(new_loc_hypotheses))
-
     def _update_possible_matches(self, query):
         """Update evidence for each hypothesis instead of removing them."""
         thread_list = []
