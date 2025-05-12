@@ -990,7 +990,7 @@ class EvidenceGraphLM(GraphLM):
                     )
                 )
 
-            self._replace_hypotheses_in_hpspace(
+            self._set_hypotheses_in_hpspace(
                 graph_id=graph_id,
                 input_channel=input_channel,
                 new_location_hypotheses=channel_possible_locations,
@@ -1083,7 +1083,7 @@ class EvidenceGraphLM(GraphLM):
             )
         return search_locations, channel_hypotheses_evidence
 
-    def _replace_hypotheses_in_hpspace(
+    def _set_hypotheses_in_hpspace(
         self,
         graph_id: str,
         input_channel: str,
