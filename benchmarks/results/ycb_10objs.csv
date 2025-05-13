@@ -9,5 +9,5 @@ randrot_noise_10distinctobj_5lms_dist_agent,100.00,0.00,57,45.26,10,84
 base_10simobj_surf_agent,95.00,10.71,55,15.49,12,24
 randrot_noise_10simobj_dist_agent,84.00,40.00,237,34.95,18,147
 randrot_noise_10simobj_surf_agent,93.00,36.00,181,31.14,17,146
-randomrot_rawnoise_10distinctobj_surf_agent,69.00,74.00,15,111.45,4,6
+randomrot_rawnoise_10distinctobj_surf_agent,68.00,72.00,15,89.35,6,7
 base_10multi_distinctobj_dist_agent,79.29,10.71,31,20.05,43,1
