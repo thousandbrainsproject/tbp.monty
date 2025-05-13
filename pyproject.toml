@@ -148,7 +148,7 @@ show_contexts = true
 [tool.mypy]
 warn_unused_configs = true
 # TODO: This effectively disables mypy, don't ignore once types are added
-ignore_errors = true
+# ignore_errors = true
 # TODO: Remove global ignore and handle missing type stubs
 ignore_missing_imports = true
 
@@ -227,6 +227,7 @@ ignore = [
     "ISC001", # ISC001: Implicitly concatenated string literals on one line
     "ISC003", # ISC003: Explicitly concatenated string should be implicitly concatenated
     "N804", # N804: First argument of a class method should be named `cls`
+    "N818", # N818: Exception name {exception} should be named with an Error suffix
     "NPY002", # NPY002: Replace legacy `np.random.normal` call with `np.random.Generator`
     "PD002", # PD002: `inplace=True` should be avoided; it has inconsistent behavior
     "PD901", # PD901: Avoid using the generic variable name `df` for DataFrames

@@ -394,6 +394,28 @@ class PositioningProcedure(BasePolicy):
     indicates that the procedure has terminated or truncated.
     """
 
+    @classmethod
+    def depth_at_center(
+        cls,
+        agent_id: str,
+        observation: Mapping,
+        sensor_id: str,
+    ) -> float:
+        """Determine the depth of the central pixel for the sensor.
+
+        Args:
+            agent_id (str): The ID of the agent to use.
+            observation (Mapping): The observation to use.
+            sensor_id (str): The ID of the sensor to use.
+
+        Returns:
+            (float): The depth of the central pixel for the sensor.
+        """
+        observation_shape = observation[agent_id][sensor_id]["depth"].shape
+        return observation[agent_id][sensor_id]["depth"][
+            observation_shape[0] // 2, observation_shape[1] // 2
+        ]
+
     @abc.abstractmethod
     def positioning_call(
         self,
@@ -450,7 +472,7 @@ class GetGoodView(PositioningProcedure):
         max_orientation_attempts: int = 1,
         **kwargs,
     ) -> None:
-        """Initialize the GetGoodView policy.
+        """Initialize the GetGoodView positioning procedure.
 
         Args:
             desired_object_distance (float): The desired distance to the object.
@@ -710,7 +732,7 @@ class GetGoodView(PositioningProcedure):
     def positioning_call(
         self,
         observation: Mapping,
-        state: Optional[MotorSystemState] = None,
+        state: MotorSystemState | None = None,
     ) -> PositioningProcedureResult:
         if (
             self._multiple_objects_present
@@ -766,6 +788,157 @@ class GetGoodView(PositioningProcedure):
         sensor_rotation = agent_state["sensors"][f"{self._sensor_id}.depth"]["rotation"]
         # Derive sensor's rotation relative to the world.
         return agent_rotation * sensor_rotation
+
+
+class ObjectNotVisible(RuntimeError):
+    """Error raised when the object is not visible."""
+
+
+class TouchObject(PositioningProcedure):
+    """Positioning procedure to touch an object.
+
+    Called at the beginning of each episode and after "jump" has been initiated
+    by a model-based policy. In addition, it can be called when the surface agent
+    cannot sense the object, e.g. because it has fallen off its surface.
+
+    If we are not on the object, first try systematically orienting left around
+    a point, then orienting down, and finally random orientations along the surface
+    of a fixed sphere.
+    """
+
+    def __init__(
+        self,
+        desired_object_distance: float,
+        sensor_id: str,
+        **kwargs,
+    ) -> None:
+        """Initialize the TouchObject positioning procedure.
+
+        Args:
+            desired_object_distance (float): The desired distance to the object.
+            sensor_id (str): The ID of the sensor to use for positioning.
+            **kwargs: Additional keyword arguments.
+        """
+        super().__init__(**kwargs)
+        self._desired_object_distance = desired_object_distance
+        self._sensor_id = sensor_id
+        self._terminated_and_succeeded = False
+        """Flag to indicate that the procedure has terminated and succeeded.
+
+        Since the PositioningProcedure is a state machine, we first return the last
+        action to take while setting this flag to True, then, on the next invocation,
+        we return a PositioningProcedureResult with success=True, terminated=True.
+        """
+        self._touch_search_rotation_degrees = 0.0
+        """Tracks how many degrees the agent has rotated in search planes.
+
+        Search begins in the horizontal plane. When this reaches 360, attempt searching
+        in the vertical plane. When this reaches 720, perform a random search.
+        """
+
+    def positioning_call(
+        self, observation: Mapping, state: MotorSystemState | None = None
+    ) -> PositioningProcedureResult:
+        if self._terminated_and_succeeded:
+            return PositioningProcedureResult(success=True, terminated=True)
+
+        depth_at_center = PositioningProcedure.depth_at_center(
+            agent_id=self.agent_id, observation=observation, sensor_id=self._sensor_id
+        )
+        # If the viewfinder sees the object within range, then move to it
+        if depth_at_center < 1.0:
+            distance = (
+                depth_at_center
+                - self._desired_object_distance
+                - state["agent_id_0"]["sensors"][f"{self._sensor_id}.depth"][
+                    "position"
+                ][2]
+            )
+            logging.debug(f"Move to touch visible object, forward by {distance}")
+
+            self._terminated_and_succeeded = True
+            return PositioningProcedureResult(
+                actions=[MoveForward(agent_id=self.agent_id, distance=distance)]
+            )
+
+        logging.debug("TouchObject positioning procedure searching for object...")
+
+        # Helpful to conceptualize these movements by considering a unit circle,
+        # scaled by the radius distance_from_center
+        # This image may be useful for intuition:
+        # https://en.wikipedia.org/wiki/Exsecant#/media/File:Circle-trig6.svg
+
+        # Rotate about a circle centered in fron of the agent's current
+        # position; TODO decide how to deal with "coliding with"/entering an
+        # object; ?could just rotate about a point on which the sensor is present
+        # Currently as a heuristic we rotate about a point 4x the desired distance;
+        # as this is typically 2.5cm, this would mean a circle with radius 10cm
+        distance_from_center = self._desired_object_distance * 4
+
+        rotation_degrees = 30  # 30 degrees at a time; note this amount is also used
+        # to eventually re-orient ourselves back to the original central point;
+        # TODO may want to consider trying smaller step-sizes; will
+        # be less efficient, but may be important for smaller/distant objects that
+        # otherwise get missed
+
+        if self._touch_search_rotation_degrees >= 720:
+            # Perform a random upward or downward movement along the surface of a
+            # sphere, with its centre fixed 10 cm in front of the agent
+            logging.debug("Trying random search for object")
+            if self.rng.uniform() < 0.5:
+                orientation = "vertical"
+                logging.debug("Orienting vertically")
+            else:
+                orientation = "horizontal"
+                logging.debug("Orienting horizontally")
+
+            rotation_degrees = self.rng.uniform(-180, 180)
+            logging.debug(f"Random orientation amount is : {rotation_degrees}")
+
+        elif (
+            self._touch_search_rotation_degrees >= 360
+            and self._touch_search_rotation_degrees < 720
+        ):
+            logging.debug("Trying vertical search for object")
+            orientation = "vertical"
+
+        else:
+            logging.debug("Trying horizontal search for object")
+            orientation = "horizontal"
+
+        # Move tangentally to the point we're facing, resulting in the agent's
+        # orienation about the central point changing as specified by rotation_deg,
+        # but now where the agent is no longer on the edge of the circle
+        move_lat_amount = np.tan(np.radians(rotation_degrees)) * distance_from_center
+        # The lateral movement will be down relative to the agent's facing position
+        # in the case of orient vertical, and left in the case of orient horizontal
+
+        # The below calculates the exsecant, which provides the necessary
+        # movement to bring the agent back to the same radius around the central
+        # point
+        move_forward_amount = distance_from_center * (
+            (1 - np.cos(np.radians(rotation_degrees)))
+            / np.cos(np.radians(rotation_degrees))
+        )
+
+        self._touch_search_rotation_degrees += rotation_degrees
+
+        action = (
+            OrientVertical(
+                agent_id=self.agent_id,
+                rotation_degrees=rotation_degrees,
+                down_distance=move_lat_amount,
+                forward_distance=move_forward_amount,
+            )
+            if orientation == "vertical"
+            else OrientHorizontal(
+                agent_id=self.agent_id,
+                rotation_degrees=rotation_degrees,
+                left_distance=move_lat_amount,
+                forward_distance=move_forward_amount,
+            )
+        )
+        return PositioningProcedureResult(actions=[action])
 
 
 class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
@@ -830,40 +1003,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             JumpToGoalStateMixin.pre_episode(self)
 
         return super().pre_episode()
-
-    def get_depth_at_center(self, raw_observation, view_sensor_id, initial_pose=True):
-        """Determine the depth of the central pixel.
-
-        Method primarily used by surface-agent, but also by distant agent after
-        performing a hypothesis-testing jump; determines the depth of the central pixel,
-        to inform whether the object is visible at all
-
-        initial_pose : Whether we are checking depth-at center as part of the first
-            start of an experiment; if using get_depth_at_center to check for
-            the observation after e.g. a hypothesis-testing jump, then we don't
-            want to throw an error if the object is nowhere to be seen; instead, we
-            simply move back
-
-        Returns:
-            Depth at the center of the view sensor.
-        """
-        observation_shape = raw_observation[self.agent_id][view_sensor_id][
-            "depth"
-        ].shape
-        depth_at_center = raw_observation[self.agent_id][view_sensor_id]["depth"][
-            observation_shape[0] // 2, observation_shape[1] // 2
-        ]
-        if initial_pose:
-            assert depth_at_center > 0, (
-                "Object must be initialized such that "
-                "agent can visualize it by moving forward"
-            )
-            # TODO investigate - I think this may have always been passing in the
-            # original surface-agent policy implementation because the surface
-            # sensor clips at 1.0, so even if the object isn't strictly visible (or
-            # we're inside the object))  there's a risk we have initialized without the
-            # object in view
-        return depth_at_center
 
     ###
     # Methods that define behavior of __call__
@@ -1105,129 +1244,12 @@ class SurfacePolicy(InformedPolicy):
 
         return super().pre_episode()
 
-    def touch_object(
-        self, raw_observation, view_sensor_id: str, state: MotorSystemState
-    ) -> MoveForward | OrientHorizontal | OrientVertical:
-        """The surface agent's policy for moving onto an object for sensing it.
-
-        Like the distant agent's get_good_view, this is called at the beginning
-        of every episode, and after a "jump" has been initialized by a
-        model-based policy. In addition, it can be called when the surface agent
-        cannot sense the object, e.g. because it has fallen off its surface.
-
-        Currently uses the raw observations returned from the viewfinder via the
-        dataloader, and not the extracted features from the sensor module.
-        TODO M refactor this so that all sensory processing is done in the sensor
-        module.
-
-        If we aren't on the object, try first systematically orienting left around
-        a point, then orienting down, and finally random orientations along the surface
-        of a fixed sphere.
-
-        Args:
-            raw_observation: The raw observation from the simulator.
-            view_sensor_id (str): The ID of the viewfinder sensor.
-            state (MotorSystemState): The current state of the motor system.
-
-        Returns:
-            (MoveForward | OrientHorizontal | OrientVertical): Action to take.
-        """
-        # If the viewfinder sees the object within range, then move to it
-        depth_at_center = self.get_depth_at_center(raw_observation, view_sensor_id)
-        if depth_at_center < 1.0:
-            distance = (
-                depth_at_center
-                - self.desired_object_distance
-                - state["agent_id_0"]["sensors"][f"{view_sensor_id}.depth"]["position"][
-                    2
-                ]
-            )
-            logging.debug(f"Move to touch visible object, forward by {distance}")
-
-            return MoveForward(agent_id=self.agent_id, distance=distance)
-
-        logging.debug("Surface policy searching for object...")
-
-        # Helpful to conceptualize these movements by considering a unit circle,
-        # scaled by the radius distance_from_center
-        # This image may be useful for intuition:
-        # https://en.wikipedia.org/wiki/Exsecant#/media/File:Circle-trig6.svg
-
-        # Rotate about a circle centered in fron of the agent's current
-        # position; TODO decide how to deal with "coliding with"/entering an
-        # object; ?could just rotate about a point on which the sensor is present
-        # Currently as a heuristic we rotate about a point 4x the desired distance;
-        # as this is typically 2.5cm, this would mean a circle with radius 10cm
-        distance_from_center = self.desired_object_distance * 4
-
-        rotation_degrees = 30  # 30 degrees at a time; note this amount is also used
-        # to eventually re-orient ourselves back to the original central point;
-        # TODO may want to consider trying smaller step-sizes; will
-        # be less efficient, but may be important for smaller/distant objects that
-        # otherwise get missed
-
-        if self.touch_search_amount >= 720:
-            # Perform a random upward or downward movement along the surface of a
-            # sphere, with its centre fixed 10 cm in front of the agent
-            logging.debug("Trying random search for object")
-            if self.rng.uniform() < 0.5:
-                orientation = "vertical"
-                logging.debug("Orienting vertically")
-            else:
-                orientation = "horizontal"
-                logging.debug("Orienting horizontally")
-
-            rotation_degrees = self.rng.uniform(-180, 180)
-            logging.debug(f"Random orientation amount is : {rotation_degrees}")
-
-        elif self.touch_search_amount >= 360 and self.touch_search_amount < 720:
-            logging.debug("Trying vertical search for object")
-            orientation = "vertical"
-
-        else:
-            logging.debug("Trying horizontal search for object")
-            orientation = "horizontal"
-
-        # Move tangentally to the point we're facing, resulting in the agent's
-        # orienation about the central point changing as specified by rotation_deg,
-        # but now where the agent is no longer on the edge of the circle
-        move_lat_amount = np.tan(np.radians(rotation_degrees)) * distance_from_center
-        # The lateral movement will be down relative to the agent's facing position
-        # in the case of orient vertical, and left in the case of orient horizontal
-
-        # The below calculates the exsecant, which provides the necessary
-        # movement to bring the agent back to the same radius around the central
-        # point
-        move_forward_amount = distance_from_center * (
-            (1 - np.cos(np.radians(rotation_degrees)))
-            / np.cos(np.radians(rotation_degrees))
-        )
-
-        self.touch_search_amount += rotation_degrees  # Accumulate total rotations
-        # for touch-search
-
-        return (
-            OrientVertical(
-                agent_id=self.agent_id,
-                rotation_degrees=rotation_degrees,
-                down_distance=move_lat_amount,
-                forward_distance=move_forward_amount,
-            )
-            if orientation == "vertical"
-            else OrientHorizontal(
-                agent_id=self.agent_id,
-                rotation_degrees=rotation_degrees,
-                left_distance=move_lat_amount,
-                forward_distance=move_forward_amount,
-            )
-        )
-
     ###
     # Methods that define behavior of __call__
     ###
     def dynamic_call(
-        self, state: Optional[MotorSystemState] = None
-    ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
+        self, state: MotorSystemState | None = None
+    ) -> MoveForward | OrientHorizontal | OrientVertical | MoveTangentially | None:
         """Return the next action to take.
 
         This requires self.processed_observations to be updated at every step
@@ -1239,8 +1261,11 @@ class SurfacePolicy(InformedPolicy):
                 Defaults to None.
 
         Returns:
-            (OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None):
+            (MoveForward | OrientHorizontal | OrientVertical | MoveTangentially | None):
                 The action to take.
+
+        Raises:
+            ObjectNotVisible: If the object is not visible.
         """
         # Check if we have poor visualization of the object
         if self.processed_observations.get_feature_by_name("object_coverage") < 0.1:
@@ -1250,11 +1275,7 @@ class SurfacePolicy(InformedPolicy):
                     self.processed_observations.get_feature_by_name("object_coverage")
                 )
             )
-            logging.debug("Initiating attempts to touch object")
-
-            return None  # Will result in moving to try to find the object
-            # This is determined by some logic in embodied_data.py, in particular
-            # the next method of InformedEnvironmentDataLoader
+            raise ObjectNotVisible
 
         elif self.action is None:
             logging.debug(
@@ -1357,7 +1378,7 @@ class SurfacePolicy(InformedPolicy):
 
     def get_next_action(
         self, state: MotorSystemState
-    ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
+    ) -> MoveForward | OrientHorizontal | OrientVertical | MoveTangentially | None:
         """Retrieve next action from a cycle of four actions.
 
         First move forward to touch the object at the right distance
@@ -1370,7 +1391,8 @@ class SurfacePolicy(InformedPolicy):
             state (MotorSystemState): The current state of the motor system.
 
         Returns:
-            Next action in the cycle.
+            (MoveForward | OrientHorizontal | OrientVertical | MoveTangentially | None):
+                Next action in the cycle.
         """
         # TODO: is this check necessary?
         if not hasattr(self, "processed_observations"):

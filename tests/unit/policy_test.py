@@ -894,109 +894,80 @@ class PolicyTest(unittest.TestCase):
 
                 #  Step | Action           | Motor-only? | Obs processed? | Source
                 # ------|------------------|-------------|----------------|-------------
-                #  1    | MoveForward      | True        | False          | dynamic_call
+                #  0    | None             | True        | False          | first_step
+                #  1    | MoveForward      | True        | False          | touch_object
                 #  2    | OrientHorizontal | True        | False          | dynamic_call
-                #  3    | OrientVertical   | False       | True           | dynamic_call
+                #  3    | OrientVertical   | KeyError    | True           | dynamic_call
                 #  4    | MoveTangentially | True        | False          | dynamic_call
                 #  5    | MoveForward      | True        | False          | dynamic_call
                 #  6    | OrientHorizontal | True        | False          | dynamic_call
-                #  7    | OrientVertical   | False       | True           | dynamic_call
+                #  7    | OrientVertical   | KeyError    | True           | dynamic_call
                 #  8    | MoveTangentially | True        | False          | dynamic_call
                 #  9    | MoveForward      | True        | False          | dynamic_call
                 #  10   | OrientHorizontal | True        | False          | dynamic_call
-                #  11   | OrientVertical   | False       | True           | dynamic_call
+                #  11   | OrientVertical   | KeyError    | True           | dynamic_call
                 #  12   | MoveTangentially | True        | False          | dynamic_call
                 # falls off object
-                #  13   | OrientHorizontal | True        | False          | touch_object
-                #  14   | OrientHorizontal | True        | False          | touch_object
-                #  15   | OrientHorizontal | True        | False          | touch_object
-                #  16   | OrientHorizontal | True        | False          | touch_object
-                #  17   | OrientHorizontal | True        | False          | touch_object
-                #  18   | OrientHorizontal | True        | False          | touch_object
-                #  19   | OrientHorizontal | True        | False          | touch_object
-                #  20   | OrientHorizontal | True        | False          | touch_object
-                #  21   | OrientHorizontal | True        | False          | touch_object
-                #  22   | OrientHorizontal | True        | False          | touch_object
-                #  23   | OrientHorizontal | True        | False          | touch_object
-                #  24   | OrientHorizontal | True        | False          | touch_object
-                #  25   | OrientVertical   | True        | False          | touch_object
+                # dataloder runs TouchObject positioning procedure in a tight loop only
+                # exposing a new observation at the end of the loop
+                #  13   | MoveForward      | True        | False          | touch_object
                 # back on object
-                #  26   | OrientHorizontal | True        | False          | dynamic_call
-                #  27   | OrientVertical   | False       | True           | dynamic_call
-                #  28   | MoveTangentially | True        | False          | dynamic_call
+                #  14   | MoveForward      | True        | False          | dynamic_call
+                #  15   | OrientHorizontal | True        | False          | dynamic_call
+                #  16   | OrientVertical   | KeyError    | True           | dynamic_call
+                #  17   | MoveTangentially | True        | False          | dynamic_call
                 # falls off object
-                #  29   | OrientHorizontal | True        | False          | touch_object
-                #  30   | OrientHorizontal | True        | False          | touch_object
-                #  31   | OrientHorizontal | True        | False          | touch_object
-                #  32   | OrientHorizontal | True        | False          | touch_object
-                #  33   | OrientHorizontal | True        | False          | touch_object
-                #  34   | OrientHorizontal | True        | False          | touch_object
-                #  35   | OrientHorizontal | True        | False          | touch_object
-                #  36   | OrientHorizontal | True        | False          | touch_object
-                #  37   | OrientHorizontal | True        | False          | touch_object
-                #  38   | OrientHorizontal | True        | False          | touch_object
-                #  39   | OrientHorizontal | True        | False          | touch_object
-                #  40   | OrientHorizontal | True        | False          | touch_object
-                #  41   | OrientVertical   | True        | False          | touch_object
-                #  42   | MoveForward      | True        | False          | touch_object
+                # dataloder runs TouchObject positioning procedure in a tight loop only
+                # exposing a new observation at the end of the loop
+                #  18   | MoveForward      | True        | False          | touch_object
                 # back on object
-                #  43   | OrientHorizontal | True        | False          | dynamic_call
-                #  44   | OrientVertical   | False       | True           | dynamic_call
-                #  45   | MoveTangentially | True        | False          | dynamic_call
+                #  19   | MoveForward      | True        | False          | dynamic_call
+                #  20   | OrientHorizontal | True        | False          | dynamic_call
+                #  21   | OrientVertical   | KeyError    | True           | dynamic_call
+                #  22   | MoveTangentially | True        | False          | dynamic_call
                 # falls off object
-                #  46   | OrientHorizontal | True        | False          | touch_object
-                #  47   | OrientHorizontal | True        | False          | touch_object
-                #  48   | OrientHorizontal | True        | False          | touch_object
-                #  49   | OrientHorizontal | True        | False          | touch_object
-                #  50   | OrientHorizontal | True        | False          | touch_object
-                #  51   | OrientHorizontal | True        | False          | touch_object
-                #  52   | OrientHorizontal | True        | False          | touch_object
-                #  53   | OrientHorizontal | True        | False          | touch_object
-                #  54   | OrientHorizontal | True        | False          | touch_object
-                #  55   | OrientHorizontal | True        | False          | touch_object
-                #  56   | OrientHorizontal | True        | False          | touch_object
-                #  57   | OrientHorizontal | True        | False          | touch_object
-                #  58   | OrientVertical   | True        | False          | touch_object
+                # dataloder runs TouchObject positioning procedure in a tight loop only
+                # exposing a new observation at the end of the loop
+                #  23   | MoveForward      | True        | False          | touch_object
                 # back on object
-                #  59   | OrientHorizontal | True        | False          | dynamic_call
-                #  60   | OrientVertical   | False       | True           | dynamic_call
-                #  61   | MoveTangentially | True        | False          | dynamic_call
+                #  24   | MoveForward      | True        | False          | dynamic_call
+                #  25   | OrientHorizontal | True        | False          | dynamic_call
+                #  26   | OrientVertical   | KeyError    | True           | dynamic_call
+                #  27   | MoveTangentially | True        | False          | dynamic_call
                 # falls off object
-                #  62   | OrientHorizontal | True        | False          | touch_object
+                # dataloder runs TouchObject positioning procedure in a tight loop only
+                # exposing a new observation at the end of the loop
+                #  28   | MoveForward      | True        | False          | touch_object
 
-                # Motor-only touch_object steps
-                if (
-                    13 <= loader_step <= 25
-                    or 29 <= loader_step <= 42
-                    or 46 <= loader_step <= 58
-                    or loader_step == 62
-                ):
+                # Motor-only last step of touch_object positioning procedure
+                if loader_step in [1, 13, 18, 23, 28]:
                     assert not exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), (
                         "Should be off object, motor-only step"
                     )
-                if loader_step == 62:
+                if loader_step == 28:
                     break  # Finish test
 
-                # First on-object steps are always OrientHorizontal motor-only steps
-                if loader_step in [26, 43, 59]:
+                # First two on-object steps after falling off are always MoveForward
+                # followed by OrientHorizontal, which are motor-only steps
+                if loader_step in [14, 15, 19, 20, 24, 25]:
                     assert not exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), (
                         "Should be on object, motor-only step"
                     )
 
-                # Second on-object steps are always OrientVertical that send data to LM
-                if loader_step in [27, 44, 60]:
+                # Third on-object steps are always OrientVertical that send data to LM
+                if loader_step in [16, 21, 26]:
                     assert exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), (
                         "Should be on object, sending data to LM"
                     )
 
-                # Third on-object steps are always MoveTangentially motor-only steps
-                if loader_step in [28, 45, 61]:
+                # Fourth on-object steps are always MoveTangentially motor-only steps
+                if loader_step in [17, 22, 27]:
                     assert not exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), (
