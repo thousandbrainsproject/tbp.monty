@@ -502,8 +502,6 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 isinstance(self.motor_system._policy, SurfacePolicy)
                 and self._action.name != OrientVertical.action_name()
             ):
-                # We are not attempting to find the object, which means that we
-                # are executing the SurfacePolicy.dynamic_call action cycle.
                 # Out of the four actions in the
                 # MoveForward->OrientHorizontal->OrientVertical->MoveTangentially
                 # "subroutine" defined in SurfacePolicy.dynamic_call, we only
@@ -516,7 +514,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
             self.motor_system._state = motor_system_state
 
-            self._counter += 1  # TODO clean up incrementing of counter
+            self._counter += 1
 
             return self._observation
 
