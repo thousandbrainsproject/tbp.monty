@@ -854,6 +854,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         if not result.success:
             raise ObjectNotVisible
 
+
 class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
     """Dataloader for Omniglot dataset."""
 
