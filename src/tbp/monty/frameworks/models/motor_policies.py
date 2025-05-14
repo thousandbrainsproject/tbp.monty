@@ -1249,7 +1249,7 @@ class SurfacePolicy(InformedPolicy):
     ###
     def dynamic_call(
         self, state: MotorSystemState | None = None
-    ) -> MoveForward | OrientHorizontal | OrientVertical | MoveTangentially | None:
+    ) -> MoveForward | MoveTangentially | OrientHorizontal | OrientVertical:
         """Return the next action to take.
 
         This requires self.processed_observations to be updated at every step
@@ -1261,7 +1261,7 @@ class SurfacePolicy(InformedPolicy):
                 Defaults to None.
 
         Returns:
-            (MoveForward | OrientHorizontal | OrientVertical | MoveTangentially | None):
+            (MoveForward | MoveTangentially | OrientHorizontal | OrientVertical):
                 The action to take.
 
         Raises:
@@ -1378,7 +1378,7 @@ class SurfacePolicy(InformedPolicy):
 
     def get_next_action(
         self, state: MotorSystemState
-    ) -> MoveForward | OrientHorizontal | OrientVertical | MoveTangentially | None:
+    ) -> MoveForward | MoveTangentially | OrientHorizontal | OrientVertical:
         """Retrieve next action from a cycle of four actions.
 
         First move forward to touch the object at the right distance
@@ -1391,13 +1391,9 @@ class SurfacePolicy(InformedPolicy):
             state (MotorSystemState): The current state of the motor system.
 
         Returns:
-            (MoveForward | OrientHorizontal | OrientVertical | MoveTangentially | None):
+            (MoveForward | MoveTangentially | OrientHorizontal | OrientVertical):
                 Next action in the cycle.
         """
-        # TODO: is this check necessary?
-        if not hasattr(self, "processed_observations"):
-            return None
-
         last_action = self.last_action
 
         if isinstance(last_action, MoveForward):
