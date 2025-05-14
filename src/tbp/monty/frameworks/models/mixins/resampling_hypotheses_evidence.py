@@ -16,13 +16,10 @@ import numpy as np
 from tbp.monty.frameworks.models.evidence_matching import EvidenceGraphLM
 from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
 from tbp.monty.frameworks.utils.graph_matching_utils import (
-    get_custom_distances,
-    get_relevant_curvature,
     possible_sensed_directions,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_multiple_orthonormal_vectors,
-    rotate_pose_dependent_features,
 )
 
 
@@ -142,14 +139,16 @@ class ResamplingHypothesesEvidenceMixin:
             # We only displace existing hypotheses since the newly resampled hypotheses
             # should not be affected by the displacement from the last sensory input.
             if existing_count > 0:
-                existing_locations, existing_evidence = self._displace_hypotheses(
-                    features,
-                    existing_locations,
-                    existing_rotations,
-                    existing_evidence,
-                    displacements,
-                    graph_id,
-                    input_channel,
+                existing_locations, existing_evidence = (
+                    self._displace_hypotheses_and_compute_evidence(
+                        features,
+                        existing_locations,
+                        existing_rotations,
+                        existing_evidence,
+                        displacements,
+                        graph_id,
+                        input_channel,
+                    )
                 )
 
             # === CONCATENATE HYPOTHESES ===
@@ -158,7 +157,7 @@ class ResamplingHypothesesEvidenceMixin:
             channel_evidence = np.hstack([existing_evidence, informed_evidence])
 
             # === RE-BUILD HYPOTHESIS SPACE ===
-            self._replace_hypotheses_in_hpspace(
+            self._set_hypotheses_in_hpspace(
                 graph_id=graph_id,
                 input_channel=input_channel,
                 new_loc_hypotheses=channel_locations,
@@ -429,207 +428,6 @@ class ResamplingHypothesesEvidenceMixin:
         ]
 
         return selected_locations, selected_rotations, selected_evidence
-
-    def _displace_hypotheses(
-        self,
-        features: Dict,
-        locations: np.ndarray,
-        rotations: np.ndarray,
-        evidence: np.ndarray,
-        displacement: Dict,
-        graph_id: str,
-        input_channel: str,
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        """Updates existing hypotheses by displacing them.
-
-        Args:
-            features (dict): Input features
-            locations (np.ndarray): Hypothesized sensor locations for each hypothesis
-            rotations (np.ndarray): Hypothesized object rotations for each hypothesis
-            evidence (np.ndarray): Current evidence value for each hypothesis
-            displacement (dict): Sensor displacements for input channels
-            graph_id (str): The ID of the current graph
-            input_channel (str): The channel involved in hypotheses updating.
-
-        Returns:
-            Tuple[np.ndarray, np.ndarray]: Updated sensor locations and evidence values.
-        """
-        evidence_threshold = self._get_evidence_update_threshold(graph_id)
-
-        rotated_displacements = rotations.dot(displacement[input_channel])
-        search_locations = locations + rotated_displacements
-
-        hyp_ids_to_test = np.where(evidence >= evidence_threshold)[0]
-        num_hypotheses_to_test = hyp_ids_to_test.shape[0]
-        if num_hypotheses_to_test > 0:
-            new_evidence = self._calculate_evidence_for_new_locations(
-                graph_id,
-                input_channel,
-                search_locations[hyp_ids_to_test],
-                rotations[hyp_ids_to_test],
-                features,
-            )
-            min_update = np.clip(np.min(new_evidence), 0, np.inf)
-            evidence_to_add = np.ones_like(evidence) * min_update
-            evidence_to_add[hyp_ids_to_test] = new_evidence
-            evidence = (
-                evidence * self.past_weight + evidence_to_add * self.present_weight
-            )
-        return search_locations, evidence
-
-    def _calculate_evidence_for_new_locations(
-        self,
-        graph_id: str,
-        input_channel: str,
-        search_locations: np.ndarray,
-        rotations: np.ndarray,
-        features: Dict,
-    ):
-        """Calculate evidence for locations based on graph model and sensed features.
-
-        First, the search locations are used to find the nearest nodes in the graph
-        model. Then we calculate the error between the stored pose features and the
-        sensed ones. Additionally we look at whether the non-pose features match at the
-        neighboring nodes. Everything is weighted by the nodes distance from the search
-        location.
-        If there are no nodes in the search radius (max_match_distance), evidence = -1.
-
-        We do this for every incoming input channel and its features if they are stored
-        in the graph and take the average over the evidence from all input channels.
-
-        Returns:
-            The location evidence.
-        """
-        logging.debug(
-            f"Calculating evidence for {graph_id} using input from {input_channel}"
-        )
-
-        pose_transformed_features = rotate_pose_dependent_features(
-            features[input_channel],
-            rotations,
-        )
-        # Get max_nneighbors nearest nodes to search locations.
-        nearest_node_ids = self.get_graph(
-            graph_id, input_channel
-        ).find_nearest_neighbors(
-            search_locations,
-            num_neighbors=self.max_nneighbors,
-        )
-        if self.max_nneighbors == 1:
-            nearest_node_ids = np.expand_dims(nearest_node_ids, axis=1)
-
-        nearest_node_locs = self.graph_memory.get_locations_in_graph(
-            graph_id, input_channel
-        )[nearest_node_ids]
-        max_abs_curvature = get_relevant_curvature(features[input_channel])
-        custom_nearest_node_dists = get_custom_distances(
-            nearest_node_locs,
-            search_locations,
-            pose_transformed_features["pose_vectors"][:, 0],
-            max_abs_curvature,
-        )
-        node_distance_weights = self._get_node_distance_weights(
-            custom_nearest_node_dists
-        )
-        mask = node_distance_weights <= 0
-
-        new_pos_features = self.graph_memory.get_features_at_node(
-            graph_id,
-            input_channel,
-            nearest_node_ids,
-            feature_keys=["pose_vectors", "pose_fully_defined"],
-        )
-        radius_evidence = self._get_pose_evidence_matrix(
-            pose_transformed_features,
-            new_pos_features,
-            input_channel,
-            node_distance_weights,
-        )
-        radius_evidence[mask] = -1
-        node_distance_weights[mask] = 1
-
-        if self.use_features_for_matching[input_channel]:
-            node_feature_evidence = self._calculate_feature_evidence_for_all_nodes(
-                features, input_channel, graph_id
-            )
-            hypothesis_radius_feature_evidence = node_feature_evidence[nearest_node_ids]
-            hypothesis_radius_feature_evidence[mask] = 0
-            radius_evidence = (
-                radius_evidence
-                + hypothesis_radius_feature_evidence * self.feature_evidence_increment
-            )
-        location_evidence = np.max(
-            radius_evidence,
-            axis=1,
-        )
-        return location_evidence
-
-    def _replace_hypotheses_in_hpspace(
-        self,
-        graph_id: str,
-        input_channel: str,
-        new_loc_hypotheses: np.ndarray,
-        new_rot_hypotheses: np.ndarray,
-        new_evidence: np.ndarray,
-    ) -> None:
-        """Updates the hypothesis space for a given input channel in a graph.
-
-        Args:
-            graph_id (str): The ID of the current graph to update.
-            input_channel (str): Channel's name involved in updating the space
-            new_loc_hypotheses (np.ndarray): New sensor locations hypotheses
-            new_rot_hypotheses (np.ndarray): New object poses hypotheses
-            new_evidence (np.ndarray): New evidence values for the input channel
-        """
-        # Add a new channel to the mapping if the hypotheses space doesn't exist
-        if input_channel not in self.channel_hypothesis_mapping[graph_id].channels:
-            self.possible_locations[graph_id] = np.array(new_loc_hypotheses)
-            self.possible_poses[graph_id] = np.array(new_rot_hypotheses)
-            self.evidence[graph_id] = np.array(new_evidence)
-
-            self.channel_hypothesis_mapping[graph_id].add_channel(
-                input_channel, len(new_evidence)
-            )
-            return
-
-        channel_start_ix, channel_end_ix = self.channel_hypothesis_mapping[
-            graph_id
-        ].channel_range(input_channel)
-        channel_size = self.channel_hypothesis_mapping[graph_id].channel_size(
-            input_channel
-        )
-
-        # This concatenation operation for location, poses and evidence replaces
-        # the existing hypothesis space. The new hypothesis space in inserted
-        # in place of the existing hypothesis space by referencing the channel
-        # start and end indices.
-        self.possible_locations[graph_id] = np.concatenate(
-            [
-                self.possible_locations[graph_id][:channel_start_ix],
-                np.array(new_loc_hypotheses),
-                self.possible_locations[graph_id][channel_end_ix:],
-            ]
-        )
-
-        self.possible_poses[graph_id] = np.concatenate(
-            [
-                self.possible_poses[graph_id][:channel_start_ix],
-                np.array(new_rot_hypotheses),
-                self.possible_poses[graph_id][channel_end_ix:],
-            ]
-        )
-
-        self.evidence[graph_id] = np.concatenate(
-            [
-                self.evidence[graph_id][:channel_start_ix],
-                np.array(new_evidence),
-                self.evidence[graph_id][channel_end_ix:],
-            ]
-        )
-
-        self.channel_hypothesis_mapping[graph_id].resize_channel_by(
-            input_channel, len(new_evidence) - channel_size
-        )
 
 
 class ResamplingEvidenceGraphLM(ResamplingHypothesesEvidenceMixin, EvidenceGraphLM):
