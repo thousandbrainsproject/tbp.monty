@@ -122,47 +122,55 @@ class ResamplingHypothesesEvidenceMixin:
         ]
 
         for input_channel in input_channels_to_use:
-            # === GET SAMPLE COUNT ===
+            # Calculate sample count for each type
             existing_count, informed_count = self._sample_count(
                 input_channel, features, graph_id
             )
 
-            # === SAMPLE HYPOTHESES ===
-            existing_locations, existing_rotations, existing_evidence = (
-                self._sample_existing(features, graph_id, existing_count, input_channel)
-            )
-            informed_locations, informed_rotations, informed_evidence = (
-                self._sample_informed(features, graph_id, informed_count, input_channel)
-            )
+            # Sample hypotheses based on their type
+            (
+                existing_possible_locations,
+                existing_possible_poses,
+                existing_hypotheses_evidence,
+            ) = self._sample_existing(features, graph_id, existing_count, input_channel)
+            (
+                informed_possible_locations,
+                informed_possible_poses,
+                informed_hypotheses_evidence,
+            ) = self._sample_informed(features, graph_id, informed_count, input_channel)
 
-            # === DISPLACE HYPOTHESES ===
             # We only displace existing hypotheses since the newly resampled hypotheses
             # should not be affected by the displacement from the last sensory input.
             if existing_count > 0:
-                existing_locations, existing_evidence = (
+                existing_possible_locations, existing_hypotheses_evidence = (
                     self._displace_hypotheses_and_compute_evidence(
                         features,
-                        existing_locations,
-                        existing_rotations,
-                        existing_evidence,
+                        existing_possible_locations,
+                        existing_possible_poses,
+                        existing_hypotheses_evidence,
                         displacements,
                         graph_id,
                         input_channel,
                     )
                 )
 
-            # === CONCATENATE HYPOTHESES ===
-            channel_locations = np.vstack([existing_locations, informed_locations])
-            channel_rotations = np.vstack([existing_rotations, informed_rotations])
-            channel_evidence = np.hstack([existing_evidence, informed_evidence])
+            # Concatenate and rebuild hypothesis space
+            channel_possible_locations = np.vstack(
+                [existing_possible_locations, informed_possible_locations]
+            )
+            channel_possible_poses = np.vstack(
+                [existing_possible_poses, informed_possible_poses]
+            )
+            channel_hypotheses_evidence = np.hstack(
+                [existing_hypotheses_evidence, informed_hypotheses_evidence]
+            )
 
-            # === RE-BUILD HYPOTHESIS SPACE ===
             self._set_hypotheses_in_hpspace(
                 graph_id=graph_id,
                 input_channel=input_channel,
-                new_loc_hypotheses=channel_locations,
-                new_rot_hypotheses=channel_rotations,
-                new_evidence=channel_evidence,
+                new_location_hypotheses=channel_possible_locations,
+                new_pose_hypotheses=channel_possible_poses,
+                new_evidence=channel_hypotheses_evidence,
             )
 
         end_time = time.time()
