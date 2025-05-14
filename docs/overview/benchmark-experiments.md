@@ -95,11 +95,11 @@ In general, we want to be able to dynamically learn and infer instead of having 
 
 An object is classified as detected correctly if the detected object ID is in the list of objects used for building the graph. This means, if a model was built from multiple objects, there are multiple correct classifications for this model. For example, if we learned a graph from a tomato can and later merge points from a peach can into the same graph, then this graph would be the correct label for tomato and peach cans in the future. This is also why the experiment with similar objects reaches a higher accuracy after the first epoch. Since in the first epoch we build fewer graphs than we saw objects (representing similar objects in the same model) it makes it easier later to recognize these combined models since, for this accuracy measure, we do not need to distinguish the similar objects anymore if they are represented in the same graph. In the most extreme case, if during the first epoch, all objects were merged into a single graph, then the following epochs would get 100% accuracy. As such, future work emphasizing unsupervised learning will also require more fine-grained metrics, such as a dataset with hierarchical labels that appropriately distinguish specific instances (peach-can vs tomato-can), from general ones (cans or even just "cylindrical objects").
 
-## Results
+### Results
 
 !table[../../benchmarks/results/ycb_unsupervised.csv]
 
-To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning can, by definition, not be parallelized across epochs. Therefore these experiments were run without multiprocessing on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
+To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning, by definition, cannot be parallelized across epochs. Therefore these experiments were run without multiprocessing (using `run.py`) on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
 
 ## Unsupervised Inference
 
@@ -109,7 +109,7 @@ To simulate such a scenario, we designed an experimental setup that **swaps the 
 
 More specifically, these experiments are run purely in evaluation mode (i.e., pre-trained object graphs are loaded before the experiment begins) with no training or graph updates taking place. Monty stays in the matching phase, continuously updating its internal hypotheses based on sensory observations. For each object, the model performs a fixed number of matching steps before the object is swapped. At the end of each segment, we evaluate whether Monty’s most likely hypothesis correctly identifies the current object. All experiments are performed on 10 distinct objects from the YCB dataset and 10 random rotations for each object. Random noise is added to sensory observations.
 
-## Results
+### Results
 
 !table[../../benchmarks/results/ycb_unsupervised_inference.csv]
 
@@ -118,6 +118,8 @@ More specifically, these experiments are run purely in evaluation mode (i.e., pr
 > These benchmark experiments track the progress on [RFC 9: Hypotheses resampling](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0009_hypotheses_resampling.md).
 > 
 > We do not expect these experiments to have good performance until the RFC is implemented and [issue #214](https://github.com/thousandbrainsproject/tbp.monty/issues/214) is resolved.
+
+These experiments are currently run without multiprocessing (using `run.py`).
 
 # Monty-Meets-World
 

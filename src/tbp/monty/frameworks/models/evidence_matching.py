@@ -8,10 +8,13 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import copy
 import logging
 import threading
 import time
+from typing import Tuple
 
 import numpy as np
 from scipy.spatial import KDTree
@@ -843,37 +846,6 @@ class EvidenceGraphLM(GraphLM):
             evidence,
         )
 
-    def _add_hypotheses_to_hpspace(
-        self,
-        graph_id,
-        input_channel,
-        new_loc_hypotheses,
-        new_rot_hypotheses,
-        new_evidence,
-    ):
-        """Add new hypotheses to hypothesis space."""
-        # Add current mean evidence to give the new hypotheses a fighting
-        # chance. TODO H: Test mean vs. median here.
-        current_mean_evidence = np.mean(self.evidence[graph_id])
-        new_evidence = new_evidence + current_mean_evidence
-        # Add new hypotheses to hypothesis space
-        self.possible_locations[graph_id] = np.vstack(
-            [
-                self.possible_locations[graph_id],
-                new_loc_hypotheses,
-            ]
-        )
-        self.possible_poses[graph_id] = np.vstack(
-            [
-                self.possible_poses[graph_id],
-                new_rot_hypotheses,
-            ]
-        )
-        self.evidence[graph_id] = np.hstack([self.evidence[graph_id], new_evidence])
-        # Update channel hypothesis mapping
-        channel_mapper = self.channel_hypothesis_mapping[graph_id]
-        channel_mapper.add_channel(input_channel, len(new_loc_hypotheses))
-
     def _update_possible_matches(self, query):
         """Update evidence for each hypothesis instead of removing them."""
         thread_list = []
@@ -903,182 +875,103 @@ class EvidenceGraphLM(GraphLM):
         self.possible_matches = self._threshold_possible_matches()
         self.current_mlh = self._calculate_most_likely_hypothesis()
 
-    def _update_evidence(self, features, displacements, graph_id):
-        """Update evidence for poses of graph_id.
+    def _update_evidence(
+        self,
+        features: dict,
+        displacements: dict | None,
+        graph_id: str,
+    ) -> None:
+        """Update evidence based on sensor displacement and sensed features.
 
-        replaces _update_matches_using_features
+        Updates existing hypothesis space or initializes a new hypothesis space
+        if one does not exist (i.e., at the beginning of the episode). Updating the
+        hypothesis space includes displacing the hypotheses possible locations, as well
+        as updating their evidence scores. This process is repeated for each input
+        channel in the graph.
 
-        - start with 0 evidence -> flat prior
-        - post-features & displacement: +/- evidence
-        - features: + evidence
-        Evidence is weighted by distance of hypothesis to point in model.
-        ----------not included in this function------
-        - votes: add average of nearby incoming evidence votes (could also be weighted
-          by distance)
-        ----------added later on perhaps?-----
-        - displacement recognition (stored edges in graph as ppf): + evidence for
-          locations
-
-        if first step (not moved yet):
-            - get initial hypothesis space using observed pose features
-            - initialize evidence for hypotheses using first observed features
-        else:
-            - update evidence for hypotheses using all observed features
-            and displacement
-
-        Raises:
-            ValueError: If no input channels are found to initializing hypotheses
+        Args:
+            features (dict): input features
+            displacements (dict or None): given displacements
+            graph_id (str): identifier of the graph being updated
         """
         start_time = time.time()
-        all_input_channels = list(features.keys())
-        input_channels_to_use = []
-        for input_channel in all_input_channels:
-            if input_channel in self.get_input_channels_in_graph(graph_id):
-                # NOTE: We might also want to check the confidence in the input channel
-                # features. This information is currently not available here. Once we
-                # pull the observation class into the LM we could add this (TODO S).
-                input_channels_to_use.append(input_channel)
-        # Before moving we initialize the hypothesis space:
-        if displacements is None:
-            if len(input_channels_to_use) == 0:
-                # QUESTION: Do we just want to continue until we get input?
-                raise ValueError(
-                    "No input channels found to initializing hypotheses. Make sure"
-                    " there is at least one channel that is also stored in the graph."
-                )
-            # This is the first observation before we moved -> check where in the
-            # graph the feature can be found and initialize poses & evidence
-            initial_possible_locations = []
-            initial_possible_rotations = []
-            initial_evidence = []
-            channel_mapper = ChannelMapper()
-            for input_channel in input_channels_to_use:
+
+        # Initialize a `ChannelMapper` to keep track of input channel range
+        # of hypotheses for a specific graph_id
+        if graph_id not in self.channel_hypothesis_mapping:
+            self.channel_hypothesis_mapping[graph_id] = ChannelMapper()
+
+        # Get all usable input channels
+        # NOTE: We might also want to check the confidence in the input channel
+        # features. This information is currently not available here.
+        # TODO S: Once we pull the observation class into the LM we could add this.
+        input_channels_to_use = [
+            ic
+            for ic in features.keys()
+            if ic in self.get_input_channels_in_graph(graph_id)
+        ]
+
+        if len(input_channels_to_use) == 0:
+            logging.info(
+                f"No input channels observed for {graph_id} that are stored in . "
+                "the model. Not updating evidence."
+            )
+            return
+
+        for input_channel in input_channels_to_use:
+            # Extract channel mapper
+            mapper = self.channel_hypothesis_mapping[graph_id]
+
+            # Determine if hypothesis space exists
+            initialize_hyp_space = bool(input_channel not in mapper.channels)
+
+            # Initialize a new hypothesis space using graph nodes
+            if initialize_hyp_space:
+                # TODO H: When initializing a hypothesis for a channel later on (if
+                # displacement is not None), include most likely existing hypothesis
+                # from other channels?
                 (
-                    initial_possible_channel_locations,
-                    initial_possible_channel_rotations,
-                    channel_evidence,
+                    channel_possible_locations,
+                    channel_possible_poses,
+                    channel_hypotheses_evidence,
                 ) = self._get_initial_hypothesis_space(
                     features, graph_id, input_channel
                 )
-                initial_possible_locations.append(initial_possible_channel_locations)
-                initial_possible_rotations.append(initial_possible_channel_rotations)
-                initial_evidence.append(channel_evidence)
-                channel_mapper.add_channel(input_channel, len(channel_evidence))
-            self.possible_locations[graph_id] = np.concatenate(
-                initial_possible_locations, axis=0
-            )
-            self.possible_poses[graph_id] = np.concatenate(
-                initial_possible_rotations, axis=0
-            )
-            self.evidence[graph_id] = (
-                np.concatenate(initial_evidence, axis=0) * self.present_weight
-            )
-            self.channel_hypothesis_mapping[graph_id] = channel_mapper
-            logging.debug(
-                f"\nhypothesis space for {graph_id}: {self.evidence[graph_id].shape[0]}"
-            )
-            assert (
-                self.evidence[graph_id].shape[0]
-                == self.possible_locations[graph_id].shape[0]
-            )
-        # ---------------------------------------------------------------------------
-        # Use displacement and new sensed features to update evidence for hypotheses.
-        else:
-            if len(input_channels_to_use) == 0:
-                logging.info(
-                    f"No input channels observed for {graph_id} that are stored in . "
-                    "the model. Not updating evidence."
+            # Retrieve existing hypothesis space for a specific input channel
+            else:
+                channel_possible_locations = mapper.extract(
+                    self.possible_locations[graph_id], input_channel
+                )
+                channel_possible_poses = mapper.extract(
+                    self.possible_poses[graph_id], input_channel
+                )
+                channel_hypotheses_evidence = mapper.extract(
+                    self.evidence[graph_id], input_channel
                 )
 
-            channel_mapper = self.channel_hypothesis_mapping[graph_id]
-            for input_channel in input_channels_to_use:
-                # If channel features are observed for the first time, initialize
-                # hypotheses for them.
-                if input_channel not in channel_mapper.channels:
-                    # TODO H: When initializing a hypothesis for a channel later on,
-                    # include most likely existing hypothesis from other channels?
-                    (
-                        initial_possible_channel_locations,
-                        initial_possible_channel_rotations,
-                        channel_evidence,
-                    ) = self._get_initial_hypothesis_space(
-                        features, graph_id, input_channel
+                # We only displace existing hypotheses since the newly sampled
+                # hypotheses should not be affected by the displacement from the last
+                # sensory input.
+                channel_possible_locations, channel_hypotheses_evidence = (
+                    self._displace_hypotheses_and_compute_evidence(
+                        features,
+                        channel_possible_locations,
+                        channel_possible_poses,
+                        channel_hypotheses_evidence,
+                        displacements,
+                        graph_id,
+                        input_channel,
                     )
+                )
 
-                    self._add_hypotheses_to_hpspace(
-                        graph_id=graph_id,
-                        input_channel=input_channel,
-                        new_loc_hypotheses=initial_possible_channel_locations,
-                        new_rot_hypotheses=initial_possible_channel_rotations,
-                        new_evidence=channel_evidence,
-                    )
+            self._set_hypotheses_in_hpspace(
+                graph_id=graph_id,
+                input_channel=input_channel,
+                new_location_hypotheses=channel_possible_locations,
+                new_pose_hypotheses=channel_possible_poses,
+                new_evidence=channel_hypotheses_evidence,
+            )
 
-                else:
-                    # Get the observed displacement for this channel
-                    displacement = displacements[input_channel]
-                    # Get the IDs range in hypothesis space for this channel
-                    channel_start, channel_end = channel_mapper.channel_range(
-                        input_channel
-                    )
-                    # Have to do this for all hypotheses so we don't loose the path
-                    # information
-                    rotated_displacements = self.possible_poses[graph_id][
-                        channel_start:channel_end
-                    ].dot(displacement)
-                    search_locations = (
-                        self.possible_locations[graph_id][channel_start:channel_end]
-                        + rotated_displacements
-                    )
-                    # Threshold hypotheses that we update by evidence for them
-                    current_evidence_update_threshold = (
-                        self._get_evidence_update_threshold(graph_id)
-                    )
-                    # Get indices of hypotheses with evidence > threshold
-                    hyp_ids_to_test = np.where(
-                        self.evidence[graph_id][channel_start:channel_end]
-                        >= current_evidence_update_threshold
-                    )[0]
-                    num_hypotheses_to_test = hyp_ids_to_test.shape[0]
-                    if num_hypotheses_to_test > 0:
-                        logging.info(
-                            f"Testing {num_hypotheses_to_test} out of "
-                            f"{self.evidence[graph_id].shape[0]} hypotheses for "
-                            f"{graph_id} "
-                            f"(evidence > {current_evidence_update_threshold})"
-                        )
-                        search_locations_to_test = search_locations[hyp_ids_to_test]
-                        # Get evidence update for all hypotheses with evidence > current
-                        # _evidence_update_threshold
-                        new_evidence = self._calculate_evidence_for_new_locations(
-                            graph_id,
-                            input_channel,
-                            search_locations_to_test,
-                            features,
-                            hyp_ids_to_test,
-                        )
-                        min_update = np.clip(np.min(new_evidence), 0, np.inf)
-                        # Alternatives (no update to other Hs or adding avg) left in
-                        # here in case we want to revert back to those.
-                        # avg_update = np.mean(new_evidence)
-                        # evidence_to_add = np.zeros_like(self.evidence[graph_id])
-                        evidence_to_add = (
-                            np.ones_like(
-                                self.evidence[graph_id][channel_start:channel_end]
-                            )
-                            * min_update
-                        )
-                        evidence_to_add[hyp_ids_to_test] = new_evidence
-                        # If past and present weight add up to 1, equivalent to
-                        # np.average and evidence will be bound to [-1, 2]. Otherwise it
-                        # keeps growing.
-                        self.evidence[graph_id][channel_start:channel_end] = (
-                            self.evidence[graph_id][channel_start:channel_end]
-                            * self.past_weight
-                            + evidence_to_add * self.present_weight
-                        )
-                    self.possible_locations[graph_id][channel_start:channel_end] = (
-                        search_locations
-                    )
         end_time = time.time()
         assert not np.isnan(np.max(self.evidence[graph_id])), "evidence contains NaN."
         logging.debug(
@@ -1086,6 +979,158 @@ class EvidenceGraphLM(GraphLM):
             f"{np.round(end_time - start_time, 2)} seconds."
             f" New max evidence: {np.round(np.max(self.evidence[graph_id]), 3)}"
         )
+
+    def _displace_hypotheses_and_compute_evidence(
+        self,
+        features: dict,
+        channel_possible_locations: np.ndarray,
+        channel_possible_poses: np.ndarray,
+        channel_hypotheses_evidence: np.ndarray,
+        displacement: dict,
+        graph_id: str,
+        input_channel: str,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Updates evidence by comparing features after applying sensed displacement.
+
+        This function applies the sensor displacement to the existing hypothesis and
+        uses the result as search locations for comparing the sensed features. This
+        comparison is used to update the evidence scores of the existing hypotheses. The
+        hypotheses locations are updated to the new locations (i.e., after displacement)
+
+        Args:
+            features (dict): Input features
+            channel_possible_locations (np.ndarray): Hypothesized sensor locations for
+                each hypothesis
+            channel_possible_poses (np.ndarray): Hypothesized object rotations for each
+                hypothesis
+            channel_hypotheses_evidence (np.ndarray): Current evidence value for each
+                hypothesis
+            displacement (dict): Sensor displacements for input channels
+            graph_id (str): The ID of the current graph
+            input_channel (str): The channel involved in hypotheses updating.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: Updated sensor locations and evidence values.
+        """
+        # Threshold hypotheses that we update by evidence for them
+        evidence_threshold = self._get_evidence_update_threshold(graph_id)
+
+        # Have to do this for all hypotheses so we don't loose the path information
+        rotated_displacements = channel_possible_poses.dot(displacement[input_channel])
+        search_locations = channel_possible_locations + rotated_displacements
+
+        # Get indices of hypotheses with evidence > threshold
+        hyp_ids_to_test = np.where(channel_hypotheses_evidence >= evidence_threshold)[0]
+        num_hypotheses_to_test = hyp_ids_to_test.shape[0]
+        if num_hypotheses_to_test > 0:
+            logging.info(
+                f"Testing {num_hypotheses_to_test} out of "
+                f"{self.evidence[graph_id].shape[0]} hypotheses for "
+                f"{graph_id} "
+                f"(evidence > {evidence_threshold})"
+            )
+
+            # Get evidence update for all hypotheses with evidence > current
+            # _evidence_update_threshold
+            new_evidence = self._calculate_evidence_for_new_locations(
+                graph_id,
+                input_channel,
+                search_locations[hyp_ids_to_test],
+                channel_possible_poses[hyp_ids_to_test],
+                features,
+            )
+            min_update = np.clip(np.min(new_evidence), 0, np.inf)
+
+            # Alternatives (no update to other Hs or adding avg) left in
+            # here in case we want to revert back to those.
+            # avg_update = np.mean(new_evidence)
+            # evidence_to_add = np.zeros_like(channel_hypotheses_evidence)
+            evidence_to_add = np.ones_like(channel_hypotheses_evidence) * min_update
+            evidence_to_add[hyp_ids_to_test] = new_evidence
+
+            # If past and present weight add up to 1, equivalent to
+            # np.average and evidence will be bound to [-1, 2]. Otherwise it
+            # keeps growing.
+            channel_hypotheses_evidence = (
+                channel_hypotheses_evidence * self.past_weight
+                + evidence_to_add * self.present_weight
+            )
+        return search_locations, channel_hypotheses_evidence
+
+    def _set_hypotheses_in_hpspace(
+        self,
+        graph_id: str,
+        input_channel: str,
+        new_location_hypotheses: np.ndarray,
+        new_pose_hypotheses: np.ndarray,
+        new_evidence: np.ndarray,
+    ) -> None:
+        """Updates the hypothesis space for a given input channel in a graph.
+
+        This function updates the hypothesis space (for a specific graph and input
+        channel) with a new set of locations, rotations and evidence scores.
+            - If the hypothesis space does not exist for any input channel, a new one
+                is initialized
+            - If the hypothesis space only exists for other channels, a new channel is
+                created with the mean evidence scores of the existing channels
+            - If the hypothesis space exists for the given input channel, the new space
+                replaces the existing hypothesis space
+
+        Args:
+            graph_id (str): The ID of the current graph to update.
+            input_channel (str): Channel's name involved in updating the space
+            new_location_hypotheses (np.ndarray): New sensor locations hypotheses
+            new_pose_hypotheses (np.ndarray): New object poses hypotheses
+            new_evidence (np.ndarray): New evidence values for the input channel
+
+        Note:
+          The `new_` prefix in the function arguments denotes that these are the
+          sets of location, pose and evidence after applying movements to the possible
+          locations and updating their evidence scores. These could also refer to newly
+          initialized hypotheses if a hypothesis space did not exist.
+        """
+        # Extract channel mapper
+        mapper = self.channel_hypothesis_mapping[graph_id]
+
+        # Add a new channel to the mapping if the hypotheses space doesn't exist
+        if input_channel not in mapper.channels:
+            if len(mapper.channels) == 0:
+                self.possible_locations[graph_id] = np.array(new_location_hypotheses)
+                self.possible_poses[graph_id] = np.array(new_pose_hypotheses)
+                self.evidence[graph_id] = np.array(new_evidence)
+
+                mapper.add_channel(input_channel, len(new_evidence))
+                return
+
+            # Add current mean evidence to give the new hypotheses a fighting
+            # chance.
+            # TODO H: Test mean vs. median here.
+            current_mean_evidence = np.mean(self.evidence[graph_id])
+            new_evidence = new_evidence + current_mean_evidence
+
+        # The mapper update function calls below automatically resize the
+        # arrays they update. Afterward, we must update the channel indices
+        # in the mapper via resize_channel_to to stay in sync with
+        # the now resized arrays. We do not resize before array updates
+        # because then, during the update, the indices would not correspond
+        # to the data in the arrays.
+        self.possible_locations[graph_id] = mapper.update(
+            self.possible_locations[graph_id],
+            input_channel,
+            np.array(new_location_hypotheses),
+        )
+        self.possible_poses[graph_id] = mapper.update(
+            self.possible_poses[graph_id],
+            input_channel,
+            np.array(new_pose_hypotheses),
+        )
+        self.evidence[graph_id] = mapper.update(
+            self.evidence[graph_id],
+            input_channel,
+            np.array(new_evidence),
+        )
+
+        mapper.resize_channel_to(input_channel, len(new_evidence))
 
     def _update_evidence_with_vote(self, state_votes, graph_id):
         """Use incoming votes to update all hypotheses."""
@@ -1151,11 +1196,11 @@ class EvidenceGraphLM(GraphLM):
 
     def _calculate_evidence_for_new_locations(
         self,
-        graph_id,
-        input_channel,
-        search_locations,
-        features,
-        hyp_ids_to_test,
+        graph_id: str,
+        input_channel: str,
+        search_locations: np.ndarray,
+        channel_possible_poses: np.ndarray,
+        features: dict,
     ):
         """Use search locations, sensed features and graph model to calculate evidence.
 
@@ -1178,7 +1223,7 @@ class EvidenceGraphLM(GraphLM):
 
         pose_transformed_features = rotate_pose_dependent_features(
             features[input_channel],
-            self.possible_poses[graph_id][hyp_ids_to_test],
+            channel_possible_poses,
         )
         # Get max_nneighbors nearest nodes to search locations.
         nearest_node_ids = self.get_graph(
