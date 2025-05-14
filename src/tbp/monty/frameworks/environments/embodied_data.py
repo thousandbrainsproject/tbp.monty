@@ -465,6 +465,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             try:
                 self._action = self.motor_system()
             except ObjectNotVisible:
+                # Note: Only SurfacePolicy raises ObjectNotVisible.
                 # TODO: Note that a PositioningProcedure is not a MotorPolicy, so
                 #       using it here to keep the agent in touch with the surface is
                 #       questionable. However, in order for the SurfacePolicy to
@@ -476,22 +477,21 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 #       the TouchObject positioning procedure instead of raising
                 #       ObjectNotVisible and relying on the dataloader to handle
                 #       this.
-                if isinstance(self.motor_system._policy, SurfacePolicy):
-                    self.touch_object(
-                        sensor_id="view_finder",
-                        desired_object_distance=self.motor_system._policy.desired_object_distance,
-                    )
-                    # TODO: Remove this short-circuit once SurfacePolicy is capable
-                    #       of receiving updated observation via
-                    #       `motor_system(observation)`. For now, we are relying
-                    #       on the experiment to check for motor_only_step and then
-                    #       to `pass_features_directly_to_motor_system(observation)`
-                    #       in order to pass the updated observation to the motor
-                    #       system policy.
-                    self.motor_system._state[self.motor_system._policy.agent_id][
-                        "motor_only_step"
-                    ] = True
-                    return self._observation
+                self.touch_object(
+                    sensor_id="view_finder",
+                    desired_object_distance=self.motor_system._policy.desired_object_distance,
+                )
+                # TODO: Remove this short-circuit once SurfacePolicy is capable
+                #       of receiving updated observation via
+                #       `motor_system(observation)`. For now, we are relying
+                #       on the experiment to check for motor_only_step and then
+                #       to `pass_features_directly_to_motor_system(observation)`
+                #       in order to pass the updated observation to the motor
+                #       system policy.
+                self.motor_system._state[self.motor_system._policy.agent_id][
+                    "motor_only_step"
+                ] = True
+                return self._observation
 
             self._observation, proprioceptive_state = self.dataset[self._action]
             motor_system_state = MotorSystemState(proprioceptive_state)
