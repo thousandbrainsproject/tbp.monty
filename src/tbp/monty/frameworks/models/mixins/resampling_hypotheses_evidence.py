@@ -56,10 +56,14 @@ class ResamplingHypothesesEvidenceMixin:
         super().__init__(*args, **kwargs)
 
         # Controls the shrinking or growth of hypothesis space size
-        self.hypotheses_count_multiplier = hypotheses_count_multiplier
+        # Cannot be less than 0
+        self.hypotheses_count_multiplier = max(0, hypotheses_count_multiplier)
 
         # Controls the ratio of existing to newly sampled hypotheses
-        self.hypotheses_existing_to_new_ratio = hypotheses_existing_to_new_ratio
+        # Bounded between 0 and 1
+        self.hypotheses_existing_to_new_ratio = max(
+            0, min(hypotheses_existing_to_new_ratio, 1)
+        )
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """Ensure the mixin is used only with compatible learning modules.
@@ -374,6 +378,12 @@ class ResamplingHypothesesEvidenceMixin:
             Tuple[np.ndarray, np.ndarray, np.ndarray]: Tuple containing
                 selected locations, rotations, and evidence data.
 
+        Note:
+            This function will not give the exact same results as the existing
+            `_sample_informed`. Here we directly sample the top `informed_count`
+            from based on the evidence scores. In `_sample_informed`, we sample
+            `informed_count/num_hyps_per_node` points then tile it for
+            `num_hyps_per_node`.
         """
         # TODO: Remove this function after approving the more efficient version
         # `_sample_informed`.
