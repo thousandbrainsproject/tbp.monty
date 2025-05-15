@@ -1,0 +1,9 @@
+- .git
+- .github
+- .mypy_cache
+- .ruff_cache
+- .vale
+- .vscode
+- docs
+- rfcs
+- *.pyc

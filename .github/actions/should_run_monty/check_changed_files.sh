@@ -4,6 +4,7 @@ while IFS= read -r changed_file
 do
   echo $changed_file
   if [[ $changed_file != .github/ISSUE_TEMPLATE/* ]] &&
+     [[ $changed_file != .rsyncignore ]] &&
      [[ $changed_file != .vale/* ]] &&
      [[ $changed_file != .vscode/* ]] &&
      [[ $changed_file != docs/* ]] &&
