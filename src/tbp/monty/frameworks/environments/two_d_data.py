@@ -34,7 +34,8 @@ __all__ = [
 # Listing Numenta objects here since they were used in the iPad demo which uses the
 # SaccadeOnImageEnvironment (or SaccadeOnImageFromStreamEnvironment). However, these
 # objects can also be tested in simulation in habitat since we created 3D meshes of
-# them. TODO: upload mesh dataset & link here.
+# them. Instructions for download + links can be found here:
+# https://thousandbrainsproject.readme.io/docs/benchmark-experiments#monty-meets-world
 NUMENTA_OBJECTS = [
     "numenta_mug",
     "terracotta_mug",

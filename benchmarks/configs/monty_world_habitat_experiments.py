@@ -73,6 +73,8 @@ randrot_noise_sim_on_scan_monty_world = dict(
         ),
         learning_module_configs=default_evidence_1lm_config,
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
+        # Not using the hypothesis-driven motor system here, because the comparison on
+        # the iPad images can't move around the object.
         motor_system_config=MotorSystemConfigInformedNoTransStepS20(),
     ),
     dataset_class=ED.EnvironmentDataset,

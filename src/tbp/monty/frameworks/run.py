@@ -100,11 +100,11 @@ def main(all_configs, experiments=None):
         )
         # If we are not running in parallel, this should always be False
         exp_config["logging_config"]["log_parallel_wandb"] = False
+        print_config(exp_config)
 
-        # Print config, including udpates to run name
+        # Print config without running experiment
         if cmd_args is not None:
             if cmd_args.print_config:
-                print_config(exp_config)
                 continue
 
         os.makedirs(exp_config["logging_config"]["output_dir"], exist_ok=True)
