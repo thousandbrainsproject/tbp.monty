@@ -920,12 +920,12 @@ class PolicyTest(unittest.TestCase):
                 #  23   | OrientHorizontal | True        | False          | touch_object
                 #  24   | OrientHorizontal | True        | False          | touch_object
                 #  25   | OrientVertical   | True        | False          | touch_object
+                #  26   | MoveForward      | True        | False          | touch_object
                 # back on object
-                #  26   | OrientHorizontal | True        | False          | dynamic_call
-                #  27   | OrientVertical   | False       | True           | dynamic_call
-                #  28   | MoveTangentially | True        | False          | dynamic_call
+                #  27   | OrientHorizontal | True        | False          | dynamic_call
+                #  28   | OrientVertical   | False       | True           | dynamic_call
+                #  29   | MoveTangentially | True        | False          | dynamic_call
                 # falls off object
-                #  29   | OrientHorizontal | True        | False          | touch_object
                 #  30   | OrientHorizontal | True        | False          | touch_object
                 #  31   | OrientHorizontal | True        | False          | touch_object
                 #  32   | OrientHorizontal | True        | False          | touch_object
@@ -937,14 +937,14 @@ class PolicyTest(unittest.TestCase):
                 #  38   | OrientHorizontal | True        | False          | touch_object
                 #  39   | OrientHorizontal | True        | False          | touch_object
                 #  40   | OrientHorizontal | True        | False          | touch_object
-                #  41   | OrientVertical   | True        | False          | touch_object
-                #  42   | MoveForward      | True        | False          | touch_object
+                #  41   | OrientHorizontal | True        | False          | touch_object
+                #  42   | OrientVertical   | True        | False          | touch_object
+                #  43   | MoveForward      | True        | False          | touch_object
                 # back on object
-                #  43   | OrientHorizontal | True        | False          | dynamic_call
-                #  44   | OrientVertical   | False       | True           | dynamic_call
-                #  45   | MoveTangentially | True        | False          | dynamic_call
+                #  44   | OrientHorizontal | True        | False          | dynamic_call
+                #  45   | OrientVertical   | False       | True           | dynamic_call
+                #  46   | MoveTangentially | True        | False          | dynamic_call
                 # falls off object
-                #  46   | OrientHorizontal | True        | False          | touch_object
                 #  47   | OrientHorizontal | True        | False          | touch_object
                 #  48   | OrientHorizontal | True        | False          | touch_object
                 #  49   | OrientHorizontal | True        | False          | touch_object
@@ -956,31 +956,33 @@ class PolicyTest(unittest.TestCase):
                 #  55   | OrientHorizontal | True        | False          | touch_object
                 #  56   | OrientHorizontal | True        | False          | touch_object
                 #  57   | OrientHorizontal | True        | False          | touch_object
-                #  58   | OrientVertical   | True        | False          | touch_object
+                #  58   | OrientHorizontal | True        | False          | touch_object
+                #  59   | OrientVertical   | True        | False          | touch_object
+                #  60   | MoveForward      | True        | False          | touch_object
                 # back on object
-                #  59   | OrientHorizontal | True        | False          | dynamic_call
-                #  60   | OrientVertical   | False       | True           | dynamic_call
-                #  61   | MoveTangentially | True        | False          | dynamic_call
+                #  61   | OrientHorizontal | True        | False          | dynamic_call
+                #  62   | OrientVertical   | False       | True           | dynamic_call
+                #  63   | MoveTangentially | True        | False          | dynamic_call
                 # falls off object
-                #  62   | OrientHorizontal | True        | False          | touch_object
+                #  64   | OrientHorizontal | True        | False          | touch_object
 
                 # Motor-only touch_object steps
                 if (
-                    13 <= loader_step <= 25
-                    or 29 <= loader_step <= 42
-                    or 46 <= loader_step <= 58
-                    or loader_step == 62
+                    13 <= loader_step <= 26
+                    or 30 <= loader_step <= 43
+                    or 47 <= loader_step <= 60
+                    or loader_step == 64
                 ):
                     assert not exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), (
                         "Should be off object, motor-only step"
                     )
-                if loader_step == 62:
+                if loader_step == 64:
                     break  # Finish test
 
                 # First on-object steps are always OrientHorizontal motor-only steps
-                if loader_step in [26, 43, 59]:
+                if loader_step in [27, 44, 61]:
                     assert not exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), (
@@ -988,7 +990,7 @@ class PolicyTest(unittest.TestCase):
                     )
 
                 # Second on-object steps are always OrientVertical that send data to LM
-                if loader_step in [27, 44, 60]:
+                if loader_step in [28, 45, 62]:
                     assert exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), (
@@ -996,7 +998,7 @@ class PolicyTest(unittest.TestCase):
                     )
 
                 # Third on-object steps are always MoveTangentially motor-only steps
-                if loader_step in [28, 45, 61]:
+                if loader_step in [29, 46, 63]:
                     assert not exp.model.learning_modules[
                         0
                     ].buffer.get_last_obs_processed(), (
