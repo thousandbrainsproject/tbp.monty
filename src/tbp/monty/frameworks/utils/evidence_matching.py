@@ -56,6 +56,20 @@ class ChannelMapper:
         """
         return sum(self.channel_sizes.values())
 
+    def channel_size(self, channel_name: str) -> int:
+        """Returns the total number of hypotheses for a specific channel.
+
+        Returns:
+            int: Size of channel
+
+        Raises:
+            ValueError: If the channel is not found.
+        """
+        if channel_name not in self.channel_sizes:
+            raise ValueError(f"Channel '{channel_name}' not found.")
+
+        return self.channel_sizes[channel_name]
+
     def channel_range(self, channel_name: str) -> Tuple[int, int]:
         """Returns the start and end indices of the given channel.
 

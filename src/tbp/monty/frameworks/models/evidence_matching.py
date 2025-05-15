@@ -39,12 +39,12 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_initial_possible_poses,
     get_relevant_curvature,
     get_scaled_evidences,
+    possible_sensed_directions,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_multiple_orthonormal_vectors,
     align_orthonormal_vectors,
     get_angles_for_all_hypotheses,
-    get_more_directions_in_plane,
     rotate_pose_dependent_features,
 )
 
@@ -177,6 +177,9 @@ class EvidenceGraphLM(GraphLM):
             radius of a hypothesis for calculating the evidence.
         initial_possible_poses: initial possible poses that should be tested for.
             In ["uniform", "informed", list]. default = "informed".
+        umbilical_num_poses: Number of samples rotations in the direction
+            of the plane perpendicular to the point normal. These are sampled at
+            umbilical points(i.e., points where PC directions are undefined)
         evidence_update_threshold: How to decide which hypotheses should be updated.
             When this parameter is either '[int]%' or 'x_percent_threshold', then
             this parameter is applied to the evidence for the Most Likely Hypothesis
@@ -267,6 +270,7 @@ class EvidenceGraphLM(GraphLM):
         feature_evidence_increment=1,
         max_nneighbors=3,
         initial_possible_poses="informed",
+        umbilical_num_poses=8,
         evidence_update_threshold="all",
         vote_evidence_threshold=0.8,
         past_weight=1,
@@ -331,6 +335,7 @@ class EvidenceGraphLM(GraphLM):
         self._fill_feature_weights_with_default(default=1)
 
         self.initial_possible_poses = get_initial_possible_poses(initial_possible_poses)
+        self.umbilical_num_poses = umbilical_num_poses
         self.use_features_for_matching = self._check_use_features_for_matching()
 
         # Dictionary with graph_ids as keys. For each graph we initialize a set of
@@ -1651,27 +1656,15 @@ class EvidenceGraphLM(GraphLM):
             "pose_fully_defined" in sensed_features[input_channel].keys()
             and not sensed_features[input_channel]["pose_fully_defined"]
         ):
-            sample_more_directions = True
+            possible_s_d = possible_sensed_directions(
+                sensed_directions, self.umbilical_num_poses
+            )
         else:
-            sample_more_directions = False
-
-        if not sample_more_directions:
-            # 2 possibilities since the curvature directions may be flipped
-            possible_s_d = [
-                sensed_directions.copy(),
-                sensed_directions.copy(),
-            ]
-            possible_s_d[1][1:] = possible_s_d[1][1:] * -1
-        else:
-            # TODO: whats a reasonable number here?
-            # Maybe just samle n poses regardless of if pc1==pc2 and increase
-            # evidence in the cases where we are more sure?
-            # Maybe keep moving until pc1!= pc2 and then start matching?
-            possible_s_d = get_more_directions_in_plane(sensed_directions, 8)
+            possible_s_d = possible_sensed_directions(sensed_directions, 2)
 
         for s_d in possible_s_d:
             # Since we have orthonormal vectors and know their correspondence we can
-            # directly calculate the rotation instead of using the Kabsch esimate
+            # directly calculate the rotation instead of using the Kabsch estimate
             # used in Rotation.align_vectors
             r = align_multiple_orthonormal_vectors(node_directions, s_d, as_scipy=False)
             all_possible_locations = np.vstack(
