@@ -1,6 +1,9 @@
-.git
-.github
-.mypy_cache
-docs
-rfcs
-*.pyc
+- .git
+- .github
+- .mypy_cache
+- .ruff_cache
+- .vale
+- .vscode
+- docs
+- rfcs
+- *.pyc
