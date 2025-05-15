@@ -1,0 +1,6 @@
+.git
+.github
+.mypy_cache
+docs
+rfcs
+*.pyc
