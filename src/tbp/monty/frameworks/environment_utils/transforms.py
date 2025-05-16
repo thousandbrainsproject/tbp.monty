@@ -15,7 +15,6 @@ import numpy as np
 import quaternion as qt
 import scipy
 
-from tbp.monty.exceptions import NoDepthSensorPresentError
 from tbp.monty.frameworks.models.states import State
 
 __all__ = [
@@ -645,3 +644,8 @@ class DepthTo3DLocations:
             surface_patch = depth_patch > th
 
         return surface_patch * semantic_patch
+
+class NoDepthSensorPresentError(RuntimeError):
+    """Raised when a depth sensor is expected but not found."""
+
+    pass
