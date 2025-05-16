@@ -1794,8 +1794,8 @@ class EvidenceGraphLM(GraphLM):
             The evidence update threshold.
 
         Raises:
-            Exception: If `self.evidence_update_threshold` is not in the allowed
-                values
+            InvalidEvidenceUpdateThresholdError: If `self.evidence_update_threshold` is
+                not in the allowed values
         """
         if type(self.evidence_update_threshold) in [int, float]:
             return self.evidence_update_threshold
@@ -1821,7 +1821,7 @@ class EvidenceGraphLM(GraphLM):
         elif self.evidence_update_threshold == "all":
             return np.min(self.evidence[graph_id])
         else:
-            raise Exception(
+            raise InvalidEvidenceUpdateThresholdError(
                 "evidence_update_threshold not in "
                 "[int, float, '[int]%', 'mean', 'median', 'all', 'x_percent_threshold']"
             )
@@ -2018,3 +2018,9 @@ class EvidenceGraphMemory(GraphMemory):
     # ------------------------ Helper --------------------------
 
     # ----------------------- Logging --------------------------
+
+
+class InvalidEvidenceUpdateThresholdError(ValueError):
+    """Raised when the evidence update threshold is invalid."""
+
+    pass
