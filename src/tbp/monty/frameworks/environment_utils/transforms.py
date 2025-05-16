@@ -645,6 +645,7 @@ class DepthTo3DLocations:
 
         return surface_patch * semantic_patch
 
+
 class NoDepthSensorPresentError(RuntimeError):
     """Raised when a depth sensor is expected but not found."""
 
