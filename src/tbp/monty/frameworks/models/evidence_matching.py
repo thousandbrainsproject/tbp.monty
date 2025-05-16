@@ -1794,8 +1794,8 @@ class EvidenceGraphLM(GraphLM):
             The evidence update threshold.
 
         Raises:
-            InvalidEvidenceUpdateThresholdError: If `self.evidence_update_threshold` is not
-            in the allowed values
+            InvalidEvidenceUpdateThresholdError: If `self.evidence_update_threshold` is
+                not in the allowed values
         """
         if type(self.evidence_update_threshold) in [int, float]:
             return self.evidence_update_threshold
