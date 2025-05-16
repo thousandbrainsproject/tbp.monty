@@ -82,11 +82,8 @@ class ReadMe:
     def get_doc_by_slug(self, slug: str) -> str:
         response = get(f"{PREFIX}/docs/{slug}", {"x-readme-version": self.version})
 
-        if response.status_code == 404:
-            return None
-        if response.status_code < 200 or response.status_code >= 300:
-            logging.error(f"Failed to get {response.url} {response.text}")
-            return None
+        if not response:
+            raise DocumentNotFoundError(f"Document {slug} not found")
 
         front_matter = OrderedDict()
         front_matter["title"] = response.get("title")
@@ -513,3 +510,8 @@ class ReadMe:
                 return f"[File not found or could not be read: {snippet_path}]"
 
         return regex_markdown_snippet.sub(replace_match, body)
+
+class DocumentNotFoundError(RuntimeError):
+    """Raised when a document is not found."""
+
+    pass
