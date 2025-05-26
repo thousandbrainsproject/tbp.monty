@@ -2291,7 +2291,7 @@ def plot_evidence_transitions(
                     )
                 else:
                     detection = "true_negative"
-                        # Not plotted because the "default" result
+                    # Not plotted because the "default" result
 
                 # Log results
                 # NB these results are only calculated when the current object is the

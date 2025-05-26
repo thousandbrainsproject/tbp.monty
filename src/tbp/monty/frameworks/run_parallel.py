@@ -373,9 +373,7 @@ def run_episodes_parallel(
                 # episode/run_time is the sum over individual episode run times.
                 # when running parallel this may not be the actual run time so we
                 # log this here additionally.
-                overall_stats["overall/parallel_run_time"] = (
-                    time.time() - start_time
-                )
+                overall_stats["overall/parallel_run_time"] = time.time() - start_time
                 overall_stats["overall/num_processes"] = num_parallel
                 run.log(overall_stats)
             else:
