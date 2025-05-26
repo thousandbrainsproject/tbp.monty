@@ -61,7 +61,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         self.dataloader.pre_episode()
 
         self.max_steps = self.max_train_steps
-        if not self.model.experiment_mode == "train":
+        if self.model.experiment_mode != "train":
             self.max_steps = self.max_eval_steps
 
         self.logger_handler.pre_episode(self.logger_args)

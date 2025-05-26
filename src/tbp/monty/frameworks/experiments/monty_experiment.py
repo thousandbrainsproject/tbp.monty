@@ -457,7 +457,7 @@ class MontyExperiment:
         self.dataloader.pre_episode()
 
         self.max_steps = self.max_train_steps
-        if not self.model.experiment_mode == "train":
+        if self.model.experiment_mode != "train":
             self.max_steps = self.max_eval_steps
 
         self.logger_handler.pre_episode(self.logger_args)
@@ -514,7 +514,7 @@ class MontyExperiment:
     def pre_epoch(self):
         """Set dataloader and call sub pre_epoch functions."""
         self.dataloader = self.train_dataloader
-        if not self.model.experiment_mode == "train":
+        if self.model.experiment_mode != "train":
             self.dataloader = self.eval_dataloader
 
         self.dataloader.pre_epoch()
