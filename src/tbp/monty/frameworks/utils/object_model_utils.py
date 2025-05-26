@@ -144,8 +144,7 @@ def already_in_list(
                                 break
                     elif delta_change > graph_delta_thresholds[feature]:
                         logging.debug(
-                            "Interesting point because of "
-                            f"{feature} : {delta_change}"
+                            f"Interesting point because of {feature} : {delta_change}"
                         )
                         redundant_point = False
                         break
