@@ -148,11 +148,10 @@ class FeatureAtLocationBuffer(BaseBuffer):
         for stat in stats.keys():
             if stat in self.stats.keys() and append:
                 self.stats[stat].append(copy.deepcopy(stats[stat]))
+            elif init_list:
+                self.stats[stat] = [copy.deepcopy(stats[stat])]
             else:
-                if init_list:
-                    self.stats[stat] = [copy.deepcopy(stats[stat])]
-                else:
-                    self.stats[stat] = copy.deepcopy(stats[stat])
+                self.stats[stat] = copy.deepcopy(stats[stat])
         if update_time:
             self.stats["time"].append(time.time() - self.start_time)
 

@@ -558,12 +558,11 @@ class BaseGraphTestCases:
                                     self.assertEqual(
                                         step_old[key3][f_idx], step_new[key3][f_idx]
                                     )
+                            elif isinstance(step_old[key3], str):
+                                # sm_id can not be compared as array
+                                self.assertEqual(step_old[key3], step_new[key3])
                             else:
-                                if isinstance(step_old[key3], str):
-                                    # sm_id can not be compared as array
-                                    self.assertEqual(step_old[key3], step_new[key3])
-                                else:
-                                    np_old = np.array(step_old[key3])
-                                    np_new = np.array(step_new[key3])
-                                    np_equal = np.isclose(np_old, np_new, atol=0.00001)
-                                    self.assertEqual(np.sum(np_equal), np_equal.size)
+                                np_old = np.array(step_old[key3])
+                                np_new = np.array(step_new[key3])
+                                np_equal = np.isclose(np_old, np_new, atol=0.00001)
+                                self.assertEqual(np.sum(np_equal), np_equal.size)
