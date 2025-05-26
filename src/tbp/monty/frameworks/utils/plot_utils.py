@@ -408,23 +408,22 @@ def get_action_name(action_stats, step, is_match_step, obs_on_object):
             action_name = "updating possible matches"
         else:
             action_name = "patch not on object"
+    elif step == 0:
+        action_name = "not moved yet"
     else:
-        if step == 0:
-            action_name = "not moved yet"
+        action = action_stats[step - 1]
+        if action[0] is not None:
+            a = action[0]
+            d = dict(a)
+            del d["action"]  # don't duplicate action in "params"
+            del d["agent_id"]  # don't duplicate agent_id in "params"
+            params = [
+                f"{k}:{v.tolist()}" if isinstance(v, np.ndarray) else f"{k}:{v}"
+                for k, v in d.items()
+            ]
+            action_name = f"{a.name} - {','.join(params)}"
         else:
-            action = action_stats[step - 1]
-            if action[0] is not None:
-                a = action[0]
-                d = dict(a)
-                del d["action"]  # don't duplicate action in "params"
-                del d["agent_id"]  # don't duplicate agent_id in "params"
-                params = [
-                    f"{k}:{v.tolist()}" if isinstance(v, np.ndarray) else f"{k}:{v}"
-                    for k, v in d.items()
-                ]
-                action_name = f"{a.name} - {','.join(params)}"
-            else:
-                action_name = "None"
+            action_name = "None"
     return action_name
 
 
@@ -736,16 +735,15 @@ def plot_feature_matching_animation(
                                 c="green",
                                 vmin=0,
                             )
-                        else:
-                            if step > 0:
-                                search_positions = get_search_positions(
-                                    start_node,
-                                    possible_poses[:show_num_pos],
-                                    displacement,
-                                )
-                                plot_search_displacements(
-                                    axes[i], search_positions, start_node
-                                )
+                        elif step > 0:
+                            search_positions = get_search_positions(
+                                start_node,
+                                possible_poses[:show_num_pos],
+                                displacement,
+                            )
+                            plot_search_displacements(
+                                axes[i], search_positions, start_node
+                            )
                         # Plot Path
                         if show_path:
                             plot_previous_path(axes[i], current_path, step)
@@ -1284,14 +1282,13 @@ def plot_evidence_at_step(
             model_pos = lm_models["pretrained"][0][obj][
                 input_feature_channel
             ].pos  # TODO: test
+        elif str(episode - 1) in lm_models.keys():
+            model_pos = lm_models[str(episode - 1)][lm][obj].pos
         else:
-            if str(episode - 1) in lm_models.keys():
-                model_pos = lm_models[str(episode - 1)][lm][obj].pos
-            else:
-                last_stored_models = np.max(np.array(list(lm_models.keys()), dtype=int))
-                model_pos = lm_models[str(last_stored_models)][lm][obj][
-                    input_feature_channel
-                ].pos
+            last_stored_models = np.max(np.array(list(lm_models.keys()), dtype=int))
+            model_pos = lm_models[str(last_stored_models)][lm][obj][
+                input_feature_channel
+            ].pos
         evidences = np.array(lm_stats["evidences"][step][obj])
         colors = evidences
         sizes = np.array(lm_stats["evidences"][step][obj]) * 10
@@ -2283,19 +2280,18 @@ def plot_evidence_transitions(
                         s=85,
                         color=detection_cmapping[detection],
                     )
+                elif primary_target != processed_stepwise_targets[ii]:
+                    detection = "false_negative"
+                    ax.scatter(
+                        ii + 1,
+                        this_step_max,
+                        marker="x",
+                        s=85,
+                        color=detection_cmapping[detection],
+                    )
                 else:
-                    if primary_target != processed_stepwise_targets[ii]:
-                        detection = "false_negative"
-                        ax.scatter(
-                            ii + 1,
-                            this_step_max,
-                            marker="x",
-                            s=85,
-                            color=detection_cmapping[detection],
-                        )
-                    else:
-                        detection = "true_negative"
-                        # Not plotted because the "default" result
+                    detection = "true_negative"
+                    # Not plotted because the "default" result
 
                 # Log results
                 # NB these results are only calculated when the current object is the

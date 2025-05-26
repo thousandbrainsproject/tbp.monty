@@ -142,14 +142,12 @@ def already_in_list(
                                 )
                                 redundant_point = False
                                 break
-                    else:
-                        if delta_change > graph_delta_thresholds[feature]:
-                            logging.debug(
-                                "Interesting point because of "
-                                f"{feature} : {delta_change}"
-                            )
-                            redundant_point = False
-                            break
+                    elif delta_change > graph_delta_thresholds[feature]:
+                        logging.debug(
+                            f"Interesting point because of {feature} : {delta_change}"
+                        )
+                        redundant_point = False
+                        break
 
         if redundant_point:
             # Considered in the list if all features above (incl. distance) are

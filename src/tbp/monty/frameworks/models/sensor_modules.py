@@ -723,8 +723,7 @@ class FeatureChangeSM(HabitatDistantPatchSM, NoiseMixin):
                         if dc > self.delta_thresholds[feature][i]:
                             logging.debug(f"new point because of {feature} - {dc}")
                             return True
-                else:
-                    if delta_change > self.delta_thresholds[feature]:
-                        logging.debug(f"new point because of {feature}")
-                        return True
+                elif delta_change > self.delta_thresholds[feature]:
+                    logging.debug(f"new point because of {feature}")
+                    return True
         return False

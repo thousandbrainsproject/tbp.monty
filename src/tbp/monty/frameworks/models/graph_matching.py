@@ -437,9 +437,8 @@ class MontyForGraphMatching(MontyBase):
 
         if self.step_type == "matching_step":
             self._pass_input_obs_to_motor_system(self.sensor_module_outputs[0])
-        else:
-            if self.sensor_module_outputs[0] is not None:
-                self._pass_input_obs_to_motor_system(self.sensor_module_outputs[0])
+        elif self.sensor_module_outputs[0] is not None:
+            self._pass_input_obs_to_motor_system(self.sensor_module_outputs[0])
 
     def _set_step_type_and_check_if_done(self):
         """Check terminal conditions and decide if we change the step type."""
@@ -823,16 +822,13 @@ class GraphLM(LearningModule):
             possible_paths_obj = np.array(possible_paths[obj])
             if len(possible_paths_obj.shape) > 1:
                 possible_locations[obj] = possible_paths_obj[:, -1]
+            elif possible_paths_obj.shape[0] > 0:
+                # deals with case where first observation is not on object
+                possible_locations[obj] = np.array(
+                    self.graph_memory.get_locations_in_graph(obj, input_channel="first")
+                )
             else:
-                if possible_paths_obj.shape[0] > 0:
-                    # deals with case where first observation is not on object
-                    possible_locations[obj] = np.array(
-                        self.graph_memory.get_locations_in_graph(
-                            obj, input_channel="first"
-                        )
-                    )
-                else:
-                    possible_locations[obj] = np.array([])
+                possible_locations[obj] = np.array([])
         return possible_locations
 
     def get_possible_poses(self, as_euler=True):
@@ -1243,11 +1239,10 @@ class GraphMemory(LMMemory):
             # guarantee this.
             first_channel = self.get_input_channels_in_graph(graph_id)[0]
             return self.models_in_memory[graph_id][first_channel]
+        elif input_channel in self.get_input_channels_in_graph(graph_id):
+            return self.models_in_memory[graph_id][input_channel]
         else:
-            if input_channel in self.get_input_channels_in_graph(graph_id):
-                return self.models_in_memory[graph_id][input_channel]
-            else:
-                raise ValueError(f"{graph_id} has no data stored for {input_channel}.")
+            raise ValueError(f"{graph_id} has no data stored for {input_channel}.")
 
     def get_feature_array(self, graph_id):
         return self.feature_array[graph_id]
