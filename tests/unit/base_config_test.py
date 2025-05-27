@@ -118,8 +118,7 @@ class BaseConfigTest(unittest.TestCase):
 
             # Handle the training loop manually for this interim test
             max_count = 5
-            count = 0
-            for observation in exp.train_dataloader:
+            for count, observation in enumerate(exp.train_dataloader):
                 agent_keys = set(observation.keys())
                 sensor_keys = []
                 for agent in agent_keys:
@@ -130,7 +129,6 @@ class BaseConfigTest(unittest.TestCase):
                     sensor_key_set, monty_module_sids, "sensor module ids must match"
                 )
 
-                count += 1
                 if count >= max_count:
                     break
 
