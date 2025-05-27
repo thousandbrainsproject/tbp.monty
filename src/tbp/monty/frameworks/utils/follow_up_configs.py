@@ -200,8 +200,7 @@ def create_eval_config_multiple_episodes(
     target_objects = []
     target_positions = []
     target_rotations = []
-    episode_counter = 0
-    for episode in episodes:
+    for episode_counter, episode in enumerate(episodes):
         # Get actions from this episode
         motor_file = os.path.join(
             output_dir,
@@ -221,7 +220,6 @@ def create_eval_config_multiple_episodes(
         target_objects.append(target_data["primary_target_object"])
         target_positions.append(target_data["primary_target_position"])
         target_rotations.append(target_data["primary_target_rotation_euler"])
-        episode_counter += 1
 
     # Update config with episode-specific data
     new_config["eval_dataloader_args"]["object_names"] = target_objects

@@ -1543,8 +1543,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         graph_lm.mode = "eval"
         graph_lm.pre_episode(primary_target=self.placeholder_target)
         # We start at evidence 0 since we don't get feature evidence at initialization
-        target_evidence = 0
-        for observation in fake_obs_test:
+        for target_evidence, observation in enumerate(fake_obs_test):
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
             graph_lm.matching_step([observation])
             self.assertEqual(
@@ -1558,7 +1557,6 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 "Since none of the features match we should only be getting evidence "
                 "from morphology which is 1 at each step (since m matches perfectly).",
             )
-            target_evidence += 1
 
         self.assertListEqual(
             list(graph_lm.get_current_mlh()["rotation"].as_euler("xyz", degrees=True)),
