@@ -56,7 +56,6 @@ from tbp.monty.frameworks.models.goal_state_generation import (
     GraphGoalStateGenerator,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
-from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
     HabitatDistantPatchSM,
