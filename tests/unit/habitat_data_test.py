@@ -333,11 +333,6 @@ class HabitatDataTest(unittest.TestCase):
         )
 
         dataloader_dist = EnvironmentDataLoader(dataset_dist, motor_system_dist, rng)
-        initial_obs_dist = next(dataloader_dist)
-        camera_obs_dist = initial_obs_dist[AGENT_ID][SENSOR_ID]
-        self.assertTrue(np.all(camera_obs_dist[SENSORS[0]] == EXPECTED_STATES[0]))
-
-        dataloader_dist.pre_episode()
         for i, item in enumerate(dataloader_dist):
             camera_obs_dist = item[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_dist[SENSORS[0]] == EXPECTED_STATES[i]))
@@ -379,11 +374,6 @@ class HabitatDataTest(unittest.TestCase):
         )
 
         dataloader_abs = EnvironmentDataLoader(dataset_abs, motor_system_abs, rng)
-        initial_obs_abs = next(dataloader_abs)
-        camera_obs_abs = initial_obs_abs[AGENT_ID][SENSOR_ID]
-        self.assertTrue(np.all(camera_obs_abs[SENSORS[0]] == EXPECTED_STATES[0]))
-
-        dataloader_abs.pre_episode()
         for i, item in enumerate(dataloader_abs):
             camera_obs_abs = item[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_abs[SENSORS[0]] == EXPECTED_STATES[i]))
@@ -427,11 +417,6 @@ class HabitatDataTest(unittest.TestCase):
         )
 
         dataloader_surf = EnvironmentDataLoader(dataset_surf, motor_system_surf, rng)
-        initial_obs_surf = next(dataloader_surf)
-        camera_obs_surf = initial_obs_surf[AGENT_ID][SENSOR_ID]
-        self.assertTrue(np.all(camera_obs_surf[SENSORS[0]] == EXPECTED_STATES[0]))
-
-        dataloader_surf.pre_episode()
         for i, item in enumerate(dataloader_surf):
             camera_obs_surf = item[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_surf[SENSORS[0]] == EXPECTED_STATES[i]))
