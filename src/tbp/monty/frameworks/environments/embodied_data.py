@@ -264,6 +264,17 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         self.epochs = 0
         self.primary_target = None
 
+    def __iter__(self):
+        """Do not reset the dataset when starting the iterator.
+
+        `self.pre_episode()` already resets the dataset before each episode, therefore,
+        `EnvironmentDataLoader.__iter__()` should not reset the dataset again.
+
+        Returns:
+            EnvironmentDataLoaderPerObject: The iterator.
+        """
+        return self
+
     def pre_episode(self):
         super().pre_episode()
         self.reset_agent()
