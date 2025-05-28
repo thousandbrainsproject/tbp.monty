@@ -56,6 +56,7 @@ from tbp.monty.frameworks.models.goal_state_generation import (
     GraphGoalStateGenerator,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
+from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
     HabitatDistantPatchSM,
@@ -874,33 +875,21 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             "When using detailed logging we should store matches at every steps.",
         )
 
-    def test_patch_off_object_logging(self):
-        """Test that patch_off_object is logged when no object is present.
-
-        Test that if there is no object in the scene to begin with,
-        we log patch_off_object.
-        """
+    def test_pre_episode_raises_error_when_no_object_is_present(self):
+        """Test that pre_episode raises an error when no object is present."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_evidence)
         with MontyObjectRecognitionExperiment(config) as exp:
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
-            exp.pre_episode()
             pprint("...removing all objects...")
             exp.dataset.env._env.remove_all_objects()
-            exp.dataloader.reset_agent()
-            pprint("...training...")
-            last_step = exp.run_episode_steps()
-            exp.post_episode(last_step)
-            exp.post_epoch()
-
-        pprint("...checking run stats...")
-        train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
-        self.assertEqual(
-            train_stats["primary_performance"][0],
-            "patch_off_object",
-            "episode should log patch_off_object performance.",
-        )
+            with self.assertRaises(ValueError) as error:
+                exp.pre_episode()
+            self.assertEqual(
+                "May be initializing experiment with no visible target object",
+                str(error.exception),
+            )
 
     def test_moving_off_object(self):
         """Test logging when moving off the object for some steps during an episode."""
@@ -1832,33 +1821,21 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 f" since it was off the object for longer than other LMs.",
             )
 
-    def test_starting_off_object_5lms(self):
-        """Test that patch_off_object is logged when no object is present.
-
-        Test that if there is no object in the scene to begin with,
-        we log patch_off_object with 5lms and voting.
-        """
+    def test_5lms_pre_episode_raises_error_when_no_object_is_present(self):
+        """Test that pre_episode raises an error when no object is present."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_5lm_config)
         with MontyObjectRecognitionExperiment(config) as exp:
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
-            exp.pre_episode()
             pprint("...removing all objects...")
             exp.dataset.env._env.remove_all_objects()
-            exp.dataloader.reset_agent()
-            pprint("...training...")
-            last_step = exp.run_episode_steps()
-            exp.post_episode(last_step)
-            exp.post_epoch()
-
-        pprint("...checking run stats...")
-        train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
-        self.assertEqual(
-            train_stats["primary_performance"][0],
-            "patch_off_object",
-            "episode should log patch_off_object performance.",
-        )
+            with self.assertRaises(ValueError) as error:
+                exp.pre_episode()
+            self.assertEqual(
+                "May be initializing experiment with no visible target object",
+                str(error.exception),
+            )
 
     def test_5lm_basic_logging(self):
         """Test that 5LM setup works with BASIC logging and stores correct data."""
