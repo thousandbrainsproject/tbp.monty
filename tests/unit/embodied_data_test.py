@@ -250,12 +250,6 @@ class EmbodiedDataTest(unittest.TestCase):
         dataloader_dist = EnvironmentDataLoader(
             dataset_dist, motor_system_dist, rng=rng
         )
-        initial_state = next(dataloader_dist)
-        self.assertTrue(
-            np.all(initial_state[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[0])
-        )
-
-        dataloader_dist.pre_episode()
         for i, item in enumerate(dataloader_dist):
             self.assertTrue(
                 np.all(item[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
@@ -281,12 +275,6 @@ class EmbodiedDataTest(unittest.TestCase):
         )
 
         dataloader_abs = EnvironmentDataLoader(dataset_abs, motor_system_abs, rng)
-        initial_state = next(dataloader_abs)
-        self.assertTrue(
-            np.all(initial_state[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[0])
-        )
-
-        dataloader_abs.pre_episode()
         for i, item in enumerate(dataloader_abs):
             self.assertTrue(
                 np.all(item[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
