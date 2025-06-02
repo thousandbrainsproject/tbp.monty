@@ -118,8 +118,7 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
     detailed_json = {}
     stop = stop or np.inf
     with open(json_file, "r") as f:
-        line_counter = 0
-        for line in f:
+        for line_counter, line in enumerate(f):
             if should_get_episode(start, stop, episodes, line_counter):
                 # NOTE: json logging is only used at inference time and inference
                 # episodes are independent and order does not matter. This hack fixes a
@@ -132,11 +131,10 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
                 json_key = list(tmp_json.keys())[0]  # has only one key
                 detailed_json[str(line_counter)] = tmp_json[json_key]
                 del tmp_json
-            line_counter += 1
 
     if episodes is not None:
         str_episodes = [str(i) for i in episodes]
-        if not list(detailed_json.keys()) == str_episodes:
+        if list(detailed_json.keys()) != str_episodes:
             print(
                 "WARNING: episode keys did not equal json keys. This can happen if "
                 "json file was not appended to in episode order. To manually load the"

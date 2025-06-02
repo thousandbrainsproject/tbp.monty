@@ -521,7 +521,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
     def pre_episode(self):
         super().pre_episode()
-        if not self.dataset.env._agents[0].action_space_type == "surface_agent":
+        if self.dataset.env._agents[0].action_space_type != "surface_agent":
             on_target_object = self.get_good_view_with_patch_refinement()
             if self.num_distractors == 0:
                 # Only perform this check if we aren't doing multi-object experiments.
