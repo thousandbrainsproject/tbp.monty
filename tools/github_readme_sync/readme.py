@@ -512,7 +512,7 @@ class ReadMe:
         return regex_markdown_snippet.sub(replace_match, body)
 
 
-class DocumentNotFoundError(RuntimeError):
+class DocumentNotFound(RuntimeError):
     """Raised when a document is not found."""
 
     pass

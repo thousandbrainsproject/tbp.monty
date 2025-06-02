@@ -185,6 +185,8 @@ select = [
 #       changes, you may want to open an issue to discuss the change first.
 ignore = [
     ###
+    # TBP-specific ignores
+    "N818", # N818: error-suffix-on-exception-name
     # Original inherited flake8 ignores
     "D1", # D1XX: Missing Docstrings
     "ERA001", # ERA001: Found commented out code

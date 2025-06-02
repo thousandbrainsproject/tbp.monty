@@ -2020,7 +2020,7 @@ class EvidenceGraphMemory(GraphMemory):
     # ----------------------- Logging --------------------------
 
 
-class InvalidEvidenceUpdateThresholdError(ValueError):
+class InvalidEvidenceUpdateThreshold(ValueError):
     """Raised when the evidence update threshold is invalid."""
 
     pass
