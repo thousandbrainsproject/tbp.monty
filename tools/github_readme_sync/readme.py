@@ -83,7 +83,7 @@ class ReadMe:
         response = get(f"{PREFIX}/docs/{slug}", {"x-readme-version": self.version})
 
         if not response:
-            raise DocumentNotFoundError(f"Document {slug} not found")
+            raise DocumentNotFound(f"Document {slug} not found")
 
         front_matter = OrderedDict()
         front_matter["title"] = response.get("title")
