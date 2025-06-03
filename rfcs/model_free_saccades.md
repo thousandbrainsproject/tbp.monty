@@ -27,7 +27,7 @@ We would like to avoid returning to already viewed locations. An obvious solutio
 
 More broadly, any map not imbued with world/body coordinates becomes stale after the next saccade. There is a workaround though -- maintain a memory of actions taken, and integrate those to populate a visitation map de novo after each observation. (I think this basically what the SC does, but only with the most recent action taken.)
 
-However, the question of whether we think maps should be persistent is a general question. As mentioned above, segmentation maps may be most useful if they reflect object classifications produced by LMs. On the other hand, building persistent maps in world/body coordinates in SC is moving into "where" pathway and/or hippocampus territory, and we might end up placing a lot of demands on the SC that are better off done elsewhere.
+However, the question of whether we think maps should be persistent is a general consideration. As mentioned above, segmentation maps may be most useful if they reflect object classifications produced by LMs. On the other hand, building persistent maps in world/body coordinates in SC is moving into "where" pathway and/or hippocampus territory, and we might end up placing a lot of demands on the SC that are better off done elsewhere.
 
 ### Policy Switching
 The SC needs to know whether it should stay within an object or move to a new one. This makes it sound like the SC would be like a motor system with swappable motor policies, but that can't be quite right since the SC would perform lots of sensor processing.
@@ -37,7 +37,7 @@ How an SC would integrate into Monty's current architecture, including which com
 
 ![Information Flow](model_free_saccades/information_flow.png)
 
-Here, the "Subortical sensory processing" node is basically the SC.
+Here, the "Subortical sensory processing" node is where the SC would fit.
 
 ### Input
 For sensor data, this is relatively straightforward. We have a view-finder which captures a wide field-of-view, and we don't need (or want) CMP-compliant messages produced by sensor modules. Since the dataset applies `DepthTo3DTransform`, the SC will have access to the view-finder's data in world coordinates if necessary.
