@@ -1259,6 +1259,9 @@ class SurfacePolicy(InformedPolicy):
                     self.processed_observations.get_feature_by_name("object_coverage")
                 )
             )
+            logging.debug(
+                f"Attempting to find object: {self.attempting_to_find_object}"
+            )
             logging.debug("Initiating attempts to touch object")
 
             return None  # Will result in moving to try to find the object
