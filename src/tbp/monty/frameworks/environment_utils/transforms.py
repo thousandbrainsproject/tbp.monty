@@ -90,7 +90,7 @@ class AddNoiseToRawDepthImage:
             observation, same as input, with added gaussian noise to depth values.
 
         Raises:
-            Exception: if no depth sensor is present.
+            NoDepthSensorPresent: if no depth sensor is present.
         """
         # loop over sensor modules
         for sm in observation[self.agent_id].keys():
@@ -102,7 +102,9 @@ class AddNoiseToRawDepthImage:
                 )
                 observation[self.agent_id][sm]["depth"] += noise
             else:
-                raise Exception("NO DEPTH SENSOR PRESENT. Don't use this transform")
+                raise NoDepthSensorPresent(
+                    "NO DEPTH SENSOR PRESENT. Don't use this transform"
+                )
         return observation
 
 
@@ -141,7 +143,7 @@ class GaussianSmoothing:
             observation, same as input, with smoothed depth values.
 
         Raises:
-            Exception: if no depth sensor is present.
+            NoDepthSensorPresent: if no depth sensor is present.
         """
         # loop over sensor modules
         for sm in observation[self.agent_id].keys():
@@ -153,7 +155,9 @@ class GaussianSmoothing:
                 )
                 observation[self.agent_id][sm]["depth"] = filtered_img
             else:
-                raise Exception("NO DEPTH SENSOR PRESENT. Don't use this transform")
+                raise NoDepthSensorPresent(
+                    "NO DEPTH SENSOR PRESENT. Don't use this transform"
+                )
         return observation
 
     def create_kernel(self):
@@ -640,3 +644,9 @@ class DepthTo3DLocations:
             surface_patch = depth_patch > th
 
         return surface_patch * semantic_patch
+
+
+class NoDepthSensorPresent(RuntimeError):
+    """Raised when a depth sensor is expected but not found."""
+
+    pass
