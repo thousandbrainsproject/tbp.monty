@@ -381,7 +381,7 @@ class ResamplingHypothesesEvidenceMixin:
         Note:
             This function will not give the exact same results as the existing
             `_sample_informed`. Here we directly sample the top `informed_count`
-            from based on the evidence scores. In `_sample_informed`, we sample
+            based on the evidence scores. In `_sample_informed`, we sample
             `informed_count/num_hyps_per_node` points then tile it for
             `num_hyps_per_node`.
         """
