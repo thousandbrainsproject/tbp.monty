@@ -8,6 +8,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import logging
 import math
 from itertools import permutations
@@ -134,7 +136,7 @@ def get_uniform_initial_possible_poses(n_degrees_sampled=9):
     return unique_poses
 
 
-def get_initial_possible_poses(initial_possible_pose_type):
+def get_initial_possible_poses(initial_possible_pose_type) -> list[Rotation]:
     """Initialize initial_possible_poses to test based on initial_possible_pose_type.
 
     Args:
