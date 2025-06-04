@@ -100,7 +100,7 @@ class ResamplingHypothesesEvidenceMixin:
             1. Calculating sample count for existing and informed hypotheses
             2. Sampling hypotheses for existing and informed hypotheses types
             3. Displacing (and updating evidence of) existing hypotheses using
-                given displacements
+                given displacements and sensed features
             4. Concatenating all samples (existing + new) to rebuild the hypothesis
                 space
 
@@ -136,7 +136,7 @@ class ResamplingHypothesesEvidenceMixin:
                 existing_possible_locations,
                 existing_possible_poses,
                 existing_hypotheses_evidence,
-            ) = self._sample_existing(features, graph_id, existing_count, input_channel)
+            ) = self._sample_existing(graph_id, existing_count, input_channel)
             (
                 informed_possible_locations,
                 informed_possible_poses,
@@ -213,12 +213,13 @@ class ResamplingHypothesesEvidenceMixin:
         num_hyps_per_node = self._num_hyps_per_node(features, input_channel)
         full_informed_count = graph_num_points * num_hyps_per_node
 
+        mapper = self.channel_hypothesis_mapping[graph_id]
         # If hypothesis space does not exist, we initialize with informed hypotheses
-        if input_channel not in self.channel_hypothesis_mapping[graph_id].channels:
+        if input_channel not in mapper.channels:
             return 0, full_informed_count
 
         # Calculate the total number of hypotheses needed
-        current = self.channel_hypothesis_mapping[graph_id].channel_size(input_channel)
+        current = mapper.channel_size(input_channel)
         needed = current * self.hypotheses_count_multiplier
 
         # Calculate how many existing and new hypotheses needed
@@ -410,15 +411,13 @@ class ResamplingHypothesesEvidenceMixin:
 
     def _sample_existing(
         self,
-        features: Dict,
         graph_id: str,
         existing_count: int,
         input_channel: str,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Samples the specified number of existing hypotheses.
+        """Samples the specified number of existing hypotheses to retain.
 
         Args:
-            features (dict): Input features.
             graph_id (str): Identifier of the graph being queried.
             existing_count (int): Number of existing hypotheses to sample.
             input_channel: The channel for which hypotheses are sampled.
@@ -432,23 +431,15 @@ class ResamplingHypothesesEvidenceMixin:
             return np.zeros((0, 3)), np.zeros((0, 3, 3)), np.zeros(0)
 
         # TODO implement sampling based on evidence slope.
-        channel_start_ix, channel_end_ix = self.channel_hypothesis_mapping[
-            graph_id
-        ].channel_range(input_channel)
-        selected_locations = self.possible_locations[graph_id][
-            channel_start_ix:channel_end_ix
-        ][:existing_count]
-        selected_rotations = self.possible_poses[graph_id][
-            channel_start_ix:channel_end_ix
-        ][:existing_count]
-        selected_evidence = self.evidence[graph_id][channel_start_ix:channel_end_ix][
+        mapper = self.channel_hypothesis_mapping[graph_id]
+        selected_locations = mapper.extract(
+            self.possible_locations[graph_id], input_channel
+        )[:existing_count]
+        selected_rotations = mapper.extract(
+            self.possible_poses[graph_id], input_channel
+        )[:existing_count]
+        selected_evidence = mapper.extract(self.evidence[graph_id], input_channel)[
             :existing_count
         ]
 
         return selected_locations, selected_rotations, selected_evidence
-
-
-class ResamplingEvidenceGraphLM(ResamplingHypothesesEvidenceMixin, EvidenceGraphLM):
-    """Class to test applying the resampling mixin to EvidenceGraphLM."""
-
-    pass

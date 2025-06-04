@@ -34,7 +34,6 @@ from tbp.monty.frameworks.models.evidence_matching import (
     MontyForEvidenceGraphMatching,
 )
 from tbp.monty.frameworks.models.mixins.resampling_hypotheses_evidence import (
-    ResamplingEvidenceGraphLM,
     ResamplingHypothesesEvidenceMixin,
 )
 from tbp.monty.frameworks.models.no_reset_evidence_matching import (
@@ -47,6 +46,12 @@ from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsPatchViewMount,
     PatchViewFinderMountHabitatDatasetArgs,
 )
+
+
+class ResamplingEvidenceGraphLM(ResamplingHypothesesEvidenceMixin, EvidenceGraphLM):
+    """Class to test applying the resampling mixin to EvidenceGraphLM."""
+
+    pass
 
 
 class InheritanceResampleHypothesesMixinTest(TestCase):
