@@ -77,13 +77,6 @@ default_evidence_lm_config = dict(
         feature_weights=default_feature_weights,
         # smaller threshold reduces runtime but also performance
         x_percent_threshold=20,
-        # Using a smaller max_nneighbors (5 instead of 10) makes runtime faster,
-        # but reduces performance a bit
-        max_nneighbors=10,
-        # Use this to update all hypotheses at every step as previously
-        # evidence_update_threshold="all",
-        # Use this to update all hypotheses with evidence > 80% of max evidence (faster)
-        evidence_update_threshold="80%",
         # use_multithreading=False,
         # NOTE: Currently not used when loading pretrained graphs.
         max_graph_size=0.3,  # 30cm
@@ -103,6 +96,16 @@ default_evidence_lm_config = dict(
             # be bounded between 0:1.0; "mod" for modifier
             desired_object_distance=0.03,  # Distance from the object to the
             # agent that is considered "close enough" to the object
+        ),
+        evidence_updater_args=dict(
+            # Using a smaller max_nneighbors (5 instead of 10) makes runtime faster,
+            # but reduces performance a bit
+            max_nneighbors=10,
+            # Use this to update all hypotheses at every step as previously
+            # evidence_update_threshold="all",
+            # Use this to update all hypotheses with evidence > 80% of max evidence
+            # (faster)
+            evidence_update_threshold="80%",
         ),
     ),
 )

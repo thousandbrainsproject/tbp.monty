@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Protocol, Tuple
+from typing import Literal, Protocol, Tuple
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -22,6 +22,7 @@ from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
 from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_custom_distances,
+    get_initial_possible_poses,
     get_relevant_curvature,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
@@ -60,6 +61,7 @@ class InvalidEvidenceUpdateThreshold(ValueError):
     pass
 
 
+# TODO: Make EvidenceSDRLMMixin & EvidenceSDRGraphLM work, _calculate_feature_evidence_sdr_for_all_nodes is a problem
 class DefaultEvidenceUpdater:
     def __init__(
         self,
@@ -69,7 +71,8 @@ class DefaultEvidenceUpdater:
         tolerances: dict,
         evidence_update_threshold: float | str = "all",
         feature_evidence_increment: int = 1,
-        initial_possible_poses: list[Rotation] | None = None,
+        initial_possible_poses: Literal["uniform", "informed"]
+        | list[Rotation] = "informed",
         max_nneighbors: int = 3,
         past_weight: float = 1,
         present_weight: float = 1,
@@ -100,8 +103,8 @@ class DefaultEvidenceUpdater:
                 multiplied by this value before being added to the overall evidence of
                 a hypothesis. This factor is only multiplied with the feature evidence
                 (not the pose evidence as opposed to the present_weight). Defaults to 1.
-            initial_possible_poses (list[Rotation] | None): Initial possible poses that
-                should be tested for. Defaults to None.
+            initial_possible_poses ("uniform" | "informed" | list[Rotation]): Initial
+                possible poses that should be tested for. Defaults to "informed".
             max_nneighbors (int): Maximum number of nearest neighbors to consider in the
                 radius of a hypothesis for calculating the evidence. Defaults to 3.
             past_weight (float): How much should the evidence accumulated so far be
@@ -135,7 +138,7 @@ class DefaultEvidenceUpdater:
         self.feature_evidence_increment = feature_evidence_increment
         self.feature_weights = feature_weights
         self.graph_memory = graph_memory
-        self.initial_possible_poses = initial_possible_poses
+        self.initial_possible_poses = get_initial_possible_poses(initial_possible_poses)
         self.max_match_distance = max_match_distance
         self.max_nneighbors = max_nneighbors
         self.past_weight = past_weight
