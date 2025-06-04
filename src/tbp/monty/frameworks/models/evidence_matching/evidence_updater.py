@@ -16,7 +16,7 @@ from typing import Protocol, Tuple
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.models.evidence_matching.evidence_graph_memory import (
+from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
 )
 from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper

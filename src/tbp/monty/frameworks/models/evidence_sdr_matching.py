@@ -15,7 +15,9 @@ import shutil
 import numpy as np
 from tqdm import tqdm
 
-from tbp.monty.frameworks.models.evidence_matching import EvidenceGraphLM
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+    EvidenceGraphLM,
+)
 
 
 class LoggerSDR:

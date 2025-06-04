@@ -53,8 +53,10 @@ from tbp.monty.frameworks.environments.ycb import (
     SIMILAR_OBJECTS,
 )
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
-from tbp.monty.frameworks.models.evidence_matching import (
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
+)
+from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
 )
 from tbp.monty.frameworks.models.sensor_modules import (
