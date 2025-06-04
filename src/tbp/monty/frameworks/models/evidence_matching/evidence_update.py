@@ -16,9 +16,8 @@ from typing import Protocol, Tuple
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.models.evidence_matching import (
+from tbp.monty.frameworks.models.evidence_matching.evidence_graph_memory import (
     EvidenceGraphMemory,
-    InvalidEvidenceUpdateThreshold,
 )
 from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
 from tbp.monty.frameworks.utils.graph_matching_utils import (
@@ -53,6 +52,12 @@ class EvidenceUpdater(Protocol):
         poses: np.ndarray,
         current_mlh: dict,
     ) -> list[EvidenceUpdate]: ...
+
+
+class InvalidEvidenceUpdateThreshold(ValueError):
+    """Raised when the evidence update threshold is invalid."""
+
+    pass
 
 
 class DefaultEvidenceUpdater:
