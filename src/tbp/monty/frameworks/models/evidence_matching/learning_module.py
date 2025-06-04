@@ -143,8 +143,8 @@ class EvidenceGraphLM(GraphLM):
     def __init__(
         self,
         max_match_distance,
-        tolerances,
-        feature_weights,
+        tolerances: dict,
+        feature_weights: dict,
         feature_evidence_increment=1,
         max_nneighbors=3,
         initial_possible_poses="informed",
@@ -186,8 +186,6 @@ class EvidenceGraphLM(GraphLM):
         self.max_match_distance = max_match_distance
         self.tolerances = tolerances
         self.feature_evidence_increment = feature_evidence_increment
-        self.max_nneighbors = max_nneighbors
-        self.evidence_update_threshold = evidence_update_threshold
         self.vote_evidence_threshold = vote_evidence_threshold
         # ------ Weighting Params ------
         self.feature_weights = feature_weights
@@ -211,8 +209,6 @@ class EvidenceGraphLM(GraphLM):
         self.graph_memory.features_to_use = self.tolerances
         # Set feature weights to 1 if not otherwise specified
         self._fill_feature_weights_with_default(default=1)
-
-        self.use_features_for_matching = self._check_use_features_for_matching()
 
         # Dictionary with graph_ids as keys. For each graph we initialize a set of
         # hypotheses at the first step of an episode. Each hypothesis has an evidence
@@ -245,7 +241,7 @@ class EvidenceGraphLM(GraphLM):
             past_weight=past_weight,
             present_weight=present_weight,
             tolerances=tolerances,
-            use_features_for_matching=self.use_features_for_matching,
+            x_percent_threshold=self.x_percent_threshold,
         )
 
     # =============== Public Interface Functions ===============
@@ -1040,31 +1036,16 @@ class EvidenceGraphLM(GraphLM):
         id_feature = sum(ord(i) for i in object_id)
         return id_feature
 
-    # ------------------------ Helper --------------------------
-    def _check_use_features_for_matching(self):
-        use_features = {}
-        for input_channel in self.tolerances.keys():
-            if input_channel not in self.feature_weights.keys():
-                use_features[input_channel] = False
-            elif self.feature_evidence_increment <= 0:
-                use_features[input_channel] = False
-            else:
-                feature_weights_provided = (
-                    len(self.feature_weights[input_channel].keys()) > 2
-                )
-                use_features[input_channel] = feature_weights_provided
-        return use_features
-
-    def _fill_feature_weights_with_default(self, default):
-        for input_channel in self.tolerances.keys():
+    def _fill_feature_weights_with_default(self, default: int) -> None:
+        for input_channel, channel_tolerances in self.tolerances.items():
             if input_channel not in self.feature_weights.keys():
                 self.feature_weights[input_channel] = {}
-            for key in self.tolerances[input_channel].keys():
+            for key, tolerance in channel_tolerances.items():
                 if key not in self.feature_weights[input_channel].keys():
-                    if hasattr(self.tolerances[input_channel][key], "shape"):
-                        shape = self.tolerances[input_channel][key].shape
-                    elif hasattr(self.tolerances[input_channel][key], "__len__"):
-                        shape = len(self.tolerances[input_channel][key])
+                    if hasattr(tolerance, "shape"):
+                        shape = tolerance.shape
+                    elif hasattr(tolerance, "__len__"):
+                        shape = len(tolerance)
                     else:
                         shape = 1
                     default_weights = np.ones(shape) * default

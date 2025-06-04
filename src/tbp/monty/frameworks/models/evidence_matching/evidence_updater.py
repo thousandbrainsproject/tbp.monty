@@ -63,18 +63,74 @@ class InvalidEvidenceUpdateThreshold(ValueError):
 class DefaultEvidenceUpdater:
     def __init__(
         self,
-        evidence_update_threshold: float | str,
-        feature_evidence_increment: int,
         feature_weights: dict,
         graph_memory: EvidenceGraphMemory,
-        initial_possible_poses: list[Rotation],
         max_match_distance: float,
-        max_nneighbors: int,
-        past_weight: float,
-        present_weight: float,
         tolerances: dict,
-        use_features_for_matching: dict,
+        evidence_update_threshold: float | str = "all",
+        feature_evidence_increment: int = 1,
+        initial_possible_poses: list[Rotation] | None = None,
+        max_nneighbors: int = 3,
+        past_weight: float = 1,
+        present_weight: float = 1,
+        x_percent_threshold: float = 10,
     ):
+        """Initializes the DefaultEvidenceUpdater.
+
+        Args:
+            feature_weights (dict): How much should each feature be weighted when
+                calculating the evidence update for hypothesis. Weights are stored in a
+                dictionary with keys corresponding to features (same as keys in
+                tolerances).
+            graph_memory (EvidenceGraphMemory): The graph memory to read graphs from.
+            max_match_distance (float): Maximum distance of a tested and stored location
+                to be matched.
+            tolerances (dict): How much can each observed feature deviate from the
+                stored features to still be considered a match.
+            evidence_update_threshold (float | str): How to decide which hypotheses
+                should be updated. When this parameter is either '[int]%' or
+                'x_percent_threshold', then this parameter is applied to the evidence
+                for the Most Likely Hypothesis (MLH) to determine a minimum evidence
+                threshold in order for other hypotheses to be updated. Any hypotheses
+                falling below the resulting evidence threshold do not get updated. The
+                other options set a fixed threshold that does not take MLH evidence into
+                account. In [int, float, '[int]%', 'mean', 'median', 'all',
+                'x_percent_threshold']. Defaults to 'all'.
+            feature_evidence_increment (int): Feature evidence (between 0 and 1) is
+                multiplied by this value before being added to the overall evidence of
+                a hypothesis. This factor is only multiplied with the feature evidence
+                (not the pose evidence as opposed to the present_weight). Defaults to 1.
+            initial_possible_poses (list[Rotation] | None): Initial possible poses that
+                should be tested for. Defaults to None.
+            max_nneighbors (int): Maximum number of nearest neighbors to consider in the
+                radius of a hypothesis for calculating the evidence. Defaults to 3.
+            past_weight (float): How much should the evidence accumulated so far be
+                weighted when combined with the evidence from the most recent
+                observation. Defaults to 1.
+            present_weight (float): How much should the current evidence be weighted
+                when added to the previous evidence. If past_weight and present_weight
+                add up to 1, the evidence is bounded and can't grow infinitely. Defaults
+                to 1.
+                NOTE: right now this doesn't give as good performance as with unbounded
+                evidence since we don't keep a full history of what we saw. With a more
+                efficient policy and better parameters that may be possible to use
+                though and could help when moving from one object to another and to
+                generally make setting thresholds etc. more intuitive.
+            x_percent_threshold (float): Used in two places:
+                1) All objects whose highest evidence is greater than the most likely
+                    objects evidence - x_percent of the most like objects evidence are
+                    considered possible matches. That means to only have one possible
+                    match, no other object can have more evidence than the candidate
+                    match's evidence - x percent of it.
+                2) Within one object, possible poses are considered possible if their
+                    evidence is larger than the most likely pose of this object - x
+                    percent of this poses evidence.
+                TODO: should we use a separate threshold for within and between objects?
+                If this value is larger, the model is usually more robust to noise and
+                reaches a better performance but also requires a lot more steps to reach
+                a terminal condition, especially if there are many similar object in the
+                data set. Defaults to 10.
+        """
         self.evidence_update_threshold = evidence_update_threshold
         self.feature_evidence_increment = feature_evidence_increment
         self.feature_weights = feature_weights
@@ -85,7 +141,9 @@ class DefaultEvidenceUpdater:
         self.past_weight = past_weight
         self.present_weight = present_weight
         self.tolerances = tolerances
-        self.use_features_for_matching = use_features_for_matching
+        self.x_percent_threshold = x_percent_threshold
+
+        self.use_features_for_matching = self._check_use_features_for_matching()
 
     def update_evidence(
         self,
@@ -118,7 +176,8 @@ class DefaultEvidenceUpdater:
             current_mlh (dict): Current most likely hypothesis
 
         Returns:
-            list[EvidenceUpdate]: result of the evidence update
+            list[EvidenceUpdate]: The list of evidence updates to be applied to each
+                input channel.
         """
         # Get all usable input channels
         # NOTE: We might also want to check the confidence in the input channel
@@ -379,6 +438,20 @@ class DefaultEvidenceUpdater:
             feature_evidence, weights=feature_weight_list, axis=1
         )
         return weighted_feature_evidence
+
+    def _check_use_features_for_matching(self):
+        use_features = {}
+        for input_channel in self.tolerances.keys():
+            if input_channel not in self.feature_weights.keys():
+                use_features[input_channel] = False
+            elif self.feature_evidence_increment <= 0:
+                use_features[input_channel] = False
+            else:
+                feature_weights_provided = (
+                    len(self.feature_weights[input_channel].keys()) > 2
+                )
+                use_features[input_channel] = feature_weights_provided
+        return use_features
 
     def _displace_hypotheses_and_compute_evidence(
         self,
