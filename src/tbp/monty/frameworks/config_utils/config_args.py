@@ -528,12 +528,28 @@ class MontyArgs:
         max_total_steps: Maximum total episode steps before timeout, regardless of
             whether LMs receive sensory information and perform a true matching step.
             Defaults to 2500.
+        knn_backend: Backend to use for KNN search:
+            - 'cpu': SciPy KDTree implementation (accurate, works on all platforms)
+            - 'gpu': FAISS GPU implementation (faster for large datasets)
+            Defaults to "cpu".
+        knn_nlist: Number of clusters for FAISS IVF indices. Only used when
+            knn_backend is set to 'gpu'. For exact KNN use 1, for potentially faster but 
+            approximate KNN you can use larger values. Defaults to 1.
+        knn_gpu_id: ID of GPU to use for FAISS. Only used when knn_backend is a
+            FAISS backend and multiple GPUs are available. Defaults to 0.
+        knn_batch_size: Batch size for large queries in FAISS. Only used when
+            knn_backend is a FAISS backend. None means auto-determined based on
+            data size. Defaults to None.
     """
 
     num_exploratory_steps: int = 1_000
     min_eval_steps: int = 3
     min_train_steps: int = 3
     max_total_steps: int = 2_500
+    knn_backend: str = "cpu"
+    knn_nlist: int = 1
+    knn_gpu_id: int = 0
+    knn_batch_size: Optional[int] = None
 
 
 @dataclass

@@ -17,7 +17,6 @@ import time
 from typing import Tuple
 
 import numpy as np
-from scipy.spatial import KDTree
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
@@ -40,6 +39,7 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_relevant_curvature,
     get_scaled_evidences,
 )
+from tbp.monty.frameworks.utils.knn_search import KNNSearchFactory
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_multiple_orthonormal_vectors,
     align_orthonormal_vectors,
@@ -250,6 +250,8 @@ class EvidenceGraphLM(GraphLM):
             since the memory requirements grow cubically with this number.
         gsg_class: The type of goal-state-generator to associate with the LM.
         gsg_args: Dictionary of configuration parameters for the GSG.
+        knn_backend: Backend to use for KNN search. 'cpu' uses SciPy KDTree, 'gpu'
+            uses FAISS (if available). Defaults to "cpu".
 
     Debugging Attributes:
         use_multithreading: Whether to calculate evidence updates for different
@@ -284,6 +286,10 @@ class EvidenceGraphLM(GraphLM):
         use_multithreading=True,
         gsg_class=EvidenceGoalStateGenerator,
         gsg_args=None,
+        knn_backend="cpu",
+        knn_nlist=1,
+        knn_gpu_id=0,
+        knn_batch_size=None,
         *args,
         **kwargs,
     ):
@@ -295,7 +301,15 @@ class EvidenceGraphLM(GraphLM):
             max_nodes_per_graph=max_nodes_per_graph,
             max_graph_size=max_graph_size,
             num_model_voxels_per_dim=num_model_voxels_per_dim,
+            knn_backend=knn_backend,
+            knn_nlist=knn_nlist,
+            knn_gpu_id=knn_gpu_id,
+            knn_batch_size=knn_batch_size,
         )
+        self.knn_backend = knn_backend
+        self.knn_nlist = knn_nlist
+        self.knn_gpu_id = knn_gpu_id
+        self.knn_batch_size = knn_batch_size
         if gsg_args is None:
             gsg_args = {}
         self.gsg = gsg_class(self, **gsg_args)
@@ -1130,26 +1144,32 @@ class EvidenceGraphLM(GraphLM):
     def _update_evidence_with_vote(self, state_votes, graph_id):
         """Use incoming votes to update all hypotheses."""
         # Extract information from list of State classes into np.arrays for efficient
-        # matrix operations and KDTree search.
+        # matrix operations and KNN search.
         graph_location_vote = np.zeros((len(state_votes), 3))
         vote_evidences = np.zeros(len(state_votes))
         for n, vote in enumerate(state_votes):
             graph_location_vote[n] = vote.location
             vote_evidences[n] = vote.confidence
 
-        vote_location_tree = KDTree(
-            graph_location_vote,
+        # Create KNN index for vote locations
+        vote_location_knn = KNNSearchFactory.create_index(
+            backend=self.knn_backend,
+            points=graph_location_vote,
             leafsize=40,
+            nlist=self.knn_nlist,
+            gpu_id=self.knn_gpu_id,
+            batch_size=self.knn_batch_size,
         )
+        
         vote_nn = 3  # TODO: Make this a parameter?
         if graph_location_vote.shape[0] < vote_nn:
             vote_nn = graph_location_vote.shape[0]
+        
         # Get max_nneighbors closest nodes and their distances
-        (radius_node_dists, radius_node_ids) = vote_location_tree.query(
+        (radius_node_dists, radius_node_ids) = vote_location_knn.search(
             self.possible_locations[graph_id],
             k=vote_nn,
-            p=2,
-            workers=1,
+            return_distance=True,
         )
         if vote_nn == 1:
             radius_node_dists = np.expand_dims(radius_node_dists, axis=1)
@@ -1860,6 +1880,10 @@ class EvidenceGraphMemory(GraphMemory):
         max_nodes_per_graph,
         max_graph_size,
         num_model_voxels_per_dim,
+        knn_backend="cpu",
+        knn_nlist=1,
+        knn_gpu_id=0,
+        knn_batch_size=None,
         *args,
         **kwargs,
     ):
@@ -1868,6 +1892,10 @@ class EvidenceGraphMemory(GraphMemory):
         self.max_nodes_per_graph = max_nodes_per_graph
         self.max_graph_size = max_graph_size
         self.num_model_voxels_per_dim = num_model_voxels_per_dim
+        self.knn_backend = knn_backend
+        self.knn_nlist = knn_nlist
+        self.knn_gpu_id = knn_gpu_id
+        self.knn_batch_size = knn_batch_size
 
     # =============== Public Interface Functions ===============
 
@@ -1934,6 +1962,10 @@ class EvidenceGraphMemory(GraphMemory):
             max_nodes=self.max_nodes_per_graph,
             max_size=self.max_graph_size,
             num_voxels_per_dim=self.num_model_voxels_per_dim,
+            knn_backend=self.knn_backend,
+            knn_nlist=self.knn_nlist,
+            knn_gpu_id=self.knn_gpu_id,
+            knn_batch_size=self.knn_batch_size,
         )
         # Keep benchmark results constant by still using original graph for
         # matching when loading pretrained models.
@@ -1959,6 +1991,10 @@ class EvidenceGraphMemory(GraphMemory):
             max_nodes=self.max_nodes_per_graph,
             max_size=self.max_graph_size,
             num_voxels_per_dim=self.num_model_voxels_per_dim,
+            knn_backend=self.knn_backend,
+            knn_nlist=self.knn_nlist,
+            knn_gpu_id=self.knn_gpu_id,
+            knn_batch_size=self.knn_batch_size,
         )
         try:
             model.build_model(locations=locations, features=features)

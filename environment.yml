@@ -48,4 +48,5 @@ dependencies:
   - pip
   - pip:
       - -e .[dev]
+      - faiss-gpu  # GPU-based KNN search, can be replaced with faiss-cpu for CPU-only builds
 
