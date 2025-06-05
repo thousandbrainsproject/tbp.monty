@@ -5,7 +5,7 @@ randrot_noise_10distinctobj_dist_agent,100.00,3.00,55,22.49,3,20
 randrot_noise_10distinctobj_dist_on_distm,99.00,1.00,38,12.15,3,18
 randrot_noise_10distinctobj_surf_agent,99.00,0.00,29,21.70,3,22
 randrot_10distinctobj_surf_agent,99.00,1.00,28,18.49,2,12
-randrot_noise_10distinctobj_5lms_dist_agent,100.00,0.00,57,45.26,10,84
+randrot_noise_10distinctobj_5lms_dist_agent,100.00,0.00,57,45.48,5,40
 base_10simobj_surf_agent,93.57,7.86,68,12.57,5,25
 randrot_noise_10simobj_dist_agent,84.00,40.00,237,35.01,11,93
 randrot_noise_10simobj_surf_agent,92.00,34.00,175,28.24,16,136
