@@ -10,7 +10,7 @@ There are two primary motivations
  2. Multi-Object Scenes and Compositional Objects: We would like to constrain saccades to either keep sensors on an object or move sensors to different objects.
 
 # Background
-The superior colliculus (SC) is a good mental model for what we need. Given visual input from a wide field-of-view, the SC generates one or more maps used to select the next location to attend to do.
+The superior colliculus (SC) is a good mental model for what we need. Given visual input from a wide field-of-view, the SC generates one or more maps used to select the next location to attend to.
  - Salience Map: The visual-only superficial layer (SCs) of the superior colliculus is thought to generate maps based on features such as contrast, color opponency, and motion. Salience maps might help Monty move to areas that are more informative than a random-walk policy would. At a minimum, they should at least guarantee that the next viewed location is on some object (or very nearly so).
  - Priority Map: The intermediate layer (SCi) is believed to generate a priority map that reflects an organism's goals. Unlike the visual-only layer, the intermediate layer receives top-down and multimodal input. In Monty, a priority map may reflect the general regions we would like to keep our saccades within.
 
