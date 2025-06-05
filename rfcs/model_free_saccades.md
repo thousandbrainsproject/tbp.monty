@@ -33,7 +33,7 @@ However, the question of whether we think maps should be persistent is a general
 The SC needs to know whether it should stay within an object or move to a new one. This makes it sound like the SC would be like a motor system with swappable motor policies, but that can't be quite right since the SC would perform lots of sensor processing.
 
 # Architecture
-How an SC would integrate into Monty's current architecture, including which components need to be added or augmented, will require a lot of feedback and discussion. Previously, the team put put together a version of this diagram:
+How an SC would integrate into Monty's current architecture, including which components need to be added or augmented, will require a lot of feedback and discussion. Previously, the team put together a version of this diagram:
 
 ![Information Flow](model_free_saccades/information_flow.png)
 
