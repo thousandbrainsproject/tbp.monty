@@ -172,6 +172,75 @@ class FAISSIndex(KNNIndex):
         
         if points is not None:
             self.build(points)
+
+
+    def __getstate__(self):
+        """Custom serialization - handle GPU/CPU FAISS index conversion"""
+        state = self.__dict__.copy()
+        
+        if self.index is not None:
+            try:
+                # Check if this is a GPU index and convert to CPU for serialization
+                if self.use_gpu and hasattr(self.index, 'getDevice'):
+                    # Convert GPU index to CPU for serialization
+                    cpu_index = faiss.index_gpu_to_cpu(self.index)
+                    state['faiss_index_bytes'] = faiss.serialize_index(cpu_index)
+                    state['was_gpu_index'] = True
+                else:
+                    # Already CPU index, serialize directly
+                    state['faiss_index_bytes'] = faiss.serialize_index(self.index)
+                    state['was_gpu_index'] = False
+                    
+            except RuntimeError as e:
+                print(f"Failed to serialize FAISS index: {e}")
+                state['faiss_index_bytes'] = None
+                state['was_gpu_index'] = self.use_gpu
+                
+            # Remove unpicklable objects
+            del state['index']
+            if 'gpu_resources' in state:
+                del state['gpu_resources']
+        else:
+            state['faiss_index_bytes'] = None
+            state['was_gpu_index'] = False
+            
+        return state
+
+    def __setstate__(self, state):
+        """Custom deserialization - rebuild FAISS index and handle GPU conversion"""
+        
+        if state.get('faiss_index_bytes') is not None:
+            # Deserialize the CPU index
+            cpu_index = faiss.deserialize_index(state['faiss_index_bytes'])
+            
+            # If it was originally a GPU index and we want to use GPU, convert back
+            if state.get('was_gpu_index', False) and self.use_gpu:
+                try:
+                    # Recreate GPU resources
+                    self.gpu_resources = faiss.StandardGpuResources()
+                    # Convert back to GPU
+                    self.index = faiss.index_cpu_to_gpu(self.gpu_resources, self.gpu_id, cpu_index)
+                except Exception as e:
+                    print(f"Failed to move index back to GPU: {e}. Using CPU instead.")
+                    self.index = cpu_index
+                    self.use_gpu = False
+                    self.gpu_resources = None
+            else:
+                # Keep as CPU index
+                self.index = cpu_index
+                self.gpu_resources = None
+        else:
+            # No index to restore
+            self.index = None
+            self.gpu_resources = None
+            
+        # Clean up temporary state variables
+        for key in ['faiss_index_bytes', 'was_gpu_index']:
+            if key in state:
+                del state[key]
+                
+        # Restore other attributes
+        self.__dict__.update(state)
     
     def _create_cpu_index(self, d, n_points):
         """Create appropriate CPU index based on dimensionality and data size.
