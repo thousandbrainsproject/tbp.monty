@@ -769,6 +769,7 @@ class SDREvidenceUpdaterMixin:
                 use_features[input_channel] = True
         return use_features
 
+
 class SDREvidenceUpdater(SDREvidenceUpdaterMixin, DefaultEvidenceUpdater):
     """Evidence updater that uses SDRs for matching."""
 
