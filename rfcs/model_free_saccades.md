@@ -7,7 +7,7 @@ This RFC proposes a mechanism for efficient model-free saccades to be used by th
 # Motivation
 There are two primary motivations
  1. Efficiency: We would like to reduce the number of inference steps required by the distant agent.
- 2. Multi-Object Scenes and Compositional Objects: We would like to constrain saccades to either keep sensors on an object or more sensors to a different objects.
+ 2. Multi-Object Scenes and Compositional Objects: We would like to constrain saccades to either keep sensors on an object or move sensors to different objects.
 
 # Background
 The superior colliculus (SC) is a good mental model for what we need. Given visual input from a wide field-of-view, the SC generates one or more maps used to select the next location to attend to do.
