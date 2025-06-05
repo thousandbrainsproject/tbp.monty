@@ -61,7 +61,6 @@ class InvalidEvidenceUpdateThreshold(ValueError):
     pass
 
 
-# TODO: Make EvidenceSDRLMMixin & EvidenceSDRGraphLM work, _calculate_feature_evidence_sdr_for_all_nodes is a problem
 class DefaultEvidenceUpdater:
     def __init__(
         self,

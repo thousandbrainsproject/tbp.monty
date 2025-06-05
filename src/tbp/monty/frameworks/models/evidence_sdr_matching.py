@@ -11,10 +11,14 @@
 import logging
 import os
 import shutil
+from typing import Any
 
 import numpy as np
 from tqdm import tqdm
 
+from tbp.monty.frameworks.models.evidence_matching.evidence_updater import (
+    DefaultEvidenceUpdater,
+)
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
@@ -526,6 +530,12 @@ class EvidenceSDRLMMixin:
     See the `monty_lab` repo for reference. Specifically,
     `experiments/configs/evidence_sdr_evaluation.py`
 
+    TODO: This mixin adds state to the instance it is being mixed with. As such, it
+    is attempting to reuse some common functionality of EvidenceGraphLM while being
+    a different thing. The likely refactor is to extract the reusable EvidenceGraphLM
+    functionality into a component (since it probably requires its own state), use
+    that component as the default in EvidenceGraphLM, and then reuse that component in
+    a new EvidenceSDRGraphLM class instead of inheriting from EvidenceGraphLM.
     """
 
     def __init__(self, *args, **kwargs):
@@ -536,6 +546,10 @@ class EvidenceSDRLMMixin:
 
         """
         self.sdr_args = kwargs.pop("sdr_args")
+        # Provide our own working default evidence updater.
+        # TODO: Should not be needed once this mixin becomes an object component.
+        if not hasattr(kwargs, "evidence_updater_class"):
+            kwargs["evidence_updater_class"] = SDREvidenceUpdater
         super().__init__(*args, **kwargs)
 
         # keeps track of the Graph objects and their ids
@@ -635,26 +649,6 @@ class EvidenceSDRLMMixin:
             )
             self.tmp_logger.log_episode(stats)
 
-    def _check_use_features_for_matching(self):
-        """Check if features should be used for matching.
-
-        EvidenceGraphLM bypasses comparing object ID by checking the number
-        of features on the input channel. In this Mixin we want to use all
-        features for matching.
-
-        Returns:
-            A dictionary indicating whether to use features for each input channel.
-        """
-        use_features = {}
-        for input_channel in self.tolerances.keys():
-            if input_channel not in self.feature_weights.keys():
-                use_features[input_channel] = False
-            elif self.feature_evidence_increment <= 0:
-                use_features[input_channel] = False
-            else:
-                use_features[input_channel] = True
-        return use_features
-
     def _object_id_to_features(self, object_id):
         """Retrieves the trained SDR corresponding to the object ID.
 
@@ -665,6 +659,53 @@ class EvidenceSDRLMMixin:
             return self.sdr_encoder.get_sdr(self.obj2id[object_id])
         else:
             return np.zeros(self.sdr_args["sdr_length"])
+
+
+class EvidenceSDRGraphLM(EvidenceSDRLMMixin, EvidenceGraphLM):
+    """Class that incorporates the EvidenceSDR Mixin with the EvidenceGraphLM."""
+
+    pass
+
+
+class SDREvidenceUpdaterMixin:
+    """DefaultEvidenceUpdater mixin for evidence updates using SDRs."""
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        """Ensure the mixin is used only with compatible evidence updaters.
+
+        Raises:
+            TypeError: If the mixin is used with a non-compatible evidence updater.
+        """
+        super().__init_subclass__(**kwargs)
+        if not any(issubclass(b, (DefaultEvidenceUpdater)) for b in cls.__bases__):
+            raise TypeError(
+                "SDREvidenceUpdaterMixin must be mixed in with a subclass of "
+                f"DefaultEvidenceUpdater, got {cls.__bases__}"
+            )
+
+    def _calculate_feature_evidence_for_all_nodes(
+        self, query_features, input_channel, graph_id
+    ):
+        """Calculates feature evidence for all nodes stored in a graph.
+
+        This override method tests if the input_channel is a learning_module. If so,
+        a different function is used for feature comparison.
+
+        Note: This assumes that learning modules always outputs 1 feature, object_id.
+        If the learning modules output more than object_id features, we need to
+        compare these according to their weights.
+
+        Returns:
+            The feature evidence for all nodes.
+        """
+        if input_channel.startswith("learning_module"):
+            return self._calculate_feature_evidence_sdr_for_all_nodes(
+                query_features, input_channel, graph_id
+            )
+
+        return super()._calculate_feature_evidence_for_all_nodes(
+            query_features, input_channel, graph_id
+        )
 
     def _calculate_feature_evidence_sdr_for_all_nodes(
         self, query_features, input_channel, graph_id
@@ -708,32 +749,27 @@ class EvidenceSDRLMMixin:
         normalized_overlaps *= self.feature_weights[input_channel]["object_id"]
         return normalized_overlaps
 
-    def _calculate_feature_evidence_for_all_nodes(
-        self, query_features, input_channel, graph_id
-    ):
-        """Calculates feature evidence for all nodes stored in a graph.
+    def _check_use_features_for_matching(self):
+        """Check if features should be used for matching.
 
-        This override method tests if the input_channel is a learning_module. If so,
-        a different function is used for feature comparison.
-
-        Note: This assumes that learning modules always outputs 1 feature, object_id.
-        If the learning modules output more than object_id features, we need to
-        compare these according to their weights.
+        EvidenceGraphLM bypasses comparing object ID by checking the number
+        of features on the input channel. In this Mixin we want to use all
+        features for matching.
 
         Returns:
-            The feature evidence for all nodes.
+            A dictionary indicating whether to use features for each input channel.
         """
-        if input_channel.startswith("learning_module"):
-            return self._calculate_feature_evidence_sdr_for_all_nodes(
-                query_features, input_channel, graph_id
-            )
+        use_features = {}
+        for input_channel in self.tolerances.keys():
+            if input_channel not in self.feature_weights.keys():
+                use_features[input_channel] = False
+            elif self.feature_evidence_increment <= 0:
+                use_features[input_channel] = False
+            else:
+                use_features[input_channel] = True
+        return use_features
 
-        return super()._calculate_feature_evidence_for_all_nodes(
-            query_features, input_channel, graph_id
-        )
-
-
-class EvidenceSDRGraphLM(EvidenceSDRLMMixin, EvidenceGraphLM):
-    """Class that incorporates the EvidenceSDR Mixin with the EvidenceGraphLM."""
+class SDREvidenceUpdater(SDREvidenceUpdaterMixin, DefaultEvidenceUpdater):
+    """Evidence updater that uses SDRs for matching."""
 
     pass
