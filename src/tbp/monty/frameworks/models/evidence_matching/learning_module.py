@@ -22,8 +22,9 @@ from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
 )
 from tbp.monty.frameworks.models.evidence_matching.hypothesis_updater import (
+    ChannelHypotheses,
     DefaultHypothesesUpdater,
-    HypothesesUpdate,
+    Hypotheses,
     HypothesesUpdater,
 )
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
@@ -728,13 +729,15 @@ class EvidenceGraphLM(GraphLM):
             self.possible_poses[graph_id] = np.array([])
 
         hypotheses_updates = self.hypotheses_updater.update_hypotheses(
-            evidence=self.evidence[graph_id],
+            hypotheses=Hypotheses(
+                evidence=self.evidence[graph_id],
+                locations=self.possible_locations[graph_id],
+                poses=self.possible_poses[graph_id],
+            ),
             features=features,
             displacements=displacements,
             graph_id=graph_id,
-            locations=self.possible_locations[graph_id],
             mapper=self.channel_hypothesis_mapping[graph_id],
-            poses=self.possible_poses[graph_id],
             max_global_evidence=self.current_mlh["evidence"],
         )
 
@@ -755,7 +758,7 @@ class EvidenceGraphLM(GraphLM):
     def _set_hypotheses_in_hpspace(
         self,
         graph_id: str,
-        new_hypotheses: HypothesesUpdate,
+        new_hypotheses: ChannelHypotheses,
     ) -> None:
         """Updates the hypothesis space for a given input channel in a graph.
 

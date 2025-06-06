@@ -34,30 +34,52 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 
 
 @dataclass
-class HypothesesUpdate:
-    """A set of hypotheses for a single input channel.
+class Hypotheses:
+    """Set of hypotheses consisting of evidence, locations, and poses.
 
-    Used to bundle together the updates to evidence, locations, and poses for the
-    hypotheses for a single input channel.
+    The three arrays are expected to have the same shape. Each index corresponds to a
+    hypothesis.
     """
+
     evidence: np.ndarray
-    input_channel: str
     locations: np.ndarray
     poses: np.ndarray
+
+
+@dataclass
+class ChannelHypotheses(Hypotheses):
+    """A set of hypotheses for a single input channel."""
+
+    input_channel: str
 
 
 class HypothesesUpdater(Protocol):
     def update_hypotheses(
         self,
-        evidence: np.ndarray,
+        hypotheses: Hypotheses,
         features: dict,
         displacements: dict | None,
         graph_id: str,
-        locations: np.ndarray,
         mapper: ChannelMapper,
-        poses: np.ndarray,
         max_global_evidence: float,
-    ) -> list[HypothesesUpdate]: ...
+    ) -> list[ChannelHypotheses]:
+        """Update hypotheses based on sensor displacement and sensed features.
+
+        Args:
+            hypotheses (Hypotheses): Hypotheses of all input channels for the graph_id
+            features (dict): Input features
+            displacements (dict or None): Given displacements
+            graph_id (str): Identifier of the graph being updated
+            mapper (ChannelMapper): Napper for the graph_id to extract data from
+                evidence, locations, and poses based on the input channel
+            max_global_evidence (float): Maximum evidence value from all hypotheses.
+                Defaults to 0.
+
+        Returns:
+            list[ChannelHypotheses]: The list of channel hypotheses updates to be
+                applied.
+        """
+        ...
 
 
 class InvalidEvidenceUpdateThreshold(ValueError):
@@ -154,15 +176,13 @@ class DefaultHypothesesUpdater:
 
     def update_hypotheses(
         self,
-        evidence: np.ndarray,
+        hypotheses: Hypotheses,
         features: dict,
         displacements: dict | None,
         graph_id: str,
-        locations: np.ndarray,
         mapper: ChannelMapper,
-        poses: np.ndarray,
         max_global_evidence: float = 0,
-    ) -> list[HypothesesUpdate]:
+    ) -> list[ChannelHypotheses]:
         """Update hypotheses based on sensor displacement and sensed features.
 
         Updates existing hypothesis space or initializes a new hypothesis space
@@ -172,14 +192,12 @@ class DefaultHypothesesUpdater:
         channel in the graph.
 
         Args:
-            evidence (np.ndarray): evidence of all input channels for the graph_id
-            features (dict): input features
-            displacements (dict or None): given displacements
-            graph_id (str): identifier of the graph being updated
-            locations (np.ndarray): locations of all input channels for the graph_id
-            mapper (ChannelMapper): mapper for the graph_id to extract data from
+            hypotheses (Hypotheses): Hypotheses of all input channels for the graph_id
+            features (dict): Input features
+            displacements (dict or None): Given displacements
+            graph_id (str): Identifier of the graph being updated
+            mapper (ChannelMapper): Napper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
-            poses (np.ndarray): poses of all input channels for the graph_id
             max_global_evidence (float): Maximum evidence value from all hypotheses.
                 Defaults to 0.
 
@@ -224,9 +242,13 @@ class DefaultHypothesesUpdater:
                 )
             # Retrieve existing hypothesis space for a specific input channel
             else:
-                channel_possible_locations = mapper.extract(locations, input_channel)
-                channel_possible_poses = mapper.extract(poses, input_channel)
-                channel_hypotheses_evidence = mapper.extract(evidence, input_channel)
+                channel_possible_locations = mapper.extract(
+                    hypotheses.locations, input_channel
+                )
+                channel_possible_poses = mapper.extract(hypotheses.poses, input_channel)
+                channel_hypotheses_evidence = mapper.extract(
+                    hypotheses.evidence, input_channel
+                )
 
                 # We only displace existing hypotheses since the newly sampled
                 # hypotheses should not be affected by the displacement from the last
@@ -240,15 +262,15 @@ class DefaultHypothesesUpdater:
                         displacements,
                         graph_id,
                         input_channel,
-                        evidence,
+                        hypotheses.evidence,
                         max_global_evidence,
                     )
                 )
 
             hypotheses_updates.append(
-                HypothesesUpdate(
-                    evidence=channel_hypotheses_evidence,
+                ChannelHypotheses(
                     input_channel=input_channel,
+                    evidence=channel_hypotheses_evidence,
                     locations=channel_possible_locations,
                     poses=channel_possible_poses,
                 )
