@@ -27,11 +27,11 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_custom_distances,
     get_initial_possible_poses,
     get_relevant_curvature,
+    possible_sensed_directions,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_multiple_orthonormal_vectors,
     get_angles_for_all_hypotheses,
-    get_more_directions_in_plane,
     rotate_pose_dependent_features,
 )
 
@@ -78,6 +78,7 @@ class DefaultHypothesesUpdater:
         max_nneighbors: int = 3,
         past_weight: float = 1,
         present_weight: float = 1,
+        umbilical_num_poses: int = 8,
     ):
         """Initializes the DefaultHypothesesUpdater.
 
@@ -111,6 +112,9 @@ class DefaultHypothesesUpdater:
                 efficient policy and better parameters that may be possible to use
                 though and could help when moving from one object to another and to
                 generally make setting thresholds etc. more intuitive.
+            umbilical_num_poses (int): Number of sampled rotations in the direction of
+                the plane perpendicular to the point normal. These are sampled at
+                umbilical points (i.e., points where PC directions are undefined).
         """
         self.feature_evidence_increment = feature_evidence_increment
         self.feature_weights = feature_weights
@@ -121,6 +125,7 @@ class DefaultHypothesesUpdater:
         self.past_weight = past_weight
         self.present_weight = present_weight
         self.tolerances = tolerances
+        self.umbilical_num_poses = umbilical_num_poses
 
         self.use_features_for_matching = self._check_use_features_for_matching()
 
@@ -526,27 +531,15 @@ class DefaultHypothesesUpdater:
             "pose_fully_defined" in sensed_channel_features.keys()
             and not sensed_channel_features["pose_fully_defined"]
         ):
-            sample_more_directions = True
+            possible_s_d = possible_sensed_directions(
+                sensed_directions, self.umbilical_num_poses
+            )
         else:
-            sample_more_directions = False
-
-        if not sample_more_directions:
-            # 2 possibilities since the curvature directions may be flipped
-            possible_s_d = [
-                sensed_directions.copy(),
-                sensed_directions.copy(),
-            ]
-            possible_s_d[1][1:] = possible_s_d[1][1:] * -1
-        else:
-            # TODO: whats a reasonable number here?
-            # Maybe just samle n poses regardless of if pc1==pc2 and increase
-            # evidence in the cases where we are more sure?
-            # Maybe keep moving until pc1!= pc2 and then start matching?
-            possible_s_d = get_more_directions_in_plane(sensed_directions, 8)
+            possible_s_d = possible_sensed_directions(sensed_directions, 2)
 
         for s_d in possible_s_d:
             # Since we have orthonormal vectors and know their correspondence we can
-            # directly calculate the rotation instead of using the Kabsch esimate
+            # directly calculate the rotation instead of using the Kabsch estimate
             # used in Rotation.align_vectors
             r = align_multiple_orthonormal_vectors(node_directions, s_d, as_scipy=False)
             all_possible_locations = np.vstack(
