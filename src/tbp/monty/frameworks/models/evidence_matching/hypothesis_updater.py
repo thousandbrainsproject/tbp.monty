@@ -35,6 +35,11 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 
 @dataclass
 class HypothesesUpdate:
+    """A set of hypotheses for a single input channel.
+
+    Used to bundle together the updates to evidence, locations, and poses for the
+    hypotheses for a single input channel.
+    """
     evidence: np.ndarray
     input_channel: str
     locations: np.ndarray
