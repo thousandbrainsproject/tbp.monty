@@ -140,7 +140,7 @@ class ResamplingHypothesesEvidenceMixin:
             (
                 informed_possible_locations,
                 informed_possible_poses,
-                informed_hypotheses_evidence,
+                informed_hypotheses_feature_evidence,
             ) = self._sample_informed(features, graph_id, informed_count, input_channel)
 
             # We only displace existing hypotheses since the newly resampled hypotheses
@@ -166,7 +166,7 @@ class ResamplingHypothesesEvidenceMixin:
                 [existing_possible_poses, informed_possible_poses]
             )
             channel_hypotheses_evidence = np.hstack(
-                [existing_hypotheses_evidence, informed_hypotheses_evidence]
+                [existing_hypotheses_evidence, informed_hypotheses_feature_evidence]
             )
 
             self._set_hypotheses_in_hpspace(
@@ -317,7 +317,9 @@ class ResamplingHypothesesEvidenceMixin:
             ]
             node_feature_evidence_filtered = np.zeros(len(top_indices))
 
-        selected_evidence = np.tile(node_feature_evidence_filtered, num_hyps_per_node)
+        selected_feature_evidence = np.tile(
+            node_feature_evidence_filtered, num_hyps_per_node
+        )
 
         # === Calculate selected locations by top-k indices === #
         all_channel_locations_filtered = self.graph_memory.get_locations_in_graph(
@@ -358,56 +360,7 @@ class ResamplingHypothesesEvidenceMixin:
                 ]
             )
 
-        return selected_locations, selected_rotations, selected_evidence
-
-    def _sample_informed_inefficient(
-        self,
-        features: Dict,
-        graph_id: str,
-        informed_count: int,
-        input_channel: str,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Samples the specified number of fully informed hypotheses.
-
-        Args:
-            features (dict): Input features.
-            graph_id (str): Identifier of the graph being queried.
-            informed_count (int): Number of fully informed hypotheses to sample.
-            input_channel: The channel for which hypotheses are sampled.
-
-        Returns:
-            Tuple[np.ndarray, np.ndarray, np.ndarray]: Tuple containing
-                selected locations, rotations, and evidence data.
-
-        Note:
-            This function will not give the exact same results as the existing
-            `_sample_informed`. Here we directly sample the top `informed_count`
-            based on the evidence scores. In `_sample_informed`, we sample
-            `informed_count/num_hyps_per_node` points then tile it for
-            `num_hyps_per_node`.
-        """
-        # TODO: Remove this function after approving the more efficient version
-        # `_sample_informed`.
-
-        # Return empty arrays for no hypotheses to sample
-        if informed_count == 0:
-            return np.zeros((0, 3)), np.zeros((0, 3, 3)), np.zeros(0)
-
-        (
-            initial_possible_channel_locations,
-            initial_possible_channel_rotations,
-            channel_evidence,
-        ) = self._get_initial_hypothesis_space(features, graph_id, input_channel)
-
-        # Get the indices of the top `informed_count` values in `channel_evidence`
-        top_indices = np.argsort(channel_evidence)[-informed_count:]  # Get top indices
-
-        # Select the corresponding entries from the original arrays
-        selected_locations = initial_possible_channel_locations[top_indices]
-        selected_rotations = initial_possible_channel_rotations[top_indices]
-        selected_evidence = channel_evidence[top_indices]
-
-        return selected_locations, selected_rotations, selected_evidence
+        return selected_locations, selected_rotations, selected_feature_evidence
 
     def _sample_existing(
         self,
