@@ -185,7 +185,7 @@ class DefaultHypothesesUpdater:
                 Defaults to 0.
 
         Returns:
-            list[HypothesesUpdate]: The list of hypotheses updates to be applied to each
+            list[ChannelHypotheses]: The list of hypotheses updates to be applied to each
                 input channel.
         """
         # Get all usable input channels

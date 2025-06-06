@@ -775,7 +775,7 @@ class EvidenceGraphLM(GraphLM):
 
         Args:
             graph_id (str): The ID of the current graph to update.
-            new_hypotheses (HypothesesUpdate): The new hypotheses to set. These are the
+            new_hypotheses (ChannelHypotheses): The new hypotheses to set. These are the
                 sets of location, pose, and evidence after applying movements to the
                 possible locations and updating their evidence scores. These could also
                 refer to newly initialized hypotheses if a hypothesis space did not
