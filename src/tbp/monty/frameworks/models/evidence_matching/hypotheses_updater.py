@@ -474,7 +474,7 @@ class DefaultHypothesesUpdater:
             max_global_evidence (float): Maximum evidence value from all hypotheses.
 
         Returns:
-            ChannelHypotheses: Displayed hypotheses with computed evidence.
+            ChannelHypotheses: Displaced hypotheses with computed evidence.
         """
         # Threshold hypotheses that we update by evidence for them
         evidence_threshold = self._get_evidence_update_threshold(
