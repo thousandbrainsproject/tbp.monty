@@ -157,11 +157,11 @@ learning_module_0 = dict(
         max_match_distance=0.01,  # =1cm
         tolerances=tolerances,
         feature_weights=feature_weights,
-        # Update all hypotheses with evidence > x_percent_threshold (faster)
-        evidence_update_threshold="x_percent_threshold",
         # Most likely hypothesis needs to have 20% more evidence than the others to 
         # be considered certain enough to trigger a terminal condition (match).
         x_percent_threshold=20,
+        # Update all hypotheses with evidence > x_percent_threshold (faster)
+        evidence_update_threshold="x_percent_threshold",
         # Config for goal state generator of LM which is used for model-based action
         # suggestions, such as hypothesis-testing actions.
         gsg_class=EvidenceGoalStateGenerator,
