@@ -23,6 +23,7 @@ from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
 )
 from tbp.monty.frameworks.models.evidence_matching.hypothesis_updater import (
     DefaultHypothesesUpdater,
+    HypothesesUpdate,
     HypothesesUpdater,
 )
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
@@ -741,13 +742,7 @@ class EvidenceGraphLM(GraphLM):
             return
 
         for update in hypotheses_updates:
-            self._set_hypotheses_in_hpspace(
-                graph_id=graph_id,
-                input_channel=update.input_channel,
-                new_location_hypotheses=update.locations,
-                new_pose_hypotheses=update.poses,
-                new_evidence=update.evidence,
-            )
+            self._set_hypotheses_in_hpspace(graph_id=graph_id, new_hypotheses=update)
 
         end_time = time.time()
         assert not np.isnan(np.max(self.evidence[graph_id])), "evidence contains NaN."
@@ -760,10 +755,7 @@ class EvidenceGraphLM(GraphLM):
     def _set_hypotheses_in_hpspace(
         self,
         graph_id: str,
-        input_channel: str,
-        new_location_hypotheses: np.ndarray,
-        new_pose_hypotheses: np.ndarray,
-        new_evidence: np.ndarray,
+        new_hypotheses: HypothesesUpdate,
     ) -> None:
         """Updates the hypothesis space for a given input channel in a graph.
 
@@ -778,28 +770,25 @@ class EvidenceGraphLM(GraphLM):
 
         Args:
             graph_id (str): The ID of the current graph to update.
-            input_channel (str): Channel's name involved in updating the space
-            new_location_hypotheses (np.ndarray): New sensor locations hypotheses
-            new_pose_hypotheses (np.ndarray): New object poses hypotheses
-            new_evidence (np.ndarray): New evidence values for the input channel
-
-        Note:
-          The `new_` prefix in the function arguments denotes that these are the
-          sets of location, pose and evidence after applying movements to the possible
-          locations and updating their evidence scores. These could also refer to newly
-          initialized hypotheses if a hypothesis space did not exist.
+            new_hypotheses (HypothesesUpdate): The new hypotheses to set. These are the
+                sets of location, pose, and evidence after applying movements to the
+                possible locations and updating their evidence scores. These could also
+                refer to newly initialized hypotheses if a hypothesis space did not
+                exist.
         """
         # Extract channel mapper
         mapper = self.channel_hypothesis_mapping[graph_id]
 
+        new_evidence = new_hypotheses.evidence
+
         # Add a new channel to the mapping if the hypotheses space doesn't exist
-        if input_channel not in mapper.channels:
+        if new_hypotheses.input_channel not in mapper.channels:
             if len(mapper.channels) == 0:
-                self.possible_locations[graph_id] = np.array(new_location_hypotheses)
-                self.possible_poses[graph_id] = np.array(new_pose_hypotheses)
+                self.possible_locations[graph_id] = np.array(new_hypotheses.locations)
+                self.possible_poses[graph_id] = np.array(new_hypotheses.poses)
                 self.evidence[graph_id] = np.array(new_evidence)
 
-                mapper.add_channel(input_channel, len(new_evidence))
+                mapper.add_channel(new_hypotheses.input_channel, len(new_evidence))
                 return
 
             # Add current mean evidence to give the new hypotheses a fighting
@@ -816,21 +805,21 @@ class EvidenceGraphLM(GraphLM):
         # to the data in the arrays.
         self.possible_locations[graph_id] = mapper.update(
             self.possible_locations[graph_id],
-            input_channel,
-            np.array(new_location_hypotheses),
+            new_hypotheses.input_channel,
+            new_hypotheses.locations,
         )
         self.possible_poses[graph_id] = mapper.update(
             self.possible_poses[graph_id],
-            input_channel,
-            np.array(new_pose_hypotheses),
+            new_hypotheses.input_channel,
+            new_hypotheses.poses,
         )
         self.evidence[graph_id] = mapper.update(
             self.evidence[graph_id],
-            input_channel,
-            np.array(new_evidence),
+            new_hypotheses.input_channel,
+            new_evidence,
         )
 
-        mapper.resize_channel_to(input_channel, len(new_evidence))
+        mapper.resize_channel_to(new_hypotheses.input_channel, len(new_evidence))
 
     def _update_evidence_with_vote(self, state_votes, graph_id):
         """Use incoming votes to update all hypotheses."""
