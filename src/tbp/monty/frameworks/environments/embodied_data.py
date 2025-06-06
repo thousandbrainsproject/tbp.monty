@@ -155,13 +155,11 @@ class EnvironmentDataLoader:
         self._counter = 0
 
     def __iter__(self):
-        # Reset the environment before iterating
-        self._observation, proprioceptive_state = self.dataset.reset()
-        self.motor_system._state = (
-            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
-        )
-        self._action = None
-        self._counter = 0
+        """Implement the iterator protocol.
+
+        Returns:
+            EnvironmentDataLoader: The iterator.
+        """
         return self
 
     def __next__(self):
@@ -181,6 +179,14 @@ class EnvironmentDataLoader:
 
     def pre_episode(self):
         self.motor_system.pre_episode()
+
+        # Reset the dataset and the data loader state.
+        self._observation, proprioceptive_state = self.dataset.reset()
+        self.motor_system._state = (
+            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
+        )
+        self._action = None
+        self._counter = 0
 
     def post_episode(self):
         self.motor_system.post_episode()
@@ -266,7 +272,10 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
 
     def pre_episode(self):
         super().pre_episode()
-        self.reset_agent()
+
+        self.motor_system._state[self.motor_system._policy.agent_id][
+            "motor_only_step"
+        ] = False
 
     def post_episode(self):
         super().post_episode()
@@ -393,23 +402,6 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
                 primary_target_object=primary_target_obj,
             )
 
-    def reset_agent(self):
-        logging.debug("resetting agent------")
-        self._observation, proprioceptive_state = self.dataset.reset()
-        motor_system_state = MotorSystemState(proprioceptive_state)
-        self._counter = 0
-
-        # Make sure to also reset action variables when resetting agent during
-        # pre-episode
-        self._action = None
-        motor_system_state[self.motor_system._policy.agent_id]["motor_only_step"] = (
-            False
-        )
-
-        self.motor_system._state = motor_system_state
-
-        return self._observation
-
 
 class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
     """Dataloader that supports a policy which makes use of previous observation(s).
@@ -434,15 +426,6 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
     iv) Supports hypothesis-testing "jump" policy
     """
-
-    def __iter__(self):
-        # Overwrite original because we don't want to reset agent at this stage
-        # (already done in pre-episode)
-
-        # TODO look into refactoring the parent __iter__ method so that we don't need
-        # to use this fix
-
-        return self
 
     def __next__(self):
         if self._counter == 0:
@@ -1000,12 +983,6 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
             "position": np.array([0, 0, 0]),
             "scale": [1.0, 1.0, 1.0],
         }
-
-    def __iter__(self):
-        # Overwrite original because we don't want to reset agent at this stage
-        # (already done in pre-episode)
-
-        return self
 
 
 class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
