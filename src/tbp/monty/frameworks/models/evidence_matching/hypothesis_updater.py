@@ -51,7 +51,7 @@ class HypothesesUpdater(Protocol):
         locations: np.ndarray,
         mapper: ChannelMapper,
         poses: np.ndarray,
-        current_mlh: dict,
+        max_global_evidence: float,
     ) -> list[HypothesesUpdate]: ...
 
 
@@ -156,7 +156,7 @@ class DefaultHypothesesUpdater:
         locations: np.ndarray,
         mapper: ChannelMapper,
         poses: np.ndarray,
-        current_mlh: dict,
+        max_global_evidence: float = 0,
     ) -> list[HypothesesUpdate]:
         """Update hypotheses based on sensor displacement and sensed features.
 
@@ -175,7 +175,8 @@ class DefaultHypothesesUpdater:
             mapper (ChannelMapper): mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
             poses (np.ndarray): poses of all input channels for the graph_id
-            current_mlh (dict): Current most likely hypothesis
+            max_global_evidence (float): Maximum evidence value from all hypotheses.
+                Defaults to 0.
 
         Returns:
             list[HypothesesUpdate]: The list of hypotheses updates to be applied to each
@@ -235,7 +236,7 @@ class DefaultHypothesesUpdater:
                         graph_id,
                         input_channel,
                         evidence,
-                        current_mlh,
+                        max_global_evidence,
                     )
                 )
 
@@ -465,7 +466,7 @@ class DefaultHypothesesUpdater:
         graph_id: str,
         input_channel: str,
         evidence_all_channels: np.ndarray,
-        current_mlh: dict,
+        max_global_evidence: float,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Updates evidence by comparing features after applying sensed displacement.
 
@@ -486,14 +487,14 @@ class DefaultHypothesesUpdater:
             graph_id (str): The ID of the current graph
             input_channel (str): The channel involved in hypotheses updating.
             evidence_all_channels (np.ndarray): Current all channels evidence values
-            current_mlh (dict): Current most likely hypothesis
+            max_global_evidence (float): Maximum evidence value from all hypotheses.
 
         Returns:
             Tuple[np.ndarray, np.ndarray]: Updated sensor locations and evidence values.
         """
         # Threshold hypotheses that we update by evidence for them
         evidence_threshold = self._get_evidence_update_threshold(
-            current_mlh, evidence_all_channels
+            max_global_evidence, evidence_all_channels
         )
 
         # Have to do this for all hypotheses so we don't loose the path information
@@ -611,9 +612,13 @@ class DefaultHypothesesUpdater:
         return all_possible_locations[1:], all_possible_rotations[1:]
 
     def _get_evidence_update_threshold(
-        self, current_mlh: dict, evidence_all_channels: np.ndarray
+        self, max_global_evidence: float, evidence_all_channels: np.ndarray
     ):
         """Determine how much evidence a hypothesis should have to be updated.
+
+        Args:
+            max_global_evidence (float): Maximum evidence value from all hypotheses.
+            evidence_all_channels (np.ndarray): Evidence values for all hypotheses.
 
         Returns:
             The evidence update threshold.
@@ -636,11 +641,9 @@ class DefaultHypothesesUpdater:
             assert percentage >= 0 and percentage <= 100, (
                 "Percentage must be between 0 and 100"
             )
-            max_global_evidence = current_mlh["evidence"]
             x_percent_of_max = max_global_evidence * (percentage / 100)
             return max_global_evidence - x_percent_of_max
         elif self.evidence_update_threshold == "x_percent_threshold":
-            max_global_evidence = current_mlh["evidence"]
             x_percent_of_max = max_global_evidence / 100 * self.x_percent_threshold
             return max_global_evidence - x_percent_of_max
         elif self.evidence_update_threshold == "all":

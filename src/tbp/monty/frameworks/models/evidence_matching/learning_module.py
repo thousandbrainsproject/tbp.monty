@@ -735,7 +735,7 @@ class EvidenceGraphLM(GraphLM):
             locations=self.possible_locations[graph_id],
             mapper=self.channel_hypothesis_mapping[graph_id],
             poses=self.possible_poses[graph_id],
-            current_mlh=self.current_mlh,
+            max_global_evidence=self.current_mlh["evidence"],
         )
 
         if not hypotheses_updates:
