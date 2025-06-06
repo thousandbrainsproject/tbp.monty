@@ -16,7 +16,7 @@ from typing import Any
 import numpy as np
 from tqdm import tqdm
 
-from tbp.monty.frameworks.models.evidence_matching.hypothesis_updater import (
+from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
     DefaultHypothesesUpdater,
 )
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (

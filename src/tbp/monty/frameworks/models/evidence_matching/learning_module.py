@@ -21,10 +21,12 @@ from scipy.spatial.transform import Rotation
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
 )
-from tbp.monty.frameworks.models.evidence_matching.hypothesis_updater import (
+from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
     ChannelHypotheses,
-    DefaultHypothesesUpdater,
     Hypotheses,
+)
+from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
+    DefaultHypothesesUpdater,
     HypothesesUpdater,
 )
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator

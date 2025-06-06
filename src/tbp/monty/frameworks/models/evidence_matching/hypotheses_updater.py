@@ -10,14 +10,17 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
-from typing import Literal, Protocol, Tuple
+from typing import Literal, Protocol
 
 import numpy as np
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
+)
+from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
+    ChannelHypotheses,
+    Hypotheses,
 )
 from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
 from tbp.monty.frameworks.utils.graph_matching_utils import (
@@ -33,26 +36,6 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 )
 
 
-@dataclass
-class Hypotheses:
-    """Set of hypotheses consisting of evidence, locations, and poses.
-
-    The three arrays are expected to have the same shape. Each index corresponds to a
-    hypothesis.
-    """
-
-    evidence: np.ndarray
-    locations: np.ndarray
-    poses: np.ndarray
-
-
-@dataclass
-class ChannelHypotheses(Hypotheses):
-    """A set of hypotheses for a single input channel."""
-
-    input_channel: str
-
-
 class HypothesesUpdater(Protocol):
     def update_hypotheses(
         self,
@@ -66,7 +49,7 @@ class HypothesesUpdater(Protocol):
         """Update hypotheses based on sensor displacement and sensed features.
 
         Args:
-            hypotheses (Hypotheses): Hypotheses of all input channels for the graph_id
+            hypotheses (Hypotheses): Hypotheses for all input channels for the graph_id
             features (dict): Input features
             displacements (dict or None): Given displacements
             graph_id (str): Identifier of the graph being updated
@@ -192,11 +175,11 @@ class DefaultHypothesesUpdater:
         channel in the graph.
 
         Args:
-            hypotheses (Hypotheses): Hypotheses of all input channels for the graph_id
+            hypotheses (Hypotheses): Hypotheses for all input channels in the graph_id
             features (dict): Input features
             displacements (dict or None): Given displacements
             graph_id (str): Identifier of the graph being updated
-            mapper (ChannelMapper): Napper for the graph_id to extract data from
+            mapper (ChannelMapper): Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
             max_global_evidence (float): Maximum evidence value from all hypotheses.
                 Defaults to 0.
@@ -233,48 +216,30 @@ class DefaultHypothesesUpdater:
                 # TODO H: When initializing a hypothesis for a channel later on (if
                 # displacement is not None), include most likely existing hypothesis
                 # from other channels?
-                (
-                    channel_possible_locations,
-                    channel_possible_poses,
-                    channel_hypotheses_evidence,
-                ) = self._get_initial_hypothesis_space(
+                channel_possible_hypotheses = self._get_initial_hypothesis_space(
                     features, graph_id, input_channel
                 )
             # Retrieve existing hypothesis space for a specific input channel
             else:
-                channel_possible_locations = mapper.extract(
-                    hypotheses.locations, input_channel
-                )
-                channel_possible_poses = mapper.extract(hypotheses.poses, input_channel)
-                channel_hypotheses_evidence = mapper.extract(
-                    hypotheses.evidence, input_channel
+                channel_hypotheses = mapper.extract_hypotheses(
+                    hypotheses, input_channel
                 )
 
                 # We only displace existing hypotheses since the newly sampled
                 # hypotheses should not be affected by the displacement from the last
                 # sensory input.
-                channel_possible_locations, channel_hypotheses_evidence = (
+                channel_possible_hypotheses = (
                     self._displace_hypotheses_and_compute_evidence(
                         features,
-                        channel_possible_locations,
-                        channel_possible_poses,
-                        channel_hypotheses_evidence,
+                        channel_hypotheses,
                         displacements,
                         graph_id,
-                        input_channel,
                         hypotheses.evidence,
                         max_global_evidence,
                     )
                 )
 
-            hypotheses_updates.append(
-                ChannelHypotheses(
-                    input_channel=input_channel,
-                    evidence=channel_hypotheses_evidence,
-                    locations=channel_possible_locations,
-                    poses=channel_possible_poses,
-                )
-            )
+            hypotheses_updates.append(channel_possible_hypotheses)
 
         return hypotheses_updates
 
@@ -486,15 +451,12 @@ class DefaultHypothesesUpdater:
     def _displace_hypotheses_and_compute_evidence(
         self,
         features: dict,
-        channel_possible_locations: np.ndarray,
-        channel_possible_poses: np.ndarray,
-        channel_hypotheses_evidence: np.ndarray,
+        possible_hypotheses: ChannelHypotheses,
         displacement: dict,
         graph_id: str,
-        input_channel: str,
         evidence_all_channels: np.ndarray,
         max_global_evidence: float,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> ChannelHypotheses:
         """Updates evidence by comparing features after applying sensed displacement.
 
         This function applies the sensor displacement to the existing hypothesis and
@@ -503,21 +465,16 @@ class DefaultHypothesesUpdater:
         hypotheses locations are updated to the new locations (i.e., after displacement)
 
         Args:
-            features (dict): Input features
-            channel_possible_locations (np.ndarray): Hypothesized sensor locations for
-                each hypothesis
-            channel_possible_poses (np.ndarray): Hypothesized object rotations for each
-                hypothesis
-            channel_hypotheses_evidence (np.ndarray): Current evidence value for each
-                hypothesis
+            features (dict): Input features.
+            possible_hypotheses (ChannelHypotheses): Possible hypotheses for the input
+                channel.
             displacement (dict): Sensor displacements for input channels
             graph_id (str): The ID of the current graph
-            input_channel (str): The channel involved in hypotheses updating.
             evidence_all_channels (np.ndarray): Current all channels evidence values
             max_global_evidence (float): Maximum evidence value from all hypotheses.
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]: Updated sensor locations and evidence values.
+            ChannelHypotheses: Displayed hypotheses with computed evidence.
         """
         # Threshold hypotheses that we update by evidence for them
         evidence_threshold = self._get_evidence_update_threshold(
@@ -525,11 +482,15 @@ class DefaultHypothesesUpdater:
         )
 
         # Have to do this for all hypotheses so we don't loose the path information
-        rotated_displacements = channel_possible_poses.dot(displacement[input_channel])
-        search_locations = channel_possible_locations + rotated_displacements
+        rotated_displacements = possible_hypotheses.poses.dot(
+            displacement[possible_hypotheses.input_channel]
+        )
+        search_locations = possible_hypotheses.locations + rotated_displacements
 
         # Get indices of hypotheses with evidence > threshold
-        hyp_ids_to_test = np.where(channel_hypotheses_evidence >= evidence_threshold)[0]
+        hyp_ids_to_test = np.where(possible_hypotheses.evidence >= evidence_threshold)[
+            0
+        ]
         num_hypotheses_to_test = hyp_ids_to_test.shape[0]
         if num_hypotheses_to_test > 0:
             logging.info(
@@ -543,9 +504,9 @@ class DefaultHypothesesUpdater:
             # _evidence_update_threshold
             new_evidence = self._calculate_evidence_for_new_locations(
                 graph_id,
-                input_channel,
+                possible_hypotheses.input_channel,
                 search_locations[hyp_ids_to_test],
-                channel_possible_poses[hyp_ids_to_test],
+                possible_hypotheses.poses[hyp_ids_to_test],
                 features,
             )
             min_update = np.clip(np.min(new_evidence), 0, np.inf)
@@ -554,17 +515,22 @@ class DefaultHypothesesUpdater:
             # here in case we want to revert back to those.
             # avg_update = np.mean(new_evidence)
             # evidence_to_add = np.zeros_like(channel_hypotheses_evidence)
-            evidence_to_add = np.ones_like(channel_hypotheses_evidence) * min_update
+            evidence_to_add = np.ones_like(possible_hypotheses.evidence) * min_update
             evidence_to_add[hyp_ids_to_test] = new_evidence
 
             # If past and present weight add up to 1, equivalent to
             # np.average and evidence will be bound to [-1, 2]. Otherwise it
             # keeps growing.
-            channel_hypotheses_evidence = (
-                channel_hypotheses_evidence * self.past_weight
+            updated_evidence = (
+                possible_hypotheses.evidence * self.past_weight
                 + evidence_to_add * self.present_weight
             )
-        return search_locations, channel_hypotheses_evidence
+        return ChannelHypotheses(
+            input_channel=possible_hypotheses.input_channel,
+            evidence=updated_evidence,
+            locations=search_locations,
+            poses=possible_hypotheses.poses,
+        )
 
     def _get_all_informed_possible_poses(
         self, graph_id, sensed_features, input_channel
@@ -683,7 +649,7 @@ class DefaultHypothesesUpdater:
 
     def _get_initial_hypothesis_space(
         self, features, graph_id, input_channel
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> ChannelHypotheses:
         if self.initial_possible_poses is None:
             # Get initial poses for all locations informed by pose features
             (
@@ -727,10 +693,11 @@ class DefaultHypothesesUpdater:
             evidence = np.array(nwmf_stacked) * self.feature_evidence_increment
         else:
             evidence = np.zeros(initial_possible_channel_rotations.shape[0])
-        return (
-            initial_possible_channel_locations,
-            initial_possible_channel_rotations,
-            evidence,
+        return ChannelHypotheses(
+            input_channel=input_channel,
+            evidence=evidence,
+            locations=initial_possible_channel_locations,
+            poses=initial_possible_channel_rotations,
         )
 
     def _get_node_distance_weights(self, distances):
