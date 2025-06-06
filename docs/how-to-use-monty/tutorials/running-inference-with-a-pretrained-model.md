@@ -171,7 +171,7 @@ learning_module_0 = dict(
             # Number of necessary steps for a hypothesis-testing action to be considered
             min_post_goal_success_steps=5,
         ),
-        evidence_updater_args=dict(
+        hypotheses_updater_args=dict(
             # Update all hypotheses with evidence > x_percent_threshold (faster)
             evidence_update_threshold="x_percent_threshold",
             # Look at features associated with (at most) the 10 closest learned points.

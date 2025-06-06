@@ -34,15 +34,15 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 
 
 @dataclass
-class EvidenceUpdate:
+class HypothesesUpdate:
     evidence: np.ndarray
     input_channel: str
     locations: np.ndarray
     poses: np.ndarray
 
 
-class EvidenceUpdater(Protocol):
-    def update_evidence(
+class HypothesesUpdater(Protocol):
+    def update_hypotheses(
         self,
         evidence: np.ndarray,
         features: dict,
@@ -52,7 +52,7 @@ class EvidenceUpdater(Protocol):
         mapper: ChannelMapper,
         poses: np.ndarray,
         current_mlh: dict,
-    ) -> list[EvidenceUpdate]: ...
+    ) -> list[HypothesesUpdate]: ...
 
 
 class InvalidEvidenceUpdateThreshold(ValueError):
@@ -61,7 +61,7 @@ class InvalidEvidenceUpdateThreshold(ValueError):
     pass
 
 
-class DefaultEvidenceUpdater:
+class DefaultHypothesesUpdater:
     def __init__(
         self,
         feature_weights: dict,
@@ -77,7 +77,7 @@ class DefaultEvidenceUpdater:
         present_weight: float = 1,
         x_percent_threshold: float = 10,
     ):
-        """Initializes the DefaultEvidenceUpdater.
+        """Initializes the DefaultHypothesesUpdater.
 
         Args:
             feature_weights (dict): How much should each feature be weighted when
@@ -147,7 +147,7 @@ class DefaultEvidenceUpdater:
 
         self.use_features_for_matching = self._check_use_features_for_matching()
 
-    def update_evidence(
+    def update_hypotheses(
         self,
         evidence: np.ndarray,
         features: dict,
@@ -157,8 +157,8 @@ class DefaultEvidenceUpdater:
         mapper: ChannelMapper,
         poses: np.ndarray,
         current_mlh: dict,
-    ) -> list[EvidenceUpdate]:
-        """Update evidence based on sensor displacement and sensed features.
+    ) -> list[HypothesesUpdate]:
+        """Update hypotheses based on sensor displacement and sensed features.
 
         Updates existing hypothesis space or initializes a new hypothesis space
         if one does not exist (i.e., at the beginning of the episode). Updating the
@@ -178,7 +178,7 @@ class DefaultEvidenceUpdater:
             current_mlh (dict): Current most likely hypothesis
 
         Returns:
-            list[EvidenceUpdate]: The list of evidence updates to be applied to each
+            list[HypothesesUpdate]: The list of hypotheses updates to be applied to each
                 input channel.
         """
         # Get all usable input channels
@@ -198,7 +198,7 @@ class DefaultEvidenceUpdater:
             )
             return []
 
-        evidence_updates = []
+        hypotheses_updates = []
 
         for input_channel in input_channels_to_use:
             # Determine if the hypothesis space exists
@@ -239,8 +239,8 @@ class DefaultEvidenceUpdater:
                     )
                 )
 
-            evidence_updates.append(
-                EvidenceUpdate(
+            hypotheses_updates.append(
+                HypothesesUpdate(
                     evidence=channel_hypotheses_evidence,
                     input_channel=input_channel,
                     locations=channel_possible_locations,
@@ -248,7 +248,7 @@ class DefaultEvidenceUpdater:
                 )
             )
 
-        return evidence_updates
+        return hypotheses_updates
 
     def _calculate_evidence_for_new_locations(
         self,

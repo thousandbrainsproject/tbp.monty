@@ -97,7 +97,7 @@ learning_module_0 = dict(
         # parameter value partially addresses this, altough we note these are temporary
         # fixes and we intend to implement a more principled approach in the future.
         required_symmetry_evidence=20,
-        evidence_updater_args=dict(
+        hypotheses_updater_args=dict(
             max_nneighbors=5
         )
     ),

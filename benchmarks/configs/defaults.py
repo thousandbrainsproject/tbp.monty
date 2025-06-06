@@ -97,7 +97,7 @@ default_evidence_lm_config = dict(
             desired_object_distance=0.03,  # Distance from the object to the
             # agent that is considered "close enough" to the object
         ),
-        evidence_updater_args=dict(
+        hypotheses_updater_args=dict(
             # Using a smaller max_nneighbors (5 instead of 10) makes runtime faster,
             # but reduces performance a bit
             max_nneighbors=10,

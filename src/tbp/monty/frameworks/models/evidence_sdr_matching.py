@@ -16,8 +16,8 @@ from typing import Any
 import numpy as np
 from tqdm import tqdm
 
-from tbp.monty.frameworks.models.evidence_matching.evidence_updater import (
-    DefaultEvidenceUpdater,
+from tbp.monty.frameworks.models.evidence_matching.hypothesis_updater import (
+    DefaultHypothesesUpdater,
 )
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
@@ -548,8 +548,8 @@ class EvidenceSDRLMMixin:
         self.sdr_args = kwargs.pop("sdr_args")
         # Provide our own working default evidence updater.
         # TODO: Should not be needed once this mixin becomes an object component.
-        if not hasattr(kwargs, "evidence_updater_class"):
-            kwargs["evidence_updater_class"] = SDREvidenceUpdater
+        if not hasattr(kwargs, "hypotheses_updater_class"):
+            kwargs["hypotheses_updater_class"] = SDRHypothesesUpdater
         super().__init__(*args, **kwargs)
 
         # keeps track of the Graph objects and their ids
@@ -667,8 +667,8 @@ class EvidenceSDRGraphLM(EvidenceSDRLMMixin, EvidenceGraphLM):
     pass
 
 
-class SDREvidenceUpdaterMixin:
-    """DefaultEvidenceUpdater mixin for evidence updates using SDRs."""
+class SDRHypothesesUpdaterMixin:
+    """DefaultHypothesesUpdater mixin for hypotheses updates using SDRs."""
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         """Ensure the mixin is used only with compatible evidence updaters.
@@ -677,10 +677,10 @@ class SDREvidenceUpdaterMixin:
             TypeError: If the mixin is used with a non-compatible evidence updater.
         """
         super().__init_subclass__(**kwargs)
-        if not any(issubclass(b, (DefaultEvidenceUpdater)) for b in cls.__bases__):
+        if not any(issubclass(b, (DefaultHypothesesUpdater)) for b in cls.__bases__):
             raise TypeError(
-                "SDREvidenceUpdaterMixin must be mixed in with a subclass of "
-                f"DefaultEvidenceUpdater, got {cls.__bases__}"
+                "SDRHypothesesUpdaterMixin must be mixed in with a subclass of "
+                f"DefaultHypothesesUpdater, got {cls.__bases__}"
             )
 
     def _calculate_feature_evidence_for_all_nodes(
@@ -770,7 +770,7 @@ class SDREvidenceUpdaterMixin:
         return use_features
 
 
-class SDREvidenceUpdater(SDREvidenceUpdaterMixin, DefaultEvidenceUpdater):
+class SDRHypothesesUpdater(SDRHypothesesUpdaterMixin, DefaultHypothesesUpdater):
     """Evidence updater that uses SDRs for matching."""
 
     pass

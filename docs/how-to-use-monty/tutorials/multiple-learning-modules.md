@@ -236,7 +236,7 @@ evidence_lm_config = dict(
             ),  # Tolerance(s) when determining goal-state success
             min_post_goal_success_steps=5,  # Number of necessary steps for a hypothesis
         ),
-        evidence_updater_args=dict(
+        hypotheses_updater_args=dict(
             # Use this to update all hypotheses > x_percent_threshold (faster)
             evidence_update_threshold="x_percent_threshold",
             max_nneighbors=10,

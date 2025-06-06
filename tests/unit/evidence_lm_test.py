@@ -268,7 +268,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                                     "hsv": np.array([1, 0, 0]),
                                 }
                             },
-                            evidence_updater_args=dict(
+                            hypotheses_updater_args=dict(
                                 initial_possible_poses="uniform",
                             ),
                         ),
@@ -313,7 +313,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                                     "hsv": np.array([1, 0, 0]),
                                 }
                             },
-                            evidence_updater_args=dict(
+                            hypotheses_updater_args=dict(
                                 initial_possible_poses=[
                                     [0, 0, 0],
                                     [45, 0, 0],
@@ -466,23 +466,23 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         )
 
         lm1_maxnn0_config = copy.deepcopy(lm0_config)
-        lm1_maxnn0_config["learning_module_args"]["evidence_updater_args"] = dict(
+        lm1_maxnn0_config["learning_module_args"]["hypotheses_updater_args"] = dict(
             max_nneighbors=1,
         )
         lm1_maxnn1_config = copy.deepcopy(lm1_config)
-        lm1_maxnn1_config["learning_module_args"]["evidence_updater_args"] = dict(
+        lm1_maxnn1_config["learning_module_args"]["hypotheses_updater_args"] = dict(
             max_nneighbors=1,
         )
         lm1_maxnn2_config = copy.deepcopy(lm2_config)
-        lm1_maxnn2_config["learning_module_args"]["evidence_updater_args"] = dict(
+        lm1_maxnn2_config["learning_module_args"]["hypotheses_updater_args"] = dict(
             max_nneighbors=1,
         )
         lm1_maxnn3_config = copy.deepcopy(lm3_config)
-        lm1_maxnn3_config["learning_module_args"]["evidence_updater_args"] = dict(
+        lm1_maxnn3_config["learning_module_args"]["hypotheses_updater_args"] = dict(
             max_nneighbors=1,
         )
         lm1_maxnn4_config = copy.deepcopy(lm4_config)
-        lm1_maxnn4_config["learning_module_args"]["evidence_updater_args"] = dict(
+        lm1_maxnn4_config["learning_module_args"]["hypotheses_updater_args"] = dict(
             max_nneighbors=1,
         )
 
@@ -745,7 +745,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             max_graph_size=10,
             gsg_class=gsg_class,
             gsg_args=gsg_args,
-            evidence_updater_args=dict(
+            hypotheses_updater_args=dict(
                 initial_possible_poses=initial_possible_poses,
             ),
         )

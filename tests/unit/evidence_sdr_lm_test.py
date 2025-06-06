@@ -476,7 +476,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTestCases.BaseGraphTest):
                 x_percent_scale_factor=0.75,
                 desired_object_distance=0.03,
             ),
-            evidence_updater_args=dict(
+            hypotheses_updater_args=dict(
                 initial_possible_poses=[[0, 0, 0]],
             ),
             sdr_args=dict(

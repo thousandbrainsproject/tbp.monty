@@ -156,11 +156,11 @@ default_surf_evidence_lm_config["learning_module_args"]["gsg_args"][
 # higher max_nneighbors is necessary so we use the default config above for
 # those.
 lower_max_nneighbors_lm_config = copy.deepcopy(default_evidence_lm_config)
-lower_max_nneighbors_lm_config["learning_module_args"]["evidence_updater_args"][
+lower_max_nneighbors_lm_config["learning_module_args"]["hypotheses_updater_args"][
     "max_nneighbors"
 ] = 5
 lower_max_nneighbors_surf_lm_config = copy.deepcopy(default_surf_evidence_lm_config)
-lower_max_nneighbors_surf_lm_config["learning_module_args"]["evidence_updater_args"][
+lower_max_nneighbors_surf_lm_config["learning_module_args"]["hypotheses_updater_args"][
     "max_nneighbors"
 ] = 5
 
@@ -489,7 +489,7 @@ default_lfs_lm = dict(
             # reaches the default required evidence. Again, these are temporary fixes
             # and we will probably want some more stable long term solutions.
             required_symmetry_evidence=20,
-            evidence_updater_args=dict(
+            hypotheses_updater_args=dict(
                 max_nneighbors=5,
             ),
         ),

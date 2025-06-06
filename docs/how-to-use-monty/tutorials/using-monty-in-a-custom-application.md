@@ -172,7 +172,7 @@ omniglot_inference = dict(
                             "pose_vectors": [0, 1, 0],
                         }
                     },
-                    evidence_updater_args=dict(
+                    hypotheses_updater_args=dict(
                         # We assume the letter is presented upright
                         initial_possible_poses=[[0, 0, 0]],
                     )
