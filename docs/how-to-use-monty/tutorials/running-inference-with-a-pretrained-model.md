@@ -157,6 +157,8 @@ learning_module_0 = dict(
         max_match_distance=0.01,  # =1cm
         tolerances=tolerances,
         feature_weights=feature_weights,
+        # Update all hypotheses with evidence > x_percent_threshold (faster)
+        evidence_update_threshold="x_percent_threshold",
         # Most likely hypothesis needs to have 20% more evidence than the others to 
         # be considered certain enough to trigger a terminal condition (match).
         x_percent_threshold=20,
@@ -172,8 +174,6 @@ learning_module_0 = dict(
             min_post_goal_success_steps=5,
         ),
         hypotheses_updater_args=dict(
-            # Update all hypotheses with evidence > x_percent_threshold (faster)
-            evidence_update_threshold="x_percent_threshold",
             # Look at features associated with (at most) the 10 closest learned points.
             max_nneighbors=10,
         )

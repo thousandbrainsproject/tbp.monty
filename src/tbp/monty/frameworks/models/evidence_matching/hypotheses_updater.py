@@ -65,12 +65,6 @@ class HypothesesUpdater(Protocol):
         ...
 
 
-class InvalidEvidenceUpdateThreshold(ValueError):
-    """Raised when the evidence update threshold is invalid."""
-
-    pass
-
-
 class DefaultHypothesesUpdater:
     def __init__(
         self,
@@ -78,14 +72,12 @@ class DefaultHypothesesUpdater:
         graph_memory: EvidenceGraphMemory,
         max_match_distance: float,
         tolerances: dict,
-        evidence_update_threshold: float | str = "all",
         feature_evidence_increment: int = 1,
         initial_possible_poses: Literal["uniform", "informed"]
         | list[Rotation] = "informed",
         max_nneighbors: int = 3,
         past_weight: float = 1,
         present_weight: float = 1,
-        x_percent_threshold: float = 10,
     ):
         """Initializes the DefaultHypothesesUpdater.
 
@@ -99,15 +91,6 @@ class DefaultHypothesesUpdater:
                 to be matched.
             tolerances (dict): How much can each observed feature deviate from the
                 stored features to still be considered a match.
-            evidence_update_threshold (float | str): How to decide which hypotheses
-                should be updated. When this parameter is either '[int]%' or
-                'x_percent_threshold', then this parameter is applied to the evidence
-                for the Most Likely Hypothesis (MLH) to determine a minimum evidence
-                threshold in order for other hypotheses to be updated. Any hypotheses
-                falling below the resulting evidence threshold do not get updated. The
-                other options set a fixed threshold that does not take MLH evidence into
-                account. In [int, float, '[int]%', 'mean', 'median', 'all',
-                'x_percent_threshold']. Defaults to 'all'.
             feature_evidence_increment (int): Feature evidence (between 0 and 1) is
                 multiplied by this value before being added to the overall evidence of
                 a hypothesis. This factor is only multiplied with the feature evidence
@@ -128,22 +111,7 @@ class DefaultHypothesesUpdater:
                 efficient policy and better parameters that may be possible to use
                 though and could help when moving from one object to another and to
                 generally make setting thresholds etc. more intuitive.
-            x_percent_threshold (float): Used in two places:
-                1) All objects whose highest evidence is greater than the most likely
-                    objects evidence - x_percent of the most like objects evidence are
-                    considered possible matches. That means to only have one possible
-                    match, no other object can have more evidence than the candidate
-                    match's evidence - x percent of it.
-                2) Within one object, possible poses are considered possible if their
-                    evidence is larger than the most likely pose of this object - x
-                    percent of this poses evidence.
-                TODO: should we use a separate threshold for within and between objects?
-                If this value is larger, the model is usually more robust to noise and
-                reaches a better performance but also requires a lot more steps to reach
-                a terminal condition, especially if there are many similar object in the
-                data set. Defaults to 10.
         """
-        self.evidence_update_threshold = evidence_update_threshold
         self.feature_evidence_increment = feature_evidence_increment
         self.feature_weights = feature_weights
         self.graph_memory = graph_memory
@@ -153,7 +121,6 @@ class DefaultHypothesesUpdater:
         self.past_weight = past_weight
         self.present_weight = present_weight
         self.tolerances = tolerances
-        self.x_percent_threshold = x_percent_threshold
 
         self.use_features_for_matching = self._check_use_features_for_matching()
 
@@ -164,7 +131,7 @@ class DefaultHypothesesUpdater:
         displacements: dict | None,
         graph_id: str,
         mapper: ChannelMapper,
-        max_global_evidence: float = 0,
+        evidence_update_threshold: float,
     ) -> list[ChannelHypotheses]:
         """Update hypotheses based on sensor displacement and sensed features.
 
@@ -181,8 +148,7 @@ class DefaultHypothesesUpdater:
             graph_id (str): Identifier of the graph being updated
             mapper (ChannelMapper): Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
-            max_global_evidence (float): Maximum evidence value from all hypotheses.
-                Defaults to 0.
+            evidence_update_threshold (float): Evidence update threshold.
 
         Returns:
             list[ChannelHypotheses]: The list of hypotheses updates to be applied to
@@ -217,7 +183,9 @@ class DefaultHypothesesUpdater:
                 # displacement is not None), include most likely existing hypothesis
                 # from other channels?
                 channel_possible_hypotheses = self._get_initial_hypothesis_space(
-                    features, graph_id, input_channel
+                    channel_features=features[input_channel],
+                    graph_id=graph_id,
+                    input_channel=input_channel,
                 )
             # Retrieve existing hypothesis space for a specific input channel
             else:
@@ -230,12 +198,12 @@ class DefaultHypothesesUpdater:
                 # sensory input.
                 channel_possible_hypotheses = (
                     self._displace_hypotheses_and_compute_evidence(
-                        features,
-                        channel_hypotheses,
-                        displacements,
-                        graph_id,
-                        hypotheses.evidence,
-                        max_global_evidence,
+                        channel_features=features[input_channel],
+                        possible_hypotheses=channel_hypotheses,
+                        channel_displacement=displacements[input_channel],
+                        graph_id=graph_id,
+                        total_hypotheses_count=hypotheses.evidence.shape[0],
+                        evidence_update_threshold=evidence_update_threshold,
                     )
                 )
 
@@ -249,7 +217,7 @@ class DefaultHypothesesUpdater:
         input_channel: str,
         search_locations: np.ndarray,
         channel_possible_poses: np.ndarray,
-        features: dict,
+        channel_features: dict,
     ):
         """Use search locations, sensed features and graph model to calculate evidence.
 
@@ -271,7 +239,7 @@ class DefaultHypothesesUpdater:
         )
 
         pose_transformed_features = rotate_pose_dependent_features(
-            features[input_channel],
+            channel_features,
             channel_possible_poses,
         )
         # Get max_nneighbors nearest nodes to search locations.
@@ -287,7 +255,7 @@ class DefaultHypothesesUpdater:
         nearest_node_locs = self.graph_memory.get_locations_in_graph(
             graph_id, input_channel
         )[nearest_node_ids]
-        max_abs_curvature = get_relevant_curvature(features[input_channel])
+        max_abs_curvature = get_relevant_curvature(channel_features)
         custom_nearest_node_dists = get_custom_distances(
             nearest_node_locs,
             search_locations,
@@ -329,7 +297,7 @@ class DefaultHypothesesUpdater:
         if self.use_features_for_matching[input_channel]:
             # add evidence if features match
             node_feature_evidence = self._calculate_feature_evidence_for_all_nodes(
-                features, input_channel, graph_id
+                channel_features, input_channel, graph_id
             )
             hypothesis_radius_feature_evidence = node_feature_evidence[nearest_node_ids]
             # Set feature evidence of nearest neighbors that are too far away to 0
@@ -357,7 +325,7 @@ class DefaultHypothesesUpdater:
         return location_evidence
 
     def _calculate_feature_evidence_for_all_nodes(
-        self, query_features, input_channel, graph_id
+        self, channel_query_features: dict, input_channel, graph_id
     ):
         """Calculate the feature evidence for all nodes stored in a graph.
 
@@ -387,19 +355,18 @@ class DefaultHypothesesUpdater:
         feature_list = np.zeros(shape_to_use) * np.nan
         circular_var = np.zeros(shape_to_use, dtype=bool)
         start_idx = 0
-        query_features = query_features[input_channel]
         for feature in feature_order:
             if feature in [
                 "pose_vectors",
                 "pose_fully_defined",
             ]:
                 continue
-            if hasattr(query_features[feature], "__len__"):
-                feature_length = len(query_features[feature])
+            if hasattr(channel_query_features[feature], "__len__"):
+                feature_length = len(channel_query_features[feature])
             else:
                 feature_length = 1
             end_idx = start_idx + feature_length
-            feature_list[start_idx:end_idx] = query_features[feature]
+            feature_list[start_idx:end_idx] = channel_query_features[feature]
             tolerance_list[start_idx:end_idx] = self.tolerances[input_channel][feature]
             feature_weight_list[start_idx:end_idx] = self.feature_weights[
                 input_channel
@@ -450,12 +417,12 @@ class DefaultHypothesesUpdater:
 
     def _displace_hypotheses_and_compute_evidence(
         self,
-        features: dict,
-        possible_hypotheses: ChannelHypotheses,
-        displacement: dict,
+        channel_features: dict,
+        channel_displacement: np.ndarray,
+        evidence_update_threshold: float,
         graph_id: str,
-        evidence_all_channels: np.ndarray,
-        max_global_evidence: float,
+        possible_hypotheses: ChannelHypotheses,
+        total_hypotheses_count: int,
     ) -> ChannelHypotheses:
         """Updates evidence by comparing features after applying sensed displacement.
 
@@ -465,49 +432,41 @@ class DefaultHypothesesUpdater:
         hypotheses locations are updated to the new locations (i.e., after displacement)
 
         Args:
-            features (dict): Input features.
-            possible_hypotheses (ChannelHypotheses): Possible hypotheses for the input
-                channel.
-            displacement (dict): Sensor displacements for input channels
+            channel_features (dict): Channel-specific input features.
+            channel_displacement (np.ndarray): Channel-specific sensor displacement.
+            evidence_update_threshold (float): Evidence update threshold.
             graph_id (str): The ID of the current graph
-            evidence_all_channels (np.ndarray): Current all channels evidence values
-            max_global_evidence (float): Maximum evidence value from all hypotheses.
+            possible_hypotheses (ChannelHypotheses): Channel-specific possible
+                hypotheses.
+            total_hypotheses_count (int): Total number of hypotheses in the graph.
 
         Returns:
             ChannelHypotheses: Displaced hypotheses with computed evidence.
         """
-        # Threshold hypotheses that we update by evidence for them
-        evidence_threshold = self._get_evidence_update_threshold(
-            max_global_evidence, evidence_all_channels
-        )
-
         # Have to do this for all hypotheses so we don't loose the path information
-        rotated_displacements = possible_hypotheses.poses.dot(
-            displacement[possible_hypotheses.input_channel]
-        )
+        rotated_displacements = possible_hypotheses.poses.dot(channel_displacement)
         search_locations = possible_hypotheses.locations + rotated_displacements
 
         # Get indices of hypotheses with evidence > threshold
-        hyp_ids_to_test = np.where(possible_hypotheses.evidence >= evidence_threshold)[
-            0
-        ]
+        hyp_ids_to_test = np.where(
+            possible_hypotheses.evidence >= evidence_update_threshold
+        )[0]
         num_hypotheses_to_test = hyp_ids_to_test.shape[0]
         if num_hypotheses_to_test > 0:
             logging.info(
                 f"Testing {num_hypotheses_to_test} out of "
-                f"{evidence_all_channels.shape[0]} hypotheses for "
-                f"{graph_id} "
-                f"(evidence > {evidence_threshold})"
+                f"{total_hypotheses_count} hypotheses for {graph_id} "
+                f"(evidence > {evidence_update_threshold})"
             )
 
             # Get evidence update for all hypotheses with evidence > current
             # _evidence_update_threshold
             new_evidence = self._calculate_evidence_for_new_locations(
-                graph_id,
-                possible_hypotheses.input_channel,
-                search_locations[hyp_ids_to_test],
-                possible_hypotheses.poses[hyp_ids_to_test],
-                features,
+                graph_id=graph_id,
+                input_channel=possible_hypotheses.input_channel,
+                search_locations=search_locations[hyp_ids_to_test],
+                channel_possible_poses=possible_hypotheses.poses[hyp_ids_to_test],
+                channel_features=channel_features,
             )
             min_update = np.clip(np.min(new_evidence), 0, np.inf)
 
@@ -533,7 +492,7 @@ class DefaultHypothesesUpdater:
         )
 
     def _get_all_informed_possible_poses(
-        self, graph_id, sensed_features, input_channel
+        self, graph_id: str, sensed_channel_features: dict, input_channel: str
     ):
         """Initialize hypotheses on possible rotations for each location.
 
@@ -561,11 +520,11 @@ class DefaultHypothesesUpdater:
         node_directions = self.graph_memory.get_rotation_features_at_all_nodes(
             graph_id, input_channel
         )
-        sensed_directions = sensed_features[input_channel]["pose_vectors"]
+        sensed_directions = sensed_channel_features["pose_vectors"]
         # Check if PCs in patch are similar -> need to sample more directions
         if (
-            "pose_fully_defined" in sensed_features[input_channel].keys()
-            and not sensed_features[input_channel]["pose_fully_defined"]
+            "pose_fully_defined" in sensed_channel_features.keys()
+            and not sensed_channel_features["pose_fully_defined"]
         ):
             sample_more_directions = True
         else:
@@ -604,58 +563,17 @@ class DefaultHypothesesUpdater:
 
         return all_possible_locations[1:], all_possible_rotations[1:]
 
-    def _get_evidence_update_threshold(
-        self, max_global_evidence: float, evidence_all_channels: np.ndarray
-    ):
-        """Determine how much evidence a hypothesis should have to be updated.
-
-        Args:
-            max_global_evidence (float): Maximum evidence value from all hypotheses.
-            evidence_all_channels (np.ndarray): Evidence values for all hypotheses.
-
-        Returns:
-            The evidence update threshold.
-
-        Raises:
-            InvalidEvidenceUpdateThreshold: If `self.evidence_update_threshold` is
-                not in the allowed values
-        """
-        if type(self.evidence_update_threshold) in [int, float]:
-            return self.evidence_update_threshold
-        elif self.evidence_update_threshold == "mean":
-            return np.mean(evidence_all_channels)
-        elif self.evidence_update_threshold == "median":
-            return np.median(evidence_all_channels)
-        elif isinstance(
-            self.evidence_update_threshold, str
-        ) and self.evidence_update_threshold.endswith("%"):
-            percentage_str = self.evidence_update_threshold.strip("%")
-            percentage = float(percentage_str)
-            assert percentage >= 0 and percentage <= 100, (
-                "Percentage must be between 0 and 100"
-            )
-            x_percent_of_max = max_global_evidence * (percentage / 100)
-            return max_global_evidence - x_percent_of_max
-        elif self.evidence_update_threshold == "x_percent_threshold":
-            x_percent_of_max = max_global_evidence / 100 * self.x_percent_threshold
-            return max_global_evidence - x_percent_of_max
-        elif self.evidence_update_threshold == "all":
-            return np.min(evidence_all_channels)
-        else:
-            raise InvalidEvidenceUpdateThreshold(
-                "evidence_update_threshold not in "
-                "[int, float, '[int]%', 'mean', 'median', 'all', 'x_percent_threshold']"
-            )
-
     def _get_initial_hypothesis_space(
-        self, features, graph_id, input_channel
+        self, channel_features: dict, graph_id: str, input_channel: str
     ) -> ChannelHypotheses:
         if self.initial_possible_poses is None:
             # Get initial poses for all locations informed by pose features
             (
                 initial_possible_channel_locations,
                 initial_possible_channel_rotations,
-            ) = self._get_all_informed_possible_poses(graph_id, features, input_channel)
+            ) = self._get_all_informed_possible_poses(
+                graph_id, channel_features, input_channel
+            )
         else:
             initial_possible_channel_locations = []
             initial_possible_channel_rotations = []
@@ -681,7 +599,7 @@ class DefaultHypothesesUpdater:
         if self.use_features_for_matching[input_channel]:
             # Get real valued features match for each node
             node_feature_evidence = self._calculate_feature_evidence_for_all_nodes(
-                features, input_channel, graph_id
+                channel_features, input_channel, graph_id
             )
             # stack node_feature_evidence to match possible poses
             nwmf_stacked = []

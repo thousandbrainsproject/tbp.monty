@@ -228,6 +228,8 @@ evidence_lm_config = dict(
                 "hsv": np.array([1, 0.5, 0.5]),
             }
         },
+        # Use this to update all hypotheses > x_percent_threshold (faster)
+        evidence_update_threshold="x_percent_threshold",
         x_percent_threshold=20,
         gsg_class=EvidenceGoalStateGenerator,
         gsg_args=dict(
@@ -237,8 +239,6 @@ evidence_lm_config = dict(
             min_post_goal_success_steps=5,  # Number of necessary steps for a hypothesis
         ),
         hypotheses_updater_args=dict(
-            # Use this to update all hypotheses > x_percent_threshold (faster)
-            evidence_update_threshold="x_percent_threshold",
             max_nneighbors=10,
         )
     ),

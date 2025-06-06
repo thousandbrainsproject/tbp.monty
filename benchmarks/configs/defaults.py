@@ -75,6 +75,11 @@ default_evidence_lm_config = dict(
         max_match_distance=0.01,  # =1cm
         tolerances=default_tolerances,
         feature_weights=default_feature_weights,
+        # Use this to update all hypotheses at every step as previously
+        # evidence_update_threshold="all",
+        # Use this to update all hypotheses with evidence > 80% of max evidence
+        # (faster)
+        evidence_update_threshold="80%",
         # smaller threshold reduces runtime but also performance
         x_percent_threshold=20,
         # use_multithreading=False,
@@ -100,12 +105,7 @@ default_evidence_lm_config = dict(
         hypotheses_updater_args=dict(
             # Using a smaller max_nneighbors (5 instead of 10) makes runtime faster,
             # but reduces performance a bit
-            max_nneighbors=10,
-            # Use this to update all hypotheses at every step as previously
-            # evidence_update_threshold="all",
-            # Use this to update all hypotheses with evidence > 80% of max evidence
-            # (faster)
-            evidence_update_threshold="80%",
+            max_nneighbors=10
         ),
     ),
 )
