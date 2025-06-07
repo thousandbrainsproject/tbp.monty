@@ -136,8 +136,14 @@ class ResamplingHypothesesUpdater:
         self.feature_weights = feature_weights
         self.features_for_matching_selector = features_for_matching_selector
         self.graph_memory = graph_memory
-        self.hypotheses_count_multiplier = hypotheses_count_multiplier
-        self.hypotheses_existing_to_new_ratio = hypotheses_existing_to_new_ratio
+        # Controls the shrinking or growth of hypothesis space size
+        # Cannot be less than 0
+        self.hypotheses_count_multiplier = max(0, hypotheses_count_multiplier)
+        # Controls the ratio of existing to newly sampled hypotheses
+        # Bounded between 0 and 1
+        self.hypotheses_existing_to_new_ratio = max(
+            0, min(hypotheses_existing_to_new_ratio, 1)
+        )
         self.initial_possible_poses = get_initial_possible_poses(initial_possible_poses)
         self.tolerances = tolerances
         self.umbilical_num_poses = umbilical_num_poses
@@ -205,15 +211,17 @@ class ResamplingHypothesesUpdater:
             )
 
             # Sample hypotheses based on their type
-            channel_hypotheses = mapper.extract_hypotheses(hypotheses, input_channel)
             existing_hypotheses = self._sample_existing(
-                existing_count, channel_hypotheses
+                existing_count=existing_count,
+                hypotheses=hypotheses,
+                input_channel=input_channel,
+                mapper=mapper,
             )
             informed_hypotheses = self._sample_informed(
                 channel_features=features[input_channel],
-                informed_count=informed_count,
-                channel_hypotheses=channel_hypotheses,
                 graph_id=graph_id,
+                informed_count=informed_count,
+                input_channel=input_channel,
             )
 
             # We only displace existing hypotheses since the newly resampled hypotheses
@@ -339,13 +347,18 @@ class ResamplingHypothesesUpdater:
     def _sample_existing(
         self,
         existing_count: int,
-        channel_hypotheses: ChannelHypotheses,
+        hypotheses: Hypotheses,
+        input_channel: str,
+        mapper: ChannelMapper,
     ) -> ChannelHypotheses:
         """Samples the specified number of existing hypotheses to retain.
 
         Args:
             existing_count (int): Number of existing hypotheses to sample.
-            channel_hypotheses (ChannelHypotheses): Channel hypotheses to sample from.
+            hypotheses (Hypotheses): Hypotheses for all input channels in the graph_id.
+            input_channel (str): The channel for which to sample existing hypotheses.
+            mapper (ChannelMapper): Mapper for the graph_id to extract data from
+                evidence, locations, and poses based on the input channel.
 
         Returns:
             ChannelHypotheses: The sampled existing hypotheses.
@@ -353,12 +366,13 @@ class ResamplingHypothesesUpdater:
         # Return empty arrays for no hypotheses to sample
         if existing_count == 0:
             return ChannelHypotheses(
-                input_channel=channel_hypotheses.input_channel,
+                input_channel=input_channel,
                 locations=np.zeros((0, 3)),
                 poses=np.zeros((0, 3, 3)),
                 evidence=np.zeros(0),
             )
 
+        channel_hypotheses = mapper.extract_hypotheses(hypotheses, input_channel)
         # TODO implement sampling based on evidence slope.
         return ChannelHypotheses(
             input_channel=channel_hypotheses.input_channel,
@@ -371,8 +385,8 @@ class ResamplingHypothesesUpdater:
         self,
         channel_features: dict,
         informed_count: int,
-        channel_hypotheses: ChannelHypotheses,
         graph_id: str,
+        input_channel: str,
     ) -> ChannelHypotheses:
         """Samples the specified number of fully informed hypotheses.
 
@@ -398,8 +412,8 @@ class ResamplingHypothesesUpdater:
         Args:
             channel_features (dict): Input channel features.
             informed_count (int): Number of fully informed hypotheses to sample.
-            channel_hypotheses (ChannelHypotheses): Channel hypotheses to sample from.
             graph_id (str): Identifier of the graph being queried.
+            input_channel (str): The channel for which to sample informed hypotheses.
 
         Returns:
             ChannelHypotheses: The sampled informed hypotheses.
@@ -408,29 +422,26 @@ class ResamplingHypothesesUpdater:
         # Return empty arrays for no hypotheses to sample
         if informed_count == 0:
             return ChannelHypotheses(
-                input_channel=channel_hypotheses.input_channel,
+                input_channel=input_channel,
                 locations=np.zeros((0, 3)),
                 poses=np.zeros((0, 3, 3)),
                 evidence=np.zeros(0),
             )
 
         num_hyps_per_node = self._num_hyps_per_node(channel_features)
-
         # === Calculate selected evidence by top-k indices === #
-        if self.use_features_for_matching[channel_hypotheses.input_channel]:
+        if self.use_features_for_matching[input_channel]:
             node_feature_evidence = self.feature_evidence_calculator.calculate(
                 channel_feature_array=self.graph_memory.get_feature_array(graph_id)[
-                    channel_hypotheses.input_channel
+                    input_channel
                 ],
                 channel_feature_order=self.graph_memory.get_feature_order(graph_id)[
-                    channel_hypotheses.input_channel
+                    input_channel
                 ],
-                channel_feature_weights=self.feature_weights[
-                    channel_hypotheses.input_channel
-                ],
+                channel_feature_weights=self.feature_weights[input_channel],
                 channel_query_features=channel_features,
-                channel_tolerances=self.tolerances[channel_hypotheses.input_channel],
-                input_channel=channel_hypotheses.input_channel,
+                channel_tolerances=self.tolerances[input_channel],
+                input_channel=input_channel,
             )
             # Find the indices for the nodes with highest evidence scores. The sorting
             # is done in ascending order, so extract the indices from the end of
@@ -455,7 +466,7 @@ class ResamplingHypothesesUpdater:
 
         # === Calculate selected locations by top-k indices === #
         all_channel_locations_filtered = self.graph_memory.get_locations_in_graph(
-            graph_id, channel_hypotheses.input_channel
+            graph_id, input_channel
         )[top_indices]
         selected_locations = np.tile(
             all_channel_locations_filtered, (num_hyps_per_node, 1)
@@ -465,7 +476,7 @@ class ResamplingHypothesesUpdater:
         if self.initial_possible_poses is None:
             node_directions_filtered = (
                 self.graph_memory.get_rotation_features_at_all_nodes(
-                    graph_id, channel_hypotheses.input_channel
+                    graph_id, input_channel
                 )[top_indices]
             )
             sensed_directions = channel_features["pose_vectors"]
@@ -493,7 +504,7 @@ class ResamplingHypothesesUpdater:
             )
 
         return ChannelHypotheses(
-            input_channel=channel_hypotheses.input_channel,
+            input_channel=input_channel,
             locations=selected_locations,
             poses=selected_rotations,
             evidence=selected_feature_evidence,

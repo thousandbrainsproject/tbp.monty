@@ -12,7 +12,6 @@ import tempfile
 from unittest import TestCase
 
 import numpy as np
-import pytest
 
 from tbp.monty.frameworks.config_utils.config_args import (
     MontyFeatureGraphArgs,
@@ -28,18 +27,14 @@ from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments.pretraining_experiments import (
     MontySupervisedObjectPretrainingExperiment,
 )
-from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
 from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
 )
-from tbp.monty.frameworks.models.mixins.resampling_hypotheses_evidence import (
-    ResamplingHypothesesEvidenceMixin,
-)
-from tbp.monty.frameworks.models.no_reset_evidence_matching import (
-    NoResetEvidenceGraphLM,
+from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater import (  # noqa: E501
+    ResamplingHypothesesUpdater,
 )
 from tbp.monty.frameworks.utils.evidence_matching import (
     ChannelMapper,
@@ -50,27 +45,7 @@ from tbp.monty.simulators.habitat.configs import (
 )
 
 
-class ResamplingEvidenceGraphLM(ResamplingHypothesesEvidenceMixin, EvidenceGraphLM):
-    """Class to test applying the resampling mixin to EvidenceGraphLM."""
-
-    pass
-
-
-class InheritanceResampleHypothesesMixinTest(TestCase):
-    @staticmethod
-    def test_mixin_used_with_compatible_learning_module_does_not_error() -> None:
-        class Compatible(ResamplingHypothesesEvidenceMixin, EvidenceGraphLM):
-            pass
-
-    @staticmethod
-    def test_mixin_used_with_non_compatible_learning_module_raises_error() -> None:
-        with pytest.raises(TypeError):
-
-            class NonCompatible(ResamplingHypothesesEvidenceMixin, LearningModule):
-                pass
-
-
-class ResamplingHypothesesMixinTest(TestCase):
+class ResamplingHypothesesUpdaterTest(TestCase):
     def setUp(self) -> None:
         super().setUp()
 
@@ -79,7 +54,7 @@ class ResamplingHypothesesMixinTest(TestCase):
             "principal_curvatures_log": np.ones(2),
         }
 
-        default_lm_args = dict(
+        resampling_lm_args = dict(
             max_match_distance=0.001,
             tolerances={"patch": default_tolerances},
             feature_weights={
@@ -87,19 +62,13 @@ class ResamplingHypothesesMixinTest(TestCase):
                     "hsv": np.array([1, 0, 0]),
                 }
             },
+            hypotheses_updater_class=ResamplingHypothesesUpdater,
         )
 
         default_evidence_lm_config = dict(
             learning_module_0=dict(
-                learning_module_class=ResamplingEvidenceGraphLM,
-                learning_module_args=default_lm_args,
-            )
-        )
-
-        default_unsupervised_evidence_lm_config = dict(
-            learning_module_0=dict(
-                learning_module_class=NoResetEvidenceGraphLM,
-                learning_module_args=default_lm_args,
+                learning_module_class=EvidenceGraphLM,
+                learning_module_args=resampling_lm_args,
             )
         )
 
@@ -148,15 +117,20 @@ class ResamplingHypothesesMixinTest(TestCase):
 
     def _num_hyps_multiplier(self, rlm, pose_defined):
         """Returns the expected hyps multiplier based on Principal curvatures."""
-        return 2 if pose_defined else rlm.umbilical_num_poses
+        return 2 if pose_defined else rlm.hypotheses_updater.umbilical_num_poses
 
     def run_sample_count(
         self, rlm, count_multiplier, existing_to_new_ratio, pose_defined, graph_id
     ):
-        rlm.hypotheses_count_multiplier = count_multiplier
-        rlm.hypotheses_existing_to_new_ratio = existing_to_new_ratio
+        rlm.hypotheses_updater.hypotheses_count_multiplier = count_multiplier
+        rlm.hypotheses_updater.hypotheses_existing_to_new_ratio = existing_to_new_ratio
         test_features = {"patch": {"pose_fully_defined": pose_defined}}
-        return rlm._sample_count("patch", test_features, graph_id)
+        return rlm.hypotheses_updater._sample_count(
+            input_channel="patch",
+            channel_features=test_features["patch"],
+            graph_id=graph_id,
+            mapper=rlm.channel_hypothesis_mapping[graph_id],
+        )
 
     def _initial_count(self, rlm, pose_defined):
         """This tests that the initial requested number of hypotheses is correct.
