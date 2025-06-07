@@ -572,10 +572,7 @@ class MontyForGraphMatching(MontyBase):
 
 
 class GraphLM(LearningModule):
-    """General Learning Module that contains a graph memory.
-
-    Subclasses are DisplacementGraphLM, FeatureGraphLM, and EvidenceGraphLM.
-    """
+    """General Learning Module that contains a graph memory."""
 
     def __init__(self, initialize_base_modules=True):
         """Initialize general Learning Module based on graphs.

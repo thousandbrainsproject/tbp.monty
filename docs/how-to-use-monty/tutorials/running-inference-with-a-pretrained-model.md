@@ -160,8 +160,6 @@ learning_module_0 = dict(
         # Most likely hypothesis needs to have 20% more evidence than the others to 
         # be considered certain enough to trigger a terminal condition (match).
         x_percent_threshold=20,
-        # Look at features associated with (at most) the 10 closest learned points.
-        max_nneighbors=10,
         # Update all hypotheses with evidence > x_percent_threshold (faster)
         evidence_update_threshold="x_percent_threshold",
         # Config for goal state generator of LM which is used for model-based action
@@ -175,6 +173,10 @@ learning_module_0 = dict(
             # Number of necessary steps for a hypothesis-testing action to be considered
             min_post_goal_success_steps=5,
         ),
+        hypotheses_updater_args=dict(
+            # Look at features associated with (at most) the 10 closest learned points.
+            max_nneighbors=10,
+        )
     ),
 )
 learning_module_configs = dict(learning_module_0=learning_module_0)

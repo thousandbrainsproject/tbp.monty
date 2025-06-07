@@ -9,6 +9,9 @@
 
 import unittest
 
+import numpy as np
+
+from tbp.monty.frameworks.models.evidence_matching.hypotheses import Hypotheses
 from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
 
 
@@ -99,8 +102,6 @@ class ChannelMapperTest(unittest.TestCase):
 
         Verifies that the returned data corresponds exactly to the expected slice.
         """
-        import numpy as np
-
         original = np.arange(30).reshape(30, 1)
 
         # Channel "B" occupies indices 5 to 15
@@ -111,12 +112,34 @@ class ChannelMapperTest(unittest.TestCase):
 
     def test_extract_invalid_channel(self) -> None:
         """Test that extracting from a non-existent channel raises an error."""
-        import numpy as np
-
         original = np.arange(30).reshape(30, 1)
 
         with self.assertRaises(ValueError):
             self.mapper.extract(original, "Z")
+
+    def test_extract_hypotheses_valid_channel(self) -> None:
+        hypotheses = Hypotheses(
+            evidence=np.arange(30).reshape(30, 1),
+            locations=np.arange(30).reshape(30, 1),
+            poses=np.arange(30).reshape(30, 1),
+        )
+
+        # Channel "B" occupies indices 5 to 15
+        extracted_hypotheses = self.mapper.extract_hypotheses(hypotheses, "B")
+
+        self.assertTrue(
+            np.array_equal(extracted_hypotheses.evidence, hypotheses.evidence[5:15])
+        )
+        self.assertEqual(extracted_hypotheses.evidence.shape, (10, 1))
+        self.assertTrue(
+            np.array_equal(extracted_hypotheses.locations, hypotheses.locations[5:15])
+        )
+        self.assertEqual(extracted_hypotheses.locations.shape, (10, 1))
+        self.assertTrue(
+            np.array_equal(extracted_hypotheses.poses, hypotheses.poses[5:15])
+        )
+        self.assertEqual(extracted_hypotheses.poses.shape, (10, 1))
+        self.assertEqual(extracted_hypotheses.input_channel, "B")
 
     def test_update_insert_data(self) -> None:
         """Test inserting new data into a specific channel range.
@@ -124,8 +147,6 @@ class ChannelMapperTest(unittest.TestCase):
         Verifies that the new data is inserted at the correct position
         and that the surrounding data is preserved.
         """
-        import numpy as np
-
         original = np.arange(30).reshape(30, 1)
         new_data = np.array([[100], [101], [102]])
 
@@ -142,8 +163,6 @@ class ChannelMapperTest(unittest.TestCase):
 
     def test_update_invalid_channel(self) -> None:
         """Test that updating a non-existent channel raises an error."""
-        import numpy as np
-
         original = np.zeros((30, 1))
         new_data = np.ones((3, 1))
 

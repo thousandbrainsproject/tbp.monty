@@ -13,6 +13,11 @@ from typing import OrderedDict as OrderedDictType
 
 import numpy as np
 
+from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
+    ChannelHypotheses,
+    Hypotheses,
+)
+
 
 class ChannelMapper:
     """Marks the range of hypotheses that correspond to each input channel.
@@ -171,6 +176,25 @@ class ChannelMapper:
 
         start, end = self.channel_range(channel)
         return original[start:end]
+
+    def extract_hypotheses(
+        self, hypotheses: Hypotheses, channel: str
+    ) -> ChannelHypotheses:
+        """Extracts the hypotheses corresponding to a given channel.
+
+        Args:
+            hypotheses (Hypotheses): The full hypotheses array across all channels.
+            channel (str): The name of the channel to extract.
+
+        Returns:
+            ChannelHypotheses: The hypotheses corresponding to the given channel.
+        """
+        return ChannelHypotheses(
+            input_channel=channel,
+            evidence=self.extract(hypotheses.evidence, channel),
+            locations=self.extract(hypotheses.locations, channel),
+            poses=self.extract(hypotheses.poses, channel),
+        )
 
     def update(
         self, original: np.ndarray, channel: str, data: np.ndarray

@@ -45,8 +45,10 @@ from tbp.monty.frameworks.config_utils.policy_setup_utils import (
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
-from tbp.monty.frameworks.models.evidence_matching import (
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
+)
+from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
 )
 from tbp.monty.frameworks.models.goal_state_generation import (
@@ -266,7 +268,9 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                                     "hsv": np.array([1, 0, 0]),
                                 }
                             },
-                            initial_possible_poses="uniform",
+                            hypotheses_updater_args=dict(
+                                initial_possible_poses="uniform",
+                            ),
                         ),
                     )
                 ),
@@ -309,11 +313,13 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                                     "hsv": np.array([1, 0, 0]),
                                 }
                             },
-                            initial_possible_poses=[
-                                [0, 0, 0],
-                                [45, 0, 0],
-                                [90, 0, 0],
-                            ],
+                            hypotheses_updater_args=dict(
+                                initial_possible_poses=[
+                                    [0, 0, 0],
+                                    [45, 0, 0],
+                                    [90, 0, 0],
+                                ],
+                            ),
                         ),
                     )
                 ),
@@ -460,15 +466,25 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         )
 
         lm1_maxnn0_config = copy.deepcopy(lm0_config)
-        lm1_maxnn0_config["learning_module_args"]["max_nneighbors"] = 1
+        lm1_maxnn0_config["learning_module_args"]["hypotheses_updater_args"] = dict(
+            max_nneighbors=1,
+        )
         lm1_maxnn1_config = copy.deepcopy(lm1_config)
-        lm1_maxnn1_config["learning_module_args"]["max_nneighbors"] = 1
+        lm1_maxnn1_config["learning_module_args"]["hypotheses_updater_args"] = dict(
+            max_nneighbors=1,
+        )
         lm1_maxnn2_config = copy.deepcopy(lm2_config)
-        lm1_maxnn2_config["learning_module_args"]["max_nneighbors"] = 1
+        lm1_maxnn2_config["learning_module_args"]["hypotheses_updater_args"] = dict(
+            max_nneighbors=1,
+        )
         lm1_maxnn3_config = copy.deepcopy(lm3_config)
-        lm1_maxnn3_config["learning_module_args"]["max_nneighbors"] = 1
+        lm1_maxnn3_config["learning_module_args"]["hypotheses_updater_args"] = dict(
+            max_nneighbors=1,
+        )
         lm1_maxnn4_config = copy.deepcopy(lm4_config)
-        lm1_maxnn4_config["learning_module_args"]["max_nneighbors"] = 1
+        lm1_maxnn4_config["learning_module_args"]["hypotheses_updater_args"] = dict(
+            max_nneighbors=1,
+        )
 
         maxnn1_5lm_evidence = copy.deepcopy(evidence_5lm_config)
         maxnn1_5lm_evidence.update(
@@ -727,9 +743,11 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             },
             # set graph size larger since fake obs displacements are meters
             max_graph_size=10,
-            initial_possible_poses=initial_possible_poses,
             gsg_class=gsg_class,
             gsg_args=gsg_args,
+            hypotheses_updater_args=dict(
+                initial_possible_poses=initial_possible_poses,
+            ),
         )
         graph_lm.mode = "train"
         for observation in fake_obs:

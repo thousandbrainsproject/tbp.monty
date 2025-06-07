@@ -12,7 +12,9 @@ from unittest import TestCase
 import pytest
 
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
-from tbp.monty.frameworks.models.evidence_matching import EvidenceGraphLM
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+    EvidenceGraphLM,
+)
 from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
     TheoreticalLimitLMLoggingMixin,
 )

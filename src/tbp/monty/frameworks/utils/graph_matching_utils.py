@@ -8,6 +8,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import logging
 import math
 from itertools import permutations
@@ -134,7 +136,7 @@ def get_uniform_initial_possible_poses(n_degrees_sampled=9):
     return unique_poses
 
 
-def get_initial_possible_poses(initial_possible_pose_type):
+def get_initial_possible_poses(initial_possible_pose_type) -> list[Rotation] | None:
     """Initialize initial_possible_poses to test based on initial_possible_pose_type.
 
     Args:
@@ -147,7 +149,8 @@ def get_initial_possible_poses(initial_possible_pose_type):
                 debugging).
 
     Returns:
-        List of initial possible poses to test.
+        List of initial possible poses to test or None if initial_possible_pose_type
+        is "informed".
     """
     if initial_possible_pose_type == "uniform":
         initial_possible_poses = get_uniform_initial_possible_poses()
@@ -162,7 +165,7 @@ def get_initial_possible_poses(initial_possible_pose_type):
     return initial_possible_poses
 
 
-def add_pose_features_to_tolerances(tolerances, default_tolerances=20):
+def add_pose_features_to_tolerances(tolerances, default_tolerances=20) -> dict:
     """Add point_normal and curvature_direction default tolerances if not set.
 
     Returns:

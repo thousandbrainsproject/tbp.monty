@@ -143,7 +143,7 @@ omniglot_training = dict(
 ```
 
 And a config for inference on those trained models could look like this:
-```
+```python
 omniglot_inference = dict(
     experiment_class=MontyObjectRecognitionExperiment,
     experiment_args=ExperimentArgs(
@@ -172,8 +172,10 @@ omniglot_inference = dict(
                             "pose_vectors": [0, 1, 0],
                         }
                     },
-                    # We assume the letter is presented upright
-                    initial_possible_poses=[[0, 0, 0]],
+                    hypotheses_updater_args=dict(
+                        # We assume the letter is presented upright
+                        initial_possible_poses=[[0, 0, 0]],
+                    )
                 ),
             )
         ),
