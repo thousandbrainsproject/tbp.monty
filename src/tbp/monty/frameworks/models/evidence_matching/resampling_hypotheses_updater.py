@@ -79,7 +79,7 @@ class ResamplingHypothesesUpdater:
         hypotheses_existing_to_new_ratio: float = 0.0,
         initial_possible_poses: Literal["uniform", "informed"]
         | list[Rotation] = "informed",
-        max_nneighbors: int = 3,  # TODO: needed?
+        max_nneighbors: int = 3,
         past_weight: float = 1,
         present_weight: float = 1,
         umbilical_num_poses: int = 8,
@@ -154,14 +154,14 @@ class ResamplingHypothesesUpdater:
             tolerances=self.tolerances,
         )
         self.hypotheses_displacer = DefaultHypothesesDisplacer(
-            feature_evidence_increment=feature_evidence_increment,
-            feature_weights=feature_weights,
-            graph_memory=graph_memory,
+            feature_evidence_increment=self.feature_evidence_increment,
+            feature_weights=self.feature_weights,
+            graph_memory=self.graph_memory,
             max_match_distance=max_match_distance,
             max_nneighbors=max_nneighbors,
             past_weight=past_weight,
             present_weight=present_weight,
-            tolerances=tolerances,
+            tolerances=self.tolerances,
             use_features_for_matching=self.use_features_for_matching,
         )
 
