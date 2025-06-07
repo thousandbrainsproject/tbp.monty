@@ -67,7 +67,6 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                     "hsv": np.array([1, 0, 0]),
                 }
             },
-            use_multithreading=False,
         )
 
         default_evidence_lm_config = dict(
