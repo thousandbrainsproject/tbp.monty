@@ -10,16 +10,18 @@
 from __future__ import annotations
 
 import logging
-from typing import Literal, Protocol
+from typing import Literal, Protocol, Type
 
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.models.evidence_matching.feature_evidence_calculator import (
-    calculate_feature_evidence_for_all_nodes,
+from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
+    DefaultFeatureEvidenceCalculator,
+    FeatureEvidenceCalculator,
 )
-from tbp.monty.frameworks.models.evidence_matching.features_for_matching import (
-    check_use_features_for_matching,
+from tbp.monty.frameworks.models.evidence_matching.features_for_matching.selector import (  # noqa: E501
+    DefaultFeaturesForMatchingSelector,
+    FeaturesForMatchingSelector,
 )
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
@@ -77,7 +79,13 @@ class DefaultHypothesesUpdater:
         graph_memory: EvidenceGraphMemory,
         max_match_distance: float,
         tolerances: dict,
+        feature_evidence_calculator: Type[FeatureEvidenceCalculator] = (
+            DefaultFeatureEvidenceCalculator
+        ),
         feature_evidence_increment: int = 1,
+        features_for_matching_selector: Type[FeaturesForMatchingSelector] = (
+            DefaultFeaturesForMatchingSelector
+        ),
         initial_possible_poses: Literal["uniform", "informed"]
         | list[Rotation] = "informed",
         max_nneighbors: int = 3,
@@ -97,10 +105,16 @@ class DefaultHypothesesUpdater:
                 to be matched.
             tolerances (dict): How much can each observed feature deviate from the
                 stored features to still be considered a match.
+            feature_evidence_calculator (Type[FeatureEvidenceCalculator]): Class to
+                calculate feature evidence for all nodes. Defaults to the default
+                calculator.
             feature_evidence_increment (int): Feature evidence (between 0 and 1) is
                 multiplied by this value before being added to the overall evidence of
                 a hypothesis. This factor is only multiplied with the feature evidence
                 (not the pose evidence as opposed to the present_weight). Defaults to 1.
+            features_for_matching_selector (Type[FeaturesForMatchingSelector]): Class to
+                select if features should be used for matching. Defaults to the default
+                selector.
             initial_possible_poses ("uniform" | "informed" | list[Rotation]): Initial
                 possible poses that should be tested for. Defaults to "informed".
             max_nneighbors (int): Maximum number of nearest neighbors to consider in the
@@ -121,27 +135,29 @@ class DefaultHypothesesUpdater:
                 the plane perpendicular to the point normal. These are sampled at
                 umbilical points (i.e., points where PC directions are undefined).
         """
+        self.feature_evidence_calculator = feature_evidence_calculator
         self.feature_evidence_increment = feature_evidence_increment
         self.feature_weights = feature_weights
+        self.features_for_matching_selector = features_for_matching_selector
         self.graph_memory = graph_memory
         self.initial_possible_poses = get_initial_possible_poses(initial_possible_poses)
         self.tolerances = tolerances
         self.umbilical_num_poses = umbilical_num_poses
 
-        self.use_features_for_matching = check_use_features_for_matching(
-            tolerances=self.tolerances,
-            feature_weights=self.feature_weights,
+        self.use_features_for_matching = self.features_for_matching_selector.select(
             feature_evidence_increment=self.feature_evidence_increment,
+            feature_weights=self.feature_weights,
+            tolerances=self.tolerances,
         )
         self.hypotheses_displacer = DefaultHypothesesDisplacer(
-            feature_evidence_increment=feature_evidence_increment,
-            feature_weights=feature_weights,
-            graph_memory=graph_memory,
+            feature_evidence_increment=self.feature_evidence_increment,
+            feature_weights=self.feature_weights,
+            graph_memory=self.graph_memory,
             max_match_distance=max_match_distance,
             max_nneighbors=max_nneighbors,
             past_weight=past_weight,
             present_weight=present_weight,
-            tolerances=tolerances,
+            tolerances=self.tolerances,
             use_features_for_matching=self.use_features_for_matching,
         )
 
@@ -325,7 +341,7 @@ class DefaultHypothesesUpdater:
         # and feature_weights or we set the global feature_evidence_increment to 0.
         if self.use_features_for_matching[input_channel]:
             # Get real valued features match for each node
-            node_feature_evidence = calculate_feature_evidence_for_all_nodes(
+            node_feature_evidence = self.feature_evidence_calculator.calculate(
                 channel_feature_array=self.graph_memory.get_feature_array(graph_id)[
                     input_channel
                 ],
@@ -335,6 +351,7 @@ class DefaultHypothesesUpdater:
                 channel_feature_weights=self.feature_weights[input_channel],
                 channel_query_features=channel_features,
                 channel_tolerances=self.tolerances[input_channel],
+                input_channel=input_channel,
             )
             # stack node_feature_evidence to match possible poses
             nwmf_stacked = []

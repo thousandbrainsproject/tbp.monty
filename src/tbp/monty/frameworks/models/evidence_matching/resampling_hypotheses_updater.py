@@ -9,16 +9,18 @@
 
 from __future__ import annotations
 
-from typing import Literal, Tuple
+from typing import Literal, Tuple, Type
 
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.models.evidence_matching.feature_evidence_calculator import (
-    calculate_feature_evidence_for_all_nodes,
+from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
+    DefaultFeatureEvidenceCalculator,
+    FeatureEvidenceCalculator,
 )
-from tbp.monty.frameworks.models.evidence_matching.features_for_matching import (
-    check_use_features_for_matching,
+from tbp.monty.frameworks.models.evidence_matching.features_for_matching.selector import (  # noqa: E501
+    DefaultFeaturesForMatchingSelector,
+    FeaturesForMatchingSelector,
 )
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
@@ -66,7 +68,13 @@ class ResamplingHypothesesUpdater:
         graph_memory: EvidenceGraphMemory,
         max_match_distance: float,
         tolerances: dict,
+        feature_evidence_calculator: Type[FeatureEvidenceCalculator] = (
+            DefaultFeatureEvidenceCalculator
+        ),
         feature_evidence_increment: int = 1,
+        features_for_matching_selector: Type[FeaturesForMatchingSelector] = (
+            DefaultFeaturesForMatchingSelector
+        ),
         hypotheses_count_multiplier: float = 1.0,
         hypotheses_existing_to_new_ratio: float = 0.0,
         initial_possible_poses: Literal["uniform", "informed"]
@@ -88,10 +96,16 @@ class ResamplingHypothesesUpdater:
                 to be matched.
             tolerances (dict): How much can each observed feature deviate from the
                 stored features to still be considered a match.
+            feature_evidence_calculator (Type[FeatureEvidenceCalculator]): Class to
+                calculate feature evidence for all nodes. Defaults to the default
+                calculator.
             feature_evidence_increment (int): Feature evidence (between 0 and 1) is
                 multiplied by this value before being added to the overall evidence of
                 a hypothesis. This factor is only multiplied with the feature evidence
                 (not the pose evidence as opposed to the present_weight). Defaults to 1.
+            features_for_matching_selector (Type[FeaturesForMatchingSelector]): Class to
+                select if features should be used for matching. Defaults to the default
+                selector.
             hypotheses_count_multiplier (float): Scales the total number of hypotheses
                 every step. Defaults to 1.0.
             hypotheses_existing_to_new_ratio (float): Controls the proportion of the
@@ -117,8 +131,10 @@ class ResamplingHypothesesUpdater:
                 the plane perpendicular to the point normal. These are sampled at
                 umbilical points (i.e., points where PC directions are undefined).
         """
+        self.feature_evidence_calculator = feature_evidence_calculator
         self.feature_evidence_increment = feature_evidence_increment
         self.feature_weights = feature_weights
+        self.features_for_matching_selector = features_for_matching_selector
         self.graph_memory = graph_memory
         self.hypotheses_count_multiplier = hypotheses_count_multiplier
         self.hypotheses_existing_to_new_ratio = hypotheses_existing_to_new_ratio
@@ -126,10 +142,10 @@ class ResamplingHypothesesUpdater:
         self.tolerances = tolerances
         self.umbilical_num_poses = umbilical_num_poses
 
-        self.use_features_for_matching = check_use_features_for_matching(
-            tolerances=self.tolerances,
-            feature_weights=self.feature_weights,
+        self.use_features_for_matching = self.features_for_matching_selector.select(
             feature_evidence_increment=self.feature_evidence_increment,
+            feature_weights=self.feature_weights,
+            tolerances=self.tolerances,
         )
         self.hypotheses_displacer = DefaultHypothesesDisplacer(
             feature_evidence_increment=feature_evidence_increment,
@@ -402,7 +418,7 @@ class ResamplingHypothesesUpdater:
 
         # === Calculate selected evidence by top-k indices === #
         if self.use_features_for_matching[channel_hypotheses.input_channel]:
-            node_feature_evidence = calculate_feature_evidence_for_all_nodes(
+            node_feature_evidence = self.feature_evidence_calculator.calculate(
                 channel_feature_array=self.graph_memory.get_feature_array(graph_id)[
                     channel_hypotheses.input_channel
                 ],
@@ -414,6 +430,7 @@ class ResamplingHypothesesUpdater:
                 ],
                 channel_query_features=channel_features,
                 channel_tolerances=self.tolerances[channel_hypotheses.input_channel],
+                input_channel=channel_hypotheses.input_channel,
             )
             # Find the indices for the nodes with highest evidence scores. The sorting
             # is done in ascending order, so extract the indices from the end of

@@ -10,12 +10,13 @@
 from __future__ import annotations
 
 import logging
-from typing import Protocol
+from typing import Protocol, Type
 
 import numpy as np
 
-from tbp.monty.frameworks.models.evidence_matching.feature_evidence_calculator import (
-    calculate_feature_evidence_for_all_nodes,
+from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
+    DefaultFeatureEvidenceCalculator,
+    FeatureEvidenceCalculator,
 )
 from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
     EvidenceGraphMemory,
@@ -71,6 +72,9 @@ class DefaultHypothesesDisplacer:
         max_match_distance: float,
         tolerances: dict,
         use_features_for_matching: dict[str, bool],
+        feature_evidence_calculator: Type[
+            FeatureEvidenceCalculator
+        ] = DefaultFeatureEvidenceCalculator,
         feature_evidence_increment: int = 1,
         max_nneighbors: int = 3,
         past_weight: float = 1,
@@ -90,6 +94,9 @@ class DefaultHypothesesDisplacer:
                 stored features to still be considered a match.
             use_features_for_matching (dict): Dictionary mapping input channels to
                 booleans indicating whether to use features for matching.
+            feature_evidence_calculator (Type[FeatureEvidenceCalculator]): Class to
+                calculate feature evidence for all nodes. Defaults to the default
+                calculator.
             feature_evidence_increment (int): Feature evidence (between 0 and 1) is
                 multiplied by this value before being added to the overall evidence of
                 a hypothesis. This factor is only multiplied with the feature evidence
@@ -109,6 +116,7 @@ class DefaultHypothesesDisplacer:
                 though and could help when moving from one object to another and to
                 generally make setting thresholds etc. more intuitive.
         """
+        self.feature_evidence_calculator = feature_evidence_calculator
         self.feature_evidence_increment = feature_evidence_increment
         self.feature_weights = feature_weights
         self.graph_memory = graph_memory
@@ -261,7 +269,7 @@ class DefaultHypothesesDisplacer:
         # and curvature_directions we don't need to calculate feature evidence.
         if self.use_features_for_matching[input_channel]:
             # add evidence if features match
-            node_feature_evidence = calculate_feature_evidence_for_all_nodes(
+            node_feature_evidence = self.feature_evidence_calculator.calculate(
                 channel_feature_array=self.graph_memory.get_feature_array(graph_id)[
                     input_channel
                 ],
@@ -271,6 +279,7 @@ class DefaultHypothesesDisplacer:
                 channel_feature_weights=self.feature_weights[input_channel],
                 channel_query_features=channel_features,
                 channel_tolerances=self.tolerances[input_channel],
+                input_channel=input_channel,
             )
             hypothesis_radius_feature_evidence = node_feature_evidence[nearest_node_ids]
             # Set feature evidence of nearest neighbors that are too far away to 0
