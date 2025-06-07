@@ -163,16 +163,14 @@ class DefaultHypothesesUpdater:
         # NOTE: We might also want to check the confidence in the input channel
         # features. This information is currently not available here.
         # TODO S: Once we pull the observation class into the LM we could add this.
-        input_channels_to_use = [
-            ic
-            for ic in features.keys()
-            if ic in self.graph_memory.get_input_channels_in_graph(graph_id)
-        ]
+        input_channels_to_use = all_usable_input_channels(
+            features, self.graph_memory.get_input_channels_in_graph(graph_id)
+        )
 
         if len(input_channels_to_use) == 0:
             logging.info(
-                f"No input channels observed for {graph_id} that are stored in . "
-                "the model. Not updating evidence."
+                f"No input channels observed for {graph_id} that are stored in the "
+                "model. Not updating evidence."
             )
             return []
 
@@ -203,12 +201,12 @@ class DefaultHypothesesUpdater:
                 # sensory input.
                 channel_possible_hypotheses = (
                     self._displace_hypotheses_and_compute_evidence(
-                        channel_features=features[input_channel],
-                        possible_hypotheses=channel_hypotheses,
                         channel_displacement=displacements[input_channel],
-                        graph_id=graph_id,
-                        total_hypotheses_count=hypotheses.evidence.shape[0],
+                        channel_features=features[input_channel],
                         evidence_update_threshold=evidence_update_threshold,
+                        graph_id=graph_id,
+                        possible_hypotheses=channel_hypotheses,
+                        total_hypotheses_count=hypotheses.evidence.shape[0],
                     )
                 )
 
@@ -688,3 +686,21 @@ class DefaultHypothesesUpdater:
         # otherwise it is in [-1, 1].
         pose_evidence_weighted += pn_evidence * pn_weight + cd1_evidence * cd1_weight
         return pose_evidence_weighted
+
+def all_usable_input_channels(
+    features: dict, all_input_channels: list[str]
+) -> list[str]:
+    """Determine all usable input channels.
+
+    Args:
+        features (dict): Input features.
+        all_input_channels (list[str]): All input channels that are stored in the graph.
+
+    Returns:
+        list[str]: All input channels that are usable for matching.
+    """
+    # Get all usable input channels
+    # NOTE: We might also want to check the confidence in the input channel
+    # features. This information is currently not available here.
+    # TODO S: Once we pull the observation class into the LM we could add this.
+    return [ic for ic in features.keys() if ic in all_input_channels]
