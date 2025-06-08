@@ -18,6 +18,9 @@ from tbp.monty.frameworks.models.evidence_matching import (
 from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
     TheoreticalLimitLMLoggingMixin,
 )
+from tbp.monty.frameworks.models.mixins.resampling_hypotheses_evidence import (
+    ResamplingHypothesesEvidenceMixin,
+)
 from tbp.monty.frameworks.models.states import State
 
 
@@ -93,7 +96,9 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
             sm.processed_obs = []
 
 
-class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
+class NoResetEvidenceGraphLM(
+    TheoreticalLimitLMLoggingMixin, ResamplingHypothesesEvidenceMixin, EvidenceGraphLM
+):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.last_location = {}

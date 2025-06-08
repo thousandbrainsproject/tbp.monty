@@ -20,11 +20,11 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
     add_pose_features_to_tolerances,
     get_initial_possible_poses,
     get_unique_paths,
+    possible_sensed_directions,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_orthonormal_vectors,
     get_angle,
-    get_more_directions_in_plane,
     get_unique_rotations,
     rotate_pose_dependent_features,
 )
@@ -45,6 +45,7 @@ class FeatureGraphLM(GraphLM):
         required_symmetry_evidence=5,
         graph_delta_thresholds=None,
         initial_possible_poses="informed",
+        umbilical_num_poses=8,
     ):
         """Initialize Learning Module.
 
@@ -64,9 +65,11 @@ class FeatureGraphLM(GraphLM):
             pose_similarity_threshold: difference between two poses to be considered
                 unique when checking for the terminal condition (in radians).
             required_symmetry_evidence: number of steps with unchanged possible poses
-                to classify an object as symetric and go into terminal condition.
+                to classify an object as symmetric and go into terminal condition.
             initial_possible_poses: initial possible poses that should be tested for.
                 In ["uniform", "informed", list]. default = "informed".
+            umbilical_num_poses: Number of samples rotations in the direction
+                of the plane perpendicular to the point normal.
         """
         super(FeatureGraphLM, self).__init__()
         self.graph_memory = FeatureGraphMemory(
@@ -84,6 +87,7 @@ class FeatureGraphLM(GraphLM):
         self.graph_memory.features_to_use = self.tolerances
 
         self.initial_possible_poses = get_initial_possible_poses(initial_possible_poses)
+        self.umbilical_num_poses = umbilical_num_poses
         self.possible_poses = {}
         self.last_unique_poses = None
         self.last_num_unique_locations = None
@@ -618,16 +622,14 @@ class FeatureGraphLM(GraphLM):
         # Check if PCs in patch are similar -> need to sample more directions
         if sensed_features[first_input_channel]["pose_fully_defined"]:
             # 2 possibilities since the curvature directions may be flipped
-            possible_s_d = [
-                sensed_directions.copy(),
-                sensed_directions.copy(),
-            ]
-            possible_s_d[1][1:] = possible_s_d[1][1:] * -1
+            possible_s_d = possible_sensed_directions(sensed_directions, 2)
         else:
             logging.debug(
                 "PC 1 is similar to PC2 -> Their directions are not meaningful"
             )
-            possible_s_d = get_more_directions_in_plane(sensed_directions, 8)
+            possible_s_d = possible_sensed_directions(
+                sensed_directions, self.umbilical_num_poses
+            )
 
         for s_d in possible_s_d:
             # Since we have orthonormal vectors and know their correspondence we can

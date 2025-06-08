@@ -15,6 +15,8 @@ from itertools import permutations
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.utils.spatial_arithmetics import get_more_directions_in_plane
+
 
 def get_correct_k_n(k_n, num_datapoints):
     """Determine k_n given the number of datapoints.
@@ -462,3 +464,38 @@ def find_step_on_new_object(
         return np.where(conv)[0][0] + n_steps_off_primary_target - 1
     else:
         return None
+
+
+def possible_sensed_directions(
+    sensed_directions: np.ndarray, num_hyps_per_node: int
+) -> np.ndarray:
+    """Returns the possible sensed directions for all nodes.
+
+    This function determines the possible sensed directions for a given set of sensed
+    directions. It relies on two different behaviors depending on the value of
+    num_hyps_per_node.
+        - If num_hyps_per_node equals 2: then pose is well defined (i.e., PC1 != PC2).
+            A well defined pose does not distinguish between mirrored directions of PC1
+            and PC2 (e.g., object can be upside down), therefore we sample both
+            directions.
+        - If num_hyps_per_node is not 2: this function samples additional poses in
+            the plane perpendicular to the sensed point normal.
+
+    Arguments:
+        sensed_directions: An array of sensed directions.
+        num_hyps_per_node: Number of rotations to get for each node.
+
+    Returns:
+        possible_s_d : Possible sensed direction for all nodes at each rotation
+    """
+    if num_hyps_per_node == 2:
+        possible_s_d = [
+            sensed_directions.copy(),
+            sensed_directions.copy(),
+        ]
+        possible_s_d[1][1:] = possible_s_d[1][1:] * -1
+    else:
+        possible_s_d = get_more_directions_in_plane(
+            sensed_directions, num_hyps_per_node
+        )
+    return possible_s_d

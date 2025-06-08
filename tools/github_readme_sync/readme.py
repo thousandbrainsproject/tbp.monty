@@ -83,7 +83,7 @@ class ReadMe:
         response = get(f"{PREFIX}/docs/{slug}", {"x-readme-version": self.version})
 
         if not response:
-            raise Exception(f"Failed to fetch document: {response}")
+            raise DocumentNotFound(f"Document {slug} not found")
 
         front_matter = OrderedDict()
         front_matter["title"] = response.get("title")
@@ -510,3 +510,9 @@ class ReadMe:
                 return f"[File not found or could not be read: {snippet_path}]"
 
         return regex_markdown_snippet.sub(replace_match, body)
+
+
+class DocumentNotFound(RuntimeError):
+    """Raised when a document is not found."""
+
+    pass

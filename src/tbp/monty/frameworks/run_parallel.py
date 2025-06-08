@@ -359,28 +359,25 @@ def run_episodes_parallel(
                 # NOTE: since we don't use wandb logging for training right now
                 # it is also not covered here. Might want to add that in the future.
                 p.map(single_train, configs)
+            elif configs[0]["logging_config"]["log_parallel_wandb"]:
+                all_episode_stats = {}
+                for result in p.imap(single_evaluate, configs):
+                    run.log(result)
+                    if not all_episode_stats:  # first episode
+                        for key in list(result.keys()):
+                            all_episode_stats[key] = [result[key]]
+                    else:
+                        for key in list(result.keys()):
+                            all_episode_stats[key].append(result[key])
+                overall_stats = get_overall_stats(all_episode_stats)
+                # episode/run_time is the sum over individual episode run times.
+                # when running parallel this may not be the actual run time so we
+                # log this here additionally.
+                overall_stats["overall/parallel_run_time"] = time.time() - start_time
+                overall_stats["overall/num_processes"] = num_parallel
+                run.log(overall_stats)
             else:
-                if configs[0]["logging_config"]["log_parallel_wandb"]:
-                    all_episode_stats = {}
-                    for result in p.imap(single_evaluate, configs):
-                        run.log(result)
-                        if not all_episode_stats:  # first episode
-                            for key in list(result.keys()):
-                                all_episode_stats[key] = [result[key]]
-                        else:
-                            for key in list(result.keys()):
-                                all_episode_stats[key].append(result[key])
-                    overall_stats = get_overall_stats(all_episode_stats)
-                    # episode/run_time is the sum over individual episode run times.
-                    # when running parallel this may not be the actual run time so we
-                    # log this here additionally.
-                    overall_stats["overall/parallel_run_time"] = (
-                        time.time() - start_time
-                    )
-                    overall_stats["overall/num_processes"] = num_parallel
-                    run.log(overall_stats)
-                else:
-                    p.map(single_evaluate, configs)
+                p.map(single_evaluate, configs)
     end_time = time.time()
     total_time = end_time - start_time
 

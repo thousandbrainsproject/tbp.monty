@@ -1095,6 +1095,8 @@ class SurfacePolicy(InformedPolicy):
         self.tangential_angle = 0
         self.alpha = alpha
 
+        self.attempting_to_find_object = False
+
     def pre_episode(self):
         self.tangential_angle = 0
         self.action = None  # Reset the first action for every episode
@@ -1144,9 +1146,13 @@ class SurfacePolicy(InformedPolicy):
             )
             logging.debug(f"Move to touch visible object, forward by {distance}")
 
+            self.attempting_to_find_object = False
+
             return MoveForward(agent_id=self.agent_id, distance=distance)
 
         logging.debug("Surface policy searching for object...")
+
+        self.attempting_to_find_object = True
 
         # Helpful to conceptualize these movements by considering a unit circle,
         # scaled by the radius distance_from_center
@@ -1243,12 +1249,18 @@ class SurfacePolicy(InformedPolicy):
                 The action to take.
         """
         # Check if we have poor visualization of the object
-        if self.processed_observations.get_feature_by_name("object_coverage") < 0.1:
+        if (
+            self.processed_observations.get_feature_by_name("object_coverage") < 0.1
+            or self.attempting_to_find_object
+        ):
             logging.debug(
                 "Object coverage of only "
                 + str(
                     self.processed_observations.get_feature_by_name("object_coverage")
                 )
+            )
+            logging.debug(
+                f"Attempting to find object: {self.attempting_to_find_object}"
             )
             logging.debug("Initiating attempts to touch object")
 
