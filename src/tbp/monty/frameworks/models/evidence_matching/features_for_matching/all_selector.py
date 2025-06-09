@@ -11,9 +11,8 @@ from __future__ import annotations
 
 
 class AllFeaturesForMatchingSelector:
-    @classmethod
+    @staticmethod
     def select(
-        cls,
         feature_evidence_increment: int,
         feature_weights: dict,
         tolerances: dict,

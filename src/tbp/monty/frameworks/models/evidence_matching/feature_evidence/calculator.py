@@ -15,9 +15,8 @@ import numpy as np
 
 
 class FeatureEvidenceCalculator(Protocol):
-    @classmethod
+    @staticmethod
     def calculate(
-        cls,
         channel_feature_array: np.ndarray,
         channel_feature_order: list[str],
         channel_feature_weights: dict,
@@ -28,16 +27,15 @@ class FeatureEvidenceCalculator(Protocol):
 
 
 class DefaultFeatureEvidenceCalculator:
-    @classmethod
+    @staticmethod
     def calculate(
-        cls,
         channel_feature_array: np.ndarray,
         channel_feature_order: list[str],
         channel_feature_weights: dict,
         channel_query_features: dict,
         channel_tolerances: dict,
-        input_channel: str,  # noqa: ARG003
-    ):
+        input_channel: str,  # noqa: ARG004
+    ) -> np.ndarray:
         """Calculate the feature evidence for all nodes stored in a graph.
 
         Evidence for each feature depends on the difference between observed and stored

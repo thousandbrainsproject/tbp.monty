@@ -17,16 +17,15 @@ from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator i
 
 
 class SDRFeatureEvidenceCalculator:
-    @classmethod
+    @staticmethod
     def calculate(
-        cls,
         channel_feature_array: np.ndarray,
         channel_feature_order: list[str],
         channel_feature_weights: dict,
         channel_query_features: dict,
         channel_tolerances: dict,
         input_channel: str,
-    ):
+    ) -> np.ndarray:
         """Calculates feature evidence for all nodes stored in a graph.
 
         This calculation tests if the input_channel is a learning_module. If so,
@@ -57,13 +56,13 @@ class SDRFeatureEvidenceCalculator:
             input_channel=input_channel,
         )
 
-    @classmethod
+    @staticmethod
     def calculate_feature_evidence_sdr_for_all_nodes(
         channel_feature_array: np.ndarray,
         channel_feature_weights: dict,
         channel_query_features: dict,
         channel_tolerances: dict,
-    ):
+    ) -> np.ndarray:
         """Calculate overlap between stored and query SDR features.
 
         Calculates the overlap between the SDR features stored at every location in

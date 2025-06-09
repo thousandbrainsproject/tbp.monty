@@ -13,9 +13,8 @@ from typing import Protocol
 
 
 class FeaturesForMatchingSelector(Protocol):
-    @classmethod
+    @staticmethod
     def select(
-        cls,
         feature_evidence_increment: int,
         feature_weights: dict,
         tolerances: dict,
@@ -23,9 +22,8 @@ class FeaturesForMatchingSelector(Protocol):
 
 
 class DefaultFeaturesForMatchingSelector:
-    @classmethod
+    @staticmethod
     def select(
-        cls,
         feature_evidence_increment: int,
         feature_weights: dict,
         tolerances: dict,
