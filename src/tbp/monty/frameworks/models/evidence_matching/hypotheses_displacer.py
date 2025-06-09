@@ -173,13 +173,16 @@ class DefaultHypothesesDisplacer:
             # If past and present weight add up to 1, equivalent to
             # np.average and evidence will be bound to [-1, 2]. Otherwise it
             # keeps growing.
-            updated_evidence = (
+            evidence = (
                 possible_hypotheses.evidence * self.past_weight
                 + evidence_to_add * self.present_weight
             )
+        else:
+            evidence = possible_hypotheses.evidence
+
         return ChannelHypotheses(
             input_channel=possible_hypotheses.input_channel,
-            evidence=updated_evidence,
+            evidence=evidence,
             locations=search_locations,
             poses=possible_hypotheses.poses,
         )
