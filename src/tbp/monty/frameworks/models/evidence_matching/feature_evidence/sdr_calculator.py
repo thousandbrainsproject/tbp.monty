@@ -41,7 +41,6 @@ class SDRFeatureEvidenceCalculator:
         if input_channel.startswith("learning_module"):
             return SDRFeatureEvidenceCalculator.calculate_feature_evidence_sdr_for_all_nodes(  # noqa: E501
                 channel_feature_array=channel_feature_array,
-                channel_feature_order=channel_feature_order,
                 channel_feature_weights=channel_feature_weights,
                 channel_query_features=channel_query_features,
                 channel_tolerances=channel_tolerances,

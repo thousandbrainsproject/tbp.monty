@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Literal, Protocol, Type
+from typing import Literal, Protocol
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -51,7 +51,7 @@ class HypothesesUpdater(Protocol):
         displacements: dict | None,
         graph_id: str,
         mapper: ChannelMapper,
-        max_global_evidence: float,
+        evidence_update_threshold: float,
     ) -> list[ChannelHypotheses]:
         """Update hypotheses based on sensor displacement and sensed features.
 
@@ -62,8 +62,7 @@ class HypothesesUpdater(Protocol):
             graph_id (str): Identifier of the graph being updated
             mapper (ChannelMapper): Napper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
-            max_global_evidence (float): Maximum evidence value from all hypotheses.
-                Defaults to 0.
+            evidence_update_threshold (float): Evidence update threshold.
 
         Returns:
             list[ChannelHypotheses]: The list of channel hypotheses updates to be
@@ -79,11 +78,11 @@ class DefaultHypothesesUpdater:
         graph_memory: EvidenceGraphMemory,
         max_match_distance: float,
         tolerances: dict,
-        feature_evidence_calculator: Type[FeatureEvidenceCalculator] = (
+        feature_evidence_calculator: type[FeatureEvidenceCalculator] = (
             DefaultFeatureEvidenceCalculator
         ),
         feature_evidence_increment: int = 1,
-        features_for_matching_selector: Type[FeaturesForMatchingSelector] = (
+        features_for_matching_selector: type[FeaturesForMatchingSelector] = (
             DefaultFeaturesForMatchingSelector
         ),
         initial_possible_poses: Literal["uniform", "informed"]

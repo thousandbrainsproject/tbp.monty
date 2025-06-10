@@ -35,8 +35,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 class HypothesesDisplacer(Protocol):
     def displace_hypotheses_and_compute_evidence(
         self,
-        channel_features: dict,
         channel_displacement: np.ndarray,
+        channel_features: dict,
         evidence_update_threshold: float,
         graph_id: str,
         possible_hypotheses: ChannelHypotheses,
@@ -50,8 +50,8 @@ class HypothesesDisplacer(Protocol):
         hypotheses locations are updated to the new locations (i.e., after displacement)
 
         Args:
-            channel_features (dict): Channel-specific input features.
             channel_displacement (np.ndarray): Channel-specific sensor displacement.
+            channel_features (dict): Channel-specific input features.
             evidence_update_threshold (float): Evidence update threshold.
             graph_id (str): The ID of the current graph
             possible_hypotheses (ChannelHypotheses): Channel-specific possible

@@ -216,9 +216,9 @@ class EvidenceGraphLM(GraphLM):
         # count associated with it which is stored here.
         # self.possible_locations and self.possible_poses have the same structure and
         # length as self.evidence and store the corresponding hypotheses.
-        self.evidence = {}
-        self.possible_locations = {}
-        self.possible_poses = {}
+        self.evidence: dict[str, np.ndarray] = {}
+        self.possible_locations: dict[str, np.ndarray] = {}
+        self.possible_poses: dict[str, np.ndarray] = {}
 
         # A dictionary from graph_id to instances of `ChannelMapper`.
         self.channel_hypothesis_mapping: dict[str, ChannelMapper] = {}
