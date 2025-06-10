@@ -147,8 +147,6 @@ show_contexts = true
 
 [tool.mypy]
 explicit_package_bases = true
-# TODO: This effectively disables mypy, don't ignore once types are added
-ignore_errors = true
 # TODO: Remove global ignore and handle missing type stubs
 ignore_missing_imports = true
 mypy_path = "src"
