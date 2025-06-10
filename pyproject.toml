@@ -146,11 +146,13 @@ sort = 'Cover'
 show_contexts = true
 
 [tool.mypy]
-warn_unused_configs = true
+explicit_package_bases = true
 # TODO: This effectively disables mypy, don't ignore once types are added
 ignore_errors = true
 # TODO: Remove global ignore and handle missing type stubs
 ignore_missing_imports = true
+mypy_path = "src"
+warn_unused_configs = true
 
 [tool.ruff]
 line-length = 88
