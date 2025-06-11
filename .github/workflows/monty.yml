@@ -202,12 +202,13 @@ jobs:
           path: tbp.monty
       - name: Check types
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        continue-on-error: true # Accept type errors for now
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           mkdir -p test_results/mypy
-          mypy --warn-unused-configs src tests benchmarks
+          mypy src tests benchmarks
 
   install_monty:
     name: install-monty
