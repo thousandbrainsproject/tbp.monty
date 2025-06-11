@@ -1172,9 +1172,3 @@ class EvidenceGraphLM(GraphLM):
         stats["evidences"] = self.evidence
         stats["symmetry_evidence"] = self.symmetry_evidence
         return stats
-
-
-class InvalidEvidenceUpdateThreshold(ValueError):
-    """Raised when the evidence update threshold is invalid."""
-
-    pass

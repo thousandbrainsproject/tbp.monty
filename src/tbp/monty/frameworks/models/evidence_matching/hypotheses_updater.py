@@ -51,6 +51,7 @@ class HypothesesUpdater(Protocol):
         displacements: dict | None,
         graph_id: str,
         mapper: ChannelMapper,
+        max_global_evidence: float,
     ) -> list[ChannelHypotheses]:
         """Update hypotheses based on sensor displacement and sensed features.
 
@@ -61,6 +62,8 @@ class HypothesesUpdater(Protocol):
             graph_id (str): Identifier of the graph being updated
             mapper (ChannelMapper): Napper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
+            max_global_evidence (float): Highest evidence of all hypotheses (i.e.,
+                current mlh evidence),
 
         Returns:
             list[ChannelHypotheses]: The list of channel hypotheses updates to be
@@ -209,6 +212,8 @@ class DefaultHypothesesUpdater:
             graph_id (str): Identifier of the graph being updated
             mapper (ChannelMapper): Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
+            max_global_evidence (float): Highest evidence of all hypotheses (i.e.,
+                current mlh evidence),
 
         Returns:
             list[ChannelHypotheses]: The list of hypotheses updates to be applied to
@@ -251,7 +256,7 @@ class DefaultHypothesesUpdater:
                     hypotheses, input_channel
                 )
 
-                # calculate the evidence_update_threshold
+                # Calculate the evidence_update_threshold
                 evidence_update_threshold = get_evidence_update_threshold(
                     self.evidence_update_threshold,
                     self.x_percent_threshold,
@@ -422,7 +427,7 @@ def all_usable_input_channels(
 
 
 def get_evidence_update_threshold(
-    evidence_update_threshold: int,
+    evidence_update_threshold: float | str,
     x_percent_threshold: float | str,
     max_global_evidence: float,
     evidence_all_channels: np.ndarray,
@@ -430,10 +435,13 @@ def get_evidence_update_threshold(
     """Determine how much evidence a hypothesis should have to be updated.
 
     Args:
-        evidence_update_threshold (float | str): update threshold type.
-        x_percent_threshold (int): x_percent threshold used in the calculation of
-            evidence threshold.
-        max_global_evidence (float): highest evidence of all hypotheses,
+        evidence_update_threshold (float | str): The heuristic for deciding which
+            hypotheses should be updated.
+        x_percent_threshold (float | str): The x_percent value to use for deciding
+            on the `evidence_update_threshold` when the `x_percent_threshold` is
+            used as a heuristic.
+        max_global_evidence (float): Highest evidence of all hypotheses (i.e.,
+            current mlh evidence),
         evidence_all_channels (np.ndarray): Evidence values for all hypotheses.
 
     Returns:
@@ -443,9 +451,6 @@ def get_evidence_update_threshold(
         InvalidEvidenceUpdateThreshold: If `self.evidence_update_threshold` is
             not in the allowed values
     """
-    # TODO: Better Args description
-    # max_global_evidence = np.max(evidence_all_channels)
-
     if type(evidence_update_threshold) in [int, float]:
         return evidence_update_threshold
     elif evidence_update_threshold == "mean":
