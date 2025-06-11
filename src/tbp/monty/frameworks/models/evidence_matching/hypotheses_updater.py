@@ -136,17 +136,17 @@ class DefaultHypothesesUpdater:
             x_percent_threshold: Used in two places:
                 1) All objects whose highest evidence is greater than the most likely
                     objects evidence - x_percent of the most like objects evidence are
-                    considered possible matches. That means to only have one possible match,
-                    no other object can have more evidence than the candidate match's
-                    evidence - x percent of it.
+                    considered possible matches. That means to only have one possible
+                    match, no other object can have more evidence than the candidate
+                    match's evidence - x percent of it.
                 2) Within one object, possible poses are considered possible if their
-                    evidence is larger than the most likely pose of this object - x percent
-                    of this poses evidence.
-                # TODO: should we use a separate threshold for within and between objects?
-                If this value is larger, the model is usually more robust to noise and
-                reaches a better performance but also requires a lot more steps to reach a
-                terminal condition, especially if there are many similar object in the data
-                set.
+                    evidence is larger than the most likely pose of this object
+                    - x percent of this poses evidence.
+                # TODO: should we use a separate threshold for within and between
+                objects? If this value is larger, the model is usually more robust to
+                noise and reaches a better performance but also requires a lot more
+                steps to reach a terminal condition, especially if there are many
+                similar object in the data set.
             evidence_update_threshold (float | str): How to decide which hypotheses
                 should be updated. When this parameter is either '[int]%' or
                 'x_percent_threshold', then this parameter is applied to the evidence
@@ -250,6 +250,7 @@ class DefaultHypothesesUpdater:
                     hypotheses, input_channel
                 )
 
+                # calculate the evidence_update_threshold
                 evidence_update_threshold = get_evidence_update_threshold(
                     self.evidence_update_threshold,
                     self.x_percent_threshold,
@@ -419,12 +420,16 @@ def all_usable_input_channels(
 
 
 def get_evidence_update_threshold(
-    evidence_update_threshold, x_percent_threshold, evidence_all_channels: np.ndarray
+    evidence_update_threshold: int,
+    x_percent_threshold: float | str,
+    evidence_all_channels: np.ndarray,
 ):
     """Determine how much evidence a hypothesis should have to be updated.
 
     Args:
-        max_global_evidence (float): Maximum evidence value from all hypotheses.
+        evidence_update_threshold (float | str): update threshold type.
+        x_percent_threshold (int): x_percent threshold used in the calculation of
+            evidence threshold.
         evidence_all_channels (np.ndarray): Evidence values for all hypotheses.
 
     Returns:
@@ -434,6 +439,7 @@ def get_evidence_update_threshold(
         InvalidEvidenceUpdateThreshold: If `self.evidence_update_threshold` is
             not in the allowed values
     """
+    # TODO: Better Args description
     max_global_evidence = np.max(evidence_all_channels)
 
     if type(evidence_update_threshold) in [int, float]:
