@@ -451,6 +451,10 @@ def get_evidence_update_threshold(
         InvalidEvidenceUpdateThreshold: If `self.evidence_update_threshold` is
             not in the allowed values
     """
+    # return 0 for the threshold if there are no evidence scores
+    if evidence_all_channels.size == 0:
+        return 0
+
     if type(evidence_update_threshold) in [int, float]:
         return evidence_update_threshold
     elif evidence_update_threshold == "mean":
