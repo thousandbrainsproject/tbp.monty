@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from json import JSONDecoder, JSONEncoder
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Any, Generator, Tuple
 
 from numpy import ndarray
 
@@ -88,7 +88,7 @@ class Action(ABC):
     def __init__(self, agent_id: str) -> None:
         self.agent_id = agent_id
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[tuple[str, Any]]:
         """Yields the action name and all action parameters.
 
         Useful if you want to do something like: `dict(action_instance)`.
@@ -380,7 +380,7 @@ class ActionJSONEncoder(JSONEncoder):
     parameters are encoded as key-value pairs in the JSON object
     """
 
-    def default(self, obj):
+    def default(self, obj: Any) -> Any:
         if isinstance(obj, Action):
             o = {}
             for key, value in dict(obj).items():
@@ -399,10 +399,10 @@ class ActionJSONDecoder(JSONDecoder):
     Additionally, the JSON object must contain all action parameters used by the action.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(object_hook=self.object_hook)
 
-    def object_hook(self, obj):
+    def object_hook(self, obj: dict[str, Any]) -> Any:
         if "action" not in obj:
             raise ValueError("Invalid action object: missing 'action' key.")
         action = obj["action"]
