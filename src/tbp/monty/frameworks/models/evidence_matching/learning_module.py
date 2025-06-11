@@ -244,6 +244,8 @@ class EvidenceGraphLM(GraphLM):
             past_weight=self.past_weight,
             present_weight=self.present_weight,
             tolerances=self.tolerances,
+            x_percent_threshold=self.x_percent_threshold,
+            evidence_update_threshold=self.evidence_update_threshold,
         )
         self.hypotheses_updater = hypotheses_updater_class(**hypotheses_updater_args)
 
@@ -739,12 +741,6 @@ class EvidenceGraphLM(GraphLM):
             self.evidence[graph_id] = np.array([])
             self.possible_locations[graph_id] = np.array([])
             self.possible_poses[graph_id] = np.array([])
-            evidence_update_threshold = 0
-        else:
-            evidence_update_threshold = self._get_evidence_update_threshold(
-                max_global_evidence=self.current_mlh["evidence"],
-                evidence_all_channels=self.evidence[graph_id],
-            )
 
         hypotheses_updates = self.hypotheses_updater.update_hypotheses(
             hypotheses=Hypotheses(
@@ -756,7 +752,6 @@ class EvidenceGraphLM(GraphLM):
             displacements=displacements,
             graph_id=graph_id,
             mapper=self.channel_hypothesis_mapping[graph_id],
-            evidence_update_threshold=evidence_update_threshold,
         )
 
         if not hypotheses_updates:
@@ -1151,49 +1146,6 @@ class EvidenceGraphLM(GraphLM):
                 f"with evidence {np.round(mlh['evidence'], 2)}"
             )
         return mlh
-
-    def _get_evidence_update_threshold(
-        self, max_global_evidence: float, evidence_all_channels: np.ndarray
-    ):
-        """Determine how much evidence a hypothesis should have to be updated.
-
-        Args:
-            max_global_evidence (float): Maximum evidence value from all hypotheses.
-            evidence_all_channels (np.ndarray): Evidence values for all hypotheses.
-
-        Returns:
-            The evidence update threshold.
-
-        Raises:
-            InvalidEvidenceUpdateThreshold: If `self.evidence_update_threshold` is
-                not in the allowed values
-        """
-        if type(self.evidence_update_threshold) in [int, float]:
-            return self.evidence_update_threshold
-        elif self.evidence_update_threshold == "mean":
-            return np.mean(evidence_all_channels)
-        elif self.evidence_update_threshold == "median":
-            return np.median(evidence_all_channels)
-        elif isinstance(
-            self.evidence_update_threshold, str
-        ) and self.evidence_update_threshold.endswith("%"):
-            percentage_str = self.evidence_update_threshold.strip("%")
-            percentage = float(percentage_str)
-            assert percentage >= 0 and percentage <= 100, (
-                "Percentage must be between 0 and 100"
-            )
-            x_percent_of_max = max_global_evidence * (percentage / 100)
-            return max_global_evidence - x_percent_of_max
-        elif self.evidence_update_threshold == "x_percent_threshold":
-            x_percent_of_max = max_global_evidence / 100 * self.x_percent_threshold
-            return max_global_evidence - x_percent_of_max
-        elif self.evidence_update_threshold == "all":
-            return np.min(evidence_all_channels)
-        else:
-            raise InvalidEvidenceUpdateThreshold(
-                "evidence_update_threshold not in "
-                "[int, float, '[int]%', 'mean', 'median', 'all', 'x_percent_threshold']"
-            )
 
     def _get_node_distance_weights(self, distances):
         node_distance_weights = (
