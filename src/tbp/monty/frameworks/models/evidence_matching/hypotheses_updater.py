@@ -192,6 +192,7 @@ class DefaultHypothesesUpdater:
         displacements: dict | None,
         graph_id: str,
         mapper: ChannelMapper,
+        max_global_evidence: float,
     ) -> list[ChannelHypotheses]:
         """Update hypotheses based on sensor displacement and sensed features.
 
@@ -254,6 +255,7 @@ class DefaultHypothesesUpdater:
                 evidence_update_threshold = get_evidence_update_threshold(
                     self.evidence_update_threshold,
                     self.x_percent_threshold,
+                    max_global_evidence,
                     hypotheses.evidence,
                 )
 
@@ -422,6 +424,7 @@ def all_usable_input_channels(
 def get_evidence_update_threshold(
     evidence_update_threshold: int,
     x_percent_threshold: float | str,
+    max_global_evidence: float,
     evidence_all_channels: np.ndarray,
 ):
     """Determine how much evidence a hypothesis should have to be updated.
@@ -430,6 +433,7 @@ def get_evidence_update_threshold(
         evidence_update_threshold (float | str): update threshold type.
         x_percent_threshold (int): x_percent threshold used in the calculation of
             evidence threshold.
+        max_global_evidence (float): highest evidence of all hypotheses,
         evidence_all_channels (np.ndarray): Evidence values for all hypotheses.
 
     Returns:
@@ -440,7 +444,7 @@ def get_evidence_update_threshold(
             not in the allowed values
     """
     # TODO: Better Args description
-    max_global_evidence = np.max(evidence_all_channels)
+    # max_global_evidence = np.max(evidence_all_channels)
 
     if type(evidence_update_threshold) in [int, float]:
         return evidence_update_threshold

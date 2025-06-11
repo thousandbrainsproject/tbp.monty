@@ -752,6 +752,7 @@ class EvidenceGraphLM(GraphLM):
             displacements=displacements,
             graph_id=graph_id,
             mapper=self.channel_hypothesis_mapping[graph_id],
+            max_global_evidence=self.current_mlh["evidence"],
         )
 
         if not hypotheses_updates:
