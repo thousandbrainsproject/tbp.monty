@@ -140,8 +140,8 @@ class LookDownActuator(Protocol):
 class LookDown(Action):
     """Rotate the agent downwards by a specified number of degrees."""
 
-    @classmethod
-    def sample(cls, agent_id: str, sampler: LookDownActionSampler) -> LookDown:
+    @staticmethod
+    def sample(agent_id: str, sampler: LookDownActionSampler) -> LookDown:
         return sampler.sample_look_down(agent_id)
 
     def __init__(
@@ -166,8 +166,8 @@ class LookUpActuator(Protocol):
 class LookUp(Action):
     """Rotate the agent upwards by a specified number of degrees."""
 
-    @classmethod
-    def sample(cls, agent_id: str, sampler: LookUpActionSampler) -> LookUp:
+    @staticmethod
+    def sample(agent_id: str, sampler: LookUpActionSampler) -> LookUp:
         return sampler.sample_look_up(agent_id)
 
     def __init__(
@@ -192,8 +192,8 @@ class MoveForwardActuator(Protocol):
 class MoveForward(Action):
     """Move the agent forward by a specified distance."""
 
-    @classmethod
-    def sample(cls, agent_id: str, sampler: MoveForwardActionSampler) -> MoveForward:
+    @staticmethod
+    def sample(agent_id: str, sampler: MoveForwardActionSampler) -> MoveForward:
         return sampler.sample_move_forward(agent_id)
 
     def __init__(self, agent_id: str, distance: float) -> None:
@@ -219,9 +219,9 @@ class MoveTangentially(Action):
     along a specified direction.
     """
 
-    @classmethod
+    @staticmethod
     def sample(
-        cls, agent_id: str, sampler: MoveTangentiallyActionSampler
+        agent_id: str, sampler: MoveTangentiallyActionSampler
     ) -> MoveTangentially:
         return sampler.sample_move_tangentially(agent_id)
 
@@ -249,9 +249,9 @@ class OrientHorizontal(Action):
     motion with a rotation in the horizontal plane.
     """
 
-    @classmethod
+    @staticmethod
     def sample(
-        cls, agent_id: str, sampler: OrientHorizontalActionSampler
+        agent_id: str, sampler: OrientHorizontalActionSampler
     ) -> OrientHorizontal:
         return sampler.sample_orient_horizontal(agent_id)
 
@@ -286,10 +286,8 @@ class OrientVertical(Action):
     with a rotation in the vertical plane.
     """
 
-    @classmethod
-    def sample(
-        cls, agent_id: str, sampler: OrientVerticalActionSampler
-    ) -> OrientVertical:
+    @staticmethod
+    def sample(agent_id: str, sampler: OrientVerticalActionSampler) -> OrientVertical:
         return sampler.sample_orient_vertical(agent_id)
 
     def __init__(
@@ -324,10 +322,8 @@ class SetAgentPitch(Action):
     with regard to the environment.
     """
 
-    @classmethod
-    def sample(
-        cls, agent_id: str, sampler: SetAgentPitchActionSampler
-    ) -> SetAgentPitch:
+    @staticmethod
+    def sample(agent_id: str, sampler: SetAgentPitchActionSampler) -> SetAgentPitch:
         return sampler.sample_set_agent_pitch(agent_id)
 
     def __init__(self, agent_id: str, pitch_degrees: float) -> None:
@@ -353,8 +349,8 @@ class SetAgentPose(Action):
     environment.
     """
 
-    @classmethod
-    def sample(cls, agent_id: str, sampler: SetAgentPoseActionSampler) -> SetAgentPose:
+    @staticmethod
+    def sample(agent_id: str, sampler: SetAgentPoseActionSampler) -> SetAgentPose:
         return sampler.sample_set_agent_pose(agent_id)
 
     def __init__(
@@ -383,10 +379,8 @@ class SetSensorPitch(Action):
     with the eye remaining in place, while the eye moves.
     """
 
-    @classmethod
-    def sample(
-        cls, agent_id: str, sampler: SetSensorPitchActionSampler
-    ) -> SetSensorPitch:
+    @staticmethod
+    def sample(agent_id: str, sampler: SetSensorPitchActionSampler) -> SetSensorPitch:
         return sampler.sample_set_sensor_pitch(agent_id)
 
     def __init__(self, agent_id: str, pitch_degrees: float) -> None:
@@ -412,10 +406,8 @@ class SetSensorPose(Action):
     environment.
     """
 
-    @classmethod
-    def sample(
-        cls, agent_id: str, sampler: SetSensorPoseActionSampler
-    ) -> SetSensorPose:
+    @staticmethod
+    def sample(agent_id: str, sampler: SetSensorPoseActionSampler) -> SetSensorPose:
         return sampler.sample_set_sensor_pose(agent_id)
 
     def __init__(
@@ -440,9 +432,9 @@ class SetSensorRotationActuator(Protocol):
 class SetSensorRotation(Action):
     """Set the sensor rotation relative to the agent."""
 
-    @classmethod
+    @staticmethod
     def sample(
-        cls, agent_id: str, sampler: SetSensorRotationActionSampler
+        agent_id: str, sampler: SetSensorRotationActionSampler
     ) -> SetSensorRotation:
         return sampler.sample_set_sensor_rotation(agent_id)
 
@@ -465,8 +457,8 @@ class SetYawActuator(Protocol):
 class SetYaw(Action):
     """Set the agent body yaw rotation."""
 
-    @classmethod
-    def sample(cls, agent_id: str, sampler: SetYawActionSampler) -> SetYaw:
+    @staticmethod
+    def sample(agent_id: str, sampler: SetYawActionSampler) -> SetYaw:
         return sampler.sample_set_yaw(agent_id)
 
     def __init__(self, agent_id: str, rotation_degrees: float) -> None:
@@ -488,8 +480,8 @@ class TurnLeftActuator(Protocol):
 class TurnLeft(Action):
     """Rotate the agent to the left."""
 
-    @classmethod
-    def sample(cls, agent_id: str, sampler: TurnLeftActionSampler) -> TurnLeft:
+    @staticmethod
+    def sample(agent_id: str, sampler: TurnLeftActionSampler) -> TurnLeft:
         return sampler.sample_turn_left(agent_id)
 
     def __init__(self, agent_id: str, rotation_degrees: float) -> None:
@@ -511,8 +503,8 @@ class TurnRightActuator(Protocol):
 class TurnRight(Action):
     """Rotate the agent to the right."""
 
-    @classmethod
-    def sample(cls, agent_id: str, sampler: TurnRightActionSampler) -> TurnRight:
+    @staticmethod
+    def sample(agent_id: str, sampler: TurnRightActionSampler) -> TurnRight:
         return sampler.sample_turn_right(agent_id)
 
     def __init__(self, agent_id: str, rotation_degrees: float) -> None:
