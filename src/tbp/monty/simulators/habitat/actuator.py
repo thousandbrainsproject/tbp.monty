@@ -10,10 +10,8 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import Any, Type
-
-from habitat_sim import Agent
+from habitat_sim import ActuationSpec, Agent
+from typing_extensions import Protocol
 
 from tbp.monty.frameworks.actions.actions import (
     Action,
@@ -32,31 +30,32 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
-from tbp.monty.frameworks.actions.actuator import Actuator
 
 __all__ = [
     "HabitatActuator",
     "HabitatActuatorRequirements",
-    "HabitatParameterizer",
 ]
 
 
-class HabitatActuatorRequirements(ABC):
+class HabitatActuatorRequirements(Protocol):
     """HabitatActuator requires these to be available when mixed in."""
 
-    @abstractmethod
-    def get_agent(self, agent_id: str) -> Agent:
-        pass
+    def get_agent(self, agent_id: str) -> Agent: ...
 
 
-class HabitatActuator(Actuator, HabitatActuatorRequirements):
-    """Habitat implementation of Actuator.
+class HabitatActuator(HabitatActuatorRequirements):
+    """Habitat implementation of an Actuator.
 
     HabitatActuator is responsible for executing actions in the Habitat simulation.
 
     It is a separate class to encapsulate the actuation logic in one place. This
     class is expected to be mixed into HabitatSim and expects
     HabitatActuatorRequirements to be met.
+
+    Note:
+        Habitat does not expose an API for passing parameters to actions.
+        So each actuate method works around this limitation by artisanally setting
+        specific action parameters directly in Habitat sim.
     """
 
     def action_name(self, action: Action) -> str:
@@ -66,170 +65,119 @@ class HabitatActuator(Actuator, HabitatActuatorRequirements):
         """
         return f"{action.agent_id}.{action.name}"
 
-    def actuate(self, action: Action, parameterizer: Type[HabitatParameterizer]):
-        """Transition from the Monty to the Habitat sim domain and execute the action.
+    def to_habitat(self, action: Action) -> tuple[Agent, ActuationSpec, str]:
+        """Transition from the Monty to the Habitat sim domain.
 
         Args:
             action: Monty action to execute by the agent specified in the action.
-            parameterizer: Parameterizer to use to set action parameters within Habitat
-                sim prior to executing the action.
+
+        Returns:
+            (Agent, ActuationSpec, str): The Habitat agent to execute the action,
+                the Habitat action parameters to set prior to executing the action, and
+                the Habitat action name to execute.
 
         Raises:
-            ValueError: If the action name is invalid
+            InvalidActionName: If the action name is invalid.
+            NoActionParameters: If the action has no parameters.
         """
         agent = self.get_agent(action.agent_id)
         action_name = self.action_name(action)
         action_space = agent.agent_config.action_space
         if action_name not in action_space:
-            raise ValueError(f"Invalid action name: {action_name}")
+            raise InvalidActionName(action_name)
 
         # actuation is Habitat's name for action parameters when action is executed
         action_params = action_space[action_name].actuation
-        # overwrite Habitat action parameters with values from Monty action
-        parameterizer.parameterize(action_params, action)
+        if action_params is None:
+            raise NoActionParameters(action_name)
 
-        agent.act(action_name)
+        return agent, action_params, action_name
 
     def actuate_look_down(self, action: LookDown) -> None:
-        self.actuate(action, LookDownParameterizer)
+        agent, action_params, action_name = self.to_habitat(action)
+        action_params.amount = action.rotation_degrees
+        action_params.constraint = action.constraint_degrees
+        agent.act(action_name)
 
     def actuate_look_up(self, action: LookUp) -> None:
-        self.actuate(action, LookUpParameterizer)
+        agent, action_params, action_name = self.to_habitat(action)
+        action_params.amount = action.rotation_degrees
+        action_params.constraint = action.constraint_degrees
+        agent.act(action_name)
 
     def actuate_move_forward(self, action: MoveForward) -> None:
-        self.actuate(action, MoveForwardParameterizer)
+        agent, action_params, action_name = self.to_habitat(action)
+        action_params.amount = action.distance
+        agent.act(action_name)
 
     def actuate_move_tangentially(self, action: MoveTangentially) -> None:
-        self.actuate(action, MoveTangentiallyParameterizer)
+        agent, action_params, action_name = self.to_habitat(action)
+        action_params.amount = action.distance
+        action_params.constraint = action.direction
+        agent.act(action_name)
 
     def actuate_orient_horizontal(self, action: OrientHorizontal) -> None:
-        self.actuate(action, OrientHoriztonalParameterizer)
+        agent, action_params, action_name = self.to_habitat(action)
+        action_params.amount = action.rotation_degrees
+        action_params.constraint = [action.left_distance, action.forward_distance]
+        agent.act(action_name)
 
     def actuate_orient_vertical(self, action: OrientVertical) -> None:
-        self.actuate(action, OrientVerticalParameterizer)
+        agent, action_params, action_name = self.to_habitat(action)
+        action_params.amount = action.rotation_degrees
+        action_params.constraint = [action.down_distance, action.forward_distance]
+        agent.act(action_name)
 
     def actuate_set_agent_pitch(self, action: SetAgentPitch) -> None:
-        self.actuate(action, SetAgentPitchParameterizer)
+        agent, action_params, action_name = self.to_habitat(action)
+        action_params.amount = action.pitch_degrees
+        agent.act(action_name)
 
     def actuate_set_agent_pose(self, action: SetAgentPose) -> None:
-        self.actuate(action, SetAgentPoseParameterizer)
+        agent, action_params, action_name = self.to_habitat(action)
+        action_params.amount = [action.location, action.rotation_quat]
+        agent.act(action_name)
 
     def actuate_set_sensor_pitch(self, action: SetSensorPitch) -> None:
-        self.actuate(action, SetSensorPitchParameterizer)
+        agent, action_params, action_name = self.to_habitat(action)
+        action_params.amount = action.pitch_degrees
+        agent.act(action_name)
 
     def actuate_set_sensor_pose(self, action: SetSensorPose) -> None:
-        self.actuate(action, SetSensorPoseParameterizer)
+        agent, action_params, action_name = self.to_habitat(action)
+        action_params.amount = [action.location, action.rotation_quat]
+        agent.act(action_name)
 
     def actuate_set_sensor_rotation(self, action: SetSensorRotation) -> None:
-        self.actuate(action, SetSensorRotationParameterizer)
+        agent, action_params, action_name = self.to_habitat(action)
+        action_params.amount = [action.rotation_quat]
+        agent.act(action_name)
 
     def actuate_set_yaw(self, action: SetYaw) -> None:
-        self.actuate(action, SetYawParameterizer)
+        agent, action_params, action_name = self.to_habitat(action)
+        action_params.amount = action.rotation_degrees
+        agent.act(action_name)
 
     def actuate_turn_left(self, action: TurnLeft) -> None:
-        self.actuate(action, TurnLeftParameterizer)
+        agent, action_params, action_name = self.to_habitat(action)
+        action_params.amount = action.rotation_degrees
+        agent.act(action_name)
 
     def actuate_turn_right(self, action: TurnRight) -> None:
-        self.actuate(action, TurnRightParameterizer)
+        agent, action_params, action_name = self.to_habitat(action)
+        action_params.amount = action.rotation_degrees
+        agent.act(action_name)
 
 
-class HabitatParameterizer(ABC):
-    @staticmethod
-    @abstractmethod
-    def parameterize(params: Any, action: Action) -> None:
-        """Copies relevant parameters from action to params.
+class InvalidActionName(Exception):
+    """Raised when an action name is invalid."""
 
-        Habitat does not expose an API for passing parameters to actions.
-        This is a work around for this limitation by artisanally setting
-        specific action parameters directly in Habitat sim.
-        """
-        pass
+    def __init__(self, action_name: str):
+        super().__init__(f"Invalid action name: {action_name}")
 
 
-class LookDownParameterizer(HabitatParameterizer):
-    @staticmethod
-    def parameterize(params: Any, action: LookDown) -> None:
-        params.amount = action.rotation_degrees
-        params.constraint = action.constraint_degrees
+class NoActionParameters(Exception):
+    """Raised when an action has no parameters."""
 
-
-class LookUpParameterizer(HabitatParameterizer):
-    @staticmethod
-    def parameterize(params: Any, action: LookUp) -> None:
-        params.amount = action.rotation_degrees
-        params.constraint = action.constraint_degrees
-
-
-class MoveForwardParameterizer(HabitatParameterizer):
-    @staticmethod
-    def parameterize(params: Any, action: MoveForward) -> None:
-        params.amount = action.distance
-
-
-class MoveTangentiallyParameterizer(HabitatParameterizer):
-    @staticmethod
-    def parameterize(params: Any, action: MoveTangentially) -> None:
-        params.amount = action.distance
-        params.constraint = action.direction
-
-
-class OrientHoriztonalParameterizer(HabitatParameterizer):
-    @staticmethod
-    def parameterize(params: Any, action: OrientHorizontal) -> None:
-        params.amount = action.rotation_degrees
-        params.constraint = [action.left_distance, action.forward_distance]
-
-
-class OrientVerticalParameterizer(HabitatParameterizer):
-    @staticmethod
-    def parameterize(params: Any, action: OrientVertical) -> None:
-        params.amount = action.rotation_degrees
-        params.constraint = [action.down_distance, action.forward_distance]
-
-
-class SetAgentPitchParameterizer(HabitatParameterizer):
-    @staticmethod
-    def parameterize(params: Any, action: SetAgentPitch) -> None:
-        params.amount = action.pitch_degrees
-
-
-class SetAgentPoseParameterizer(HabitatParameterizer):
-    @staticmethod
-    def parameterize(params: Any, action: SetAgentPose) -> None:
-        params.amount = [action.location, action.rotation_quat]
-
-
-class SetSensorPitchParameterizer(HabitatParameterizer):
-    @staticmethod
-    def parameterize(params: Any, action: SetSensorPitch) -> None:
-        params.amount = action.pitch_degrees
-
-
-class SetSensorPoseParameterizer(HabitatParameterizer):
-    @staticmethod
-    def parameterize(params: Any, action: SetSensorPose) -> None:
-        params.amount = [action.location, action.rotation_quat]
-
-
-class SetSensorRotationParameterizer(HabitatParameterizer):
-    @staticmethod
-    def parameterize(params: Any, action: SetSensorRotation) -> None:
-        params.amount = [action.rotation_quat]
-
-
-class SetYawParameterizer(HabitatParameterizer):
-    @staticmethod
-    def parameterize(params: Any, action: SetYaw) -> None:
-        params.amount = action.rotation_degrees
-
-
-class TurnLeftParameterizer(HabitatParameterizer):
-    @staticmethod
-    def parameterize(params: Any, action: TurnLeft) -> None:
-        params.amount = action.rotation_degrees
-
-
-class TurnRightParameterizer(HabitatParameterizer):
-    @staticmethod
-    def parameterize(params: Any, action: TurnRight) -> None:
-        params.amount = action.rotation_degrees
+    def __init__(self, action_name: str):
+        super().__init__(f"No action parameters for action: {action_name}")

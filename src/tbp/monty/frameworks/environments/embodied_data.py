@@ -735,7 +735,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             self.motor_system._policy.action = MoveTangentially(
                 agent_id=self.motor_system._policy.agent_id,
                 distance=0.0,
-                direction=[0, 0, 0],
+                direction=(0, 0, 0),
             )
 
             # TODO cleanup where this is performed, and make variable names more general

@@ -96,7 +96,7 @@ from tbp.monty.simulators.habitat.configs import (
 
 
 class PolicyTest(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Code that gets executed before every test."""
         self.output_dir = tempfile.mkdtemp()
 
@@ -519,7 +519,7 @@ class PolicyTest(unittest.TestCase):
             exp.evaluate()
 
     # @unittest.skip("debugging")
-    def test_can_run_curv_informed_policy(self):
+    def test_can_run_curv_informed_policy(self) -> None:
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.curv_informed_config)
         with MontyObjectRecognitionExperiment(config) as exp:

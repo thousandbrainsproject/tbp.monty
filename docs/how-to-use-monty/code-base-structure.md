@@ -26,10 +26,13 @@ The basic repository structure looks as follows:
 |   |   `-- utils
 |   `-- simulators/
 |       `-- habitat/
-|           |-- actions
-|           |-- agents
-|           |-- sensors
-|           `-- simulator
+|           |-- actions.py
+|           |-- actuator.py
+|           |-- agents.py
+|           |-- configs.py
+|           |-- environment.py
+|           |-- sensors.py
+|           `-- simulator.py
 |-- tests/                      # Unit tests
 |-- tools/
 `-- README.md

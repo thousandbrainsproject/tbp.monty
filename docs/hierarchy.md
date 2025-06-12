@@ -33,6 +33,7 @@
   - [multiple-learning-modules](how-to-use-monty/tutorials/multiple-learning-modules.md)
   - [using-monty-in-a-custom-application](how-to-use-monty/tutorials/using-monty-in-a-custom-application.md)
   - [using-monty-for-robotics](how-to-use-monty/tutorials/using-monty-for-robotics.md)
+  - [implementing-actions](how-to-use-monty/tutorials/implementing-actions.md)
 - [common-issues-and-how-to-fix-them](how-to-use-monty/common-issues-and-how-to-fix-them.md)
 
 # how-monty-works: How Monty Works

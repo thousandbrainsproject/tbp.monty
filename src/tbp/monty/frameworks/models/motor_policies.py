@@ -63,7 +63,7 @@ class MotorPolicy(abc.ABC):
         self.is_predefined = False
 
     @abc.abstractmethod
-    def dynamic_call(self, state: Optional[MotorSystemState] = None) -> Action:
+    def dynamic_call(self, state: Optional[MotorSystemState] = None) -> Action | None:
         """Use this method when actions are not predefined.
 
         Args:
@@ -71,7 +71,7 @@ class MotorPolicy(abc.ABC):
                 Defaults to None.
 
         Returns:
-            (Action): The action to take.
+            (Action | None): The action to take.
         """
         pass
 
@@ -83,7 +83,7 @@ class MotorPolicy(abc.ABC):
 
     @abc.abstractmethod
     def post_action(
-        self, action: Action, state: Optional[MotorSystemState] = None
+        self, action: Action | None, state: Optional[MotorSystemState] = None
     ) -> None:
         """This post action hook will automatically be called at the end of __call__.
 
@@ -92,7 +92,7 @@ class MotorPolicy(abc.ABC):
               motor system.
 
         Args:
-            action (Action): The action to process the hook for.
+            action (Action | None): The action to process the hook for.
             state (Optional[MotorSystemState]): The current state of the motor system.
                 Defaults to None.
         """
@@ -126,7 +126,7 @@ class MotorPolicy(abc.ABC):
         """
         pass
 
-    def __call__(self, state: Optional[MotorSystemState] = None) -> Action:
+    def __call__(self, state: Optional[MotorSystemState] = None) -> Action | None:
         """Select either dynamic or predefined call.
 
         Args:
@@ -134,10 +134,10 @@ class MotorPolicy(abc.ABC):
                 Defaults to None.
 
         Returns:
-            (Action): The action to take.
+            (Action | None): The action to take.
         """
         if self.is_predefined:
-            action = self.predefined_call()
+            action: Action | None = self.predefined_call()
         else:
             action = self.dynamic_call(state)
         self.post_action(action, state)
@@ -182,7 +182,9 @@ class BasePolicy(MotorPolicy):
         self.episode_count = 0
         self.switch_frequency = float(switch_frequency)
         # Ensure our first action only samples from those that can be random
-        self.action = self.get_random_action(self.action_sampler.sample(self.agent_id))
+        self.action: Action | None = self.get_random_action(
+            self.action_sampler.sample(self.agent_id)
+        )
 
         ###
         # Load data for predefined actions and amounts if specified
@@ -209,7 +211,7 @@ class BasePolicy(MotorPolicy):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, _state: Optional[MotorSystemState] = None) -> Action:
+    def dynamic_call(self, _state: Optional[MotorSystemState] = None) -> Action | None:
         """Return a random action.
 
         The MotorSystemState is ignored.
@@ -240,7 +242,9 @@ class BasePolicy(MotorPolicy):
     def predefined_call(self) -> Action:
         return self.action_list[self.episode_step % len(self.action_list)]
 
-    def post_action(self, action: Action, _: Optional[MotorSystemState] = None) -> None:
+    def post_action(
+        self, action: Action | None, _: Optional[MotorSystemState] = None
+    ) -> None:
         self.action = action
         self.timestep += 1
         self.episode_step += 1
@@ -869,7 +873,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, state: Optional[MotorSystemState] = None) -> Action:
+    def dynamic_call(self, state: Optional[MotorSystemState] = None) -> Action | None:
         """Return the next action to take.
 
         This requires self.processed_observations to be updated at every step
@@ -881,7 +885,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 Defaults to None.
 
         Returns:
-            (Action): The action to take.
+            (Action | None): The action to take.
         """
         return (
             super().dynamic_call(state)
@@ -889,7 +893,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             else self.fixme_undo_last_action()
         )
 
-    def fixme_undo_last_action(self):
+    def fixme_undo_last_action(
+        self,
+    ) -> LookDown | LookUp | TurnLeft | TurnRight | MoveForward | MoveTangentially:
         """Returns an action that undoes last action for supported actions.
 
         Previous InformedPolicy.dynamic_call() implementation when not on object:
@@ -962,7 +968,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             raise TypeError(f"Invalid action: {last_action}")
 
     def post_action(
-        self, action: Action, state: Optional[MotorSystemState] = None
+        self, action: Action | None, state: MotorSystemState | None = None
     ) -> None:
         self.action = action
         self.timestep += 1
@@ -1439,7 +1445,7 @@ class SurfacePolicy(InformedPolicy):
             # x-coordinate and sin(theta) with the y-coordinate of space
         )
 
-        return direction
+        return tuple(direction)
 
     def horizontal_distances(self, rotation_degrees: float) -> Tuple[float, float]:
         """Compute the horizontal and forward distances to move to.
@@ -1840,7 +1846,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         return tang_movement
 
-    def perform_pc_guided_step(self, state: MotorSystemState):
+    def perform_pc_guided_step(self, state: MotorSystemState) -> VectorXYZ:
         """Inform steps to take using defined directions of principal curvature.
 
         Use the defined directions of principal curvature to inform (ideally a
@@ -1916,8 +1922,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             self.reset_pc_buffers()
             self.following_heading_counter = 0
 
-            return qt.rotate_vectors(
-                state["agent_id_0"]["rotation"], self.tangential_vec
+            return tuple(
+                qt.rotate_vectors(state["agent_id_0"]["rotation"], self.tangential_vec)
             )
 
         # Otherwise our heading is good; we continue and use our original heading (or
@@ -1936,9 +1942,11 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.following_pc_counter += 1
         self.continuous_pc_steps += 1
 
-        return qt.rotate_vectors(state["agent_id_0"]["rotation"], self.tangential_vec)
+        return tuple(
+            qt.rotate_vectors(state["agent_id_0"]["rotation"], self.tangential_vec)
+        )
 
-    def perform_standard_tang_step(self, state: MotorSystemState):
+    def perform_standard_tang_step(self, state: MotorSystemState) -> VectorXYZ:
         """Perform a standard tangential step across the object.
 
         This is in contrast to, for example, being guided by principal curvatures.
@@ -2000,9 +2008,11 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         self.following_heading_counter += 1
 
-        return qt.rotate_vectors(
-            state["agent_id_0"]["rotation"],
-            self.tangential_vec,
+        return tuple(
+            qt.rotate_vectors(
+                state["agent_id_0"]["rotation"],
+                self.tangential_vec,
+            )
         )
 
     def update_tangential_reps(self, vec_form=None, angle_form=None):

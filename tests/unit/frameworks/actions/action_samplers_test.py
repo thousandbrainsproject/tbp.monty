@@ -14,57 +14,91 @@ import unittest
 from typing import List, Type
 
 from numpy.random import Generator, default_rng
+from typing_extensions import Protocol
 
 from tbp.monty.frameworks.actions.action_samplers import (
     ActionSampler,
     ConstantSampler,
     UniformlyDistributedSampler,
 )
-from tbp.monty.frameworks.actions.actions import Action
-from tbp.monty.frameworks.actions.actuator import Actuator
+from tbp.monty.frameworks.actions.actions import Action, QuaternionWXYZ, VectorXYZ
 
 RNG_SEED = 1337
 
 
+class FakeActionOneActionSampler(Protocol):
+    def sample_fake_action_one(self, agent_id: str) -> FakeActionOne: ...
+
+
+class FakeActionOneActuator(Protocol):
+    def actuate_fake_action_one(self, action: FakeActionOne) -> None: ...
+
+
 class FakeActionOne(Action):
     @classmethod
-    def sample(cls, agent_id: str, _: ActionSampler) -> FakeActionOne:
-        pass
+    def sample(
+        cls, agent_id: str, sampler: FakeActionOneActionSampler
+    ) -> FakeActionOne:
+        return sampler.sample_fake_action_one(agent_id)
 
     def __init__(self, agent_id: str):
         super().__init__(agent_id)
 
-    def act(self, _: Actuator):
+    def act(self, _: FakeActionOneActuator) -> None:
         pass
+
+
+class FakeActionTwoActionSampler(Protocol):
+    def sample_fake_action_two(self, agent_id: str) -> FakeActionTwo: ...
+
+
+class FakeActionTwoActuator(Protocol):
+    def actuate_fake_action_two(self, action: FakeActionTwo) -> None: ...
 
 
 class FakeActionTwo(Action):
     @classmethod
-    def sample(cls, agent_id: str, _: ActionSampler) -> FakeActionTwo:
-        pass
+    def sample(
+        cls, agent_id: str, sampler: FakeActionTwoActionSampler
+    ) -> FakeActionTwo:
+        return sampler.sample_fake_action_two(agent_id)
 
     def __init__(self, agent_id: str):
         super().__init__(agent_id)
 
-    def act(self, _: Actuator):
+    def act(self, _: FakeActionTwoActuator) -> None:
         pass
+
+
+class FakeActionThreeActionSampler(Protocol):
+    def sample_fake_action_three(self, agent_id: str) -> FakeActionThree: ...
+
+
+class FakeActionThreeActuator(Protocol):
+    def actuate_fake_action_three(self, action: FakeActionThree) -> None: ...
 
 
 class FakeActionThree(Action):
     @classmethod
-    def sample(cls, agent_id: str, _: ActionSampler) -> FakeActionThree:
-        pass
+    def sample(
+        cls, agent_id: str, sampler: FakeActionThreeActionSampler
+    ) -> FakeActionThree:
+        return sampler.sample_fake_action_three(agent_id)
 
     def __init__(self, agent_id: str):
         super().__init__(agent_id)
 
-    def act(self, _: Actuator):
+    def act(self, _: FakeActionThreeActuator) -> None:
         pass
 
 
-class FakeSampler(ConstantSampler):
-    def __init__(self, rng: Generator = None, actions: List[Type[Action]] = None):
-        super().__init__(rng, actions)
+class FakeSampler(ActionSampler):
+    def __init__(
+        self,
+        rng: Generator | None = None,
+        actions: List[Type[Action]] | None = None,
+    ):
+        super().__init__(rng=rng, actions=actions)
 
     def sample_fake_action_one(self, agent_id: str) -> FakeActionOne:
         return FakeActionOne(agent_id)
@@ -76,15 +110,8 @@ class FakeSampler(ConstantSampler):
         return FakeActionThree(agent_id)
 
 
-class FakeSamplerTest(unittest.TestCase):
-    def test_fake_sampler_implements_action_sampler(self):
-        """Will fail if FakeSampler does not implement ActionSampler."""
-        sampler = FakeSampler()
-        self.assertIsInstance(sampler, ActionSampler)
-
-
 class ActionSamplerTest(unittest.TestCase):
-    def test_sample_samples_random_action(self):
+    def test_sample_samples_random_action(self) -> None:
         sampler = FakeSampler(
             actions=[FakeActionOne, FakeActionTwo, FakeActionThree],
             rng=default_rng(RNG_SEED),
@@ -111,12 +138,12 @@ class ConstantSamplerTest(unittest.TestCase):
     compare their parameters to ensure that they are the same across actions.
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.absolute_degrees = 45.0
-        self.direction = [1.0, 2.0, 3.0]
-        self.location = [4.0, 5.0, 6.0]
+        self.direction: VectorXYZ = (1.0, 2.0, 3.0)
+        self.location: VectorXYZ = (4.0, 5.0, 6.0)
         self.rotation_degrees = 4.0
-        self.rotation_quat = [0.0, 0.0, 0.0, 1.0]
+        self.rotation_quat: QuaternionWXYZ = (0.0, 0.0, 0.0, 1.0)
         self.translation_distance = 0.02
         self.sampler = ConstantSampler(
             absolute_degrees=self.absolute_degrees,
@@ -128,7 +155,7 @@ class ConstantSamplerTest(unittest.TestCase):
             translation_distance=self.translation_distance,
         )
 
-    def test_accepts_arbitrary_additional_init_params(self):
+    def test_accepts_arbitrary_additional_init_params(self) -> None:
         ConstantSampler(
             absolute_degrees=self.absolute_degrees,
             direction=self.direction,
@@ -140,7 +167,7 @@ class ConstantSamplerTest(unittest.TestCase):
             additional_param="additional_param",
         )
 
-    def test_samples_look_down_with_constant_params(self):
+    def test_samples_look_down_with_constant_params(self) -> None:
         action1 = self.sampler.sample_look_down("agent1")
         action2 = self.sampler.sample_look_down("agent2")
         self.assertTrue(
@@ -150,7 +177,7 @@ class ConstantSamplerTest(unittest.TestCase):
         )
         self.assertTrue(action1.constraint_degrees == action2.constraint_degrees == 90)
 
-    def test_samples_look_up_with_constant_params(self):
+    def test_samples_look_up_with_constant_params(self) -> None:
         action1 = self.sampler.sample_look_up("agent1")
         action2 = self.sampler.sample_look_up("agent2")
         self.assertTrue(
@@ -160,14 +187,14 @@ class ConstantSamplerTest(unittest.TestCase):
         )
         self.assertTrue(action1.constraint_degrees == action2.constraint_degrees == 90)
 
-    def test_samples_move_forward_with_constant_params(self):
+    def test_samples_move_forward_with_constant_params(self) -> None:
         action1 = self.sampler.sample_move_forward("agent1")
         action2 = self.sampler.sample_move_forward("agent2")
         self.assertTrue(
             action1.distance == action2.distance == self.translation_distance
         )
 
-    def test_samples_move_tangentially_with_constant_params(self):
+    def test_samples_move_tangentially_with_constant_params(self) -> None:
         action1 = self.sampler.sample_move_tangentially("agent1")
         action2 = self.sampler.sample_move_tangentially("agent2")
         self.assertTrue(
@@ -176,7 +203,7 @@ class ConstantSamplerTest(unittest.TestCase):
         self.assertEqual(action1.direction, self.direction)
         self.assertEqual(action2.direction, self.direction)
 
-    def test_samples_orient_horizontal_with_constant_params(self):
+    def test_samples_orient_horizontal_with_constant_params(self) -> None:
         action1 = self.sampler.sample_orient_horizontal("agent1")
         action2 = self.sampler.sample_orient_horizontal("agent2")
         self.assertTrue(
@@ -193,7 +220,7 @@ class ConstantSamplerTest(unittest.TestCase):
             == self.translation_distance
         )
 
-    def test_samples_orient_vertical_with_constant_params(self):
+    def test_samples_orient_vertical_with_constant_params(self) -> None:
         action1 = self.sampler.sample_orient_vertical("agent1")
         action2 = self.sampler.sample_orient_vertical("agent2")
         self.assertTrue(
@@ -210,14 +237,14 @@ class ConstantSamplerTest(unittest.TestCase):
             == self.translation_distance
         )
 
-    def test_samples_set_agent_pitch_with_constant_params(self):
+    def test_samples_set_agent_pitch_with_constant_params(self) -> None:
         action1 = self.sampler.sample_set_agent_pitch("agent1")
         action2 = self.sampler.sample_set_agent_pitch("agent2")
         self.assertTrue(
             action1.pitch_degrees == action2.pitch_degrees == self.absolute_degrees
         )
 
-    def test_samples_set_agent_pose_with_constant_params(self):
+    def test_samples_set_agent_pose_with_constant_params(self) -> None:
         action1 = self.sampler.sample_set_agent_pose("agent1")
         action2 = self.sampler.sample_set_agent_pose("agent2")
         self.assertEqual(action1.location, self.location)
@@ -225,14 +252,14 @@ class ConstantSamplerTest(unittest.TestCase):
         self.assertEqual(action2.location, self.location)
         self.assertEqual(action2.rotation_quat, self.rotation_quat)
 
-    def test_samples_set_sensor_pitch_with_constant_params(self):
+    def test_samples_set_sensor_pitch_with_constant_params(self) -> None:
         action1 = self.sampler.sample_set_sensor_pitch("agent1")
         action2 = self.sampler.sample_set_sensor_pitch("agent2")
         self.assertTrue(
             action1.pitch_degrees == action2.pitch_degrees == self.absolute_degrees
         )
 
-    def test_samples_set_sensor_pose_with_constant_params(self):
+    def test_samples_set_sensor_pose_with_constant_params(self) -> None:
         action1 = self.sampler.sample_set_sensor_pose("agent1")
         action2 = self.sampler.sample_set_sensor_pose("agent2")
         self.assertEqual(action1.location, self.location)
@@ -240,13 +267,13 @@ class ConstantSamplerTest(unittest.TestCase):
         self.assertEqual(action2.location, self.location)
         self.assertEqual(action2.rotation_quat, self.rotation_quat)
 
-    def test_samples_set_sensor_rotation_with_constant_params(self):
+    def test_samples_set_sensor_rotation_with_constant_params(self) -> None:
         action1 = self.sampler.sample_set_sensor_rotation("agent1")
         action2 = self.sampler.sample_set_sensor_rotation("agent2")
         self.assertEqual(action1.rotation_quat, self.rotation_quat)
         self.assertEqual(action2.rotation_quat, self.rotation_quat)
 
-    def test_samples_set_yaw_with_constant_params(self):
+    def test_samples_set_yaw_with_constant_params(self) -> None:
         action1 = self.sampler.sample_set_yaw("agent1")
         action2 = self.sampler.sample_set_yaw("agent2")
         self.assertTrue(
@@ -255,7 +282,7 @@ class ConstantSamplerTest(unittest.TestCase):
             == self.absolute_degrees
         )
 
-    def test_samples_turn_left_with_constant_params(self):
+    def test_samples_turn_left_with_constant_params(self) -> None:
         action1 = self.sampler.sample_turn_left("agent1")
         action2 = self.sampler.sample_turn_left("agent2")
         self.assertTrue(
@@ -264,7 +291,7 @@ class ConstantSamplerTest(unittest.TestCase):
             == self.rotation_degrees
         )
 
-    def test_samples_turn_right_with_constant_params(self):
+    def test_samples_turn_right_with_constant_params(self) -> None:
         action1 = self.sampler.sample_turn_right("agent1")
         action2 = self.sampler.sample_turn_right("agent2")
         self.assertTrue(
@@ -275,7 +302,7 @@ class ConstantSamplerTest(unittest.TestCase):
 
 
 class UniformlyDistributedSamplerTest(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.max_absolute_degrees = 360.0
         self.min_absolute_degrees = 180.0
         self.max_rotation_degrees = 45.0
@@ -292,7 +319,7 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
             min_translation=self.min_translation,
         )
 
-    def test_accepts_arbitrary_additional_init_params(self):
+    def test_accepts_arbitrary_additional_init_params(self) -> None:
         UniformlyDistributedSampler(
             max_absolute_degrees=self.max_absolute_degrees,
             min_absolute_degrees=self.min_absolute_degrees,
@@ -304,7 +331,7 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
             additional_param="additional_param",
         )
 
-    def test_samples_look_down_with_sampled_params(self):
+    def test_samples_look_down_with_sampled_params(self) -> None:
         action1 = self.sampler.sample_look_down("agent1")
         action2 = self.sampler.sample_look_down("agent2")
         self.assertNotAlmostEqual(action1.rotation_degrees, action2.rotation_degrees)
@@ -316,7 +343,7 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
             )
             self.assertEqual(action.constraint_degrees, 90)
 
-    def test_samples_look_up_with_sampled_params(self):
+    def test_samples_look_up_with_sampled_params(self) -> None:
         action1 = self.sampler.sample_look_up("agent1")
         action2 = self.sampler.sample_look_up("agent2")
         self.assertNotAlmostEqual(action1.rotation_degrees, action2.rotation_degrees)
@@ -328,7 +355,7 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
             )
             self.assertEqual(action.constraint_degrees, 90)
 
-    def test_samples_move_forward_with_sampled_params(self):
+    def test_samples_move_forward_with_sampled_params(self) -> None:
         action1 = self.sampler.sample_move_forward("agent1")
         action2 = self.sampler.sample_move_forward("agent2")
         self.assertNotAlmostEqual(action1.distance, action2.distance)
@@ -337,7 +364,7 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
                 self.min_translation <= action.distance <= self.max_translation
             )
 
-    def test_samples_move_tangentially_with_sampled_params(self):
+    def test_samples_move_tangentially_with_sampled_params(self) -> None:
         action1 = self.sampler.sample_move_tangentially("agent1")
         action2 = self.sampler.sample_move_tangentially("agent2")
         self.assertNotAlmostEqual(action1.distance, action2.distance)
@@ -348,7 +375,7 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
                 self.min_translation <= action.distance <= self.max_translation
             )
 
-    def test_samples_orient_horizontal_with_sample_params(self):
+    def test_samples_orient_horizontal_with_sample_params(self) -> None:
         action1 = self.sampler.sample_orient_horizontal("agent1")
         action2 = self.sampler.sample_orient_horizontal("agent2")
         self.assertNotAlmostEqual(action1.rotation_degrees, action2.rotation_degrees)
@@ -367,7 +394,7 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
                 self.min_translation <= action.forward_distance <= self.max_translation
             )
 
-    def test_samples_orient_vertical_with_sample_params(self):
+    def test_samples_orient_vertical_with_sample_params(self) -> None:
         action1 = self.sampler.sample_orient_vertical("agent1")
         action2 = self.sampler.sample_orient_vertical("agent2")
         self.assertNotAlmostEqual(action1.rotation_degrees, action2.rotation_degrees)
@@ -386,7 +413,7 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
                 self.min_translation <= action.forward_distance <= self.max_translation
             )
 
-    def test_samples_set_agent_pitch_with_sample_params(self):
+    def test_samples_set_agent_pitch_with_sample_params(self) -> None:
         action1 = self.sampler.sample_set_agent_pitch("agent1")
         action2 = self.sampler.sample_set_agent_pitch("agent2")
         self.assertNotAlmostEqual(action1.pitch_degrees, action2.pitch_degrees)
@@ -397,7 +424,7 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
                 <= self.max_absolute_degrees
             )
 
-    def test_samples_set_agent_pose_with_sample_params(self):
+    def test_samples_set_agent_pose_with_sample_params(self) -> None:
         action1 = self.sampler.sample_set_agent_pose("agent1")
         action2 = self.sampler.sample_set_agent_pose("agent2")
         for i in range(3):
@@ -407,7 +434,7 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
                 action1.rotation_quat[i], action2.rotation_quat[i]
             )
 
-    def test_samples_set_sensor_pitch_with_sample_params(self):
+    def test_samples_set_sensor_pitch_with_sample_params(self) -> None:
         action1 = self.sampler.sample_set_sensor_pitch("agent1")
         action2 = self.sampler.sample_set_sensor_pitch("agent2")
         self.assertNotAlmostEqual(action1.pitch_degrees, action2.pitch_degrees)
@@ -418,7 +445,7 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
                 <= self.max_absolute_degrees
             )
 
-    def test_samples_set_sensor_pose_with_sample_params(self):
+    def test_samples_set_sensor_pose_with_sample_params(self) -> None:
         action1 = self.sampler.sample_set_sensor_pose("agent1")
         action2 = self.sampler.sample_set_sensor_pose("agent2")
         for i in range(3):
@@ -428,7 +455,7 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
                 action1.rotation_quat[i], action2.rotation_quat[i]
             )
 
-    def test_samples_set_sensor_rotation_with_sample_params(self):
+    def test_samples_set_sensor_rotation_with_sample_params(self) -> None:
         action1 = self.sampler.sample_set_sensor_rotation("agent1")
         action2 = self.sampler.sample_set_sensor_rotation("agent2")
         for i in range(4):
@@ -436,7 +463,7 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
                 action1.rotation_quat[i], action2.rotation_quat[i]
             )
 
-    def test_samples_set_yaw_with_sample_params(self):
+    def test_samples_set_yaw_with_sample_params(self) -> None:
         action1 = self.sampler.sample_set_yaw("agent1")
         action2 = self.sampler.sample_set_yaw("agent2")
         self.assertNotAlmostEqual(action1.rotation_degrees, action2.rotation_degrees)
@@ -447,7 +474,7 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
                 <= self.max_absolute_degrees
             )
 
-    def test_samples_turn_left_with_sample_params(self):
+    def test_samples_turn_left_with_sample_params(self) -> None:
         action1 = self.sampler.sample_turn_left("agent1")
         action2 = self.sampler.sample_turn_left("agent2")
         self.assertNotAlmostEqual(action1.rotation_degrees, action2.rotation_degrees)
@@ -458,7 +485,7 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
                 <= self.max_rotation_degrees
             )
 
-    def test_samples_turn_right_with_sample_params(self):
+    def test_samples_turn_right_with_sample_params(self) -> None:
         action1 = self.sampler.sample_turn_right("agent1")
         action2 = self.sampler.sample_turn_right("agent2")
         self.assertNotAlmostEqual(action1.rotation_degrees, action2.rotation_degrees)
