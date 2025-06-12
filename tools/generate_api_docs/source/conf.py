@@ -32,8 +32,8 @@ sys.path.insert(0, str(source_path))
 
 project = "tbp.monty"
 year = str(datetime.datetime.now().year)
-copyright = f"{year}, Numenta, Inc"  # noqa: A001
-author = "Numenta, Inc."
+copyright = f"{year}, Thousand Brains Project"  # noqa: A001
+author = "Thousand Brains Project"
 
 # The full version, including alpha/beta/rc tags
 
