@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Union, cast
+from typing import TYPE_CHECKING, Any, Optional, Sequence, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,8 +33,9 @@ from tbp.monty.frameworks.utils.transform_utils import numpy_to_scipy_quat
 if TYPE_CHECKING:
     from numbers import Number
 
+
 def plot_graph(
-    graph: Union[Data, GraphObjectModel],
+    graph: Data | GraphObjectModel,
     show_nodes: bool = True,
     show_edges: bool = False,
     show_trisurf: bool = False,

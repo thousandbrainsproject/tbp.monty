@@ -71,6 +71,7 @@ class ActionSampler:
         )
         return random_create_method(agent_id)
 
+
 class ConstantSampler(ActionSampler):
     """An Action factory using constant, prespecified action parameters.
 

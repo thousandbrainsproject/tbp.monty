@@ -154,12 +154,14 @@ class LookDown(Action):
     def act(self, actuator: LookDownActuator) -> None:
         actuator.actuate_look_down(self)
 
+
 class LookUpActionSampler(Protocol):
     def sample_look_up(self, agent_id: str) -> LookUp: ...
 
 
 class LookUpActuator(Protocol):
     def actuate_look_up(self, action: LookUp) -> None: ...
+
 
 class LookUp(Action):
     """Rotate the agent upwards by a specified number of degrees."""
@@ -530,10 +532,7 @@ class ActionJSONEncoder(JSONEncoder):
 
     def default(self, obj: Any) -> Any:
         if isinstance(obj, Action):
-            o = {}
-            for key, value in dict(obj).items():
-                o[key] = value
-            return o
+            return dict(obj)
         return super().default(obj)
 
 
