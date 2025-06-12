@@ -30,6 +30,7 @@ dependencies = [
     'torchvision', # imported via conda (pytorch::torchvision)
     'torch-geometric', # imported via conda (pyg::pyg)
     'tqdm', # imported via conda (conda-forge::tqdm)
+    'typing-extensions',
     'wandb', # imported via conda (conda-forge::wandb)
 ]
 description = 'Thousand Brains Project Monty'
