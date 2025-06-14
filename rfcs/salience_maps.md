@@ -18,11 +18,10 @@ To implement these strategies, we propose the addition of two new components.
   - `SalienceMapSM`: a sensor module type that receives a wide field-of-view, performs model-free processing (e.g., segmentation salience estimation), and outputs a set of CMP-compliant goal states.
   - `GoalStateSelector`: a arbiter component that receives goal states from all sources (LMs and `SalienceMapSM`)and outputs a single goal state for the motor system.
 
-See [Architecture](#architecture) for a more detailed description of these components and their proposed positioning within Monty's information routing scheme.
-
 # Architecture
 
 ![Information Flow](salience_maps/flow.png)
+**Proposed Routing Pathways**. LM- and `SalienceMapSM`-derived goal states will be routed into the  `GoalStateSelector`, and the `GoalStateSelector`'s output will be routed to the motor system. All other routing pathways are unchanged.
 
 ### `SalienceMapSM`
 
@@ -35,7 +34,7 @@ The primary purpose of the `SalienceMapSM` is to help action policies make bette
   - Segmentation: To support action policies that require staying on-object (or moving off-object).
   - Salience Detection: To support rapid inference by targeting an object's more informative areas.
 
-The results of these processes may be (a) used to filter out goal states and/or (b) embedded into `GoalState` objects. On the one hand, filtering is pretty unambiguous way to indicate whether a target location is worth considering at all. On the other, filtering out goal-states based on model-free criteria might prematurely eliminate candidates that would have been very promising had they been allowed to mix with model-based information. At this stage, I'm learning towards minimal output filtering. Some metadata will be added each goal state's dictionary of non-morphological features (such as `region_id` and `salience`) which the can be used to filter and rank goal states later.
+The results of these processes may be (a) used to filter out goal states and/or (b) embedded into `GoalState` objects. On the one hand, filtering is pretty unambiguous way to indicate whether a target location is worth considering at all. On the other, filtering out goal-states based on model-free criteria might prematurely eliminate candidates that would have been very promising had they been allowed to mix with model-based information. At this stage, I'm learning towards minimal output filtering since (a) we want to avoid repeatedly saccading between a handful of salient locations, and (b) the `GoalStateSelector`'s filtration should be "smarter" since it has access to model-based information[^4]. Some metadata will be added each goal state's dictionary of non-morphological features (such as `region_id` and `salience`) which the `GoalStateSelector` can use to filter and rank goal states[^5]. 
 
 ### `GoalStateSelector`
 
@@ -76,8 +75,6 @@ The `MontyBase` or one of its subclass will need a `goal_state_selector` attribu
   
 `SalienceMapSM` is sensor module, so it can be added to `Monty`, and it will be called like any other. But we will need to implement the passing of its up new routing pathways.
 
-New logic may be required to set up an experiment that has new components. TBD.
-
 **Routing**
   - Add: `SalienceMapSM` ->  `GoalStateSelector`.
   - Add: LM/GSG -> `GoalStateSelector`.
@@ -85,7 +82,7 @@ New logic may be required to set up an experiment that has new components. TBD.
   - Remove: LM/GSG -> `MotorSystem`. See `MontyForEvidenceGraphMatching._pass_infos_to_motor_system`.
   
 **Potential issue**
-  - All `MontyBase` subclasses have the same set of attributes. I don't know much code assumes that this is the case. If `MontyExperiment` classes assume a fixed set of attributes, there could be a few pain points.
+  - All `MontyBase` subclasses appear to have the same set of attributes. I don't know how much code assumes that this is the case. If `MontyExperiment` classes assume a fixed set of attributes for initialization and logging, there could be a few pain points.
 
 # Open Questions
  - Can/should we integrate model-based signals to inform segmentation or region selection?
@@ -110,3 +107,7 @@ Note: there is one part of our code that already implements SC-like behavior -- 
 [^2] While this document is focused on inference, the model-free mechanisms proposed in this RFC seem well-suited to help improve unsupervised learning.
 
 [^3]: This should be true with a random-walk policy, but I'm not sure it'll hold when saccade targets are chosen differently.
+
+[^4] The caveat here is that any filtration technique that needs a full image array or retinotopic coordinates may not be feasible or advisable within the `GoalStateSelector`. In that case, filtration would need applied by the `SalienceMapSM`. Alternatively, values that *would* filter goal states could be embedded as goal state metadata.
+
+[^5] Preferably, we don't get too crazy with goal state metadata. We should keep a goal state's actual properties in sync with what a `GoalStateSelector` expects.
