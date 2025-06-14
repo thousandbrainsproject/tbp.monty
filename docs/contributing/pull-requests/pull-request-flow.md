@@ -40,7 +40,7 @@ If all automated checks pass, **Maintainers** will **Review** the Pull Request. 
 
 # 3. Update Pull Request
 
-If automated checks fail or **Maintainers** **Request Changes**, you are responsible for **Updating the Pull Request**. Once you updated, the Pull Request will again enter **Review**.
+If automated checks fail or **Maintainers** **Request Changes**, you are responsible for **Updating the Pull Request**. Once you have updated it, the Pull Request will again enter **Review**.
 
 # 4. Approve
 

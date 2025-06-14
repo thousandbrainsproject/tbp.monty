@@ -12,7 +12,7 @@ In this tutorial we will introduce the basic mechanics of Monty experiment confi
 
 # Setting up the Experiment Config
 
-To go along, copy this code into the `benchmarks/configs/my_experiments.py` file.
+To follow along, copy this code into the `benchmarks/configs/my_experiments.py` file.
 
 ```python
 from dataclasses import asdict
@@ -31,7 +31,7 @@ from tbp.monty.frameworks.experiments import MontyExperiment
 from tbp.monty.simulators.habitat.configs import SinglePTZHabitatDatasetArgs
 
 #####
-# To test your env and familiarize with the code, we'll run the simplest possible
+# To test your env and help you familiarize yourself with the code, we'll run the simplest possible
 # experiment. We'll use a model with a single learning module as specified in
 # monty_config. We'll also skip evaluation, train for a single epoch for a single step,
 # and only train on a single object, as specified in experiment_args and train_dataloader_args.

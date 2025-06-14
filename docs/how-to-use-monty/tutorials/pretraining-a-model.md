@@ -48,7 +48,9 @@ To follow along, open the `benchmarks/configs/my_experiments.py` file and paste 
 
 ```python
 import os
+from dataclasses import asdict
 
+from benchmarks.configs.names import MyExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
     MotorSystemConfigCurvatureInformedSurface,
@@ -92,7 +94,7 @@ model_name = "surf_agent_1lm_2obj"
 >
 > Inference logs will be saved at `~/tbp/results/monty/projects/surf_agent_1lm_2obj/eval`.
 
-Next, we specify which objects the model will train on in the dataset, including the rotations in which the objects will be presented. The following code specifies two object ("mug" and "banana") and 14 unique rotations, which means that both the mug and the banana will be shown 14 times, each time in a different rotation. During each of the overall 28 episodes, the sensors will move over the respective object and collect multiple observations to update the model of the object.
+Next, we specify which objects the model will train on in the dataset, including the rotations in which the objects will be presented. The following code specifies two objects ("mug" and "banana") and 14 unique rotations, which means that both the mug and the banana will be shown 14 times, each time in a different rotation. During each of the overall 28 episodes, the sensors will move over the respective object and collect multiple observations to update the model of the object.
 
 ```python
 """
@@ -111,9 +113,9 @@ and many of our benchmark experiments since the rotations it returns provide a g
 of views from all around the object. Its name comes from picturing an imaginary cube
 surrounding an object. If we look at the object from each of the cube's faces, we
 get 6 unique views that typically cover most of the object's surface. We can also look
-at the object from each of the cube's 8 corners which provides an extra set of views 
-that help fill in any gaps. The 14 rotations provided by 
-`get_cube_face_and_corner_views_rotations` will rotate the object as if an observer 
+at the object from each of the cube's 8 corners which provides an extra set of views
+that help fill in any gaps. The 14 rotations provided by
+`get_cube_face_and_corner_views_rotations` will rotate the object as if an observer
 were looking at the object from each of the cube's faces and corners like so:
 
 ![learned_models](../../figures/how-to-use-monty/cube_face_and_corner_views_spam.png)
@@ -236,7 +238,7 @@ Next you will need to declare your experiment name as part of the `MyExperiments
 class MyExperiments:
     surf_agent_2obj_train: dict
 ```
-To run this experiment, navigate to the `benchmarks/` folder in a terminal and call the `run.py` script with an experiment name as the -e argument.
+To run this experiment, navigate to the `benchmarks/` folder in a terminal and call the `run.py` script with the experiment name as the -e argument.
 ```shell
 cd benchmarks
 python run.py -e surf_agent_2obj_train
@@ -273,4 +275,3 @@ Replace `"mug"` with `"banana"` in the second to last line to visualize the bana
 ![learned_models](../../figures/how-to-use-monty/pretraining_tutorial_mug_banana.png)
 
 See [logging and analysis](../logging-and-analysis.md) for more detailed information about experiment logs and how to work with them. You can now move on to [part two](running-inference-with-a-pretrained-model.md) of this tutorial where we load our pretrained model and use it for inference.
-
