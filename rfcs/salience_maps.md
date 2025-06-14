@@ -2,58 +2,99 @@
 - RFC PR: 
 
 # Summary
-This RFC proposes several additions to and modifications of Monty’s architecture broadly aimed at supporting compositional objects, multi-object scenes, and unsupervised learning. More specifically, this document addresses the intermediate goal of [implementing efficient saccades driven by model-free and model-based signals](https://thousandbrainsproject.readme.io/docs/implement-efficient-saccades-driven-by-model-free-and-model-based-signals).
+This RFC proposes changes to Monty’s architecture designed to improve support for compositional objects and multi-object environments[^1]. More specifically, this document addresses the intermediate goal of [implementing efficient saccades driven by model-free and model-based signals](https://thousandbrainsproject.readme.io/docs/implement-efficient-saccades-driven-by-model-free-and-model-based-signals).
 
-In single-object, one-object-per-episode experiments, we can make a simplifying assumption -- all observations in an episode correspond to exactly one object (henceforth, "one-object criterion"). In this case, the following critical conditions are are automatically met:
-  1. Each object is stored in its own independent reference frame.
-  2. During inference, a set of observations is approximately equal to some subset of a model in memory, up to rotation and displacement. (This may seem esoteric, but it's necessary for graph-matching.)
+In single-object, one-object-per-episode experiments, we make the following simplifying assumption -- all observations in an episode correspond to exactly one object (henceforth, "one-object criterion"). In this case, the following important conditions are are automatically guaranteed:
+  1. Objects models are stored in their own reference frame.
+  2. During inference, a sequence of observed locations forms an approximate subset that is contained within a learned model (up to rotation + displacement).
 
-In general, compositional objects and multi-object scenes violate the one-object criterion. For example, if a saccade moves a sensor module's small receptive field off of one object and onto another, it has no way of knowing it is now sensing a different object. During learning, this would result in a single "object" model that contains points corresponding observed on both objects, therefore violating condition 1. During inference, integrating the post-saccade observation will likely result in a set of locations not found in any learned model and therefore violate condition 2. (Note that these kinds of predictionary errors can be useful indicators of object identity. See [RFC 9](https://github.com/thousandbrainsproject/tbp.monty/pull/196) and related PRs for more on that.)
+In general, the one-object criterion is not met when operating with compositional objects and multi-object scenes. For example, if a saccade moves a sensor module's small receptive field off one object and onto another, its downstream learning module has no way of knowing that it is looking at a different object. During learning, this would result in a single "object" model that contains points from several objects, thus violating the requirement that each object is stored in its own independent reference frame. During inference, integrating the off-object observations will likely result in having collected a set of locations that does not exist as a subset in any stored models. The ensuing weakening of true hypotheses intended to estimate the target region's object will eventually have to be "made up" for, assuming we later return to the target object, which ultimately results in delayed convergence[^2].
 
-Here we outline a strategy to satisfy a weaker, spatially restricted version of the one-object criterion by imposing constraints on the actions allowed during an inference window (i.e., a stretch of time where Monty attempts to recognize a single object). In particular, our goal is to restrict saccades so that they do not move a sensor module's receptive field off a sensed object until it has been recognized. We propose using model-free segmentation methods to generate spatial limits, though LMs may also play a role (uncertain).
+This RFC outlines two main strategies aimed at improving the speed and robustness of object recognition with compositional objects and in multi-object environments.
+  1. We propose a strategy for selecting saccade targets that are contained within a region estimated to satisfy the one-object criterion. This depends on first having reasonably good estimates of the locations and spatiel extents of one-object regions. To accomplish this, we plan to apply model-free segmentation techniques to wide field-of-view imagery. Model-based signals may also be used to generate segmentation maps de novo and/or refine model-free maps, but this topic is currently marked as an [open question](#open-questions).
+  2. In addition, we propose a set of optimization strategies designed to improve efficiency. In this context, efficiency refers to the number of steps taken to converge on an object + pose estimate. While these optimization strategies should improve inference speed in any setting (single-object, multi-object, etc.), faster inference may serve an additional purpose in the compositional/multi-object context; by reducing the number of steps needed to recognizing an object, we may also reduce the likelihood of collecting mislabeled, off-object observation[^3].
 
-In addition, we also propose a model-free, salience-based method to improve inference speed. This will improve inference speed in any setting (single-object, multi-object, etc.), but there is an equally important benefit to efficiency improvements in compositional/multi-object environments. By reducing the number of steps spent recognizing an object, we also reduce the number of opportunities for off-object observations to sneak in.
+To implement these strategies, we propose the addition of two new components.
+  - `SalienceMapSM`: a sensor module type that receives a wide field-of-view, performs model-free processing (e.g., segmentation salience estimation), and outputs a set of CMP-compliant goal states.
+  - `GoalStateSelector`: a arbiter component that receives goal states from all sources (LMs and `SalienceMapSM`)and outputs a single goal state for the motor system.
 
-
- - Generating model-free segmentation maps from wide field-of-view imagery.
- - Converting a segmented region into a CMP-compliant set of goal states.
- - Aggregating segmentation-derived (model-free) goal states and LM-derived (model-based) goal states.
- - Selecting a single goal state to relay to the motor system.
- 
-In addition, this document also proposes 
-  - Weighting model-free goal states by salience values for faster inference.
-  - Further weighting of all goal states to encourage larger saccades and discourage revisiting locations.
-  
-
-### Efficient Model-Free Policies
-
-The distant agent has only one model-free action policy -- a random walk -- and it is relatively inefficient. Here, "inefficient" means that Monty requires a large number of observations to recognize an object. In contrast, a surface agent may be equipped with a curvature-guided model-free action policy that far outperforms the random walk with respect to efficiency and, to a lesser extent, accuracy.
-
-**Selectivity**. 
-In the context of multi-object scenes or compositional/nested objects, a random walk policy is also prone to failure on two accounts.
-   - In the absence of movement constraints, such as a limiting boundary, it is highly likely that Monty will collect mixed-object observations (i.e., a set of observations where not all observations were taken from the same object). During learning, this tends to create object models that contain spurious points derived from off-object observations. Object recognition also tends to suffer from mixed-object observations for related reasons[^1](#footnote_1).
-   - As the number of inference steps increases, so does the likelihood of collecting mixed-object observations. Therefore, inefficient action policies, such as the random walk, invite performance problems simply by keeping the inference window open for an extended period of time.
-   
+See [Architecture](#architecture) for a more detailed description of these components and their proposed positioning within Monty's information routing scheme.
 
 # Architecture
 
 ![Information Flow](salience_maps/flow.png)
-Here, the "Subortical sensory processing" node is where the SC would fit.
 
-To implement the strategies outlined above, we propose two new Monty components:
- - `SalienceMapSM`: A sensor module subclass responsible for proposing a set of CMP-compliant goal states. These goal states can be thought of as salience-weighted, spatially constrained candidate locations. CMP-compliance is enforced to ensure these model-free goal states can be integrated with model-based, LM-derived goal states.
- - `GoalStateSelector`: A component that acts as a gateway between goal state proposers (i.e., learning modules and the `SalienceMapSM`) and the motor system. Its main job is to pool all goal states from all sources and decide which to send to the motor system. Since it produces the goal states used by the motor system, is the natural place to maintain a memory of previously visited locations, and therefore, the component that implements return inhibition (i.e., not returning to previously visited locations). 
+### `SalienceMapSM`
+
+  - **Type**: `DetailedLoggingSM`
+  - **Input**: Wide field-of-view imagery, depth data, and each pixel's associated 3D coordinates. No special handling of input data is required beyond standard processing steps performed for all other sensor modules.
+  - **Output**: A set of CMP-compliant `GoalState` objects.
+  - **Consumers**: `GoalStateSelector`  
+
+The primary purpose of the `SalienceMapSM` is to help action policies make better decisions about where to observe next. There are no strict requirements for how it should do this, but we plan to implement the following:
+  - Segmentation: To support action policies that require staying on-object (or moving off-object).
+  - Salience Detection: To support rapid inference by targeting an object's more informative areas.
+
+The results of these processes may be (a) used to filter out goal states and/or (b) embedded into `GoalState` objects. On the one hand, filtering is pretty unambiguous way to indicate whether a target location is worth considering at all. On the other, filtering out goal-states based on model-free criteria might prematurely eliminate candidates that would have been very promising had they been allowed to mix with model-based information. At this stage, I'm learning towards minimal output filtering. Some metadata will be added each goal state's dictionary of non-morphological features (such as `region_id` and `salience`) which the can be used to filter and rank goal states later.
+
+### `GoalStateSelector`
+
+  - **Type**: `object`
+  - **Input**: All `GoalState` objects produced by LMs and the `SalienceMapSM`).
+  - **Output**: `GoalState`
+  - **Consumers**: `MotorSystem`  
+
+With the addition of a `SalienceMapSM`, the number of goal states generated at each time step will jump from ~1 to ~1000 (roughly). Consequently, we need something to pool LM- and SM-derived goal states together and decide which should be acted upon by the motor system. These requirements place the `GoalStateSelector` in a uniquely powerful position to integrate model-free and model-based data. In addition, it can easily maintain a recent history of visited (or at least attempted) locations since it has the final say about which goal state the motor system should attempt.
+
+In its simplest/dumbest form, a `GoalStateSelector` could choose a goal state like so:
+  - If an LM emitted a goal state, use it. In the case of multiple LM-derived goal states, pick the one with the greatest confidence value. If there are ties, break them at random.
+  - If no LM has emitted a goal state, use one of the `SalienceMapSM`'s most salient goal state.
+
+If we take advantage of the `GoalStateSelectors`'s unique input/output values, we could instead do any or all of the following:
+  - If an LM emitted a goal state, use it. In the case of multiple LM-derived goal states, pick the one with the greatest confidence value. If there are ties, select the one with the highest expected salience.
+  - If no LM has emitted a goal state, focus on the `SalienceMapSM`'s goal state.
+    - Initialize some scoring variable for each goal state. Let's call it `priority`.
+    - Weight `priority` values based on `region_id` (e.g., make it zero or `nan` if it's on the wrong region, or simply filter out the off-object ones).
+    - Weight `priority` values by salience.
+    - Weight `priority` values by the magnitude of the displacement it would generate. (bigger displacements => faster hypothesis elimination)
+    - Weight `priorty` values by a goal state's distance from previously visited areas.
+
+Some of these rules help satisfy the one-object criterion, and others support efficiency. There are a lot of things we could try here, and we won't know what works until we do. Other potential rules are left as an exercise for the reader.
+
+### Integration
+
+### Executing Goal States
+This RFC would move us down a very goal-state-heavy path. It's easy to imagine that a distant agent performing inference will produce achievable goal states at every step. This is a pretty big departure from Monty's existing behavior in which goal states are only occasionally generated and acted upon. The remainder of the time, actions are derived from model-free policies.
+
+Implementing this RFC is going to require at least some revisions to our goal-state execution framework. First, we
+only have one goal-state-attempter -- `InformedEnvironmentDataLoader.execute_jump_attempt` -- and has only one strategy. All attempts consist of an agent-pose and sensor-orientation setting actions. This RFC entails that most of goal states will have been produced by the `SalienceMapSM`, and are therefore achievable through saccades alone. At a mimimum, we should build out some system that's capable of deciding whether a saccade is sufficient or whether it should perform pose-and-orientation resets. Second, I believe there are existing plans (desires?) to move `execute_jump_attempt` out of `InformedEnvironmentDataLoader`. I'm assuming it's headed for a `MotorPolicy`, but I don't really know.
+
+Also, I'd like to make one thing clear: The `MotorSystem`/`MotorPolicy` situation is probably my biggest Monty blindspot. I'm also aware that Tristan has been actively refactoring `Motor*` code, which means I'm at least as ignorant about the future as I am the present.
+
+### Modifying Monty Classes
+The `MontyBase` or one of its subclass will need a `goal_state_selector` attribute. Which subclass? TBD.
+  
+`SalienceMapSM` is sensor module, so it can be added to `Monty`, and it will be called like any other. But we will need to implement the passing of its up new routing pathways.
+
+New logic may be required to set up an experiment that has new components. TBD.
+
+**Routing**
+  - Add: `SalienceMapSM` ->  `GoalStateSelector`.
+  - Add: LM/GSG -> `GoalStateSelector`.
+  - Add: `GoalStateSelector` -> `MotorSystem`.
+  - Remove: LM/GSG -> `MotorSystem`. See `MontyForEvidenceGraphMatching._pass_infos_to_motor_system`.
+  
+**Potential issue**
+  - All `MontyBase` subclasses have the same set of attributes. I don't know much code assumes that this is the case. If `MontyExperiment` classes assume a fixed set of attributes, there could be a few pain points.
+
+# Open Questions
+ - Can/should we integrate model-based signals to inform segmentation or region selection?
+ - Which segmentation methods, or combination thereof, might work will for multi-object environments (where objects do not share space) and compmositional objects (where objects *do* share space). For example, depth-based segmentation will be no help in separating a logo from the mug it is on.
+ - identifying objects in a multi-object environment *and* identify child/parent objects? Depth clearly won't help separate a mug's logo from its mug.
  
-Of course, these two components will require additions to and modifications of existing input/output pathways.
 
-Finally, expect some refactoring of the motor system and the `InformedEnvironmentDataLoader`. At present, goal states are handled by `InformedEnvironmentDataLoader.execute_jump_attempt`. Some notes:
-  - A DataLoader isn't the obvious place for this function, even now. Figuring out how to achieve a goal state is generally considered to fall within a motor system's reponsibilities.
-  - This function is also too inflexible. It attempts all goal states in the same way -- a total (re)setting of the agent's pose. Since LMs emit goal states sparsely, I expect the vast majority of used goal states will be derived from `SalienceMapSM`, and all of these should be achievable with a saccade.
-
-NOTE: The motor system is the side of Monty I've had the least contact with, so bear with me while I try to get more specific about any refactoring we may or may not need here. And please weigh in.
-
-# Addendum
-The superior colliculus (SC) is the primary template for this system proposed here. Given visual input from a wide field-of-view, the SC generates one or more maps used to select the next location to attend to.
+# Appendix: Superior Colliculus
+The proposed architecture in this document is largely inspired by the superior colliculus (SC), a subcortical region involved in lower-level visual processing and dispatching saccade commands. Given visual input from a wide field-of-view, the SC generates one or more maps used to select the next location to attend to.
  - Salience Map: The visual-only superficial layer (SCs) of the superior colliculus is thought to generate maps based on features such as contrast, color opponency, and motion. Salience maps might help Monty move to areas that are more informative than a random-walk policy would. At a minimum, they should at least guarantee that the next viewed location is on some object (or very nearly so).
  - Priority Map: The intermediate layer (SCi) is believed to generate a priority map that reflects an organism's goals. Unlike the visual-only layer, the intermediate layer receives top-down and multimodal input. In Monty, a priority map may reflect the general regions we would like to keep our saccades within.
 
@@ -61,9 +102,11 @@ Finally, the SC is thought to be THE place where the saccade command are ultimat
 
 The system proposed here doesn't have an exact 1:1 relationship with the superior colliculus, but they do rhyme. The `SalienceMapSM` resembles the visual-only superficial layer of the SC, while the `GoalStateSelector` is perhaps most similar to the SC's intermediate layer. The `GoalStateSelector` also resembles the SC in they both act as the input into the motor system.
 
-Note: there is one part of our code that already implements SC-like behavior -- `GetGoodView`. This code uses raw sensor data and coordinates obtained via `DepthTo3DLocations`. With this data, it decides where it ought to look, and computes the necessary "look" actions used directly by the motor system. Niels has proposed reworking `GetGoodView` as an intermediate step to guide the development of this new system. I haven't given it much thought yet, but givenn that `GetGoodView` employs both translating and orienting actions, it could be an interesting spot to explore how motor systems decide which actions to perform to achiev a goal state.
-
+Note: there is one part of our code that already implements SC-like behavior -- `GetGoodView`. This code uses raw sensor data and coordinates obtained via `DepthTo3DLocations`. With this data, it decides where it ought to look, and computes the necessary "look" actions used directly by the motor system. Niels has proposed reworking `GetGoodView` as an intermediate step to guide the development of this new system. I haven't given it much thought yet, but given that `GetGoodView` employs both translating and orienting actions, it could be an interesting spot to explore how motor systems decide which actions to perform to achieve a goal state.
 
 # Footnotes
-<a name="footnote_1">[^1]</a> Other approaches aimed at improving robustness under a multi-object, mixed observation setting are also being developed. See [RFC 9](https://github.com/thousandbrainsproject/tbp.monty/pull/196) for an LM-centric solution.
+[^1] For more discussion on how evidence drop-offs indicate changes to the sensed object's identity, see [RFC 9](https://github.com/thousandbrainsproject/tbp.monty/pull/196). Also see [here](https://thousandbrainsproject.readme.io/docs/use-off-object-observations) for a general discussion about how off-object observations may be used in the future. 
 
+[^2] While this document is focused on inference, the model-free mechanisms proposed in this RFC seem well-suited to help improve unsupervised learning.
+
+[^3]: This should be true with a random-walk policy, but I'm not sure it'll hold when saccade targets are chosen differently.
