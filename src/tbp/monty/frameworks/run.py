@@ -59,7 +59,7 @@ def run(config):
 def main(all_configs, experiments=None):
     """Use this as "main" function when running monty experiments.
 
-    A typical project `run.py` shoud look like this::
+    A typical project `run.py` should look like this::
 
         # Load all experiment configurations from local project
         from experiments import CONFIGS
