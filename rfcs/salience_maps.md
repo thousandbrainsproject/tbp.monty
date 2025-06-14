@@ -87,9 +87,7 @@ The `MontyBase` or one of its subclass will need a `goal_state_selector` attribu
 # Open Questions
  - Can/should we integrate model-based signals to inform segmentation or region selection?
  - Which segmentation methods, or combination thereof, might work will for multi-object environments (where objects do not share space) and compmositional objects (where objects *do* share space). For example, depth-based segmentation will be no help in separating a logo from the mug it is on.
- - identifying objects in a multi-object environment *and* identify child/parent objects? Depth clearly won't help separate a mug's logo from its mug.
  
-
 # Appendix: Superior Colliculus
 The proposed architecture in this document is largely inspired by the superior colliculus (SC), a subcortical region involved in lower-level visual processing and dispatching saccade commands. Given visual input from a wide field-of-view, the SC generates one or more maps used to select the next location to attend to.
  - Salience Map: The visual-only superficial layer (SCs) of the superior colliculus is thought to generate maps based on features such as contrast, color opponency, and motion. Salience maps might help Monty move to areas that are more informative than a random-walk policy would. At a minimum, they should at least guarantee that the next viewed location is on some object (or very nearly so).
