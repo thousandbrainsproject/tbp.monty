@@ -1305,11 +1305,7 @@ class SurfacePolicy(InformedPolicy):
 
         When the TouchObject positioning procedure is complete, the SurfacePolicy
         will never see the TouchObject actions, so when it resumes, the last action
-        will be either MoveForward or MoveTangentially. MoveForward can happen
-        initially (artificially set if self.action is None), whereas MoveTangentially is
-        the only action that can go off object. In the case when the last action is
-        MoveTangentially, the SurfacePolicy will resume by taking the MoveForward action
-        instead.
+        will be whatever the last action the SurfacePolicy took.
 
         For now, we specifically track only the SurfacePolicy actions in the
         last_surface_policy_action attribute, in order to prepare the code
