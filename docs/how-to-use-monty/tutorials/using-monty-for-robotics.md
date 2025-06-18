@@ -13,7 +13,7 @@ Currently, Monty relies on a couple of dependencies that [can NOT be installed o
 When choosing hardware to use with Monty, we recommend thinking through certain requirements in advance to avoid pain points later on. In particular, Monty's performance depends on its ability to accurately map its observations into a fixed reference frame. For this to be successful, we recommend designing your system so that it can accurately measure the following:
    - **An object's position relative to the sensor**. Example: A well-calibrated RGBD camera with precise, consistent depth measurements.
    - **A sensor's position and orientation relative to the robot's body**. Example: A swiveling camera fixed to a platform by a vertical rod, where the rod's dimensions and mounting points are known, and the swiveling mechanism provides up-to-date measurements of its current angle.
-   - **The robot's position relative to a fixed point in the world**. Example: A handheld device located by external trackers. If the trackers only measure the device's location, then the device's orientation would need to estimated by another mechanism (e.g., an internal gyroscope).
+   - **The robot's position relative to a fixed point in the world**. Example: A handheld device located by external trackers. If the trackers only measure the device's location, then the device's orientation would need to be estimated by another mechanism (e.g., an internal gyroscope).
 
 
 # Example 1: Monty Meets World iPad App
