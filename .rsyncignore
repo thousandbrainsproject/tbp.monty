@@ -1,8 +1,11 @@
 - .git
 - .github
+- .idea
 - .mypy_cache
+- .pytest_cache
 - .ruff_cache
 - .vale
+- .venv
 - .vscode
 - docs
 - rfcs

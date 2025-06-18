@@ -16,12 +16,12 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Artificial Intelligence'
 ]
 dependencies = [
-    'habitat_sim', # imported via conda (aihabitat::habitat-sim)
     'importlib_resources', # imported via conda (conda-forge::importlib_resources)
     'matplotlib', # imported via conda (conda-forge::matplotlib)
     'numpy', # imported via conda (conda-forge::numpy)
     'pandas', # imported via conda (conda-forge::pandas)
     'pillow', # imported via conda (conda-forge::pillow)
+    'numpy-quaternion==2023.0.3', # imported via conda (conda-forge::quaternion)
     'scikit-image', # imported via conda (conda-forge::scikit-image)
     'scikit-learn==1.3.2', # imported via conda (conda-forge::scikit-learn)
     'scipy', # imported via conda (conda-forge::scipy)
@@ -40,6 +40,13 @@ readme = 'README.md'
 requires-python = '>=3.8'
 
 [project.optional-dependencies]
+simulator_habitat = [
+    # HabitatSim is only installable via conda. These dependencies are listed here
+    # for documentation and consistency
+    # NOTE: The version constraint is to prevent `uv` from failing trying to check all
+    # optional dependency sets are valid.
+    'habitat_sim;python_version=="3.9"', # imported via conda (aihabitat::habitat-sim)
+]
 analysis = [
     'ipython',
     'seaborn',
