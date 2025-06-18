@@ -8,7 +8,7 @@
 
 This repository contains the first implementation of a **sensorimotor learning system** from the **Thousand Brains Project**. We lovingly call it **Monty** after Vernon Mountcastle, who proposed cortical columns as a repeating functional unit across the neocortex.
 
-This is an open-source project, partially funded by the Gates Foundation.
+This is an open-source project that was initially started at Numenta. The Thousand Brains Project is now an independent non-profit, partially funded by the Gates Foundation.
 
 Please find our [**full documentation** here](https://thousandbrainsproject.readme.io/)
 
