@@ -58,7 +58,7 @@ class HabitatAcutatorTest(unittest.TestCase):
         self.assertEqual(actuator.action_name(action), "agent1.fake_action")
 
     @patch("tests.unit.frameworks.actions.habitat.actuator_test.FakeHabitat.get_agent")
-    def test_actuate_raises_value_error_if_action_name_not_in_action_space(
+    def test_to_habitat_raises_value_error_if_action_name_not_in_action_space(
         self, mock_get_agent: Mock
     ) -> None:
         mock_agent = Mock(spec=Agent)
