@@ -4,7 +4,7 @@
 # Summary
 This RFC proposes changes to Monty’s architecture designed to improve support for compositional objects and multi-object environments[^1]. More specifically, this document addresses the intermediate goal of [implementing efficient saccades driven by model-free and model-based signals](https://thousandbrainsproject.readme.io/docs/implement-efficient-saccades-driven-by-model-free-and-model-based-signals).
 
-In single-object, one-object-per-episode experiments, we make the following simplifying assumption -- all observations in an episode correspond to exactly one object (henceforth, "one-object criterion"). In this case, the following important conditions are are automatically guaranteed:
+In single-object, one-object-per-episode experiments, we make the following simplifying assumption -- all observations in an episode correspond to exactly one object (henceforth, "one-object criterion"). In this case, the following important conditions are automatically guaranteed:
   1. Objects models are stored in their own reference frames.
   2. During inference, a sequence of observed locations forms an approximate subset that is contained within a learned model (up to rotation + displacement).
 
