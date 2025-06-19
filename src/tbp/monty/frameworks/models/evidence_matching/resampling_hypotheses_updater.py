@@ -79,7 +79,7 @@ class ResamplingHypothesesUpdater:
             DefaultFeaturesForMatchingSelector
         ),
         hypotheses_count_multiplier: float = 1.0,
-        hypotheses_existing_to_new_ratio: float = 0.0,
+        hypotheses_existing_to_new_ratio: float = 0.1,
         initial_possible_poses: Literal["uniform", "informed"]
         | list[Rotation] = "informed",
         max_nneighbors: int = 3,
@@ -231,12 +231,14 @@ class ResamplingHypothesesUpdater:
                 hypotheses=hypotheses,
                 input_channel=input_channel,
                 mapper=mapper,
+                tracker=tracker,
             )
             informed_hypotheses = self._sample_informed(
                 channel_features=features[input_channel],
                 graph_id=graph_id,
                 informed_count=informed_count,
                 input_channel=input_channel,
+                tracker=tracker,
             )
 
             # We only displace existing hypotheses since the newly resampled hypotheses
@@ -267,7 +269,7 @@ class ResamplingHypothesesUpdater:
             hypotheses_updates.append(channel_hypotheses)
 
             # Update tracker evidence
-            tracker.update(channel_hypotheses.evidence)
+            tracker.update(channel_hypotheses.evidence, input_channel)
 
         return hypotheses_updates
 
@@ -400,11 +402,12 @@ class ResamplingHypothesesUpdater:
             )
 
         keep_ids, remove_ids = tracker.calculate_keep_and_remove_ids(
-            desired_total=existing_count
+            desired_keep=existing_count,
+            channel=input_channel,
         )
 
         # Update tracker by removing the remove_ids
-        tracker.remove_hyp(remove_ids)
+        tracker.remove_hyp(remove_ids, input_channel)
 
         channel_hypotheses = mapper.extract_hypotheses(hypotheses, input_channel)
         return ChannelHypotheses(

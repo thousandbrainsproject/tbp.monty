@@ -267,7 +267,7 @@ class EvidenceSlopeTracker:
         age (Dict[str, np.ndarray]): Maps channel names to hypothesis age counters.
     """
 
-    def __init__(self, window_size: int = 3, min_age: int = 2) -> None:
+    def __init__(self, window_size: int = 3, min_age: int = 5) -> None:
         """Initializes the EvidenceSlopeTracker.
 
         Args:
@@ -301,18 +301,6 @@ class EvidenceSlopeTracker:
             np.ndarray: Boolean array indicating valid hypotheses (age >= min_age).
         """
         return self.age[channel] >= self.min_age
-
-    def must_keep_mask(self, channel: str) -> np.ndarray:
-        """Returns a boolean mask for hypotheses that must be kept due to age.
-
-        Args:
-            channel (str): Name of the input channel.
-
-        Returns:
-            np.ndarray: Boolean array indicating hypotheses that must be kept
-                (age < min_age).
-        """
-        return self.age[channel] < self.min_age
 
     def add_hyp(self, num_new_hyp: int, channel: str) -> None:
         """Adds new hypotheses to the specified input channel.
@@ -415,6 +403,11 @@ class EvidenceSlopeTracker:
         valid_ids = total_ids[valid_mask]
 
         sorted_indices = np.argsort(valid_slopes)
-        to_remove = valid_ids[sorted_indices[:-desired_keep]]
-        to_keep = np.setdiff1d(valid_ids, to_remove)
+
+        remove_requested = self.total_size(channel) - desired_keep
+        to_remove = valid_ids[sorted_indices[:remove_requested]]
+        to_keep = np.array(
+            [i for i in np.arange(self.total_size(channel)) if i not in to_remove],
+            dtype=int,
+        )
         return to_keep, to_remove
