@@ -95,7 +95,7 @@ The proposed architecture in this document is largely inspired by the superior c
 
 Finally, the SC is thought to be THE place where the saccade command are ultimately issued.
 
-The system proposed here doesn't have an exact 1:1 relationship with the superior colliculus, but they do rhyme. The `SalienceMapSM` resembles the visual-only superficial layer of the SC, while the `GoalStateSelector` is perhaps most similar to the SC's intermediate layer. The `GoalStateSelector` also resembles the SC in they both act as the input to the motor system.
+The system proposed here doesn't have an exact 1:1 relationship with the superior colliculus, but they do rhyme. The `SalienceMapSM` resembles the visual-only superficial layer of the SC, while the `GoalStateSelector` is perhaps most similar to the SC's intermediate layer. The `GoalStateSelector` also resembles the SC in that they both act as the input to the motor system.
 
 Note: there is one part of our code that already implements SC-like behavior -- `GetGoodView`. This code uses raw sensor data and coordinates obtained via `DepthTo3DLocations`. With this data, it decides where it ought to look, and computes the necessary "look" actions used directly by the motor system. Niels has proposed reworking `GetGoodView` as an intermediate step to guide the development of this new system. I haven't given it much thought yet, but given that `GetGoodView` employs both translating and orienting actions, it could be an interesting spot to explore how motor systems decide which actions to perform to achieve a goal state.
 
