@@ -341,7 +341,7 @@ class GridObjectModel(GraphObjectModel):
             object_id: id of the object
             max_nodes: maximum number of nodes in the graph. Will be k in k winner
                 voxels with highest observation count.
-            max_size: maximum size of the object in meters. Defines size of obejcts
+            max_size: maximum size of the object in meters. Defines size of objects
                 that can be represented and how locations are mapped into voxels.
             num_voxels_per_dim: number of voxels per dimension in the models grids.
                 Defines the resolution of the model.
