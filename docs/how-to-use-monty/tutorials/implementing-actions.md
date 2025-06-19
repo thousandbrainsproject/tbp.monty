@@ -4,7 +4,7 @@ title: Implementing Actions
 
 # What Are Actions?
 
-**Actions** are how Monty moves **Agents** in its **Environment**. Monty's **Motor System** outputs **Actions**, which are then actuated within the **Environment**. An **Agent** is what Monty calls its end effectors.
+**Actions** are how Monty moves **Agents** in its **Environment**. Monty's **Motor System** outputs **Actions**, which are then actuated within the **Environment**. An **Agent** is what Monty calls its end effectors, which carry out actions in the environment, physically or in simulation (like a robotic arm or a camera), or virtually (like a web browser navigating the Internet).
 
 **Actions** are coupled to what can be actuated in the **Environment**. For example, if a simple robot can only go forward and backward, then the meaningful actions for that robot are restricted to going forward and backward. The robot environment would be unable to actuate a `Jump` action.
 
@@ -16,7 +16,7 @@ At a high level, **Actions** are created by the **Motor System** and actuated by
 
 ![](../../figures/how-to-use-monty/tutorials/action_lifecycle_high_level.png)
 
-Within the **Motor System**, **Policies** either explicitly choose a specific **Action** by creating it directly, or sample from a pool of actions available.
+Within the **Motor System**, **Policies** either explicitly choose a specific **Action** by creating it directly (e.g., create `MoveForward`), or sample a random **Action** from a pool of actions available (e.g., sample `MoveForward` from the action space `{MoveForward, MoveBack}`).
 
 ![](../../figures/how-to-use-monty/tutorials/action_lifecycle_motor_system_detail.png)
 
@@ -24,7 +24,7 @@ Within the **Environment**, the **Actions** are actuated either within a simulat
 
 ![](../../figures/how-to-use-monty/tutorials/action_lifecycle_both_detail.png)
 
-Additionally, within an experimental framework, a **Positioning Procedure** can generate **Actions** before starting the experiment. This is analogous to an experimenter moving Monty into a starting position.
+Additionally, within an experimental framework, a **Positioning Procedure** can generate **Actions** before starting the experiment. This is analogous to an experimenter moving Monty into a starting position. The **Positioning Procedure** can use privileged information such as labels, ground truth object models, or task instructions, and is independent of Monty and the models learned in its learning modules.
 
 ![](../../figures/how-to-use-monty/tutorials/action_lifecycle_positioning_procedure.png)
 
@@ -49,7 +49,7 @@ class ActionJSONDecoder(JSONDecoder):
 
     def object_hook(self, obj: dict[str, Any]) -> Any:
         # ...
-        elif action = Jump.action_name():
+        elif action == Jump.action_name():
             return Jump(
                 agent_id=obj["agent_id"]
                 how_high=obj["how_high"]
@@ -60,6 +60,8 @@ class ActionJSONDecoder(JSONDecoder):
 With the above in place, the **Motor System** can now create the **Action** as needed.
 
 # Sampling Actions
+
+Action samplers can be used to randomly sample actions from a predefined action space. You can use different samplers to implement different sampling strategies. For example, one sampler could always return the same action. Another sampler could return predetermined sequence of actions. Another sampler could randomly pick an action. Additionally, samplers can parameterize the actions differently. One sampler could configure all movement actions with the same distance to move. Another sampler could randomly sample the specific distance to move. For examples of samplers currently used by Monty, see `src/tbp/monty/frameworks/actions/action_samplers.py`.
 
 For the **Motor System** to be able to sample the **Action** with the help of a sampler, you will need to include a `sample` method and declare an action-specific sampler protocol:
 
@@ -105,8 +107,6 @@ sampler = MyConstantSampler(actions=[Jump])
 action = sampler.sample("agent_0")
 ```
 
-For already existing samplers, see `src/tbp/monty/frameworks/actions/action_samplers.py`.
-
 # Actuating Actions
 
 For an **Action** to take effect within an **Environment**, it needs to be actuated. Include the `act` method and declare an action-specific actuator protocol:
@@ -130,8 +130,9 @@ The actuator itself will be specific to the **Environment** and the simulator, r
 ```python
 class MyActuator:
 
-    def actuate_jump(self, action: Jump) -> None: ...
-        # custom code to make Jump happen
+    def actuate_jump(self, action: Jump) -> None:
+        # custom code to make Jump happen in your system
+        pass
 ```
 
 The **Environment**, simulator, or robot will invoke the actuator by calling the **Action**'s `act` method:
