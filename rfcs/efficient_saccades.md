@@ -16,7 +16,7 @@ This RFC outlines two main strategies aimed at improving the speed and robustnes
 
 To implement these strategies, we propose the addition of two new components.
   - `SalienceMapSM`: a sensor module type that receives a wide, low-resolution field-of-view, performs model-free processing (e.g., salience estimation or segmentation), and outputs a set of CMP-compliant goal states.
-  - `GoalStateSelector`: an arbiter that receives goal states from all sources (LMs and `SalienceMapSM`)and outputs a single goal state for the motor system.
+  - `GoalStateSelector`: an arbiter that receives goal states from all sources (LMs and `SalienceMapSM`) and outputs a single goal state for the motor system.
 
 # Architecture
 
