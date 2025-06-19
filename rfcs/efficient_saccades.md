@@ -39,7 +39,7 @@ The results of these processes may be (a) used to filter out goal states and/or 
 ### `GoalStateSelector`
 
   - **Type**: `object`
-  - **Input**: All `GoalState` objects produced by LMs and the `SalienceMapSM`).
+  - **Input**: All `GoalState` objects produced by LMs and the `SalienceMapSM`.
   - **Output**: `GoalState`
   - **Consumers**: `MotorSystem`  
 
