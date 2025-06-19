@@ -85,6 +85,9 @@ surf_monty_config.sensor_module_configs["sensor_module_1"]["sensor_module_args"]
 ] = False
 surf_monty_config.monty_class = MONTY_CLASS
 surf_monty_config.monty_args.min_eval_steps = EVAL_STEPS
+surf_monty_config.learning_module_configs["learning_module_0"]["learning_module_args"][
+    "evidence_update_threshold"
+] = "all"
 unsupervised_inference_distinctobj_surf_agent.update(
     {"monty_config": surf_monty_config}
 )
@@ -105,6 +108,9 @@ dist_monty_config.sensor_module_configs["sensor_module_1"]["sensor_module_args"]
 ] = False
 dist_monty_config.monty_class = MONTY_CLASS
 dist_monty_config.monty_args.min_eval_steps = EVAL_STEPS
+dist_monty_config.learning_module_configs["learning_module_0"]["learning_module_args"][
+    "evidence_update_threshold"
+] = "all"
 unsupervised_inference_distinctobj_dist_agent.update(
     {"monty_config": dist_monty_config}
 )

@@ -12,7 +12,10 @@ import unittest
 import numpy as np
 
 from tbp.monty.frameworks.models.evidence_matching.hypotheses import Hypotheses
-from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
+from tbp.monty.frameworks.utils.evidence_matching import (
+    ChannelMapper,
+    EvidenceSlopeTracker,
+)
 
 
 class ChannelMapperTest(unittest.TestCase):
@@ -173,6 +176,90 @@ class ChannelMapperTest(unittest.TestCase):
         """Test string representation of the ChannelMapper."""
         expected_repr = "ChannelMapper({'A': (0, 5), 'B': (5, 15), 'C': (15, 30)})"
         self.assertEqual(repr(self.mapper), expected_repr)
+
+
+class EvidenceSlopeTrackerTest(unittest.TestCase):
+    """Unit tests for the EvidenceSlopeTracker class with channel-specific behavior."""
+
+    def setUp(self) -> None:
+        """Set up a new tracker and test channel for each test."""
+        self.tracker = EvidenceSlopeTracker(window_size=3, min_age=2)
+        self.channel = "patch"
+
+    def test_add_hypotheses_initializes_channel(self) -> None:
+        """Test that hypotheses are correctly initialized in a new channel."""
+        self.tracker.add_hyp(2, self.channel)
+        self.assertEqual(self.tracker.total_size(self.channel), 2)
+        self.assertEqual(self.tracker.data[self.channel].shape, (2, 3))
+        self.assertTrue(np.all(np.isnan(self.tracker.data[self.channel])))
+        self.assertTrue(np.all(self.tracker.age[self.channel] == 0))
+
+    def test_update_correctly_shifts_and_sets_values(self) -> None:
+        """Test that update correctly shifts previous values and adds new ones."""
+        self.tracker.add_hyp(2, self.channel)
+        self.tracker.update([1.0, 2.0], self.channel)
+        self.tracker.update([2.0, 3.0], self.channel)
+        self.tracker.update([3.0, 4.0], self.channel)
+
+        expected = np.array([[1.0, 2.0, 3.0], [2.0, 3.0, 4.0]])
+        np.testing.assert_array_equal(self.tracker.data[self.channel], expected)
+        np.testing.assert_array_equal(self.tracker.age[self.channel], [3, 3])
+
+    def test_update_raises_on_wrong_length(self) -> None:
+        """Test that update raises ValueError if the length doesn't match hypotheses."""
+        self.tracker.add_hyp(2, self.channel)
+        with self.assertRaises(ValueError):
+            self.tracker.update([1.0], self.channel)
+
+    def test_remove_hypotheses_removes_correct_indices(self) -> None:
+        """Test removing a specific hypothesis by index."""
+        self.tracker.add_hyp(3, self.channel)
+        self.tracker.update([1.0, 2.0, 3.0], self.channel)
+        self.tracker.remove_hyp([1], self.channel)
+        self.assertEqual(self.tracker.total_size(self.channel), 2)
+        np.testing.assert_array_equal(
+            self.tracker.data[self.channel][:, -1], [1.0, 3.0]
+        )
+
+    def test_calculate_slopes_correctly(self) -> None:
+        """Test slope calculation over the sliding window."""
+        self.tracker.add_hyp(1, self.channel)
+        self.tracker.update([1.0], self.channel)
+        self.tracker.update([2.0], self.channel)
+        self.tracker.update([3.0], self.channel)
+
+        slopes = self.tracker._calculate_slopes(self.channel)
+        expected_slope = ((2.0 - 1.0) + (3.0 - 2.0)) / 2  # = 1.0
+        self.assertAlmostEqual(slopes[0], expected_slope)
+
+    def test_valid_indices_mask_matches_min_age(self) -> None:
+        """Test that the valid mask reflects min_age cutoff."""
+        self.tracker.add_hyp(3, self.channel)
+        self.tracker.age[self.channel][:] = [1, 2, 3]
+        mask = self.tracker.valid_indices_mask(self.channel)
+        np.testing.assert_array_equal(mask, [False, True, True])
+
+    def test_calculate_keep_and_remove_ids_returns_expected(self) -> None:
+        """Test that hypotheses with the lowest slopes are selected for removal."""
+        self.tracker.add_hyp(3, self.channel)
+        self.tracker.update([1.0, 3.0, 1.0], self.channel)
+        self.tracker.update([2.0, 2.0, 1.0], self.channel)
+        self.tracker.update([3.0, 1.0, 1.0], self.channel)
+
+        # Slopes = [1.0, -1.0, 0.0]
+        to_keep, to_remove = self.tracker.calculate_keep_and_remove_ids(
+            num_keep=2, channel=self.channel
+        )
+
+        np.testing.assert_array_equal(np.sort(to_keep), [0, 2])
+        np.testing.assert_array_equal(to_remove, [1])
+
+    def test_keep_more_than_total_raises(self) -> None:
+        """Test that asking to keep more hypotheses than exist raises an error."""
+        self.tracker.add_hyp(2, self.channel)
+        self.tracker.age[self.channel][:] = [2, 2]
+        with self.assertRaises(ValueError):
+            self.tracker.calculate_keep_and_remove_ids(3, self.channel)
 
 
 if __name__ == "__main__":

@@ -402,7 +402,7 @@ class ResamplingHypothesesUpdater:
             )
 
         keep_ids, remove_ids = tracker.calculate_keep_and_remove_ids(
-            desired_keep=existing_count,
+            num_keep=existing_count,
             channel=input_channel,
         )
 

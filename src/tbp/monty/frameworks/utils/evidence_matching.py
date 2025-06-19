@@ -375,14 +375,14 @@ class EvidenceSlopeTracker:
         self.age[channel] = self.age[channel][mask]
 
     def calculate_keep_and_remove_ids(
-        self, desired_keep: int, channel: str
+        self, num_keep: int, channel: str
     ) -> Tuple[np.ndarray, np.ndarray]:
         """Determines which hypotheses to keep and which to remove in a channel.
 
         Hypotheses with the lowest average slope are selected for removal.
 
         Args:
-            desired_keep (int): Target number of hypotheses to retain.
+            num_keep (int): Requested number of hypotheses to retain.
             channel (str): Name of the input channel.
 
         Returns:
@@ -392,22 +392,28 @@ class EvidenceSlopeTracker:
 
         Raises:
             ValueError: If the channel does not exist.
+            ValueError: If the requested hypotheses to retain are more than available
+                hypotheses.
         """
         if channel not in self.data:
             raise ValueError(f"Channel '{channel}' does not exist.")
 
+        total_size = self.total_size(channel)
+        if num_keep > total_size:
+            raise ValueError(
+                f"Cannot keep {num_keep} hypotheses; only {total_size} exist."
+            )
+        total_ids = np.arange(total_size)
+        num_remove = total_size - num_keep
+
+        # Retrieve valid slopes and sort them
         valid_mask = self.valid_indices_mask(channel)
         slopes = self._calculate_slopes(channel)
         valid_slopes = slopes[valid_mask]
-        total_ids = np.arange(self.total_size(channel))
         valid_ids = total_ids[valid_mask]
-
         sorted_indices = np.argsort(valid_slopes)
 
-        remove_requested = self.total_size(channel) - desired_keep
-        to_remove = valid_ids[sorted_indices[:remove_requested]]
-        to_keep = np.array(
-            [i for i in np.arange(self.total_size(channel)) if i not in to_remove],
-            dtype=int,
-        )
+        # Calculate which ids to keep and which to remove
+        to_remove = valid_ids[sorted_indices[:num_remove]]
+        to_keep = np.setdiff1d(total_ids, to_remove)
         return to_keep, to_remove
