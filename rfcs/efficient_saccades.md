@@ -86,7 +86,7 @@ The `MontyBase` or one of its subclass will need a `goal_state_selector` attribu
 
 # Open Questions
  - Can/should we integrate model-based signals to inform segmentation or region selection?
- - Which segmentation methods, or combination thereof, might work well for multi-object environments (where objects do not share space) and compmositional objects (where objects *do* share space). For example, depth-based segmentation will be no help in separating a logo from the mug it is on.
+ - Which segmentation methods, or combination thereof, might work well for multi-object environments (where objects do not share space) and compositional objects (where objects *do* share space). For example, depth-based segmentation will be no help in separating a logo from the mug it is on.
  
 # Appendix: Superior Colliculus
 The proposed architecture in this document is largely inspired by the superior colliculus (SC), a subcortical region involved in lower-level visual processing and dispatching saccade commands. Given visual input from a wide field-of-view, the SC generates one or more maps used to select the next location to attend to.
