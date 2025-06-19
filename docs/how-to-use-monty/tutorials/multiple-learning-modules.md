@@ -178,9 +178,11 @@ from tbp.monty.frameworks.experiments import (
     MontyObjectRecognitionExperiment,
 )
 from tbp.monty.frameworks.loggers.monty_handlers import BasicCSVStatsHandler
-from tbp.monty.frameworks.models.evidence_matching import (
-    EvidenceGraphLM,
-    MontyForEvidenceGraphMatching,
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+    EvidenceGraphLM
+)
+from tbp.monty.frameworks.models.evidence_matching.model import (
+    MontyForEvidenceGraphMatching
 )
 from tbp.monty.frameworks.models.goal_state_generation import (
     EvidenceGoalStateGenerator,
