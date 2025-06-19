@@ -63,11 +63,11 @@ class MotorPolicy(abc.ABC):
         self.is_predefined = False
 
     @abc.abstractmethod
-    def dynamic_call(self, state: Optional[MotorSystemState] = None) -> Action | None:
+    def dynamic_call(self, state: MotorSystemState | None = None) -> Action | None:
         """Use this method when actions are not predefined.
 
         Args:
-            state (Optional[MotorSystemState]): The current state of the motor system.
+            state (MotorSystemState | None): The current state of the motor system.
                 Defaults to None.
 
         Returns:
@@ -83,7 +83,7 @@ class MotorPolicy(abc.ABC):
 
     @abc.abstractmethod
     def post_action(
-        self, action: Action | None, state: Optional[MotorSystemState] = None
+        self, action: Action | None, state: MotorSystemState | None = None
     ) -> None:
         """This post action hook will automatically be called at the end of __call__.
 
@@ -93,7 +93,7 @@ class MotorPolicy(abc.ABC):
 
         Args:
             action (Action | None): The action to process the hook for.
-            state (Optional[MotorSystemState]): The current state of the motor system.
+            state (MotorSystemState | None): The current state of the motor system.
                 Defaults to None.
         """
         pass
@@ -126,11 +126,11 @@ class MotorPolicy(abc.ABC):
         """
         pass
 
-    def __call__(self, state: Optional[MotorSystemState] = None) -> Action | None:
+    def __call__(self, state: MotorSystemState | None = None) -> Action | None:
         """Select either dynamic or predefined call.
 
         Args:
-            state (Optional[MotorSystemState]): The current state of the motor system.
+            state (MotorSystemState | None): The current state of the motor system.
                 Defaults to None.
 
         Returns:
@@ -211,13 +211,13 @@ class BasePolicy(MotorPolicy):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, _state: Optional[MotorSystemState] = None) -> Action | None:
+    def dynamic_call(self, _state: MotorSystemState | None = None) -> Action | None:
         """Return a random action.
 
         The MotorSystemState is ignored.
 
         Args:
-            _state (Optional[MotorSystemState]): The current state of the motor system.
+            _state (MotorSystemState | None): The current state of the motor system.
                 Defaults to None. Unused.
 
         Returns:
@@ -243,7 +243,7 @@ class BasePolicy(MotorPolicy):
         return self.action_list[self.episode_step % len(self.action_list)]
 
     def post_action(
-        self, action: Action | None, _: Optional[MotorSystemState] = None
+        self, action: Action | None, _: MotorSystemState | None = None
     ) -> None:
         self.action = action
         self.timestep += 1
@@ -873,7 +873,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, state: Optional[MotorSystemState] = None) -> Action | None:
+    def dynamic_call(self, state: MotorSystemState | None = None) -> Action | None:
         """Return the next action to take.
 
         This requires self.processed_observations to be updated at every step
@@ -881,7 +881,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         extracted by the sensor module for the guiding sensor (patch).
 
         Args:
-            state (Optional[MotorSystemState]): The current state of the motor system.
+            state (MotorSystemState | None): The current state of the motor system.
                 Defaults to None.
 
         Returns:
