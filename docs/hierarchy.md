@@ -25,6 +25,7 @@
 - [running-benchmarks](how-to-use-monty/running-benchmarks.md)
 - [logging-and-analysis](how-to-use-monty/logging-and-analysis.md)
 - [customizing-monty](how-to-use-monty/customizing-monty.md)
+- [implementing-actions](how-to-use-monty/implementing-actions.md)
 - [tutorials](how-to-use-monty/tutorials.md)
   - [running-your-first-experiment](how-to-use-monty/tutorials/running-your-first-experiment.md)
   - [pretraining-a-model](how-to-use-monty/tutorials/pretraining-a-model.md)
@@ -33,7 +34,6 @@
   - [multiple-learning-modules](how-to-use-monty/tutorials/multiple-learning-modules.md)
   - [using-monty-in-a-custom-application](how-to-use-monty/tutorials/using-monty-in-a-custom-application.md)
   - [using-monty-for-robotics](how-to-use-monty/tutorials/using-monty-for-robotics.md)
-  - [implementing-actions](how-to-use-monty/tutorials/implementing-actions.md)
 - [common-issues-and-how-to-fix-them](how-to-use-monty/common-issues-and-how-to-fix-them.md)
 
 # how-monty-works: How Monty Works
