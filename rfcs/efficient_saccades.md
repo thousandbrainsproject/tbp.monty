@@ -73,7 +73,7 @@ Also, I'd like to make one thing clear: The `MotorSystem`/`MotorPolicy` situatio
 ### Modifying Monty Classes
 The `MontyBase` or one of its subclass will need a `goal_state_selector` attribute. Which subclass? TBD.
   
-`SalienceMapSM` is sensor module, so it can be added to `Monty`, and it will be called like any other. But we will need to implement the passing of its up new routing pathways.
+`SalienceMapSM` is a sensor module, so it can be added to `Monty`, and it will be called like any other. But we will need to implement the passing of its new routing pathways.
 
 **Routing**
   - Add: `SalienceMapSM` ->  `GoalStateSelector`.
