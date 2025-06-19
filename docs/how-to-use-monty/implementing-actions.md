@@ -14,19 +14,19 @@ With that in mind, before creating a new **Action**, consider what can be actuat
 
 At a high level, **Actions** are created by the **Motor System** and actuated by the **Environment**.
 
-![](../../figures/how-to-use-monty/tutorials/action_lifecycle_high_level.png)
+![](../figures/how-to-use-monty/action_lifecycle_high_level.png)
 
 Within the **Motor System**, **Policies** either explicitly choose a specific **Action** by creating it directly (e.g., create `MoveForward`), or sample a random **Action** from a pool of actions available (e.g., sample `MoveForward` from the action space `{MoveForward, MoveBack}`).
 
-![](../../figures/how-to-use-monty/tutorials/action_lifecycle_motor_system_detail.png)
+![](../figures/how-to-use-monty/action_lifecycle_motor_system_detail.png)
 
 Within the **Environment**, the **Actions** are actuated either within a simulator, by a robot, or directly.
 
-![](../../figures/how-to-use-monty/tutorials/action_lifecycle_both_detail.png)
+![](../figures/how-to-use-monty/action_lifecycle_both_detail.png)
 
 Additionally, within an experimental framework, a **Positioning Procedure** can generate **Actions** before starting the experiment. This is analogous to an experimenter moving Monty into a starting position. The **Positioning Procedure** can use privileged information such as labels, ground truth object models, or task instructions, and is independent of Monty and the models learned in its learning modules.
 
-![](../../figures/how-to-use-monty/tutorials/action_lifecycle_positioning_procedure.png)
+![](../figures/how-to-use-monty/action_lifecycle_positioning_procedure.png)
 
 # Creating Actions
 
