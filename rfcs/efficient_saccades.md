@@ -15,7 +15,7 @@ This RFC outlines two main strategies aimed at improving the speed and robustnes
   2. In addition, we propose a set of optimization strategies designed to improve efficiency. In this context, efficiency refers to the number of steps taken to converge on an object + pose estimate. While these optimization strategies should improve inference speed in any setting (single-object, multi-object, etc.), faster inference may serve an additional purpose in the compositional/multi-object context; by reducing the number of steps needed to recognize an object, we may also reduce the likelihood of collecting mislabeled, off-object observation[^3].
 
 To implement these strategies, we propose the addition of two new components.
-  - `SalienceMapSM`: a sensor module type that receives a wide field-of-view, performs model-free processing (e.g., segmentation salience estimation), and outputs a set of CMP-compliant goal states.
+  - `SalienceMapSM`: a sensor module type that receives a wide, low-resolution field-of-view, performs model-free processing (e.g., salience estimation or segmentation), and outputs a set of CMP-compliant goal states.
   - `GoalStateSelector`: an arbiter that receives goal states from all sources (LMs and `SalienceMapSM`)and outputs a single goal state for the motor system.
 
 # Architecture
