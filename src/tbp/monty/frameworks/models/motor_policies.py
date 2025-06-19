@@ -1095,7 +1095,9 @@ class SurfacePolicy(InformedPolicy):
         self.tangential_angle = 0
         self.alpha = alpha
 
-        self.attempting_to_find_object = False
+        # TODO: Remove these once TouchObject positioning procedure is implemented
+        self.attempting_to_find_object: bool = False
+        self.last_surface_policy_action: Action | None = None
 
     def pre_episode(self):
         self.tangential_angle = 0
@@ -1104,6 +1106,8 @@ class SurfacePolicy(InformedPolicy):
         # along the horizontal plane searching for an object; when this reaches 360,
         # try searching along the vertical plane, or for 720, performing a random
         # search
+
+        self.last_surface_policy_action = None
 
         return super().pre_episode()
 
@@ -1264,11 +1268,14 @@ class SurfacePolicy(InformedPolicy):
             )
             logging.debug("Initiating attempts to touch object")
 
+            # Set attempting_to_find_object to True here so that post_action will
+            # not interfere with self.last_surface_policy_action
+            self.attempting_to_find_object = True
             return None  # Will result in moving to try to find the object
             # This is determined by some logic in embodied_data.py, in particular
             # the next method of InformedEnvironmentDataLoader
 
-        elif self.action is None:
+        elif self.last_surface_policy_action is None:
             logging.debug(
                 "Object coverage good at initialization: "
                 + str(
@@ -1280,8 +1287,40 @@ class SurfacePolicy(InformedPolicy):
             # good; therefore initialize the cycle of actions as if we had just
             # moved forward (e.g. to get a good view)
             self.action = self.action_sampler.sample_move_forward(self.agent_id)
+            self.last_surface_policy_action = self.action
 
         return self.get_next_action(state)
+
+    def post_action(
+        self, action: Action, state: MotorSystemState | None = None
+    ) -> None:
+        """Temporary SurfacePolicy post_action to distinguish types of last action.
+
+        Once TouchObject positioning procedure exists, it will not run through the
+        Monty step loop and will not register any touch object actions as last action.
+
+        Currently, when SurfacePolicy.dynamic_call resumes, it sees the last action
+        of a touch object, which is always MoveForward. As such, the SurfacePolicy
+        resumes by always taking the OrientHorizontal action.
+
+        When the TouchObject positioning procedure is complete, the SurfacePolicy
+        will never see the TouchObject actions, so when it resumes, the last action
+        will be whatever the last action the SurfacePolicy took.
+
+        For now, we specifically track only the SurfacePolicy actions in the
+        last_surface_policy_action attribute, in order to prepare the code
+        for TouchObject positioning procedure.
+
+        Args:
+            action (Action): The action that was just taken.
+            state (Optional[MotorSystemState]): The current state of the motor system.
+                Defaults to None.
+
+        # TODO: Remove this once TouchObject positioning procedure is implemented
+        """
+        super().post_action(action, state)
+        if not self.attempting_to_find_object:
+            self.last_surface_policy_action = action
 
     def _orient_horizontal(self, state: MotorSystemState) -> OrientHorizontal:
         """Orient the agent horizontally.
@@ -1388,7 +1427,9 @@ class SurfacePolicy(InformedPolicy):
         if not hasattr(self, "processed_observations"):
             return None
 
-        last_action = self.last_action
+        # TODO: Revert to last_action = self.last_action once TouchObject positioning
+        #       procedure is implemented
+        last_action = self.last_surface_policy_action
 
         if isinstance(last_action, MoveForward):
             return self._orient_horizontal(state)
