@@ -49,7 +49,6 @@
 - [connecting-lms-into-a-heterarchy](how-monty-works/connecting-lms-into-a-heterarchy.md)
 - [faq-monty](how-monty-works/faq-monty.md)
 - [open-questions](how-monty-works/open-questions.md)
-- [implementing-actions](how-monty-works/implementing-actions.md)
 
 # contributing: Contributing
 - [why-contribute](contributing/why-contribute.md)
