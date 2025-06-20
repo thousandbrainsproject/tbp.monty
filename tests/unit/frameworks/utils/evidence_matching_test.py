@@ -23,12 +23,12 @@ class ChannelMapperTest(unittest.TestCase):
         """Sets up a default ChannelMapper instance for testing."""
         self.mapper = ChannelMapper({"A": 5, "B": 10, "C": 15})
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """Test initializing ChannelMapper with predefined sizes."""
         self.assertEqual(self.mapper.channels, ["A", "B", "C"])
         self.assertEqual(self.mapper.total_size, 30)
 
-    def test_channel_range(self):
+    def test_channel_range(self) -> None:
         """Test retrieving channel ranges and non-existent channels."""
         self.assertEqual(self.mapper.channel_range("A"), (0, 5))
         self.assertEqual(self.mapper.channel_range("B"), (5, 15))
@@ -36,7 +36,7 @@ class ChannelMapperTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.mapper.channel_range("D")
 
-    def test_channel_size(self):
+    def test_channel_size(self) -> None:
         """Test retrieving total hypotheses for a specific channel."""
         self.assertEqual(self.mapper.channel_size("A"), 5)
         self.assertEqual(self.mapper.channel_size("B"), 10)
@@ -45,13 +45,13 @@ class ChannelMapperTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.mapper.channel_size("D")
 
-    def test_resize_channel_by_positive(self):
+    def test_resize_channel_by_positive(self) -> None:
         """Test increasing channel sizes."""
         self.mapper.resize_channel_by("B", 5)
         self.assertEqual(self.mapper.channel_range("B"), (5, 20))
         self.assertEqual(self.mapper.total_size, 35)
 
-    def test_resize_channel_by_negative(self):
+    def test_resize_channel_by_negative(self) -> None:
         """Test decreasing channel sizes."""
         self.mapper.resize_channel_by("B", -5)
         self.assertEqual(self.mapper.channel_range("B"), (5, 10))
@@ -60,7 +60,7 @@ class ChannelMapperTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.mapper.resize_channel_by("A", -10)
 
-    def test_resize_channel_to_valid(self):
+    def test_resize_channel_to_valid(self) -> None:
         """Test setting a new size for an existing channel."""
         self.mapper.resize_channel_to("A", 8)
         self.assertEqual(self.mapper.channel_range("A"), (0, 8))
@@ -68,19 +68,19 @@ class ChannelMapperTest(unittest.TestCase):
         self.assertEqual(self.mapper.channel_range("C"), (18, 33))
         self.assertEqual(self.mapper.total_size, 33)
 
-    def test_resize_channel_to_invalid_channel(self):
+    def test_resize_channel_to_invalid_channel(self) -> None:
         """Test resizing a non-existent channel."""
         with self.assertRaises(ValueError):
             self.mapper.resize_channel_to("Z", 5)
 
-    def test_resize_channel_to_invalid_size(self):
+    def test_resize_channel_to_invalid_size(self) -> None:
         """Test resizing a channel to a non-positive size."""
         with self.assertRaises(ValueError):
             self.mapper.resize_channel_to("B", 0)
         with self.assertRaises(ValueError):
             self.mapper.resize_channel_to("B", -3)
 
-    def test_add_channel(self):
+    def test_add_channel(self) -> None:
         """Test adding a new channel."""
         self.mapper.add_channel("D", 8)
         self.assertIn("D", self.mapper.channels)
@@ -89,7 +89,7 @@ class ChannelMapperTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.mapper.add_channel("A", 3)
 
-    def test_add_channel_at_position(self):
+    def test_add_channel_at_position(self) -> None:
         """Test inserting a channel at a specific position."""
         self.mapper.add_channel("X", 7, position=1)
         self.assertEqual(self.mapper.channels, ["A", "X", "B", "C"])
@@ -172,7 +172,7 @@ class ChannelMapperTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.mapper.update(original, "Z", new_data)
 
-    def test_repr(self):
+    def test_repr(self) -> None:
         """Test string representation of the ChannelMapper."""
         expected_repr = "ChannelMapper({'A': (0, 5), 'B': (5, 15), 'C': (15, 30)})"
         self.assertEqual(repr(self.mapper), expected_repr)
