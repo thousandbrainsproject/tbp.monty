@@ -6228,6 +6228,8 @@ dependencies = [
     { name = "torchvision", version = "0.19.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "torchvision", version = "0.22.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
     { name = "tqdm" },
+    { name = "typing-extensions", version = "4.13.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
+    { name = "typing-extensions", version = "4.14.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
     { name = "wandb" },
 ]
 
@@ -6332,6 +6334,7 @@ requires-dist = [
     { name = "torch-geometric" },
     { name = "torchvision" },
     { name = "tqdm" },
+    { name = "typing-extensions" },
     { name = "wandb" },
 ]
 provides-extras = ["simulator-habitat", "simulator-mujoco", "analysis", "build", "dev", "generate-api-docs-tool", "github-readme-sync-tool", "print-version-tool", "real-robots"]
