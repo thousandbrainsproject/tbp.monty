@@ -63,15 +63,15 @@ class MotorPolicy(abc.ABC):
         self.is_predefined = False
 
     @abc.abstractmethod
-    def dynamic_call(self, state: Optional[MotorSystemState] = None) -> Action:
+    def dynamic_call(self, state: MotorSystemState | None = None) -> Action | None:
         """Use this method when actions are not predefined.
 
         Args:
-            state (Optional[MotorSystemState]): The current state of the motor system.
+            state (MotorSystemState | None): The current state of the motor system.
                 Defaults to None.
 
         Returns:
-            (Action): The action to take.
+            (Action | None): The action to take.
         """
         pass
 
@@ -83,7 +83,7 @@ class MotorPolicy(abc.ABC):
 
     @abc.abstractmethod
     def post_action(
-        self, action: Action, state: Optional[MotorSystemState] = None
+        self, action: Action | None, state: MotorSystemState | None = None
     ) -> None:
         """This post action hook will automatically be called at the end of __call__.
 
@@ -92,8 +92,8 @@ class MotorPolicy(abc.ABC):
               motor system.
 
         Args:
-            action (Action): The action to process the hook for.
-            state (Optional[MotorSystemState]): The current state of the motor system.
+            action (Action | None): The action to process the hook for.
+            state (MotorSystemState | None): The current state of the motor system.
                 Defaults to None.
         """
         pass
@@ -126,18 +126,18 @@ class MotorPolicy(abc.ABC):
         """
         pass
 
-    def __call__(self, state: Optional[MotorSystemState] = None) -> Action:
+    def __call__(self, state: MotorSystemState | None = None) -> Action | None:
         """Select either dynamic or predefined call.
 
         Args:
-            state (Optional[MotorSystemState]): The current state of the motor system.
+            state (MotorSystemState | None): The current state of the motor system.
                 Defaults to None.
 
         Returns:
-            (Action): The action to take.
+            (Action | None): The action to take.
         """
         if self.is_predefined:
-            action = self.predefined_call()
+            action: Action | None = self.predefined_call()
         else:
             action = self.dynamic_call(state)
         self.post_action(action, state)
@@ -182,7 +182,9 @@ class BasePolicy(MotorPolicy):
         self.episode_count = 0
         self.switch_frequency = float(switch_frequency)
         # Ensure our first action only samples from those that can be random
-        self.action = self.get_random_action(self.action_sampler.sample(self.agent_id))
+        self.action: Action | None = self.get_random_action(
+            self.action_sampler.sample(self.agent_id)
+        )
 
         ###
         # Load data for predefined actions and amounts if specified
@@ -209,13 +211,13 @@ class BasePolicy(MotorPolicy):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, _state: Optional[MotorSystemState] = None) -> Action:
+    def dynamic_call(self, _state: MotorSystemState | None = None) -> Action | None:
         """Return a random action.
 
         The MotorSystemState is ignored.
 
         Args:
-            _state (Optional[MotorSystemState]): The current state of the motor system.
+            _state (MotorSystemState | None): The current state of the motor system.
                 Defaults to None. Unused.
 
         Returns:
@@ -240,7 +242,9 @@ class BasePolicy(MotorPolicy):
     def predefined_call(self) -> Action:
         return self.action_list[self.episode_step % len(self.action_list)]
 
-    def post_action(self, action: Action, _: Optional[MotorSystemState] = None) -> None:
+    def post_action(
+        self, action: Action | None, _: MotorSystemState | None = None
+    ) -> None:
         self.action = action
         self.timestep += 1
         self.episode_step += 1
@@ -869,7 +873,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, state: Optional[MotorSystemState] = None) -> Action:
+    def dynamic_call(self, state: MotorSystemState | None = None) -> Action | None:
         """Return the next action to take.
 
         This requires self.processed_observations to be updated at every step
@@ -877,11 +881,11 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         extracted by the sensor module for the guiding sensor (patch).
 
         Args:
-            state (Optional[MotorSystemState]): The current state of the motor system.
+            state (MotorSystemState | None): The current state of the motor system.
                 Defaults to None.
 
         Returns:
-            (Action): The action to take.
+            (Action | None): The action to take.
         """
         return (
             super().dynamic_call(state)
@@ -889,7 +893,9 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             else self.fixme_undo_last_action()
         )
 
-    def fixme_undo_last_action(self):
+    def fixme_undo_last_action(
+        self,
+    ) -> LookDown | LookUp | TurnLeft | TurnRight | MoveForward | MoveTangentially:
         """Returns an action that undoes last action for supported actions.
 
         Previous InformedPolicy.dynamic_call() implementation when not on object:
@@ -962,7 +968,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
             raise TypeError(f"Invalid action: {last_action}")
 
     def post_action(
-        self, action: Action, state: Optional[MotorSystemState] = None
+        self, action: Action | None, state: MotorSystemState | None = None
     ) -> None:
         self.action = action
         self.timestep += 1
@@ -1095,7 +1101,9 @@ class SurfacePolicy(InformedPolicy):
         self.tangential_angle = 0
         self.alpha = alpha
 
-        self.attempting_to_find_object = False
+        # TODO: Remove these once TouchObject positioning procedure is implemented
+        self.attempting_to_find_object: bool = False
+        self.last_surface_policy_action: Action | None = None
 
     def pre_episode(self):
         self.tangential_angle = 0
@@ -1104,6 +1112,8 @@ class SurfacePolicy(InformedPolicy):
         # along the horizontal plane searching for an object; when this reaches 360,
         # try searching along the vertical plane, or for 720, performing a random
         # search
+
+        self.last_surface_policy_action = None
 
         return super().pre_episode()
 
@@ -1264,11 +1274,14 @@ class SurfacePolicy(InformedPolicy):
             )
             logging.debug("Initiating attempts to touch object")
 
+            # Set attempting_to_find_object to True here so that post_action will
+            # not interfere with self.last_surface_policy_action
+            self.attempting_to_find_object = True
             return None  # Will result in moving to try to find the object
             # This is determined by some logic in embodied_data.py, in particular
             # the next method of InformedEnvironmentDataLoader
 
-        elif self.action is None:
+        elif self.last_surface_policy_action is None:
             logging.debug(
                 "Object coverage good at initialization: "
                 + str(
@@ -1280,8 +1293,40 @@ class SurfacePolicy(InformedPolicy):
             # good; therefore initialize the cycle of actions as if we had just
             # moved forward (e.g. to get a good view)
             self.action = self.action_sampler.sample_move_forward(self.agent_id)
+            self.last_surface_policy_action = self.action
 
         return self.get_next_action(state)
+
+    def post_action(
+        self, action: Action, state: MotorSystemState | None = None
+    ) -> None:
+        """Temporary SurfacePolicy post_action to distinguish types of last action.
+
+        Once TouchObject positioning procedure exists, it will not run through the
+        Monty step loop and will not register any touch object actions as last action.
+
+        Currently, when SurfacePolicy.dynamic_call resumes, it sees the last action
+        of a touch object, which is always MoveForward. As such, the SurfacePolicy
+        resumes by always taking the OrientHorizontal action.
+
+        When the TouchObject positioning procedure is complete, the SurfacePolicy
+        will never see the TouchObject actions, so when it resumes, the last action
+        will be whatever the last action the SurfacePolicy took.
+
+        For now, we specifically track only the SurfacePolicy actions in the
+        last_surface_policy_action attribute, in order to prepare the code
+        for TouchObject positioning procedure.
+
+        Args:
+            action (Action): The action that was just taken.
+            state (Optional[MotorSystemState]): The current state of the motor system.
+                Defaults to None.
+
+        # TODO: Remove this once TouchObject positioning procedure is implemented
+        """
+        super().post_action(action, state)
+        if not self.attempting_to_find_object:
+            self.last_surface_policy_action = action
 
     def _orient_horizontal(self, state: MotorSystemState) -> OrientHorizontal:
         """Orient the agent horizontally.
@@ -1388,7 +1433,9 @@ class SurfacePolicy(InformedPolicy):
         if not hasattr(self, "processed_observations"):
             return None
 
-        last_action = self.last_action
+        # TODO: Revert to last_action = self.last_action once TouchObject positioning
+        #       procedure is implemented
+        last_action = self.last_surface_policy_action
 
         if isinstance(last_action, MoveForward):
             return self._orient_horizontal(state)
@@ -1439,7 +1486,7 @@ class SurfacePolicy(InformedPolicy):
             # x-coordinate and sin(theta) with the y-coordinate of space
         )
 
-        return direction
+        return tuple(direction)
 
     def horizontal_distances(self, rotation_degrees: float) -> Tuple[float, float]:
         """Compute the horizontal and forward distances to move to.
@@ -1840,7 +1887,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         return tang_movement
 
-    def perform_pc_guided_step(self, state: MotorSystemState):
+    def perform_pc_guided_step(self, state: MotorSystemState) -> VectorXYZ:
         """Inform steps to take using defined directions of principal curvature.
 
         Use the defined directions of principal curvature to inform (ideally a
@@ -1916,8 +1963,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             self.reset_pc_buffers()
             self.following_heading_counter = 0
 
-            return qt.rotate_vectors(
-                state["agent_id_0"]["rotation"], self.tangential_vec
+            return tuple(
+                qt.rotate_vectors(state["agent_id_0"]["rotation"], self.tangential_vec)
             )
 
         # Otherwise our heading is good; we continue and use our original heading (or
@@ -1936,9 +1983,11 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.following_pc_counter += 1
         self.continuous_pc_steps += 1
 
-        return qt.rotate_vectors(state["agent_id_0"]["rotation"], self.tangential_vec)
+        return tuple(
+            qt.rotate_vectors(state["agent_id_0"]["rotation"], self.tangential_vec)
+        )
 
-    def perform_standard_tang_step(self, state: MotorSystemState):
+    def perform_standard_tang_step(self, state: MotorSystemState) -> VectorXYZ:
         """Perform a standard tangential step across the object.
 
         This is in contrast to, for example, being guided by principal curvatures.
@@ -2000,9 +2049,11 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         self.following_heading_counter += 1
 
-        return qt.rotate_vectors(
-            state["agent_id_0"]["rotation"],
-            self.tangential_vec,
+        return tuple(
+            qt.rotate_vectors(
+                state["agent_id_0"]["rotation"],
+                self.tangential_vec,
+            )
         )
 
     def update_tangential_reps(self, vec_form=None, angle_form=None):
