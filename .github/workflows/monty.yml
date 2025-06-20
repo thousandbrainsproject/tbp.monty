@@ -12,8 +12,10 @@ on:
     branches:
       - main
 
-jobs:
+env:
+  UV_PYTHON: 3.9.22 # version of Python to use in `uv` environment
 
+jobs:
   build_sphinx_monty:
     name: build-sphinx-monty
     runs-on:
@@ -354,4 +356,52 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test_coverage
+          path: tbp.monty/htmlcov
+
+  test_uv_monty:
+    name: test-uv-monty
+    runs-on:
+      group: tbp.monty
+      labels: tbp-linux-x64-ubuntu2204-8core
+    timeout-minutes: 120
+    needs:
+      # TODO: check all these using `uv` once we move off Conda
+      - check_dependencies_monty # Don't run if dependency check fails
+      - check_style_monty # Don't run if style check fails
+      - check_types_monty # Don't run if type check fails
+      - should_run_monty
+    steps:
+      - name: Checkout tbp.monty
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          path: tbp.monty
+      - name: Install uv
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: '**/uv.lock'
+      - name: Create uv environment
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        working-directory: tbp.monty
+        run: uv sync --locked --extra dev --extra simulator_mujoco
+      - name: Run tests
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          mkdir -p test_results/pytest
+          uv run pytest --cov --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose
+      - name: Store test results
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test_results_uv
+          path: tbp.monty/test_results/pytest
+      - name: Store coverage
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test_coverage_uv
           path: tbp.monty/htmlcov
