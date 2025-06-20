@@ -302,13 +302,13 @@ def evidence_update_threshold(
     elif evidence_threshold_config == "all":
         return np.min(evidence_all_channels)
     else:
-        raise InvalidEvidenceUpdateThreshold(
+        raise InvalidEvidenceThresholdConfig(
             "evidence_threshold_config not in "
             "[int, float, '[int]%', 'mean', 'median', 'all', 'x_percent_threshold']"
         )
 
 
-class InvalidEvidenceUpdateThreshold(ValueError):
+class InvalidEvidenceThresholdConfig(ValueError):
     """Raised when the evidence update threshold is invalid."""
 
     pass
