@@ -42,11 +42,14 @@ requires-python = '>=3.8'
 
 [project.optional-dependencies]
 simulator_habitat = [
-    # HabitatSim is only installable via conda. These dependencies are listed here
-    # for documentation and consistency
+    # HabitatSim is only installable via conda. These dependencies are listed here for
+    # documentation and consistency.
     # NOTE: The version constraint is to prevent `uv` from failing trying to check all
     # optional dependency sets are valid.
     'habitat_sim;python_version=="3.9"', # imported via conda (aihabitat::habitat-sim)
+]
+simulator_mujoco = [
+    'mujoco'
 ]
 analysis = [
     'ipython',
