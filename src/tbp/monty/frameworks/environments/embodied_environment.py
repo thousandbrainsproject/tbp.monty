@@ -13,6 +13,8 @@ import collections.abc
 from typing import Any, Dict, Optional, Tuple
 
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.environments.observations import Observations
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 
 __all__ = ["EmbodiedEnvironment", "ActionSpace"]
 
@@ -76,7 +78,7 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def step(self, action: Action) -> Dict[Any, Dict]:
+    def step(self, action: Action) -> Observations:
         """Apply the given action to the environment.
 
         Return the current observations and other environment information (i.e. sensor
@@ -85,7 +87,7 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_state(self):
+    def get_state(self) -> ProprioceptiveState:
         """Return the state of the environment (and agent)."""
         pass
 

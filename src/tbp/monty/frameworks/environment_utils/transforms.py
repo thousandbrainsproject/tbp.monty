@@ -7,22 +7,36 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
-from numbers import Number
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 import quaternion as qt
 import scipy
+from typing_extensions import Protocol
 
-from tbp.monty.frameworks.models.states import State
+from tbp.monty.frameworks.environments.observations import Observations
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
+
+if TYPE_CHECKING:
+    from numbers import Number
 
 __all__ = [
     "AddNoiseToRawDepthImage",
     "DepthTo3DLocations",
     "GaussianSmoothing",
     "MissingToMaxDepth",
+    "Transform",
 ]
+
+
+class Transform(Protocol):
+    """A transform that can be applied to observations."""
+
+    def __call__(
+        self, observations: Observations, state: ProprioceptiveState | None = None
+    ) -> Observations: ...
 
 
 class MissingToMaxDepth:
@@ -47,15 +61,17 @@ class MissingToMaxDepth:
         self.threshold = threshold
         self.needs_rng = False
 
-    def __call__(self, observation, state=None):
+    def __call__(
+        self, observation: Observations, state: ProprioceptiveState | None = None
+    ) -> Observations:
         """Replace missing depth values with max_depth.
 
         Args:
-            observation: observation to modify in place.
-            state: not used.
+            observation (Observations): Observations to modify in place.
+            state (ProprioceptiveState | None): Not used.
 
         Returns:
-            observation, same as input, with missing data modified in place
+            Observations: Same as input, with missing data modified in place
         """
         # loop over sensor modules
         for sm in observation[self.agent_id].keys():
@@ -79,33 +95,35 @@ class AddNoiseToRawDepthImage:
         self.sigma = sigma
         self.needs_rng = True
 
-    def __call__(self, observation, state=None):
+    def __call__(
+        self, observations: Observations, state: ProprioceptiveState | None = None
+    ) -> Observations:
         """Add gaussian noise to raw sensory input.
 
         Args:
-            observation: observation to modify in place.
-            state: not used.
+            observations (Observations): Observations to modify in place.
+            state (ProprioceptiveState | None): Not used.
 
         Returns:
-            observation, same as input, with added gaussian noise to depth values.
+            Observations: Same as input, with added gaussian noise to depth values.
 
         Raises:
             NoDepthSensorPresent: if no depth sensor is present.
         """
         # loop over sensor modules
-        for sm in observation[self.agent_id].keys():
-            if "depth" in observation[self.agent_id][sm].keys():
+        for sm in observations[self.agent_id].keys():
+            if "depth" in observations[self.agent_id][sm].keys():
                 noise = self.rng.normal(
                     0,
                     self.sigma,
-                    observation[self.agent_id][sm]["depth"].shape,
+                    observations[self.agent_id][sm]["depth"].shape,
                 )
-                observation[self.agent_id][sm]["depth"] += noise
+                observations[self.agent_id][sm]["depth"] += noise
             else:
                 raise NoDepthSensorPresent(
                     "NO DEPTH SENSOR PRESENT. Don't use this transform"
                 )
-        return observation
+        return observations
 
 
 class GaussianSmoothing:
@@ -132,33 +150,35 @@ class GaussianSmoothing:
         self.kernel = self.create_kernel()
         self.needs_rng = False
 
-    def __call__(self, observation, state=None):
+    def __call__(
+        self, observations: Observations, state: ProprioceptiveState | None = None
+    ) -> Observations:
         """Apply gaussian smoothing to depth images.
 
         Args:
-            observation: observation to modify in place.
-            state: not used.
+            observations (Observations): Observations to modify in place.
+            state (ProprioceptiveState | None): Not used.
 
         Returns:
-            observation, same as input, with smoothed depth values.
+            Observations: Same as input, with smoothed depth values.
 
         Raises:
             NoDepthSensorPresent: if no depth sensor is present.
         """
         # loop over sensor modules
-        for sm in observation[self.agent_id].keys():
-            if "depth" in observation[self.agent_id][sm].keys():
-                depth_img = observation[self.agent_id][sm]["depth"].copy()
+        for sm in observations[self.agent_id].keys():
+            if "depth" in observations[self.agent_id][sm].keys():
+                depth_img = observations[self.agent_id][sm]["depth"].copy()
                 padded_img = self.get_padded_img(depth_img, pad_type="edge")
                 filtered_img = scipy.signal.convolve(
                     padded_img, self.kernel, mode="valid"
                 )
-                observation[self.agent_id][sm]["depth"] = filtered_img
+                observations[self.agent_id][sm]["depth"] = filtered_img
             else:
                 raise NoDepthSensorPresent(
                     "NO DEPTH SENSOR PRESENT. Don't use this transform"
                 )
-        return observation
+        return observations
 
     def create_kernel(self):
         """Create a normalized gaussian kernel.
@@ -314,7 +334,9 @@ class DepthTo3DLocations:
         self.clip_value = clip_value
         self.depth_clip_sensors = depth_clip_sensors
 
-    def __call__(self, observations: dict, state: Optional[State] = None):
+    def __call__(
+        self, observations: Observations, state: ProprioceptiveState | None = None
+    ) -> Observations:
         """Apply the depth-to-3D-locations transform to sensor observations.
 
         Applies spatial transforms to the observations and generates a mask used
@@ -523,7 +545,7 @@ class DepthTo3DLocations:
         semantic_patch: np.ndarray,
         min_depth_range: Number,
         default_on_surface_th: Number,
-    ) -> Tuple[Number, bool]:
+    ) -> tuple[Number, bool]:
         """Return a depth threshold if we have a bimodal depth distribution.
 
         If the depth values are in a large enough range (> min_depth_range) we may
