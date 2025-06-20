@@ -62,22 +62,22 @@ class MissingToMaxDepth:
         self.needs_rng = False
 
     def __call__(
-        self, observation: Observations, state: ProprioceptiveState | None = None
+        self, observations: Observations, state: ProprioceptiveState | None = None
     ) -> Observations:
         """Replace missing depth values with max_depth.
 
         Args:
-            observation (Observations): Observations to modify in place.
+            observations (Observations): Observations to modify in place.
             state (ProprioceptiveState | None): Not used.
 
         Returns:
             Observations: Same as input, with missing data modified in place
         """
         # loop over sensor modules
-        for sm in observation[self.agent_id].keys():
-            m = np.where(observation[self.agent_id][sm]["depth"] <= self.threshold)
-            observation[self.agent_id][sm]["depth"][m] = self.max_depth
-        return observation
+        for sm in observations[self.agent_id].keys():
+            m = np.where(observations[self.agent_id][sm]["depth"] <= self.threshold)
+            observations[self.agent_id][sm]["depth"][m] = self.max_depth
+        return observations
 
 
 class AddNoiseToRawDepthImage:
