@@ -1395,7 +1395,8 @@ class SurfacePolicy(InformedPolicy):
             Next action in the cycle.
 
         Raises:
-            UnsupportedLastAction: If the last action is not one of the supported actions.
+            UnsupportedLastAction: If the last action is not one of the supported
+                actions.
         """
         last_action = self.last_action
 
