@@ -231,7 +231,7 @@ evidence_lm_config = dict(
             }
         },
         # Use this to update all hypotheses > x_percent_threshold (faster)
-        evidence_update_threshold="x_percent_threshold",
+        evidence_threshold_config="x_percent_threshold",
         x_percent_threshold=20,
         gsg_class=EvidenceGoalStateGenerator,
         gsg_args=dict(
