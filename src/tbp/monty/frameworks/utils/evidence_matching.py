@@ -252,7 +252,7 @@ class ChannelMapper:
 
 
 def evidence_update_threshold(
-    evidence_update_threshold: float | str,
+    evidence_threshold_config: float | str,
     x_percent_threshold: float | str,
     max_global_evidence: float,
     evidence_all_channels: np.ndarray,
@@ -260,7 +260,7 @@ def evidence_update_threshold(
     """Determine how much evidence a hypothesis should have to be updated.
 
     Args:
-        evidence_update_threshold (float | str): The heuristic for deciding which
+        evidence_threshold_config (float | str): The heuristic for deciding which
             hypotheses should be updated.
         x_percent_threshold (float | str): The x_percent value to use for deciding
             on the `evidence_update_threshold` when the `x_percent_threshold` is
@@ -273,37 +273,37 @@ def evidence_update_threshold(
         The evidence update threshold.
 
     Raises:
-        InvalidEvidenceUpdateThreshold: If `self.evidence_update_threshold` is
+        InvalidEvidenceUpdateThreshold: If `evidence_threshold_config` is
             not in the allowed values
     """
     # return 0 for the threshold if there are no evidence scores
     if evidence_all_channels.size == 0:
         return 0
 
-    if type(evidence_update_threshold) in [int, float]:
-        return evidence_update_threshold
-    elif evidence_update_threshold == "mean":
+    if type(evidence_threshold_config) in [int, float]:
+        return evidence_threshold_config
+    elif evidence_threshold_config == "mean":
         return np.mean(evidence_all_channels)
-    elif evidence_update_threshold == "median":
+    elif evidence_threshold_config == "median":
         return np.median(evidence_all_channels)
     elif isinstance(
-        evidence_update_threshold, str
-    ) and evidence_update_threshold.endswith("%"):
-        percentage_str = evidence_update_threshold.strip("%")
+        evidence_threshold_config, str
+    ) and evidence_threshold_config.endswith("%"):
+        percentage_str = evidence_threshold_config.strip("%")
         percentage = float(percentage_str)
         assert percentage >= 0 and percentage <= 100, (
             "Percentage must be between 0 and 100"
         )
         x_percent_of_max = max_global_evidence * (percentage / 100)
         return max_global_evidence - x_percent_of_max
-    elif evidence_update_threshold == "x_percent_threshold":
+    elif evidence_threshold_config == "x_percent_threshold":
         x_percent_of_max = max_global_evidence / 100 * x_percent_threshold
         return max_global_evidence - x_percent_of_max
-    elif evidence_update_threshold == "all":
+    elif evidence_threshold_config == "all":
         return np.min(evidence_all_channels)
     else:
         raise InvalidEvidenceUpdateThreshold(
-            "evidence_update_threshold not in "
+            "evidence_threshold_config not in "
             "[int, float, '[int]%', 'mean', 'median', 'all', 'x_percent_threshold']"
         )
 

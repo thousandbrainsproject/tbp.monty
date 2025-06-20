@@ -57,7 +57,7 @@ class EvidenceGraphLM(GraphLM):
             by this value before being added to the overall evidence of a hypothesis.
             This factor is only multiplied with the feature evidence (not the pose
             evidence as opposed to the present_weight).
-        evidence_update_threshold (float | str): How to decide which hypotheses
+        evidence_threshold_config (float | str): How to decide which hypotheses
             should be updated. When this parameter is either '[int]%' or
             'x_percent_threshold', then this parameter is applied to the evidence
             for the Most Likely Hypothesis (MLH) to determine a minimum evidence
@@ -150,7 +150,7 @@ class EvidenceGraphLM(GraphLM):
         tolerances: dict,
         feature_weights: dict,
         feature_evidence_increment=1,
-        evidence_update_threshold: float | str = "all",
+        evidence_threshold_config: float | str = "all",
         vote_evidence_threshold=0.8,
         past_weight=1,
         present_weight=1,
@@ -189,7 +189,7 @@ class EvidenceGraphLM(GraphLM):
         self.max_match_distance = max_match_distance
         self.tolerances = tolerances
         self.feature_evidence_increment = feature_evidence_increment
-        self.evidence_update_threshold = evidence_update_threshold
+        self.evidence_threshold_config = evidence_threshold_config
         self.vote_evidence_threshold = vote_evidence_threshold
         # ------ Weighting Params ------
         self.feature_weights = feature_weights
@@ -745,7 +745,7 @@ class EvidenceGraphLM(GraphLM):
 
         # Calculate the evidence_update_threshold
         update_threshold = evidence_update_threshold(
-            self.evidence_update_threshold,
+            self.evidence_threshold_config,
             self.x_percent_threshold,
             max_global_evidence=self.current_mlh["evidence"],
             evidence_all_channels=self.evidence[graph_id],
