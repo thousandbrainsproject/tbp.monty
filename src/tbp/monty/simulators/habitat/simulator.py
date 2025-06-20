@@ -25,7 +25,23 @@ from habitat_sim.utils import common as sim_utils
 from importlib_resources import files
 
 import tbp.monty.simulators.resources as resources
-from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.actions.actions import (
+    Action,
+    LookDown,
+    LookUp,
+    MoveForward,
+    MoveTangentially,
+    OrientHorizontal,
+    OrientVertical,
+    SetAgentPitch,
+    SetAgentPose,
+    SetSensorPitch,
+    SetSensorPose,
+    SetSensorRotation,
+    SetYaw,
+    TurnLeft,
+    TurnRight,
+)
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
 from tbp.monty.simulators.habitat.environment_utils import get_bounding_corners
 
@@ -461,11 +477,36 @@ class HabitatSim(HabitatActuator):
             A dictionary with the observations grouped by agent_id
 
         Raises:
+            TypeError: If the action type is invalid
             ValueError: If the action name is invalid
         """
         action_name = self.action_name(action)
         if action_name not in self._action_space:
             raise ValueError(f"Invalid action name: {action_name}")
+
+        # TODO: This is for the purpose of type checking, but would be better handled
+        #       using the action space check above, once those are integrated into the
+        #       type system.
+        if not isinstance(
+            action,
+            (
+                LookDown,
+                LookUp,
+                MoveForward,
+                MoveTangentially,
+                OrientHorizontal,
+                OrientVertical,
+                SetAgentPitch,
+                SetAgentPose,
+                SetSensorPitch,
+                SetSensorPose,
+                SetSensorRotation,
+                SetYaw,
+                TurnLeft,
+                TurnRight,
+            ),
+        ):
+            raise TypeError(f"Invalid action type: {type(action)}")
 
         action.act(self)
 
