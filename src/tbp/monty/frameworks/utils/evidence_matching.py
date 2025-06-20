@@ -273,7 +273,7 @@ def evidence_update_threshold(
         The evidence update threshold.
 
     Raises:
-        InvalidEvidenceUpdateThreshold: If `evidence_threshold_config` is
+        InvalidEvidenceThresholdConfig: If `evidence_threshold_config` is
             not in the allowed values
     """
     # return 0 for the threshold if there are no evidence scores
