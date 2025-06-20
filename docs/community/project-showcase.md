@@ -27,7 +27,7 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 
 ## LEGO Robot
 
-![An image of a robot built out of legos. In the foreground is a flat rotating platform with a potted meat can placed in the center. Further back is a lego elevator with two small thumb-sized cameras facing the meat can. The elevator is elevated off the ground. To the left of the elevator is a lego tower with wires coming in and out. At the top level of the tower is a Raspberry PI that is connected to the sensors on the elevator and a power cable going down below the platform.](../figures/community/lego_robot.png)
+![An image of a robot built out of legos. In the foreground is a flat rotating platform with a potted meat can placed in the center. Further back is a lego elevator with two small thumb-sized cameras facing the meat can. The elevator is elevated off the ground. To the left of the elevator is a lego tower with wires coming in and out. At the top level of the tower is a Raspberry PI that is connected to the sensors on the elevator and a power cable going down below the platform. Another Raspberry PI is visible to the right of the elevator on the robot surface.](../figures/community/lego_robot.png)
 
 The first example of Monty moving its sensors in the real-world.
 
