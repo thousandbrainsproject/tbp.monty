@@ -163,7 +163,7 @@ learning_module_0 = dict(
         # be considered certain enough to trigger a terminal condition (match).
         x_percent_threshold=20,
         # Update all hypotheses with evidence > x_percent_threshold (faster)
-        evidence_update_threshold="x_percent_threshold",
+        evidence_threshold_config="x_percent_threshold",
         # Config for goal state generator of LM which is used for model-based action
         # suggestions, such as hypothesis-testing actions.
         gsg_class=EvidenceGoalStateGenerator,

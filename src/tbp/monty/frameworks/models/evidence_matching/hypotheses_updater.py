@@ -60,9 +60,9 @@ class HypothesesUpdater(Protocol):
             features (dict): Input features
             displacements (dict or None): Given displacements
             graph_id (str): Identifier of the graph being updated
-            mapper (ChannelMapper): Napper for the graph_id to extract data from
+            mapper (ChannelMapper): Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
-            evidence_update_threshold (float): Evidence update threshold.
+            evidence_update_threshold (float): Evidence update threshold
 
         Returns:
             list[ChannelHypotheses]: The list of channel hypotheses updates to be
