@@ -25,4 +25,12 @@ This is the first real-world demo of Monty the TBP team came up with. We used th
 
 See the [monty_lab project folder](https://github.com/thousandbrainsproject/monty_lab/tree/main/monty_meets_world) for more details.
 
+## LEGO Robot
+
+![An image of a robot built out of legos. In the foreground is a flat rotating platform with a potted meat can placed in the center. Further back is a lego elevator with two small thumb-sized cameras facing the meat can. The elevator is elevated off the ground. To the left of the elevator is a lego tower with wires coming in and out. At the top level of the tower is a Raspberry PI that is connected to the sensors on the elevator and a power cable going down below the platform.](../figures/community/lego_robot.png)
+
+The first example of Monty moving its sensors in the real-world.
+
+See the [everything_is_awesome repository](https://github.com/thousandbrainsproject/everything_is_awesome) for more information.
+
 
