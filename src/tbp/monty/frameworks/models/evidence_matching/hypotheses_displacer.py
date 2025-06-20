@@ -131,7 +131,7 @@ class DefaultHypothesesDisplacer:
         self,
         channel_displacement: np.ndarray,
         channel_features: dict,
-        evidence_update_threshold: float,
+        evidence_update_threshold: float | None,
         graph_id: str,
         possible_hypotheses: ChannelHypotheses,
         total_hypotheses_count: int,
@@ -141,9 +141,13 @@ class DefaultHypothesesDisplacer:
         search_locations = possible_hypotheses.locations + rotated_displacements
 
         # Get indices of hypotheses with evidence > threshold
-        hyp_ids_to_test = np.where(
-            possible_hypotheses.evidence >= evidence_update_threshold
-        )[0]
+        # TODO: Should simplify after the update threshold concept is removed
+        if evidence_update_threshold is None:
+            hyp_ids_to_test = np.arange(possible_hypotheses.evidence.shape[0])
+        else:
+            hyp_ids_to_test = np.where(
+                possible_hypotheses.evidence >= evidence_update_threshold
+            )[0]
         num_hypotheses_to_test = hyp_ids_to_test.shape[0]
         if num_hypotheses_to_test > 0:
             logging.info(

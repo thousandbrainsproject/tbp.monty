@@ -420,7 +420,7 @@ class EvidenceSlopeTracker:
 
 
 def evidence_update_threshold(
-    evidence_threshold_config: float | str,
+    evidence_threshold_config: float | str | None,
     x_percent_threshold: float | str,
     max_global_evidence: float,
     evidence_all_channels: np.ndarray,
@@ -428,7 +428,7 @@ def evidence_update_threshold(
     """Determine how much evidence a hypothesis should have to be updated.
 
     Args:
-        evidence_threshold_config (float | str): The heuristic for deciding which
+        evidence_threshold_config (float | str | None): The heuristic for deciding which
             hypotheses should be updated.
         x_percent_threshold (float | str): The x_percent value to use for deciding
             on the `evidence_update_threshold` when the `x_percent_threshold` is
@@ -444,7 +444,11 @@ def evidence_update_threshold(
         InvalidEvidenceThresholdConfig: If `evidence_threshold_config` is
             not in the allowed values
     """
-    # return 0 for the threshold if there are no evidence scores
+    # Return None to bypass update threshold calculation
+    if evidence_threshold_config is None:
+        return None
+
+    # Return 0 for the threshold if there are no evidence scores
     if evidence_all_channels.size == 0:
         return 0
 
@@ -472,7 +476,8 @@ def evidence_update_threshold(
     else:
         raise InvalidEvidenceThresholdConfig(
             "evidence_threshold_config not in "
-            "[int, float, '[int]%', 'mean', 'median', 'all', 'x_percent_threshold']"
+            "[int, float, '[int]%', 'mean', "
+            "'median', 'all', 'x_percent_threshold', 'None']"
         )
 
 
