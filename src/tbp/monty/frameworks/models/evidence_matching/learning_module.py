@@ -32,7 +32,10 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
 from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.models.states import State
-from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
+from tbp.monty.frameworks.utils.evidence_matching import (
+    ChannelMapper,
+    evidence_update_threshold,
+)
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     add_pose_features_to_tolerances,
     get_scaled_evidences,
@@ -244,8 +247,6 @@ class EvidenceGraphLM(GraphLM):
             past_weight=self.past_weight,
             present_weight=self.present_weight,
             tolerances=self.tolerances,
-            x_percent_threshold=self.x_percent_threshold,
-            evidence_update_threshold=self.evidence_update_threshold,
         )
         self.hypotheses_updater = hypotheses_updater_class(**hypotheses_updater_args)
 
@@ -742,6 +743,14 @@ class EvidenceGraphLM(GraphLM):
             self.possible_locations[graph_id] = np.array([])
             self.possible_poses[graph_id] = np.array([])
 
+        # Calculate the evidence_update_threshold
+        update_threshold = evidence_update_threshold(
+            self.evidence_update_threshold,
+            self.x_percent_threshold,
+            max_global_evidence=self.current_mlh["evidence"],
+            evidence_all_channels=self.evidence[graph_id],
+        )
+
         hypotheses_updates = self.hypotheses_updater.update_hypotheses(
             hypotheses=Hypotheses(
                 evidence=self.evidence[graph_id],
@@ -752,7 +761,7 @@ class EvidenceGraphLM(GraphLM):
             displacements=displacements,
             graph_id=graph_id,
             mapper=self.channel_hypothesis_mapping[graph_id],
-            max_global_evidence=self.current_mlh["evidence"],
+            evidence_update_threshold=update_threshold,
         )
 
         if not hypotheses_updates:

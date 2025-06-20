@@ -51,7 +51,7 @@ class HypothesesUpdater(Protocol):
         displacements: dict | None,
         graph_id: str,
         mapper: ChannelMapper,
-        max_global_evidence: float,
+        evidence_update_threshold: float,
     ) -> list[ChannelHypotheses]:
         """Update hypotheses based on sensor displacement and sensed features.
 
@@ -62,8 +62,7 @@ class HypothesesUpdater(Protocol):
             graph_id (str): Identifier of the graph being updated
             mapper (ChannelMapper): Napper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
-            max_global_evidence (float): Highest evidence of all hypotheses (i.e.,
-                current mlh evidence),
+            evidence_update_threshold (float): Evidence update_threshold
 
         Returns:
             list[ChannelHypotheses]: The list of channel hypotheses updates to be
@@ -92,8 +91,6 @@ class DefaultHypothesesUpdater:
         past_weight: float = 1,
         present_weight: float = 1,
         umbilical_num_poses: int = 8,
-        x_percent_threshold: int = 10,
-        evidence_update_threshold: float | str = "all",
     ):
         """Initializes the DefaultHypothesesUpdater.
 
@@ -136,29 +133,6 @@ class DefaultHypothesesUpdater:
             umbilical_num_poses (int): Number of sampled rotations in the direction of
                 the plane perpendicular to the point normal. These are sampled at
                 umbilical points (i.e., points where PC directions are undefined).
-            x_percent_threshold: Used in two places:
-                1) All objects whose highest evidence is greater than the most likely
-                    objects evidence - x_percent of the most like objects evidence are
-                    considered possible matches. That means to only have one possible
-                    match, no other object can have more evidence than the candidate
-                    match's evidence - x percent of it.
-                2) Within one object, possible poses are considered possible if their
-                    evidence is larger than the most likely pose of this object
-                    - x percent of this poses evidence.
-                # TODO: should we use a separate threshold for within and between
-                objects? If this value is larger, the model is usually more robust to
-                noise and reaches a better performance but also requires a lot more
-                steps to reach a terminal condition, especially if there are many
-                similar object in the data set.
-            evidence_update_threshold (float | str): How to decide which hypotheses
-                should be updated. When this parameter is either '[int]%' or
-                'x_percent_threshold', then this parameter is applied to the evidence
-                for the Most Likely Hypothesis (MLH) to determine a minimum evidence
-                threshold in order for other hypotheses to be updated. Any hypotheses
-                falling below the resulting evidence threshold do not get updated. The
-                other options set a fixed threshold that does not take MLH evidence into
-                account. In [int, float, '[int]%', 'mean', 'median', 'all',
-                'x_percent_threshold']. Defaults to 'all'.
         """
         self.feature_evidence_calculator = feature_evidence_calculator
         self.feature_evidence_increment = feature_evidence_increment
@@ -168,8 +142,6 @@ class DefaultHypothesesUpdater:
         self.initial_possible_poses = get_initial_possible_poses(initial_possible_poses)
         self.tolerances = tolerances
         self.umbilical_num_poses = umbilical_num_poses
-        self.x_percent_threshold = x_percent_threshold
-        self.evidence_update_threshold = evidence_update_threshold
 
         self.use_features_for_matching = self.features_for_matching_selector.select(
             feature_evidence_increment=self.feature_evidence_increment,
@@ -195,7 +167,7 @@ class DefaultHypothesesUpdater:
         displacements: dict | None,
         graph_id: str,
         mapper: ChannelMapper,
-        max_global_evidence: float,
+        evidence_update_threshold: float,
     ) -> list[ChannelHypotheses]:
         """Update hypotheses based on sensor displacement and sensed features.
 
@@ -212,8 +184,7 @@ class DefaultHypothesesUpdater:
             graph_id (str): Identifier of the graph being updated
             mapper (ChannelMapper): Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
-            max_global_evidence (float): Highest evidence of all hypotheses (i.e.,
-                current mlh evidence),
+            evidence_update_threshold (float): Evidence update threshold.
 
         Returns:
             list[ChannelHypotheses]: The list of hypotheses updates to be applied to
@@ -254,14 +225,6 @@ class DefaultHypothesesUpdater:
             else:
                 channel_hypotheses = mapper.extract_hypotheses(
                     hypotheses, input_channel
-                )
-
-                # Calculate the evidence_update_threshold
-                evidence_update_threshold = get_evidence_update_threshold(
-                    self.evidence_update_threshold,
-                    self.x_percent_threshold,
-                    max_global_evidence,
-                    hypotheses.evidence,
                 )
 
                 # We only displace existing hypotheses since the newly sampled
@@ -424,66 +387,3 @@ def all_usable_input_channels(
     # features. This information is currently not available here.
     # TODO S: Once we pull the observation class into the LM we could add this.
     return [ic for ic in features.keys() if ic in all_input_channels]
-
-
-def get_evidence_update_threshold(
-    evidence_update_threshold: float | str,
-    x_percent_threshold: float | str,
-    max_global_evidence: float,
-    evidence_all_channels: np.ndarray,
-):
-    """Determine how much evidence a hypothesis should have to be updated.
-
-    Args:
-        evidence_update_threshold (float | str): The heuristic for deciding which
-            hypotheses should be updated.
-        x_percent_threshold (float | str): The x_percent value to use for deciding
-            on the `evidence_update_threshold` when the `x_percent_threshold` is
-            used as a heuristic.
-        max_global_evidence (float): Highest evidence of all hypotheses (i.e.,
-            current mlh evidence),
-        evidence_all_channels (np.ndarray): Evidence values for all hypotheses.
-
-    Returns:
-        The evidence update threshold.
-
-    Raises:
-        InvalidEvidenceUpdateThreshold: If `self.evidence_update_threshold` is
-            not in the allowed values
-    """
-    # return 0 for the threshold if there are no evidence scores
-    if evidence_all_channels.size == 0:
-        return 0
-
-    if type(evidence_update_threshold) in [int, float]:
-        return evidence_update_threshold
-    elif evidence_update_threshold == "mean":
-        return np.mean(evidence_all_channels)
-    elif evidence_update_threshold == "median":
-        return np.median(evidence_all_channels)
-    elif isinstance(
-        evidence_update_threshold, str
-    ) and evidence_update_threshold.endswith("%"):
-        percentage_str = evidence_update_threshold.strip("%")
-        percentage = float(percentage_str)
-        assert percentage >= 0 and percentage <= 100, (
-            "Percentage must be between 0 and 100"
-        )
-        x_percent_of_max = max_global_evidence * (percentage / 100)
-        return max_global_evidence - x_percent_of_max
-    elif evidence_update_threshold == "x_percent_threshold":
-        x_percent_of_max = max_global_evidence / 100 * x_percent_threshold
-        return max_global_evidence - x_percent_of_max
-    elif evidence_update_threshold == "all":
-        return np.min(evidence_all_channels)
-    else:
-        raise InvalidEvidenceUpdateThreshold(
-            "evidence_update_threshold not in "
-            "[int, float, '[int]%', 'mean', 'median', 'all', 'x_percent_threshold']"
-        )
-
-
-class InvalidEvidenceUpdateThreshold(ValueError):
-    """Raised when the evidence update threshold is invalid."""
-
-    pass
