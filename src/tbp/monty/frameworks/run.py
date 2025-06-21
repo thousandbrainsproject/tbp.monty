@@ -93,7 +93,7 @@ def main(all_configs, experiments=None):
 
         # Disable wandb with environment variable
         if str2bool(os.getenv("DISABLE_WANDB", "0")):
-            exp_config["logging_config"]["wandb_handlers"] = []
+            exp_config["logging_config"]["wandb_handlers"].clear()
 
         # Update run_name and output dir with experiment name
         # NOTE: wandb args are further processed in monty_experiment

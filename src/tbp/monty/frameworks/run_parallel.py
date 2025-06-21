@@ -631,7 +631,7 @@ def main(
 
     # Disable wandb with environment variable
     if str2bool(os.getenv("DISABLE_WANDB", "0")):
-        exp["logging_config"]["wandb_handlers"] = []
+        exp["logging_config"]["wandb_handlers"].clear()
 
     if len(exp["logging_config"]["run_name"]) > 0:
         experiment = exp["logging_config"]["run_name"]
