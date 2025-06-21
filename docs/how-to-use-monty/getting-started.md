@@ -215,6 +215,14 @@ If you want to run an experiment with parallel processing to make use of multipl
 python benchmarks/run_parallel.py -e my_experiment
 ```
 
+If you wish to disable W&B for benchmark experiments, you can pass the environment variable `DISABLE_WANDB=1` as a prefix to the run command.
+
+```shell
+DISABLE_WANDB=1 python benchmarks/run.py -e my_experiment
+#OR
+DISABLE_WANDB=1 python benchmarks/run_parallel.py -e my_experiment
+```
+
 # 5. What Next?
 A good next step to get more familiar with our approach and the Monty code base is to go through our [tutorials](./tutorials.md). They include follow-along code and detailed explanations on how Monty experiments are structured, how Monty can be configured in different ways, and what happens when you run a Monty experiment.
 
