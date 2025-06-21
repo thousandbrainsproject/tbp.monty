@@ -251,8 +251,176 @@ class ChannelMapper:
         return f"ChannelMapper({ranges})"
 
 
+class EvidenceSlopeTracker:
+    """Tracks the slopes of evidence streams over a sliding window per input channel.
+
+    Each input channel maintains its own hypotheses with independent evidence histories.
+    This tracker supports adding, updating, pruning, and analyzing hypotheses per
+    channel.
+
+    Attributes:
+        window_size (int): Number of past values to consider for slope calculation.
+        min_age (int): Minimum number of updates before a hypothesis can be considered
+            for removal.
+        data (Dict[str, np.ndarray]): Maps channel names to their hypothesis evidence
+            buffers.
+        age (Dict[str, np.ndarray]): Maps channel names to hypothesis age counters.
+    """
+
+    def __init__(self, window_size: int = 3, min_age: int = 5) -> None:
+        """Initializes the EvidenceSlopeTracker.
+
+        Args:
+            window_size (int, optional): Number of evidence points per hypothesis.
+            min_age (int, optional): Minimum number of updates before removal is
+                allowed.
+        """
+        self.window_size = window_size
+        self.min_age = min_age
+        self.data: Dict[str, np.ndarray] = {}
+        self.age: Dict[str, np.ndarray] = {}
+
+    def total_size(self, channel: str) -> int:
+        """Returns the number of hypotheses in a given channel.
+
+        Args:
+            channel (str): Name of the input channel.
+
+        Returns:
+            int: Number of hypotheses currently tracked in the channel.
+        """
+        return self.data.get(channel, np.empty((0, self.window_size))).shape[0]
+
+    def valid_indices_mask(self, channel: str) -> np.ndarray:
+        """Returns a boolean mask for hypotheses valid for removal in a channel.
+
+        Args:
+            channel (str): Name of the input channel.
+
+        Returns:
+            np.ndarray: Boolean array indicating valid hypotheses (age >= min_age).
+        """
+        return self.age[channel] >= self.min_age
+
+    def add_hyp(self, num_new_hyp: int, channel: str) -> None:
+        """Adds new hypotheses to the specified input channel.
+
+        Args:
+            num_new_hyp (int): Number of new hypotheses to add.
+            channel (str): Name of the input channel.
+        """
+        new_data = np.full((num_new_hyp, self.window_size), np.nan)
+        new_age = np.zeros(num_new_hyp, dtype=int)
+
+        if channel not in self.data:
+            self.data[channel] = new_data
+            self.age[channel] = new_age
+        else:
+            self.data[channel] = np.vstack((self.data[channel], new_data))
+            self.age[channel] = np.concatenate((self.age[channel], new_age))
+
+    def update(self, values: List[float] | np.ndarray, channel: str) -> None:
+        """Updates all hypotheses in a channel with new evidence values.
+
+        Args:
+            values (List[float] | np.ndarray): List or array of new evidence values.
+            channel (str): Name of the input channel.
+
+        Raises:
+            ValueError: If the channel doesn't exist or the number of values is
+                incorrect.
+        """
+        values = np.array(values, dtype=float)
+        if channel not in self.data:
+            raise ValueError(f"Channel '{channel}' does not exist.")
+
+        if values.shape[0] != self.total_size(channel):
+            raise ValueError(
+                f"Expected {self.total_size(channel)} values, but got {len(values)}"
+            )
+
+        # Shift evidence data by one step
+        self.data[channel][:, :-1] = self.data[channel][:, 1:]
+
+        # Add new evidence data
+        self.data[channel][:, -1] = values
+
+        # Increment age
+        self.age[channel] += 1
+
+    def _calculate_slopes(self, channel: str) -> np.ndarray:
+        """Computes the average slope of hypotheses in a channel.
+
+        Args:
+            channel (str): Name of the input channel.
+
+        Returns:
+            np.ndarray: Array of average slopes, one per hypothesis.
+        """
+        diffs = np.diff(self.data[channel], axis=1)
+        valid_steps = np.count_nonzero(~np.isnan(diffs), axis=1)
+        valid_steps = np.where(valid_steps == 0, np.nan, valid_steps)
+        return np.nansum(diffs, axis=1) / valid_steps
+
+    def remove_hyp(self, hyp_ids: List[int], channel: str) -> None:
+        """Removes specific hypotheses by index in the specified channel.
+
+        Args:
+            hyp_ids (List[int]): List of hypothesis indices to remove.
+            channel (str): Name of the input channel.
+        """
+        mask = np.ones(self.total_size(channel), dtype=bool)
+        mask[hyp_ids] = False
+        self.data[channel] = self.data[channel][mask]
+        self.age[channel] = self.age[channel][mask]
+
+    def calculate_keep_and_remove_ids(
+        self, num_keep: int, channel: str
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """Determines which hypotheses to keep and which to remove in a channel.
+
+        Hypotheses with the lowest average slope are selected for removal.
+
+        Args:
+            num_keep (int): Requested number of hypotheses to retain.
+            channel (str): Name of the input channel.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]:
+                - to_keep: Indices of hypotheses to retain.
+                - to_remove: Indices of hypotheses to remove.
+
+        Raises:
+            ValueError: If the channel does not exist.
+            ValueError: If the requested hypotheses to retain are more than available
+                hypotheses.
+        """
+        if channel not in self.data:
+            raise ValueError(f"Channel '{channel}' does not exist.")
+
+        total_size = self.total_size(channel)
+        if num_keep > total_size:
+            raise ValueError(
+                f"Cannot keep {num_keep} hypotheses; only {total_size} exist."
+            )
+        total_ids = np.arange(total_size)
+        num_remove = total_size - num_keep
+
+        # Retrieve valid slopes and sort them
+        valid_mask = self.valid_indices_mask(channel)
+        slopes = self._calculate_slopes(channel)
+        valid_slopes = slopes[valid_mask]
+        valid_ids = total_ids[valid_mask]
+        sorted_indices = np.argsort(valid_slopes)
+
+        # Calculate which ids to keep and which to remove
+        to_remove = valid_ids[sorted_indices[:num_remove]]
+        to_keep = np.setdiff1d(total_ids, to_remove)
+        return to_keep, to_remove
+
+
 def evidence_update_threshold(
-    evidence_threshold_config: float | str,
+    evidence_threshold_config: float | str | None,
     x_percent_threshold: float | str,
     max_global_evidence: float,
     evidence_all_channels: np.ndarray,
@@ -260,7 +428,7 @@ def evidence_update_threshold(
     """Determine how much evidence a hypothesis should have to be updated.
 
     Args:
-        evidence_threshold_config (float | str): The heuristic for deciding which
+        evidence_threshold_config (float | str | None): The heuristic for deciding which
             hypotheses should be updated.
         x_percent_threshold (float | str): The x_percent value to use for deciding
             on the `evidence_update_threshold` when the `x_percent_threshold` is
@@ -276,7 +444,11 @@ def evidence_update_threshold(
         InvalidEvidenceThresholdConfig: If `evidence_threshold_config` is
             not in the allowed values
     """
-    # return 0 for the threshold if there are no evidence scores
+    # Return None to bypass update threshold calculation
+    if evidence_threshold_config is None:
+        return None
+
+    # Return 0 for the threshold if there are no evidence scores
     if evidence_all_channels.size == 0:
         return 0
 
@@ -304,7 +476,8 @@ def evidence_update_threshold(
     else:
         raise InvalidEvidenceThresholdConfig(
             "evidence_threshold_config not in "
-            "[int, float, '[int]%', 'mean', 'median', 'all', 'x_percent_threshold']"
+            "[int, float, '[int]%', 'mean', "
+            "'median', 'all', 'x_percent_threshold', 'None']"
         )
 
 

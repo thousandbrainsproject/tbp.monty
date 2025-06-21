@@ -44,6 +44,7 @@ from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater
 )
 from tbp.monty.frameworks.utils.evidence_matching import (
     ChannelMapper,
+    EvidenceSlopeTracker,
 )
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsPatchViewMount,
@@ -112,6 +113,9 @@ class ResamplingHypothesesUpdaterTest(TestCase):
 
         rlm = train_exp.model.learning_modules[0]
         rlm.channel_hypothesis_mapping["capsule3DSolid"] = ChannelMapper()
+        rlm.hypotheses_updater.evidence_slope_trackers["capsule3DSolid"] = (
+            EvidenceSlopeTracker(min_age=0)
+        )
         return rlm
 
     def _graph_node_count(self, rlm, graph_id):
@@ -126,7 +130,12 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         return 2 if pose_defined else rlm.hypotheses_updater.umbilical_num_poses
 
     def run_sample_count(
-        self, rlm, count_multiplier, existing_to_new_ratio, pose_defined, graph_id
+        self,
+        rlm,
+        count_multiplier,
+        existing_to_new_ratio,
+        pose_defined,
+        graph_id,
     ):
         rlm.hypotheses_updater.hypotheses_count_multiplier = count_multiplier
         rlm.hypotheses_updater.hypotheses_existing_to_new_ratio = existing_to_new_ratio
@@ -136,6 +145,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
             channel_features=test_features["patch"],
             graph_id=graph_id,
             mapper=rlm.channel_hypothesis_mapping[graph_id],
+            tracker=rlm.hypotheses_updater.evidence_slope_trackers[graph_id],
         )
 
     def _initial_count(self, rlm, pose_defined):
@@ -149,7 +159,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         existing_count, informed_count = self.run_sample_count(
             rlm=rlm,
             count_multiplier=1,
-            existing_to_new_ratio=0.0,
+            existing_to_new_ratio=0.1,
             pose_defined=pose_defined,
             graph_id=graph_id,
         )
@@ -172,6 +182,9 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         graph_num_nodes = self._graph_node_count(rlm, graph_id)
         before_count = graph_num_nodes * self._num_hyps_multiplier(rlm, pose_defined)
         rlm.channel_hypothesis_mapping[graph_id].add_channel("patch", before_count)
+        rlm.hypotheses_updater.evidence_slope_trackers[graph_id].add_hyp(
+            before_count, "patch"
+        )
         count_multipliers = [0.5, 1, 2]
 
         for count_multiplier in count_multipliers:
@@ -249,6 +262,9 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         )
         rlm.channel_hypothesis_mapping[graph_id].add_channel(
             "patch", available_existing_count
+        )
+        rlm.hypotheses_updater.evidence_slope_trackers[graph_id].add_hyp(
+            available_existing_count, "patch"
         )
         count_multiplier = 2
 
