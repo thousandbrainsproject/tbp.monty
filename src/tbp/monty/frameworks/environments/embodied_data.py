@@ -7,11 +7,13 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import copy
 import logging
 import math
 from pprint import pformat
+from typing import Tuple
 
 import numpy as np
 import quaternion
@@ -26,10 +28,15 @@ from tbp.monty.frameworks.actions.actions import (
     SetAgentPose,
     SetSensorRotation,
 )
+from tbp.monty.frameworks.environment_utils.transforms import Transform
+from tbp.monty.frameworks.environments.observations import Observations
 from tbp.monty.frameworks.models.motor_policies import (
     GetGoodView,
     InformedPolicy,
+    ObjectNotVisible,
+    PositioningProcedure,
     SurfacePolicy,
+    TouchObject,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.motor_system_state import (
@@ -50,7 +57,7 @@ __all__ = [
 ]
 
 
-class EnvironmentDataset(Dataset):
+class EnvironmentDataset(Dataset[Tuple[Observations, ProprioceptiveState]]):
     """Wraps an embodied environment with a :class:`torch.utils.data.Dataset`.
 
     TODO: Change the name of this class to reflect the interactiveness. Monty doesn't
@@ -99,7 +106,12 @@ class EnvironmentDataset(Dataset):
     def close(self):
         self.env.close()
 
-    def apply_transform(self, transform, observation, state):
+    def apply_transform(
+        self,
+        transform: Transform | list[Transform],
+        observation: Observations,
+        state: ProprioceptiveState,
+    ) -> Observations:
         if isinstance(transform, list):
             for t in transform:
                 observation = t(observation, state)
@@ -107,12 +119,12 @@ class EnvironmentDataset(Dataset):
             observation = transform(observation, state)
         return observation
 
-    def __getitem__(self, action: Action):
+    def __getitem__(self, action: Action) -> tuple[Observations, ProprioceptiveState]:
         observation = self.env.step(action)
         state = self.env.get_state()
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-        return observation, ProprioceptiveState(state) if state else None
+        return observation, state
 
     def __len__(self):
         return math.inf
@@ -140,7 +152,11 @@ class EnvironmentDataLoader:
         This one on its own won't work.
     """
 
-    def __init__(self, dataset: EnvironmentDataset, motor_system: MotorSystem, rng):
+    _observation: Observations
+
+    def __init__(
+        self, dataset: EnvironmentDataset, motor_system: MotorSystem, rng
+    ) -> None:
         assert isinstance(dataset, EnvironmentDataset)
         if not isinstance(motor_system, MotorSystem):
             f"motor_system must be an instance of MotorSystem, got {motor_system}"
@@ -151,7 +167,7 @@ class EnvironmentDataLoader:
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
-        self._action = None
+        self._action: Action | None = None
         self._counter = 0
 
     def __iter__(self):
@@ -427,7 +443,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
     iv) Supports hypothesis-testing "jump" policy
     """
 
-    def __next__(self):
+    def __next__(self) -> Observations:
         if self._counter == 0:
             return self.first_step()
 
@@ -442,50 +458,46 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         # NOTE: terminal conditions are now handled in experiment.run_episode loop
         else:
-            self._action = self.motor_system()
-            attempting_to_find_object = False
-
-            # If entirely off object, use vision (i.e. view-finder)
-            # TODO refactor so that this check is done in the motor-policy, and we
-            # update the constraint separately/appropriately; i.e. the below
-            # code should be as general as possible
-            if (
-                isinstance(self.motor_system._policy, SurfacePolicy)
-                and self._action is None
-            ):
-                attempting_to_find_object = True
-                self._action = self.motor_system._policy.touch_object(
-                    self._observation,
-                    view_sensor_id="view_finder",
-                    state=self.motor_system._state,
+            try:
+                self._action = self.motor_system()
+            except ObjectNotVisible:
+                # Note: Only SurfacePolicy raises ObjectNotVisible.
+                # TODO: Note that a PositioningProcedure is not a MotorPolicy, so
+                #       using it here to keep the agent in touch with the surface is
+                #       questionable. However, in order for the SurfacePolicy to
+                #       take over this responsibility, the main MontyExperiment loop
+                #       between Monty, MotorSystem, and DataLoaders needs to be updated
+                #       first. Once invoking the MotorSystem includes `observation` as
+                #       an argument, e.g. motor_system(observation), then the
+                #       SurfacePolicy will be capable of implementing logic similar to
+                #       the TouchObject positioning procedure instead of raising
+                #       ObjectNotVisible and relying on the dataloader to handle
+                #       this.
+                self.touch_object(
+                    sensor_id="view_finder",
+                    desired_object_distance=self.motor_system._policy.desired_object_distance,
                 )
-            else:
-                # TODO: Encapsulate this reset inside TouchObject positioning
-                #       procedure once it exists.
-                #       This is a hack to reset the current touch_object
-                #       positioning procedure state so that the next time
-                #       SurfacePolicy falls off the object, it will try to find
-                #       the object using its full repertoire of actions.
-                self.motor_system._policy.touch_search_amount = 0
-
-            self._observation, proprioceptive_state = self.dataset[self._action]
-            motor_system_state = MotorSystemState(proprioceptive_state)
-
-            # TODO: Refactor this so that all of this is contained within the
-            #       SurfacePolicy and/or positioning procedure.
-            if isinstance(self.motor_system._policy, SurfacePolicy):
-                # When we are attempting to find the object, we are always performing
-                # a motor-only step.
-                motor_system_state[self.motor_system._policy.agent_id][
+                # TODO: Remove this short-circuit once SurfacePolicy is capable
+                #       of receiving updated observation via
+                #       `motor_system(observation)`. For now, we are relying
+                #       on the experiment to check for motor_only_step and then
+                #       to `pass_features_directly_to_motor_system(observation)`
+                #       in order to pass the updated observation to the motor
+                #       system policy.
+                self.motor_system._state[self.motor_system._policy.agent_id][
                     "motor_only_step"
-                ] = attempting_to_find_object
+                ] = True
+                return self._observation
+            else:
+                self._observation, proprioceptive_state = self.dataset[self._action]
+                motor_system_state = MotorSystemState(proprioceptive_state)
 
+                # TODO: Refactor this so that all of this is contained within the
+                #       SurfacePolicy.
                 if (
-                    not attempting_to_find_object
+                    isinstance(self.motor_system._policy, SurfacePolicy)
                     and self._action.name != OrientVertical.action_name()
                 ):
-                    # We are not attempting to find the object, which means that we
-                    # are executing the SurfacePolicy.dynamic_call action cycle.
                     # Out of the four actions in the
                     # MoveForward->OrientHorizontal->OrientVertical->MoveTangentially
                     # "subroutine" defined in SurfacePolicy.dynamic_call, we only
@@ -496,11 +508,11 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                         "motor_only_step"
                     ] = True
 
-            self.motor_system._state = motor_system_state
+                self.motor_system._state = motor_system_state
 
-            self._counter += 1  # TODO clean up incrementing of counter
+                self._counter += 1
 
-            return self._observation
+                return self._observation
 
     def pre_episode(self):
         super().pre_episode()
@@ -512,7 +524,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                     "Primary target must be visible at the start of the episode"
                 )
 
-    def first_step(self):
+    def first_step(self) -> Observations:
         """Carry out particular motor-system state updates required on the first step.
 
         TODO ?can get rid of this by appropriately initializing motor_only_step
@@ -555,7 +567,13 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         Returns:
             bool: Whether the sensor is on the target object.
+
+        Raises:
+            UninitializedMotorSystemState: If the motor system state is not initialized.
         """
+        if self.motor_system._state is None:
+            raise UninitializedMotorSystemState
+
         positioning_procedure = GetGoodView(
             agent_id=self.motor_system._policy.agent_id,
             desired_object_distance=self.motor_system._policy.desired_object_distance,
@@ -586,9 +604,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         while not result.terminated and not result.truncated:
             for action in result.actions:
                 self._observation, proprio_state = self.dataset[action]
-                self.motor_system._state = (
-                    MotorSystemState(proprio_state) if proprio_state else None
-                )
+                self.motor_system._state = MotorSystemState(proprio_state)
 
             result = positioning_procedure.positioning_call(
                 self._observation, self.motor_system._state
@@ -624,13 +640,13 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 break
         return on_target_object
 
-    def execute_jump_attempt(self):
+    def execute_jump_attempt(self) -> Observations:
         """Attempt a hypothesis-testing "jump" onto a location of the object.
 
         Delegates to motor policy directly to determine specific jump actions.
 
         Returns:
-            The observation from the jump attempt.
+            (Observations): The observation from the jump attempt.
         """
         logging.debug(
             "Attempting a 'jump' like movement to evaluate an object hypothesis"
@@ -685,10 +701,10 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         # Check depth-at-center to see if the object is in front of us
         # As for methods such as touch_object, we use the view-finder
-        depth_at_center = self.motor_system._policy.get_depth_at_center(
-            self._observation,
-            view_sensor_id="view_finder",
-            initial_pose=False,
+        depth_at_center = PositioningProcedure.depth_at_center(
+            agent_id=self.motor_system._policy.agent_id,
+            observation=self._observation,
+            sensor_id="view_finder",
         )
 
         # If depth_at_center < 1.0, there is a visible element within 1 meter of the
@@ -798,6 +814,51 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # only moving back to our starting location if this is unsuccessful
         # after e.g. 16 glances around where we arrived; NB however that
         # if we're inside the object, then we don't want to do this
+
+    def touch_object(self, sensor_id: str, desired_object_distance: float) -> None:
+        """Invoke the TouchObject positioning procedure.
+
+        Args:
+            sensor_id (str): The ID of the sensor to use for positioning.
+            desired_object_distance (float): The desired distance from the object.
+
+        Raises:
+            ObjectNotVisible: If the object is not visible.
+            UninitializedMotorSystemState: If the motor system state is not initialized.
+        """
+        if self.motor_system._state is None:
+            raise UninitializedMotorSystemState
+
+        positioning_procedure = TouchObject(
+            agent_id=self.motor_system._policy.agent_id,
+            sensor_id=sensor_id,
+            desired_object_distance=desired_object_distance,
+            rng=self.rng,
+            # TODO: Remaining arguments are unused but required by BasePolicy.
+            #       These will be removed when PositioningProcedure is split from
+            #       BasePolicy.
+            action_sampler_args=dict(actions=[LookUp]),
+            action_sampler_class=UniformlyDistributedSampler,
+            switch_frequency=0.0,
+        )
+        result = positioning_procedure.positioning_call(
+            self._observation, self.motor_system._state
+        )
+        while not result.terminated and not result.truncated:
+            for action in result.actions:
+                self._observation, proprio_state = self.dataset[action]
+                self.motor_system._state = MotorSystemState(proprio_state)
+
+            result = positioning_procedure.positioning_call(
+                self._observation, self.motor_system._state
+            )
+
+        if not result.success:
+            raise ObjectNotVisible
+
+
+class UninitializedMotorSystemState(RuntimeError):
+    """Raised when the motor system state is not initialized."""
 
 
 class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
