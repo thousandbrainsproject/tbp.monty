@@ -215,7 +215,7 @@ If you want to run an experiment with parallel processing to make use of multipl
 python benchmarks/run_parallel.py -e my_experiment
 ```
 
-If you wish to disable W&B for benchmark experiments, you can pass the environment variable `DISABLE_WANDB=1` as a prefix to the run command.
+If you wish to disable W&B for benchmark experiments, you can pass the inline environment variable `DISABLE_WANDB=1` to the run command.
 
 ```shell
 DISABLE_WANDB=1 python benchmarks/run.py -e my_experiment
