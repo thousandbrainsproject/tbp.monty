@@ -16,6 +16,7 @@ import time
 
 from tbp.monty.frameworks.config_utils.cmd_parser import create_cmd_parser
 from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
+from tbp.monty.frameworks.utils.profile_utils import str2bool
 
 
 def merge_args(config, cmd_args=None):
@@ -89,6 +90,10 @@ def main(all_configs, experiments=None):
         exp = all_configs[experiment]
         exp_config = merge_args(exp, cmd_args)  # TODO: is this really even necessary?
         exp_config = config_to_dict(exp_config)
+
+        # Disable wandb with environment variable
+        if str2bool(os.getenv("DISABLE_WANDB", "0")):
+            exp_config["logging_config"]["wandb_handlers"] = []
 
         # Update run_name and output dir with experiment name
         # NOTE: wandb args are further processed in monty_experiment

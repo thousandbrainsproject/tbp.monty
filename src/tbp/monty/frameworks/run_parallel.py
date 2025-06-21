@@ -37,6 +37,7 @@ from tbp.monty.frameworks.loggers.monty_handlers import (
 )
 from tbp.monty.frameworks.run import print_config
 from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
+from tbp.monty.frameworks.utils.profile_utils import str2bool
 
 """
 Just like run.py, but run episodes in parallel. Running in parallel is as simple as
@@ -627,6 +628,10 @@ def main(
 
     exp = exp if is_unittest else all_configs[experiment]
     exp = config_to_dict(exp)
+
+    # Disable wandb with environment variable
+    if str2bool(os.getenv("DISABLE_WANDB", "0")):
+        exp["logging_config"]["wandb_handlers"] = []
 
     if len(exp["logging_config"]["run_name"]) > 0:
         experiment = exp["logging_config"]["run_name"]

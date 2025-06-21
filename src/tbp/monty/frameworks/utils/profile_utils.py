@@ -120,3 +120,7 @@ def get_total_time(df):
     total = df["cumtime"].sum()
     print(f"total time: {total} s")
     return total
+
+
+def str2bool(value: str) -> bool:
+    return value.lower() in ("1", "true", "yes", "on")
