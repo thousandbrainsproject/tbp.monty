@@ -39,10 +39,6 @@ class MontyBase(Monty):
         min_train_steps,
         num_exploratory_steps,
         max_total_steps,
-        knn_backend,
-        knn_nlist,
-        knn_gpu_id,
-        knn_batch_size,
     ):
         """Initialize the base class.
 
@@ -74,18 +70,6 @@ class MontyBase(Monty):
             min_train_steps: Minimum number of steps required for training.
             num_exploratory_steps: Number of steps required by the exploratory phase.
             max_total_steps: Maximum number of steps to run the experiment.
-            knn_backend: Backend to use for KNN search:
-                - 'cpu': SciPy KDTree implementation (accurate, works on all platforms)
-                - 'gpu': FAISS GPU implementation (faster for large datasets)
-                Defaults to "cpu".
-            knn_nlist: Number of clusters for FAISS IVF indices. Only used when
-                knn_backend is set to 'gpu'. For exact KNN use 1, for potentially faster but 
-                approximate KNN you can use larger values. Defaults to 1.
-            knn_gpu_id: ID of GPU to use for FAISS. Only used when knn_backend is a
-                FAISS backend and multiple GPUs are available. Defaults to 0.
-            knn_batch_size: Batch size for large queries in FAISS. Only used when
-                knn_backend is a FAISS backend. None means auto-determined based on
-                data size. Defaults to None.
 
         Raises:
             ValueError: If `sm_to_lm_matrix` is not defined
@@ -108,10 +92,6 @@ class MontyBase(Monty):
         self.min_train_steps = min_train_steps
         self.num_exploratory_steps = num_exploratory_steps
         self.max_total_steps = max_total_steps
-        self.knn_backend = knn_backend
-        self.knn_nlist = knn_nlist
-        self.knn_gpu_id = knn_gpu_id
-        self.knn_batch_size = knn_batch_size
 
         # Counters, logging, default step_type
         self.step_type = "matching_step"
@@ -522,7 +502,10 @@ class MontyBase(Monty):
 class LearningModuleBase(LearningModule):
     """Dummy placeholder class used only for tests."""
 
-    def __init__(self):
+    def __init__(self, knn_backend="cpu",
+        knn_nlist=1,
+        knn_gpu_id=0,
+        knn_batch_size=None):
         self.test_attr_1 = True
         self.test_attr_2 = True
 

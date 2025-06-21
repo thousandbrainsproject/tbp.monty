@@ -31,6 +31,10 @@ class DisplacementGraphLM(GraphLM):
         tolerance=0.001,
         use_relative_len=False,
         graph_delta_thresholds=None,
+        knn_backend="cpu",
+        knn_nlist=1,
+        knn_gpu_id=0,
+        knn_batch_size=None,
     ):
         """Initialize Learning Module.
 
@@ -48,6 +52,11 @@ class DisplacementGraphLM(GraphLM):
                 of 0.001 (determined in remove_close_points). Can also specify
                 thresholds based on e.g. point-normal angle difference, or principal
                 curvature magnitude difference.
+            knn_backend: Backend to use for KNN search. 'cpu' uses SciPy KDTree, 'gpu'
+                uses FAISS (if available). Defaults to "cpu".
+            knn_nlist: Number of clusters to use in knn gpu index. 
+            knn_gpu_id: ID of GPU on device to use for GPU based KNN backend.
+            knn_batch_size: Batch size to use for large KNN queries.
         """
         super(DisplacementGraphLM, self).__init__()
         self.graph_memory = DisplacementGraphMemory(

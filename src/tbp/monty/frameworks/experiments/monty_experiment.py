@@ -18,6 +18,8 @@ import pprint
 import numpy as np
 import torch
 
+from tbp.monty.frameworks.utils.knn_profiler import KNNProfiler
+
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentDataLoader,
     EnvironmentDataLoaderPerObject,
@@ -112,12 +114,32 @@ class MontyExperiment:
         """
         monty_config = copy.deepcopy(monty_config)
 
+        # Setup KNN Backend
+        knn_backend_config = monty_config.pop("knn_backend_args")
+        self.knn_backend = knn_backend_config['knn_backend']
+        self.knn_nlist = knn_backend_config['knn_nlist']
+        self.knn_gpu_id = knn_backend_config['knn_gpu_id']
+        self.knn_batch_size = knn_backend_config['knn_batch_size']
+        self.enable_knn_profiling = knn_backend_config['enable_knn_profiling']
+
+        if self.enable_knn_profiling:
+            # Enable the KNN profiler
+            KNNProfiler.get_instance().enable()
+            logging.info("KNN profiling enabled")
+
         # Create learning modules
         learning_module_configs = monty_config.pop("learning_module_configs")
         learning_modules = {}
         for lm_id, lm_cfg in learning_module_configs.items():
             lm_class = lm_cfg["learning_module_class"]
             lm_args = lm_cfg["learning_module_args"]
+
+            # Assign each LM the MontyExperiment-wide KNN backend settings
+            lm_args['knn_backend'] = self.knn_backend
+            lm_args['knn_gpu_id'] = self.knn_gpu_id
+            lm_args['knn_nlist'] = self.knn_nlist
+            lm_args['knn_batch_size'] = self.knn_batch_size
+
             assert issubclass(lm_class, LearningModule)
             learning_modules[lm_id] = lm_class(**lm_args)
             learning_modules[lm_id].rng = self.rng
@@ -170,7 +192,7 @@ class MontyExperiment:
             sm_to_lm_matrix=sm_to_lm_matrix,
             lm_to_lm_matrix=lm_to_lm_matrix,
             lm_to_lm_vote_matrix=lm_to_lm_vote_matrix,
-            # Pass any leftover configuration paramters downstream to monty_class
+            # Pass any leftover configuration parameters downstream to monty_class
             **monty_config,
             # FIXME: Kept for backward compatibility
             **monty_args,
@@ -604,6 +626,41 @@ class MontyExperiment:
     def close(self):
         if isinstance(self.dataset, EnvironmentDataset):
             self.dataset.close()
+
+        # Save KNN profiling data if enabled
+        if hasattr(self, 'enable_knn_profiling') and self.enable_knn_profiling:
+            profiler = KNNProfiler.get_instance()
+            output_dir = self.config["logging_config"]["output_dir"]
+            run_name = self.config["logging_config"]["run_name"]
+            
+            # Log summary statistics
+            summary = profiler.get_summary()
+            if summary:
+                logging.info("KNN profiling summary:")
+                if 'build' in summary:
+                    build_summary = summary['build']
+                    logging.info(f"Build operations: {build_summary['count']} calls, "
+                                f"total time: {build_summary['total_time']:.4f}s, "
+                                f"avg time: {build_summary['avg_time']:.4f}s")
+                    if build_summary['cpu_count'] > 0 and build_summary['gpu_count'] > 0:
+                        logging.info(f"CPU avg: {build_summary['cpu_avg_time']:.4f}s, "
+                                    f"GPU avg: {build_summary['gpu_avg_time']:.4f}s")
+                
+                if 'search' in summary:
+                    search_summary = summary['search']
+                    logging.info(f"Search operations: {search_summary['count']} calls, "
+                                f"total time: {search_summary['total_time']:.4f}s, "
+                                f"avg time: {search_summary['avg_time']:.4f}s")
+                    if search_summary['cpu_count'] > 0 and search_summary['gpu_count'] > 0:
+                        logging.info(f"CPU avg: {search_summary['cpu_avg_time']:.4f}s, "
+                                    f"GPU avg: {search_summary['gpu_avg_time']:.4f}s")
+            
+            # Save the data to CSV files
+            profiler.save_to_csv(output_dir, run_name)
+            logging.info(f"KNN profiling data saved to {output_dir}")
+            
+            # Disable profiling
+            profiler.disable()
 
         # Close monty logging
         self.logger_handler.close(self.logger_args)

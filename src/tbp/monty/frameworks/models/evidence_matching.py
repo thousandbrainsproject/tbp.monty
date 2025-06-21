@@ -252,6 +252,9 @@ class EvidenceGraphLM(GraphLM):
         gsg_args: Dictionary of configuration parameters for the GSG.
         knn_backend: Backend to use for KNN search. 'cpu' uses SciPy KDTree, 'gpu'
             uses FAISS (if available). Defaults to "cpu".
+        knn_nlist: Number of clusters to use in knn gpu index. 
+        knn_gpu_id: ID of GPU on device to use for GPU based KNN backend.
+        knn_batch_size: Batch size to use for large KNN queries.
 
     Debugging Attributes:
         use_multithreading: Whether to calculate evidence updates for different
@@ -284,12 +287,12 @@ class EvidenceGraphLM(GraphLM):
         max_nodes_per_graph=2000,
         num_model_voxels_per_dim=50,  # -> voxel size = 6mm3 (0.006)
         use_multithreading=True,
-        gsg_class=EvidenceGoalStateGenerator,
-        gsg_args=None,
         knn_backend="cpu",
         knn_nlist=1,
         knn_gpu_id=0,
         knn_batch_size=None,
+        gsg_class=EvidenceGoalStateGenerator,
+        gsg_args=None,
         *args,
         **kwargs,
     ):
@@ -1205,6 +1208,7 @@ class EvidenceGraphLM(GraphLM):
                 [
                     self.evidence[graph_id],
                     distance_weighted_vote_evidence * self.vote_weight,
+                    # np.squeeze(distance_weighted_vote_evidence * self.vote_weight),
                 ],
                 axis=0,
             )

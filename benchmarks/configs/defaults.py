@@ -102,6 +102,7 @@ default_evidence_lm_config = dict(
             desired_object_distance=0.03,  # Distance from the object to the
             # agent that is considered "close enough" to the object
         ),
+        use_multithreading=False,
     ),
 )
 

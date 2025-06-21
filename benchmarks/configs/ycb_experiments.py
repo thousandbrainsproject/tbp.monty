@@ -37,6 +37,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
     SurfaceAndViewMontyConfig,
     SurfaceAndViewSOTAMontyConfig,
     get_cube_face_and_corner_views_rotations,
+    KNNBackendArgs,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderMultiObjectArgs,
@@ -141,6 +142,15 @@ model_path_1lm_77obj = os.path.join(
 model_path_5lms_77obj = os.path.join(
     pretrained_dir,
     "supervised_pre_training_5lms_all_objects/pretrained/",
+)
+
+# KNN Backend Config for the full experiment (Each LM will be assigned these values within the experiment)
+knn_backend_args = KNNBackendArgs(
+    knn_backend='cpu', 
+    knn_nlist=4, 
+    knn_gpu_id=0, 
+    knn_batch_size=None, 
+    enable_knn_profiling=True
 )
 
 # Default configs for surface policy which has a different desired object distance
@@ -258,6 +268,7 @@ base_config_10distinctobj_dist_agent = dict(
     monty_config=PatchAndViewSOTAMontyConfig(
         learning_module_configs=lower_max_nneighbors_1lm_config,
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
+        knn_backend_args=knn_backend_args,
     ),
     dataset_class=ED.EnvironmentDataset,
     dataset_args=PatchViewFinderMountHabitatDatasetArgs(),
@@ -282,6 +293,7 @@ base_config_10distinctobj_surf_agent.update(
         learning_module_configs=lower_max_nneighbors_surf_1lm_config,
         motor_system_config=MotorSystemConfigCurInformedSurfaceGoalStateDriven(),
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
+        knn_backend_args=knn_backend_args,
     ),
     dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(),
 )
@@ -307,6 +319,7 @@ randrot_noise_10distinctobj_dist_agent.update(
         ),
         learning_module_configs=default_evidence_1lm_config,
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
+        knn_backend_args=knn_backend_args,
     ),
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
@@ -349,6 +362,7 @@ randrot_noise_10distinctobj_surf_agent.update(
         learning_module_configs=default_evidence_surf_1lm_config,
         motor_system_config=MotorSystemConfigCurInformedSurfaceGoalStateDriven(),
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
+        knn_backend_args=knn_backend_args,
     ),
     dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(),
 )
@@ -442,6 +456,7 @@ base_10multi_distinctobj_dist_agent.update(
     monty_config=PatchAndViewFartherAwaySOTAMontyConfig(
         learning_module_configs=lower_max_nneighbors_1lm_config,
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
+        knn_backend_args=knn_backend_args,
     ),
     dataset_args=PatchViewFinderMultiObjectMountHabitatDatasetArgs(),
     eval_dataloader_args=EnvironmentDataloaderMultiObjectArgs(
@@ -484,6 +499,7 @@ default_lfs_lm = dict(
             # and we will probably want some more stable long term solutions.
             required_symmetry_evidence=20,
             max_nneighbors=5,
+            use_multithreading=False
         ),
     )
 )
@@ -505,6 +521,7 @@ surf_agent_unsupervised_10distinctobj.update(
     monty_config=SurfaceAndViewMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=1000, min_train_steps=100),
         learning_module_configs=default_lfs_lm,
+        knn_backend_args=knn_backend_args,
     ),
     dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(),
     train_dataloader_class=ED.InformedEnvironmentDataLoader,
@@ -531,6 +548,7 @@ surf_agent_unsupervised_10distinctobj_noise.update(
             ),
         ),
         learning_module_configs=default_lfs_lm,
+        knn_backend_args=knn_backend_args,
     )
 )
 

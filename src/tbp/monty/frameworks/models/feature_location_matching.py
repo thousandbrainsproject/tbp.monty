@@ -13,6 +13,7 @@ import logging
 import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
+from tbp.monty.frameworks.utils.knn_search import KNNSearchFactory
 from sklearn.neighbors import KDTree
 
 from tbp.monty.frameworks.models.graph_matching import GraphLM, GraphMemory
@@ -45,6 +46,10 @@ class FeatureGraphLM(GraphLM):
         required_symmetry_evidence=5,
         graph_delta_thresholds=None,
         initial_possible_poses="informed",
+        knn_backend="cpu",
+        knn_nlist=1,
+        knn_gpu_id=0,
+        knn_batch_size=None,
     ):
         """Initialize Learning Module.
 
@@ -67,6 +72,11 @@ class FeatureGraphLM(GraphLM):
                 to classify an object as symetric and go into terminal condition.
             initial_possible_poses: initial possible poses that should be tested for.
                 In ["uniform", "informed", list]. default = "informed".
+            knn_backend: Backend to use for KNN search. 'cpu' uses SciPy KDTree, 'gpu'
+                uses FAISS (if available). Defaults to "cpu".
+            knn_nlist: Number of clusters to use in knn gpu index. 
+            knn_gpu_id: ID of GPU on device to use for GPU based KNN backend.
+            knn_batch_size: Batch size to use for large KNN queries.
         """
         super(FeatureGraphLM, self).__init__()
         self.graph_memory = FeatureGraphMemory(
@@ -87,6 +97,11 @@ class FeatureGraphLM(GraphLM):
         self.possible_poses = {}
         self.last_unique_poses = None
         self.last_num_unique_locations = None
+
+        self.knn_backend = knn_backend
+        self.knn_nlist = knn_nlist
+        self.knn_gpu_id = knn_gpu_id
+        self.knn_batch_size = knn_batch_size
 
     # =============== Public Interface Functions ===============
 
@@ -170,9 +185,13 @@ class FeatureGraphLM(GraphLM):
                     else:
                         # k should not be > num_lms - 1
                         k = self.NUM_OTHER_LMS
-                    vote_location_tree = KDTree(
-                        vote_data["pos_location_votes"][possible_obj],
-                        leaf_size=2,
+                    vote_location_knn = KNNSearchFactory.create_index(
+                        backend=self.knn_backend,
+                        points=vote_data["pos_location_votes"][possible_obj],
+                        leafsize=2,
+                        nlist=self.knn_nlist,
+                        gpu_id=self.knn_gpu_id,
+                        batch_size=self.knn_batch_size,
                     )
                     removed_locations = np.zeros((1, 3))
                     # print("updating possible locations on model")
@@ -180,7 +199,12 @@ class FeatureGraphLM(GraphLM):
                         list(enumerate(self.possible_paths[possible_obj]))
                     ):
                         location = path[-1]
-                        dists, _ = vote_location_tree.query([location], k=k)
+                        dists, _ = vote_location_knn.search(
+                            [location],
+                            k=k,
+                            return_distance=True,
+                        )
+
                         # print(f"distances of nearest votes: {dists}")
                         # TODO: check pose vote as well.
                         # TODO: adapt this to number of LMs/received votes

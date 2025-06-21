@@ -10,7 +10,9 @@
 
 import logging
 import numpy as np
+import time
 from scipy.spatial import KDTree
+import threading
 
 # Conditionally import FAISS if available
 try:
@@ -19,6 +21,33 @@ try:
 except ImportError:
     FAISS_AVAILABLE = False
     logging.warning("FAISS is not available. GPU-based KNN search will not be available.")
+
+# Import profiler
+from tbp.monty.frameworks.utils.knn_profiler import KNNProfiler
+
+_SHARED_GPU_RESOURCES = None
+_GPU_LOCK = threading.Lock()
+
+def get_shared_gpu_resources():
+    """Get the shared GPU resources, creating if accessed for the first time.
+
+    Use this to prevent multiple instances of the GPU resource for multiple FAISS runtimes.
+    All FAISS objects should use this shared resource to point to the same GPU.
+
+    Returns:
+        The shared FAISS GPU resource
+    """
+    global _SHARED_GPU_RESOURCES
+    if _SHARED_GPU_RESOURCES is None:
+        with _GPU_LOCK:
+            if _SHARED_GPU_RESOURCES is None:
+                try:
+                    _SHARED_GPU_RESOURCES = faiss.StandardGpuResources()
+                    print("Created shared GPU resources")
+                except Exception as e:
+                    print(f"Failed to create GPU resources: {e}")
+                    return None
+    return _SHARED_GPU_RESOURCES
 
 
 class KNNSearchFactory:
@@ -41,10 +70,7 @@ class KNNSearchFactory:
             A KNNIndex instance
         """
         # Parse specific backend types for FAISS
-        if backend.startswith('gpu_') and FAISS_AVAILABLE:
-            index_type = backend[4:]  # Extract the index type after 'gpu_'
-            return FAISSIndex(points=points, use_gpu=True, index_type=index_type, **kwargs)
-        elif backend == 'gpu' and FAISS_AVAILABLE:
+        if backend == 'gpu' and FAISS_AVAILABLE:
             return FAISSIndex(points=points, use_gpu=True, **kwargs)
         else:
             if backend != 'cpu' and backend != 'kdtree':
@@ -107,7 +133,14 @@ class KDTreeIndex(KNNIndex):
         Returns:
             self for method chaining
         """
+        start_time = time.time()
         self.index = KDTree(points, leafsize=self.leafsize)
+        elapsed_time = time.time() - start_time
+        
+        # Record profiling data
+        profiler = KNNProfiler.get_instance()
+        profiler.record_build('cpu', points.shape, elapsed_time)
+        
         return self
     
     def search(self, query_points, k, p=2, workers=1, return_distance=True):
@@ -126,12 +159,18 @@ class KDTreeIndex(KNNIndex):
         if self.index is None:
             raise ValueError("Index not built yet. Call build() first.")
         
+        start_time = time.time()
         distances, indices = self.index.query(
             query_points, 
             k=k, 
             p=p, 
             workers=workers
         )
+        elapsed_time = time.time() - start_time
+
+        # Record profiling data
+        profiler = KNNProfiler.get_instance()
+        profiler.record_search('cpu', query_points.shape, k, elapsed_time)
         
         # Handle the case where k=1 by reshaping the output
         if k == 1:
@@ -153,7 +192,6 @@ class FAISSIndex(KNNIndex):
             points: Optional points to initialize the index with
             use_gpu: Whether to use GPU acceleration (default: True)
             nlist: Number of clusters for IVF indices (higher = more fine-grained)
-            nprobe: Number of clusters to visit during search (higher = more accurate but slower)
             gpu_id: ID of GPU to use if multiple are available
             batch_size: Batch size for large queries (None = auto)
             **kwargs: Additional arguments (ignored)
@@ -162,12 +200,11 @@ class FAISSIndex(KNNIndex):
             raise ImportError("FAISS is not available. Please install it first.")
         
         self.use_gpu = use_gpu and FAISS_AVAILABLE
-        # TODO investigate ANN with larger nlist
         self.nlist = nlist
+        self.nprobe = nlist
         self.gpu_id = gpu_id
         self.batch_size = batch_size
         self.index = None
-        self.gpu_resources = None  # GPU resources
         self._index_size = 0  # Track index size for auto-tuning
         
         if points is not None:
@@ -217,22 +254,21 @@ class FAISSIndex(KNNIndex):
             if state.get('was_gpu_index', False) and self.use_gpu:
                 try:
                     # Recreate GPU resources
-                    self.gpu_resources = faiss.StandardGpuResources()
+                    shared_resources = get_shared_gpu_resources()
+                    if shared_resources is None:
+                        raise Exception("Could not get GPU resources")
                     # Convert back to GPU
-                    self.index = faiss.index_cpu_to_gpu(self.gpu_resources, self.gpu_id, cpu_index)
+                    self.index = faiss.index_cpu_to_gpu(shared_resources, self.gpu_id, cpu_index)
                 except Exception as e:
                     print(f"Failed to move index back to GPU: {e}. Using CPU instead.")
                     self.index = cpu_index
                     self.use_gpu = False
-                    self.gpu_resources = None
             else:
                 # Keep as CPU index
                 self.index = cpu_index
-                self.gpu_resources = None
         else:
             # No index to restore
             self.index = None
-            self.gpu_resources = None
             
         # Clean up temporary state variables
         for key in ['faiss_index_bytes', 'was_gpu_index']:
@@ -270,6 +306,8 @@ class FAISSIndex(KNNIndex):
         if points.size == 0:
             raise ValueError("Cannot build index with empty points array")
             
+        start_time = time.time()
+        
         # Ensure we're working with float32
         points = np.ascontiguousarray(points.astype('float32'))
         d = points.shape[1]  # dimensionality
@@ -278,19 +316,8 @@ class FAISSIndex(KNNIndex):
         
         # Create appropriate CPU index
         cpu_index = self._create_cpu_index(d, n_points)
-        # if not cpu_index.is_trained:
-        #     cpu_index.train(points)
-
-        # try:
-        #     # Check if GPU is available
-        #     self.gpu_resources = faiss.StandardGpuResources()
-        # except Exception as e:
-        #     print(f"FAISS GPU not available: {e}")
-
-        # self.index = faiss.index_cpu_to_gpu(self.gpu_resources, self.gpu_id, cpu_index)
         
         # Training is required for IVF indices
-        # if isinstance(cpu_index, faiss.IndexIVF):
         if not cpu_index.is_trained:
             cpu_index.train(points)
             
@@ -298,8 +325,12 @@ class FAISSIndex(KNNIndex):
         # Move to GPU if requested and available
         if self.use_gpu:
             try:
-                self.gpu_resources = faiss.StandardGpuResources()
-                self.index = faiss.index_cpu_to_gpu(self.gpu_resources, self.gpu_id, cpu_index)
+                shared_resources = get_shared_gpu_resources()
+                if shared_resources is None:
+                    raise Exception("Could not get GPU resources")
+                    
+                # self.gpu_resources = faiss.StandardGpuResources()
+                self.index = faiss.index_cpu_to_gpu(shared_resources, self.gpu_id, cpu_index)
             except Exception as e:
                 logging.warning(f"Error moving index to GPU: {e}. Falling back to CPU index.")
                 self.index = cpu_index
@@ -309,10 +340,14 @@ class FAISSIndex(KNNIndex):
         
         # Add points
         self.index.add(points)
+        self.index.nprobe = self.nprobe
         
-        # # Set parameters for search
-        # if hasattr(self.index, 'nprobe'):
-        #     self.index.nprobe = min(self.nprobe, max(1, n_points // 10))
+        elapsed_time = time.time() - start_time
+        
+        # Record profiling data
+        profiler = KNNProfiler.get_instance()
+        backend = 'gpu' if self.use_gpu else 'cpu'
+        profiler.record_build(backend, points.shape, elapsed_time)
             
         return self
     
@@ -329,34 +364,40 @@ class FAISSIndex(KNNIndex):
         """
         if self.index is None:
             raise ValueError("Index not built yet. Call build() first.")
-        
         # Ensure we're working with float32
         query_points = np.ascontiguousarray(query_points.astype('float32'))
+
+        MAX_GPU_BATCH_SIZE = 65535
         n_queries = query_points.shape[0]
-        
-        # For large query batches, split into smaller batches to avoid OOM errors
-        # Default batch size is scaled with index size
-        # if self.batch_size is None:
-        #     # Heuristic: larger index = smaller batch size
-        #     self.batch_size = max(1, min(1024, 10000 // max(1, self._index_size // 1000)))
-        
-        # # Process in batches if needed
-        # if n_queries > self.batch_size:
-        #     all_distances = []
-        #     all_indices = []
+        start_time = time.time()
+
+        if n_queries > MAX_GPU_BATCH_SIZE:
+            all_distances = []
+            all_indices = []
             
-        #     for i in range(0, n_queries, self.batch_size):
-        #         batch = query_points[i:i+self.batch_size]
-        #         batch_distances, batch_indices = self.index.search(batch, k)
+            for i in range(0, n_queries, MAX_GPU_BATCH_SIZE):
+                batch_end = min(i + MAX_GPU_BATCH_SIZE, n_queries)
+                batch = query_points[i:batch_end]
                 
-        #         all_distances.append(batch_distances)
-        #         all_indices.append(batch_indices)
-                
-        #     distances = np.vstack(all_distances)
-        #     indices = np.vstack(all_indices)
-        # else:
-        #     # Search directly
-        distances, indices = self.index.search(query_points, k)
+                batch_distances, batch_indices = self.index.search(batch, k)
+                all_distances.append(batch_distances)
+                all_indices.append(batch_indices)
+            
+            # Combine results
+            distances = np.vstack(all_distances)
+            indices = np.vstack(all_indices)
+        else:
+            # Small enough to search directly
+            distances, indices = self.index.search(query_points, k)
+            
+        
+        # Search directly
+        elapsed_time = time.time() - start_time
+
+        # Record profiling data
+        profiler = KNNProfiler.get_instance()
+        backend = 'gpu' if self.use_gpu else 'cpu'
+        profiler.record_search(backend, query_points.shape, k, elapsed_time)
         
         if return_distance:
             return distances, indices
