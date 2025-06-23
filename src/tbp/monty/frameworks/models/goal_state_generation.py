@@ -18,6 +18,7 @@ from tbp.monty.frameworks.utils.communication_utils import get_state_from_channe
 
 logger = logging.getLogger(__name__)
 
+
 class GraphGoalStateGenerator(GoalStateGenerator):
     """Generate sub-goal states until the received goal state is achieved.
 

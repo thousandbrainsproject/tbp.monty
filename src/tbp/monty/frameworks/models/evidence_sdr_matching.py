@@ -27,6 +27,7 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
 
 logger = logging.getLogger(__name__)
 
+
 class LoggerSDR:
     """A simple logger that saves the data passed to it.
 

@@ -29,6 +29,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 
 logger = logging.getLogger(__name__)
 
+
 class DetailedLoggingSM(SensorModuleBase):
     """Sensor module that keeps track of raw observations for logging."""
 

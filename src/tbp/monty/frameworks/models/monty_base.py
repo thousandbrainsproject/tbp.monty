@@ -24,6 +24,7 @@ from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_sta
 
 logger = logging.getLogger(__name__)
 
+
 class MontyBase(Monty):
     LOGGING_REGISTRY = dict(TEST=TestLogger)
 
