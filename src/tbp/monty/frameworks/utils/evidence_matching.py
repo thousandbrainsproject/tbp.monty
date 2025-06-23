@@ -6,12 +6,18 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 from collections import OrderedDict
 from typing import Dict, List, Optional, Tuple
 from typing import OrderedDict as OrderedDictType
 
 import numpy as np
+
+from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
+    ChannelHypotheses,
+    Hypotheses,
+)
 
 
 class ChannelMapper:
@@ -55,6 +61,20 @@ class ChannelMapper:
             int: Total size across all channels.
         """
         return sum(self.channel_sizes.values())
+
+    def channel_size(self, channel_name: str) -> int:
+        """Returns the total number of hypotheses for a specific channel.
+
+        Returns:
+            int: Size of channel
+
+        Raises:
+            ValueError: If the channel is not found.
+        """
+        if channel_name not in self.channel_sizes:
+            raise ValueError(f"Channel '{channel_name}' not found.")
+
+        return self.channel_sizes[channel_name]
 
     def channel_range(self, channel_name: str) -> Tuple[int, int]:
         """Returns the start and end indices of the given channel.
@@ -158,6 +178,25 @@ class ChannelMapper:
         start, end = self.channel_range(channel)
         return original[start:end]
 
+    def extract_hypotheses(
+        self, hypotheses: Hypotheses, channel: str
+    ) -> ChannelHypotheses:
+        """Extracts the hypotheses corresponding to a given channel.
+
+        Args:
+            hypotheses (Hypotheses): The full hypotheses array across all channels.
+            channel (str): The name of the channel to extract.
+
+        Returns:
+            ChannelHypotheses: The hypotheses corresponding to the given channel.
+        """
+        return ChannelHypotheses(
+            input_channel=channel,
+            evidence=self.extract(hypotheses.evidence, channel),
+            locations=self.extract(hypotheses.locations, channel),
+            poses=self.extract(hypotheses.poses, channel),
+        )
+
     def update(
         self, original: np.ndarray, channel: str, data: np.ndarray
     ) -> np.ndarray:
@@ -210,3 +249,66 @@ class ChannelMapper:
         """
         ranges = {ch: self.channel_range(ch) for ch in self.channel_sizes}
         return f"ChannelMapper({ranges})"
+
+
+def evidence_update_threshold(
+    evidence_threshold_config: float | str,
+    x_percent_threshold: float | str,
+    max_global_evidence: float,
+    evidence_all_channels: np.ndarray,
+) -> float:
+    """Determine how much evidence a hypothesis should have to be updated.
+
+    Args:
+        evidence_threshold_config (float | str): The heuristic for deciding which
+            hypotheses should be updated.
+        x_percent_threshold (float | str): The x_percent value to use for deciding
+            on the `evidence_update_threshold` when the `x_percent_threshold` is
+            used as a heuristic.
+        max_global_evidence (float): Highest evidence of all hypotheses (i.e.,
+            current mlh evidence),
+        evidence_all_channels (np.ndarray): Evidence values for all hypotheses.
+
+    Returns:
+        The evidence update threshold.
+
+    Raises:
+        InvalidEvidenceThresholdConfig: If `evidence_threshold_config` is
+            not in the allowed values
+    """
+    # return 0 for the threshold if there are no evidence scores
+    if evidence_all_channels.size == 0:
+        return 0
+
+    if type(evidence_threshold_config) in [int, float]:
+        return evidence_threshold_config
+    elif evidence_threshold_config == "mean":
+        return np.mean(evidence_all_channels)
+    elif evidence_threshold_config == "median":
+        return np.median(evidence_all_channels)
+    elif isinstance(
+        evidence_threshold_config, str
+    ) and evidence_threshold_config.endswith("%"):
+        percentage_str = evidence_threshold_config.strip("%")
+        percentage = float(percentage_str)
+        assert percentage >= 0 and percentage <= 100, (
+            "Percentage must be between 0 and 100"
+        )
+        x_percent_of_max = max_global_evidence * (percentage / 100)
+        return max_global_evidence - x_percent_of_max
+    elif evidence_threshold_config == "x_percent_threshold":
+        x_percent_of_max = max_global_evidence / 100 * x_percent_threshold
+        return max_global_evidence - x_percent_of_max
+    elif evidence_threshold_config == "all":
+        return np.min(evidence_all_channels)
+    else:
+        raise InvalidEvidenceThresholdConfig(
+            "evidence_threshold_config not in "
+            "[int, float, '[int]%', 'mean', 'median', 'all', 'x_percent_threshold']"
+        )
+
+
+class InvalidEvidenceThresholdConfig(ValueError):
+    """Raised when the evidence update threshold is invalid."""
+
+    pass

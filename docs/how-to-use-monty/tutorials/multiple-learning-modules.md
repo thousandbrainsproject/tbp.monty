@@ -178,9 +178,11 @@ from tbp.monty.frameworks.experiments import (
     MontyObjectRecognitionExperiment,
 )
 from tbp.monty.frameworks.loggers.monty_handlers import BasicCSVStatsHandler
-from tbp.monty.frameworks.models.evidence_matching import (
-    EvidenceGraphLM,
-    MontyForEvidenceGraphMatching,
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+    EvidenceGraphLM
+)
+from tbp.monty.frameworks.models.evidence_matching.model import (
+    MontyForEvidenceGraphMatching
 )
 from tbp.monty.frameworks.models.goal_state_generation import (
     EvidenceGoalStateGenerator,
@@ -228,9 +230,8 @@ evidence_lm_config = dict(
                 "hsv": np.array([1, 0.5, 0.5]),
             }
         },
-        max_nneighbors=10,
         # Use this to update all hypotheses > x_percent_threshold (faster)
-        evidence_update_threshold="x_percent_threshold",
+        evidence_threshold_config="x_percent_threshold",
         x_percent_threshold=20,
         gsg_class=EvidenceGoalStateGenerator,
         gsg_args=dict(
@@ -239,6 +240,9 @@ evidence_lm_config = dict(
             ),  # Tolerance(s) when determining goal-state success
             min_post_goal_success_steps=5,  # Number of necessary steps for a hypothesis
         ),
+        hypotheses_updater_args=dict(
+            max_nneighbors=10,
+        )
     ),
 )
 # We'll also reuse these tolerances, so we specify them here.

@@ -7,10 +7,10 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import os
-from numbers import Number
-from typing import Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Optional, Sequence, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,6 +20,7 @@ from scipy.spatial.transform import Rotation
 from skimage.transform import resize
 from torch_geometric.data import Data
 
+from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import find_step_on_new_object
 from tbp.monty.frameworks.utils.logging_utils import (
@@ -29,9 +30,12 @@ from tbp.monty.frameworks.utils.logging_utils import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 from tbp.monty.frameworks.utils.transform_utils import numpy_to_scipy_quat
 
+if TYPE_CHECKING:
+    from numbers import Number
+
 
 def plot_graph(
-    graph: Union[Data, GraphObjectModel],
+    graph: Data | GraphObjectModel,
     show_nodes: bool = True,
     show_edges: bool = False,
     show_trisurf: bool = False,
@@ -378,7 +382,12 @@ def get_model_id(epoch, mode):
     return model_id
 
 
-def get_action_name(action_stats, step, is_match_step, obs_on_object):
+def get_action_name(
+    action_stats: list[list[Action | dict[str, Any] | None]],
+    step: int,
+    is_match_step: bool,
+    obs_on_object: bool,
+) -> str:
     """Get the name of the action taken at a step.
 
     When the name is derived from an action, the format is:
@@ -397,11 +406,11 @@ def get_action_name(action_stats, step, is_match_step, obs_on_object):
 
 
     Returns:
-        Action name or one of the following sentinel values:
-            "updating possible matches"
-            "patch not on object"
-            "not moved yet"
-            "None"
+        str: Action name or one of the following sentinel values:
+                "updating possible matches"
+                "patch not on object"
+                "not moved yet"
+                "None"
     """
     if is_match_step:
         if obs_on_object:
@@ -413,7 +422,7 @@ def get_action_name(action_stats, step, is_match_step, obs_on_object):
     else:
         action = action_stats[step - 1]
         if action[0] is not None:
-            a = action[0]
+            a = cast(Action, action[0])
             d = dict(a)
             del d["action"]  # don't duplicate action in "params"
             del d["agent_id"]  # don't duplicate agent_id in "params"

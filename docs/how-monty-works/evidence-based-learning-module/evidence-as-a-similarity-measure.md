@@ -61,7 +61,7 @@ The error in overlap bits cannot be used to optimize the object SDRs directly si
 
 # Implementation in Monty
 
-The encoding algorithm is implemented as an LM Mixin by the name `EvidenceSDRLMMixin`. This Mixin overrides the initialization of the LM, and the`post_episode` function to collect evidence values after each episode and use them to optimize a set of object representations. We define the `EvidenceSDRGraphLM`, which incorporates the Mixin and can be used as a drop-in replacement for `EvidenceGraphLM`when defining an experiment config.
+The encoding algorithm is implemented as an LM Mixin by the name `EvidenceSDRLMMixin`. This Mixin overrides the initialization of the LM, and the `post_episode` function to collect evidence values after each episode and use them to optimize a set of object representations. It configures the evidence updater with the `SDRFeatureEvidenceCalculator` and the `AllFeaturesForMatchingChecker`. We define the `EvidenceSDRGraphLM`, which incorporates the Mixin and can be used as a drop-in replacement for `EvidenceGraphLM` when defining an experiment config.
 
 Want to dive deeper into this topic? Have a look at this presentation:
 [block:embed]

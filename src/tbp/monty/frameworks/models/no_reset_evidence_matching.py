@@ -11,9 +11,14 @@ from typing import List
 
 import numpy as np
 
-from tbp.monty.frameworks.models.evidence_matching import (
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
+)
+from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
+)
+from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater import (  # noqa: E501
+    ResamplingHypothesesUpdater,
 )
 from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
     TheoreticalLimitLMLoggingMixin,
@@ -95,6 +100,9 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
 
 class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
     def __init__(self, *args, **kwargs):
+        # Use ResamplingHypothesesUpdater by default.
+        if not hasattr(kwargs, "hypotheses_updater_class"):
+            kwargs["hypotheses_updater_class"] = ResamplingHypothesesUpdater
         super().__init__(*args, **kwargs)
         self.last_location = {}
 

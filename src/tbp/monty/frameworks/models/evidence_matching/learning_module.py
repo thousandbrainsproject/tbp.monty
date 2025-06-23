@@ -10,152 +10,37 @@
 
 from __future__ import annotations
 
-import copy
 import logging
 import threading
 import time
-from typing import Tuple
 
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.models.evidence_matching.graph_memory import (
+    EvidenceGraphMemory,
+)
+from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
+    ChannelHypotheses,
+    Hypotheses,
+)
+from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
+    DefaultHypothesesUpdater,
+    HypothesesUpdater,
+)
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
-from tbp.monty.frameworks.models.graph_matching import (
-    GraphLM,
-    GraphMemory,
-    MontyForGraphMatching,
-)
-from tbp.monty.frameworks.models.object_model import (
-    GraphObjectModel,
-    GridObjectModel,
-    GridTooSmallError,
-)
+from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.models.states import State
-from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
+from tbp.monty.frameworks.utils.evidence_matching import (
+    ChannelMapper,
+    evidence_update_threshold,
+)
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     add_pose_features_to_tolerances,
-    get_custom_distances,
-    get_initial_possible_poses,
-    get_relevant_curvature,
     get_scaled_evidences,
 )
+
 from tbp.monty.frameworks.utils.knn_search import KNNSearchFactory
-from tbp.monty.frameworks.utils.spatial_arithmetics import (
-    align_multiple_orthonormal_vectors,
-    align_orthonormal_vectors,
-    get_angles_for_all_hypotheses,
-    get_more_directions_in_plane,
-    rotate_pose_dependent_features,
-)
-
-
-class MontyForEvidenceGraphMatching(MontyForGraphMatching):
-    """Monty model for evidence based graphs.
-
-    Customize voting and union of possible matches.
-    """
-
-    def __init__(self, *args, **kwargs):
-        """Initialize and reset LM."""
-        super().__init__(*args, **kwargs)
-
-    def _pass_infos_to_motor_system(self):
-        """Pass processed observations and goal-states to the motor system.
-
-        Currently there is no complex connectivity or hierarchy, and all generated
-        goal-states are considered bound for the motor-system. TODO M change this.
-        """
-        super()._pass_infos_to_motor_system()
-
-        # Check the motor-system can receive goal-states
-        if self.motor_system._policy.use_goal_state_driven_actions:
-            best_goal_state = None
-            best_goal_confidence = -np.inf
-            for current_goal_state in self.gsg_outputs:
-                if (
-                    current_goal_state is not None
-                    and current_goal_state.confidence > best_goal_confidence
-                ):
-                    best_goal_state = current_goal_state
-                    best_goal_confidence = current_goal_state.confidence
-
-            self.motor_system._policy.set_driving_goal_state(best_goal_state)
-
-    def _combine_votes(self, votes_per_lm):
-        """Combine evidence from different lms.
-
-        Returns:
-            The combined votes.
-        """
-        combined_votes = []
-        for i in range(len(self.learning_modules)):
-            lm_state_votes = {}
-            if votes_per_lm[i] is not None:
-                receiving_lm_pose = votes_per_lm[i]["sensed_pose_rel_body"]
-                for j in self.lm_to_lm_vote_matrix[i]:
-                    if votes_per_lm[j] is not None:
-                        sending_lm_pose = votes_per_lm[j]["sensed_pose_rel_body"]
-                        sensor_disp = np.array(receiving_lm_pose[0]) - np.array(
-                            sending_lm_pose[0]
-                        )
-                        sensor_rotation_disp, _ = align_orthonormal_vectors(
-                            sending_lm_pose[1:],
-                            receiving_lm_pose[1:],
-                            as_scipy=False,
-                        )
-                        logging.debug(
-                            f"LM {j} to {i} - displacement: {sensor_disp}, "
-                            f"rotation: "
-                            f"{sensor_rotation_disp}"
-                        )
-                        for obj in votes_per_lm[j]["possible_states"].keys():
-                            # Get the displacement between the sending and receiving
-                            # sensor and take this into account when transmitting
-                            # possible locations on the object.
-                            # "If I am here, you should be there."
-                            lm_states_for_object = votes_per_lm[j]["possible_states"][
-                                obj
-                            ]
-                            # Take the location votes and transform them so they would
-                            # apply to the receiving LMs sensor. Basically saying, if my
-                            # sensor is here and in this pose then your sensor should be
-                            # there in that pose.
-                            # NOTE: rotation votes are not being used right now.
-                            transformed_lm_states_for_object = []
-                            for s in lm_states_for_object:
-                                # need to make a copy because the same vote state may be
-                                # transformed in different ways depending on the
-                                # receiving LMs' pose
-                                new_s = copy.deepcopy(s)
-                                rotated_displacement = new_s.get_pose_vectors().dot(
-                                    sensor_disp
-                                )
-                                new_s.transform_morphological_features(
-                                    translation=rotated_displacement,
-                                    rotation=sensor_rotation_disp,
-                                )
-                                transformed_lm_states_for_object.append(new_s)
-                            if obj in lm_state_votes.keys():
-                                lm_state_votes[obj].extend(
-                                    transformed_lm_states_for_object
-                                )
-                            else:
-                                lm_state_votes[obj] = transformed_lm_states_for_object
-            logging.debug(f"VOTE from LMs {self.lm_to_lm_vote_matrix[i]} to LM {i}")
-            vote = lm_state_votes
-            combined_votes.append(vote)
-        return combined_votes
-
-    def switch_to_exploratory_step(self):
-        """Switch to exploratory step.
-
-        Also, set mlh evidence high enough to generate output during exploration.
-        """
-        super().switch_to_exploratory_step()
-        # Make sure new object ID gets communicated to higher level LMs during
-        # exploration.
-        for lm in self.learning_modules:
-            lm.current_mlh["evidence"] = lm.object_evidence_threshold + 1
 
 
 class EvidenceGraphLM(GraphLM):
@@ -173,18 +58,15 @@ class EvidenceGraphLM(GraphLM):
             by this value before being added to the overall evidence of a hypothesis.
             This factor is only multiplied with the feature evidence (not the pose
             evidence as opposed to the present_weight).
-        max_nneighbors: Maximum number of nearest neighbors to consider in the
-            radius of a hypothesis for calculating the evidence.
-        initial_possible_poses: initial possible poses that should be tested for.
-            In ["uniform", "informed", list]. default = "informed".
-        evidence_update_threshold: How to decide which hypotheses should be updated.
-            When this parameter is either '[int]%' or 'x_percent_threshold', then
-            this parameter is applied to the evidence for the Most Likely Hypothesis
-            (MLH) to determine a minimum evidence threshold in order for other
-            hypotheses to be updated. Any hypotheses falling below the resulting
-            evidence threshold do not get updated. The other options set a fixed
-            threshold that does not take MLH evidence into account. In [int, float,
-            '[int]%', 'mean', 'median', 'all', 'x_percent_threshold'].
+        evidence_threshold_config (float | str): How to decide which hypotheses
+            should be updated. When this parameter is either '[int]%' or
+            'x_percent_threshold', then this parameter is applied to the evidence
+            for the Most Likely Hypothesis (MLH) to determine a minimum evidence
+            threshold in order for other hypotheses to be updated. Any hypotheses
+            falling below the resulting evidence threshold do not get updated. The
+            other options set a fixed threshold that does not take MLH evidence into
+            account. In [int, float, '[int]%', 'mean', 'median', 'all',
+            'x_percent_threshold']. Defaults to 'all'.
         vote_evidence_threshold: Only send votes that have a scaled evidence above
             this threshold. Vote evidences are in the range of [-1, 1] so the threshold
             should not be outside this range.
@@ -250,12 +132,16 @@ class EvidenceGraphLM(GraphLM):
             since the memory requirements grow cubically with this number.
         gsg_class: The type of goal-state-generator to associate with the LM.
         gsg_args: Dictionary of configuration parameters for the GSG.
+        hypotheses_updater_class: The type of hypotheses updater to associate with the
+            LM.
+        hypotheses_updater_args: Dictionary of configuration parameters for the
+            hypotheses updater.
         knn_backend: Backend to use for KNN search. 'cpu' uses SciPy KDTree, 'gpu'
             uses FAISS (if available). Defaults to "cpu".
         knn_nlist: Number of clusters to use in knn gpu index. 
         knn_gpu_id: ID of GPU on device to use for GPU based KNN backend.
         knn_batch_size: Batch size to use for large KNN queries.
-
+        
     Debugging Attributes:
         use_multithreading: Whether to calculate evidence updates for different
             objects in parallel using multithreading. This can be done since the
@@ -267,12 +153,10 @@ class EvidenceGraphLM(GraphLM):
     def __init__(
         self,
         max_match_distance,
-        tolerances,
-        feature_weights,
+        tolerances: dict,
+        feature_weights: dict,
         feature_evidence_increment=1,
-        max_nneighbors=3,
-        initial_possible_poses="informed",
-        evidence_update_threshold="all",
+        evidence_threshold_config: float | str = "all",
         vote_evidence_threshold=0.8,
         past_weight=1,
         present_weight=1,
@@ -293,6 +177,8 @@ class EvidenceGraphLM(GraphLM):
         knn_batch_size=None,
         gsg_class=EvidenceGoalStateGenerator,
         gsg_args=None,
+        hypotheses_updater_class: type[HypothesesUpdater] = DefaultHypothesesUpdater,
+        hypotheses_updater_args: dict | None = None,
         *args,
         **kwargs,
     ):
@@ -321,8 +207,7 @@ class EvidenceGraphLM(GraphLM):
         self.max_match_distance = max_match_distance
         self.tolerances = tolerances
         self.feature_evidence_increment = feature_evidence_increment
-        self.max_nneighbors = max_nneighbors
-        self.evidence_update_threshold = evidence_update_threshold
+        self.evidence_threshold_config = evidence_threshold_config
         self.vote_evidence_threshold = vote_evidence_threshold
         # ------ Weighting Params ------
         self.feature_weights = feature_weights
@@ -347,20 +232,17 @@ class EvidenceGraphLM(GraphLM):
         # Set feature weights to 1 if not otherwise specified
         self._fill_feature_weights_with_default(default=1)
 
-        self.initial_possible_poses = get_initial_possible_poses(initial_possible_poses)
-        self.use_features_for_matching = self._check_use_features_for_matching()
-
         # Dictionary with graph_ids as keys. For each graph we initialize a set of
         # hypotheses at the first step of an episode. Each hypothesis has an evidence
         # count associated with it which is stored here.
         # self.possible_locations and self.possible_poses have the same structure and
         # length as self.evidence and store the corresponding hypotheses.
-        self.evidence = {}
-        self.possible_locations = {}
-        self.possible_poses = {}
+        self.evidence: dict[str, np.ndarray] = {}
+        self.possible_locations: dict[str, np.ndarray] = {}
+        self.possible_poses: dict[str, np.ndarray] = {}
 
         # A dictionary from graph_id to instances of `ChannelMapper`.
-        self.channel_hypothesis_mapping = {}
+        self.channel_hypothesis_mapping: dict[str, ChannelMapper] = {}
 
         self.current_mlh = {
             "graph_id": "no_observations_yet",
@@ -369,6 +251,22 @@ class EvidenceGraphLM(GraphLM):
             "scale": 1,
             "evidence": 0,
         }
+
+        if hypotheses_updater_args is None:
+            hypotheses_updater_args = {}
+        # Every HypothesesUpdater gets at least the following arguments because they are
+        # either constructed or edited in the constructor, or they are shared with the
+        # learning module.
+        hypotheses_updater_args.update(
+            feature_evidence_increment=self.feature_evidence_increment,
+            feature_weights=self.feature_weights,
+            graph_memory=self.graph_memory,
+            max_match_distance=self.max_match_distance,
+            past_weight=self.past_weight,
+            present_weight=self.present_weight,
+            tolerances=self.tolerances,
+        )
+        self.hypotheses_updater = hypotheses_updater_class(**hypotheses_updater_args)
 
     # =============== Public Interface Functions ===============
 
@@ -805,59 +703,6 @@ class EvidenceGraphLM(GraphLM):
             stats = self._add_detailed_stats(stats)
         return stats
 
-    # ======================= Private ==========================
-
-    # ------------------- Main Algorithm -----------------------
-    def _get_initial_hypothesis_space(self, features, graph_id, input_channel):
-        if self.initial_possible_poses is None:
-            # Get initial poses for all locations informed by pose features
-            (
-                initial_possible_channel_locations,
-                initial_possible_channel_rotations,
-            ) = self._get_all_informed_possible_poses(graph_id, features, input_channel)
-        else:
-            initial_possible_channel_locations = []
-            initial_possible_channel_rotations = []
-            all_channel_locations = self.graph_memory.get_locations_in_graph(
-                graph_id, input_channel
-            )
-            # Initialize fixed possible poses (without using pose features)
-            for rotation in self.initial_possible_poses:
-                for node_id in range(len(all_channel_locations)):
-                    initial_possible_channel_locations.append(
-                        all_channel_locations[node_id]
-                    )
-                    initial_possible_channel_rotations.append(rotation.as_matrix())
-
-            initial_possible_channel_rotations = np.array(
-                initial_possible_channel_rotations
-            )
-        # There will always be two feature weights (point normal and curvature
-        # direction). If there are no more weight we are not using features for
-        # matching and skip this step. Doing matching with only morphology can
-        # currently be achieved in two ways. Either we don't specify tolerances
-        # and feature_weights or we set the global feature_evidence_increment to 0.
-        if self.use_features_for_matching[input_channel]:
-            # Get real valued features match for each node
-            node_feature_evidence = self._calculate_feature_evidence_for_all_nodes(
-                features, input_channel, graph_id
-            )
-            # stack node_feature_evidence to match possible poses
-            nwmf_stacked = []
-            for _ in range(
-                len(initial_possible_channel_rotations) // len(node_feature_evidence)
-            ):
-                nwmf_stacked.extend(node_feature_evidence)
-            # add evidence if features match
-            evidence = np.array(nwmf_stacked) * self.feature_evidence_increment
-        else:
-            evidence = np.zeros(initial_possible_channel_rotations.shape[0])
-        return (
-            initial_possible_channel_locations,
-            initial_possible_channel_rotations,
-            evidence,
-        )
-
     def _update_possible_matches(self, query):
         """Update evidence for each hypothesis instead of removing them."""
         thread_list = []
@@ -912,77 +757,36 @@ class EvidenceGraphLM(GraphLM):
         # of hypotheses for a specific graph_id
         if graph_id not in self.channel_hypothesis_mapping:
             self.channel_hypothesis_mapping[graph_id] = ChannelMapper()
+            self.evidence[graph_id] = np.array([])
+            self.possible_locations[graph_id] = np.array([])
+            self.possible_poses[graph_id] = np.array([])
 
-        # Get all usable input channels
-        # NOTE: We might also want to check the confidence in the input channel
-        # features. This information is currently not available here.
-        # TODO S: Once we pull the observation class into the LM we could add this.
-        input_channels_to_use = [
-            ic
-            for ic in features.keys()
-            if ic in self.get_input_channels_in_graph(graph_id)
-        ]
+        # Calculate the evidence_update_threshold
+        update_threshold = evidence_update_threshold(
+            self.evidence_threshold_config,
+            self.x_percent_threshold,
+            max_global_evidence=self.current_mlh["evidence"],
+            evidence_all_channels=self.evidence[graph_id],
+        )
 
-        if len(input_channels_to_use) == 0:
-            logging.info(
-                f"No input channels observed for {graph_id} that are stored in . "
-                "the model. Not updating evidence."
-            )
+        hypotheses_updates = self.hypotheses_updater.update_hypotheses(
+            hypotheses=Hypotheses(
+                evidence=self.evidence[graph_id],
+                locations=self.possible_locations[graph_id],
+                poses=self.possible_poses[graph_id],
+            ),
+            features=features,
+            displacements=displacements,
+            graph_id=graph_id,
+            mapper=self.channel_hypothesis_mapping[graph_id],
+            evidence_update_threshold=update_threshold,
+        )
+
+        if not hypotheses_updates:
             return
 
-        for input_channel in input_channels_to_use:
-            # Extract channel mapper
-            mapper = self.channel_hypothesis_mapping[graph_id]
-
-            # Determine if hypothesis space exists
-            initialize_hyp_space = bool(input_channel not in mapper.channels)
-
-            # Initialize a new hypothesis space using graph nodes
-            if initialize_hyp_space:
-                # TODO H: When initializing a hypothesis for a channel later on (if
-                # displacement is not None), include most likely existing hypothesis
-                # from other channels?
-                (
-                    channel_possible_locations,
-                    channel_possible_poses,
-                    channel_hypotheses_evidence,
-                ) = self._get_initial_hypothesis_space(
-                    features, graph_id, input_channel
-                )
-            # Retrieve existing hypothesis space for a specific input channel
-            else:
-                channel_possible_locations = mapper.extract(
-                    self.possible_locations[graph_id], input_channel
-                )
-                channel_possible_poses = mapper.extract(
-                    self.possible_poses[graph_id], input_channel
-                )
-                channel_hypotheses_evidence = mapper.extract(
-                    self.evidence[graph_id], input_channel
-                )
-
-                # We only displace existing hypotheses since the newly sampled
-                # hypotheses should not be affected by the displacement from the last
-                # sensory input.
-                channel_possible_locations, channel_hypotheses_evidence = (
-                    self._displace_hypotheses_and_compute_evidence(
-                        features,
-                        channel_possible_locations,
-                        channel_possible_poses,
-                        channel_hypotheses_evidence,
-                        displacements,
-                        graph_id,
-                        input_channel,
-                    )
-                )
-
-            self._set_hypotheses_in_hpspace(
-                graph_id=graph_id,
-                input_channel=input_channel,
-                new_location_hypotheses=channel_possible_locations,
-                new_pose_hypotheses=channel_possible_poses,
-                new_evidence=channel_hypotheses_evidence,
-            )
+        for update in hypotheses_updates:
+            self._set_hypotheses_in_hpspace(graph_id=graph_id, new_hypotheses=update)
 
         end_time = time.time()
         assert not np.isnan(np.max(self.evidence[graph_id])), "evidence contains NaN."
@@ -992,90 +796,10 @@ class EvidenceGraphLM(GraphLM):
             f" New max evidence: {np.round(np.max(self.evidence[graph_id]), 3)}"
         )
 
-    def _displace_hypotheses_and_compute_evidence(
-        self,
-        features: dict,
-        channel_possible_locations: np.ndarray,
-        channel_possible_poses: np.ndarray,
-        channel_hypotheses_evidence: np.ndarray,
-        displacement: dict,
-        graph_id: str,
-        input_channel: str,
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        """Updates evidence by comparing features after applying sensed displacement.
-
-        This function applies the sensor displacement to the existing hypothesis and
-        uses the result as search locations for comparing the sensed features. This
-        comparison is used to update the evidence scores of the existing hypotheses. The
-        hypotheses locations are updated to the new locations (i.e., after displacement)
-
-        Args:
-            features (dict): Input features
-            channel_possible_locations (np.ndarray): Hypothesized sensor locations for
-                each hypothesis
-            channel_possible_poses (np.ndarray): Hypothesized object rotations for each
-                hypothesis
-            channel_hypotheses_evidence (np.ndarray): Current evidence value for each
-                hypothesis
-            displacement (dict): Sensor displacements for input channels
-            graph_id (str): The ID of the current graph
-            input_channel (str): The channel involved in hypotheses updating.
-
-        Returns:
-            Tuple[np.ndarray, np.ndarray]: Updated sensor locations and evidence values.
-        """
-        # Threshold hypotheses that we update by evidence for them
-        evidence_threshold = self._get_evidence_update_threshold(graph_id)
-
-        # Have to do this for all hypotheses so we don't loose the path information
-        rotated_displacements = channel_possible_poses.dot(displacement[input_channel])
-        search_locations = channel_possible_locations + rotated_displacements
-
-        # Get indices of hypotheses with evidence > threshold
-        hyp_ids_to_test = np.where(channel_hypotheses_evidence >= evidence_threshold)[0]
-        num_hypotheses_to_test = hyp_ids_to_test.shape[0]
-        if num_hypotheses_to_test > 0:
-            logging.info(
-                f"Testing {num_hypotheses_to_test} out of "
-                f"{self.evidence[graph_id].shape[0]} hypotheses for "
-                f"{graph_id} "
-                f"(evidence > {evidence_threshold})"
-            )
-
-            # Get evidence update for all hypotheses with evidence > current
-            # _evidence_update_threshold
-            new_evidence = self._calculate_evidence_for_new_locations(
-                graph_id,
-                input_channel,
-                search_locations[hyp_ids_to_test],
-                channel_possible_poses[hyp_ids_to_test],
-                features,
-            )
-            min_update = np.clip(np.min(new_evidence), 0, np.inf)
-
-            # Alternatives (no update to other Hs or adding avg) left in
-            # here in case we want to revert back to those.
-            # avg_update = np.mean(new_evidence)
-            # evidence_to_add = np.zeros_like(channel_hypotheses_evidence)
-            evidence_to_add = np.ones_like(channel_hypotheses_evidence) * min_update
-            evidence_to_add[hyp_ids_to_test] = new_evidence
-
-            # If past and present weight add up to 1, equivalent to
-            # np.average and evidence will be bound to [-1, 2]. Otherwise it
-            # keeps growing.
-            channel_hypotheses_evidence = (
-                channel_hypotheses_evidence * self.past_weight
-                + evidence_to_add * self.present_weight
-            )
-        return search_locations, channel_hypotheses_evidence
-
     def _set_hypotheses_in_hpspace(
         self,
         graph_id: str,
-        input_channel: str,
-        new_location_hypotheses: np.ndarray,
-        new_pose_hypotheses: np.ndarray,
-        new_evidence: np.ndarray,
+        new_hypotheses: ChannelHypotheses,
     ) -> None:
         """Updates the hypothesis space for a given input channel in a graph.
 
@@ -1090,28 +814,25 @@ class EvidenceGraphLM(GraphLM):
 
         Args:
             graph_id (str): The ID of the current graph to update.
-            input_channel (str): Channel's name involved in updating the space
-            new_location_hypotheses (np.ndarray): New sensor locations hypotheses
-            new_pose_hypotheses (np.ndarray): New object poses hypotheses
-            new_evidence (np.ndarray): New evidence values for the input channel
-
-        Note:
-          The `new_` prefix in the function arguments denotes that these are the
-          sets of location, pose and evidence after applying movements to the possible
-          locations and updating their evidence scores. These could also refer to newly
-          initialized hypotheses if a hypothesis space did not exist.
+            new_hypotheses (ChannelHypotheses): The new hypotheses to set. These are the
+                sets of location, pose, and evidence after applying movements to the
+                possible locations and updating their evidence scores. These could also
+                refer to newly initialized hypotheses if a hypothesis space did not
+                exist.
         """
         # Extract channel mapper
         mapper = self.channel_hypothesis_mapping[graph_id]
 
+        new_evidence = new_hypotheses.evidence
+
         # Add a new channel to the mapping if the hypotheses space doesn't exist
-        if input_channel not in mapper.channels:
+        if new_hypotheses.input_channel not in mapper.channels:
             if len(mapper.channels) == 0:
-                self.possible_locations[graph_id] = np.array(new_location_hypotheses)
-                self.possible_poses[graph_id] = np.array(new_pose_hypotheses)
+                self.possible_locations[graph_id] = np.array(new_hypotheses.locations)
+                self.possible_poses[graph_id] = np.array(new_hypotheses.poses)
                 self.evidence[graph_id] = np.array(new_evidence)
 
-                mapper.add_channel(input_channel, len(new_evidence))
+                mapper.add_channel(new_hypotheses.input_channel, len(new_evidence))
                 return
 
             # Add current mean evidence to give the new hypotheses a fighting
@@ -1128,21 +849,21 @@ class EvidenceGraphLM(GraphLM):
         # to the data in the arrays.
         self.possible_locations[graph_id] = mapper.update(
             self.possible_locations[graph_id],
-            input_channel,
-            np.array(new_location_hypotheses),
+            new_hypotheses.input_channel,
+            new_hypotheses.locations,
         )
         self.possible_poses[graph_id] = mapper.update(
             self.possible_poses[graph_id],
-            input_channel,
-            np.array(new_pose_hypotheses),
+            new_hypotheses.input_channel,
+            new_hypotheses.poses,
         )
         self.evidence[graph_id] = mapper.update(
             self.evidence[graph_id],
-            input_channel,
-            np.array(new_evidence),
+            new_hypotheses.input_channel,
+            new_evidence,
         )
 
-        mapper.resize_channel_to(input_channel, len(new_evidence))
+        mapper.resize_channel_to(new_hypotheses.input_channel, len(new_evidence))
 
     def _update_evidence_with_vote(self, state_votes, graph_id):
         """Use incoming votes to update all hypotheses."""
@@ -1212,269 +933,6 @@ class EvidenceGraphLM(GraphLM):
                 ],
                 axis=0,
             )
-
-    def _calculate_evidence_for_new_locations(
-        self,
-        graph_id: str,
-        input_channel: str,
-        search_locations: np.ndarray,
-        channel_possible_poses: np.ndarray,
-        features: dict,
-    ):
-        """Use search locations, sensed features and graph model to calculate evidence.
-
-        First, the search locations are used to find the nearest nodes in the graph
-        model. Then we calculate the error between the stored pose features and the
-        sensed ones. Additionally we look at whether the non-pose features match at the
-        neighboring nodes. Everything is weighted by the nodes distance from the search
-        location.
-        If there are no nodes in the search radius (max_match_distance), evidence = -1.
-
-        We do this for every incoming input channel and its features if they are stored
-        in the graph and take the average over the evidence from all input channels.
-
-        Returns:
-            The location evidence.
-        """
-        logging.debug(
-            f"Calculating evidence for {graph_id} using input from {input_channel}"
-        )
-
-        pose_transformed_features = rotate_pose_dependent_features(
-            features[input_channel],
-            channel_possible_poses,
-        )
-        # Get max_nneighbors nearest nodes to search locations.
-        nearest_node_ids = self.get_graph(
-            graph_id, input_channel
-        ).find_nearest_neighbors(
-            search_locations,
-            num_neighbors=self.max_nneighbors,
-        )
-        if self.max_nneighbors == 1:
-            nearest_node_ids = np.expand_dims(nearest_node_ids, axis=1)
-
-        nearest_node_locs = self.graph_memory.get_locations_in_graph(
-            graph_id, input_channel
-        )[nearest_node_ids]
-        max_abs_curvature = get_relevant_curvature(features[input_channel])
-        custom_nearest_node_dists = get_custom_distances(
-            nearest_node_locs,
-            search_locations,
-            pose_transformed_features["pose_vectors"][:, 0],
-            max_abs_curvature,
-        )
-        # shape=(H, K)
-        node_distance_weights = self._get_node_distance_weights(
-            custom_nearest_node_dists
-        )
-        # Get IDs where custom_nearest_node_dists > max_match_distance
-        mask = node_distance_weights <= 0
-
-        new_pos_features = self.graph_memory.get_features_at_node(
-            graph_id,
-            input_channel,
-            nearest_node_ids,
-            feature_keys=["pose_vectors", "pose_fully_defined"],
-        )
-        # Calculate the pose error for each hypothesis
-        # shape=(H, K)
-        radius_evidence = self._get_pose_evidence_matrix(
-            pose_transformed_features,
-            new_pos_features,
-            input_channel,
-            node_distance_weights,
-        )
-        # Set the evidences which are too far away to -1
-        radius_evidence[mask] = -1
-        # If a node is too far away, weight the negative evidence fully (*1). This
-        # only comes into play if there are no nearby nodes in the radius, then we
-        # want an evidence of -1 for this hypothesis.
-        # NOTE: Currently we don't weight the evidence by distance so this doesn't
-        # matter.
-        node_distance_weights[mask] = 1
-
-        # If no feature weights are provided besides the ones for point_normal
-        # and curvature_directions we don't need to calculate feature evidence.
-        if self.use_features_for_matching[input_channel]:
-            # add evidence if features match
-            node_feature_evidence = self._calculate_feature_evidence_for_all_nodes(
-                features, input_channel, graph_id
-            )
-            hypothesis_radius_feature_evidence = node_feature_evidence[nearest_node_ids]
-            # Set feature evidence of nearest neighbors that are too far away to 0
-            hypothesis_radius_feature_evidence[mask] = 0
-            # Take the maximum feature evidence out of the nearest neighbors in the
-            # search radius and weighted by its distance to the search location.
-            # Evidence will be in [0, 1] and is only 1 if all features match
-            # perfectly and the node is at the search location.
-            radius_evidence = (
-                radius_evidence
-                + hypothesis_radius_feature_evidence * self.feature_evidence_increment
-            )
-        # We take the maximum to be better able to deal with parts of the model where
-        # features change quickly and we may have noisy location information. This way
-        # we check if we can find a good match of pose features within the search
-        # radius. It doesn't matter if there are also points stored nearby in the model
-        # that are not a good match.
-        # Removing the comment weights the evidence by the nodes distance from the
-        # search location. However, epirically this did not seem to help.
-        # shape=(H,)
-        location_evidence = np.max(
-            radius_evidence,  # * node_distance_weights,
-            axis=1,
-        )
-        return location_evidence
-
-    def _get_pose_evidence_matrix(
-        self,
-        query_features,
-        node_features,
-        input_channel,
-        node_distance_weights,
-    ):
-        """Get angle mismatch error of the three pose features for multiple points.
-
-        Args:
-            query_features: Observed features.
-            node_features: Features at nodes that are being tested.
-            input_channel: Input channel for which we want to calculate the
-                pose evidence. This are all input channels that are received at the
-                current time step and are also stored in the graph.
-            node_distance_weights: Weights for each nodes error (determined by
-                distance to the search location). Currently not used, except for shape.
-
-        Returns:
-            The sum of angle evidence weighted by weights. In range [-1, 1].
-        """
-        # TODO S: simplify by looping over pose vectors
-        evidences_shape = node_distance_weights.shape[:2]
-        pose_evidence_weighted = np.zeros(evidences_shape)
-        # TODO H: at higher level LMs we may want to look at all pose vectors.
-        # Currently we skip the third since the second curv dir is always 90 degree
-        # from the first.
-        # Get angles between three pose features
-        pn_error = get_angles_for_all_hypotheses(
-            # shape of node_features[input_channel]["pose_vectors"]: (nH, knn, 9)
-            node_features["pose_vectors"][:, :, :3],
-            query_features["pose_vectors"][:, 0],  # shape (nH, 3)
-        )
-        # Divide error by 2 so it is in range [0, pi/2]
-        # Apply sin -> [0, 1]. Subtract 0.5 -> [-0.5, 0.5]
-        # Negate the error to get evidence (lower error is higher evidence)
-        pn_evidence = -(np.sin(pn_error / 2) - 0.5)
-        pn_weight = self.feature_weights[input_channel]["pose_vectors"][0]
-        # If curvatures are same the directions are meaningless
-        #  -> set curvature angle error to zero.
-        if not query_features["pose_fully_defined"]:
-            cd1_weight = 0
-            # Only calculate curv dir angle if sensed curv dirs are meaningful
-            cd1_evidence = np.zeros(pn_error.shape)
-        else:
-            cd1_weight = self.feature_weights[input_channel]["pose_vectors"][1]
-            # Also check if curv dirs stored at node are meaningful
-            use_cd = np.array(
-                node_features["pose_fully_defined"][:, :, 0],
-                dtype=bool,
-            )
-            cd1_angle = get_angles_for_all_hypotheses(
-                node_features["pose_vectors"][:, :, 3:6],
-                query_features["pose_vectors"][:, 1],
-            )
-            # Since curvature directions could be rotated 180 degrees we define the
-            # error to be largest when the angle is pi/2 (90 deg) and angles 0 and
-            # pi are equal. This means the angle error will be between 0 and pi/2.
-            cd1_error = np.pi / 2 - np.abs(cd1_angle - np.pi / 2)
-            # We then apply the same operations as on pn error to get cd1_evidence
-            # in range [-0.5, 0.5]
-            cd1_evidence = -(np.sin(cd1_error) - 0.5)
-            # nodes where pc1==pc2 receive no cd evidence but twice the pn evidence
-            # -> overall evidence can be in range [-1, 1]
-            cd1_evidence = cd1_evidence * use_cd
-            pn_evidence[np.logical_not(use_cd)] * 2
-        # weight angle errors by feature weights
-        # if sensed pc1==pc2 cd1_weight==0 and overall evidence is in [-0.5, 0.5]
-        # otherwise it is in [-1, 1].
-        pose_evidence_weighted += pn_evidence * pn_weight + cd1_evidence * cd1_weight
-        return pose_evidence_weighted
-
-    def _calculate_feature_evidence_for_all_nodes(
-        self, query_features, input_channel, graph_id
-    ):
-        """Calculate the feature evidence for all nodes stored in a graph.
-
-        Evidence for each feature depends on the difference between observed and stored
-        features, feature weights, and distance weights.
-
-        Evidence is a float between 0 and 1. An evidence of 1 is a perfect match, the
-        larger the difference between observed and sensed features, the close to 0 goes
-        the evidence. Evidence is 0 if the difference is >= the tolerance for this
-        feature.
-
-        If a node does not store a given feature, evidence will be nan.
-
-        input_channel indicates where the sensed features are coming from and thereby
-        tells this function to which features in the graph they need to be compared.
-
-        Returns:
-            The feature evidence for all nodes.
-        """
-        feature_array = self.graph_memory.get_feature_array(graph_id)
-        feature_order = self.graph_memory.get_feature_order(graph_id)
-        # generate the lists of features, tolerances, and whether features are circular
-        shape_to_use = feature_array[input_channel].shape[1]
-        feature_order = feature_order[input_channel]
-        tolerance_list = np.zeros(shape_to_use) * np.nan
-        feature_weight_list = np.zeros(shape_to_use) * np.nan
-        feature_list = np.zeros(shape_to_use) * np.nan
-        circular_var = np.zeros(shape_to_use, dtype=bool)
-        start_idx = 0
-        query_features = query_features[input_channel]
-        for feature in feature_order:
-            if feature in [
-                "pose_vectors",
-                "pose_fully_defined",
-            ]:
-                continue
-            if hasattr(query_features[feature], "__len__"):
-                feature_length = len(query_features[feature])
-            else:
-                feature_length = 1
-            end_idx = start_idx + feature_length
-            feature_list[start_idx:end_idx] = query_features[feature]
-            tolerance_list[start_idx:end_idx] = self.tolerances[input_channel][feature]
-            feature_weight_list[start_idx:end_idx] = self.feature_weights[
-                input_channel
-            ][feature]
-            circular_var[start_idx:end_idx] = (
-                [True, False, False] if feature == "hsv" else False
-            )
-            circ_range = 1
-            start_idx = end_idx
-
-        feature_differences = np.zeros_like(feature_array[input_channel])
-        feature_differences[:, ~circular_var] = np.abs(
-            feature_array[input_channel][:, ~circular_var] - feature_list[~circular_var]
-        )
-        cnode_fs = feature_array[input_channel][:, circular_var]
-        cquery_fs = feature_list[circular_var]
-        feature_differences[:, circular_var] = np.min(
-            [
-                np.abs(circ_range + cnode_fs - cquery_fs),
-                np.abs(cnode_fs - cquery_fs),
-                np.abs(cnode_fs - (cquery_fs + circ_range)),
-            ],
-            axis=0,
-        )
-        # any difference < tolerance should be positive evidence
-        # any difference >= tolerance should be 0 evidence
-        feature_evidence = np.clip(tolerance_list - feature_differences, 0, np.inf)
-        # normalize evidence to be in [0, 1]
-        feature_evidence = feature_evidence / tolerance_list
-        weighted_feature_evidence = np.average(
-            feature_evidence, weights=feature_weight_list, axis=1
-        )
-        return weighted_feature_evidence
 
     def _check_for_unique_poses(
         self,
@@ -1607,31 +1065,16 @@ class EvidenceGraphLM(GraphLM):
         id_feature = sum(ord(i) for i in object_id)
         return id_feature
 
-    # ------------------------ Helper --------------------------
-    def _check_use_features_for_matching(self):
-        use_features = {}
-        for input_channel in self.tolerances.keys():
-            if input_channel not in self.feature_weights.keys():
-                use_features[input_channel] = False
-            elif self.feature_evidence_increment <= 0:
-                use_features[input_channel] = False
-            else:
-                feature_weights_provided = (
-                    len(self.feature_weights[input_channel].keys()) > 2
-                )
-                use_features[input_channel] = feature_weights_provided
-        return use_features
-
-    def _fill_feature_weights_with_default(self, default):
-        for input_channel in self.tolerances.keys():
+    def _fill_feature_weights_with_default(self, default: int) -> None:
+        for input_channel, channel_tolerances in self.tolerances.items():
             if input_channel not in self.feature_weights.keys():
                 self.feature_weights[input_channel] = {}
-            for key in self.tolerances[input_channel].keys():
+            for key, tolerance in channel_tolerances.items():
                 if key not in self.feature_weights[input_channel].keys():
-                    if hasattr(self.tolerances[input_channel][key], "shape"):
-                        shape = self.tolerances[input_channel][key].shape
-                    elif hasattr(self.tolerances[input_channel][key], "__len__"):
-                        shape = len(self.tolerances[input_channel][key])
+                    if hasattr(tolerance, "shape"):
+                        shape = tolerance.shape
+                    elif hasattr(tolerance, "__len__"):
+                        shape = len(tolerance)
                     else:
                         shape = 1
                     default_weights = np.ones(shape) * default
@@ -1639,78 +1082,6 @@ class EvidenceGraphLM(GraphLM):
                         f"adding {key} to feature_weights with value {default_weights}"
                     )
                     self.feature_weights[input_channel][key] = default_weights
-
-    def _get_all_informed_possible_poses(
-        self, graph_id, sensed_features, input_channel
-    ):
-        """Initialize hypotheses on possible rotations for each location.
-
-        Similar to _get_informed_possible_poses but doesn't require looping over nodes
-
-        For this we use the point normal and curvature directions and check how
-        they would have to be rotated to match between sensed and stored vectors
-        at each node. If principal curvature is similar in both directions, the
-        direction vectors cannot inform this and we have to uniformly sample multiple
-        possible rotations along this plane.
-
-        Note:
-            In general this initialization of hypotheses determines how well the
-            matching later on does and if an object and pose can be recognized. We
-            should think about whether this is the most robust way to initialize
-            hypotheses.
-
-        Returns:
-            The possible locations and rotations.
-        """
-        all_possible_locations = np.zeros((1, 3))
-        all_possible_rotations = np.zeros((1, 3, 3))
-
-        logging.debug(f"Determining possible poses using input from {input_channel}")
-        node_directions = self.graph_memory.get_rotation_features_at_all_nodes(
-            graph_id, input_channel
-        )
-        sensed_directions = sensed_features[input_channel]["pose_vectors"]
-        # Check if PCs in patch are similar -> need to sample more directions
-        if (
-            "pose_fully_defined" in sensed_features[input_channel].keys()
-            and not sensed_features[input_channel]["pose_fully_defined"]
-        ):
-            sample_more_directions = True
-        else:
-            sample_more_directions = False
-
-        if not sample_more_directions:
-            # 2 possibilities since the curvature directions may be flipped
-            possible_s_d = [
-                sensed_directions.copy(),
-                sensed_directions.copy(),
-            ]
-            possible_s_d[1][1:] = possible_s_d[1][1:] * -1
-        else:
-            # TODO: whats a reasonable number here?
-            # Maybe just samle n poses regardless of if pc1==pc2 and increase
-            # evidence in the cases where we are more sure?
-            # Maybe keep moving until pc1!= pc2 and then start matching?
-            possible_s_d = get_more_directions_in_plane(sensed_directions, 8)
-
-        for s_d in possible_s_d:
-            # Since we have orthonormal vectors and know their correspondence we can
-            # directly calculate the rotation instead of using the Kabsch esimate
-            # used in Rotation.align_vectors
-            r = align_multiple_orthonormal_vectors(node_directions, s_d, as_scipy=False)
-            all_possible_locations = np.vstack(
-                [
-                    all_possible_locations,
-                    np.array(
-                        self.graph_memory.get_locations_in_graph(
-                            graph_id, input_channel
-                        )
-                    ),
-                ]
-            )
-            all_possible_rotations = np.vstack([all_possible_rotations, r])
-
-        return all_possible_locations[1:], all_possible_rotations[1:]
 
     def _threshold_possible_matches(self, x_percent_scale_factor=1.0):
         """Return possible matches based on evidence threshold.
@@ -1811,45 +1182,6 @@ class EvidenceGraphLM(GraphLM):
             )
         return mlh
 
-    def _get_evidence_update_threshold(self, graph_id):
-        """Determine how much evidence a hypothesis should have to be updated.
-
-        Returns:
-            The evidence update threshold.
-
-        Raises:
-            InvalidEvidenceUpdateThreshold: If `self.evidence_update_threshold` is
-                not in the allowed values
-        """
-        if type(self.evidence_update_threshold) in [int, float]:
-            return self.evidence_update_threshold
-        elif self.evidence_update_threshold == "mean":
-            return np.mean(self.evidence[graph_id])
-        elif self.evidence_update_threshold == "median":
-            return np.median(self.evidence[graph_id])
-        elif isinstance(
-            self.evidence_update_threshold, str
-        ) and self.evidence_update_threshold.endswith("%"):
-            percentage_str = self.evidence_update_threshold.strip("%")
-            percentage = float(percentage_str)
-            assert percentage >= 0 and percentage <= 100, (
-                "Percentage must be between 0 and 100"
-            )
-            max_global_evidence = self.current_mlh["evidence"]
-            x_percent_of_max = max_global_evidence * (percentage / 100)
-            return max_global_evidence - x_percent_of_max
-        elif self.evidence_update_threshold == "x_percent_threshold":
-            max_global_evidence = self.current_mlh["evidence"]
-            x_percent_of_max = max_global_evidence / 100 * self.x_percent_threshold
-            return max_global_evidence - x_percent_of_max
-        elif self.evidence_update_threshold == "all":
-            return np.min(self.evidence[graph_id])
-        else:
-            raise InvalidEvidenceUpdateThreshold(
-                "evidence_update_threshold not in "
-                "[int, float, '[int]%', 'mean', 'median', 'all', 'x_percent_threshold']"
-            )
-
     def _get_node_distance_weights(self, distances):
         node_distance_weights = (
             self.max_match_distance - distances
@@ -1874,193 +1206,3 @@ class EvidenceGraphLM(GraphLM):
         stats["evidences"] = self.evidence
         stats["symmetry_evidence"] = self.symmetry_evidence
         return stats
-
-
-class EvidenceGraphMemory(GraphMemory):
-    """Custom GraphMemory that stores GridObjectModel instead of GraphObjectModel."""
-
-    def __init__(
-        self,
-        max_nodes_per_graph,
-        max_graph_size,
-        num_model_voxels_per_dim,
-        knn_backend="cpu",
-        knn_nlist=1,
-        knn_gpu_id=0,
-        knn_batch_size=None,
-        *args,
-        **kwargs,
-    ):
-        super(EvidenceGraphMemory, self).__init__(*args, **kwargs)
-
-        self.max_nodes_per_graph = max_nodes_per_graph
-        self.max_graph_size = max_graph_size
-        self.num_model_voxels_per_dim = num_model_voxels_per_dim
-        self.knn_backend = knn_backend
-        self.knn_nlist = knn_nlist
-        self.knn_gpu_id = knn_gpu_id
-        self.knn_batch_size = knn_batch_size
-
-    # =============== Public Interface Functions ===============
-
-    # ------------------- Main Algorithm -----------------------
-
-    # ------------------ Getters & Setters ---------------------
-    def get_initial_hypotheses(self):
-        return self.get_memory_ids()
-
-    def get_rotation_features_at_all_nodes(self, graph_id, input_channel):
-        """Get rotation features from all N nodes. shape=(N, 3, 3).
-
-        Returns:
-            The rotation features from all N nodes. shape=(N, 3, 3).
-        """
-        all_node_r_features = self.get_features_at_node(
-            graph_id,
-            input_channel,
-            self.get_graph_node_ids(graph_id, input_channel),
-            feature_keys=["pose_vectors"],
-        )
-        node_directions = all_node_r_features["pose_vectors"]
-        num_nodes = len(node_directions)
-        node_directions = node_directions.reshape((num_nodes, 3, 3))
-        return node_directions
-
-    # ------------------ Logging & Saving ----------------------
-
-    # ======================= Private ==========================
-
-    # ------------------- Main Algorithm -----------------------
-    def _add_graph_to_memory(self, model, graph_id):
-        """Add pretrained graph to memory.
-
-        Initializes GridObjectModel and calls set_graph.
-
-        Args:
-            model: new model to be added to memory
-            graph_id: id of graph that should be added
-
-        """
-        self.models_in_memory[graph_id] = {}
-        for input_channel in model.keys():
-            channel_model = model[input_channel]
-            try:
-                if isinstance(channel_model, GraphObjectModel):
-                    # When loading a model trained with a different LM, need to convert
-                    # it to the GridObjectModel (with use_original_graph == True)
-                    loaded_graph = channel_model._graph
-                    channel_model = self._initialize_model_with_graph(
-                        graph_id, loaded_graph
-                    )
-
-                logging.info(f"Loaded {model} for {input_channel}")
-                self.models_in_memory[graph_id][input_channel] = channel_model
-            except GridTooSmallError:
-                logging.info(
-                    "Grid too small for given locations. Not adding to memory."
-                )
-
-    def _initialize_model_with_graph(self, graph_id, graph):
-        model = GridObjectModel(
-            object_id=graph_id,
-            max_nodes=self.max_nodes_per_graph,
-            max_size=self.max_graph_size,
-            num_voxels_per_dim=self.num_model_voxels_per_dim,
-            knn_backend=self.knn_backend,
-            knn_nlist=self.knn_nlist,
-            knn_gpu_id=self.knn_gpu_id,
-            knn_batch_size=self.knn_batch_size,
-        )
-        # Keep benchmark results constant by still using original graph for
-        # matching when loading pretrained models.
-        model.use_original_graph = True
-        model.set_graph(graph)
-        return model
-
-    def _build_graph(self, locations, features, graph_id, input_channel):
-        """Build a graph from a list of features at locations and add to memory.
-
-        This initializes a new GridObjectModel and calls model.build_graph.
-
-        Args:
-            locations: List of x,y,z locations.
-            features: List of features.
-            graph_id: name of new graph.
-            input_channel: ?
-        """
-        logging.info(f"Adding a new graph to memory.")
-
-        model = GridObjectModel(
-            object_id=graph_id,
-            max_nodes=self.max_nodes_per_graph,
-            max_size=self.max_graph_size,
-            num_voxels_per_dim=self.num_model_voxels_per_dim,
-            knn_backend=self.knn_backend,
-            knn_nlist=self.knn_nlist,
-            knn_gpu_id=self.knn_gpu_id,
-            knn_batch_size=self.knn_batch_size,
-        )
-        try:
-            model.build_model(locations=locations, features=features)
-
-            if graph_id not in self.models_in_memory:
-                self.models_in_memory[graph_id] = {}
-            self.models_in_memory[graph_id][input_channel] = model
-
-            logging.info(f"Added new graph with id {graph_id} to memory.")
-            logging.info(model)
-        except GridTooSmallError:
-            logging.info(
-                "Grid too small for given locations. Not building a model "
-                f"for {graph_id}"
-            )
-
-    def _extend_graph(
-        self,
-        locations,
-        features,
-        graph_id,
-        input_channel,
-        object_location_rel_body,
-        location_rel_model,
-        object_rotation,
-        object_scale,
-    ):
-        """Add new observations into an existing graph.
-
-        Args:
-            locations: List of x,y,z locations.
-            features: Features observed at the locations.
-            graph_id: ID of the existing graph.
-            input_channel: ?
-            object_location_rel_body: location of the sensor in body reference frame
-            location_rel_model: location of sensor in model reference frame
-            object_rotation: rotation of the sensed object relative to the model
-            object_scale: scale of the object relative to the model of it
-        """
-        logging.info(f"Updating existing graph for {graph_id}")
-
-        try:
-            self.models_in_memory[graph_id][input_channel].update_model(
-                locations=locations,
-                features=features,
-                location_rel_model=location_rel_model,
-                object_location_rel_body=object_location_rel_body,
-                object_rotation=object_rotation,
-            )
-            logging.info(
-                f"Extended graph {graph_id} with new points. New model:\n"
-                f"{self.models_in_memory[graph_id]}"
-            )
-        except GridTooSmallError:
-            logging.info("Grid too small for given locations. Not updating model.")
-
-    # ------------------------ Helper --------------------------
-
-    # ----------------------- Logging --------------------------
-
-
-class InvalidEvidenceUpdateThreshold(ValueError):
-    """Raised when the evidence update threshold is invalid."""
-
-    pass

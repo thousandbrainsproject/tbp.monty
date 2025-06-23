@@ -11,7 +11,9 @@ from typing import Any, Dict
 
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.models.evidence_matching import EvidenceGraphLM
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+    EvidenceGraphLM,
+)
 from tbp.monty.frameworks.utils.logging_utils import compute_pose_error
 
 

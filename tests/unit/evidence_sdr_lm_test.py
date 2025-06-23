@@ -469,13 +469,15 @@ class EvidenceSDRIntegrationTest(BaseGraphTestCases.BaseGraphTest):
             },
             # set graph size larger since fake obs displacements are meters
             max_graph_size=10,
-            initial_possible_poses=[[0, 0, 0]],
             gsg_class=EvidenceGoalStateGenerator,
             gsg_args=dict(
                 elapsed_steps_factor=10,
                 min_post_goal_success_steps=5,
                 x_percent_scale_factor=0.75,
                 desired_object_distance=0.03,
+            ),
+            hypotheses_updater_args=dict(
+                initial_possible_poses=[[0, 0, 0]],
             ),
             sdr_args=dict(
                 log_path=None,  # Temporary log path

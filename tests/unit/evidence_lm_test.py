@@ -8,6 +8,12 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import pytest
+
+pytest.importorskip(
+    "habitat_sim",
+    reason="Habitat Sim optional dependency not installed.",
+)
 
 import copy
 import logging
@@ -45,8 +51,10 @@ from tbp.monty.frameworks.config_utils.policy_setup_utils import (
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
-from tbp.monty.frameworks.models.evidence_matching import (
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
+)
+from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
 )
 from tbp.monty.frameworks.models.goal_state_generation import (
@@ -266,7 +274,9 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                                     "hsv": np.array([1, 0, 0]),
                                 }
                             },
-                            initial_possible_poses="uniform",
+                            hypotheses_updater_args=dict(
+                                initial_possible_poses="uniform",
+                            ),
                         ),
                     )
                 ),
@@ -309,11 +319,13 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                                     "hsv": np.array([1, 0, 0]),
                                 }
                             },
-                            initial_possible_poses=[
-                                [0, 0, 0],
-                                [45, 0, 0],
-                                [90, 0, 0],
-                            ],
+                            hypotheses_updater_args=dict(
+                                initial_possible_poses=[
+                                    [0, 0, 0],
+                                    [45, 0, 0],
+                                    [90, 0, 0],
+                                ],
+                            ),
                         ),
                     )
                 ),
@@ -460,15 +472,25 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         )
 
         lm1_maxnn0_config = copy.deepcopy(lm0_config)
-        lm1_maxnn0_config["learning_module_args"]["max_nneighbors"] = 1
+        lm1_maxnn0_config["learning_module_args"]["hypotheses_updater_args"] = dict(
+            max_nneighbors=1,
+        )
         lm1_maxnn1_config = copy.deepcopy(lm1_config)
-        lm1_maxnn1_config["learning_module_args"]["max_nneighbors"] = 1
+        lm1_maxnn1_config["learning_module_args"]["hypotheses_updater_args"] = dict(
+            max_nneighbors=1,
+        )
         lm1_maxnn2_config = copy.deepcopy(lm2_config)
-        lm1_maxnn2_config["learning_module_args"]["max_nneighbors"] = 1
+        lm1_maxnn2_config["learning_module_args"]["hypotheses_updater_args"] = dict(
+            max_nneighbors=1,
+        )
         lm1_maxnn3_config = copy.deepcopy(lm3_config)
-        lm1_maxnn3_config["learning_module_args"]["max_nneighbors"] = 1
+        lm1_maxnn3_config["learning_module_args"]["hypotheses_updater_args"] = dict(
+            max_nneighbors=1,
+        )
         lm1_maxnn4_config = copy.deepcopy(lm4_config)
-        lm1_maxnn4_config["learning_module_args"]["max_nneighbors"] = 1
+        lm1_maxnn4_config["learning_module_args"]["hypotheses_updater_args"] = dict(
+            max_nneighbors=1,
+        )
 
         maxnn1_5lm_evidence = copy.deepcopy(evidence_5lm_config)
         maxnn1_5lm_evidence.update(
@@ -727,9 +749,11 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             },
             # set graph size larger since fake obs displacements are meters
             max_graph_size=10,
-            initial_possible_poses=initial_possible_poses,
             gsg_class=gsg_class,
             gsg_args=gsg_args,
+            hypotheses_updater_args=dict(
+                initial_possible_poses=initial_possible_poses,
+            ),
         )
         graph_lm.mode = "train"
         for observation in fake_obs:
@@ -856,33 +880,21 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             "When using detailed logging we should store matches at every steps.",
         )
 
-    def test_patch_off_object_logging(self):
-        """Test that patch_off_object is logged when no object is present.
-
-        Test that if there is no object in the scene to begin with,
-        we log patch_off_object.
-        """
+    def test_pre_episode_raises_error_when_no_object_is_present(self):
+        """Test that pre_episode raises an error when no object is present."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.fixed_actions_evidence)
         with MontyObjectRecognitionExperiment(config) as exp:
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
-            exp.pre_episode()
             pprint("...removing all objects...")
             exp.dataset.env._env.remove_all_objects()
-            exp.dataloader.reset_agent()
-            pprint("...training...")
-            last_step = exp.run_episode_steps()
-            exp.post_episode(last_step)
-            exp.post_epoch()
-
-        pprint("...checking run stats...")
-        train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
-        self.assertEqual(
-            train_stats["primary_performance"][0],
-            "patch_off_object",
-            "episode should log patch_off_object performance.",
-        )
+            with self.assertRaises(ValueError) as error:
+                exp.pre_episode()
+            self.assertEqual(
+                "May be initializing experiment with no visible target object",
+                str(error.exception),
+            )
 
     def test_moving_off_object(self):
         """Test logging when moving off the object for some steps during an episode."""
@@ -1814,33 +1826,21 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 f" since it was off the object for longer than other LMs.",
             )
 
-    def test_starting_off_object_5lms(self):
-        """Test that patch_off_object is logged when no object is present.
-
-        Test that if there is no object in the scene to begin with,
-        we log patch_off_object with 5lms and voting.
-        """
+    def test_5lms_pre_episode_raises_error_when_no_object_is_present(self):
+        """Test that pre_episode raises an error when no object is present."""
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_5lm_config)
         with MontyObjectRecognitionExperiment(config) as exp:
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
-            exp.pre_episode()
             pprint("...removing all objects...")
             exp.dataset.env._env.remove_all_objects()
-            exp.dataloader.reset_agent()
-            pprint("...training...")
-            last_step = exp.run_episode_steps()
-            exp.post_episode(last_step)
-            exp.post_epoch()
-
-        pprint("...checking run stats...")
-        train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
-        self.assertEqual(
-            train_stats["primary_performance"][0],
-            "patch_off_object",
-            "episode should log patch_off_object performance.",
-        )
+            with self.assertRaises(ValueError) as error:
+                exp.pre_episode()
+            self.assertEqual(
+                "May be initializing experiment with no visible target object",
+                str(error.exception),
+            )
 
     def test_5lm_basic_logging(self):
         """Test that 5LM setup works with BASIC logging and stores correct data."""
