@@ -170,12 +170,7 @@ class KDTreeIndex(KNNIndex):
 
         # Record profiling data
         profiler = KNNProfiler.get_instance()
-        profiler.record_search('cpu', query_points.shape, k, elapsed_time)
-        
-        # Handle the case where k=1 by reshaping the output
-        if k == 1:
-            distances = np.expand_dims(distances, axis=1)
-            indices = np.expand_dims(indices, axis=1)
+        profiler.record_search('cpu', len(query_points), k, elapsed_time)
         
         if return_distance:
             return distances, indices
