@@ -22,6 +22,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_orthonormal_vectors,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class MontyForEvidenceGraphMatching(MontyForGraphMatching):
     """Monty model for evidence based graphs.
@@ -77,7 +79,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                             receiving_lm_pose[1:],
                             as_scipy=False,
                         )
-                        logging.debug(
+                        logger.debug(
                             f"LM {j} to {i} - displacement: {sensor_disp}, "
                             f"rotation: "
                             f"{sensor_rotation_disp}"
@@ -115,7 +117,7 @@ class MontyForEvidenceGraphMatching(MontyForGraphMatching):
                                 )
                             else:
                                 lm_state_votes[obj] = transformed_lm_states_for_object
-            logging.debug(f"VOTE from LMs {self.lm_to_lm_vote_matrix[i]} to LM {i}")
+            logger.debug(f"VOTE from LMs {self.lm_to_lm_vote_matrix[i]} to LM {i}")
             vote = lm_state_votes
             combined_votes.append(vote)
         return combined_votes

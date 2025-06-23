@@ -23,6 +23,8 @@ from .monty_experiment import MontyExperiment
 # turn interactive plotting off -- call plt.show() to open all figures
 plt.ioff()
 
+logger = logging.getLogger(__name__)
+
 
 class MontyObjectRecognitionExperiment(MontyExperiment):
     """Experiment customized for object-pose recognition with a single object.
@@ -84,7 +86,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
                 self.show_observations(observation, loader_step)
 
             if self.model.check_reached_max_matching_steps(self.max_steps):
-                logging.info(
+                logger.info(
                     f"Terminated due to maximum matching steps : {self.max_steps}"
                 )
                 # Need to break here already, otherwise there are problems
@@ -92,12 +94,12 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
                 return loader_step
 
             if loader_step >= (self.max_total_steps):
-                logging.info(f"Terminated due to maximum episode steps : {loader_step}")
+                logger.info(f"Terminated due to maximum episode steps : {loader_step}")
                 self.model.deal_with_time_out()
                 return loader_step
 
             if self.model.is_motor_only_step:
-                logging.debug(
+                logger.debug(
                     "Performing a motor-only step, so passing info straight to motor"
                 )
                 # On these sensations, we just want to pass information to the motor

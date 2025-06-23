@@ -25,6 +25,8 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     EmbodiedEnvironment,
 )
 
+logger = logging.getLogger(__name__)
+
 __all__ = [
     "OmniglotEnvironment",
     "SaccadeOnImageEnvironment",
@@ -221,7 +223,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         char_dir = "/" + char_img_names + "_" + str(self.character_version).zfill(2)
         current_image = load_img(img_char_dir + char_dir + ".png")
         move_path = load_motor(stroke_char_dir + char_dir + ".txt")
-        logging.info(f"Finished loading new image from {img_char_dir + char_dir}")
+        logger.info(f"Finished loading new image from {img_char_dir + char_dir}")
         locations = self.motor_to_locations(move_path)
         maxloc = current_image.shape[0] - self.patch_size
         # Don't use locations at the border where patch doesn't fit anymore
@@ -633,7 +635,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         elif action_name == "turn_right":
             new_loc[1] += amount
         else:
-            logging.error(f"{action_name} is not a valid action, not moving.")
+            logger.error(f"{action_name} is not a valid action, not moving.")
         # Make sure location stays within move area
         if new_loc[0] < self.move_area[0][0]:
             new_loc[0] = self.move_area[0][0]

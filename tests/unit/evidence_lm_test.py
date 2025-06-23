@@ -1185,8 +1185,6 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
     def test_same_sequence_recognition_elm(self):
         """Test that the object is recognized with same action sequence."""
-        logging.basicConfig(level="DEBUG")
-
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
 
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)
