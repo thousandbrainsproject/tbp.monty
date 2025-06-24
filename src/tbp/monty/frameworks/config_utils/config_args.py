@@ -111,7 +111,7 @@ class LoggingConfig:
     wandb_handlers: list = field(default_factory=list)
     python_log_level: str = "INFO"
     python_log_to_file: bool = True
-    python_log_to_stdout: bool = True
+    python_log_to_stderr: bool = True
     output_dir: str = os.path.expanduser(
         os.path.join(monty_logs_dir, "projects/monty_runs/")
     )

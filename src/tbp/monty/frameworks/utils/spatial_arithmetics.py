@@ -16,6 +16,8 @@ import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
 
+logger = logging.getLogger(__name__)
+
 
 def rotations_to_quats(rotations, invert=False):
     # We get euler rotations from feature LM
@@ -160,13 +162,13 @@ def get_angle_torch(v1, v2):
 def check_orthonormal(matrix):
     is_orthogonal = np.mean(np.abs(np.linalg.inv(matrix) - matrix.T)) < 0.01
     if not is_orthogonal:
-        logging.debug(
+        logger.debug(
             "not orthogonal. Error: "
             f"{np.mean(np.abs(np.linalg.inv(matrix) - matrix.T))}"
         )
     is_normal = np.mean(np.abs(np.linalg.norm(matrix, axis=1) - [1, 1, 1])) < 0.01
     if not is_normal:
-        logging.debug(
+        logger.debug(
             "not normal. Error: "
             f"{np.mean(np.abs(np.linalg.norm(matrix, axis=1) - [1, 1, 1]))}"
         )

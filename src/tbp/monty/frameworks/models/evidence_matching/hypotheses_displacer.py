@@ -31,6 +31,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     rotate_pose_dependent_features,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class HypothesesDisplacer(Protocol):
     def displace_hypotheses_and_compute_evidence(
@@ -146,7 +148,7 @@ class DefaultHypothesesDisplacer:
         )[0]
         num_hypotheses_to_test = hyp_ids_to_test.shape[0]
         if num_hypotheses_to_test > 0:
-            logging.info(
+            logger.info(
                 f"Testing {num_hypotheses_to_test} out of "
                 f"{total_hypotheses_count} hypotheses for {graph_id} "
                 f"(evidence > {evidence_update_threshold})"
@@ -210,7 +212,7 @@ class DefaultHypothesesDisplacer:
         Returns:
             The location evidence.
         """
-        logging.debug(
+        logger.debug(
             f"Calculating evidence for {graph_id} using input from {input_channel}"
         )
 

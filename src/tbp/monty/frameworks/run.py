@@ -17,6 +17,8 @@ import time
 from tbp.monty.frameworks.config_utils.cmd_parser import create_cmd_parser
 from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
 
+logger = logging.getLogger(__name__)
+
 
 def merge_args(config, cmd_args=None):
     """Override experiment "config" parameters with command line args.
@@ -110,4 +112,4 @@ def main(all_configs, experiments=None):
         os.makedirs(exp_config["logging_config"]["output_dir"], exist_ok=True)
         start_time = time.time()
         run(exp_config)
-        logging.info(f"Done running {experiment} in {time.time() - start_time} seconds")
+        logger.info(f"Done running {experiment} in {time.time() - start_time} seconds")

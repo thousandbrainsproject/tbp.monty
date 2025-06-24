@@ -42,6 +42,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_multiple_orthonormal_vectors,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class HypothesesUpdater(Protocol):
     def update_hypotheses(
@@ -199,7 +201,7 @@ class DefaultHypothesesUpdater:
         )
 
         if len(input_channels_to_use) == 0:
-            logging.info(
+            logger.info(
                 f"No input channels observed for {graph_id} that are stored in the "
                 "model. Not updating evidence."
             )
@@ -270,7 +272,7 @@ class DefaultHypothesesUpdater:
         all_possible_locations = np.zeros((1, 3))
         all_possible_rotations = np.zeros((1, 3, 3))
 
-        logging.debug(f"Determining possible poses using input from {input_channel}")
+        logger.debug(f"Determining possible poses using input from {input_channel}")
         node_directions = self.graph_memory.get_rotation_features_at_all_nodes(
             graph_id, input_channel
         )

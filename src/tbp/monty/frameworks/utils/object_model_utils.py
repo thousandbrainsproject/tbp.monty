@@ -18,6 +18,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_right_hand_angle,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class NumpyGraph:
     """Alternative way to represent graphs without using torch.
@@ -111,7 +113,7 @@ def already_in_list(
                     )  # Use circular difference to reflect angular nature of hue
 
                     if hue_d > graph_delta_thresholds[feature][0]:
-                        logging.debug(
+                        logger.debug(
                             f"Interesting point because of {feature} : {hue_d}"
                         )
                         redundant_point = False
@@ -137,13 +139,13 @@ def already_in_list(
                     if len(delta_change.shape) > 0:
                         for i, dc in enumerate(delta_change):
                             if dc > graph_delta_thresholds[feature][i]:
-                                logging.debug(
+                                logger.debug(
                                     f"Interesting point because of {feature} : {dc}"
                                 )
                                 redundant_point = False
                                 break
                     elif delta_change > graph_delta_thresholds[feature]:
-                        logging.debug(
+                        logger.debug(
                             f"Interesting point because of {feature} : {delta_change}"
                         )
                         redundant_point = False
@@ -323,7 +325,7 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
     # are from opposite sides of an objects surface.
     valid_pose_vecs = np.where(np.any(pose_vecs, axis=1))[0]
     if len(valid_pose_vecs) == 0:
-        logging.debug(f"no valid pose vecs: {pose_vecs}")
+        logger.debug(f"no valid pose vecs: {pose_vecs}")
         return None, False
     # TODO: more generic names
     pns = pose_vecs[valid_pose_vecs, :3]

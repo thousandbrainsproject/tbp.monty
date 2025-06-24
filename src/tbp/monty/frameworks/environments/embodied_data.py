@@ -49,6 +49,8 @@ __all__ = [
     "SaccadeOnImageFromStreamDataLoader",
 ]
 
+logger = logging.getLogger(__name__)
+
 
 class EnvironmentDataset(Dataset):
     """Wraps an embodied environment with a :class:`torch.utils.data.Dataset`.
@@ -321,7 +323,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         Also add any potential distractor objects.
         """
         next_object = (self.current_object + 1) % self.n_objects
-        logging.info(
+        logger.info(
             f"\n\nGoing from {self.current_object} to {next_object} of {self.n_objects}"
         )
         self.change_object_by_idx(next_object)
@@ -366,7 +368,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             "semantic_id": self.semantic_label_to_id[self.object_names[idx]],
             **self.object_params,
         }
-        logging.info(f"New primary target: {pformat(self.primary_target)}")
+        logger.info(f"New primary target: {pformat(self.primary_target)}")
 
     def add_distractor_objects(
         self, primary_target_obj, init_params, primary_target_name
@@ -632,7 +634,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         Returns:
             The observation from the jump attempt.
         """
-        logging.debug(
+        logger.debug(
             "Attempting a 'jump' like movement to evaluate an object hypothesis"
         )
 
@@ -722,7 +724,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         A successful jump is "on-object", i.e. the object is perceived by the sensor.
         """
-        logging.debug(
+        logger.debug(
             "Object visible, maintaining new pose for hypothesis-testing action"
         )
 
@@ -756,8 +758,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         A failed jump is "off-object", i.e. the object is not perceived by the sensor.
         """
-        logging.debug("No object visible from hypothesis jump, or inside object!")
-        logging.debug("Returning to previous position")
+        logger.debug("No object visible from hypothesis jump, or inside object!")
+        logger.debug("Returning to previous position")
 
         set_agent_pose = SetAgentPose(
             agent_id=self.motor_system._policy.agent_id,
@@ -867,7 +869,7 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
     def cycle_object(self):
         """Switch to the next character image."""
         next_object = (self.current_object + 1) % self.n_objects
-        logging.info(
+        logger.info(
             f"\n\nGoing from {self.current_object} to {next_object} of {self.n_objects}"
         )
         self.change_object_by_idx(next_object)
@@ -952,7 +954,7 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
     def cycle_object(self):
         """Switch to the next scene image."""
         next_scene = (self.current_scene_version + 1) % self.n_versions
-        logging.info(
+        logger.info(
             f"\n\nGoing from {self.current_scene_version} to {next_scene} of "
             f"{self.n_versions}"
         )
@@ -965,7 +967,7 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
             idx: Index of the new object and ints parameters in object params
         """
         assert idx <= self.n_versions, "idx must be <= self.n_versions"
-        logging.info(
+        logger.info(
             f"changing to obj {idx} -> scene {self.scenes[idx]}, version "
             f"{self.versions[idx]}"
         )
@@ -1040,7 +1042,7 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
     def cycle_scene(self):
         """Switch to the next scene image."""
         next_scene = self.current_scene + 1
-        logging.info(f"\n\nGoing from {self.current_scene} to {next_scene}")
+        logger.info(f"\n\nGoing from {self.current_scene} to {next_scene}")
         # TODO: Do we need a separate method for this ?
         self.change_scene_by_idx(next_scene)
 
@@ -1050,7 +1052,7 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         Args:
             idx: Index of the new object and ints parameters in object params
         """
-        logging.info(f"changing to scene {idx}")
+        logger.info(f"changing to scene {idx}")
         self.dataset.env.switch_to_scene(idx)
         self.current_scene = idx
         # TODO: Currently not differentiating between different poses/views
