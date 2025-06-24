@@ -187,9 +187,20 @@ def is_config_like(obj: Any) -> TypeIs[DataclassInstance | Dict[str, Any]]:
         (TypeIs[DataclassInstance | Dict[str, Any]]): True if config is a dataclass or
             dict, False otherwise.
     """
-    return isinstance(obj, dict) or (
-        dataclasses.is_dataclass(obj) and not isinstance(obj, type)
-    )
+    return isinstance(obj, dict) or is_dataclass_instance(obj)
+
+
+def is_dataclass_instance(obj: Any) -> TypeIs[DataclassInstance]:
+    """Returns True if obj is a dataclass instance, False otherwise.
+
+    Args:
+        obj(Any): Object to check.
+
+    Returns:
+        (TypeIs[DataclassInstance]): True if obj is a dataclass instance, False
+            otherwise.
+    """
+    return dataclasses.is_dataclass(obj) and not isinstance(obj, type)
 
 
 def get_subset_of_args(arguments, function):
