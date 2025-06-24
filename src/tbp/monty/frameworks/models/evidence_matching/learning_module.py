@@ -39,7 +39,6 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
     add_pose_features_to_tolerances,
     get_scaled_evidences,
 )
-
 from tbp.monty.frameworks.utils.knn_search import KNNSearchFactory
 
 
@@ -138,10 +137,10 @@ class EvidenceGraphLM(GraphLM):
             hypotheses updater.
         knn_backend: Backend to use for KNN search. 'cpu' uses SciPy KDTree, 'gpu'
             uses FAISS (if available). Defaults to "cpu".
-        knn_nlist: Number of clusters to use in knn gpu index. 
+        knn_nlist: Number of clusters to use in knn gpu index.
         knn_gpu_id: ID of GPU on device to use for GPU based KNN backend.
         knn_batch_size: Batch size to use for large KNN queries.
-        
+
     Debugging Attributes:
         use_multithreading: Whether to calculate evidence updates for different
             objects in parallel using multithreading. This can be done since the
@@ -884,11 +883,11 @@ class EvidenceGraphLM(GraphLM):
             gpu_id=self.knn_gpu_id,
             batch_size=self.knn_batch_size,
         )
-        
+
         vote_nn = 3  # TODO: Make this a parameter?
         if graph_location_vote.shape[0] < vote_nn:
             vote_nn = graph_location_vote.shape[0]
-        
+
         # Get max_nneighbors closest nodes and their distances
         (radius_node_dists, radius_node_ids) = vote_location_knn.search(
             self.possible_locations[graph_id],

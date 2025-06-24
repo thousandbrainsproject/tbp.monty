@@ -54,7 +54,7 @@ class DisplacementGraphLM(GraphLM):
                 curvature magnitude difference.
             knn_backend: Backend to use for KNN search. 'cpu' uses SciPy KDTree, 'gpu'
                 uses FAISS (if available). Defaults to "cpu".
-            knn_nlist: Number of clusters to use in knn gpu index. 
+            knn_nlist: Number of clusters to use in knn gpu index.
             knn_gpu_id: ID of GPU on device to use for GPU based KNN backend.
             knn_batch_size: Batch size to use for large KNN queries.
         """

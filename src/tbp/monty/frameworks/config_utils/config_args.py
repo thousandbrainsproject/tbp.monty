@@ -535,9 +535,10 @@ class MontyArgs:
     min_train_steps: int = 3
     max_total_steps: int = 2_500
 
-@dataclass 
+
+@dataclass
 class KNNBackendArgs:
-    """ Settings for the KNN backend to use
+    """Settings for the KNN backend to use.
 
     Attributes:
         knn_backend: Backend to use for KNN search:
@@ -545,14 +546,15 @@ class KNNBackendArgs:
             - 'gpu': FAISS GPU implementation (faster for large datasets)
             Defaults to "cpu".
         knn_nlist: Number of clusters for FAISS IVF indices. Only used when
-            knn_backend is set to 'gpu'. For exact KNN use 1, for potentially faster but 
-            approximate KNN you can use larger values. Defaults to 1.
+            knn_backend is set to 'gpu'. For exact KNN use 1, for potentially faster
+            but approximate KNN you can use larger values. Defaults to 1.
         knn_gpu_id: ID of GPU to use for FAISS. Only used when knn_backend is a
             FAISS backend and multiple GPUs are available. Defaults to 0.
         knn_batch_size: Batch size for large queries in FAISS. Only used when
             knn_backend is a FAISS backend. None means auto-determined based on
             data size. Defaults to None.
     """
+
     knn_backend: str = "cpu"
     knn_nlist: int = 1
     knn_gpu_id: int = 0
@@ -617,7 +619,9 @@ class SingleCameraMontyConfig(MontyConfig):
     lm_to_lm_matrix: Optional[List] = None
     lm_to_lm_vote_matrix: Optional[List] = None
     monty_args: Union[Dict, MontyArgs] = field(default_factory=MontyArgs)
-    knn_backend_args: Union[Dict, KNNBackendArgs] = field(default_factory=KNNBackendArgs)
+    knn_backend_args: Union[Dict, KNNBackendArgs] = field(
+        default_factory=KNNBackendArgs
+    )
 
 
 @dataclass
@@ -661,7 +665,9 @@ class BaseMountMontyConfig(MontyConfig):
     lm_to_lm_matrix: Optional[List] = None
     lm_to_lm_vote_matrix: Optional[List] = None
     monty_args: Union[Dict, MontyArgs] = field(default_factory=MontyArgs)
-    knn_backend_args: Union[Dict, KNNBackendArgs] = field(default_factory=KNNBackendArgs)
+    knn_backend_args: Union[Dict, KNNBackendArgs] = field(
+        default_factory=KNNBackendArgs
+    )
 
 
 @dataclass
@@ -728,7 +734,9 @@ class PatchAndViewMontyConfig(MontyConfig):
     lm_to_lm_matrix: Optional[List] = None
     lm_to_lm_vote_matrix: Optional[List] = None
     monty_args: Union[Dict, dataclass] = field(default_factory=MontyArgs)
-    knn_backend_args: Union[Dict, KNNBackendArgs] = field(default_factory=KNNBackendArgs)
+    knn_backend_args: Union[Dict, KNNBackendArgs] = field(
+        default_factory=KNNBackendArgs
+    )
 
 
 @dataclass
@@ -854,7 +862,9 @@ class SurfaceAndViewMontyConfig(PatchAndViewMontyConfig):
     lm_to_lm_matrix: Optional[List] = None
     lm_to_lm_vote_matrix: Optional[List] = None
     monty_args: Union[Dict, dataclass] = field(default_factory=MontyArgs)
-    knn_backend_args: Union[Dict, KNNBackendArgs] = field(default_factory=KNNBackendArgs)
+    knn_backend_args: Union[Dict, KNNBackendArgs] = field(
+        default_factory=KNNBackendArgs
+    )
 
 
 @dataclass
@@ -1041,7 +1051,9 @@ class TwoLMMontyConfig(MontyConfig):
     lm_to_lm_matrix: Optional[List] = None
     lm_to_lm_vote_matrix: List = field(default_factory=lambda: [[1], [0]])
     monty_args: Union[Dict, dataclass] = field(default_factory=MontyArgs)
-    knn_backend_args: Union[Dict, KNNBackendArgs] = field(default_factory=KNNBackendArgs)
+    knn_backend_args: Union[Dict, KNNBackendArgs] = field(
+        default_factory=KNNBackendArgs
+    )
 
 
 @dataclass
@@ -1250,7 +1262,9 @@ class FiveLMMontyConfig(MontyConfig):
         ]
     )
     monty_args: Union[Dict, dataclass] = field(default_factory=MontyArgs)
-    knn_backend_args: Union[Dict, KNNBackendArgs] = field(default_factory=KNNBackendArgs)
+    knn_backend_args: Union[Dict, KNNBackendArgs] = field(
+        default_factory=KNNBackendArgs
+    )
 
 
 @dataclass

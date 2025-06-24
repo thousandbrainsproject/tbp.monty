@@ -13,7 +13,6 @@ import logging
 import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
-from tbp.monty.frameworks.utils.knn_search import KNNSearchFactory
 from sklearn.neighbors import KDTree
 
 from tbp.monty.frameworks.models.graph_matching import GraphLM, GraphMemory
@@ -23,6 +22,7 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_unique_paths,
     possible_sensed_directions,
 )
+from tbp.monty.frameworks.utils.knn_search import KNNSearchFactory
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_orthonormal_vectors,
     get_angle,
@@ -77,7 +77,7 @@ class FeatureGraphLM(GraphLM):
                 of the plane perpendicular to the point normal.
             knn_backend: Backend to use for KNN search. 'cpu' uses SciPy KDTree, 'gpu'
                 uses FAISS (if available). Defaults to "cpu".
-            knn_nlist: Number of clusters to use in knn gpu index. 
+            knn_nlist: Number of clusters to use in knn gpu index.
             knn_gpu_id: ID of GPU on device to use for GPU based KNN backend.
             knn_batch_size: Batch size to use for large KNN queries.
         """

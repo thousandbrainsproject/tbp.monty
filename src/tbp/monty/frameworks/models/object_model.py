@@ -333,8 +333,17 @@ class GridObjectModel(GraphObjectModel):
         - remove .norm as attribute and store as feature instead?
     """
 
-    def __init__(self, object_id, max_nodes, max_size, num_voxels_per_dim, 
-                 knn_backend="cpu", knn_nlist=1, knn_gpu_id=0, knn_batch_size=None):
+    def __init__(
+        self,
+        object_id,
+        max_nodes,
+        max_size,
+        num_voxels_per_dim,
+        knn_backend="cpu",
+        knn_nlist=1,
+        knn_gpu_id=0,
+        knn_batch_size=None,
+    ):
         """Initialize a grid object model.
 
         Args:
@@ -350,8 +359,8 @@ class GridObjectModel(GraphObjectModel):
                 - 'gpu': FAISS GPU implementation (faster for large datasets)
                 Defaults to "cpu".
             knn_nlist: Number of clusters for FAISS IVF indices. Only used when
-                knn_backend is set to 'gpu'. For exact KNN use 1, for potentially faster but 
-                approximate KNN you can use larger values. Defaults to 1.
+                knn_backend is set to 'gpu'. For exact KNN use 1, for potentially faster
+                but approximate KNN you can use larger values. Defaults to 1.
             knn_gpu_id: ID of GPU to use for FAISS. Only used when knn_backend is a
                 FAISS backend and multiple GPUs are available. Defaults to 0.
             knn_batch_size: Batch size for large queries in FAISS. Only used when
@@ -461,20 +470,14 @@ class GridObjectModel(GraphObjectModel):
             If return_distance is True, return distances. Otherwise, return indices of
             nearest neighbors.
         """
-        if self._knn_index is not None:
-            # We are using the pretrained graphs and KNN index for matching
-            distances, nearest_node_ids = self._knn_index.search(
-                search_locations,
-                k=num_neighbors, 
-                return_distance=True
-            )
-            if return_distance:
-                return distances
-            else:
-                return nearest_node_ids
+        # We are using the pretrained graphs and KNN index for matching
+        distances, nearest_node_ids = self._knn_index.search(
+            search_locations, k=num_neighbors, return_distance=True
+        )
+        if return_distance:
+            return distances
         else:
-            # If KNN index is not initialized, raise an error
-            raise ValueError("KNN index not initialized. Call update_model first.")
+            return nearest_node_ids
 
     # ------------------ Getters & Setters ---------------------
     def set_graph(self, graph):

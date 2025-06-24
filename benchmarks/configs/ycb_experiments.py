@@ -29,6 +29,7 @@ from benchmarks.configs.names import YcbExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     CSVLoggingConfig,
     FiveLMMontySOTAConfig,
+    KNNBackendArgs,
     MontyArgs,
     MotorSystemConfigCurInformedSurfaceGoalStateDriven,
     ParallelEvidenceLMLoggingConfig,
@@ -37,7 +38,6 @@ from tbp.monty.frameworks.config_utils.config_args import (
     SurfaceAndViewMontyConfig,
     SurfaceAndViewSOTAMontyConfig,
     get_cube_face_and_corner_views_rotations,
-    KNNBackendArgs,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderMultiObjectArgs,
@@ -146,13 +146,13 @@ model_path_5lms_77obj = os.path.join(
     "supervised_pre_training_5lms_all_objects/pretrained/",
 )
 
-# KNN Backend Config for the full experiment (Each LM will be assigned these values within the experiment)
+# KNN Backend Config for the full experiment (Each LM will be assigned these values)
 knn_backend_args = KNNBackendArgs(
-    knn_backend='cpu', 
-    knn_nlist=4, 
-    knn_gpu_id=0, 
-    knn_batch_size=None, 
-    enable_knn_profiling=True
+    knn_backend="cpu",
+    knn_nlist=4,
+    knn_gpu_id=0,
+    knn_batch_size=None,
+    enable_knn_profiling=True,
 )
 
 # Default configs for surface policy which has a different desired object distance
