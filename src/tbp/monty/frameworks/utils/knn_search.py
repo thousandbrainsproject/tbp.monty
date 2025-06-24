@@ -203,7 +203,8 @@ class FAISSIndex(KNNIndex):
         self.nlist = nlist
         self.nprobe = nlist
         self.gpu_id = gpu_id
-        self.batch_size = batch_size
+        max_gpu_batch_size = 65535
+        self.batch_size = batch_size if batch_size else max_gpu_batch_size
         self.index = None
         self._index_size = 0  # Track index size for auto-tuning
 
@@ -366,16 +367,15 @@ class FAISSIndex(KNNIndex):
         # Ensure we're working with float32
         query_points = np.ascontiguousarray(query_points.astype("float32"))
 
-        max_gpu_batch_size = 65535
         n_queries = query_points.shape[0]
         start_time = time.time()
 
-        if n_queries > max_gpu_batch_size:
+        if n_queries > sekf.batch_size:
             all_distances = []
             all_indices = []
 
-            for i in range(0, n_queries, max_gpu_batch_size):
-                batch_end = min(i + max_gpu_batch_size, n_queries)
+            for i in range(0, n_queries, self.batch_size):
+                batch_end = min(i + self.batch_size, n_queries)
                 batch = query_points[i:batch_end]
 
                 batch_distances, batch_indices = self.index.search(batch, k)
