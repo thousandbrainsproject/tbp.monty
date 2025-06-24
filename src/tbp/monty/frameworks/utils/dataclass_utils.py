@@ -170,12 +170,11 @@ def config_to_dict(config: DataclassInstance | Dict[str, Any]) -> Dict[str, Any]
     Returns:
         (Dict[str, Any]): Pure dict version of config.
     """
-    if isinstance(config, dict):
-        return {
-            k: config_to_dict(v) if is_config_like(v) else v for k, v in config.items()
-        }
-    if dataclasses.is_dataclass(config):
-        return dataclasses.asdict(config)
+    return (
+        {k: config_to_dict(v) if is_config_like(v) else v for k, v in config.items()}
+        if isinstance(config, dict)
+        else dataclasses.asdict(config)
+    )
 
 
 def is_config_like(obj: Any) -> TypeIs[DataclassInstance | Dict[str, Any]]:
