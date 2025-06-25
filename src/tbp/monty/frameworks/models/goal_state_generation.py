@@ -16,6 +16,8 @@ from tbp.monty.frameworks.models.abstract_monty_classes import GoalStateGenerato
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.utils.communication_utils import get_state_from_channel
 
+logger = logging.getLogger(__name__)
+
 
 class GraphGoalStateGenerator(GoalStateGenerator):
     """Generate sub-goal states until the received goal state is achieved.
@@ -626,7 +628,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         Returns:
             The index of the point in the model to test.
         """
-        logging.debug("Proposing an evaluation location based on graph mismatch")
+        logger.debug("Proposing an evaluation location based on graph mismatch")
 
         top_id, second_id = self.parent_lm.get_top_two_mlh_ids()
 
@@ -976,7 +978,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             # of the way towards being certain about the ID
             # (len(pm_smaller_thresh) == 1), then we sometimes (hence the randomness)
             # focus on pose.
-            logging.debug(
+            logger.debug(
                 "Hypothesis jump indicated: One object more likely, focusing on pose"
             )
             self.focus_on_pose = True
@@ -995,7 +997,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             ]
             != [top_id, second_id]
         ):
-            logging.debug(
+            logger.debug(
                 "Hypothesis jump indicated: change or shuffle in top-two MLH IDs"
             )
             return True
@@ -1010,7 +1012,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             top_mlh["rotation"].as_euler("xyz")
             != self.prev_top_mlhs[0]["rotation"].as_euler("xyz")
         ):
-            logging.debug(
+            logger.debug(
                 "Hypothesis jump indicated: change in most-likely rotation of MLH"
             )
             return True
@@ -1019,7 +1021,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # still perform a jump; note however that this threshold exponentially
         # increases, so that we avoid continuously returning to the same location
         elif num_elapsed_steps % (self.wait_factor * self.elapsed_steps_factor) == 0:
-            logging.debug(
+            logger.debug(
                 "Hypothesis jump indicated: sufficient steps elapsed with no jump"
             )
 

@@ -22,6 +22,8 @@ from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import Action, ActionJSONEncoder
 
+logger = logging.getLogger(__name__)
+
 
 class BaseBuffer:
     @abc.abstractclassmethod
@@ -346,7 +348,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
         all_features_on_object = {}
         # Number of steps where at least one input was on the object
         global_on_object_ids = np.where(self.on_object)[0]
-        logging.debug(
+        logger.debug(
             f"Observed {np.array(self.locations).shape} locations, "
             f"{len(global_on_object_ids)} global on object"
         )
@@ -355,7 +357,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             channel_off_object_ids = np.where(
                 self.features[input_channel]["on_object"] is False
             )[0]
-            logging.debug(
+            logger.debug(
                 f"{input_channel} has "
                 f"{len(self.locations) - len(channel_off_object_ids)} "
                 "on object observations"
@@ -373,7 +375,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
                         ),
                         refcheck=False,
                     )
-                logging.debug(
+                logger.debug(
                     f"{input_channel} observations for feature {feature} have "
                     f"shape {np.array(self.features[input_channel][feature]).shape}"
                 )

@@ -27,6 +27,8 @@ from tbp.monty.frameworks.models.goal_state_generation import GraphGoalStateGene
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 
+logger = logging.getLogger(__name__)
+
 
 class MontyForGraphMatching(MontyBase):
     """General Monty model for recognizing object using graphs."""
@@ -63,22 +65,20 @@ class MontyForGraphMatching(MontyBase):
         for sm in self.sensor_modules:
             sm.pre_episode()
 
-        logging.debug(
+        logger.debug(
             f"Models in memory: {self.learning_modules[0].get_all_known_object_ids()}"
         )
 
     def send_vote_to_lm(self, lm, lm_id, combined_votes):
         """Route correct votes to a given LM."""
-        logging.debug(
-            f"Matches before voting (LM {lm_id}): {lm.get_possible_matches()}"
-        )
+        logger.debug(f"Matches before voting (LM {lm_id}): {lm.get_possible_matches()}")
         if len(combined_votes) < 1:
             # Deal with set vote from displacement LM
             lm.receive_votes(combined_votes)
         else:
             lm.receive_votes(combined_votes[lm_id])
 
-        logging.debug(f"Matches after voting (LM {lm_id}): {lm.get_possible_matches()}")
+        logger.debug(f"Matches after voting (LM {lm_id}): {lm.get_possible_matches()}")
 
     def update_stats_after_vote(self, lm):
         """Add voting stats to buffer and check individual terminal condition."""
@@ -156,7 +156,7 @@ class MontyForGraphMatching(MontyBase):
         num_lms_done = 0
         for lm in self.learning_modules:
             lm.update_terminal_condition()
-            logging.debug(
+            logger.debug(
                 f"{lm.learning_module_id} has terminal state: {lm.terminal_state}"
             )
             # If any LM is not done yet, we are not done yet
@@ -164,7 +164,7 @@ class MontyForGraphMatching(MontyBase):
                 num_lms_done += 1
 
         if num_lms_done >= self.min_lms_match:
-            logging.info("\n\nMONTY DETECTED MATCH\n\n")
+            logger.info("\n\nMONTY DETECTED MATCH\n\n")
             return True
 
     def reset(self):
@@ -232,7 +232,7 @@ class MontyForGraphMatching(MontyBase):
 
                 if self.step_type == "matching_step":
                     input_channels = [obs.sender_id for obs in sensory_inputs]
-                    logging.info(
+                    logger.info(
                         f"Sending input from {input_channels}"
                         f" to {self.learning_modules[i].learning_module_id}"
                     )
@@ -240,13 +240,13 @@ class MontyForGraphMatching(MontyBase):
                 assert callable(lm_step_method), f"{lm_step_method} must be callable"
                 lm_step_method(sensory_inputs)
                 if self.step_type == "matching_step":
-                    logging.debug(f"Stepping learning module {i}")
+                    logger.debug(f"Stepping learning module {i}")
                 self.learning_modules[i].add_lm_processing_to_buffer_stats(
                     lm_processed=True
                 )
             else:
                 if self.step_type == "matching_step":
-                    logging.info(f"Skipping step on learning module {i}")
+                    logger.info(f"Skipping step on learning module {i}")
                 self.learning_modules[i].add_lm_processing_to_buffer_stats(
                     lm_processed=False
                 )
@@ -284,13 +284,13 @@ class MontyForGraphMatching(MontyBase):
                 # TODO: This LM may already have some IDs narrowed down by using
                 # incoming voted. Account for that.
                 pm = set()
-            logging.info(f"Possible matches for LM {i}: {pm}")
+            logger.info(f"Possible matches for LM {i}: {pm}")
             if union_of_pm is None:
                 union_of_pm = pm
             else:
                 union_of_pm = set.union(union_of_pm, pm)
         if len(self.learning_modules) > 1:
-            logging.info(f"Union of matches: {union_of_pm}")
+            logger.info(f"Union of matches: {union_of_pm}")
         return union_of_pm
 
     def _combine_votes(self, votes_per_lm):
@@ -342,10 +342,10 @@ class MontyForGraphMatching(MontyBase):
                         # "If I am here, you should be there."
                         lm_loc_vote = votes_per_lm[j]["location_vote"][obj]
                         lm_rot_vote = votes_per_lm[j]["rotation_vote"][obj]
-                        logging.debug(
+                        logger.debug(
                             f"loc vote from LM {j} - {obj}: {lm_loc_vote.shape}"
                         )
-                        logging.debug(
+                        logger.debug(
                             f"rot vote from LM {j} - {obj}: {len(lm_rot_vote)}"
                         )
                         sending_lm_pose = votes_per_lm[j]["sensed_pose_rel_body"]
@@ -355,7 +355,7 @@ class MontyForGraphMatching(MontyBase):
                         sensor_rotation_disp, _ = Rotation.align_vectors(
                             sending_lm_pose[1:], receiving_lm_pose[1:]
                         )
-                        logging.debug(
+                        logger.debug(
                             f"LM {i} to {j} - displacement: {sensor_disp}, "
                             f"rotation: "
                             f"{sensor_rotation_disp.as_euler('xyz', degrees=True)}"
@@ -397,7 +397,7 @@ class MontyForGraphMatching(MontyBase):
                                     lm_loc_vote_transformed
                                 )
                                 lm_object_rotation_votes[obj] = lm_rot_vote_transformed
-                logging.info(
+                logger.info(
                     f"VOTE from LMs {self.lm_to_lm_vote_matrix[i]} to LM {i}: + "
                     f"{pos_object_id_votes}, - {neg_object_id_votes}"
                 )
@@ -421,7 +421,7 @@ class MontyForGraphMatching(MontyBase):
             combined_votes = self._combine_votes(votes_per_lm)
             # Receive votes
             for i in range(len(self.learning_modules)):
-                logging.debug(f"------ Sending votes to LM {i} -------")
+                logger.debug(f"------ Sending votes to LM {i} -------")
                 self.send_vote_to_lm(self.learning_modules[i], i, combined_votes)
                 self.update_stats_after_vote(self.learning_modules[i])
 
@@ -532,18 +532,18 @@ class MontyForGraphMatching(MontyBase):
             lm.stepwise_target_object = self.semantic_id_to_label[
                 sensory_inputs[0]._semantic_id
             ]
-            logging.debug(f"Stepwise target: {lm.stepwise_target_object}")
+            logger.debug(f"Stepwise target: {lm.stepwise_target_object}")
         except KeyError:
             # Semantic sensor may not be available, or the "patch" key
             # may be different
-            logging.debug("Semantic ID not available for stepwise-targets")
+            logger.debug("Semantic ID not available for stepwise-targets")
             lm.stepwise_target_object = "no_label"
         except TypeError:
             # semantic_id_to_label is not specified, e.g. in unit tests
-            logging.debug("semantic_id_to_label mapping not specified")
+            logger.debug("semantic_id_to_label mapping not specified")
             lm.stepwise_target_object = "no_label"
         except AttributeError:
-            logging.debug("semantic_id_to_label mapping not specified")
+            logger.debug("semantic_id_to_label mapping not specified")
             lm.stepwise_target_object = "no_label"
 
         # Add logging information : TODO use the buffer to log this appropriately
@@ -643,9 +643,9 @@ class GraphLM(LearningModule):
         self.buffer.append_input_states(observations)
 
         if first_movement_detected:
-            logging.debug("performing matching step.")
+            logger.debug("performing matching step.")
         else:
-            logging.debug("we have not moved yet.")
+            logger.debug("we have not moved yet.")
 
         self._compute_possible_matches(
             observations, first_movement_detected=first_movement_detected
@@ -668,7 +668,7 @@ class GraphLM(LearningModule):
     def post_episode(self):
         """If training, update memory after each episode."""
         if (self.mode == "train") and len(self.buffer) > 0:
-            logging.info(f"\n---Updating memory of {self.learning_module_id}---")
+            logger.info(f"\n---Updating memory of {self.learning_module_id}---")
             self._update_memory()
             self._update_target_graph_mapping(self.detected_object, self.primary_target)
 
@@ -686,7 +686,7 @@ class GraphLM(LearningModule):
         possible_matches = set(self.get_possible_matches())
         all_objects = set(self.get_all_known_object_ids())
         vote = all_objects.difference(possible_matches)
-        logging.debug(
+        logger.debug(
             f"PM: {possible_matches} out of all: {all_objects} -> vote: {vote}"
         )
         return vote
@@ -703,7 +703,7 @@ class GraphLM(LearningModule):
             current_possible_matches = self.get_possible_matches()
             for vote in vote_data:
                 if vote in current_possible_matches:
-                    logging.debug(f"REMOVING {vote} FROM MATCHES")
+                    logger.debug(f"REMOVING {vote} FROM MATCHES")
                     self.possible_matches.pop(vote)
             self._add_votes_to_buffer_stats(vote_data)
 
@@ -752,15 +752,13 @@ class GraphLM(LearningModule):
             object_id = possible_matches[0]
             pose = self.get_unique_pose_if_available(object_id)
             if pose is None:  # No pose determined yet
-                logging.info(
-                    f"Pose for {self.learning_module_id} not narrowed down yet"
-                )
+                logger.info(f"Pose for {self.learning_module_id} not narrowed down yet")
             else:
                 self.set_individual_ts("match")
-                logging.info(f"{self.learning_module_id} recognized object {object_id}")
+                logger.info(f"{self.learning_module_id} recognized object {object_id}")
         # > 1 possible match
         else:
-            logging.info(f"{self.learning_module_id} did not recognize an object yet.")
+            logger.info(f"{self.learning_module_id} did not recognize an object yet.")
         return self.terminal_state
 
     # ------------------ Getters & Setters ---------------------
@@ -909,12 +907,12 @@ class GraphLM(LearningModule):
     # ------------------ Logging & Saving ----------------------
 
     def set_individual_ts(self, terminal_state):
-        logging.info(
+        logger.info(
             f"Setting terminal state of {self.learning_module_id} to {terminal_state}"
         )
         self.set_detected_object(terminal_state)
         if terminal_state == "match":
-            logging.info(
+            logger.info(
                 f"{self.learning_module_id}: "
                 f"Detected {self.detected_object} "
                 f"at location {np.round(self.detected_pose[:3], 3)},"
@@ -996,7 +994,7 @@ class GraphLM(LearningModule):
                 None,
             ]
 
-        logging.debug(f"query: {query}")
+        logger.debug(f"query: {query}")
 
         self._update_possible_matches(query=query)
 
@@ -1157,7 +1155,7 @@ class GraphMemory(LMMemory):
     ):
         """Determine how to update memory and call corresponding function."""
         if graph_id is None:
-            logging.info("no match found in time, not updating memory")
+            logger.info("no match found in time, not updating memory")
         else:
             for input_channel in features.keys():
                 (
@@ -1171,7 +1169,7 @@ class GraphMemory(LMMemory):
                     graph_id in self.get_memory_ids()
                     and input_channel in self.get_input_channels_in_graph(graph_id)
                 ):
-                    logging.info(
+                    logger.info(
                         f"{graph_id} already in memory ({self.get_memory_ids()})"
                     )
                     self._extend_graph(
@@ -1185,7 +1183,7 @@ class GraphMemory(LMMemory):
                         object_scale=object_scale,
                     )
                 else:
-                    logging.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
+                    logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
                     print(f"building graph for {input_channel}")
                     self._build_graph(
                         input_channel_locations,
@@ -1313,7 +1311,7 @@ class GraphMemory(LMMemory):
         node_features = {}
         graph = self.get_graph(graph_id, input_channel)
         if graph is None:
-            logging.debug(
+            logger.debug(
                 f"{input_channel} not stored in graph {graph_id} yet. "
                 "-> Input not used for matching."
             )
@@ -1335,9 +1333,9 @@ class GraphMemory(LMMemory):
     # ------------------ Logging & Saving ----------------------
     def load_state_dict(self, state_dict):
         """Load graphs from state dict and add to memory."""
-        logging.info("loading models")
+        logger.info("loading models")
         for obj_name, model in state_dict.items():
-            logging.info(f"loading {obj_name} with features from {model.keys()}")
+            logger.info(f"loading {obj_name} with features from {model.keys()}")
             # Add loaded graph to memory
             self._add_graph_to_memory(model, obj_name)
 
@@ -1370,7 +1368,7 @@ class GraphMemory(LMMemory):
             graph_id: name of new graph.
             input_channel: ?
         """
-        logging.info(f"Adding a new graph to memory.")
+        logger.info(f"Adding a new graph to memory.")
         model = GraphObjectModel(
             object_id=graph_id,
         )
@@ -1389,7 +1387,7 @@ class GraphMemory(LMMemory):
             self.models_in_memory[graph_id] = {}
         self.models_in_memory[graph_id][input_channel] = model
 
-        logging.info(f"Added new graph with id {graph_id} to memory.")
+        logger.info(f"Added new graph with id {graph_id} to memory.")
 
     def _extend_graph(
         self,
@@ -1414,7 +1412,7 @@ class GraphMemory(LMMemory):
             object_rotation: detected rotation of object model relative to world.
             object_scale: detected scale of object model relative to world. Not used.
         """
-        logging.info(f"Updating existing graph for {graph_id}")
+        logger.info(f"Updating existing graph for {graph_id}")
 
         self.models_in_memory[graph_id][input_channel].update_model(
             locations=locations,
@@ -1424,7 +1422,7 @@ class GraphMemory(LMMemory):
             object_rotation=object_rotation,
         )
 
-        logging.info(
+        logger.info(
             f"Extended graph {graph_id} with new points. New model:\n"
             f"{self.models_in_memory[graph_id][input_channel]}"
         )

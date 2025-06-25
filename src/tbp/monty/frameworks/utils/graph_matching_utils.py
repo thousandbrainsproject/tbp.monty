@@ -19,6 +19,8 @@ from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_more_directions_in_plane
 
+logger = logging.getLogger(__name__)
+
 
 def get_correct_k_n(k_n, num_datapoints):
     """Determine k_n given the number of datapoints.
@@ -40,9 +42,9 @@ def get_correct_k_n(k_n, num_datapoints):
     if num_datapoints <= k_n:
         if num_datapoints > 2:
             k_n = num_datapoints - 1
-            logging.debug(f"Setting k_n to {k_n}")
+            logger.debug(f"Setting k_n to {k_n}")
         else:
-            logging.error("not enough observations collected to build graph.")
+            logger.error("not enough observations collected to build graph.")
             return None
     return k_n
 
@@ -212,7 +214,7 @@ def get_relevant_curvature(features):
     elif "gaussian_curvature_sc" in features.keys():
         curvatures = features["gaussian_curvature_sc"]
     else:
-        logging.error(
+        logger.error(
             f"No curvatures contained in the features {list(features.keys())}."
         )
         # Return large curvature so we use an almost circular search sphere.

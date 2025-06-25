@@ -27,6 +27,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     rotations_to_quats,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def load_stats(
     exp_path,
@@ -900,13 +902,13 @@ def maybe_rename_existing_file(log_file, extension, report_count):
         old_name = log_file.split(extension)[0]
         new_name = old_name + "_old" + extension
 
-        logging.warning(
+        logger.warning(
             f"Output file {log_file} already exists. This file will be moved"
             f" to {new_name}"
         )
 
         if os.path.exists(new_name):
-            logging.warning(
+            logger.warning(
                 f"Output file {new_name} also already exists. This file will be removed"
                 " before renaming."
             )
@@ -918,12 +920,12 @@ def maybe_rename_existing_file(log_file, extension, report_count):
 def maybe_rename_existing_directory(path, report_count):
     if (report_count == 0) and os.path.exists(path):
         new_path = path + "_old"
-        logging.warning(
+        logger.warning(
             f"Output path {path} already exists. This path will be movedto {new_path}"
         )
 
         if os.path.exists(new_path):
-            logging.warning(
+            logger.warning(
                 f"{new_path} also exists, and will be removed before renaming"
             )
             os.remove(new_path)

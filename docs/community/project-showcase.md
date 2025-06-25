@@ -25,4 +25,12 @@ This is the first real-world demo of Monty the TBP team came up with. We used th
 
 See the [monty_lab project folder](https://github.com/thousandbrainsproject/monty_lab/tree/main/monty_meets_world) for more details.
 
+## LEGO Robot
+
+![](../figures/community/lego_robot.png)
+
+The first example of Monty moving its sensors in the real-world.
+
+See the [everything_is_awesome repository](https://github.com/thousandbrainsproject/everything_is_awesome) for more information.
+
 

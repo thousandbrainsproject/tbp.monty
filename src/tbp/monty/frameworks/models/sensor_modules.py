@@ -27,6 +27,8 @@ from tbp.monty.frameworks.utils.sensor_processing import (
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 
+logger = logging.getLogger(__name__)
+
 
 class DetailedLoggingSM(SensorModuleBase):
     """Sensor module that keeps track of raw observations for logging."""
@@ -208,7 +210,7 @@ class DetailedLoggingSM(SensorModuleBase):
 
         invalid_signals = (not valid_pn) or (not valid_pc)
         if invalid_signals:
-            logging.debug("Either the point-normal or pc-directions were ill-defined")
+            logger.debug("Either the point-normal or pc-directions were ill-defined")
 
         return features, morphological_features, invalid_signals
 
@@ -636,12 +638,12 @@ class FeatureChangeSM(HabitatDistantPatchSM, NoiseMixin):
             return patch_observation
 
         if self.last_features is None:  # first step
-            logging.debug("Performing first sensation step of FeatureChangeSM")
+            logger.debug("Performing first sensation step of FeatureChangeSM")
             self.last_features = patch_observation
             return patch_observation
 
         else:
-            logging.debug("Performing FeatureChangeSM step")
+            logger.debug("Performing FeatureChangeSM step")
             significant_feature_change = self.check_feature_change(patch_observation)
 
             # Save bool which will tell us whether to pass the information to LMs
@@ -669,7 +671,7 @@ class FeatureChangeSM(HabitatDistantPatchSM, NoiseMixin):
         if not observed_features.get_on_object():
             # Even for the surface-agent sensor, do not return a feature for LM
             # processing that is not on the object
-            logging.debug(f"No new point because not on object")
+            logger.debug(f"No new point because not on object")
             return False
 
         for feature in self.delta_thresholds.keys():
@@ -679,7 +681,7 @@ class FeatureChangeSM(HabitatDistantPatchSM, NoiseMixin):
 
             if feature == "n_steps":
                 if self.last_sent_n_steps_ago >= self.delta_thresholds[feature]:
-                    logging.debug(f"new point because of {feature}")
+                    logger.debug(f"new point because of {feature}")
                     return True
             elif feature == "distance":
                 distance = np.linalg.norm(
@@ -688,7 +690,7 @@ class FeatureChangeSM(HabitatDistantPatchSM, NoiseMixin):
                 )
 
                 if distance > self.delta_thresholds[feature]:
-                    logging.debug(f"new point because of {feature}")
+                    logger.debug(f"new point because of {feature}")
                     return True
 
             elif feature == "hsv":
@@ -702,7 +704,7 @@ class FeatureChangeSM(HabitatDistantPatchSM, NoiseMixin):
                 delta_change_sv = np.abs(last_feat[1:] - current_feat[1:])
                 for i, dc in enumerate(delta_change_sv):
                     if dc > self.delta_thresholds[feature][i + 1]:
-                        logging.debug(f"new point because of {feature} - {i + 1}")
+                        logger.debug(f"new point because of {feature} - {i + 1}")
                         return True
 
             elif feature == "pose_vectors":
@@ -711,7 +713,7 @@ class FeatureChangeSM(HabitatDistantPatchSM, NoiseMixin):
                     current_feat[0],
                 )
                 if angle_between >= self.delta_thresholds[feature][0]:
-                    logging.debug(
+                    logger.debug(
                         f"new point because of {feature} angle : {angle_between}"
                     )
                     return True
@@ -721,9 +723,9 @@ class FeatureChangeSM(HabitatDistantPatchSM, NoiseMixin):
                 if len(delta_change.shape) > 0:
                     for i, dc in enumerate(delta_change):
                         if dc > self.delta_thresholds[feature][i]:
-                            logging.debug(f"new point because of {feature} - {dc}")
+                            logger.debug(f"new point because of {feature} - {dc}")
                             return True
                 elif delta_change > self.delta_thresholds[feature]:
-                    logging.debug(f"new point because of {feature}")
+                    logger.debug(f"new point because of {feature}")
                     return True
         return False
