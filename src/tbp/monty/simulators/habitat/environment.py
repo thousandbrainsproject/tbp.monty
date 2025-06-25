@@ -36,6 +36,7 @@ __all__ = [
     "SingleSensorAgentArgs",
 ]
 
+from tbp.monty.simulators.simulator import Simulator
 
 # Create agent and object configuration helper dataclasses
 
@@ -116,7 +117,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
             agent = agent_type(**args)
             self._agents.append(agent)
 
-        self._env = HabitatSim(
+        self._env: Simulator = HabitatSim(
             agents=self._agents,
             scene_id=scene_id,
             seed=seed,
