@@ -16,7 +16,6 @@ import numpy as np
 import torch
 
 from tbp.monty.frameworks.environments.embodied_data import SaccadeOnImageDataLoader
-from tbp.monty.frameworks.environments.observations import Observations
 from tbp.monty.frameworks.utils.plot_utils import add_patch_outline_to_view_finder
 
 from .monty_experiment import MontyExperiment
@@ -126,7 +125,7 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         self.setup_camera_ax()
         self.setup_sensor_ax()
 
-    def show_observations(self, observation: Observations, step: int) -> None:
+    def show_observations(self, observation, step: int) -> None:
         self.fig.suptitle(
             f"Observation at step {step}"
             + ("" if step == 0 else f"\n{self.dataloader._action.name}")
