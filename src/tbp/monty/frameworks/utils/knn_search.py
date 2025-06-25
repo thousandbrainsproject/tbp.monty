@@ -370,7 +370,7 @@ class FAISSIndex(KNNIndex):
         n_queries = query_points.shape[0]
         start_time = time.time()
 
-        if n_queries > sekf.batch_size:
+        if n_queries > self.batch_size:
             all_distances = []
             all_indices = []
 
