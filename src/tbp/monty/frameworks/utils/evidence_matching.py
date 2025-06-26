@@ -331,7 +331,6 @@ class EvidenceSlopeTracker:
             ValueError: If the channel doesn't exist or the number of values is
                 incorrect.
         """
-        values = np.array(values, dtype=float)
         if channel not in self.data:
             raise ValueError(f"Channel '{channel}' does not exist.")
 
@@ -361,7 +360,6 @@ class EvidenceSlopeTracker:
         diffs = np.diff(self.data[channel], axis=1)
         valid_steps = np.count_nonzero(~np.isnan(diffs), axis=1)
         valid_steps = np.where(valid_steps == 0, np.nan, valid_steps)
-        a = np.nansum(diffs, axis=1) / valid_steps
         return np.nansum(diffs, axis=1) / valid_steps
 
     def remove_hyp(self, hyp_ids: npt.NDArray[np.int_], channel: str) -> None:
