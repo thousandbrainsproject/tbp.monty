@@ -19,8 +19,8 @@ class Simulator(Protocol):
     """A Protocol defining a simulator for use in simulated environments.
 
     A Simulator is responsible for a simulated environment that contains objects to
-    be interacted with, agents to do the interacting, and for producing observations to
-    be fed into Monty for analysis.
+    interact with, agents to do the interacting, and for collecting observations and 
+    proprioceptive state to send to Monty.
     """
 
     # TODO - do we need a way to abstract the concept of "agent"?
@@ -42,7 +42,7 @@ class Simulator(Protocol):
         enable_physics: Optional[bool] = False,
         object_to_avoid=False,
         primary_target_bb=None,
-    ):
+    ) -> None:
         """Add new object to simulated environment.
 
         Adds a new object based on the named object. This assumes that the set of
@@ -88,10 +88,10 @@ class Simulator(Protocol):
         """Execute the given action in the environment.
 
         Args:
-            action: the action to execute
+            action (Action): the action to execute
 
         Returns:
-            A dictionary with the observations grouped by agent_id
+            (Dict[str, Dict]): A dictionary with the observations grouped by agent_id
         """
         ...
 
