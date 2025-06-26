@@ -39,7 +39,7 @@ class HypothesesDisplacer(Protocol):
         self,
         channel_displacement: np.ndarray,
         channel_features: dict,
-        evidence_update_threshold: float,
+        evidence_update_threshold: float | None,
         graph_id: str,
         possible_hypotheses: ChannelHypotheses,
         total_hypotheses_count: int,

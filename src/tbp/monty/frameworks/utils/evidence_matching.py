@@ -444,10 +444,6 @@ def evidence_update_threshold(
         InvalidEvidenceThresholdConfig: If `evidence_threshold_config` is
             not in the allowed values
     """
-    # Return None to bypass update threshold calculation
-    if evidence_threshold_config is None:
-        return None
-
     # Return 0 for the threshold if there are no evidence scores
     if evidence_all_channels.size == 0:
         return 0
@@ -472,7 +468,7 @@ def evidence_update_threshold(
         x_percent_of_max = max_global_evidence / 100 * x_percent_threshold
         return max_global_evidence - x_percent_of_max
     elif evidence_threshold_config == "all":
-        return np.min(evidence_all_channels)
+        return None
     else:
         raise InvalidEvidenceThresholdConfig(
             "evidence_threshold_config not in "
