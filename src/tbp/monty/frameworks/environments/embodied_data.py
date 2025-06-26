@@ -29,6 +29,7 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.models.motor_policies import (
     GetGoodView,
     InformedPolicy,
+    ObjectNotVisible,
     PositioningProcedure,
     SurfacePolicy,
 )
@@ -445,17 +446,11 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         # NOTE: terminal conditions are now handled in experiment.run_episode loop
         else:
-            self._action = self.motor_system()
             attempting_to_find_object = False
-
-            # If entirely off object, use vision (i.e. view-finder)
-            # TODO refactor so that this check is done in the motor-policy, and we
-            # update the constraint separately/appropriately; i.e. the below
-            # code should be as general as possible
-            if (
-                isinstance(self.motor_system._policy, SurfacePolicy)
-                and self._action is None
-            ):
+            try:
+                self._action = self.motor_system()
+            except ObjectNotVisible:
+                # Note: Only SurfacePolicy raises ObjectNotVisible.
                 attempting_to_find_object = True
                 self._action = self.motor_system._policy.touch_object(
                     self._observation,

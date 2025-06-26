@@ -793,6 +793,10 @@ class GetGoodView(PositioningProcedure):
         return agent_rotation * sensor_rotation
 
 
+class ObjectNotVisible(RuntimeError):
+    """Error raised when the object is not visible."""
+
+
 class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
     """Policy that takes observation as input.
 
@@ -1266,7 +1270,7 @@ class SurfacePolicy(InformedPolicy):
             # Set attempting_to_find_object to True here so that post_action will
             # not interfere with self.last_surface_policy_action
             self.attempting_to_find_object = True
-            return None  # Will result in moving to try to find the object
+            raise ObjectNotVisible  # Will result in moving to try to find the object
             # This is determined by some logic in embodied_data.py, in particular
             # the next method of InformedEnvironmentDataLoader
 
