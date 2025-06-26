@@ -74,7 +74,7 @@ class MontyExperiment:
         """Set up the basic elements of a Monty experiment and initialize counters.
 
         Args:
-            config(Dict[str, Any]): config specifying variables of the experiment.
+            config: config specifying variables of the experiment.
         """
         self.init_loggers(self.config["logging_config"])
         self.model = self.init_model(
@@ -318,7 +318,7 @@ class MontyExperiment:
         """Initialize logger with specified log level.
 
         Args:
-            logging_config(Dict[str, Any]): Logging configuration.
+            logging_config: Logging configuration.
         """
         # Unpack individual logging arguments
         self.python_log_level = logging_config["python_log_level"]
@@ -360,7 +360,7 @@ class MontyExperiment:
         """Initialize Monty data loggers.
 
         Args:
-            logging_config(Dict[str, Any]): Logging configuration.
+            logging_config: Logging configuration.
         """
         self.monty_log_level = logging_config["monty_log_level"]
         self.monty_handlers = logging_config["monty_handlers"]

@@ -195,7 +195,7 @@ class ReadMe:
             file_path: The path to the current document being processed
 
         Returns:
-            str: The document body with CSV tables converted to HTML format
+            The document body with CSV tables converted to HTML format.
         """
 
         def replace_match(match):
@@ -494,7 +494,7 @@ class ReadMe:
             file_path: The path to the current document being processed
 
         Returns:
-            str: The document body with snippets inserted
+            The document body with snippets inserted.
         """
 
         def replace_match(match):

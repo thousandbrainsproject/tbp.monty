@@ -165,10 +165,10 @@ def config_to_dict(config: DataclassInstance | Dict[str, Any]) -> Dict[str, Any]
     TODO: Remove once all other configs are converted to dict only
 
     Args:
-        config(DataclassInstance | Dict[str, Any]): Config to convert to dict.
+        config: Config to convert to dict.
 
     Returns:
-        (Dict[str, Any]): Pure dict version of config.
+        Pure dict version of config.
     """
     return (
         {k: config_to_dict(v) if is_config_like(v) else v for k, v in config.items()}
@@ -181,11 +181,10 @@ def is_config_like(obj: Any) -> TypeIs[DataclassInstance | Dict[str, Any]]:
     """Returns True if obj is a dataclass or dict, False otherwise.
 
     Args:
-        obj(Any): Object to check.
+        obj: Object to check.
 
     Returns:
-        (TypeIs[DataclassInstance | Dict[str, Any]]): True if config is a dataclass or
-            dict, False otherwise.
+        True if config is a dataclass or dict, False otherwise.
     """
     if isinstance(obj, type):
         return False

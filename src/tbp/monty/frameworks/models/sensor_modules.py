@@ -214,7 +214,7 @@ class DetailedLoggingSM(SensorModuleBase):
 
         return features, morphological_features, invalid_signals
 
-    def observations_to_comunication_protocol(self, data, on_object_only=True):
+    def observations_to_comunication_protocol(self, data, on_object_only=True) -> State:
         """Turn raw observations into instance of State class following CMP.
 
         Args:
@@ -226,7 +226,7 @@ class DetailedLoggingSM(SensorModuleBase):
                     image that include an object.
 
         Returns:
-            State: Features and morphological features.
+            Features and morphological features.
         """
         obs_3d = data["semantic_3d"]
         sensor_frame_data = data["sensor_frame_data"]

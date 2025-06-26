@@ -127,12 +127,11 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         at the beginning of the first episode when the last location is not set.
 
         Args:
-            obs (List[State]): A list of observations to which displacements will be
+            obs: A list of observations to which displacements will be
                 added.
 
         Returns:
-            obs (List[State]): The list of observations, each updated with a
-                displacement vector.
+            The list of observations, each updated with a displacement vector.
         """
         for o in obs:
             if o.sender_id in self.last_location.keys():

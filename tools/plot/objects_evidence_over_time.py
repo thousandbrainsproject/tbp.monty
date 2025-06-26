@@ -31,11 +31,10 @@ def plot_objects_evidence_over_time(exp_path: str) -> int:
     particular target object is active.
 
     Args:
-        exp_path (str): Path to the experiment directory containing the detailed stats
-            file.
+        exp_path: Path to the experiment directory containing the detailed stats file.
 
     Returns:
-        int: Exit code.
+        Exit code.
     """
     if not Path(exp_path).exists():
         logger.error(f"Experiment path not found: {exp_path}")

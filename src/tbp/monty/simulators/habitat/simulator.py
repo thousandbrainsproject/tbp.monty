@@ -350,7 +350,7 @@ class HabitatSim(HabitatActuator):
         primary_obj_bb,
         new_obj_bb,
         overlap_threshold=0.75,
-    ):
+    ) -> bool:
         """Check if the object being added overlaps in the x-axis with target.
 
         The object overlapping the primary target object risks obstructing the initial
@@ -366,8 +366,8 @@ class HabitatSim(HabitatActuator):
             overlap_threshold: The threshold for overlap. Defaults to 0.75.
 
         Returns:
-            bool: True if the overlap is greater than overlap_threshold; 1.0 corresponds
-                to total overlap (the primary target is potentially not visible)
+            True if the overlap is greater than overlap_threshold; 1.0 corresponds
+            to total overlap (the primary target is potentially not visible)
         """
         primary_start, primary_end = primary_obj_bb[0][0], primary_obj_bb[1][0]
         new_start, new_end = new_obj_bb[0][0], new_obj_bb[1][0]
@@ -540,7 +540,7 @@ class HabitatSim(HabitatActuator):
         obs = self.process_observations(obs)
         return obs
 
-    def process_observations(self, obs):
+    def process_observations(self, obs) -> dict:
         """Habitat returns observations grouped by agent_index.
 
         Initially, we group observations by agent_id instead and call all agents
@@ -550,7 +550,7 @@ class HabitatSim(HabitatActuator):
             obs: The observations to process
 
         Returns:
-            dict: The processed observations grouped by agent_id
+            The processed observations grouped by agent_id.
         """
         processed_obs = defaultdict(dict)
         for agent_index, agent_obs in obs.items():

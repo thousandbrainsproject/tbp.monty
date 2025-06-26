@@ -119,7 +119,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             each step.
 
         Returns:
-            observation (dict).
+            The observation.
         """
         amount = 1
         if hasattr(action, "rotation_degrees"):
@@ -339,7 +339,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             amount: Amount of pixels to move at once.
 
         Returns:
-            observation (dict).
+            The observation.
         """
         if action.name in self._valid_actions:
             amount = action.rotation_degrees

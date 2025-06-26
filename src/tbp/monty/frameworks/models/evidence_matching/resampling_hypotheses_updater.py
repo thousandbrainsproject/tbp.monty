@@ -87,38 +87,37 @@ class ResamplingHypothesesUpdater:
         """Initializes the ResamplingHypothesesUpdater.
 
         Args:
-            feature_weights (dict): How much should each feature be weighted when
+            feature_weights: How much should each feature be weighted when
                 calculating the evidence update for hypothesis. Weights are stored in a
                 dictionary with keys corresponding to features (same as keys in
                 tolerances).
-            graph_memory (EvidenceGraphMemory): The graph memory to read graphs from.
-            max_match_distance (float): Maximum distance of a tested and stored location
+            graph_memory: The graph memory to read graphs from.
+            max_match_distance: Maximum distance of a tested and stored location
                 to be matched.
-            tolerances (dict): How much can each observed feature deviate from the
+            tolerances: How much can each observed feature deviate from the
                 stored features to still be considered a match.
-            feature_evidence_calculator (Type[FeatureEvidenceCalculator]): Class to
-                calculate feature evidence for all nodes. Defaults to the default
-                calculator.
-            feature_evidence_increment (int): Feature evidence (between 0 and 1) is
+            feature_evidence_calculator: Class to calculate feature evidence for all
+                nodes. Defaults to the default calculator.
+            feature_evidence_increment: Feature evidence (between 0 and 1) is
                 multiplied by this value before being added to the overall evidence of
                 a hypothesis. This factor is only multiplied with the feature evidence
                 (not the pose evidence as opposed to the present_weight). Defaults to 1.
-            features_for_matching_selector (Type[FeaturesForMatchingSelector]): Class to
+            features_for_matching_selector: Class to
                 select if features should be used for matching. Defaults to the default
                 selector.
-            hypotheses_count_multiplier (float): Scales the total number of hypotheses
+            hypotheses_count_multiplier: Scales the total number of hypotheses
                 every step. Defaults to 1.0.
-            hypotheses_existing_to_new_ratio (float): Controls the proportion of the
+            hypotheses_existing_to_new_ratio: Controls the proportion of the
                 existing vs. newly sampled hypotheses during resampling. Defaults to
                 0.0.
-            initial_possible_poses ("uniform" | "informed" | list[Rotation]): Initial
+            initial_possible_poses: Initial
                 possible poses that should be tested for. Defaults to "informed".
-            max_nneighbors (int): Maximum number of nearest neighbors to consider in the
+            max_nneighbors: Maximum number of nearest neighbors to consider in the
                 radius of a hypothesis for calculating the evidence. Defaults to 3.
-            past_weight (float): How much should the evidence accumulated so far be
+            past_weight: How much should the evidence accumulated so far be
                 weighted when combined with the evidence from the most recent
                 observation. Defaults to 1.
-            present_weight (float): How much should the current evidence be weighted
+            present_weight: How much should the current evidence be weighted
                 when added to the previous evidence. If past_weight and present_weight
                 add up to 1, the evidence is bounded and can't grow infinitely. Defaults
                 to 1.
@@ -127,7 +126,7 @@ class ResamplingHypothesesUpdater:
                 efficient policy and better parameters that may be possible to use
                 though and could help when moving from one object to another and to
                 generally make setting thresholds etc. more intuitive.
-            umbilical_num_poses (int): Number of sampled rotations in the direction of
+            umbilical_num_poses: Number of sampled rotations in the direction of
                 the plane perpendicular to the point normal. These are sampled at
                 umbilical points (i.e., points where PC directions are undefined).
         """
@@ -183,17 +182,16 @@ class ResamplingHypothesesUpdater:
         channel in the graph.
 
         Args:
-            hypotheses (Hypotheses): Hypotheses for all input channels in the graph_id
-            features (dict): Input features
-            displacements (dict or None): Given displacements
-            graph_id (str): Identifier of the graph being updated
-            mapper (ChannelMapper): Mapper for the graph_id to extract data from
+            hypotheses: Hypotheses for all input channels in the graph_id
+            features: Input features
+            displacements: Given displacements
+            graph_id: Identifier of the graph being updated
+            mapper: Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
-            evidence_update_threshold (float): Evidence update threshold.
+            evidence_update_threshold: Evidence update threshold.
 
         Returns:
-            list[ChannelHypotheses]: The list of hypotheses updates to be applied to
-                each input channel.
+            The list of hypotheses updates to be applied to each input channel.
         """
         input_channels_to_use = all_usable_input_channels(
             features, self.graph_memory.get_input_channels_in_graph(graph_id)
@@ -260,10 +258,10 @@ class ResamplingHypothesesUpdater:
         """Calculate the number of hypotheses per node.
 
         Args:
-            channel_features (dict): Features for the input channel.
+            channel_features: Features for the input channel.
 
         Returns:
-            int: The number of hypotheses per node.
+            The number of hypotheses per node.
         """
         if self.initial_possible_poses is None:
             return (
@@ -284,17 +282,16 @@ class ResamplingHypothesesUpdater:
         """Calculates the number of existing and informed hypotheses needed.
 
         Args:
-            input_channel (str): The channel for which to calculate hypothesis count.
-            channel_features (dict): Input channel features containing pose information.
-            graph_id (str): Identifier of the graph being queried.
-            mapper (ChannelMapper): Mapper for the graph_id to extract data from
+            input_channel: The channel for which to calculate hypothesis count.
+            channel_features: Input channel features containing pose information.
+            graph_id: Identifier of the graph being queried.
+            mapper: Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
 
         Returns:
-            Tuple[int, int]: A tuple containing the number of existing and new
-                hypotheses needed. Existing hypotheses are maintained from existing ones
-                while new hypotheses will be initialized, informed by pose sensory
-                information.
+            A tuple containing the number of existing and new hypotheses needed.
+            Existing hypotheses are maintained from existing ones while new hypotheses
+            will be initialized, informed by pose sensory information.
 
         Notes:
             This function takes into account the following ratios:
@@ -354,14 +351,14 @@ class ResamplingHypothesesUpdater:
         """Samples the specified number of existing hypotheses to retain.
 
         Args:
-            existing_count (int): Number of existing hypotheses to sample.
-            hypotheses (Hypotheses): Hypotheses for all input channels in the graph_id.
-            input_channel (str): The channel for which to sample existing hypotheses.
-            mapper (ChannelMapper): Mapper for the graph_id to extract data from
+            existing_count: Number of existing hypotheses to sample.
+            hypotheses: Hypotheses for all input channels in the graph_id.
+            input_channel: The channel for which to sample existing hypotheses.
+            mapper: Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel.
 
         Returns:
-            ChannelHypotheses: The sampled existing hypotheses.
+            The sampled existing hypotheses.
         """
         # Return empty arrays for no hypotheses to sample
         if existing_count == 0:
@@ -410,13 +407,13 @@ class ResamplingHypothesesUpdater:
         at every step.
 
         Args:
-            channel_features (dict): Input channel features.
-            informed_count (int): Number of fully informed hypotheses to sample.
-            graph_id (str): Identifier of the graph being queried.
-            input_channel (str): The channel for which to sample informed hypotheses.
+            channel_features: Input channel features.
+            informed_count: Number of fully informed hypotheses to sample.
+            graph_id: Identifier of the graph being queried.
+            input_channel: The channel for which to sample informed hypotheses.
 
         Returns:
-            ChannelHypotheses: The sampled informed hypotheses.
+            The sampled informed hypotheses.
 
         """
         # Return empty arrays for no hypotheses to sample

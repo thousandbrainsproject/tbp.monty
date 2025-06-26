@@ -731,9 +731,9 @@ class EvidenceGraphLM(GraphLM):
         channel in the graph.
 
         Args:
-            features (dict): input features
-            displacements (dict or None): given displacements
-            graph_id (str): identifier of the graph being updated
+            features: input features
+            displacements: given displacements
+            graph_id: identifier of the graph being updated
         """
         start_time = time.time()
 
@@ -797,8 +797,8 @@ class EvidenceGraphLM(GraphLM):
                 replaces the existing hypothesis space
 
         Args:
-            graph_id (str): The ID of the current graph to update.
-            new_hypotheses (ChannelHypotheses): The new hypotheses to set. These are the
+            graph_id: The ID of the current graph to update.
+            new_hypotheses: The new hypotheses to set. These are the
                 sets of location, pose, and evidence after applying movements to the
                 possible locations and updating their evidence scores. These could also
                 refer to newly initialized hypotheses if a hypothesis space did not

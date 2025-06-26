@@ -135,8 +135,8 @@ def get_angles_for_all_hypotheses(hyp_f, query_f):
     return shape = (num_hyp, num_nn)
 
     Args:
-        hyp_f (num_hyp, num_nn, 3): ?
-        query_f (num_hyp, 3): ?
+        hyp_f: ?
+        query_f: ?
 
     Returns:
         ?
@@ -324,7 +324,7 @@ def pose_is_new(all_poses, new_pose, similarity_th):
     return True
 
 
-def rotate_pose_dependent_features(features, ref_frame_rots):
+def rotate_pose_dependent_features(features, ref_frame_rots) -> dict:
     """Rotate pose_vectors given a list of rotation matrices.
 
     Args:
@@ -336,9 +336,9 @@ def rotate_pose_dependent_features(features, ref_frame_rots):
             EvidenceGraphLM).
 
     Returns:
-        dict: Original features but with the pose_vectors rotated. If multiple
-            rotations were given, pose_vectors entry will now contain multiple
-            entries of shape (N, 3, 3).
+        Original features but with the pose_vectors rotated. If multiple rotations
+        were given, pose_vectors entry will now contain multiple entries of shape
+        (N, 3, 3).
     """
     pose_transformed_features = copy.deepcopy(features)
     old_pv = pose_transformed_features["pose_vectors"]
@@ -358,7 +358,7 @@ def rotate_pose_dependent_features(features, ref_frame_rots):
     return pose_transformed_features
 
 
-def rotate_multiple_pose_dependent_features(features, ref_frame_rot):
+def rotate_multiple_pose_dependent_features(features, ref_frame_rot) -> dict:
     """Rotate point normal and curv dirs given a rotation matrix.
 
     Args:
@@ -367,7 +367,7 @@ def rotate_multiple_pose_dependent_features(features, ref_frame_rot):
         ref_frame_rot: scipy rotation to rotate pose vectors with.
 
     Returns:
-        dict: Features with rotated pose vectors
+        Features with rotated pose vectors
     """
     pose_vecs = features["pose_vectors"]
     num_pose_vecs = pose_vecs.shape[0]

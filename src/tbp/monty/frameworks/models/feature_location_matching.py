@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
 
@@ -712,21 +713,26 @@ class FeatureGraphMemory(GraphMemory):
         node_directions = np.array(node_directions).reshape((3, 3))
         return node_directions
 
-    def get_nodes_with_matching_features(self, graph_id, features, list_of_lists=False):
+    def get_nodes_with_matching_features(
+        self,
+        graph_id,
+        features,
+        list_of_lists=False,
+    ) -> tuple[list, list]:
         """Get only nodes with matching features.
 
         Get a reduced list of nodes that includes only nodes with features
         that match the features dict passed here
 
         Args:
-            graph_id (str): The graph descriptor e.g. 'mug'
-            features (dict): The observed features to be matched
-            list_of_lists (bool, optional): should each location in the list be embedded
-            in its own list (useful for some downstream operations)
+            graph_id: The graph descriptor e.g. 'mug'
+            features: The observed features to be matched
+            list_of_lists: should each location in the list be embedded in its own list
+                (useful for some downstream operations)
             Defaults to False.
 
         Returns:
-            tuple(list, list): The reduced lists of ids / locs.
+            The reduced lists of ids / locs.
         """
         first_input_channel = list(features.keys())[0]
         all_node_ids = self.get_graph_node_ids(graph_id, first_input_channel)
@@ -753,7 +759,7 @@ class FeatureGraphMemory(GraphMemory):
 
     # ------------------- Main Algorithm -----------------------
 
-    def _match_all_node_features(self, features, input_channel, graph_id):
+    def _match_all_node_features(self, features, input_channel, graph_id) -> np.ndarray:
         """Match observed features to all nodes in the graph.
 
         Match a list of the currently observed object features to an array of
@@ -767,12 +773,12 @@ class FeatureGraphMemory(GraphMemory):
         a list of which vars are circular and then matches them differently
 
         Args:
-            features (dict): The observed features to be matched
+            features: The observed features to be matched
             input_channel: ?
-            graph_id (str): The graph descriptor e.g. 'mug'
+            graph_id: The graph descriptor e.g. 'mug'
 
         Returns:
-            np.ndarray: Array, where True~graph nodes matching ALL features,
+            Array, where True~graph nodes matching ALL features,
             False~graph nodes with any non-matching features
         """
         shape_to_use = self.feature_array[graph_id][input_channel].shape[1]

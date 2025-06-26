@@ -52,16 +52,16 @@ class HypothesesDisplacer(Protocol):
         hypotheses locations are updated to the new locations (i.e., after displacement)
 
         Args:
-            channel_displacement (np.ndarray): Channel-specific sensor displacement.
-            channel_features (dict): Channel-specific input features.
-            evidence_update_threshold (float): Evidence update threshold.
-            graph_id (str): The ID of the current graph
-            possible_hypotheses (ChannelHypotheses): Channel-specific possible
+            channel_displacement: Channel-specific sensor displacement.
+            channel_features: Channel-specific input features.
+            evidence_update_threshold: Evidence update threshold.
+            graph_id: The ID of the current graph
+            possible_hypotheses: Channel-specific possible
                 hypotheses.
-            total_hypotheses_count (int): Total number of hypotheses in the graph.
+            total_hypotheses_count: Total number of hypotheses in the graph.
 
         Returns:
-            ChannelHypotheses: Displaced hypotheses with computed evidence.
+            Displaced hypotheses with computed evidence.
         """
         ...
 
@@ -85,30 +85,29 @@ class DefaultHypothesesDisplacer:
         """Initializes the DefaultHypothesesDisplacer.
 
         Args:
-            feature_weights (dict): How much should each feature be weighted when
+            feature_weights: How much should each feature be weighted when
                 calculating the evidence update for hypothesis. Weights are stored in a
                 dictionary with keys corresponding to features (same as keys in
                 tolerances).
-            graph_memory (EvidenceGraphMemory): The graph memory to read graphs from.
-            max_match_distance (float): Maximum distance of a tested and stored location
+            graph_memory: The graph memory to read graphs from.
+            max_match_distance: Maximum distance of a tested and stored location
                 to be matched.
-            tolerances (dict): How much can each observed feature deviate from the
+            tolerances: How much can each observed feature deviate from the
                 stored features to still be considered a match.
-            use_features_for_matching (dict): Dictionary mapping input channels to
+            use_features_for_matching: Dictionary mapping input channels to
                 booleans indicating whether to use features for matching.
-            feature_evidence_calculator (Type[FeatureEvidenceCalculator]): Class to
-                calculate feature evidence for all nodes. Defaults to the default
-                calculator.
-            feature_evidence_increment (int): Feature evidence (between 0 and 1) is
+            feature_evidence_calculator: Class to calculate feature evidence for all
+                nodes. Defaults to the default calculator.
+            feature_evidence_increment: Feature evidence (between 0 and 1) is
                 multiplied by this value before being added to the overall evidence of
                 a hypothesis. This factor is only multiplied with the feature evidence
                 (not the pose evidence as opposed to the present_weight). Defaults to 1.
-            max_nneighbors (int): Maximum number of nearest neighbors to consider in the
+            max_nneighbors: Maximum number of nearest neighbors to consider in the
                 radius of a hypothesis for calculating the evidence. Defaults to 3.
-            past_weight (float): How much should the evidence accumulated so far be
+            past_weight: How much should the evidence accumulated so far be
                 weighted when combined with the evidence from the most recent
                 observation. Defaults to 1.
-            present_weight (float): How much should the current evidence be weighted
+            present_weight: How much should the current evidence be weighted
                 when added to the previous evidence. If past_weight and present_weight
                 add up to 1, the evidence is bounded and can't grow infinitely. Defaults
                 to 1.

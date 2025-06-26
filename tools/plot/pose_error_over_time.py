@@ -37,11 +37,10 @@ def plot_pose_error_over_time(exp_path: str) -> int:
     likely hypothesis (MLH).
 
     Args:
-        exp_path (str): Path to the experiment directory containing detailed stats
-            data.
+        exp_path: Path to the experiment directory containing detailed stats data.
 
     Returns:
-        int: Exit code.
+        Exit code.
     """
     if not Path(exp_path).exists():
         logger.error(f"Experiment path not found: {exp_path}")

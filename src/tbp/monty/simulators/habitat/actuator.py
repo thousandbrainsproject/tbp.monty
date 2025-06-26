@@ -72,9 +72,8 @@ class HabitatActuator(HabitatActuatorRequirements):
             action: Monty action to execute by the agent specified in the action.
 
         Returns:
-            (Agent, ActuationSpec, str): The Habitat agent to execute the action,
-                the Habitat action parameters to set prior to executing the action, and
-                the Habitat action name to execute.
+            The Habitat agent to execute the action, the Habitat action parameters to
+            set prior to executing the action, and the Habitat action name to execute.
 
         Raises:
             InvalidActionName: If the action name is invalid.

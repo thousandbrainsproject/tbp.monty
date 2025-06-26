@@ -54,10 +54,10 @@ class TheoreticalLimitLMLoggingMixin:
         target object) , and the pose error of the MLH hypothesis on the target object.
 
         Args:
-            stats (Dict[str, Any]): The existing statistics dictionary to augment.
+            stats: The existing statistics dictionary to augment.
 
         Returns:
-            Dict[str, Any]: Updated statistics dictionary.
+            Updated statistics dictionary.
         """
         stats["max_evidence"] = {k: max(v) for k, v in self.evidence.items()}
         stats["target_object_theoretical_limit"] = (
