@@ -400,6 +400,25 @@ class PositioningProcedure(BasePolicy):
     indicates that the procedure has terminated or truncated.
     """
 
+    @staticmethod
+    def depth_at_center(agent_id: str, observation: Any, sensor_id: str) -> float:
+        """Determine the depth of the central pixel for the sensor.
+
+        Args:
+            agent_id (str): The ID of the agent to use.
+            observation (Observations): The observation to use.
+            sensor_id (str): The ID of the sensor to use.
+
+        Returns:
+            (float): The depth of the central pixel for the sensor.
+        """
+        # TODO: A lot of assumptions are made here about the shape of the observation.
+        #       This should be made robust.
+        observation_shape = observation[agent_id][sensor_id]["depth"].shape
+        return observation[agent_id][sensor_id]["depth"][
+            observation_shape[0] // 2, observation_shape[1] // 2
+        ]
+
     @abc.abstractmethod
     def positioning_call(
         self,
@@ -837,40 +856,6 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
 
         return super().pre_episode()
 
-    def get_depth_at_center(self, raw_observation, view_sensor_id, initial_pose=True):
-        """Determine the depth of the central pixel.
-
-        Method primarily used by surface-agent, but also by distant agent after
-        performing a hypothesis-testing jump; determines the depth of the central pixel,
-        to inform whether the object is visible at all
-
-        initial_pose : Whether we are checking depth-at center as part of the first
-            start of an experiment; if using get_depth_at_center to check for
-            the observation after e.g. a hypothesis-testing jump, then we don't
-            want to throw an error if the object is nowhere to be seen; instead, we
-            simply move back
-
-        Returns:
-            Depth at the center of the view sensor.
-        """
-        observation_shape = raw_observation[self.agent_id][view_sensor_id][
-            "depth"
-        ].shape
-        depth_at_center = raw_observation[self.agent_id][view_sensor_id]["depth"][
-            observation_shape[0] // 2, observation_shape[1] // 2
-        ]
-        if initial_pose:
-            assert depth_at_center > 0, (
-                "Object must be initialized such that "
-                "agent can visualize it by moving forward"
-            )
-            # TODO investigate - I think this may have always been passing in the
-            # original surface-agent policy implementation because the surface
-            # sensor clips at 1.0, so even if the object isn't strictly visible (or
-            # we're inside the object))  there's a risk we have initialized without the
-            # object in view
-        return depth_at_center
-
     ###
     # Methods that define behavior of __call__
     ###
@@ -1147,7 +1132,11 @@ class SurfacePolicy(InformedPolicy):
             (MoveForward | OrientHorizontal | OrientVertical): Action to take.
         """
         # If the viewfinder sees the object within range, then move to it
-        depth_at_center = self.get_depth_at_center(raw_observation, view_sensor_id)
+        depth_at_center = PositioningProcedure.depth_at_center(
+            agent_id=self.agent_id,
+            observation=raw_observation,
+            sensor_id=view_sensor_id,
+        )
         if depth_at_center < 1.0:
             distance = (
                 depth_at_center
