@@ -16,7 +16,7 @@ See Also:
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import habitat_sim
 import magnum as mn
@@ -52,6 +52,11 @@ __all__ = [
     "PRIMITIVE_OBJECT_TYPES",
 ]
 
+from tbp.monty.frameworks.environments.embodied_environment import (
+    QuaternionWXYZ,
+    VectorXYZ,
+)
+
 DEFAULT_SCENE = "NONE"
 DEFAULT_PHYSICS_CONFIG = str(files(resources) / "default.physics_config.json")
 
@@ -64,10 +69,6 @@ PRIMITIVE_OBJECT_TYPES = {
     "icosphereSolid": 105,
     "uvSphereSolid": 106,
 }
-
-
-Vector3 = Tuple[float, float, float]
-Quaternion = Tuple[float, float, float, float]
 
 
 class HabitatSim(HabitatActuator):
@@ -211,11 +212,11 @@ class HabitatSim(HabitatActuator):
     def add_object(
         self,
         name: str,
-        position: Vector3 = (0.0, 0.0, 0.0),
-        rotation: Quaternion = (1.0, 0.0, 0.0, 0.0),
-        scale: Vector3 = (1.0, 1.0, 1.0),
+        position: VectorXYZ = (0.0, 0.0, 0.0),
+        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
+        scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: Optional[str] = None,
-        enable_physics: Optional[bool] = False,
+        enable_physics=False,
         object_to_avoid=False,
         primary_target_bb=None,
     ):
