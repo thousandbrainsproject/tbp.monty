@@ -205,6 +205,25 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         np.testing.assert_array_equal(self.tracker.data[self.channel], expected)
         np.testing.assert_array_equal(self.tracker.age[self.channel], [3, 3])
 
+    def test_update_more_than_window_size_slides_correctly(self) -> None:
+        """Test that only the most recent values within window_size affect slope."""
+        self.tracker.add_hyp(1, self.channel)
+
+        # Perform 5 updates; window_size is 3 so only the last 3 should be considered
+        self.tracker.update(np.array([0.0]), self.channel)
+        self.tracker.update(np.array([3.0]), self.channel)
+        self.tracker.update(np.array([5.0]), self.channel)
+        self.tracker.update(np.array([4.0]), self.channel)
+        self.tracker.update(np.array([3.0]), self.channel)
+
+        # Final buffer should be [5.0, 4.0, 3.0]
+        expected_buffer = np.array([[5.0, 4.0, 3.0]])
+        np.testing.assert_array_equal(self.tracker.data[self.channel], expected_buffer)
+
+        # Slopes: (3.0 - 4.0) + (4.0 - 5.0) = (-1) + (-1) = -2 / 2 = -1.0
+        slopes = self.tracker._calculate_slopes(self.channel)
+        self.assertAlmostEqual(slopes[0], -1.0)
+
     def test_update_raises_on_wrong_length(self) -> None:
         """Test that update raises ValueError if the length doesn't match hypotheses."""
         self.tracker.add_hyp(2, self.channel)
