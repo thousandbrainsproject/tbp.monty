@@ -1313,9 +1313,13 @@ class SurfacePolicy(InformedPolicy):
 
         # TODO: Remove this once TouchObject positioning procedure is implemented
         """
+        if self.attempting_to_find_object:
+            # When the TouchObject positioning procedure is separated, there
+            # will be no post_action calls when attempting to find the object.
+            return
+
         super().post_action(action, state)
-        if not self.attempting_to_find_object:
-            self.last_surface_policy_action = action
+        self.last_surface_policy_action = action
 
     def _orient_horizontal(self, state: MotorSystemState) -> OrientHorizontal:
         """Orient the agent horizontally.
