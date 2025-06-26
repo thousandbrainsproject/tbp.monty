@@ -13,6 +13,7 @@ from typing import Dict, List, Optional, Tuple
 from typing import OrderedDict as OrderedDictType
 
 import numpy as np
+import numpy.typing as npt
 
 from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
     ChannelHypotheses,
@@ -277,8 +278,8 @@ class EvidenceSlopeTracker:
         """
         self.window_size = window_size
         self.min_age = min_age
-        self.data: Dict[str, np.ndarray] = {}
-        self.age: Dict[str, np.ndarray] = {}
+        self.data: dict[str, npt.NDArray[np.float64]] = {}
+        self.age: dict[str, npt.NDArray[np.int_]] = {}
 
     def total_size(self, channel: str) -> int:
         """Returns the number of hypotheses in a given channel.
@@ -291,7 +292,7 @@ class EvidenceSlopeTracker:
         """
         return self.data.get(channel, np.empty((0, self.window_size))).shape[0]
 
-    def valid_indices_mask(self, channel: str) -> np.ndarray:
+    def valid_indices_mask(self, channel: str) -> npt.NDArray[np.bool_]:
         """Returns a boolean mask for hypotheses valid for removal in a channel.
 
         Args:
@@ -319,7 +320,7 @@ class EvidenceSlopeTracker:
             self.data[channel] = np.vstack((self.data[channel], new_data))
             self.age[channel] = np.concatenate((self.age[channel], new_age))
 
-    def update(self, values: List[float] | np.ndarray, channel: str) -> None:
+    def update(self, values: npt.NDArray[np.float64], channel: str) -> None:
         """Updates all hypotheses in a channel with new evidence values.
 
         Args:
@@ -348,7 +349,7 @@ class EvidenceSlopeTracker:
         # Increment age
         self.age[channel] += 1
 
-    def _calculate_slopes(self, channel: str) -> np.ndarray:
+    def _calculate_slopes(self, channel: str) -> npt.NDArray[np.float64]:
         """Computes the average slope of hypotheses in a channel.
 
         Args:
@@ -360,9 +361,10 @@ class EvidenceSlopeTracker:
         diffs = np.diff(self.data[channel], axis=1)
         valid_steps = np.count_nonzero(~np.isnan(diffs), axis=1)
         valid_steps = np.where(valid_steps == 0, np.nan, valid_steps)
+        a = np.nansum(diffs, axis=1) / valid_steps
         return np.nansum(diffs, axis=1) / valid_steps
 
-    def remove_hyp(self, hyp_ids: List[int], channel: str) -> None:
+    def remove_hyp(self, hyp_ids: npt.NDArray[np.int_], channel: str) -> None:
         """Removes specific hypotheses by index in the specified channel.
 
         Args:
@@ -376,7 +378,7 @@ class EvidenceSlopeTracker:
 
     def calculate_keep_and_remove_ids(
         self, num_keep: int, channel: str
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[npt.NDArray[np.int_], npt.NDArray[np.int_]]:
         """Determines which hypotheses to keep and which to remove in a channel.
 
         Hypotheses with the lowest average slope are selected for removal.
@@ -424,7 +426,7 @@ def evidence_update_threshold(
     x_percent_threshold: float | str,
     max_global_evidence: float,
     evidence_all_channels: np.ndarray,
-) -> float:
+) -> float | None:
     """Determine how much evidence a hypothesis should have to be updated.
 
     Args:
@@ -446,7 +448,7 @@ def evidence_update_threshold(
     """
     # Return 0 for the threshold if there are no evidence scores
     if evidence_all_channels.size == 0:
-        return 0
+        return 0.0
 
     if type(evidence_threshold_config) in [int, float]:
         return evidence_threshold_config

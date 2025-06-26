@@ -197,9 +197,9 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
     def test_update_correctly_shifts_and_sets_values(self) -> None:
         """Test that update correctly shifts previous values and adds new ones."""
         self.tracker.add_hyp(2, self.channel)
-        self.tracker.update([1.0, 2.0], self.channel)
-        self.tracker.update([2.0, 3.0], self.channel)
-        self.tracker.update([3.0, 4.0], self.channel)
+        self.tracker.update(np.array([1.0, 2.0]), self.channel)
+        self.tracker.update(np.array([2.0, 3.0]), self.channel)
+        self.tracker.update(np.array([3.0, 4.0]), self.channel)
 
         expected = np.array([[1.0, 2.0, 3.0], [2.0, 3.0, 4.0]])
         np.testing.assert_array_equal(self.tracker.data[self.channel], expected)
@@ -209,13 +209,13 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         """Test that update raises ValueError if the length doesn't match hypotheses."""
         self.tracker.add_hyp(2, self.channel)
         with self.assertRaises(ValueError):
-            self.tracker.update([1.0], self.channel)
+            self.tracker.update(np.array([1.0]), self.channel)
 
     def test_remove_hypotheses_removes_correct_indices(self) -> None:
         """Test removing a specific hypothesis by index."""
         self.tracker.add_hyp(3, self.channel)
-        self.tracker.update([1.0, 2.0, 3.0], self.channel)
-        self.tracker.remove_hyp([1], self.channel)
+        self.tracker.update(np.array([1.0, 2.0, 3.0]), self.channel)
+        self.tracker.remove_hyp(np.array([1]), self.channel)
         self.assertEqual(self.tracker.total_size(self.channel), 2)
         np.testing.assert_array_equal(
             self.tracker.data[self.channel][:, -1], [1.0, 3.0]
@@ -224,9 +224,9 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
     def test_calculate_slopes_correctly(self) -> None:
         """Test slope calculation over the sliding window."""
         self.tracker.add_hyp(1, self.channel)
-        self.tracker.update([1.0], self.channel)
-        self.tracker.update([2.0], self.channel)
-        self.tracker.update([3.0], self.channel)
+        self.tracker.update(np.array([1.0]), self.channel)
+        self.tracker.update(np.array([2.0]), self.channel)
+        self.tracker.update(np.array([3.0]), self.channel)
 
         slopes = self.tracker._calculate_slopes(self.channel)
         expected_slope = ((2.0 - 1.0) + (3.0 - 2.0)) / 2  # = 1.0
@@ -242,9 +242,9 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
     def test_calculate_keep_and_remove_ids_returns_expected(self) -> None:
         """Test that hypotheses with the lowest slopes are selected for removal."""
         self.tracker.add_hyp(3, self.channel)
-        self.tracker.update([1.0, 3.0, 1.0], self.channel)
-        self.tracker.update([2.0, 2.0, 1.0], self.channel)
-        self.tracker.update([3.0, 1.0, 1.0], self.channel)
+        self.tracker.update(np.array([1.0, 3.0, 1.0]), self.channel)
+        self.tracker.update(np.array([2.0, 2.0, 1.0]), self.channel)
+        self.tracker.update(np.array([3.0, 1.0, 1.0]), self.channel)
 
         # Slopes = [1.0, -1.0, 0.0]
         to_keep, to_remove = self.tracker.calculate_keep_and_remove_ids(
