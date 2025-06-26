@@ -29,6 +29,8 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.models.motor_policies import (
     GetGoodView,
     InformedPolicy,
+    ObjectNotVisible,
+    PositioningProcedure,
     SurfacePolicy,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -444,17 +446,11 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         # NOTE: terminal conditions are now handled in experiment.run_episode loop
         else:
-            self._action = self.motor_system()
             attempting_to_find_object = False
-
-            # If entirely off object, use vision (i.e. view-finder)
-            # TODO refactor so that this check is done in the motor-policy, and we
-            # update the constraint separately/appropriately; i.e. the below
-            # code should be as general as possible
-            if (
-                isinstance(self.motor_system._policy, SurfacePolicy)
-                and self._action is None
-            ):
+            try:
+                self._action = self.motor_system()
+            except ObjectNotVisible:
+                # Note: Only SurfacePolicy raises ObjectNotVisible.
                 attempting_to_find_object = True
                 self._action = self.motor_system._policy.touch_object(
                     self._observation,
@@ -500,7 +496,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
             self.motor_system._state = motor_system_state
 
-            self._counter += 1  # TODO clean up incrementing of counter
+            if not attempting_to_find_object:
+                self._counter += 1
 
             return self._observation
 
@@ -687,10 +684,10 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         # Check depth-at-center to see if the object is in front of us
         # As for methods such as touch_object, we use the view-finder
-        depth_at_center = self.motor_system._policy.get_depth_at_center(
-            self._observation,
-            view_sensor_id="view_finder",
-            initial_pose=False,
+        depth_at_center = PositioningProcedure.depth_at_center(
+            agent_id=self.motor_system._policy.agent_id,
+            observation=self._observation,
+            sensor_id="view_finder",
         )
 
         # If depth_at_center < 1.0, there is a visible element within 1 meter of the
