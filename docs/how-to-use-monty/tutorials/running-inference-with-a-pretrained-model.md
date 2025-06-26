@@ -13,9 +13,11 @@ To follow along, open the `benchmarks/configs/my_experiments.py` file and paste 
 
 ```python
 import os
+from dataclasses import asdict
 
 import numpy as np
 
+from benchmarks.configs.names import MyExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     EvalLoggingConfig,
     MontyArgs,

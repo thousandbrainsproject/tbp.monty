@@ -20,6 +20,8 @@ from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import is_in_ranges
 from tbp.monty.frameworks.utils.sensor_processing import point_pair_features
 
+logger = logging.getLogger(__name__)
+
 
 class DisplacementGraphLM(GraphLM):
     """Learning module that uses displacement stored in graphs to recognize objects."""
@@ -134,7 +136,7 @@ class DisplacementGraphLM(GraphLM):
                     "detected_scale": scale,
                 }
                 self.buffer.add_overall_stats(lm_episode_stats)
-                logging.debug(f"(location, rotation, scale): {pose_and_scale}")
+                logger.debug(f"(location, rotation, scale): {pose_and_scale}")
 
         return pose_and_scale
 
@@ -209,7 +211,7 @@ class DisplacementGraphLM(GraphLM):
         elif self.match_attribute == "PPF":
             query = self.buffer.get_current_ppf(input_channel="first")
         else:
-            logging.error("match_attribute not defined")
+            logger.error("match_attribute not defined")
 
         # This is just whether we are on the object or not here.
         target = self._select_features_to_use(observation)
@@ -219,7 +221,7 @@ class DisplacementGraphLM(GraphLM):
                 input_channel="first"
             )
 
-        logging.debug(f"query: {query}")
+        logger.debug(f"query: {query}")
 
         self._update_possible_matches(query=query, target=target)
 
@@ -351,13 +353,13 @@ class DisplacementGraphLM(GraphLM):
         self.possible_paths[graph_id] = current_possible_paths
         self.next_possible_paths[graph_id] = new_possible_paths
         self.scale_factors[graph_id] = path_scale_factors
-        # logging.info(
+        # logger.info(
         #     "possible paths for "
         #     + graph_id
         #     + ": "
         #     + str(self.possible_paths[graph_id])
         # )
-        # logging.info(
+        # logger.info(
         #     "next possible paths for "
         #     + graph_id
         #     + ": "
@@ -489,13 +491,12 @@ class DisplacementGraphMemory(GraphMemory):
             scale_factors,
         )
 
-    # ------------------ Getters & Setters ---------------------
     # ------------------ Logging & Saving ----------------------
     def load_state_dict(self, state_dict):
         """Load graphs into memory from a state_dict and add point pair features."""
-        logging.info("loading models")
+        logger.info("loading models")
         for obj_name, model in state_dict.items():
-            logging.debug(f"loading {obj_name}: {model}")
+            logger.debug(f"loading {obj_name}: {model}")
             for input_channel in model:
                 if (self.match_attribute == "PPF") and (
                     model[input_channel].has_ppf is False
@@ -518,7 +519,7 @@ class DisplacementGraphMemory(GraphMemory):
             graph_id: Name of the object.
             input_channel: ?
         """
-        logging.info(f"Adding a new graph to memory.")
+        logger.info(f"Adding a new graph to memory.")
 
         model = GraphObjectModel(
             object_id=graph_id,
@@ -539,7 +540,4 @@ class DisplacementGraphMemory(GraphMemory):
         if graph_id not in self.models_in_memory:
             self.models_in_memory[graph_id] = {}
         self.models_in_memory[graph_id][input_channel] = model
-        logging.info(f"Added new graph with id {graph_id} to memory.")
-
-    # ------------------------ Helper --------------------------
-    # ----------------------- Logging --------------------------
+        logger.info(f"Added new graph with id {graph_id} to memory.")

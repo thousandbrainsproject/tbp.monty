@@ -17,6 +17,8 @@ from tbp.monty.frameworks.models.object_model import (
     GridTooSmallError,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class EvidenceGraphMemory(GraphMemory):
     """Custom GraphMemory that stores GridObjectModel instead of GraphObjectModel."""
@@ -60,8 +62,6 @@ class EvidenceGraphMemory(GraphMemory):
         node_directions = node_directions.reshape((num_nodes, 3, 3))
         return node_directions
 
-    # ------------------ Logging & Saving ----------------------
-
     # ======================= Private ==========================
 
     # ------------------- Main Algorithm -----------------------
@@ -87,12 +87,10 @@ class EvidenceGraphMemory(GraphMemory):
                         graph_id, loaded_graph
                     )
 
-                logging.info(f"Loaded {model} for {input_channel}")
+                logger.info(f"Loaded {model} for {input_channel}")
                 self.models_in_memory[graph_id][input_channel] = channel_model
             except GridTooSmallError:
-                logging.info(
-                    "Grid too small for given locations. Not adding to memory."
-                )
+                logger.info("Grid too small for given locations. Not adding to memory.")
 
     def _initialize_model_with_graph(self, graph_id, graph):
         model = GridObjectModel(
@@ -118,7 +116,7 @@ class EvidenceGraphMemory(GraphMemory):
             graph_id: name of new graph.
             input_channel: ?
         """
-        logging.info(f"Adding a new graph to memory.")
+        logger.info(f"Adding a new graph to memory.")
 
         model = GridObjectModel(
             object_id=graph_id,
@@ -133,10 +131,10 @@ class EvidenceGraphMemory(GraphMemory):
                 self.models_in_memory[graph_id] = {}
             self.models_in_memory[graph_id][input_channel] = model
 
-            logging.info(f"Added new graph with id {graph_id} to memory.")
-            logging.info(model)
+            logger.info(f"Added new graph with id {graph_id} to memory.")
+            logger.info(model)
         except GridTooSmallError:
-            logging.info(
+            logger.info(
                 "Grid too small for given locations. Not building a model "
                 f"for {graph_id}"
             )
@@ -164,7 +162,7 @@ class EvidenceGraphMemory(GraphMemory):
             object_rotation: rotation of the sensed object relative to the model
             object_scale: scale of the object relative to the model of it
         """
-        logging.info(f"Updating existing graph for {graph_id}")
+        logger.info(f"Updating existing graph for {graph_id}")
 
         try:
             self.models_in_memory[graph_id][input_channel].update_model(
@@ -174,9 +172,9 @@ class EvidenceGraphMemory(GraphMemory):
                 object_location_rel_body=object_location_rel_body,
                 object_rotation=object_rotation,
             )
-            logging.info(
+            logger.info(
                 f"Extended graph {graph_id} with new points. New model:\n"
                 f"{self.models_in_memory[graph_id]}"
             )
         except GridTooSmallError:
-            logging.info("Grid too small for given locations. Not updating model.")
+            logger.info("Grid too small for given locations. Not updating model.")

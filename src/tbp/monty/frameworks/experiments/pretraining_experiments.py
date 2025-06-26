@@ -18,6 +18,8 @@ from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
 
 from .monty_experiment import MontyExperiment
 
+logger = logging.getLogger(__name__)
+
 
 class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
     """Just run exploratory steps and tell the model the object and pose.
@@ -134,5 +136,5 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
     def evaluate(self):
         """Use experiment just for supervised pretraining -> no eval."""
-        logging.warning("No evalualtion mode for supervised experiment.")
+        logger.warning("No evalualtion mode for supervised experiment.")
         pass

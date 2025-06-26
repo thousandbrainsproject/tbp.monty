@@ -41,6 +41,8 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_scaled_evidences,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class EvidenceGraphLM(GraphLM):
     """Learning module that accumulates evidence for objects and poses.
@@ -314,7 +316,7 @@ class EvidenceGraphLM(GraphLM):
                     # call this to prevent main thread from continuing in code
                     # before all evidences are updated.
                     thread.join()
-            logging.debug("Updating possible matches after vote")
+            logger.debug("Updating possible matches after vote")
             self.possible_matches = self._threshold_possible_matches()
             self.current_mlh = self._calculate_most_likely_hypothesis()
 
@@ -469,7 +471,7 @@ class EvidenceGraphLM(GraphLM):
         If we timed out it is None and we will not update the graph memory.
         """
         self.terminal_state = terminal_state
-        logging.debug(f"terminal state: {terminal_state}")
+        logger.debug(f"terminal state: {terminal_state}")
         if terminal_state is None:  # at beginning of episode
             graph_id = None
         elif (terminal_state == "no_match") or len(self.get_possible_matches()) == 0:
@@ -533,7 +535,7 @@ class EvidenceGraphLM(GraphLM):
                 pose_and_scale = np.concatenate(
                     [mlh["location"], r_euler, [mlh["scale"]]]
                 )
-                logging.debug(f"(location, rotation, scale): {pose_and_scale}")
+                logger.debug(f"(location, rotation, scale): {pose_and_scale}")
                 # Set LM variables to detected object & pose
                 self.detected_pose = pose_and_scale
                 self.detected_rotation_r = mlh["rotation"]
@@ -561,7 +563,7 @@ class EvidenceGraphLM(GraphLM):
                     self.buffer.add_overall_stats(symmetry_stats)
                 return pose_and_scale
             else:
-                logging.debug(f"object {object_id} detected but pose not resolved yet.")
+                logger.debug(f"object {object_id} detected but pose not resolved yet.")
                 return None
         else:
             return None
@@ -651,10 +653,10 @@ class EvidenceGraphLM(GraphLM):
             possible_object_hypotheses_ids = np.where(
                 self.evidence[object_id] > max_obj_evidence - x_percent_of_max
             )[0]
-            logging.debug(
+            logger.debug(
                 f"possible hpids: {possible_object_hypotheses_ids} for {object_id}"
             )
-            logging.debug(f"hpid evidence is > {max_obj_evidence} - {x_percent_of_max}")
+            logger.debug(f"hpid evidence is > {max_obj_evidence} - {x_percent_of_max}")
             return possible_object_hypotheses_ids
 
     def get_evidence_for_each_graph(self):
@@ -773,7 +775,7 @@ class EvidenceGraphLM(GraphLM):
 
         end_time = time.time()
         assert not np.isnan(np.max(self.evidence[graph_id])), "evidence contains NaN."
-        logging.debug(
+        logger.debug(
             f"evidence update for {graph_id} took "
             f"{np.round(end_time - start_time, 2)} seconds."
             f" New max evidence: {np.round(np.max(self.evidence[graph_id]), 3)}"
@@ -930,7 +932,7 @@ class EvidenceGraphLM(GraphLM):
         possible_locations = np.array(
             self.possible_locations[graph_id][possible_object_hypotheses_ids]
         )
-        logging.debug(f"{possible_locations.shape[0]} possible locations")
+        logger.debug(f"{possible_locations.shape[0]} possible locations")
 
         center_location = np.mean(possible_locations, axis=0)
         distances_to_center = np.linalg.norm(
@@ -938,7 +940,7 @@ class EvidenceGraphLM(GraphLM):
         )
         location_unique = np.max(distances_to_center) < self.path_similarity_threshold
         if location_unique:
-            logging.info(
+            logger.info(
                 "all possible locations are in radius "
                 f"{self.path_similarity_threshold} of {center_location}"
             )
@@ -946,7 +948,7 @@ class EvidenceGraphLM(GraphLM):
         possible_rotations = np.array(self.possible_poses[graph_id])[
             possible_object_hypotheses_ids
         ]
-        logging.debug(f"{possible_rotations.shape[0]} possible rotations")
+        logger.debug(f"{possible_rotations.shape[0]} possible rotations")
 
         # Compute the difference between each rotation matrix in the list of possible
         # rotations and the most likely rotation in radians.
@@ -981,7 +983,7 @@ class EvidenceGraphLM(GraphLM):
         """
         if self.last_possible_hypotheses is None:
             return False  # need more steps to meet symmetry condition
-        logging.debug(
+        logger.debug(
             f"\n\nchecking for symmetry for hp ids {possible_object_hypotheses_ids}"
             f" with last ids {self.last_possible_hypotheses}"
         )
@@ -991,13 +993,13 @@ class EvidenceGraphLM(GraphLM):
             hypothesis_overlap = previous_hyps.intersection(current_hyps)
             if len(hypothesis_overlap) / len(current_hyps) > 0.9:
                 # at least 90% of current possible ids were also in previous ids
-                logging.info("added symmetry evidence")
+                logger.info("added symmetry evidence")
                 self.symmetry_evidence += 1
             else:  # has to be consequtive
                 self.symmetry_evidence = 0
 
         if self._enough_symmetry_evidence_accumulated():
-            logging.info(
+            logger.info(
                 f"Symmetry detected for hypotheses {possible_object_hypotheses_ids}"
             )
             return True
@@ -1054,7 +1056,7 @@ class EvidenceGraphLM(GraphLM):
                     else:
                         shape = 1
                     default_weights = np.ones(shape) * default
-                    logging.debug(
+                    logger.debug(
                         f"adding {key} to feature_weights with value {default_weights}"
                     )
                     self.feature_weights[input_channel][key] = default_weights
@@ -1075,7 +1077,7 @@ class EvidenceGraphLM(GraphLM):
             The possible matches.
         """
         if len(self.graph_memory) == 0:
-            logging.info("no objects in memory yet.")
+            logger.info("no objects in memory yet.")
             return []
         graph_ids, graph_evidences = self.get_evidence_for_each_graph()
         # median_ge = np.median(graph_evidences)
@@ -1091,8 +1093,8 @@ class EvidenceGraphLM(GraphLM):
             )
             th = max_ge - x_percent_of_max if max_ge > 0 else 0
             pm = [graph_ids[i] for i, ge in enumerate(graph_evidences) if ge > th]
-            logging.debug(f"evidences for each object: {graph_evidences}")
-            logging.debug(
+            logger.debug(f"evidences for each object: {graph_evidences}")
+            logger.debug(
                 f"mean evidence: {np.round(mean_ge, 3)}, std: {np.round(std_ge, 3)}"
                 f" -> th={th}"
             )
@@ -1152,7 +1154,7 @@ class EvidenceGraphLM(GraphLM):
             if not mlh:  # No objects in memory
                 mlh = self.current_mlh
                 mlh["graph_id"] = "new_object0"
-            logging.info(
+            logger.info(
                 f"current most likely hypothesis: {mlh['graph_id']} "
                 f"with evidence {np.round(mlh['evidence'], 2)}"
             )

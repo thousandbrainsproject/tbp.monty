@@ -55,6 +55,8 @@ from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSyst
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
 
+logger = logging.getLogger(__name__)
+
 
 class MotorPolicy(abc.ABC):
     """The abstract scaffold for motor policies."""
@@ -628,12 +630,12 @@ class GetGoodView(PositioningProcedure):
         # For multi-object experiments, handle the possibility that object is no
         # longer visible.
         if self._multiple_objects_present and n_points_on_target_obj == 0:
-            logging.debug("Object not visible, cannot move closer")
+            logger.debug("Object not visible, cannot move closer")
             return None
 
         if n_points_on_target_obj > 0:
             closest_point_on_target_obj = np.min(depth_image[points_on_target_obj])
-            logging.debug(
+            logger.debug(
                 "closest target object point: " + str(closest_point_on_target_obj)
             )
         else:
@@ -644,31 +646,31 @@ class GetGoodView(PositioningProcedure):
         perc_on_target_obj = get_perc_on_obj_semantic(
             semantic_image, semantic_id=self._target_semantic_id
         )
-        logging.debug("% on target object: " + str(perc_on_target_obj))
+        logger.debug("% on target object: " + str(perc_on_target_obj))
 
         # Also calculate closest point on *any* object so that we don't get too close
         # and clip into objects; NB that any object will have a semantic ID > 0
         points_on_any_obj = semantic_image > 0
         closest_point_on_any_obj = np.min(depth_image[points_on_any_obj])
-        logging.debug("closest point on any object: " + str(closest_point_on_any_obj))
+        logger.debug("closest point on any object: " + str(closest_point_on_any_obj))
 
         if perc_on_target_obj < self._good_view_percentage:
             if closest_point_on_target_obj > self._desired_object_distance:
                 if self._multiple_objects_present and (
                     closest_point_on_any_obj < self._desired_object_distance / 4
                 ):
-                    logging.debug(
+                    logger.debug(
                         "Getting too close to other objects, not moving forward."
                     )
                     return None
                 else:
-                    logging.debug("Moving forward")
+                    logger.debug("Moving forward")
                     return MoveForward(agent_id=self.agent_id, distance=0.01)
             else:
-                logging.debug("Close enough.")
+                logger.debug("Close enough.")
                 return None
         else:
-            logging.debug("Enough percent visible.")
+            logger.debug("Enough percent visible.")
             return None
 
     def orient_to_object(
@@ -697,7 +699,7 @@ class GetGoodView(PositioningProcedure):
         if not self._multiple_objects_present:
             sem_obs[sem_obs > 0] = self._target_semantic_id
 
-        logging.debug("Searching for object")
+        logger.debug("Searching for object")
         relative_location = self.find_location_to_look_at(
             sem3d_obs,
             image_shape=obs_dim,
@@ -732,7 +734,7 @@ class GetGoodView(PositioningProcedure):
         if self._allow_translation:
             action = self.move_close_enough(observation)
             if action is not None:
-                logging.debug("Moving closer to object.")
+                logger.debug("Moving closer to object.")
                 return PositioningProcedureResult(actions=[action])
 
         # Setting this flag to False here ensures that this state machine state is
@@ -1154,13 +1156,13 @@ class SurfacePolicy(InformedPolicy):
                     2
                 ]
             )
-            logging.debug(f"Move to touch visible object, forward by {distance}")
+            logger.debug(f"Move to touch visible object, forward by {distance}")
 
             self.attempting_to_find_object = False
 
             return MoveForward(agent_id=self.agent_id, distance=distance)
 
-        logging.debug("Surface policy searching for object...")
+        logger.debug("Surface policy searching for object...")
 
         self.attempting_to_find_object = True
 
@@ -1185,23 +1187,23 @@ class SurfacePolicy(InformedPolicy):
         if self.touch_search_amount >= 720:
             # Perform a random upward or downward movement along the surface of a
             # sphere, with its centre fixed 10 cm in front of the agent
-            logging.debug("Trying random search for object")
+            logger.debug("Trying random search for object")
             if self.rng.uniform() < 0.5:
                 orientation = "vertical"
-                logging.debug("Orienting vertically")
+                logger.debug("Orienting vertically")
             else:
                 orientation = "horizontal"
-                logging.debug("Orienting horizontally")
+                logger.debug("Orienting horizontally")
 
             rotation_degrees = self.rng.uniform(-180, 180)
-            logging.debug(f"Random orientation amount is : {rotation_degrees}")
+            logger.debug(f"Random orientation amount is : {rotation_degrees}")
 
         elif self.touch_search_amount >= 360 and self.touch_search_amount < 720:
-            logging.debug("Trying vertical search for object")
+            logger.debug("Trying vertical search for object")
             orientation = "vertical"
 
         else:
-            logging.debug("Trying horizontal search for object")
+            logger.debug("Trying horizontal search for object")
             orientation = "horizontal"
 
         # Move tangentally to the point we're facing, resulting in the agent's
@@ -1263,16 +1265,14 @@ class SurfacePolicy(InformedPolicy):
             self.processed_observations.get_feature_by_name("object_coverage") < 0.1
             or self.attempting_to_find_object
         ):
-            logging.debug(
+            logger.debug(
                 "Object coverage of only "
                 + str(
                     self.processed_observations.get_feature_by_name("object_coverage")
                 )
             )
-            logging.debug(
-                f"Attempting to find object: {self.attempting_to_find_object}"
-            )
-            logging.debug("Initiating attempts to touch object")
+            logger.debug(f"Attempting to find object: {self.attempting_to_find_object}")
+            logger.debug("Initiating attempts to touch object")
 
             # Set attempting_to_find_object to True here so that post_action will
             # not interfere with self.last_surface_policy_action
@@ -1282,7 +1282,7 @@ class SurfacePolicy(InformedPolicy):
             # the next method of InformedEnvironmentDataLoader
 
         elif self.last_surface_policy_action is None:
-            logging.debug(
+            logger.debug(
                 "Object coverage good at initialization: "
                 + str(
                     self.processed_observations.get_feature_by_name("object_coverage")
@@ -1387,11 +1387,11 @@ class SurfacePolicy(InformedPolicy):
             action.distance = action.distance / (
                 4 / self.processed_observations.get_feature_by_name("object_coverage")
             )
-            logging.debug(f"Very close to edge so only moving by {action.distance}")
+            logger.debug(f"Very close to edge so only moving by {action.distance}")
 
         elif self.processed_observations.get_feature_by_name("object_coverage") < 0.75:
             action.distance = action.distance / 4
-            logging.debug(f"Near edge so only moving by {action.distance}")
+            logger.debug(f"Near edge so only moving by {action.distance}")
 
         action.direction = self.tangential_direction(state)
 
@@ -1852,7 +1852,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.pc_is_z_defined = False
         self.setting_new_heading = False
 
-        logging.debug("Input-driven tangential movement")
+        logger.debug("Input-driven tangential movement")
 
         if (self.processed_observations.get_feature_by_name("pose_fully_defined")) and (
             self.ignoring_pc_counter >= self.min_general_steps
@@ -1870,7 +1870,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # Check whether we've just left a series of PC-defined trajectories
             # (i.e. entering a region of undefined PCs)
             if self.using_pc_guide:
-                logging.debug("First movement after exiting PC-guided sequence")
+                logger.debug("First movement after exiting PC-guided sequence")
                 self.reset_pc_buffers()
 
             else:
@@ -1899,7 +1899,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         Returns:
             VectorXYZ: direction of the action
         """
-        logging.debug("Attempting step with PC guidance")
+        logger.debug("Attempting step with PC guidance")
 
         self.using_pc_guide = True
 
@@ -1927,8 +1927,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
             self.pc_is_z_defined = True
 
-            logging.debug("Warning: PC is predominantly defined in z-direction")
-            logging.debug("Skipping PC-guided move; using standard tangential movement")
+            logger.debug("Warning: PC is predominantly defined in z-direction")
+            logger.debug("Skipping PC-guided move; using standard tangential movement")
 
             # Revert to a standard tangential step if we get to this stage
             # and the PC is predominantly defined in the z-direction; note that this
@@ -1969,7 +1969,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         # Otherwise our heading is good; we continue and use our original heading (or
         # it's negative flip) to inform the PC heading
-        logging.debug("We have a good PC heading")
+        logger.debug("We have a good PC heading")
 
         # Use a moving average of previous principal curvature directions to result in a
         # smoother path through areas where this shifts slightly
@@ -2001,7 +2001,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         Returns:
             VectorXYZ: direction of the action
         """
-        logging.debug("Standard tangential movement")
+        logger.debug("Standard tangential movement")
 
         # Select new movement, equivalent to alpha-weighted steps in the standard
         # informed surface-agent policy
@@ -2036,7 +2036,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # updated by avoid_revisiting_locations (if necessary)
 
             if self.setting_new_heading:
-                logging.debug("Ignoring momentum to avoid prev. locations")
+                logger.debug("Ignoring momentum to avoid prev. locations")
 
                 self.following_heading_counter = (
                     0  # Reset this counter, so that we continue on the new heading
@@ -2069,7 +2069,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         supply *either* the vector form or the (Euler) angle form in radians that will
         define the new representations.
         """
-        logging.debug("Updating tangential representations")
+        logger.debug("Updating tangential representations")
         assert (vec_form is None) != (
             angle_form is None  # Logical xor
         ), "Please provide one format for updating the tangential representation"
@@ -2079,8 +2079,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         elif angle_form is not None:
             self.tangential_vec = projected_vec_from_angle(angle_form)
             self.tangential_angle = projected_angle_from_vec(self.tangential_vec)
-        logging.debug(f"Angular form {self.tangential_angle}; vector form:")
-        logging.debug(self.tangential_vec)
+        logger.debug(f"Angular form {self.tangential_angle}; vector form:")
+        logger.debug(self.tangential_vec)
 
     def reset_pc_buffers(self):
         """Reset counters and other variables.
@@ -2118,8 +2118,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         simple counter-heuristic
         """
         if self.following_pc_counter == self.max_pc_bias_steps:
-            logging.debug("Changing preference for pc-type.")
-            logging.debug(f"Previous pref. for min-directions: {self.min_dir_pref}")
+            logger.debug("Changing preference for pc-type.")
+            logger.debug(f"Previous pref. for min-directions: {self.min_dir_pref}")
 
             self.min_dir_pref = not (self.min_dir_pref)
 
@@ -2133,7 +2133,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # to be orthogonal to previous estimates
             self.prev_angle = None
 
-            logging.debug(f"Updated preference: {self.min_dir_pref}")
+            logger.debug(f"Updated preference: {self.min_dir_pref}")
 
     def determine_pc_for_use(self):
         """Determine the principal curvature to use for our heading.
@@ -2198,8 +2198,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             inverse_quaternion_rotation = self.get_inverse_agent_rot(state)
 
             current_loc = self.tangent_locs[-1]
-            logging.debug("Checking we don't head for prev. locations")
-            logging.debug(f"Current location: {current_loc}")
+            logger.debug("Checking we don't head for prev. locations")
+            logger.debug(f"Current location: {current_loc}")
 
             # Previous locations relative to current one (i.e. centered)
             adjusted_prev_locs = np.array(self.tangent_locs) - current_loc
@@ -2234,7 +2234,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             while searching_for_heading:
                 conflicts = False  # Assume False until evidence otherwise
 
-                logging.debug(f"Number of locations to check : {len(rotated_locs) - 1}")
+                logger.debug(f"Number of locations to check : {len(rotated_locs) - 1}")
 
                 # Check all prev. locations for conflict; TODO could vectorize this
                 for ii in range(
@@ -2247,22 +2247,22 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                         conflicts = True  # Keep track of the fact that we've found
                         # a conflicting direction that we need to deal with
 
-                        logging.debug("Angle is low, so re-orienting")
-                        logging.debug(f"Inducing location from sensation {ii}")
-                        logging.debug(f"Currently on sensation {len(rotated_locs)}")
+                        logger.debug("Angle is low, so re-orienting")
+                        logger.debug(f"Inducing location from sensation {ii}")
+                        logger.debug(f"Currently on sensation {len(rotated_locs)}")
 
                         self.attempt_conflict_resolution(vec_copy)
 
                 if not conflicts:  # We have a valid heading
                     searching_for_heading = False
 
-                    logging.debug("The final direction from conflict checking:")
-                    logging.debug(self.tangential_vec)
+                    logger.debug("The final direction from conflict checking:")
+                    logger.debug(self.tangential_vec)
                     self.update_tangential_reps(vec_form=self.tangential_vec)
 
                 elif self.search_counter >= self.max_steps:
-                    logging.debug("Abandoning search, no directions without conflict")
-                    logging.debug("Therefore using original headng")
+                    logger.debug("Abandoning search, no directions without conflict")
+                    logger.debug("Therefore using original headng")
 
                     self.update_tangential_reps(vec_form=vec_copy)
 
@@ -2275,7 +2275,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                     if self.search_counter % 20 == 0:
                         self.conflict_divisor += 1
 
-                        logging.debug(
+                        logger.debug(
                             f"Updating conflict divisor: {self.conflict_divisor}"
                         )
 
@@ -2333,11 +2333,11 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # we do not try this initial flip
 
             self.update_tangential_reps(vec_form=np.array(vec_copy) * -1)
-            logging.debug("Flipping the PC direction to avoid prev. locations.")
+            logger.debug("Flipping the PC direction to avoid prev. locations.")
             self.first_attempt = False
 
         else:
-            logging.debug("Trying a new random heading")
+            logger.debug("Trying a new random heading")
             self.setting_new_heading = True  # PC, if it was being followed, will
             # be abandoned
 
@@ -2365,7 +2365,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                 abs(theta_change(self.prev_angle, self.tangential_angle + np.pi))
                 <= np.pi / 4
             ):
-                logging.debug(
+                logger.debug(
                     "Evidence that PC direction arbitrarily flipped, flipping back"
                 )
                 self.update_tangential_reps(vec_form=np.array(self.tangential_vec) * -1)
@@ -2377,7 +2377,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         directions will be in the reference frame of the agent (which has rotated itself
         to align with the point normal)
         """
-        logging.debug("Applying momentum to PC direction estimate")
+        logger.debug("Applying momentum to PC direction estimate")
 
         # Calculate a weighted average in such a way that ensures we can handle
         # the circular nature of angles (i.e. that +pi and -pi are adjacent)

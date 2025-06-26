@@ -7,16 +7,20 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import copy
 import datetime
-import importlib
 import logging
 import os
 import pprint
+from typing import TYPE_CHECKING, Any, Dict
 
 import numpy as np
 import torch
+
+if TYPE_CHECKING:
+    from _typeshed import DataclassInstance
 
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentDataLoader,
@@ -43,6 +47,8 @@ from tbp.monty.frameworks.utils.dataclass_utils import (
 
 __all__ = {"MontyExperiment"}
 
+logger = logging.getLogger("tbp.monty")
+
 
 class MontyExperiment:
     """General Monty experiment class used to run sensorimotor experiments.
@@ -51,7 +57,7 @@ class MontyExperiment:
     the outermost loops for training and evaluating (including run epoch and episode)
     """
 
-    def __init__(self, config):
+    def __init__(self, config: DataclassInstance | Dict[str, Any]) -> None:
         """Initialize the experiment based on the provided configuration.
 
         Args:
@@ -64,18 +70,19 @@ class MontyExperiment:
 
         self.unpack_experiment_args(config["experiment_args"])
 
-    def setup_experiment(self, config):
+    def setup_experiment(self, config: Dict[str, Any]) -> None:
         """Set up the basic elements of a Monty experiment and initialize counters.
 
         Args:
-            config: config specifying variables of the experiment.
+            config(Dict[str, Any]): config specifying variables of the experiment.
         """
+        self.init_loggers(self.config["logging_config"])
         self.model = self.init_model(
             monty_config=config["monty_config"],
             model_path=self.model_path,
         )
         self.load_dataset_and_dataloaders(config)
-        self.init_loggers(self.config["logging_config"])
+        self.init_monty_data_loggers(self.config["logging_config"])
         self.init_counters()
 
     ####
@@ -307,46 +314,57 @@ class MontyExperiment:
             args.update(target=self.dataloader.primary_target)
         return args
 
-    def init_loggers(self, logging_config):
-        """Initialize logger with specified log level."""
-        # Add experiment config so config can be passed to wandb
-        all_logging_args = logging_config
-        # all_logging_args.update(config=self.config)
+    def init_loggers(self, logging_config: Dict[str, Any]) -> None:
+        """Initialize logger with specified log level.
 
+        Args:
+            logging_config(Dict[str, Any]): Logging configuration.
+        """
         # Unpack individual logging arguments
-        self.monty_log_level = all_logging_args["monty_log_level"]
-        self.monty_handlers = all_logging_args["monty_handlers"]
-        self.wandb_handlers = all_logging_args["wandb_handlers"]
-        self.python_log_level = all_logging_args["python_log_level"]
-        self.log_to_file = all_logging_args["python_log_to_file"]
-        self.log_to_stdout = all_logging_args["python_log_to_stdout"]
-        self.output_dir = all_logging_args["output_dir"]
-        self.run_name = all_logging_args["run_name"]
+        self.python_log_level = logging_config["python_log_level"]
+        self.log_to_file = logging_config["python_log_to_file"]
+        self.log_to_stderr = logging_config["python_log_to_stderr"]
+        self.output_dir = logging_config["output_dir"]
+        self.run_name = logging_config["run_name"]
 
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 
-        # If basic config has been set by a previous experiment, ipython, code editor,
-        # or anything else, the config will not be properly set. importlib.reload gets
-        # around this and ensures
-        importlib.reload(logging)
+        # Clear any existing tpb.monty logger handlers
+        for handler in logger.handlers:
+            logger.removeHandler(handler)
 
         # Create basic python logging handlers
-        python_logging_handlers = []
+        python_logging_handlers: list[logging.Handler] = []
         if self.log_to_file:
             python_logging_handlers.append(
                 logging.FileHandler(os.path.join(self.output_dir, "log.txt"), mode="w")
             )
-        if self.log_to_stdout:
-            python_logging_handlers.append(logging.StreamHandler())
+        if self.log_to_stderr:
+            handler = logging.StreamHandler()
+            handler.setFormatter(
+                logging.Formatter(
+                    fmt="%(levelname)s:%(name)s:%(funcName)s:%(lineno)d:%(message)s"
+                )
+            )
+            python_logging_handlers.append(handler)
 
-        # Configure basic python logging
-        logging.basicConfig(
-            level=self.python_log_level,
-            handlers=python_logging_handlers,
-        )
-        logging.info(f"Logger initialized at {datetime.datetime.now()}")
-        logging.debug(pprint.pformat(self.config))
+        logger.setLevel(self.python_log_level)
+        for handler in python_logging_handlers:
+            logger.addHandler(handler)
+
+        logger.info("logger initialized")
+        logger.debug(pprint.pformat(self.config))
+
+    def init_monty_data_loggers(self, logging_config: Dict[str, Any]) -> None:
+        """Initialize Monty data loggers.
+
+        Args:
+            logging_config(Dict[str, Any]): Logging configuration.
+        """
+        self.monty_log_level = logging_config["monty_log_level"]
+        self.monty_handlers = logging_config["monty_handlers"]
+        self.wandb_handlers = logging_config["wandb_handlers"]
 
         # Configure Monty logging
         monty_handlers = []
@@ -354,13 +372,13 @@ class MontyExperiment:
         for handler in self.monty_handlers:
             if handler.log_level() == "DETAILED":
                 has_detailed_logger = True
-            handler_args = get_subset_of_args(all_logging_args, handler.__init__)
+            handler_args = get_subset_of_args(logging_config, handler.__init__)
             monty_handler = handler(**handler_args)
             monty_handlers.append(monty_handler)
 
         # Configure wandb logging
         if len(self.wandb_handlers) > 0:
-            wandb_args = get_subset_of_args(all_logging_args, WandbWrapper.__init__)
+            wandb_args = get_subset_of_args(logging_config, WandbWrapper.__init__)
             wandb_args.update(
                 config=self.config,
                 run_name=wandb_args["run_name"] + "_" + wandb_args["wandb_id"],
@@ -371,7 +389,7 @@ class MontyExperiment:
                     has_detailed_logger = True
 
         if has_detailed_logger and self.monty_log_level != "DETAILED":
-            logging.warning(
+            logger.warning(
                 f"Log level is set to {self.monty_log_level} but you "
                 "specified a detailed logging handler. Setting log level "
                 "to detailed."
@@ -379,7 +397,7 @@ class MontyExperiment:
             self.monty_log_level = "DETAILED"
 
         if self.monty_log_level == "DETAILED" and not has_detailed_logger:
-            logging.warning(
+            logger.warning(
                 "You are setting the monty logging level to DETAILED, but all your"
                 "handlers are BASIC. Consider setting the level to BASIC, or adding a"
                 "DETAILED handler"
@@ -401,14 +419,14 @@ class MontyExperiment:
             logger_class = self.model.LOGGING_REGISTRY[self.monty_log_level]
             self.monty_logger = logger_class(handlers=monty_handlers)
         else:
-            logging.warning(
-                "Unable to match monty logger to log level"
+            logger.warning(
+                "Unable to match monty logger to log level. "
                 "An empty logger will be used as a placeholder"
             )
             self.monty_logger = BaseMontyLogger(handlers=[])
 
-        if "log_parallel_wandb" in all_logging_args.keys():
-            self.monty_logger.use_parallel_wandb_logging = all_logging_args[
+        if "log_parallel_wandb" in logging_config.keys():
+            self.monty_logger.use_parallel_wandb_logging = logging_config[
                 "log_parallel_wandb"
             ]
         # Instantiate logging callback handler for custom monty loggers
@@ -496,17 +514,17 @@ class MontyExperiment:
                 while True:
                     self.run_episode()
             except KeyboardInterrupt:
-                logging.info("Data streaming interupted. Stopping experiment.")
+                logger.info("Data streaming interupted. Stopping experiment.")
         elif isinstance(self.dataloader, SaccadeOnImageDataLoader):
             num_episodes = len(self.dataloader.scenes)
             for _ in range(num_episodes):
                 self.run_episode()
         elif isinstance(self.dataloader, EnvironmentDataLoaderPerObject):
             for object_name in self.dataloader.object_names:
-                logging.info(f"Running a simulation to model object: {object_name}")
+                logger.info(f"Running a simulation to model object: {object_name}")
                 self.run_episode()
         else:
-            logging.info("Running single episode")
+            logger.info("Running single episode")
             self.run_episode()
 
         self.post_epoch()
@@ -584,7 +602,7 @@ class MontyExperiment:
         ):
             pass
         else:
-            logging.info(f"saving model to {output_dir}")
+            logger.info(f"saving model to {output_dir}")
             torch.save(model_state_dict, os.path.join(output_dir, "model.pt"))
             torch.save(exp_state_dict, os.path.join(output_dir, "exp_state_dict.pt"))
             torch.save(self.config, os.path.join(output_dir, "config.pt"))
@@ -609,10 +627,9 @@ class MontyExperiment:
         self.logger_handler.close(self.logger_args)
 
         # Close python logging
-        python_logger = logging.getLogger()
-        for handler in python_logger.handlers:
-            logging.debug(f"Removing and closing python log handler: {handler}")
-            python_logger.removeHandler(handler)
+        for handler in logger.handlers:
+            logger.debug(f"Removing and closing python log handler: {handler}")
+            logger.removeHandler(handler)
             handler.close()
 
     def __enter__(self):

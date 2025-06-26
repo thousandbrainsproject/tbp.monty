@@ -25,6 +25,8 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class LoggerSDR:
     """A simple logger that saves the data passed to it.
@@ -41,7 +43,7 @@ class LoggerSDR:
     # of Monty loggers. Fix issue #328 first.
     def __init__(self, path):
         if path is None:
-            logging.warning("EvidenceSDR log path is set to None.")
+            logger.warning("EvidenceSDR log path is set to None.")
             return
 
         path = os.path.expanduser(path)
@@ -115,7 +117,7 @@ class EncoderSDR:
         log_flag=False,
     ):
         if sdr_on_bits >= sdr_length or sdr_on_bits <= 0:
-            logging.warning(
+            logger.warning(
                 f"Invalid sparsity: sdr_on_bits set to 2% ({round(sdr_length * 0.02)})"
             )
             sdr_on_bits = round(sdr_length * 0.02)
@@ -126,7 +128,7 @@ class EncoderSDR:
         self.stability = stability
         if self.stability > 1.0 or self.stability < 0.0:
             self.stability = np.clip(self.stability, 0.0, 1.0)
-            logging.warning(
+            logger.warning(
                 f"Invalid stability parameter: stability clamped to {self.stability}"
             )
         self.log_flag = log_flag
@@ -312,11 +314,11 @@ class EncoderSDR:
         # return if no target provided
         stats = {}
         if np.all(np.isnan(target_overlaps)):
-            logging.warning("Empty overlap targets. No training needed.")
+            logger.warning("Empty overlap targets. No training needed.")
             return stats
 
         if np.all(np.array(target_overlaps.shape) > self.n_objects):
-            logging.warning(
+            logger.warning(
                 "Overlap targets have larger size than "
                 + f"{(self.n_objects, self.n_objects)}"
             )

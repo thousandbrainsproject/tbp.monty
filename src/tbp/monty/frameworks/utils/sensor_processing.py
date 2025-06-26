@@ -19,6 +19,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     non_singular_mat,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def get_point_normal_naive(point_cloud, patch_radius_frac=2.5):
     """Estimate point normal.
@@ -115,7 +117,7 @@ def get_point_normal_naive(point_cloud, patch_radius_frac=2.5):
             # -> try a smaller tan_len
             tan_len = tan_len // 2
             if tan_len < 1:
-                # logging.debug(
+                # logger.debug(
                 #     "Too many off object points around center for point-normal"
                 # )
                 norm1 = norm2 = [0, 0, 1]
@@ -185,13 +187,13 @@ def get_point_normal_ordinary_least_squares(
         else:  # Not enough point to compute
             point_normal = np.array([0.0, 0.0, 1.0])
             valid_pn = False
-            logging.debug("Warning : Singular matrix encountered in get_point_normal!")
+            logger.debug("Warning : Singular matrix encountered in get_point_normal!")
 
     # Patch center does not lie on an object
     else:
         point_normal = np.array([0.0, 0.0, 1.0])
         valid_pn = False
-        logging.debug("Warning : Patch center does not lie on an object!")
+        logger.debug("Warning : Patch center does not lie on an object!")
 
     return point_normal, valid_pn
 
@@ -246,13 +248,13 @@ def get_point_normal_total_least_squares(
         except np.linalg.LinAlgError:
             n_dir = np.array([0.0, 0.0, 1.0])
             valid_pn = False
-            logging.debug("Warning : Non-diagonalizable matrix for PN estimation!")
+            logger.debug("Warning : Non-diagonalizable matrix for PN estimation!")
 
     # Patch center does not lie on an object
     else:
         n_dir = np.array([0.0, 0.0, 1.0])
         valid_pn = False
-        logging.debug("Warning : Patch center does not lie on an object!")
+        logger.debug("Warning : Patch center does not lie on an object!")
 
     return n_dir, valid_pn
 
@@ -407,7 +409,7 @@ def get_curvature_at_point(point_cloud, center_id, normal):
         else:
             k1, k2, dir1, dir2 = 0, 0, [0, 0, 0], [0, 0, 0]
             valid_pc = False
-            logging.debug(
+            logger.debug(
                 "Warning : Singular matrix encountered in get-curvature-at-point!"
             )
 
@@ -554,7 +556,7 @@ def get_principal_curvatures(
         else:
             k1, k2, pc1_dir, pc2_dir = 0, 0, [0, 0, 0], [0, 0, 0]
             valid_pc = False
-            logging.debug(
+            logger.debug(
                 "Warning : Singular matrix encountered in get-curvature-at-point!"
             )
 
