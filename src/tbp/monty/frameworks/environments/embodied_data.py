@@ -496,7 +496,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
             self.motor_system._state = motor_system_state
 
-            self._counter += 1  # TODO clean up incrementing of counter
+            if not attempting_to_find_object:
+                self._counter += 1
 
             return self._observation
 
