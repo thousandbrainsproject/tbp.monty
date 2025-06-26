@@ -29,6 +29,7 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.models.motor_policies import (
     GetGoodView,
     InformedPolicy,
+    PositioningProcedure,
     SurfacePolicy,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -687,10 +688,10 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         # Check depth-at-center to see if the object is in front of us
         # As for methods such as touch_object, we use the view-finder
-        depth_at_center = self.motor_system._policy.get_depth_at_center(
-            self._observation,
-            view_sensor_id="view_finder",
-            initial_pose=False,
+        depth_at_center = PositioningProcedure.depth_at_center(
+            agent_id=self.motor_system._policy.agent_id,
+            observation=self._observation,
+            sensor_id="view_finder",
         )
 
         # If depth_at_center < 1.0, there is a visible element within 1 meter of the
