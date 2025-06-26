@@ -1252,6 +1252,9 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             (OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None):
                 The action to take.
+
+        Raises:
+            ObjectNotVisible: If the object is not visible.
         """
         # Check if we have poor visualization of the object
         if (
