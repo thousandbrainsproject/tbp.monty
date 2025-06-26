@@ -140,7 +140,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: Optional[str] = None,
-        enable_physics: Optional[bool] = False,
+        enable_physics=False,
         object_to_avoid=False,
         primary_target_object=None,
     ):

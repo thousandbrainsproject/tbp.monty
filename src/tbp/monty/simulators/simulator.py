@@ -6,7 +6,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-from typing import Dict, Optional, Protocol
+from typing import Dict, List, Optional, Protocol
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
@@ -19,7 +19,7 @@ class Simulator(Protocol):
     """A Protocol defining a simulator for use in simulated environments.
 
     A Simulator is responsible for a simulated environment that contains objects to
-    interact with, agents to do the interacting, and for collecting observations and 
+    interact with, agents to do the interacting, and for collecting observations and
     proprioceptive state to send to Monty.
     """
 
@@ -39,9 +39,9 @@ class Simulator(Protocol):
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: Optional[str] = None,
-        enable_physics: Optional[bool] = False,
+        enable_physics=False,
         object_to_avoid=False,
-        primary_target_bb=None,
+        primary_target_bb: Optional[List] = None,
     ) -> None:
         """Add new object to simulated environment.
 
@@ -49,17 +49,17 @@ class Simulator(Protocol):
         available objects are preloaded and keyed by name.
 
         Args:
-            name: Registered object name
-            position: Initial absolute position of the object
-            rotation: Initial orientation of the object
-            scale: Initial object scale
-            semantic_id: Optional override object semantic ID (what does this mean?)
-            enable_physics: Whether to enable physics on the object
-            object_to_avoid: If True, ensure the object is not colliding with
+            name (str): Registered object name
+            position (VectorXYZ): Initial absolute position of the object
+            rotation (QuaternionWXYZ): Initial orientation of the object
+            scale (VectorXYZ): Initial object scale
+            semantic_id (Optional[str]): Optional override object semantic ID
+            enable_physics (bool): Whether to enable physics on the object
+            object_to_avoid (bool): If True, ensure the object is not colliding with
               other objects
-            primary_target_bb: If not None, this is a list of the min and max corners
-              of a bounding box for the primary object, used to prevent obscuring the
-              primary objet with the new object.
+            primary_target_bb (List | None): If not None, this is a list of the min and
+              max corners of a bounding box for the primary object, used to prevent
+              obscuring the primary objet with the new object.
         """
         ...
 
