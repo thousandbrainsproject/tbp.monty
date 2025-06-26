@@ -15,6 +15,7 @@ import math
 from pprint import pformat
 from typing import Tuple
 
+# import matplotlib.pyplot as plt
 import numpy as np
 import quaternion
 from torch.utils.data import Dataset
@@ -831,6 +832,20 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         if self.motor_system._state is None:
             raise UninitializedMotorSystemState
 
+        # if not hasattr(self, "fig"):
+        #     self.fig, self.ax = plt.subplots(
+        #         1, 2, figsize=(9, 6), gridspec_kw={"width_ratios": [1, 0.8]}
+        #     )
+        #     self.fig.subplots_adjust(top=1.1)
+        #     # setup_camera_ax
+        #     self.ax[0].set_title("Camera image")
+        #     self.ax[0].set_axis_off()
+        #     self.camera_image = None
+        #     # setup_sensor_ax
+        #     self.ax[1].set_title("Sensor image")
+        #     self.ax[1].set_axis_off()
+        #     self.sensor_image = None
+
         positioning_procedure = TouchObject(
             agent_id=self.motor_system._policy.agent_id,
             sensor_id=sensor_id,
@@ -847,6 +862,20 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             self._observation, self.motor_system._state
         )
         while not result.terminated and not result.truncated:
+            # self.fig.suptitle(
+            #     f"Touching object {sensor_id} at distance {desired_object_distance}\n{result.actions[0].name}"
+            # )
+            # if self.camera_image is not None:
+            #     self.camera_image.remove()
+            # if self.sensor_image is not None:
+            #     self.sensor_image.remove()
+            # self.camera_image = self.ax[0].imshow(
+            #     self._observation["agent_id_0"]["view_finder"]["rgba"], zorder=-99
+            # )
+            # self.sensor_image = self.ax[1].imshow(
+            #     self._observation["agent_id_0"]["patch"]["rgba"]
+            # )
+            # plt.pause(1)
             for action in result.actions:
                 self._observation, proprio_state = self.dataset[action]
                 self.motor_system._state = MotorSystemState(proprio_state)
@@ -857,6 +886,9 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         if not result.success:
             raise ObjectNotVisible
+
+        # self.fig.suptitle(f"Object touched!")
+        # plt.pause(3)
 
 
 class UninitializedMotorSystemState(RuntimeError):
