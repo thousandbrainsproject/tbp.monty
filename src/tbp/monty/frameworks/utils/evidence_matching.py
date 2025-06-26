@@ -351,15 +351,28 @@ class EvidenceSlopeTracker:
     def _calculate_slopes(self, channel: str) -> npt.NDArray[np.float64]:
         """Computes the average slope of hypotheses in a channel.
 
+        This method calculates the slope of the evidence signal for each hypothesis by
+        subtracting adjacent values along the time dimension (i.e., computing deltas
+        between consecutive evidence values). It then computes the average of these
+        differences while ignoring any missing (NaN) values. For hypotheses with no
+        valid evidence differences (e.g., all NaNs), the slope is returned as NaN.
+
         Args:
             channel (str): Name of the input channel.
 
         Returns:
             np.ndarray: Array of average slopes, one per hypothesis.
         """
+        # Calculate the evidence differences
         diffs = np.diff(self.data[channel], axis=1)
-        valid_steps = np.count_nonzero(~np.isnan(diffs), axis=1)
-        valid_steps = np.where(valid_steps == 0, np.nan, valid_steps)
+
+        # Count the number of non-NaN values
+        valid_steps = np.sum(~np.isnan(diffs), axis=1).astype(np.float64)
+
+        # Set valid steps to Nan to avoid dividing by zero
+        valid_steps[valid_steps == 0] = np.nan
+
+        # Return the average slope for each tracked hypothesis, ignoring Nan
         return np.nansum(diffs, axis=1) / valid_steps
 
     def remove_hyp(self, hyp_ids: npt.NDArray[np.int_], channel: str) -> None:
@@ -415,7 +428,9 @@ class EvidenceSlopeTracker:
 
         # Calculate which ids to keep and which to remove
         to_remove = removable_ids[sorted_indices[:num_remove]]
-        to_keep = np.setdiff1d(total_ids, to_remove)
+        to_remove_mask = np.zeros(total_size, dtype=bool)
+        to_remove_mask[to_remove] = True
+        to_keep = total_ids[~to_remove_mask]
         return to_keep, to_remove
 
 
