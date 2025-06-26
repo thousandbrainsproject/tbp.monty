@@ -292,14 +292,14 @@ class EvidenceSlopeTracker:
         """
         return self.data.get(channel, np.empty((0, self.window_size))).shape[0]
 
-    def valid_indices_mask(self, channel: str) -> npt.NDArray[np.bool_]:
-        """Returns a boolean mask for hypotheses valid for removal in a channel.
+    def removable_indices_mask(self, channel: str) -> npt.NDArray[np.bool_]:
+        """Returns a boolean mask for removable hypotheses in a channel.
 
         Args:
             channel (str): Name of the input channel.
 
         Returns:
-            np.ndarray: Boolean array indicating valid hypotheses (age >= min_age).
+            np.ndarray: Boolean array indicating removable hypotheses (age >= min_age).
         """
         return self.age[channel] >= self.min_age
 
@@ -409,14 +409,14 @@ class EvidenceSlopeTracker:
         num_remove = total_size - num_keep
 
         # Retrieve valid slopes and sort them
-        valid_mask = self.valid_indices_mask(channel)
+        removable_mask = self.removable_indices_mask(channel)
         slopes = self._calculate_slopes(channel)
-        valid_slopes = slopes[valid_mask]
-        valid_ids = total_ids[valid_mask]
-        sorted_indices = np.argsort(valid_slopes)
+        removable_slopes = slopes[removable_mask]
+        removable_ids = total_ids[removable_mask]
+        sorted_indices = np.argsort(removable_slopes)
 
         # Calculate which ids to keep and which to remove
-        to_remove = valid_ids[sorted_indices[:num_remove]]
+        to_remove = removable_ids[sorted_indices[:num_remove]]
         to_keep = np.setdiff1d(total_ids, to_remove)
         return to_keep, to_remove
 

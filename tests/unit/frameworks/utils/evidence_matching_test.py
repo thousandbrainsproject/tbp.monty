@@ -251,11 +251,11 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         expected_slope = ((2.0 - 1.0) + (3.0 - 2.0)) / 2  # = 1.0
         self.assertAlmostEqual(slopes[0], expected_slope)
 
-    def test_valid_indices_mask_matches_min_age(self) -> None:
-        """Test that the valid mask reflects min_age cutoff."""
+    def test_removable_indices_mask_matches_min_age(self) -> None:
+        """Test that the removable mask reflects min_age cutoff."""
         self.tracker.add_hyp(3, self.channel)
         self.tracker.age[self.channel][:] = [1, 2, 3]
-        mask = self.tracker.valid_indices_mask(self.channel)
+        mask = self.tracker.removable_indices_mask(self.channel)
         np.testing.assert_array_equal(mask, [False, True, True])
 
     def test_calculate_keep_and_remove_ids_returns_expected(self) -> None:

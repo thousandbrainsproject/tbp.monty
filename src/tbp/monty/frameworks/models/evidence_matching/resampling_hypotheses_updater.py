@@ -360,7 +360,7 @@ class ResamplingHypothesesUpdater:
             new_informed = full_informed_count
 
         # Additional adjustment based on valid mask
-        must_keep = int(np.sum(~tracker.valid_indices_mask(input_channel)))
+        must_keep = int(np.sum(~tracker.removable_indices_mask(input_channel)))
         if must_keep > existing_maintained:
             existing_maintained = must_keep
             new_informed = needed - existing_maintained
