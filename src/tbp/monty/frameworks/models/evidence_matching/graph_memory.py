@@ -28,6 +28,10 @@ class EvidenceGraphMemory(GraphMemory):
         max_nodes_per_graph,
         max_graph_size,
         num_model_voxels_per_dim,
+        knn_backend="cpu",
+        knn_nlist=1,
+        knn_gpu_id=0,
+        knn_batch_size=None,
         *args,
         **kwargs,
     ):
@@ -36,6 +40,10 @@ class EvidenceGraphMemory(GraphMemory):
         self.max_nodes_per_graph = max_nodes_per_graph
         self.max_graph_size = max_graph_size
         self.num_model_voxels_per_dim = num_model_voxels_per_dim
+        self.knn_backend = knn_backend
+        self.knn_nlist = knn_nlist
+        self.knn_gpu_id = knn_gpu_id
+        self.knn_batch_size = knn_batch_size
 
     # =============== Public Interface Functions ===============
 
@@ -98,6 +106,10 @@ class EvidenceGraphMemory(GraphMemory):
             max_nodes=self.max_nodes_per_graph,
             max_size=self.max_graph_size,
             num_voxels_per_dim=self.num_model_voxels_per_dim,
+            knn_backend=self.knn_backend,
+            knn_nlist=self.knn_nlist,
+            knn_gpu_id=self.knn_gpu_id,
+            knn_batch_size=self.knn_batch_size,
         )
         # Keep benchmark results constant by still using original graph for
         # matching when loading pretrained models.
@@ -123,6 +135,10 @@ class EvidenceGraphMemory(GraphMemory):
             max_nodes=self.max_nodes_per_graph,
             max_size=self.max_graph_size,
             num_voxels_per_dim=self.num_model_voxels_per_dim,
+            knn_backend=self.knn_backend,
+            knn_nlist=self.knn_nlist,
+            knn_gpu_id=self.knn_gpu_id,
+            knn_batch_size=self.knn_batch_size,
         )
         try:
             model.build_model(locations=locations, features=features)

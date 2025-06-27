@@ -15,12 +15,12 @@ import numpy as np
 import torch
 import torch_geometric
 import torch_geometric.transforms as T
-from scipy.spatial import KDTree
 from sklearn.neighbors import kneighbors_graph
 from torch_geometric.data import Data
 
 from tbp.monty.frameworks.models.abstract_monty_classes import ObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import get_correct_k_n
+from tbp.monty.frameworks.utils.knn_search import KNNSearchFactory
 from tbp.monty.frameworks.utils.object_model_utils import (
     NumpyGraph,
     build_point_cloud_graph,
@@ -335,17 +335,39 @@ class GridObjectModel(GraphObjectModel):
         - remove .norm as attribute and store as feature instead?
     """
 
-    def __init__(self, object_id, max_nodes, max_size, num_voxels_per_dim):
+    def __init__(
+        self,
+        object_id,
+        max_nodes,
+        max_size,
+        num_voxels_per_dim,
+        knn_backend="cpu",
+        knn_nlist=1,
+        knn_gpu_id=0,
+        knn_batch_size=None,
+    ):
         """Initialize a grid object model.
 
         Args:
             object_id: id of the object
             max_nodes: maximum number of nodes in the graph. Will be k in k winner
                 voxels with highest observation count.
-            max_size: maximum size of the object in meters. Defines size of obejcts
+            max_size: maximum size of the object in meters. Defines size of objects
                 that can be represented and how locations are mapped into voxels.
             num_voxels_per_dim: number of voxels per dimension in the models grids.
                 Defines the resolution of the model.
+            knn_backend: Backend to use for KNN search:
+                - 'cpu': SciPy KDTree implementation (accurate, works on all platforms)
+                - 'gpu': FAISS GPU implementation (faster for large datasets)
+                Defaults to "cpu".
+            knn_nlist: Number of clusters for FAISS IVF indices. Only used when
+                knn_backend is set to 'gpu'. For exact KNN use 1, for potentially faster
+                but approximate KNN you can use larger values. Defaults to 1.
+            knn_gpu_id: ID of GPU to use for FAISS. Only used when knn_backend is a
+                FAISS backend and multiple GPUs are available. Defaults to 0.
+            knn_batch_size: Batch size for large queries in FAISS. Only used when
+                knn_backend is a FAISS backend. None means auto-determined based on
+                data size. Defaults to None.
         """
         logger.info(f"init object model with id {object_id}")
         self.object_id = object_id
@@ -353,6 +375,10 @@ class GridObjectModel(GraphObjectModel):
         self._max_nodes = max_nodes
         self._max_size = max_size  # 1=1meter
         self._num_voxels_per_dim = num_voxels_per_dim
+        self._knn_backend = knn_backend
+        self._knn_nlist = knn_nlist
+        self._knn_gpu_id = knn_gpu_id
+        self._knn_batch_size = knn_batch_size
         # Sparse, 4d torch tensors that store content in the voxels of the model grid.
         # number of observations in each voxel
         self._observation_count = None
@@ -367,7 +393,7 @@ class GridObjectModel(GraphObjectModel):
         # This will be true if we load a pretrained graph. If True, grids are not
         # filled or used to constrain nodes in graph.
         self.use_original_graph = False
-        self._location_tree = None
+        self._knn_index = None
 
     # =============== Public Interface Functions ===============
     # ------------------- Main Algorithm -----------------------
@@ -417,9 +443,13 @@ class GridObjectModel(GraphObjectModel):
         assert not np.any(np.isnan(new_graph.x))
         self._graph = new_graph
         # TODO: remove eventually and do search directly in grid?
-        self._location_tree = KDTree(
-            new_graph.pos,
+        self._knn_index = KNNSearchFactory.create_index(
+            backend=self._knn_backend,
+            points=new_graph.pos,
             leafsize=40,
+            nlist=self._knn_nlist,
+            gpu_id=self._knn_gpu_id,
+            batch_size=self._knn_batch_size,
         )
 
     def find_nearest_neighbors(
@@ -431,34 +461,21 @@ class GridObjectModel(GraphObjectModel):
         """Find nearest neighbors in graph for list of search locations.
 
         Note:
-            This is currently using kd tree search. In the future we may consider
-            doing this directly by indexing the grids. However, an initial
-            implementation of this does not seem to be faster than the kd tree search
-            (~5-10x slower). However one must consider that search directly in the grid
-            would remove the cost of building the tree. TODO: Investigate this further.
+            This is currently using the KNN index specified by self._knn_backend.
+            We may consider doing this directly by indexing the grids in the future.
+            However, an initial implementation of this did not seem to be faster than
+            the KDTree search (~5-10x slower). However, one must consider that search
+            directly in the grid would remove the cost of building the tree.
+            TODO: Investigate this further.
 
         Returns:
             If return_distance is True, return distances. Otherwise, return indices of
             nearest neighbors.
         """
-        # if self._location_tree is not None:
-        # We are using the pretrained graphs and location trees for matching
-        (distances, nearest_node_ids) = self._location_tree.query(
-            search_locations,
-            k=num_neighbors,
-            p=2,  # eucledian distance
-            workers=1,  # using more than 1 worker slows down run on lambda.
+        # We are using the pretrained graphs and KNN index for matching
+        distances, nearest_node_ids = self._knn_index.search(
+            search_locations, k=num_neighbors, return_distance=True
         )
-        # else:
-        #     # TODO: This is not done yet and doesn't work. It seems at the moment
-        #     # That kd Tree search is still more efficient.
-        #     # using new grid structure directly to query nearest neighbors
-        #     distances, nearest_node_ids = self._retrieve_locations_in_radius(
-        #         search_locations,
-        #         search_radius=search_radius,
-        #         max_neighbors=num_neighbors,
-        #     )
-
         if return_distance:
             return distances
         else:
@@ -474,9 +491,13 @@ class GridObjectModel(GraphObjectModel):
         if self.use_original_graph:
             # Just use pretrained graph. Do not use grids to constrain nodes.
             self._graph = graph
-            self._location_tree = KDTree(
-                graph.pos,
+            self._knn_index = KNNSearchFactory.create_index(
+                backend=self._knn_backend,
+                points=graph.pos,
                 leafsize=40,
+                nlist=self._knn_nlist,
+                gpu_id=self._knn_gpu_id,
+                batch_size=self._knn_batch_size,
             )
         else:
             self._initialize_and_fill_grid(
@@ -680,9 +701,13 @@ class GridObjectModel(GraphObjectModel):
             feature_mapping=self._current_feature_mapping,
         )
         # TODO: remove eventually and do search directly in grid?
-        self._location_tree = KDTree(
-            graph.pos,
+        self._knn_index = KNNSearchFactory.create_index(
+            backend=self._knn_backend,
+            points=graph.pos,
             leafsize=40,
+            nlist=self._knn_nlist,
+            gpu_id=self._knn_gpu_id,
+            batch_size=self._knn_batch_size,
         )
         return graph
 
