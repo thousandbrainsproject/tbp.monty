@@ -260,11 +260,10 @@ class EvidenceSlopeTracker:
 
     Attributes:
         window_size: Number of past values to consider for slope calculation.
-        min_age: Minimum number of updates before a hypothesis can be considered
-            for removal.
-        data: Maps channel names to their hypothesis evidence
-            buffers.
-        age: Maps channel names to hypothesis age counters.
+        min_age: Minimum number of updates before a hypothesis can be considered for
+            removal.
+        evidence_buffer: Maps channel names to their hypothesis evidence buffers.
+        hyp_age: Maps channel names to hypothesis age counters.
     """
 
     def __init__(self, window_size: int = 3, min_age: int = 5) -> None:
@@ -276,8 +275,8 @@ class EvidenceSlopeTracker:
         """
         self.window_size = window_size
         self.min_age = min_age
-        self.data: dict[str, npt.NDArray[np.float64]] = {}
-        self.age: dict[str, npt.NDArray[np.int_]] = {}
+        self.evidence_buffer: dict[str, npt.NDArray[np.float64]] = {}
+        self.hyp_age: dict[str, npt.NDArray[np.int_]] = {}
 
     def total_size(self, channel: str) -> int:
         """Returns the number of hypotheses in a given channel.
@@ -288,7 +287,9 @@ class EvidenceSlopeTracker:
         Returns:
             Number of hypotheses currently tracked in the channel.
         """
-        return self.data.get(channel, np.empty((0, self.window_size))).shape[0]
+        return self.evidence_buffer.get(channel, np.empty((0, self.window_size))).shape[
+            0
+        ]
 
     def removable_indices_mask(self, channel: str) -> npt.NDArray[np.bool_]:
         """Returns a boolean mask for removable hypotheses in a channel.
@@ -299,7 +300,7 @@ class EvidenceSlopeTracker:
         Returns:
             Boolean array indicating removable hypotheses (age >= min_age).
         """
-        return self.age[channel] >= self.min_age
+        return self.hyp_age[channel] >= self.min_age
 
     def add_hyp(self, num_new_hyp: int, channel: str) -> None:
         """Adds new hypotheses to the specified input channel.
@@ -311,12 +312,14 @@ class EvidenceSlopeTracker:
         new_data = np.full((num_new_hyp, self.window_size), np.nan)
         new_age = np.zeros(num_new_hyp, dtype=int)
 
-        if channel not in self.data:
-            self.data[channel] = new_data
-            self.age[channel] = new_age
+        if channel not in self.evidence_buffer:
+            self.evidence_buffer[channel] = new_data
+            self.hyp_age[channel] = new_age
         else:
-            self.data[channel] = np.vstack((self.data[channel], new_data))
-            self.age[channel] = np.concatenate((self.age[channel], new_age))
+            self.evidence_buffer[channel] = np.vstack(
+                (self.evidence_buffer[channel], new_data)
+            )
+            self.hyp_age[channel] = np.concatenate((self.hyp_age[channel], new_age))
 
     def update(self, values: npt.NDArray[np.float64], channel: str) -> None:
         """Updates all hypotheses in a channel with new evidence values.
@@ -329,7 +332,7 @@ class EvidenceSlopeTracker:
             ValueError: If the channel doesn't exist or the number of values is
                 incorrect.
         """
-        if channel not in self.data:
+        if channel not in self.evidence_buffer:
             raise ValueError(f"Channel '{channel}' does not exist.")
 
         if values.shape[0] != self.total_size(channel):
@@ -337,14 +340,14 @@ class EvidenceSlopeTracker:
                 f"Expected {self.total_size(channel)} values, but got {len(values)}"
             )
 
-        # Shift evidence data by one step
-        self.data[channel][:, :-1] = self.data[channel][:, 1:]
+        # Shift evidence buffer by one step
+        self.evidence_buffer[channel][:, :-1] = self.evidence_buffer[channel][:, 1:]
 
         # Add new evidence data
-        self.data[channel][:, -1] = values
+        self.evidence_buffer[channel][:, -1] = values
 
         # Increment age
-        self.age[channel] += 1
+        self.hyp_age[channel] += 1
 
     def _calculate_slopes(self, channel: str) -> npt.NDArray[np.float64]:
         """Computes the average slope of hypotheses in a channel.
@@ -362,7 +365,7 @@ class EvidenceSlopeTracker:
             Array of average slopes, one per hypothesis.
         """
         # Calculate the evidence differences
-        diffs = np.diff(self.data[channel], axis=1)
+        diffs = np.diff(self.evidence_buffer[channel], axis=1)
 
         # Count the number of non-NaN values
         valid_steps = np.sum(~np.isnan(diffs), axis=1).astype(np.float64)
@@ -382,8 +385,8 @@ class EvidenceSlopeTracker:
         """
         mask = np.ones(self.total_size(channel), dtype=bool)
         mask[hyp_ids] = False
-        self.data[channel] = self.data[channel][mask]
-        self.age[channel] = self.age[channel][mask]
+        self.evidence_buffer[channel] = self.evidence_buffer[channel][mask]
+        self.hyp_age[channel] = self.hyp_age[channel][mask]
 
     def calculate_keep_and_remove_ids(
         self, num_keep: int, channel: str
@@ -405,7 +408,7 @@ class EvidenceSlopeTracker:
             ValueError: If the requested hypotheses to retain are more than available
                 hypotheses.
         """
-        if channel not in self.data:
+        if channel not in self.evidence_buffer:
             raise ValueError(f"Channel '{channel}' does not exist.")
 
         total_size = self.total_size(channel)

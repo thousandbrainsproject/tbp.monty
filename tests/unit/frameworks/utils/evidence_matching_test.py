@@ -190,9 +190,9 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         """Test that hypotheses are correctly initialized in a new channel."""
         self.tracker.add_hyp(2, self.channel)
         self.assertEqual(self.tracker.total_size(self.channel), 2)
-        self.assertEqual(self.tracker.data[self.channel].shape, (2, 3))
-        self.assertTrue(np.all(np.isnan(self.tracker.data[self.channel])))
-        self.assertTrue(np.all(self.tracker.age[self.channel] == 0))
+        self.assertEqual(self.tracker.evidence_buffer[self.channel].shape, (2, 3))
+        self.assertTrue(np.all(np.isnan(self.tracker.evidence_buffer[self.channel])))
+        self.assertTrue(np.all(self.tracker.hyp_age[self.channel] == 0))
 
     def test_update_correctly_shifts_and_sets_values(self) -> None:
         """Test that update correctly shifts previous values and adds new ones."""
@@ -202,8 +202,10 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         self.tracker.update(np.array([3.0, 4.0]), self.channel)
 
         expected = np.array([[1.0, 2.0, 3.0], [2.0, 3.0, 4.0]])
-        np.testing.assert_array_equal(self.tracker.data[self.channel], expected)
-        np.testing.assert_array_equal(self.tracker.age[self.channel], [3, 3])
+        np.testing.assert_array_equal(
+            self.tracker.evidence_buffer[self.channel], expected
+        )
+        np.testing.assert_array_equal(self.tracker.hyp_age[self.channel], [3, 3])
 
     def test_update_more_than_window_size_slides_correctly(self) -> None:
         """Test that only the most recent values within window_size affect slope."""
@@ -218,7 +220,9 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
 
         # Final buffer should be [5.0, 4.0, 3.0]
         expected_buffer = np.array([[5.0, 4.0, 3.0]])
-        np.testing.assert_array_equal(self.tracker.data[self.channel], expected_buffer)
+        np.testing.assert_array_equal(
+            self.tracker.evidence_buffer[self.channel], expected_buffer
+        )
 
         # Slopes: (3.0 - 4.0) + (4.0 - 5.0) = (-1) + (-1) = -2 / 2 = -1.0
         slopes = self.tracker._calculate_slopes(self.channel)
@@ -237,7 +241,7 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         self.tracker.remove_hyp(np.array([1]), self.channel)
         self.assertEqual(self.tracker.total_size(self.channel), 2)
         np.testing.assert_array_equal(
-            self.tracker.data[self.channel][:, -1], [1.0, 3.0]
+            self.tracker.evidence_buffer[self.channel][:, -1], [1.0, 3.0]
         )
 
     def test_calculate_slopes_correctly(self) -> None:
@@ -254,7 +258,7 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
     def test_removable_indices_mask_matches_min_age(self) -> None:
         """Test that the removable mask reflects min_age cutoff."""
         self.tracker.add_hyp(3, self.channel)
-        self.tracker.age[self.channel][:] = [1, 2, 3]
+        self.tracker.hyp_age[self.channel][:] = [1, 2, 3]
         mask = self.tracker.removable_indices_mask(self.channel)
         np.testing.assert_array_equal(mask, [False, True, True])
 
@@ -276,7 +280,7 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
     def test_keep_more_than_total_raises(self) -> None:
         """Test that asking to keep more hypotheses than exist raises an error."""
         self.tracker.add_hyp(2, self.channel)
-        self.tracker.age[self.channel][:] = [2, 2]
+        self.tracker.hyp_age[self.channel][:] = [2, 2]
         with self.assertRaises(ValueError):
             self.tracker.calculate_keep_and_remove_ids(3, self.channel)
 
