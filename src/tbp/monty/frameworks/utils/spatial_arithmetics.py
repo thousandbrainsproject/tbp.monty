@@ -135,11 +135,11 @@ def get_angles_for_all_hypotheses(hyp_f, query_f):
     return shape = (num_hyp, num_nn)
 
     Args:
-        hyp_f: ?
-        query_f: ?
+        hyp_f: Hypotheses features three pose vectors
+        query_f: Query features three pose vectors
 
     Returns:
-        ?
+        Angles between hypotheses and query pose vectors
     """
     dot_product = np.einsum("ijk,ik->ij", hyp_f, query_f)
     angle = np.arccos(np.clip(dot_product, -1, 1))

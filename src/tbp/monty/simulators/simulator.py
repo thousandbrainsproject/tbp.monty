@@ -53,7 +53,7 @@ class Simulator(Protocol):
             position: Initial absolute position of the object.
             rotation: Initial orientation of the object.
             scale: Initial object scale.
-            semantic_id: Optional override object semantic ID.
+            semantic_id: Optional override for the object's semantic ID.
             enable_physics: Whether to enable physics on the object.
             object_to_avoid: If True, ensure the object is not colliding with
               other objects.
