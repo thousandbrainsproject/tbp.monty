@@ -1299,19 +1299,19 @@ class SurfacePolicy(InformedPolicy):
                 action_sampler_class=UniformlyDistributedSampler,
                 switch_frequency=0.0,
             )
-        # result = self.touch_object_pos_proc.positioning_call(raw_observation, state)
-        # if not result.terminated and not result.truncated:
-        #     action = result.actions[0]
-        #     # Ensure dynamic_call gives us control by raising ObjectNotVisible
-        #     self.attempting_to_find_object = True
-        #     if isinstance(action, MoveForward):
-        #         # Reset TouchObject positioning procedure
-        #         self.touch_object_pos_proc = None
-        #         # Let dynamic_call proceed to take action
-        #         self.attempting_to_find_object = False
-        #     return action
+        result = self.touch_object_pos_proc.positioning_call(raw_observation, state)
+        if not result.terminated and not result.truncated:
+            action = result.actions[0]
+            # Ensure dynamic_call gives us control by raising ObjectNotVisible
+            self.attempting_to_find_object = True
+            if isinstance(action, MoveForward):
+                # Reset TouchObject positioning procedure
+                self.touch_object_pos_proc = None
+                # Let dynamic_call proceed to take action
+                self.attempting_to_find_object = False
+            return action
 
-        # raise RuntimeError("touch_object should not have been called")
+        raise RuntimeError("touch_object should not have been called")
 
         # If the viewfinder sees the object within range, then move to it
         depth_at_center = PositioningProcedure.depth_at_center(
