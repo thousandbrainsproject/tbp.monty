@@ -53,6 +53,9 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
+class MaxPositioningStepsExceeded(RuntimeError):
+    """Error raised when the maximum number of positioning steps is exceeded."""
+
 
 class EnvironmentDataset(Dataset):
     """Wraps an embodied environment with a :class:`torch.utils.data.Dataset`.
@@ -452,7 +455,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             except ObjectNotVisible:
                 # Note: Only SurfacePolicy raises ObjectNotVisible.
                 attempting_to_find_object = True
-                while True:
+                max_steps = 48
+                for _ in range(max_steps):
                     # Execute policy procedure in a loop until it is done
                     self._action = self.motor_system._policy.touch_object(
                         self._observation,
@@ -466,6 +470,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                     ] = True
                     if self.motor_system._policy.touch_object_pos_proc is None:
                         return self._observation
+
+                raise MaxPositioningStepsExceeded from None
             else:
                 # TODO: Encapsulate this reset inside TouchObject positioning
                 #       procedure once it exists.

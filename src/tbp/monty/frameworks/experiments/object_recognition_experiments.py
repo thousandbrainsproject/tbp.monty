@@ -15,7 +15,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from tbp.monty.frameworks.environments.embodied_data import SaccadeOnImageDataLoader
+from tbp.monty.frameworks.environments.embodied_data import (
+    MaxPositioningStepsExceeded,
+    SaccadeOnImageDataLoader,
+)
 from tbp.monty.frameworks.utils.plot_utils import add_patch_outline_to_view_finder
 
 from .monty_experiment import MontyExperiment
@@ -81,39 +84,48 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         Returns:
             The number of total steps taken in the episode.
         """
-        for loader_step, observation in enumerate(self.dataloader):
-            if self.show_sensor_output:
-                self.show_observations(observation, loader_step)
+        loader_step = 0
+        try:
+            for loader_step, observation in enumerate(self.dataloader):
+                if self.show_sensor_output:
+                    self.show_observations(observation, loader_step)
 
-            if self.model.check_reached_max_matching_steps(self.max_steps):
-                logger.info(
-                    f"Terminated due to maximum matching steps : {self.max_steps}"
-                )
-                # Need to break here already, otherwise there are problems
-                # when the object is recognized in the last step
-                return loader_step
+                if self.model.check_reached_max_matching_steps(self.max_steps):
+                    logger.info(
+                        f"Terminated due to maximum matching steps : {self.max_steps}"
+                    )
+                    # Need to break here already, otherwise there are problems
+                    # when the object is recognized in the last step
+                    return loader_step
 
-            if loader_step >= (self.max_total_steps):
-                logger.info(f"Terminated due to maximum episode steps : {loader_step}")
-                self.model.deal_with_time_out()
-                return loader_step
+                if loader_step >= (self.max_total_steps):
+                    logger.info(
+                        f"Terminated due to maximum episode steps : {loader_step}"
+                    )
+                    self.model.deal_with_time_out()
+                    return loader_step
 
-            if self.model.is_motor_only_step:
-                logger.debug(
-                    "Performing a motor-only step, so passing info straight to motor"
-                )
-                # On these sensations, we just want to pass information to the motor
-                # system, so bypass the main model step (i.e. updating of LMs)
-                self.model.pass_features_directly_to_motor_system(observation)
-            else:
-                self.model.step(observation)
+                if self.model.is_motor_only_step:
+                    logger.debug(
+                        "Performing a motor-only step, so passing info straight to motor"
+                    )
+                    # On these sensations, we just want to pass information to the motor
+                    # system, so bypass the main model step (i.e. updating of LMs)
+                    self.model.pass_features_directly_to_motor_system(observation)
+                else:
+                    self.model.step(observation)
 
-            if self.model.is_done:
-                # Check this right after step to avoid setting time out
-                # after object was already recognized.
-                return loader_step
-        # handle case where spiral policy calls StopIterator in motor policy
-        self.model.set_is_done()
+                if self.model.is_done:
+                    # Check this right after step to avoid setting time out
+                    # after object was already recognized.
+                    return loader_step
+        except MaxPositioningStepsExceeded:
+            logger.info("Terminated due to MaxPositioningStepsExceeded")
+            self.model.deal_with_time_out()
+        else:
+            # handle case where spiral policy calls StopIterator in motor policy
+            self.model.set_is_done()
+
         return loader_step
 
     def initialize_online_plotting(self):
