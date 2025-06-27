@@ -452,11 +452,20 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             except ObjectNotVisible:
                 # Note: Only SurfacePolicy raises ObjectNotVisible.
                 attempting_to_find_object = True
-                self._action = self.motor_system._policy.touch_object(
-                    self._observation,
-                    view_sensor_id="view_finder",
-                    state=self.motor_system._state,
-                )
+                while True:
+                    # Execute policy procedure in a loop until it is done
+                    self._action = self.motor_system._policy.touch_object(
+                        self._observation,
+                        view_sensor_id="view_finder",
+                        state=self.motor_system._state,
+                    )
+                    self._observation, proprioceptive_state = self.dataset[self._action]
+                    self.motor_system._state = MotorSystemState(proprioceptive_state)
+                    self.motor_system._state[self.motor_system._policy.agent_id][
+                        "motor_only_step"
+                    ] = True
+                    if self.motor_system._policy.touch_object_pos_proc is None:
+                        return self._observation
             else:
                 # TODO: Encapsulate this reset inside TouchObject positioning
                 #       procedure once it exists.
