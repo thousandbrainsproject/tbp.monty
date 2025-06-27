@@ -1248,7 +1248,7 @@ def make_multi_lm_flat_dense_connectivity(n_lms: int) -> Dict:
             including a view finder) is equal to the number of LMs.
 
     Returns:
-        Mapping: A dictionary with keys "sm_to_agent_dict", "sm_to_lm_matrix",
+        A dictionary with keys "sm_to_agent_dict", "sm_to_lm_matrix",
             "lm_to_lm_matrix", and "lm_to_lm_vote_matrix".
     """
     # Create default sm_to_lm_matrix: all sensors are on 'agent_id_0'.
@@ -1323,28 +1323,28 @@ def make_multi_lm_monty_config(
 
 
     Args:
-        n_lms (int): Number of learning modules.
-        monty_class (type): Monty class.
-        learning_module_class (type): Learning module class.
-        learning_module_args (dict, optional): Arguments for learning modules.
-        sensor_module_class (type): Sensor module class.
-        sensor_module_args (dict, optional): Arguments for sensor modules.
-        motor_system_class (type): Motor system class.
-        motor_system_args (Mapping, optional): Arguments for motor system.
-        monty_args (Mapping, MontyArgs, optional): Arguments for monty.
-        connectivity_func (Callable[[int], Mapping], optional): Function that returns a
+        n_lms: Number of learning modules.
+        monty_class: Monty class.
+        learning_module_class: Learning module class.
+        learning_module_args: Arguments for learning modules.
+        sensor_module_class: Sensor module class.
+        sensor_module_args: Arguments for sensor modules.
+        motor_system_class: Motor system class.
+        motor_system_args: Arguments for motor system.
+        monty_args: Arguments for monty.
+        connectivity_func: Function that returns a
             dictionary of connectivity matrices given a number of learning modules.
             In particular, it must return a dictionary with keys "sm_to_agent_dict",
             "sm_to_lm_matrix", "lm_to_lm_matrix", and "lm_to_lm_vote_matrix". Defaults
             to `make_multi_lm_flat_dense_connectivity`.
-        view_finder_config (Mapping, optional): A mapping which contains the items
+        view_finder_config: A mapping which contains the items
             `"sensor_module_class"` and `"sensor_module_args"`. If not specified,
             a config is added using the class `DetailedLoggingSM` with  `"view_finder"`
             as the `sensor_module_id`. `"save_raw_obs"` will default to match the
             value in `sensor_module_args` and `False` if none was provided.
 
     Returns:
-        `MontyConfig`: complete monty config for multi-LM experiment.
+        A complete monty config for multi-LM experiment.
     """
     # Make learning module configs.
     if learning_module_args is None:
@@ -1425,13 +1425,13 @@ def get_possible_3d_rotations(
     """Get list of 24 unique 3d rotations that tile the space. Used for configs.
 
     Args:
-        degrees (Iterable[Number]): Sequence of degrees to sample from.
-        displacement (Number): Additional offset (in degrees) to apply to all rotations;
+        degrees: Sequence of degrees to sample from.
+        displacement: Additional offset (in degrees) to apply to all rotations;
             useful if want to e.g. tile a similar space at training and evaluation, but
             slightly offset between these settings.
 
     Returns:
-        List[np.ndarray]: List of unique 3D rotations in euler angles (degrees).
+        List of unique 3D rotations in euler angles (degrees).
 
     """
     # Generate all possible 3D rotations (non-unique)

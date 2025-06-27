@@ -60,7 +60,7 @@ def plot_graph(
             instance will be created.
 
     Returns:
-        Figure: the figure on which the graph was plotted.
+        The figure on which the graph was plotted.
 
     """
     if ax is None:
@@ -406,11 +406,8 @@ def get_action_name(
 
 
     Returns:
-        str: Action name or one of the following sentinel values:
-                "updating possible matches"
-                "patch not on object"
-                "not moved yet"
-                "None"
+        Action name or one of the following sentinel values: "updating possible
+        matches", "patch not on object", "not moved yet", "None"
     """
     if is_match_step:
         if obs_on_object:

@@ -477,7 +477,7 @@ def make_multi_sensor_habitat_dataset_args(
             `make_multi_sensor_mount_config` for details.
 
     Returns:
-        `MultiLMMountHabitatDatasetArgs`: config ready for use in an experiment config.
+        Config ready for use in an experiment config.
     """
     mount_config = make_multi_sensor_mount_config(n_sensors, **mount_kwargs)
 

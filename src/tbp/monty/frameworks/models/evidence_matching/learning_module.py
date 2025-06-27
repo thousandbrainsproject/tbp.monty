@@ -322,7 +322,7 @@ class EvidenceGraphLM(GraphLM):
 
             self._add_votes_to_buffer_stats(vote_data)
 
-    def send_out_vote(self):
+    def send_out_vote(self) -> dict | None:
         """Send out hypotheses and the evidence for them.
 
         Votes are a dict and contain the following:
@@ -345,9 +345,8 @@ class EvidenceGraphLM(GraphLM):
         object will not send out a vote.
 
         Returns:
-            None or dict:
-                possible_states: The possible states.
-                sensed_pose_rel_body: The sensed pose relative to the body.
+            Dictionary with possible states and sensed poses relative to the body, or
+            None if we don't want the LM to vote.
         """
         if (
             self.buffer.get_num_observations_on_object() < 1
@@ -732,9 +731,9 @@ class EvidenceGraphLM(GraphLM):
         channel in the graph.
 
         Args:
-            features (dict): input features
-            displacements (dict or None): given displacements
-            graph_id (str): identifier of the graph being updated
+            features: input features
+            displacements: given displacements
+            graph_id: identifier of the graph being updated
         """
         start_time = time.time()
 
@@ -798,8 +797,8 @@ class EvidenceGraphLM(GraphLM):
                 replaces the existing hypothesis space
 
         Args:
-            graph_id (str): The ID of the current graph to update.
-            new_hypotheses (ChannelHypotheses): The new hypotheses to set. These are the
+            graph_id: The ID of the current graph to update.
+            new_hypotheses: The new hypotheses to set. These are the
                 sets of location, pose, and evidence after applying movements to the
                 possible locations and updating their evidence scores. These could also
                 refer to newly initialized hypotheses if a hypothesis space did not

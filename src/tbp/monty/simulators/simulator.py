@@ -39,8 +39,8 @@ class Simulator(Protocol):
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: Optional[str] = None,
-        enable_physics=False,
-        object_to_avoid=False,
+        enable_physics: bool = False,
+        object_to_avoid: bool = False,
         primary_target_bb: Optional[List] = None,
     ) -> None:
         """Add new object to simulated environment.
@@ -49,17 +49,17 @@ class Simulator(Protocol):
         available objects are preloaded and keyed by name.
 
         Args:
-            name (str): Registered object name
-            position (VectorXYZ): Initial absolute position of the object
-            rotation (QuaternionWXYZ): Initial orientation of the object
-            scale (VectorXYZ): Initial object scale
-            semantic_id (Optional[str]): Optional override object semantic ID
-            enable_physics (bool): Whether to enable physics on the object
-            object_to_avoid (bool): If True, ensure the object is not colliding with
-              other objects
-            primary_target_bb (List | None): If not None, this is a list of the min and
+            name: Registered object name.
+            position: Initial absolute position of the object.
+            rotation: Initial orientation of the object.
+            scale: Initial object scale.
+            semantic_id: Optional override for the object's semantic ID.
+            enable_physics: Whether to enable physics on the object.
+            object_to_avoid: If True, ensure the object is not colliding with
+              other objects.
+            primary_target_bb: If not None, this is a list of the min and
               max corners of a bounding box for the primary object, used to prevent
-              obscuring the primary objet with the new object.
+              obscuring the primary object with the new object.
         """
         ...
 
@@ -88,10 +88,10 @@ class Simulator(Protocol):
         """Execute the given action in the environment.
 
         Args:
-            action (Action): the action to execute
+            action: The action to execute.
 
         Returns:
-            (Dict[str, Dict]): A dictionary with the observations grouped by agent_id
+            A dictionary with the observations grouped by agent_id.
         """
         ...
 

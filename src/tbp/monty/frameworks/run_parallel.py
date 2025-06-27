@@ -223,8 +223,8 @@ def post_parallel_eval(configs: List[Mapping], base_dir: str) -> None:
     Logs are consolidated across parallel runs and saved to disk.
 
     Args:
-        configs (List[Mapping]): List of configs ran in parallel.
-        base_dir (str): Directory where parallel logs are stored.
+        configs: List of configs ran in parallel.
+        base_dir: Directory where parallel logs are stored.
     """
     print("Executing post parallel evaluation cleanup")
     parallel_dirs = [cfg["logging_config"]["output_dir"] for cfg in configs]
@@ -268,8 +268,8 @@ def post_parallel_train(configs: List[Mapping], base_dir: str) -> None:
     Object models are consolidated across parallel runs and saved to disk.
 
     Args:
-        configs (List[Mapping]): List of configs ran in parallel.
-        base_dir (str): Directory where parallel logs are stored.
+        configs: List of configs ran in parallel.
+        base_dir: Directory where parallel logs are stored.
     """
     print("Executing post parallel training cleanup")
     parallel_dirs = [cfg["logging_config"]["output_dir"] for cfg in configs]
@@ -321,13 +321,13 @@ def run_episodes_parallel(
     """Run episodes in parallel.
 
     Args:
-        configs (List[Mapping]): List of configs to run in parallel.
-        num_parallel (int): Maximum number of parallel processes to run. If there
+        configs: List of configs to run in parallel.
+        num_parallel: Maximum number of parallel processes to run. If there
             are fewer configs to run than `num_parallel`, then the actual number of
             processes will be equal to the number of configs.
-        experiment_name (str): name of experiment
-        train (bool): whether to run training or evaluation
-        is_unittest (bool): whether to run in unittest mode
+        experiment_name: name of experiment
+        train: whether to run training or evaluation
+        is_unittest: whether to run in unittest mode
     """
     # Use fewer processes if there are fewer configs than `num_parallel`.
     num_parallel = min(len(configs), num_parallel)
@@ -430,8 +430,8 @@ def generate_parallel_train_configs(
     episodes, each parallel config specifies a single object but all rotations.
 
     Args:
-        exp (dict): Config for experiment to be broken into parallel configs.
-        experiment_name (str): Name of experiment.
+        exp: Config for experiment to be broken into parallel configs.
+        experiment_name: Name of experiment.
 
     Returns:
         List of configs for training episodes.
@@ -486,8 +486,8 @@ def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> List[M
     training episodes, a config is created for each object + rotation separately.
 
     Args:
-        exp (dict): Config for experiment to be broken into parallel configs.
-        experiment_name (str): Name of experiment.
+        exp: Config for experiment to be broken into parallel configs.
+        experiment_name: Name of experiment.
 
     Returns:
         List of configs for evaluation episodes.
@@ -591,20 +591,19 @@ def main(
         - `num_parallel`
 
     Args:
-        all_configs (Mapping[str, Mapping], optional): A mapping from config name to
-            config dict.
-        exp (Mapping, optional): Config for experiment to run. Not required if running
+        all_configs: A mapping from config name to config dict.
+        exp: Config for experiment to run. Not required if running
             from command line as the config is selected from `all_configs`.
-        experiment (str, optional): Name of experiment to run. Not required if running
+        experiment: Name of experiment to run. Not required if running
             from command line.
-        num_parallel (int, optional): Maximum number of parallel processes to run. If
+        num_parallel: Maximum number of parallel processes to run. If
             the config is broken into fewer parallel configs than `num_parallel`, then
             the actual number of processes will be equal to the number of parallel
             configs. Not required if running from command line.
-        quiet_habitat_logs (bool): Whether to quiet Habitat logs. Defaults to True.
-        print_cfg (bool): Whether to print configs for spot checking. Defaults to
+        quiet_habitat_logs: Whether to quiet Habitat logs. Defaults to True.
+        print_cfg: Whether to print configs for spot checking. Defaults to
             False.
-        is_unittest (bool): Whether to run in unittest mode. If `True`, parallel runs
+        is_unittest: Whether to run in unittest mode. If `True`, parallel runs
             are done in serial. Defaults to False.
     """
     # Handle args passed directly (only used by unittest) or command line (normal)

@@ -766,7 +766,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
     def _compute_goal_state_for_target_loc(
         self, observations, target_info, goal_confidence=1.0
-    ):
+    ) -> GoalState:
         """Specify a goal state for the motor-actuator.
 
         Based on a target location (in object-centric coordinates) and the associated
@@ -790,7 +790,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
                 importance of the goal-state relative to other goal-states.
 
         Returns:
-            GoalState: A goal-state for the motor-actuator.
+            A goal-state for the motor-actuator.
         """
         # Determine the displacement, and therefore the environmental target location,
         # that we will use

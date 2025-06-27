@@ -250,7 +250,7 @@ class DisplacementGraphLM(GraphLM):
             if prediction_error[graph_id] > threshold:
                 self.possible_matches.pop(graph_id)
 
-    def _make_predictions(self, query, use_relative_len):
+    def _make_predictions(self, query, use_relative_len) -> dict:
         """Predict whether we will still be on the object given a displacement.
 
         Args:
@@ -262,8 +262,8 @@ class DisplacementGraphLM(GraphLM):
                 of absolute. This may help with scale invariance.
 
         Returns:
-            dict: Binary predictions for each graph in possible_matches whether
-                the object will be at the new location.
+            Binary predictions for each graph in possible_matches whether the object
+            will be at the new location.
 
         """
         predictions = {}
@@ -279,7 +279,7 @@ class DisplacementGraphLM(GraphLM):
         displacement,
         graph_id,
         use_relative_len,
-    ):
+    ) -> int:
         """Predict whether we will still be on the object given a displacement.
 
         Takes a displacement as input (the last action that was performed) and checks
@@ -298,7 +298,7 @@ class DisplacementGraphLM(GraphLM):
                 of absolute. This may help with scale invariance.
 
         Returns:
-            int: Whether the displacement is on the object. 0 if not, 1 if it is.
+            Whether the displacement is on the object. 0 if not, 1 if it is.
         """
         # TODO: Due to the use of node IDs as paths start IDs it a bit tricky to use
         # multiple input channels & I am not sure if it is worth the time investment atm
@@ -380,8 +380,7 @@ class DisplacementGraphLM(GraphLM):
             target: The actual sensation at the new location (also binary)
 
         Returns:
-            prediction_error: Binary prediction error for each graph:
-                int(target != prediction)
+            Binary prediction error for each graph: int(target != prediction)
         """
         prediction_error = {}
         for graph_id in predictions:
@@ -430,11 +429,11 @@ class DisplacementGraphLM(GraphLM):
             o.set_displacement(displacement=displacement, ppf=ppf)
         return obs
 
-    def _select_features_to_use(self, states):
+    def _select_features_to_use(self, states) -> int:
         """Extract on_object from observed features to use as target.
 
         Returns:
-            int: Whether we are on the object or not.
+            Whether we are on the object or not as integer.
         """
         morph_features = states[0].morphological_features
         # TODO S: decide if we want to store on_object in state

@@ -314,7 +314,7 @@ class DepthTo3DLocations:
         self.clip_value = clip_value
         self.depth_clip_sensors = depth_clip_sensors
 
-    def __call__(self, observations: dict, state: Optional[State] = None):
+    def __call__(self, observations: dict, state: Optional[State] = None) -> dict:
         """Apply the depth-to-3D-locations transform to sensor observations.
 
         Applies spatial transforms to the observations and generates a mask used
@@ -369,11 +369,11 @@ class DepthTo3DLocations:
         to the original observations dict.
 
         Args:
-            observations (dict): Observations returned by the data loader.
-            state (State, optional): Optionally supplied CMP-compliant state object.
+            observations: Observations returned by the data loader.
+            state: Optionally supplied CMP-compliant state object.
 
         Returns:
-            dict: The original observations dict with the following possibly added:
+            The original observations dict with the following possibly added:
                 - "semantic_3d": 3D coordinates for each pixel. If `self.world_coord`
                     is `True` (default), then the coordinates are in the world's
                     reference frame and are in the sensor's reference frame otherwise.

@@ -108,7 +108,7 @@ class Action(Protocol):
         """Initialize the action with the agent ID.
 
         Args:
-            agent_id (str): The ID of the agent that will take this action.
+            agent_id: The ID of the agent that will take this action.
         """
         self.agent_id = agent_id
 

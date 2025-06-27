@@ -57,6 +57,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
+    "sphinx_autodoc_typehints",
     "myst_parser",
 ]
 
@@ -196,3 +197,9 @@ todo_link_only = True
 
 # remove the Built with Sphinx message
 html_show_sphinx = False
+
+# -- Options for sphinx_autodoc_typehints extension ----------------------------
+
+always_use_bars_union = True
+typehints_use_signature = True
+typehints_use_signature_return = True

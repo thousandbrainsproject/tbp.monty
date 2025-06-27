@@ -69,11 +69,11 @@ class MotorPolicy(abc.ABC):
         """Use this method when actions are not predefined.
 
         Args:
-            state (MotorSystemState | None): The current state of the motor system.
+            state: The current state of the motor system.
                 Defaults to None.
 
         Returns:
-            (Action | None): The action to take.
+            The action to take.
         """
         pass
 
@@ -94,8 +94,8 @@ class MotorPolicy(abc.ABC):
               motor system.
 
         Args:
-            action (Action | None): The action to process the hook for.
-            state (MotorSystemState | None): The current state of the motor system.
+            action: The action to process the hook for.
+            state: The current state of the motor system.
                 Defaults to None.
         """
         pass
@@ -115,7 +115,7 @@ class MotorPolicy(abc.ABC):
         """Use this method when actions are predefined.
 
         Returns:
-            (Action): The action to take.
+            The action to take.
         """
         pass
 
@@ -124,7 +124,7 @@ class MotorPolicy(abc.ABC):
         """Sets the experiment mode.
 
         Args:
-            mode (Literal["train", "eval"]): The experiment mode to set.
+            mode: The experiment mode to set.
         """
         pass
 
@@ -132,11 +132,11 @@ class MotorPolicy(abc.ABC):
         """Select either dynamic or predefined call.
 
         Args:
-            state (MotorSystemState | None): The current state of the motor system.
+            state: The current state of the motor system.
                 Defaults to None.
 
         Returns:
-            (Action | None): The action to take.
+            The action to take.
         """
         if self.is_predefined:
             action: Action | None = self.predefined_call()
@@ -219,11 +219,11 @@ class BasePolicy(MotorPolicy):
         The MotorSystemState is ignored.
 
         Args:
-            _state (MotorSystemState | None): The current state of the motor system.
+            _state: The current state of the motor system.
                 Defaults to None. Unused.
 
         Returns:
-            (Action): A random action.
+            A random action.
         """
         return self.get_random_action(self.action)
 
@@ -274,14 +274,14 @@ class BasePolicy(MotorPolicy):
             Assumes we only have one agent.
 
         Args:
-            state (MotorSystemState): The current state of the motor system.
+            state: The current state of the motor system.
 
         Returns:
-            (AgentState): Agent state.
+            Agent state.
         """
         return state[self.agent_id]
 
-    def is_motor_only_step(self, state: MotorSystemState):
+    def is_motor_only_step(self, state: MotorSystemState) -> bool:
         """Check if the current step is a motor-only step.
 
         TODO: This information is currently stored in motor system state, but
@@ -289,10 +289,10 @@ class BasePolicy(MotorPolicy):
         state, not motor system state. This will remove MotorSystemState param.
 
         Args:
-            state (MotorSystemState): The current state of the motor system.
+            state: The current state of the motor system.
 
         Returns:
-            bool: True if the current step is a motor-only step, False otherwise.
+            True if the current step is a motor-only step, False otherwise.
         """
         agent_state = self.get_agent_state(state)
         if "motor_only_step" in agent_state.keys() and agent_state["motor_only_step"]:
@@ -405,12 +405,12 @@ class PositioningProcedure(BasePolicy):
         """Determine the depth of the central pixel for the sensor.
 
         Args:
-            agent_id (str): The ID of the agent to use.
-            observation (Observations): The observation to use.
-            sensor_id (str): The ID of the sensor to use.
+            agent_id: The ID of the agent to use.
+            observation: The observation to use.
+            sensor_id: The ID of the sensor to use.
 
         Returns:
-            (float): The depth of the central pixel for the sensor.
+            The depth of the central pixel for the sensor.
         """
         # TODO: A lot of assumptions are made here about the shape of the observation.
         #       This should be made robust.
@@ -430,13 +430,12 @@ class PositioningProcedure(BasePolicy):
         TODO: When this becomes a PositioningProcedure it can be a __call__ method.
 
         Args:
-            observation (Optional[Mapping]): The observation to use for positioning.
-            state (Optional[MotorSystemState]): The current state of the motor system.
+            observation: The observation to use for positioning.
+            state: The current state of the motor system.
 
         Returns:
-            (PositioningProcedureResult): Any actions to take, whether the procedure
-                succeeded, whether the procedure terminated, and whether the procedure
-                truncated.
+            Any actions to take, whether the procedure succeeded, whether the procedure
+            terminated, and whether the procedure truncated.
         """
         pass
 
@@ -478,17 +477,17 @@ class GetGoodView(PositioningProcedure):
         """Initialize the GetGoodView policy.
 
         Args:
-            desired_object_distance (float): The desired distance to the object.
-            good_view_percentage (float): The percentage of the sensor that should be
+            desired_object_distance: The desired distance to the object.
+            good_view_percentage: The percentage of the sensor that should be
                 filled with the object.
-            multiple_objects_present (bool): Whether there are multiple objects in
+            multiple_objects_present: Whether there are multiple objects in
                 the scene.
-            sensor_id (str): The ID of the sensor to use for positioning.
-            target_semantic_id (int): The semantic ID of the target object.
-            allow_translation (bool): Whether to allow movement toward the object via
+            sensor_id: The ID of the sensor to use for positioning.
+            target_semantic_id: The semantic ID of the target object.
+            allow_translation: Whether to allow movement toward the object via
                 the motor systems's move_close_enough method. If False, only
                 orientienting movements are performed. Defaults to True.
-            max_orientation_attempts (int): The maximum number of orientation attempts
+            max_orientation_attempts: The maximum number of orientation attempts
                 allowed before giving up and truncating the procedure indicating that
                 the sensor is not on the target object.
             **kwargs: Additional keyword arguments.
@@ -523,9 +522,8 @@ class GetGoodView(PositioningProcedure):
 
         Args:
             relative_location: the x,y,z coordinates of the target with respect
-            to the sensor.
-            state (Optional[MotorSystemState]): The current state of the motor system.
-                Defaults to None.
+                to the sensor.
+            state: The current state of the motor system. Defaults to None.
 
         Returns:
             down_amount: Amount to look down (degrees).
@@ -561,15 +559,14 @@ class GetGoodView(PositioningProcedure):
         taking the maximum of this smoothed image.
 
         Args:
-            sem3d_obs (np.ndarray): The location of each pixel and the semantic ID
+            sem3d_obs: The location of each pixel and the semantic ID
                 associated with that location.
-            image_shape (Tuple[int, int]): The shape of the camera image.
-            state (Optional[MotorSystemState]): The current state of the motor system.
+            image_shape: The shape of the camera image.
+            state: The current state of the motor system.
                 Defaults to None.
 
         Returns:
-            (np.ndarray): The x,y,z coordinates of the target with respect
-                to the sensor.
+            The x,y,z coordinates of the target with respect to the sensor.
         """
         sem3d_obs_image = sem3d_obs.reshape((image_shape[0], image_shape[1], 4))
         on_object_image = sem3d_obs_image[:, :, 3]
@@ -605,10 +602,10 @@ class GetGoodView(PositioningProcedure):
         """Check if a sensor is on the target object.
 
         Args:
-            observation (Mapping): The observation to use for positioning.
+            observation: The observation to use for positioning.
 
         Returns:
-            bool: Whether the sensor is on the target object.
+            Whether the sensor is on the target object.
         """
         # Reconstruct the 2D semantic/surface map embedded in 'semantic_3d'.
         image_shape = observation[self.agent_id][self._sensor_id]["depth"].shape[0:2]
@@ -626,11 +623,11 @@ class GetGoodView(PositioningProcedure):
         """Move closer to the object until we are close enough.
 
         Args:
-            observation (Mapping): The observation to use for positioning.
+            observation: The observation to use for positioning.
 
         Returns:
-            (Action | None): The next action to take, or None if we are already close
-                enough to the object.
+            The next action to take, or None if we are already close enough to the
+            object.
 
         Raises:
             ValueError: If the object is not visible.
@@ -701,13 +698,13 @@ class GetGoodView(PositioningProcedure):
         and the object needs to be somewhere in the view finders view.
 
         Args:
-            observation (Mapping): The observation to use for positioning.
-            state (Optional[MotorSystemState]): The current state of the motor system.
+            observation: The observation to use for positioning.
+            state: The current state of the motor system.
                 Defaults to None.
 
         Returns:
-            (List[Action]): A list of actions of length two composed of actions needed
-                to get us onto the target object.
+            A list of actions of length two composed of actions needed to get us onto
+            the target object.
         """
         # Reconstruct 2D semantic map.
         depth_image = observation[self.agent_id][self._sensor_id]["depth"]
@@ -779,10 +776,10 @@ class GetGoodView(PositioningProcedure):
         """Derives the positioning sensor's rotation relative to the world.
 
         Args:
-            state (MotorSystemState): The current state of the motor system.
+            state: The current state of the motor system.
 
         Returns:
-            (Any): The positioning sensor's rotation relative to the world.
+            The positioning sensor's rotation relative to the world.
         """
         agent_state = self.get_agent_state(state)
         # Retrieve agent's rotation relative to the world.
@@ -872,11 +869,11 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
         extracted by the sensor module for the guiding sensor (patch).
 
         Args:
-            state (MotorSystemState | None): The current state of the motor system.
+            state: The current state of the motor system.
                 Defaults to None.
 
         Returns:
-            (Action | None): The action to take.
+            The action to take.
         """
         return (
             super().dynamic_call(state)
@@ -1004,11 +1001,11 @@ class NaiveScanPolicy(InformedPolicy):
         The MotorSystemState is ignored.
 
         Args:
-            _state (Optional[MotorSystemState]): The current state of the motor system.
+            _state: The current state of the motor system.
                 Defaults to None. Unused.
 
         Returns:
-            (Action): The action to take.
+            The action to take.
 
         Raises:
             StopIteration: If the spiral has completed.
@@ -1129,11 +1126,11 @@ class SurfacePolicy(InformedPolicy):
 
         Args:
             raw_observation: The raw observation from the simulator.
-            view_sensor_id (str): The ID of the viewfinder sensor.
-            state (MotorSystemState): The current state of the motor system.
+            view_sensor_id: The ID of the viewfinder sensor.
+            state: The current state of the motor system.
 
         Returns:
-            (MoveForward | OrientHorizontal | OrientVertical): Action to take.
+            Action to take.
         """
         # If the viewfinder sees the object within range, then move to it
         depth_at_center = PositioningProcedure.depth_at_center(
@@ -1246,12 +1243,11 @@ class SurfacePolicy(InformedPolicy):
         extracted by the sensor module for the guiding sensor (patch).
 
         Args:
-            state (Optional[MotorSystemState]): The current state of the motor system.
+            state: The current state of the motor system.
                 Defaults to None.
 
         Returns:
-            (OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None):
-                The action to take.
+            The action to take.
 
         Raises:
             ObjectNotVisible: If the object is not visible.
@@ -1314,8 +1310,8 @@ class SurfacePolicy(InformedPolicy):
         for TouchObject positioning procedure.
 
         Args:
-            action (Action): The action that was just taken.
-            state (Optional[MotorSystemState]): The current state of the motor system.
+            action: The action that was just taken.
+            state: The current state of the motor system.
                 Defaults to None.
 
         # TODO: Remove this once TouchObject positioning procedure is implemented
@@ -1332,7 +1328,7 @@ class SurfacePolicy(InformedPolicy):
         """Orient the agent horizontally.
 
         Args:
-            state (MotorSystemState): The current state of the motor system.
+            state: The current state of the motor system.
 
         Returns:
             OrientHorizontal action.
@@ -1352,7 +1348,7 @@ class SurfacePolicy(InformedPolicy):
         """Orient the agent vertically.
 
         Args:
-            state (MotorSystemState): The current state of the motor system.
+            state: The current state of the motor system.
 
         Returns:
             OrientVertical action.
@@ -1372,7 +1368,7 @@ class SurfacePolicy(InformedPolicy):
         """Move tangentially along the object surface.
 
         Args:
-            state (MotorSystemState): The current state of the motor system.
+            state: The current state of the motor system.
 
         Returns:
             MoveTangentially action.
@@ -1424,7 +1420,7 @@ class SurfacePolicy(InformedPolicy):
         Then start over
 
         Args:
-            state (MotorSystemState): The current state of the motor system.
+            state: The current state of the motor system.
 
         Returns:
             Next action in the cycle.
@@ -1466,7 +1462,7 @@ class SurfacePolicy(InformedPolicy):
             state: The current state of the motor system.
 
         Returns:
-            VectorXYZ: direction of the action
+            Direction of the action
         """
         new_target_direction = (self.rng.rand() - 0.5) * 2 * np.pi
         self.tangential_angle = (
@@ -1544,7 +1540,7 @@ class SurfacePolicy(InformedPolicy):
         inverse
 
         Args:
-            state (MotorSystemState): The current state of the motor system.
+            state: The current state of the motor system.
 
         Returns:
             Inverse quaternion rotation.
@@ -1564,8 +1560,8 @@ class SurfacePolicy(InformedPolicy):
         to turn in order to be oriented directly toward the object
 
         Args:
-            orienting (str): `"horizontal" or "vertical"`
-            state (MotorSystemState): The current state of the motor system.
+            orienting: `"horizontal" or "vertical"`
+            state: The current state of the motor system.
 
         Returns:
             degrees that the agent needs to turn
@@ -1597,7 +1593,7 @@ def read_action_file(file: str) -> List[Action]:
         file: name of file to load
 
     Returns:
-        List[Action]: list of actions
+        List of actions
     """
     file = os.path.expanduser(file)
     with open(file, "r") as f:
@@ -1846,7 +1842,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             state: The current state of the motor system.
 
         Returns:
-            VectorXYZ: direction of the action
+            Direction of the action
         """
         # Reset booleans tracking z-axis PC directions and new headings
         self.pc_is_z_defined = False
@@ -1894,10 +1890,10 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         series) of steps along the appropriate direction.
 
         Args:
-            state (MotorSystemState): The current state of the motor system.
+            state: The current state of the motor system.
 
         Returns:
-            VectorXYZ: direction of the action
+            Direction of the action
         """
         logger.debug("Attempting step with PC guidance")
 
@@ -1996,10 +1992,10 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         surface-agent policy, because it also attempts to avoid revisiting old locations
 
         Args:
-            state (MotorSystemState): The current state of the motor system.
+            state: The current state of the motor system.
 
         Returns:
-            VectorXYZ: direction of the action
+            Direction of the action
         """
         logger.debug("Standard tangential movement")
 
@@ -2175,7 +2171,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                 initial value that will be dynamically adjusted. Defaults to 3.
             max_steps: Maximum iterations of the search to perform to try to find a
                 non-conflicting heading. Defaults to 100.
-            state (MotorSystemState): The current state of the motor system.
+            state: The current state of the motor system.
 
         Note that while the policy might have "unrealistic" access to information about
         it's location in the environment, this could easily be replaced by relative

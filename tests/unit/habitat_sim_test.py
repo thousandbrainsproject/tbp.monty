@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import pytest
 
@@ -50,7 +51,7 @@ def create_agents(
     action_space_type="distant_agent",
     rotation_step=10.0,
     translation_step=0.25,
-):
+) -> list[SingleSensorAgent]:
     """Create agents with RGB, Depth and optional semantic sensors.
 
     Args:
@@ -64,7 +65,7 @@ def create_agents(
         translation_step: Default action translation step in meters
 
     Returns:
-        list: List of :class:`HabitatAgent`
+        The created agents.
     """
     agents = []
     for i in range(num_agents):

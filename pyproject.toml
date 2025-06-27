@@ -77,6 +77,7 @@ generate_api_docs_tool = [
     'docutils>=0.17',
     'sphinx',
     'sphinx-autobuild',
+    'sphinx-autodoc-typehints',
     'myst-parser',
     'pydata_sphinx_theme',
     'snowballstemmer<3'

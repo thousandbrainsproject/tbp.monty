@@ -38,8 +38,7 @@ class ChannelMapper:
         """Initializes the ChannelMapper with an ordered dictionary of channel sizes.
 
         Args:
-            channel_sizes (Optional[Dict[str, int]]): Dictionary of
-                {channel_name: size}.
+            channel_sizes: Dictionary of {channel_name: size}.
         """
         self.channel_sizes: OrderedDictType[str, int] = (
             OrderedDict(channel_sizes) if channel_sizes else OrderedDict()
@@ -50,7 +49,7 @@ class ChannelMapper:
         """Returns the existing channel names.
 
         Returns:
-            List[str]: List of channel names.
+            List of channel names.
         """
         return list(self.channel_sizes.keys())
 
@@ -59,7 +58,7 @@ class ChannelMapper:
         """Returns the total number of hypotheses across all channels.
 
         Returns:
-            int: Total size across all channels.
+            Total size across all channels.
         """
         return sum(self.channel_sizes.values())
 
@@ -67,7 +66,7 @@ class ChannelMapper:
         """Returns the total number of hypotheses for a specific channel.
 
         Returns:
-            int: Size of channel
+            Size of channel
 
         Raises:
             ValueError: If the channel is not found.
@@ -81,10 +80,10 @@ class ChannelMapper:
         """Returns the start and end indices of the given channel.
 
         Args:
-            channel_name (str): The name of the channel.
+            channel_name: The name of the channel.
 
         Returns:
-            Tuple[int, int]: The start and end indices of the channel.
+            The start and end indices of the channel.
 
         Raises:
             ValueError: If the channel is not found.
@@ -102,8 +101,8 @@ class ChannelMapper:
         """Increases or decreases the channel by a specific amount.
 
         Args:
-            channel_name (str): The name of the channel.
-            value (int): The value used to modify the channel size.
+            channel_name: The name of the channel.
+            value: The value used to modify the channel size.
                 Use a negative value to decrease the size.
 
         Raises:
@@ -121,8 +120,8 @@ class ChannelMapper:
         """Sets the size of the given channel to a specific value.
 
         Args:
-            channel_name (str): The name of the channel.
-            new_size (int): The new size to set for the channel.
+            channel_name: The name of the channel.
+            new_size: The new size to set for the channel.
 
         Raises:
             ValueError: If the channel is not found or if the new size is not positive.
@@ -139,9 +138,9 @@ class ChannelMapper:
         """Adds a new channel at a specified position (default is at the end).
 
         Args:
-            channel_name (str): The name of the new channel.
-            size (int): The size of the new channel.
-            position (Optional[int]): The index at which to insert the channel.
+            channel_name: The name of the new channel.
+            size: The size of the new channel.
+            position: The index at which to insert the channel.
 
         Raises:
             ValueError: If the channel already exists or position is out of bounds.
@@ -163,12 +162,12 @@ class ChannelMapper:
         """Extracts the portion of the original array corresponding to a given channel.
 
         Args:
-            original (np.ndarray): The full hypotheses array across all channels.
-            channel (str): The name of the channel to extract.
+            original: The full hypotheses array across all channels.
+            channel: The name of the channel to extract.
 
         Returns:
-            np.ndarray: The extracted slice of the original array. Returns a view, not
-                a copy of the original array.
+            The extracted slice of the original array. Returns a view, not a copy of the
+            original array.
 
         Raises:
             ValueError: If the channel is not found.
@@ -185,11 +184,11 @@ class ChannelMapper:
         """Extracts the hypotheses corresponding to a given channel.
 
         Args:
-            hypotheses (Hypotheses): The full hypotheses array across all channels.
-            channel (str): The name of the channel to extract.
+            hypotheses: The full hypotheses array across all channels.
+            channel: The name of the channel to extract.
 
         Returns:
-            ChannelHypotheses: The hypotheses corresponding to the given channel.
+            The hypotheses corresponding to the given channel.
         """
         return ChannelHypotheses(
             input_channel=channel,
@@ -216,14 +215,14 @@ class ChannelMapper:
         the shape (22, 3), i.e., we removed 3 rows and added new 5 rows.
 
         Args:
-            original (np.ndarray): The original array.
-            channel (str): The name of the input channel.
-            data (np.ndarray): The new data to insert.
+            original: The original array.
+            channel: The name of the input channel.
+            data: The new data to insert.
 
         Returns:
-            np.ndarray: The resulting array after insertion. Can return a new copy or a
-                view, depending on whether the inserted data is of the same size as the
-                existing channel.
+            The resulting array after insertion. Can return a new copy or a view,
+            depending on whether the inserted data is of the same size as the existing
+            channel.
 
         Raises:
             ValueError: If the channel is not found.
@@ -246,7 +245,7 @@ class ChannelMapper:
         """Returns a string representation of the current channel mapping.
 
         Returns:
-            str: String representation of the channel mappings.
+            String representation of the channel mappings.
         """
         ranges = {ch: self.channel_range(ch) for ch in self.channel_sizes}
         return f"ChannelMapper({ranges})"
@@ -443,14 +442,14 @@ def evidence_update_threshold(
     """Determine how much evidence a hypothesis should have to be updated.
 
     Args:
-        evidence_threshold_config (float | str | None): The heuristic for deciding which
+        evidence_threshold_config: The heuristic for deciding which
             hypotheses should be updated.
-        x_percent_threshold (float | str): The x_percent value to use for deciding
+        x_percent_threshold: The x_percent value to use for deciding
             on the `evidence_update_threshold` when the `x_percent_threshold` is
             used as a heuristic.
-        max_global_evidence (float): Highest evidence of all hypotheses (i.e.,
+        max_global_evidence: Highest evidence of all hypotheses (i.e.,
             current mlh evidence),
-        evidence_all_channels (np.ndarray): Evidence values for all hypotheses.
+        evidence_all_channels: Evidence values for all hypotheses.
 
     Returns:
         The evidence update threshold.

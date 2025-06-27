@@ -52,7 +52,7 @@ def torch_graph_to_numpy(torch_graph):
 
 def already_in_list(
     existing_points, new_point, features, clean_ids, query_id, graph_delta_thresholds
-):
+) -> bool:
     """Check if a given point is already in a list of points.
 
     Args:
@@ -67,7 +67,7 @@ def already_in_list(
             the graph
 
     Returns:
-        bool: Whether the point is already in the list
+        Whether the point is already in the list
     """
     in_list = False
 

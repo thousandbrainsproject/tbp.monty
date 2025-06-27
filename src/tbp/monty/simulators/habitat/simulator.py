@@ -319,14 +319,14 @@ class HabitatSim(HabitatActuator):
 
         return obj
 
-    def non_conflicting_vector(self):
+    def non_conflicting_vector(self) -> np.ndarray:
         """Find a non-conflicting vector.
 
         A non-conflicting vector avoids sampling directions that will be just in front
         of or behind a target object.
 
         Returns:
-            np.array: The non-conflicting vector
+            The non-conflicting vector
         """
         angle_ranges = [
             (0, 30),
@@ -350,7 +350,7 @@ class HabitatSim(HabitatActuator):
         primary_obj_bb,
         new_obj_bb,
         overlap_threshold=0.75,
-    ):
+    ) -> bool:
         """Check if the object being added overlaps in the x-axis with target.
 
         The object overlapping the primary target object risks obstructing the initial
@@ -366,8 +366,8 @@ class HabitatSim(HabitatActuator):
             overlap_threshold: The threshold for overlap. Defaults to 0.75.
 
         Returns:
-            bool: True if the overlap is greater than overlap_threshold; 1.0 corresponds
-                to total overlap (the primary target is potentially not visible)
+            True if the overlap is greater than overlap_threshold; 1.0 corresponds
+            to total overlap (the primary target is potentially not visible)
         """
         primary_start, primary_end = primary_obj_bb[0][0], primary_obj_bb[1][0]
         new_start, new_end = new_obj_bb[0][0], new_obj_bb[1][0]
@@ -514,11 +514,11 @@ class HabitatSim(HabitatActuator):
         observations = self.get_observations()
         return observations
 
-    def get_observations(self):
+    def get_observations(self) -> dict:
         """Get sensor observations.
 
         Returns:
-            dict: A dictionary with all sensor observations grouped by sensor module.
+            A dictionary with all sensor observations grouped by sensor module.
                 For example:
                     {
                         "agent1": {
@@ -540,7 +540,7 @@ class HabitatSim(HabitatActuator):
         obs = self.process_observations(obs)
         return obs
 
-    def process_observations(self, obs):
+    def process_observations(self, obs) -> dict:
         """Habitat returns observations grouped by agent_index.
 
         Initially, we group observations by agent_id instead and call all agents
@@ -550,7 +550,7 @@ class HabitatSim(HabitatActuator):
             obs: The observations to process
 
         Returns:
-            dict: The processed observations grouped by agent_id
+            The processed observations grouped by agent_id.
         """
         processed_obs = defaultdict(dict)
         for agent_index, agent_obs in obs.items():
@@ -560,34 +560,34 @@ class HabitatSim(HabitatActuator):
 
         return processed_obs
 
-    def get_states(self):
+    def get_states(self) -> dict:
         """Get agent and sensor states (position, rotation, etc..).
 
         Returns:
-            dict: A dictionary with the agent pose in world coordinates and any other
-                agent specific state as well as every sensor pose relative to the agent
-                as well as any sensor specific state that is not returned by
-                :meth:`get_observations`.
+            A dictionary with the agent pose in world coordinates and any other
+            agent specific state as well as every sensor pose relative to the agent
+            as well as any sensor specific state that is not returned by
+            :meth:`get_observations`.
 
-                For example:
-                    {
-                        "camera": {
-                            "position": [2.125, 1.5, -5.278],
-                            "rotation": [0.707107, 0.0, 0.0.707107, 0.0],
-                            "sensors" : {
-                                "rgba": {
-                                    "position": [0.0, 1.5, 0.0],
-                                    "rotation": [1.0, 0.0, 0.0, 0.0],
-                                },
-                                "depth": {
-                                    "position": [0.0, 1.5, 0.0],
-                                    "rotation": [1.0, 0.0, 0.0, 0.0],
-                                },
-                                :
-                            }
-                        },
-                        :
-                    }
+            For example:
+                {
+                    "camera": {
+                        "position": [2.125, 1.5, -5.278],
+                        "rotation": [0.707107, 0.0, 0.0.707107, 0.0],
+                        "sensors" : {
+                            "rgba": {
+                                "position": [0.0, 1.5, 0.0],
+                                "rotation": [1.0, 0.0, 0.0, 0.0],
+                            },
+                            "depth": {
+                                "position": [0.0, 1.5, 0.0],
+                                "rotation": [1.0, 0.0, 0.0, 0.0],
+                            },
+                            :
+                        }
+                    },
+                    :
+                }
         """
         result = {}
         for agent_index, sim_agent in enumerate(self._sim.agents):

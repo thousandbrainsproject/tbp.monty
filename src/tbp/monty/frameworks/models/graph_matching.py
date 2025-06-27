@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
 import os
@@ -578,7 +579,7 @@ class GraphLM(LearningModule):
         """Initialize general Learning Module based on graphs.
 
         Args:
-            initialize_base_modules (bool): Provides option to not intialize
+            initialize_base_modules: Provides option to not intialize
                 the base modules if more specialized versions will be initialized in
                 child LMs. Defaults to True.
         """
@@ -1429,7 +1430,9 @@ class GraphMemory(LMMemory):
 
     # ------------------------ Helper --------------------------
 
-    def _get_all_node_features(self, graph_id, input_channel):
+    def _get_all_node_features(
+        self, graph_id, input_channel
+    ) -> tuple[np.ndarray, list]:
         """Create an array of all features for all nodes in a graph.
 
         This can be used for fast feature matching
@@ -1439,7 +1442,7 @@ class GraphMemory(LMMemory):
             input_channel: ?
 
         Returns:
-            np.ndarray: an array, num_nodes x num_features
+            An array, num_nodes x num_features
         """
         all_node_ids = self.get_graph_node_ids(graph_id, input_channel).astype(int)
         feature_arrays = self._get_empty_feature_arrays(
@@ -1465,7 +1468,9 @@ class GraphMemory(LMMemory):
                 start_idx = end_idx
         return feature_arrays, feature_order
 
-    def _get_empty_feature_arrays(self, graph_id, input_channel, num_nodes):
+    def _get_empty_feature_arrays(
+        self, graph_id, input_channel, num_nodes
+    ) -> np.ndarray:
         """Get nan array with space for all features per input channel.
 
         The size of the array is calculated by taking the length of all non-pose
@@ -1481,7 +1486,7 @@ class GraphMemory(LMMemory):
                 (determines size of array)
 
         Returns:
-            np.array filled with nans of size (sum(feature_lens), num_nodes)
+            An array filled with nans of size (sum(feature_lens), num_nodes)
         """
         node_features = self.get_features_at_node(graph_id, input_channel, node_id=0)
         feature_array_len = 0

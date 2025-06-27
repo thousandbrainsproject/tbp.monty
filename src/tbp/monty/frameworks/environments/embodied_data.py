@@ -16,6 +16,7 @@ from pprint import pformat
 import numpy as np
 import quaternion
 from torch.utils.data import Dataset
+from typing_extensions import Self
 
 from tbp.monty.frameworks.actions.action_samplers import UniformlyDistributedSampler
 from tbp.monty.frameworks.actions.actions import (
@@ -158,11 +159,11 @@ class EnvironmentDataLoader:
         self._action = None
         self._counter = 0
 
-    def __iter__(self):
+    def __iter__(self) -> Self:
         """Implement the iterator protocol.
 
         Returns:
-            EnvironmentDataLoader: The iterator.
+            The iterator.
         """
         return self
 
@@ -380,10 +381,10 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         Args:
             primary_target_obj : the Habitat object which is the primary target in
                 the scene
-            init_params (dict): parameters used to initialize the object, e.g.
+            init_params: parameters used to initialize the object, e.g.
                 orientation; for now, these are identical to the primary target
                 except for the object ID
-            primary_target_name (str): name of the primary target object
+            primary_target_name: name of the primary target object
         """
         # Sample distractor objects from those that are not the primary target; this
         # is so that, for now, we can evaluate how well the model stays on the primary
@@ -544,16 +545,16 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         """Invoke the GetGoodView positioning procedure.
 
         Args:
-            sensor_id (str): The ID of the sensor to use for positioning.
-            allow_translation (bool): Whether to allow movement toward the object via
+            sensor_id: The ID of the sensor to use for positioning.
+            allow_translation: Whether to allow movement toward the object via
                 the motor systems's move_close_enough method. If False, only
                 orientienting movements are performed. Defaults to True.
-            max_orientation_attempts (int): The maximum number of orientation attempts
+            max_orientation_attempts: The maximum number of orientation attempts
                 allowed before giving up and truncating the procedure indicating that
                 the sensor is not on the target object.
 
         Returns:
-            bool: Whether the sensor is on the target object.
+            Whether the sensor is on the target object.
         """
         positioning_procedure = GetGoodView(
             agent_id=self.motor_system._policy.agent_id,
@@ -815,11 +816,11 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         """Initialize dataloader.
 
         Args:
-            alphabets (List[str]): List of alphabets.
-            characters (List[str]): List of characters.
+            alphabets: List of alphabets.
+            characters: List of characters.
             versions: List of versions.
-            dataset (EnvironmentDataset): The environment dataset.
-            motor_system (MotorSystem): The motor system.
+            dataset: The environment dataset.
+            motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
 
@@ -909,8 +910,8 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         Args:
             scenes: List of scenes
             versions: List of versions
-            dataset (EnvironmentDataset): The environment dataset.
-            motor_system (MotorSystem): The motor system.
+            dataset: The environment dataset.
+            motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
 
@@ -997,8 +998,8 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         """Initialize dataloader.
 
         Args:
-            dataset (EnvironmentDataset): The environment dataset.
-            motor_system (MotorSystem): The motor system.
+            dataset: The environment dataset.
+            motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
 

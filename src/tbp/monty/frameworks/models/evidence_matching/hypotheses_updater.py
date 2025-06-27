@@ -58,17 +58,16 @@ class HypothesesUpdater(Protocol):
         """Update hypotheses based on sensor displacement and sensed features.
 
         Args:
-            hypotheses (Hypotheses): Hypotheses for all input channels for the graph_id
-            features (dict): Input features
-            displacements (dict or None): Given displacements
-            graph_id (str): Identifier of the graph being updated
-            mapper (ChannelMapper): Mapper for the graph_id to extract data from
+            hypotheses: Hypotheses for all input channels for the graph_id
+            features: Input features
+            displacements: Given displacements
+            graph_id: Identifier of the graph being updated
+            mapper: Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
-            evidence_update_threshold (float): Evidence update threshold
+            evidence_update_threshold: Evidence update threshold
 
         Returns:
-            list[ChannelHypotheses]: The list of channel hypotheses updates to be
-                applied.
+            The list of channel hypotheses updates to be applied.
         """
         ...
 
@@ -97,33 +96,33 @@ class DefaultHypothesesUpdater:
         """Initializes the DefaultHypothesesUpdater.
 
         Args:
-            feature_weights (dict): How much should each feature be weighted when
+            feature_weights: How much should each feature be weighted when
                 calculating the evidence update for hypothesis. Weights are stored in a
                 dictionary with keys corresponding to features (same as keys in
                 tolerances).
-            graph_memory (EvidenceGraphMemory): The graph memory to read graphs from.
-            max_match_distance (float): Maximum distance of a tested and stored location
+            graph_memory: The graph memory to read graphs from.
+            max_match_distance: Maximum distance of a tested and stored location
                 to be matched.
-            tolerances (dict): How much can each observed feature deviate from the
+            tolerances: How much can each observed feature deviate from the
                 stored features to still be considered a match.
-            feature_evidence_calculator (Type[FeatureEvidenceCalculator]): Class to
+            feature_evidence_calculator: Class to
                 calculate feature evidence for all nodes. Defaults to the default
                 calculator.
-            feature_evidence_increment (int): Feature evidence (between 0 and 1) is
+            feature_evidence_increment: Feature evidence (between 0 and 1) is
                 multiplied by this value before being added to the overall evidence of
                 a hypothesis. This factor is only multiplied with the feature evidence
                 (not the pose evidence as opposed to the present_weight). Defaults to 1.
-            features_for_matching_selector (Type[FeaturesForMatchingSelector]): Class to
+            features_for_matching_selector: Class to
                 select if features should be used for matching. Defaults to the default
                 selector.
-            initial_possible_poses ("uniform" | "informed" | list[Rotation]): Initial
+            initial_possible_poses: Initial
                 possible poses that should be tested for. Defaults to "informed".
-            max_nneighbors (int): Maximum number of nearest neighbors to consider in the
+            max_nneighbors: Maximum number of nearest neighbors to consider in the
                 radius of a hypothesis for calculating the evidence. Defaults to 3.
-            past_weight (float): How much should the evidence accumulated so far be
+            past_weight: How much should the evidence accumulated so far be
                 weighted when combined with the evidence from the most recent
                 observation. Defaults to 1.
-            present_weight (float): How much should the current evidence be weighted
+            present_weight: How much should the current evidence be weighted
                 when added to the previous evidence. If past_weight and present_weight
                 add up to 1, the evidence is bounded and can't grow infinitely. Defaults
                 to 1.
@@ -132,7 +131,7 @@ class DefaultHypothesesUpdater:
                 efficient policy and better parameters that may be possible to use
                 though and could help when moving from one object to another and to
                 generally make setting thresholds etc. more intuitive.
-            umbilical_num_poses (int): Number of sampled rotations in the direction of
+            umbilical_num_poses: Number of sampled rotations in the direction of
                 the plane perpendicular to the point normal. These are sampled at
                 umbilical points (i.e., points where PC directions are undefined).
         """
@@ -180,17 +179,16 @@ class DefaultHypothesesUpdater:
         channel in the graph.
 
         Args:
-            hypotheses (Hypotheses): Hypotheses for all input channels in the graph_id
-            features (dict): Input features
-            displacements (dict or None): Given displacements
-            graph_id (str): Identifier of the graph being updated
-            mapper (ChannelMapper): Mapper for the graph_id to extract data from
+            hypotheses: Hypotheses for all input channels in the graph_id
+            features: Input features
+            displacements: Given displacements
+            graph_id: Identifier of the graph being updated
+            mapper: Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
-            evidence_update_threshold (float): Evidence update threshold.
+            evidence_update_threshold: Evidence update threshold.
 
         Returns:
-            list[ChannelHypotheses]: The list of hypotheses updates to be applied to
-                each input channel.
+            The list of hypotheses updates to be applied to each input channel.
         """
         # Get all usable input channels
         # NOTE: We might also want to check the confidence in the input channel
@@ -378,11 +376,11 @@ def all_usable_input_channels(
     """Determine all usable input channels.
 
     Args:
-        features (dict): Input features.
-        all_input_channels (list[str]): All input channels that are stored in the graph.
+        features: Input features.
+        all_input_channels: All input channels that are stored in the graph.
 
     Returns:
-        list[str]: All input channels that are usable for matching.
+        All input channels that are usable for matching.
     """
     # Get all usable input channels
     # NOTE: We might also want to check the confidence in the input channel

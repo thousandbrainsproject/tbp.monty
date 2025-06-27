@@ -14,10 +14,11 @@ import datetime
 import logging
 import os
 import pprint
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Literal
 
 import numpy as np
 import torch
+from typing_extensions import Self
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
@@ -74,7 +75,7 @@ class MontyExperiment:
         """Set up the basic elements of a Monty experiment and initialize counters.
 
         Args:
-            config(Dict[str, Any]): config specifying variables of the experiment.
+            config: config specifying variables of the experiment.
         """
         self.init_loggers(self.config["logging_config"])
         self.model = self.init_model(
@@ -318,7 +319,7 @@ class MontyExperiment:
         """Initialize logger with specified log level.
 
         Args:
-            logging_config(Dict[str, Any]): Logging configuration.
+            logging_config: Logging configuration.
         """
         # Unpack individual logging arguments
         self.python_log_level = logging_config["python_log_level"]
@@ -360,7 +361,7 @@ class MontyExperiment:
         """Initialize Monty data loggers.
 
         Args:
-            logging_config(Dict[str, Any]): Logging configuration.
+            logging_config: Logging configuration.
         """
         self.monty_log_level = logging_config["monty_log_level"]
         self.monty_handlers = logging_config["monty_handlers"]
@@ -632,7 +633,7 @@ class MontyExperiment:
             logger.removeHandler(handler)
             handler.close()
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         """Context manager entry method.
 
         Returns:
@@ -641,13 +642,13 @@ class MontyExperiment:
         self.setup_experiment(self.config)
         return self
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def __exit__(self, exc_type, exc_value, exc_traceback) -> Literal[False]:
         """Context manager exit method.
 
         Ensure that we always close the environment if necessary.
 
         Returns:
-            bool to indicate whether to supress any exceptions that were raised.
+            Whether to supress any exceptions that were raised.
         """
         self.close()
         return False  # don't silence exceptions inside the with block
