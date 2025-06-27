@@ -107,7 +107,8 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
 
                 if self.model.is_motor_only_step:
                     logger.debug(
-                        "Performing a motor-only step, so passing info straight to motor"
+                        "Performing a motor-only step, so passing info straight to "
+                        "motor"
                     )
                     # On these sensations, we just want to pass information to the motor
                     # system, so bypass the main model step (i.e. updating of LMs)

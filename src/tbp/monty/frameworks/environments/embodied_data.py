@@ -57,6 +57,7 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
+
 class PositioningProcedureTruncated(RuntimeError):
     """Error raised when a positioning procedure is truncated."""
 
@@ -850,6 +851,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         if not result.success:
             raise ObjectNotVisible
+
 
 class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
     """Dataloader for Omniglot dataset."""
