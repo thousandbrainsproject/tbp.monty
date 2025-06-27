@@ -865,14 +865,14 @@ class TouchObject(PositioningProcedure):
                     "position"
                 ][2]
             )
-            logging.debug(f"Move to touch visible object, forward by {distance}")
+            logger.debug(f"Move to touch visible object, forward by {distance}")
 
             self._terminated_and_succeeded = True
             return PositioningProcedureResult(
                 actions=[MoveForward(agent_id=self.agent_id, distance=distance)]
             )
 
-        logging.debug("TouchObject positioning procedure searching for object...")
+        logger.debug("TouchObject positioning procedure searching for object...")
 
         # Helpful to conceptualize these movements by considering a unit circle,
         # scaled by the radius distance_from_center
@@ -895,26 +895,26 @@ class TouchObject(PositioningProcedure):
         if self._touch_search_rotation_degrees >= 720:
             # Perform a random upward or downward movement along the surface of a
             # sphere, with its centre fixed 10 cm in front of the agent
-            logging.debug("Trying random search for object")
+            logger.debug("Trying random search for object")
             if self.rng.uniform() < 0.5:
                 orientation = "vertical"
-                logging.debug("Orienting vertically")
+                logger.debug("Orienting vertically")
             else:
                 orientation = "horizontal"
-                logging.debug("Orienting horizontally")
+                logger.debug("Orienting horizontally")
 
             rotation_degrees = self.rng.uniform(-180, 180)
-            logging.debug(f"Random orientation amount is : {rotation_degrees}")
+            logger.debug(f"Random orientation amount is : {rotation_degrees}")
 
         elif (
             self._touch_search_rotation_degrees >= 360
             and self._touch_search_rotation_degrees < 720
         ):
-            logging.debug("Trying vertical search for object")
+            logger.debug("Trying vertical search for object")
             orientation = "vertical"
 
         else:
-            logging.debug("Trying horizontal search for object")
+            logger.debug("Trying horizontal search for object")
             orientation = "horizontal"
 
         # Move tangentally to the point we're facing, resulting in the agent's
