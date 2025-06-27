@@ -259,21 +259,20 @@ class EvidenceSlopeTracker:
     channel.
 
     Attributes:
-        window_size (int): Number of past values to consider for slope calculation.
-        min_age (int): Minimum number of updates before a hypothesis can be considered
+        window_size: Number of past values to consider for slope calculation.
+        min_age: Minimum number of updates before a hypothesis can be considered
             for removal.
-        data (Dict[str, np.ndarray]): Maps channel names to their hypothesis evidence
+        data: Maps channel names to their hypothesis evidence
             buffers.
-        age (Dict[str, np.ndarray]): Maps channel names to hypothesis age counters.
+        age: Maps channel names to hypothesis age counters.
     """
 
     def __init__(self, window_size: int = 3, min_age: int = 5) -> None:
         """Initializes the EvidenceSlopeTracker.
 
         Args:
-            window_size (int, optional): Number of evidence points per hypothesis.
-            min_age (int, optional): Minimum number of updates before removal is
-                allowed.
+            window_size: Number of evidence points per hypothesis.
+            min_age: Minimum number of updates before removal is allowed.
         """
         self.window_size = window_size
         self.min_age = min_age
@@ -284,10 +283,10 @@ class EvidenceSlopeTracker:
         """Returns the number of hypotheses in a given channel.
 
         Args:
-            channel (str): Name of the input channel.
+            channel: Name of the input channel.
 
         Returns:
-            int: Number of hypotheses currently tracked in the channel.
+            Number of hypotheses currently tracked in the channel.
         """
         return self.data.get(channel, np.empty((0, self.window_size))).shape[0]
 
@@ -295,10 +294,10 @@ class EvidenceSlopeTracker:
         """Returns a boolean mask for removable hypotheses in a channel.
 
         Args:
-            channel (str): Name of the input channel.
+            channel: Name of the input channel.
 
         Returns:
-            np.ndarray: Boolean array indicating removable hypotheses (age >= min_age).
+            Boolean array indicating removable hypotheses (age >= min_age).
         """
         return self.age[channel] >= self.min_age
 
@@ -306,8 +305,8 @@ class EvidenceSlopeTracker:
         """Adds new hypotheses to the specified input channel.
 
         Args:
-            num_new_hyp (int): Number of new hypotheses to add.
-            channel (str): Name of the input channel.
+            num_new_hyp: Number of new hypotheses to add.
+            channel: Name of the input channel.
         """
         new_data = np.full((num_new_hyp, self.window_size), np.nan)
         new_age = np.zeros(num_new_hyp, dtype=int)
@@ -323,8 +322,8 @@ class EvidenceSlopeTracker:
         """Updates all hypotheses in a channel with new evidence values.
 
         Args:
-            values (List[float] | np.ndarray): List or array of new evidence values.
-            channel (str): Name of the input channel.
+            values: List or array of new evidence values.
+            channel: Name of the input channel.
 
         Raises:
             ValueError: If the channel doesn't exist or the number of values is
@@ -357,10 +356,10 @@ class EvidenceSlopeTracker:
         valid evidence differences (e.g., all NaNs), the slope is returned as NaN.
 
         Args:
-            channel (str): Name of the input channel.
+            channel: Name of the input channel.
 
         Returns:
-            np.ndarray: Array of average slopes, one per hypothesis.
+            Array of average slopes, one per hypothesis.
         """
         # Calculate the evidence differences
         diffs = np.diff(self.data[channel], axis=1)
@@ -378,8 +377,8 @@ class EvidenceSlopeTracker:
         """Removes specific hypotheses by index in the specified channel.
 
         Args:
-            hyp_ids (List[int]): List of hypothesis indices to remove.
-            channel (str): Name of the input channel.
+            hyp_ids: List of hypothesis indices to remove.
+            channel: Name of the input channel.
         """
         mask = np.ones(self.total_size(channel), dtype=bool)
         mask[hyp_ids] = False
@@ -394,13 +393,12 @@ class EvidenceSlopeTracker:
         Hypotheses with the lowest average slope are selected for removal.
 
         Args:
-            num_keep (int): Requested number of hypotheses to retain.
-            channel (str): Name of the input channel.
+            num_keep: Requested number of hypotheses to retain.
+            channel: Name of the input channel.
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]:
-                - to_keep: Indices of hypotheses to retain.
-                - to_remove: Indices of hypotheses to remove.
+            - to_keep: Indices of hypotheses to retain.
+            - to_remove: Indices of hypotheses to remove.
 
         Raises:
             ValueError: If the channel does not exist.

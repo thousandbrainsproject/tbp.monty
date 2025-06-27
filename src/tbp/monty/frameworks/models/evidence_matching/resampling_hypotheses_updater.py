@@ -305,7 +305,7 @@ class ResamplingHypothesesUpdater:
             graph_id: Identifier of the graph being queried.
             mapper: Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
-            tracker (EvidenceSlopeTracker): Slope tracker for the evidence values of a
+            tracker: Slope tracker for the evidence values of a
                 graph_id
 
         Returns:
@@ -383,7 +383,7 @@ class ResamplingHypothesesUpdater:
             input_channel: The channel for which to sample existing hypotheses.
             mapper: Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel.
-            tracker (EvidenceSlopeTracker): Slope tracker for the evidence values of a
+            tracker: Slope tracker for the evidence values of a
                 graph_id
 
         Returns:
