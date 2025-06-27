@@ -149,6 +149,6 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         episode only. If a `last_location` exists, then first movement has occurred.
 
         Returns:
-            - Whether the agent has moved since the last reset.
+            Whether the agent has moved since the last reset.
         """
         return len(self.last_location) > 0

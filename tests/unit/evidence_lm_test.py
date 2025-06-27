@@ -783,11 +783,11 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
     def get_elm_with_two_fake_objects(
         self, fake_obs, fake_obs_two, initial_possible_poses, gsg_class, gsg_args
-    ):
+    ) -> EvidenceGraphLM:
         """Train on two fake observation objects.
 
         Returns:
-            EvidenceGraphLM: Evidence GraphLearning Module
+            Evidence GraphLearning Module
         """
         # Train on first object
         graph_lm = self.get_elm_with_fake_object(

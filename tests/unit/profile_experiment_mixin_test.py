@@ -113,7 +113,7 @@ class ProfileExperimentMixinTest(TestCase):
         """Helper to get the files in the profile directory in a set.
 
         Returns:
-            set of filenames in the profile directory.
+            Set of filenames in the profile directory.
         """
         path = Path(self.output_dir, "profile")
         filenames = [f.name for f in path.iterdir() if f.is_file()]

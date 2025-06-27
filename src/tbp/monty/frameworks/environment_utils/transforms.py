@@ -314,7 +314,7 @@ class DepthTo3DLocations:
         self.clip_value = clip_value
         self.depth_clip_sensors = depth_clip_sensors
 
-    def __call__(self, observations: dict, state: Optional[State] = None):
+    def __call__(self, observations: dict, state: Optional[State] = None) -> dict:
         """Apply the depth-to-3D-locations transform to sensor observations.
 
         Applies spatial transforms to the observations and generates a mask used

@@ -100,7 +100,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         #      interface and how the class hierarchy is defined and used.
         raise NotImplementedError("OmniglotEnvironment does not support adding objects")
 
-    def step(self, action: Action):
+    def step(self, action: Action) -> dict:
         """Retrieve the next observation.
 
         Since the omniglot dataset includes stroke information (the order in which
@@ -331,7 +331,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             "SaccadeOnImageEnvironment does not support adding objects"
         )
 
-    def step(self, action: Action):
+    def step(self, action: Action) -> dict:
         """Retrieve the next observation.
 
         Args:

@@ -14,10 +14,11 @@ import datetime
 import logging
 import os
 import pprint
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Literal
 
 import numpy as np
 import torch
+from typing_extensions import Self
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
@@ -632,7 +633,7 @@ class MontyExperiment:
             logger.removeHandler(handler)
             handler.close()
 
-    def __enter__(self):
+    def __enter__(self) -> Self:
         """Context manager entry method.
 
         Returns:
@@ -641,13 +642,13 @@ class MontyExperiment:
         self.setup_experiment(self.config)
         return self
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def __exit__(self, exc_type, exc_value, exc_traceback) -> Literal[False]:
         """Context manager exit method.
 
         Ensure that we always close the environment if necessary.
 
         Returns:
-            bool to indicate whether to supress any exceptions that were raised.
+            Whether to supress any exceptions that were raised.
         """
         self.close()
         return False  # don't silence exceptions inside the with block

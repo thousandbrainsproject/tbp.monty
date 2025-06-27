@@ -61,12 +61,11 @@ class HabitatAgent:
         self.height = height
         self.sensors: List[SensorConfig] = []
 
-    def get_spec(self):
+    def get_spec(self) -> AgentConfiguration:
         """Returns a habitat-sim agent configuration.
 
         Returns:
-            :class:`habitat_sim.agent.AgentConfiguration` spec create from this
-            sensor module configuration.
+            Spec created from this sensor module configuration.
         """
         spec = AgentConfiguration()
         spec.height = self.height

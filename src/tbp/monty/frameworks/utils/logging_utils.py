@@ -359,7 +359,7 @@ def check_detection_accuracy_at_step(stats, last_n_step=1):
     return detection_stats
 
 
-def get_time_stats(all_ds, all_conditions):
+def get_time_stats(all_ds, all_conditions) -> pd.DataFrame:
     """Get summary of run times in a dataframe for each condition.
 
     Args:
@@ -367,7 +367,7 @@ def get_time_stats(all_ds, all_conditions):
         all_conditions: name of each condition
 
     Returns:
-        pd.DataFrame with runtime stats
+        Runtime stats.
     """
     time_stats = []
     for i, detailed_stats in enumerate(all_ds):

@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
 
@@ -231,7 +232,7 @@ class MontyBase(Monty):
         )
         return sensory_inputs
 
-    def _combine_inputs(self, inputs_from_sms, inputs_from_lms):
+    def _combine_inputs(self, inputs_from_sms, inputs_from_lms) -> dict | None:
         """Combine all inputs to an LM into one dict.
 
         An LM only receives input from another LM if it also receives input from
@@ -248,10 +249,9 @@ class MontyBase(Monty):
             inputs_from_lms: List of dicts of LM outputs.
 
         Returns:
-            dict of combined features and location from all inputs with
-                interesting features. If there are no inputs or none of them
-                are deemed interesting (i.e. off object or low confidence LM)
-                this returns None.
+            Combined features and location from all inputs with interesting features.
+            If there are no inputs or none of them are deemed interesting (i.e. off
+            object or low confidence LM) this returns None.
         """
         combined_inputs = [
             inputs_from_sms[i]

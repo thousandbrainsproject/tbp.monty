@@ -321,7 +321,7 @@ class EvidenceGraphLM(GraphLM):
 
             self._add_votes_to_buffer_stats(vote_data)
 
-    def send_out_vote(self):
+    def send_out_vote(self) -> dict | None:
         """Send out hypotheses and the evidence for them.
 
         Votes are a dict and contain the following:
@@ -344,9 +344,8 @@ class EvidenceGraphLM(GraphLM):
         object will not send out a vote.
 
         Returns:
-            None or dict:
-                possible_states: The possible states.
-                sensed_pose_rel_body: The sensed pose relative to the body.
+            Dictionary with possible states and sensed poses relative to the body, or
+            None if we don't want the LM to vote.
         """
         if (
             self.buffer.get_num_observations_on_object() < 1

@@ -406,11 +406,8 @@ def get_action_name(
 
 
     Returns:
-        Action name or one of the following sentinel values:
-            "updating possible matches"
-            "patch not on object"
-            "not moved yet"
-            "None"
+        Action name or one of the following sentinel values: "updating possible
+        matches", "patch not on object", "not moved yet", "None"
     """
     if is_match_step:
         if obs_on_object:

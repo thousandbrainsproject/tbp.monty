@@ -16,6 +16,7 @@ from pprint import pformat
 import numpy as np
 import quaternion
 from torch.utils.data import Dataset
+from typing_extensions import Self
 
 from tbp.monty.frameworks.actions.action_samplers import UniformlyDistributedSampler
 from tbp.monty.frameworks.actions.actions import (
@@ -158,11 +159,11 @@ class EnvironmentDataLoader:
         self._action = None
         self._counter = 0
 
-    def __iter__(self):
+    def __iter__(self) -> Self:
         """Implement the iterator protocol.
 
         Returns:
-            EnvironmentDataLoader: The iterator.
+            The iterator.
         """
         return self
 

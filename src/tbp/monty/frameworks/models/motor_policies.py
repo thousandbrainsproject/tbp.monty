@@ -115,7 +115,7 @@ class MotorPolicy(abc.ABC):
         """Use this method when actions are predefined.
 
         Returns:
-            (Action): The action to take.
+            The action to take.
         """
         pass
 
@@ -434,9 +434,8 @@ class PositioningProcedure(BasePolicy):
             state: The current state of the motor system.
 
         Returns:
-            Any actions to take, whether the procedure
-                succeeded, whether the procedure terminated, and whether the procedure
-                truncated.
+            Any actions to take, whether the procedure succeeded, whether the procedure
+            terminated, and whether the procedure truncated.
         """
         pass
 
@@ -523,9 +522,8 @@ class GetGoodView(PositioningProcedure):
 
         Args:
             relative_location: the x,y,z coordinates of the target with respect
-            to the sensor.
-            state: The current state of the motor system.
-                Defaults to None.
+                to the sensor.
+            state: The current state of the motor system. Defaults to None.
 
         Returns:
             down_amount: Amount to look down (degrees).

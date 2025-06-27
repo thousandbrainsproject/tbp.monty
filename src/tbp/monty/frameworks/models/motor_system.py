@@ -58,7 +58,7 @@ class MotorSystem:
         Delegates to the motor policy.
 
         Returns:
-            (Action): The action to take.
+            The action to take.
         """
         action = self._policy(self._state)
         return action

@@ -65,7 +65,7 @@ def create_agents(
         translation_step: Default action translation step in meters
 
     Returns:
-        List of :class:`SingleSensorAgent`
+        The created agents.
     """
     agents = []
     for i in range(num_agents):

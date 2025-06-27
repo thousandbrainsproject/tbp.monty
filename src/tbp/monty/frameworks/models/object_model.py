@@ -184,8 +184,8 @@ class GraphObjectModel(ObjectModel):
             features: new observed features (dict)
 
         Returns:
-            combines features at locations with new locations transformed into
-                the graphs reference frame.
+            Combines features at locations with new locations transformed into the
+            graph's reference frame.
         """
         old_points = self.pos
         feature_mapping = self.feature_mapping
@@ -253,7 +253,7 @@ class GraphObjectModel(ObjectModel):
 
         Returns:
             A torch_geometric.data graph containing the observed features at
-                locations, with edges betweed the k_n nearest neighbors.
+            locations, with edges between the k_n nearest neighbors.
         """
         locations_reduced, clean_ids = remove_close_points(
             np.array(locations), features, graph_delta_thresholds, old_graph_index

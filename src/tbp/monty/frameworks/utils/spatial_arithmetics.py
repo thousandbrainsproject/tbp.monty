@@ -11,6 +11,7 @@
 import copy
 import logging
 import sys
+from typing import List
 
 import numpy as np
 import torch
@@ -253,7 +254,7 @@ def non_singular_mat(a):
         return False
 
 
-def get_more_directions_in_plane(vecs, n_poses):
+def get_more_directions_in_plane(vecs, n_poses) -> List[np.ndarray]:
     """Get a list of unit vectors, evenly spaced in a plane orthogonal to vecs[0].
 
     This is used to sample possible poses orthogonal to the point normal when the
@@ -264,7 +265,7 @@ def get_more_directions_in_plane(vecs, n_poses):
         n_poses: Number of poses to get
 
     Returns:
-        list: List of vectors evenly spaced in a plane orthogonal to vecs[0]
+        List of vectors evenly spaced in a plane orthogonal to vecs[0]
     """
     new_vecs = [vecs]
     angles = np.linspace(0, 2 * np.pi, n_poses + 1)
@@ -308,14 +309,14 @@ def get_unique_rotations(poses, similarity_th, get_reverse_r=True):
     return euler_poses, r_poses
 
 
-def pose_is_new(all_poses, new_pose, similarity_th):
+def pose_is_new(all_poses, new_pose, similarity_th) -> bool:
     """Check if a pose is different from a list of poses.
 
     Use the magnitude of the difference between quaternions as a measure for
     similarity and check that it is below pose_similarity_threshold.
 
     Returns:
-        bool: True if the pose is new, False otherwise
+        True if the pose is new, False otherwise
     """
     for pose in all_poses:
         d = new_pose * pose.inv()

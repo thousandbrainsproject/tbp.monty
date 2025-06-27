@@ -244,7 +244,7 @@ class ChannelMapper:
         """Returns a string representation of the current channel mapping.
 
         Returns:
-            str: String representation of the channel mappings.
+            String representation of the channel mappings.
         """
         ranges = {ch: self.channel_range(ch) for ch in self.channel_sizes}
         return f"ChannelMapper({ranges})"
