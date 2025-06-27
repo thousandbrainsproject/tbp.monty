@@ -812,7 +812,7 @@ class TouchObject(PositioningProcedure):
         self,
         desired_object_distance: float,
         sensor_id: str,
-        max_steps: int = 48,
+        max_steps: int = 32,
         **kwargs: Any,
     ) -> None:
         """Intialize the TouchObject positioning procedure.
@@ -821,7 +821,7 @@ class TouchObject(PositioningProcedure):
             desired_object_distance: The desired distance to the object.
             sensor_id: The ID of the sensor to use for positioning.
             max_steps: The maximum number of steps to take before truncating the
-                procedure. Defaults to 48.
+                procedure. Defaults to 32.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
