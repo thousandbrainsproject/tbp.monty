@@ -23,8 +23,38 @@ import numpy as np
 from tbp.monty.frameworks.models.evidence_matching.learning_module import EvidenceGraphLM
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.models.unsupervised_association import UnsupervisedAssociationMixin
+from tbp.monty.frameworks.utils.graph_matching_utils import get_scaled_evidences
 
 logger = logging.getLogger(__name__)
+
+
+def _convert_to_parent_vote_format(vote_data):
+    """
+    Convert association vote data back to the format expected by parent class.
+
+    The parent EvidenceGraphLM expects votes in a specific format for evidence updating.
+
+    Args:
+        vote_data: Vote data in association format or CMP format
+
+    Returns:
+        Vote data in format expected by parent class
+    """
+    if not vote_data or isinstance(vote_data, list):
+        return vote_data
+    if isinstance(vote_data, dict):
+        converted_votes = []
+        stack = [vote_data]
+        while stack:
+            obj = stack.pop()
+            if isinstance(obj, dict):
+                stack.extend(obj.values())
+            elif isinstance(obj, list):
+                stack.extend(obj)
+            else:
+                converted_votes.append(obj)
+        return converted_votes
+    return vote_data
 
 
 class UnsupervisedEvidenceGraphLM(UnsupervisedAssociationMixin, EvidenceGraphLM):
@@ -65,11 +95,10 @@ class UnsupervisedEvidenceGraphLM(UnsupervisedAssociationMixin, EvidenceGraphLM)
 
     def receive_votes(self, vote_data):
         """
-        Enhanced vote receiving with association learning.
-        
-        This method first learns/updates associations based on co-occurrence,
-        then maps votes to local object IDs using learned associations,
-        and finally updates evidence as in the parent class.
+        Enhanced vote receiving with association learning and CMP compliance.
+
+        This method processes CMP-compliant votes that include object IDs and
+        association metadata in the non_morphological_features field.
         """
         if vote_data is None:
             return
@@ -77,48 +106,144 @@ class UnsupervisedEvidenceGraphLM(UnsupervisedAssociationMixin, EvidenceGraphLM)
         # Increment step counter for temporal tracking
         self.episode_step += 1
 
-        # Learn associations from co-occurrence patterns
+        # Extract association information from CMP-compliant votes
         if self.association_learning_enabled:
-            self.update_associations(vote_data, self.episode_step)
+            association_vote_data = self._extract_association_data_from_votes(vote_data)
+
+            # Learn associations from co-occurrence patterns
+            self.update_associations(association_vote_data, self.episode_step)
 
             # Map votes to my object IDs using learned associations
-            mapped_votes = self.map_votes_to_my_objects(vote_data)
+            mapped_votes = self.map_votes_to_my_objects(association_vote_data)
+
+            # Convert back to format expected by parent class
+            parent_vote_data = _convert_to_parent_vote_format(mapped_votes)
 
             # Log association mapping for debugging
             if logger.isEnabledFor(logging.DEBUG):
-                self._log_vote_mapping(vote_data, mapped_votes)
+                self._log_vote_mapping(association_vote_data, mapped_votes)
 
             # Use mapped votes for evidence updating
-            super().receive_votes(mapped_votes)
+            super().receive_votes(parent_vote_data)
         else:
-            # Fall back to original behavior
-            super().receive_votes(vote_data)
+            # Convert to parent format and fall back to original behavior
+            parent_vote_data = _convert_to_parent_vote_format(vote_data)
+            super().receive_votes(parent_vote_data)
 
     def send_out_vote(self):
         """
-        Enhanced vote sending with association metadata.
-        
-        Extends the parent's vote with additional metadata needed for
-        association learning.
-        """
-        # Get the standard vote from parent class
-        vote = super().send_out_vote()
+        Enhanced vote sending with proper CMP compliance and association metadata.
 
-        if vote is None:
+        This method creates votes that properly include object IDs and association
+        metadata in the non_morphological_features field, following the CMP protocol.
+        """
+        if self.buffer.get_num_observations_on_object() == 0:
             return None
 
-        # Add association metadata to enable better association learning
-        enhanced_vote = {}
+        possible_states = {}
+        evidences = get_scaled_evidences(self.get_all_evidences())
 
-        for object_id, vote_states in vote.items():
-            enhanced_vote[object_id] = []
+        for graph_id in evidences.keys():
+            interesting_hyp = np.nonzero(
+                evidences[graph_id] > self.vote_evidence_threshold
+            )
+            if len(interesting_hyp[0]) > 0:
+                possible_states[graph_id] = []
+                for hyp_id in interesting_hyp[0]:
+                    # Create CMP-compliant vote with object ID and association metadata
+                    vote = State(
+                        location=self.possible_locations[graph_id][hyp_id],
+                        morphological_features={
+                            "pose_vectors": self.possible_poses[graph_id][hyp_id].T,
+                            "pose_fully_defined": True,
+                        },
+                        # FIX: Include object ID and association metadata in CMP
+                        non_morphological_features={
+                            "object_id": graph_id,  # Essential for association learning!
+                            "sender_lm_id": self.learning_module_id,
+                            "evidence_strength": evidences[graph_id][hyp_id],
+                            "association_metadata": self._get_association_metadata(),
+                        },
+                        confidence=evidences[graph_id][hyp_id],
+                        use_state=True,
+                        sender_id=self.learning_module_id,
+                        sender_type="LM",
+                    )
+                    possible_states[graph_id].append(vote)
 
-            for state in vote_states:
-                # Create enhanced state with additional metadata
-                enhanced_state = self._create_enhanced_vote_state(state, object_id)
-                enhanced_vote[object_id].append(enhanced_state)
+        return possible_states if possible_states else None
 
-        return enhanced_vote
+    def _get_association_metadata(self) -> Dict:
+        """
+        Get association metadata to include in vote messages.
+
+        Returns:
+            Dictionary containing metadata useful for association learning
+        """
+        metadata = {
+            "temporal_context": self.episode_step,
+            "num_observations": self.buffer.get_num_observations_on_object(),
+        }
+
+        # Add spatial context if available
+        if hasattr(self, 'current_mlh') and self.current_mlh:
+            if 'location' in self.current_mlh:
+                metadata["current_location"] = self.current_mlh['location']
+            if 'rotation' in self.current_mlh:
+                metadata["current_rotation"] = self.current_mlh['rotation']
+
+        # Add association statistics if available
+        if hasattr(self, 'association_memory') and self.association_memory:
+            metadata["total_associations"] = self._count_total_associations()
+            metadata["association_learning_enabled"] = self.association_learning_enabled
+
+        return metadata
+
+    def _count_total_associations(self) -> int:
+        """
+        Count the total number of associations in the association memory.
+        Returns:
+            int: Total number of associations.
+        """
+        if hasattr(self, 'association_memory') and self.association_memory:
+            return sum(len(obj_dict) for obj_dict in self.association_memory.values() if isinstance(obj_dict, dict))
+        return 0
+
+    def _extract_association_data_from_votes(self, vote_data):
+        """
+        Extract association data from CMP-compliant votes.
+
+        Converts from the new CMP format (with object IDs in non_morphological_features)
+        to the format expected by the association learning system.
+
+        Args:
+            vote_data: List of votes from other learning modules (CMP format)
+
+        Returns:
+            Dictionary in format expected by association learning:
+            {sender_lm_id: {object_id: vote_info}}
+        """
+        if not isinstance(vote_data, list):
+            return {}
+        return self._flatten_votes_for_association(vote_data)
+
+    @staticmethod
+    def _flatten_votes_for_association(vote_data):
+        association_data = {}
+        stack = [(vote, None) for vote in vote_data]
+        while stack:
+            item, object_id = stack.pop()
+            if isinstance(item, list):
+                stack.extend((subitem, object_id) for subitem in item)
+            elif isinstance(item, dict) and not hasattr(item, 'non_morphological_features'):
+                stack.extend((v, k) for k, v in item.items())
+            elif hasattr(item, 'non_morphological_features') and isinstance(item.non_morphological_features, dict):
+                nmf = item.non_morphological_features
+                sender_lm_id = nmf.get('sender_lm_id', getattr(item, 'sender_id', None))
+                actual_object_id = nmf.get('object_id', object_id)
+                if sender_lm_id and actual_object_id:
+                    association_data.setdefault(sender_lm_id, {})[actual_object_id] = item
+        return association_data
 
     def _create_enhanced_vote_state(self, state: State, object_id: str) -> State:
         """Create an enhanced vote state with association metadata."""

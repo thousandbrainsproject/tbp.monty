@@ -98,6 +98,69 @@ class TestAssociationData(unittest.TestCase):
         self.assertLessEqual(avg_confidence, 1.0)
 
 
+class TestCMPCompliance(unittest.TestCase):
+    """Test CMP compliance of the unsupervised association system."""
+
+    def test_extract_evidence_from_cmp_vote(self):
+        """Test extracting evidence from CMP-compliant vote messages."""
+        from tbp.monty.frameworks.models.unsupervised_association import _extract_evidence_from_vote
+
+        # Test CMP-compliant State object
+        state = State(
+            location=np.array([1, 2, 3]),
+            morphological_features={'pose_vectors': np.eye(3), 'pose_fully_defined': True},
+            non_morphological_features={
+                'object_id': 'test_object',
+                'evidence_strength': 0.75
+            },
+            confidence=0.8,
+            use_state=True,
+            sender_id='test_lm',
+            sender_type='LM'
+        )
+
+        # Should extract evidence_strength from non_morphological_features
+        evidence = _extract_evidence_from_vote(state)
+        self.assertEqual(evidence, 0.75)
+
+        # Test fallback to confidence when evidence_strength not available
+        state_no_evidence = State(
+            location=np.array([1, 2, 3]),
+            morphological_features={'pose_vectors': np.eye(3), 'pose_fully_defined': True},
+            non_morphological_features={'object_id': 'test_object'},
+            confidence=0.9,
+            use_state=True,
+            sender_id='test_lm',
+            sender_type='LM'
+        )
+
+        evidence = _extract_evidence_from_vote(state_no_evidence)
+        self.assertEqual(evidence, 0.9)
+
+    def test_extract_spatial_info_from_cmp_vote(self):
+        """Test extracting spatial information from CMP-compliant votes."""
+        from tbp.monty.frameworks.models.unsupervised_association import _extract_spatial_info_from_vote
+
+        pose_vectors = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        state = State(
+            location=np.array([1, 2, 3]),
+            morphological_features={
+                'pose_vectors': pose_vectors,
+                'pose_fully_defined': True
+            },
+            non_morphological_features={'object_id': 'test_object'},
+            confidence=0.8,
+            use_state=True,
+            sender_id='test_lm',
+            sender_type='LM'
+        )
+
+        location, pose = _extract_spatial_info_from_vote(state)
+
+        np.testing.assert_array_equal(location, np.array([1, 2, 3]))
+        np.testing.assert_array_equal(pose, pose_vectors)
+
+
 class TestUnsupervisedAssociationMixin(unittest.TestCase):
     """Test the UnsupervisedAssociationMixin class."""
 
@@ -204,10 +267,25 @@ class TestUnsupervisedAssociationMixin(unittest.TestCase):
                 ['object_1'], 'other_lm', 'other_object', 0.8, vote_info
             )
 
-        # Create vote data
+        # Create CMP-compliant vote data
         vote_data = {
             'other_lm': {
-                'other_object': {'confidence': 0.9, 'location': [1.0, 2.0, 3.0]}
+                'other_object': State(
+                    location=np.array([1.0, 2.0, 3.0]),
+                    morphological_features={
+                        'pose_vectors': np.eye(3),
+                        'pose_fully_defined': True
+                    },
+                    non_morphological_features={
+                        'object_id': 'other_object',
+                        'sender_lm_id': 'other_lm',
+                        'evidence_strength': 0.9
+                    },
+                    confidence=0.9,
+                    use_state=True,
+                    sender_id='other_lm',
+                    sender_type='LM'
+                )
             }
         }
 
@@ -256,22 +334,31 @@ class TestUnsupervisedEvidenceGraphLM(unittest.TestCase):
         # Mock required methods
         self.lm.get_all_known_object_ids = Mock(return_value=['object_1'])
 
-        vote_data = {
-            'other_lm': {
+        # Create CMP-compliant vote data with object IDs in non_morphological_features
+        vote_data = [
+            {
                 'other_object': [State(
                     location=np.array([1.0, 2.0, 3.0]),
                     morphological_features={
                         'pose_vectors': np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
                         'pose_fully_defined': True
                     },
-                    non_morphological_features={},
+                    non_morphological_features={
+                        'object_id': 'other_object',
+                        'sender_lm_id': 'other_lm',
+                        'evidence_strength': 0.8,
+                        'association_metadata': {
+                            'temporal_context': 10,
+                            'num_observations': 5
+                        }
+                    },
                     confidence=0.8,
                     use_state=True,
                     sender_id='other_lm',
                     sender_type='LM'
                 )]
             }
-        }
+        ]
 
         # Call receive_votes
         self.lm.receive_votes(vote_data)

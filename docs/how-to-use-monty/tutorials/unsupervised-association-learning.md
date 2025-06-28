@@ -76,6 +76,94 @@ INFO - Association strength: visual_object_1 -> touch_lm:touch_object_3 = 0.847
 INFO - LM visual_lm: 23 total associations, 18 strong, avg strength: 0.756
 ```
 
+## CMP Message Structure for Association Learning
+
+### Enhanced Cortical Messaging Protocol
+
+The unsupervised association learning system extends Monty's Cortical Messaging Protocol (CMP) to include object IDs and association metadata. This enables learning modules to discover object correspondences without predefined labels.
+
+#### Standard CMP vs. Association-Enhanced CMP
+
+**Standard CMP Vote (Before):**
+```python
+vote = State(
+    location=np.array([1.0, 2.0, 3.0]),
+    morphological_features={
+        "pose_vectors": rotation_matrix,
+        "pose_fully_defined": True,
+    },
+    non_morphological_features=None,  # No object ID information
+    confidence=0.85,
+    use_state=True,
+    sender_id="visual_lm",
+    sender_type="LM",
+)
+```
+
+**Association-Enhanced CMP Vote (After):**
+```python
+vote = State(
+    location=np.array([1.0, 2.0, 3.0]),
+    morphological_features={
+        "pose_vectors": rotation_matrix,
+        "pose_fully_defined": True,
+    },
+    non_morphological_features={
+        "object_id": "visual_object_1",        # LM-specific object ID
+        "sender_lm_id": "visual_lm",           # Sending LM identifier
+        "evidence_strength": 0.85,             # Evidence for this object
+        "association_metadata": {              # Additional context
+            "temporal_context": 15,
+            "num_observations": 10,
+            "current_location": [1.0, 2.0, 3.0],
+            "total_associations": 23
+        }
+    },
+    confidence=0.85,
+    use_state=True,
+    sender_id="visual_lm",
+    sender_type="LM",
+)
+```
+
+#### Key CMP Extensions
+
+1. **Object ID Transmission**: Each vote now includes the sender's unique object ID in `non_morphological_features["object_id"]`
+
+2. **Sender LM Context**: The `sender_lm_id` field enables proper association tracking across learning modules
+
+3. **Evidence Strength**: Explicit evidence values help with association confidence calculations
+
+4. **Association Metadata**: Rich contextual information supports sophisticated association learning algorithms
+
+#### How Association Learning Uses CMP Data
+
+```python
+def receive_votes(self, vote_data):
+    """Process CMP-compliant votes for association learning."""
+    # Extract association data from CMP messages
+    for vote in vote_data:
+        for object_id, states in vote.items():
+            for state in states:
+                # Extract from CMP structure
+                other_object_id = state.non_morphological_features["object_id"]
+                sender_lm_id = state.non_morphological_features["sender_lm_id"]
+                evidence = state.non_morphological_features["evidence_strength"]
+
+                # Learn associations based on co-occurrence
+                if evidence > self.association_threshold:
+                    self._record_co_occurrence(
+                        my_objects, sender_lm_id, other_object_id, evidence, state
+                    )
+```
+
+### Backward Compatibility
+
+The CMP extensions maintain full backward compatibility:
+- Standard learning modules ignore `non_morphological_features` content
+- Association-enabled modules extract additional information when available
+- No changes to core `State` class structure required
+
 ## Analyzing Results
 
 ### Using Built-in Logging and Output

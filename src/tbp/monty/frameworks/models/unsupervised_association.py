@@ -77,7 +77,7 @@ class AssociationData:
 
 
 def _extract_evidence_from_vote(vote_info: Any) -> float:
-    """Extract evidence value from vote information."""
+    """Extract evidence value from vote information (CMP-compliant)."""
     if isinstance(vote_info, dict):
         return vote_info.get('confidence', vote_info.get('evidence', 0.0))
     elif isinstance(vote_info, (list, tuple)) and len(vote_info) > 0:
@@ -85,6 +85,9 @@ def _extract_evidence_from_vote(vote_info: Any) -> float:
         return max(getattr(vote, 'confidence', 0.0) for vote in vote_info)
     elif hasattr(vote_info, 'confidence'):
         return vote_info.confidence
+    elif hasattr(vote_info, 'non_morphological_features') and vote_info.non_morphological_features:
+        # Extract from CMP-compliant vote
+        return vote_info.non_morphological_features.get('evidence_strength', vote_info.confidence)
     else:
         return 0.0
 
@@ -109,11 +112,14 @@ def _create_weighted_vote(vote_info: Any, weight: float) -> Any:
 
 
 def _extract_spatial_info_from_vote(vote_info: Any) -> Tuple[Any, Any]:
-    """Extract location and pose information from vote data."""
+    """Extract location and pose information from vote data (CMP-compliant)."""
     if isinstance(vote_info, dict):
         return vote_info.get('location'), vote_info.get('pose_vectors')
     elif hasattr(vote_info, 'location'):
-        other_pose = getattr(vote_info, 'morphological_features', {}).get('pose_vectors')
+        # Extract pose from morphological_features (CMP standard)
+        other_pose = None
+        if hasattr(vote_info, 'morphological_features') and vote_info.morphological_features:
+            other_pose = vote_info.morphological_features.get('pose_vectors')
         return vote_info.location, other_pose
     return None, None
 
@@ -164,6 +170,61 @@ def _calculate_pose_similarity(my_pose: Any, other_pose: Any) -> float:
 
     # Fallback for unsupported pose formats
     return 0.5
+
+
+def _detect_periodicity(temporal_context: Any) -> float:
+    """Detect periodic patterns in temporal context."""
+    if len(temporal_context) < 3:
+        return 0.0
+
+    try:
+        # Calculate intervals between consecutive associations
+        intervals = np.diff(temporal_context)
+        if len(intervals) < 2:
+            return 0.0
+        interval_std = float(np.std(intervals))
+        interval_mean = float(np.mean(intervals))
+
+        if interval_mean == 0:
+            return 0.0
+
+        # Lower coefficient of variation indicates more regular pattern
+        coefficient_of_variation = interval_std / interval_mean
+        import math
+        periodicity_score = math.exp(-float(coefficient_of_variation))
+
+        return float(periodicity_score)
+
+    except Exception as e:
+        logger.debug(f"Error detecting periodicity: {e}")
+        return 0.0
+
+
+def _calculate_temporal_clustering(temporal_context: Any) -> float:
+    """Calculate how clustered the temporal associations are."""
+    if len(temporal_context) < 2:
+        return 0.0
+
+    try:
+        # Calculate the span of temporal context
+        time_span = temporal_context[-1] - temporal_context[0]
+
+        if time_span == 0:
+            return 1.0  # All associations at same time = perfect clustering
+
+        # Calculate density of associations
+        num_associations = len(temporal_context)
+        density = num_associations / time_span
+
+        # Normalize density score (higher density = better clustering)
+        # Use sigmoid-like function to map to [0, 1]
+        clustering_score = 2 / (1 + np.exp(-density)) - 1
+
+        return float(clustering_score)
+
+    except Exception as e:
+        logger.debug(f"Error calculating temporal clustering: {e}")
+        return 0.0
 
 
 class UnsupervisedAssociationMixin:
@@ -422,7 +483,7 @@ class UnsupervisedAssociationMixin:
 
                 # Compare movement patterns (more robust than absolute positions)
                 movement_distance = np.linalg.norm(my_delta - other_delta)
-                movement_similarity = np.exp(-movement_distance / self.distance_tolerance)
+                movement_similarity = float(np.exp(-movement_distance / self.distance_tolerance))
 
                 # Store current locations for next comparison
                 self._previous_my_locations.append(my_loc_normalized)
@@ -445,7 +506,7 @@ class UnsupervisedAssociationMixin:
 
                 # Fallback to improved distance calculation with better normalization
                 distance = np.linalg.norm(my_loc_normalized - other_loc_normalized)
-                similarity = np.exp(-distance / self.distance_tolerance)
+                similarity = float(np.exp(-distance / self.distance_tolerance) > 0.5)
                 return float(similarity)
 
         except Exception as e:
@@ -536,10 +597,10 @@ class UnsupervisedAssociationMixin:
             recency_score = self._calculate_recency_score(association_data)
 
             # 2. Periodicity detection - look for regular patterns
-            periodicity_score = self._detect_periodicity(temporal_context)
+            periodicity_score = _detect_periodicity(temporal_context)
 
             # 3. Temporal clustering - how clustered the associations are
-            clustering_score = self._calculate_temporal_clustering(temporal_context)
+            clustering_score = _calculate_temporal_clustering(temporal_context)
 
             # Combine all temporal factors using configurable weights
             total_temporal_strength = (
@@ -559,58 +620,6 @@ class UnsupervisedAssociationMixin:
         """Calculate recency score with adaptive decay."""
         steps_since_last = self.current_step - association_data.last_updated_step
         return self.temporal_decay_factor ** steps_since_last
-
-    def _detect_periodicity(self, temporal_context: Any) -> float:
-        """Detect periodic patterns in temporal context."""
-        if len(temporal_context) < 3:
-            return 0.0
-
-        try:
-            # Calculate intervals between consecutive associations
-            intervals = np.diff(temporal_context)
-            if len(intervals) < 2:
-                return 0.0
-            interval_std = np.std(intervals)
-            interval_mean = np.mean(intervals)
-
-            if interval_mean == 0:
-                return 0.0
-
-            # Lower coefficient of variation indicates more regular pattern
-            coefficient_of_variation = interval_std / interval_mean
-            periodicity_score = np.exp(-coefficient_of_variation)
-
-            return float(periodicity_score)
-
-        except Exception as e:
-            logger.debug(f"Error detecting periodicity: {e}")
-            return 0.0
-
-    def _calculate_temporal_clustering(self, temporal_context: Any) -> float:
-        """Calculate how clustered the temporal associations are."""
-        if len(temporal_context) < 2:
-            return 0.0
-
-        try:
-            # Calculate the span of temporal context
-            time_span = temporal_context[-1] - temporal_context[0]
-
-            if time_span == 0:
-                return 1.0  # All associations at same time = perfect clustering
-
-            # Calculate density of associations
-            num_associations = len(temporal_context)
-            density = num_associations / time_span
-
-            # Normalize density score (higher density = better clustering)
-            # Use sigmoid-like function to map to [0, 1]
-            clustering_score = 2 / (1 + np.exp(-density)) - 1
-
-            return float(clustering_score)
-
-        except Exception as e:
-            logger.debug(f"Error calculating temporal clustering: {e}")
-            return 0.0
 
     def get_associated_object_ids(self, my_object_id: str, other_lm_id: str,
                                   min_strength: Optional[float] = None) -> List[Tuple[str, float]]:
