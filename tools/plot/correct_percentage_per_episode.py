@@ -7,16 +7,20 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import argparse
+from __future__ import annotations
+
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING
 
 from matplotlib import pyplot as plt
 from matplotlib import rcParams
 
 from tbp.monty.frameworks.utils.logging_utils import load_stats
+
+if TYPE_CHECKING:
+    import argparse
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +107,7 @@ def plot_correct_percentage_per_episode(exp_path: str) -> int:
 
 def add_subparser(
     subparsers: argparse._SubParsersAction,
-    parent_parser: Optional[argparse.ArgumentParser] = None,
+    parent_parser: argparse.ArgumentParser | None = None,
 ) -> None:
     """Add the correct_percentage_per_episode subparser to the main parser.
 
