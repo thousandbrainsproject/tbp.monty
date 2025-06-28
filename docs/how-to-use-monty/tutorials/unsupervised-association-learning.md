@@ -78,32 +78,53 @@ INFO - LM visual_lm: 23 total associations, 18 strong, avg strength: 0.756
 
 ## Analyzing Results
 
-### Using the Analysis Script
+### Using Built-in Logging and Output
 
-After running experiments, use the analysis script to generate detailed reports:
+Monty's built-in logging infrastructure automatically captures detailed association learning metrics during experiments. Results are stored in structured directories under `~/tbp/results/monty/projects/`.
 
-```bash
-# Analyze a single experiment
-python benchmarks/analyze_association_results.py --experiment ~/tbp/results/monty/projects/simple_cross_modal_association
+#### Experiment Output Structure
 
-# Compare multiple strategies
-python benchmarks/analyze_association_results.py --compare \
-    ~/tbp/results/monty/projects/strategy1 \
-    ~/tbp/results/monty/projects/strategy2 \
-    ~/tbp/results/monty/projects/strategy3
+```
+~/tbp/results/monty/projects/simple_cross_modal_association/
+├── logs/                    # Detailed execution logs
+├── stats/                   # CSV files with metrics
+├── configs/                 # Experiment configuration snapshots
+└── checkpoints/            # Model checkpoints (if enabled)
+```
 
-# Generate a detailed report file
-python benchmarks/analyze_association_results.py --experiment path/to/results --output association_report.md
+#### Key Log Files to Examine
+
+- **Main logs**: Look for association learning progress in the main experiment logs
+- **CSV stats**: Quantitative metrics are automatically saved to CSV files
+- **Debug logs**: Enable debug logging for detailed association tracking
+
+#### Monitoring Association Learning
+
+During experiments, monitor the logs for messages like:
+
+```
+INFO - Recorded co-occurrence: visual_object_1 <-> touch_lm:touch_object_3 (count: 15, confidence: 0.892)
+INFO - Association strength: visual_object_1 -> touch_lm:touch_object_3 = 0.847
+INFO - LM visual_lm: 23 total associations, 18 strong, avg strength: 0.756
 ```
 
 ### Key Analysis Questions
 
 When analyzing results, consider:
 
-1. **Convergence**: Do associations stabilize over time?
-2. **Accuracy**: Do learned associations match ground truth object correspondences?
-3. **Robustness**: How well do associations handle noise and ambiguity?
-4. **Efficiency**: How quickly do strong associations form?
+1. **Convergence**: Do associations stabilize over time? Check association strength trends in logs.
+2. **Accuracy**: Do learned associations match ground truth object correspondences? Compare association patterns with known object relationships.
+3. **Robustness**: How well do associations handle noise and ambiguity? Look for consistent association strengths across episodes.
+4. **Efficiency**: How quickly do strong associations form? Monitor co-occurrence counts and confidence scores.
+
+### Advanced Analysis with Wandb (Optional)
+
+If wandb logging is enabled in your experiment configuration, you can view rich visualizations and metrics in the wandb dashboard:
+
+- Association strength trends over time
+- Cross-modal consistency metrics
+- Spatial and temporal pattern analysis
+- Comparative performance across different strategies
 
 ## Customizing Experiments
 

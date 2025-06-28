@@ -18,6 +18,7 @@ from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
 from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
 )
+
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
     EvalExperimentArgs,
@@ -260,41 +261,70 @@ def create_conservative_association_config():
 
 def create_association_strategy_comparison_config():
     """Create configuration for comparing different association strategies."""
+    # Define base components needed for the experiment
+    base_sensor_module_local = {
+        "sensor_module_class": "HabitatDistantPatchSM",  # Placeholder
+        "sensor_module_args": {"sensor_module_id": "patch"},
+    }
+
+    base_motor_system_local = {
+        "motor_system_class": MotorSystem,
+        "motor_system_args": make_informed_policy_config(
+            action_space_type="distant_agent",
+            action_sampler_class=ConstantSampler,
+        ),
+    }
+
     # Create multiple LM configs with different association parameters
     lm_configs = []
 
     # Strategy 1: Balanced weights
     balanced_params = get_association_params_preset("balanced")
     lm_configs.append(create_cross_modal_lm_configs(
+        base_learning_module,
         num_lms=2,
-        association_params=balanced_params,
-        lm_class=UnsupervisedEvidenceGraphLM
+        association_params=balanced_params
     ))
 
-    # Strategy 2: Spatial-focused
-    spatial_params = get_association_params_preset("spatial_focused")
+    # Strategy 2: Conservative (spatial-focused)
+    conservative_params = get_association_params_preset("conservative")
     lm_configs.append(create_cross_modal_lm_configs(
+        base_learning_module,
         num_lms=2,
-        association_params=spatial_params,
-        lm_class=UnsupervisedEvidenceGraphLM
+        association_params=conservative_params
     ))
 
-    # Strategy 3: Temporal-focused
-    temporal_params = get_association_params_preset("temporal_focused")
+    # Strategy 3: Aggressive (co-occurrence-focused)
+    aggressive_params = get_association_params_preset("aggressive")
     lm_configs.append(create_cross_modal_lm_configs(
+        base_learning_module,
         num_lms=2,
-        association_params=temporal_params,
-        lm_class=UnsupervisedEvidenceGraphLM
+        association_params=aggressive_params
     ))
 
-    # Use the balanced config as the base
-    monty_config = create_unsupervised_association_monty_config(
-        lm_configs=lm_configs[0],  # Use balanced as base
-        motor_system_class=MotorSystem,
-        motor_system_args=make_informed_policy_config(
-            action_space_type="distant_agent",
-            action_sampler_class=ConstantSampler,
+    # Create base monty config for comparison
+    base_monty_config = {
+        "monty_class": MontyForUnsupervisedAssociation,
+        "monty_args": MontyArgs(
+            min_eval_steps=400,
+            min_train_steps=400,
+            num_exploratory_steps=2000,
+            max_total_steps=4000,
         ),
+        "sensor_module_configs": [base_sensor_module_local, base_sensor_module_local],
+        "learning_module_configs": lm_configs[0],  # Use balanced as base
+        "motor_system_config": base_motor_system_local,
+        "sm_to_agent_dict": {0: 0, 1: 0},
+        "sm_to_lm_matrix": [[0], [1]],
+        "lm_to_lm_matrix": [[], []],
+        "lm_to_lm_vote_matrix": [[1], [0]],
+    }
+
+    monty_config = create_unsupervised_association_monty_config(
+        base_monty_config=base_monty_config,
+        lm_configs=lm_configs[0],
+        enable_association_analysis=True,
+        log_association_details=True,
     )
 
     # Comparison logging config with detailed metrics

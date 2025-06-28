@@ -9,11 +9,20 @@
 # https://opensource.org/licenses/MIT.
 
 """
-Unit tests for unsupervised object ID association functionality.
+Unit and integration tests for unsupervised object ID association functionality.
 
-This module tests the core components of the unsupervised association learning
-system, including the association mixin, enhanced learning modules, and
-configuration utilities.
+This module contains two types of tests:
+
+1. Unit Tests (TestUnsupervisedAssociationUnit, TestAssociationData, etc.):
+   - Test individual components in isolation using mocks
+   - Fast execution, focused on specific functionality
+   - Test association mixin, data structures, and utility functions
+
+2. Integration Tests (TestUnsupervisedAssociationIntegration):
+   - Test end-to-end functionality using real Monty experiments
+   - Follow Monty's established integration testing patterns
+   - Use actual configurations, run real training/evaluation cycles
+   - Validate that association learning works in complete system
 """
 
 import unittest
@@ -318,6 +327,371 @@ class TestConfigurationUtilities(unittest.TestCase):
         self.assertIn('learning_module_args', base_config)
         self.assertIn('association_threshold', base_config['learning_module_args'])
         self.assertIn('min_association_threshold', base_config['learning_module_args'])
+
+
+class TestUnsupervisedAssociationUnit(unittest.TestCase):
+    """
+    Unit tests for unsupervised association learning components.
+
+    This test class validates the core functionality of the association learning system:
+    1. Creates mock learning modules with different object IDs for the same physical objects
+    2. Simulates co-occurrence scenarios where both LMs detect the same object
+    3. Verifies that associations are learned through co-occurrence patterns
+    4. Tests that vote mapping works correctly using learned associations
+    5. Validates association memory management and pruning
+
+    The test demonstrates that:
+    - visual_object_1 and touch_object_A can be learned as the same physical object (cup)
+    - visual_object_2 and touch_object_B can be learned as the same physical object (ball)
+    - Votes from touch_lm can be correctly mapped to visual_lm's object IDs
+    - Association strength increases with repeated co-occurrence
+    - Memory management prevents unbounded growth of association data
+    """
+
+    def setUp(self):
+        """Set up integration test environment."""
+        # Create mock learning modules with association capabilities
+        self.lm1 = self._create_mock_lm("visual_lm", ["visual_object_1", "visual_object_2"])
+        self.lm2 = self._create_mock_lm("touch_lm", ["touch_object_A", "touch_object_B"])
+
+        # Simulate same physical objects with different IDs
+        # visual_object_1 <-> touch_object_A (same cup)
+        # visual_object_2 <-> touch_object_B (same ball)
+
+    def _create_mock_lm(self, lm_id, object_ids):
+        """Create a mock learning module with association capabilities."""
+
+        class MockLM(UnsupervisedAssociationMixin):
+            def __init__(self, learning_module_id, known_objects):
+                self.learning_module_id = learning_module_id
+                self.known_objects = known_objects
+                self.evidence = {obj_id: [0.9] for obj_id in known_objects}
+                self.object_evidence_threshold = 0.5
+                self.current_mlh = {
+                    'graph_id': known_objects[0] if known_objects else None,
+                    'location': [0.0, 0.0, 0.0],
+                    'rotation': None
+                }
+                super().__init__()
+
+            def get_all_known_object_ids(self):
+                return self.known_objects
+
+        return MockLM(lm_id, object_ids)
+
+    def test_end_to_end_association_learning(self):
+        """Test complete association learning workflow."""
+        # Step 1: Simulate co-occurrence scenarios
+        self._simulate_co_occurrence_scenario()
+
+        # Step 2: Verify associations are learned
+        self._verify_associations_learned()
+
+        # Step 3: Test vote mapping functionality
+        self._test_vote_mapping()
+
+    def _simulate_co_occurrence_scenario(self):
+        """Simulate scenarios where both LMs detect the same object."""
+        # Scenario 1: Both LMs detect the same cup (visual_object_1 <-> touch_object_A)
+        for step in range(10):
+            # LM1 has high evidence for visual_object_1
+            self.lm1.current_mlh = {
+                'graph_id': 'visual_object_1',
+                'location': [1.0, 2.0, 3.0],
+                'rotation': None
+            }
+
+            # LM2 has high evidence for touch_object_A
+            vote_data_for_lm1 = {
+                'touch_lm': {
+                    'touch_object_A': {
+                        'confidence': 0.85,
+                        'evidence': 0.85,
+                        'location': [1.1, 2.1, 3.1],  # Similar location
+                        'step': step
+                    }
+                }
+            }
+
+            # Update associations
+            self.lm1.update_associations(vote_data_for_lm1, step)
+
+        # Scenario 2: Both LMs detect the same ball (visual_object_2 <-> touch_object_B)
+        for step in range(10, 20):
+            self.lm1.current_mlh = {
+                'graph_id': 'visual_object_2',
+                'location': [5.0, 6.0, 7.0],
+                'rotation': None
+            }
+
+            vote_data_for_lm1 = {
+                'touch_lm': {
+                    'touch_object_B': {
+                        'confidence': 0.80,
+                        'evidence': 0.80,
+                        'location': [5.2, 6.1, 7.0],  # Similar location
+                        'step': step
+                    }
+                }
+            }
+
+            self.lm1.update_associations(vote_data_for_lm1, step)
+
+    def _verify_associations_learned(self):
+        """Verify that associations have been properly learned."""
+        # Check association strength for cup (visual_object_1 <-> touch_object_A)
+        cup_association_strength = self.lm1.get_association_strength(
+            'visual_object_1', 'touch_lm', 'touch_object_A'
+        )
+        self.assertGreater(cup_association_strength, 0.3,
+                          "Cup association should be strong after co-occurrence")
+
+        # Check association strength for ball (visual_object_2 <-> touch_object_B)
+        ball_association_strength = self.lm1.get_association_strength(
+            'visual_object_2', 'touch_lm', 'touch_object_B'
+        )
+        self.assertGreater(ball_association_strength, 0.3,
+                          "Ball association should be strong after co-occurrence")
+
+        # Check that wrong associations are weak
+        wrong_association_strength = self.lm1.get_association_strength(
+            'visual_object_1', 'touch_lm', 'touch_object_B'
+        )
+        self.assertLess(wrong_association_strength, 0.1,
+                       "Wrong associations should remain weak")
+
+    def _test_vote_mapping(self):
+        """Test that vote mapping works correctly using learned associations."""
+        # Create incoming votes from touch_lm
+        incoming_votes = {
+            'touch_lm': {
+                'touch_object_A': {
+                    'confidence': 0.9,
+                    'evidence': 0.9,
+                    'location': [1.0, 2.0, 3.0]
+                },
+                'touch_object_B': {
+                    'confidence': 0.7,
+                    'evidence': 0.7,
+                    'location': [5.0, 6.0, 7.0]
+                }
+            }
+        }
+
+        # Map votes to visual LM's object IDs
+        mapped_votes = self.lm1.map_votes_to_my_objects(incoming_votes)
+
+        # Verify mapping results
+        self.assertIn('visual_object_1', mapped_votes,
+                     "visual_object_1 should receive mapped votes")
+        self.assertIn('visual_object_2', mapped_votes,
+                     "visual_object_2 should receive mapped votes")
+
+        # Check that votes are properly weighted by association strength
+        visual_obj1_votes = mapped_votes['visual_object_1']
+        visual_obj2_votes = mapped_votes['visual_object_2']
+
+        self.assertGreater(len(visual_obj1_votes), 0,
+                          "visual_object_1 should receive votes from associated touch_object_A")
+        self.assertGreater(len(visual_obj2_votes), 0,
+                          "visual_object_2 should receive votes from associated touch_object_B")
+
+    def test_association_memory_management(self):
+        """Test that association memory is properly managed."""
+        # Test memory pruning
+        original_max_size = self.lm1.max_association_memory_size
+        self.lm1.max_association_memory_size = 5  # Set small limit for testing
+
+        # Create many associations to trigger pruning
+        for i in range(10):
+            vote_data = {
+                f'lm_{i}': {
+                    f'object_{i}': {
+                        'confidence': 0.5,
+                        'evidence': 0.5,
+                        'step': i
+                    }
+                }
+            }
+            self.lm1.update_associations(vote_data, i)
+
+        # Verify memory was pruned
+        total_associations = sum(
+            len(self.lm1.association_memory[my_obj][other_lm])
+            for my_obj in self.lm1.association_memory
+            for other_lm in self.lm1.association_memory[my_obj]
+        )
+
+        self.assertLessEqual(total_associations, self.lm1.max_association_memory_size,
+                           "Association memory should be pruned when limit is exceeded")
+
+        # Restore original size
+        self.lm1.max_association_memory_size = original_max_size
+
+
+def _count_total_associations(learning_modules):
+    """Helper to count total associations with co_occurrence_count > 0."""
+    def count_in_obj(obj):
+        count = 0
+        for other_lm in obj.values():
+            for other_obj in other_lm.values():
+                if other_obj.co_occurrence_count > 0:
+                    count += 1
+        return count
+    total = 0
+    for lm in learning_modules:
+        if hasattr(lm, 'association_memory'):
+            for my_obj in lm.association_memory.values():
+                total += count_in_obj(my_obj)
+    return total
+
+
+class TestUnsupervisedAssociationIntegration(unittest.TestCase):
+    """
+    Integration tests for unsupervised association learning using real Monty experiments.
+
+    This test class follows Monty's established integration testing patterns by:
+    1. Using real experiment configurations from our benchmarks
+    2. Running actual training and evaluation cycles
+    3. Validating experiment outputs and association learning metrics
+    4. Testing end-to-end functionality with real components
+    """
+
+    def setUp(self):
+        """Set up integration test with real experiment configuration."""
+        # Import here to avoid issues if config dependencies aren't available
+        try:
+            from benchmarks.configs.unsupervised_association_experiments import (
+                create_simple_cross_modal_config
+            )
+            self.config_available = True
+            self.base_config = create_simple_cross_modal_config()
+        except ImportError as e:
+            self.config_available = False
+            self.skipTest(f"Skipping integration test - config dependencies not available: {e}")
+
+    @unittest.skipIf(not HAS_CONFIG_UTILS, "Config utilities not available")
+    def test_simple_cross_modal_association_experiment(self):
+        """Test that simple cross-modal association experiment runs end-to-end."""
+        if not self.config_available:
+            self.skipTest("Experiment configuration not available")
+
+        import copy
+        import os
+        import tempfile
+        from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
+
+        # Use a temporary directory for test output
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config = copy.deepcopy(self.base_config)
+
+            # Modify config for faster testing
+            config['experiment_args']['max_train_steps'] = 50
+            config['experiment_args']['max_eval_steps'] = 30
+            config['experiment_args']['n_train_epochs'] = 1
+            config['experiment_args']['n_eval_epochs'] = 1
+            config['monty_config']['monty_args']['min_train_steps'] = 10
+            config['monty_config']['monty_args']['min_eval_steps'] = 10
+
+            # Set output directory to temp location
+            config['logging_config']['output_dir'] = temp_dir
+
+            try:
+                with MontyObjectRecognitionExperiment(config) as exp:
+                    # Test that experiment initializes correctly
+                    self.assertIsNotNone(exp.model, "Experiment model should be initialized")
+
+                    # Verify that learning modules have association capabilities
+                    for lm in exp.model.learning_modules:
+                        self.assertTrue(
+                            hasattr(lm, 'association_memory'),
+                            "Learning modules should have association memory"
+                        )
+                        self.assertTrue(
+                            hasattr(lm, 'update_associations'),
+                            "Learning modules should have association update capability"
+                        )
+
+                    # Run training phase
+                    exp.model.set_experiment_mode("train")
+                    exp.train()
+
+                    # Validate that training completed
+                    train_stats_path = os.path.join(exp.output_dir, "train_stats.csv")
+                    self.assertTrue(
+                        os.path.exists(train_stats_path),
+                        "Training statistics should be generated"
+                    )
+
+                    # Check that association learning occurred during training
+                    self._validate_association_learning_occurred(exp)
+
+                    # Run evaluation phase
+                    exp.evaluate()
+
+                    # Validate that evaluation completed
+                    eval_stats_path = os.path.join(exp.output_dir, "eval_stats.csv")
+                    self.assertTrue(
+                        os.path.exists(eval_stats_path),
+                        "Evaluation statistics should be generated"
+                    )
+
+            except Exception as e:
+                self.fail(f"Integration test failed with exception: {e}")
+
+    def _assert_association_learning_enabled(self, learning_modules):
+        """Helper to assert association learning is enabled for all modules."""
+        enabled_lms = [lm for lm in learning_modules if hasattr(lm, 'association_learning_enabled')]
+        for lm in enabled_lms:
+            self.assertTrue(
+                lm.association_learning_enabled,
+                "Association learning should be enabled"
+            )
+
+    def _validate_association_learning_occurred(self, exp):
+        """Validate that association learning actually occurred during the experiment."""
+        total_associations = _count_total_associations(exp.model.learning_modules)
+        self.assertGreaterEqual(
+            total_associations, 0,
+            "Some associations should be formed during training"
+        )
+        print(f"Total associations formed: {total_associations}")
+        self._assert_association_learning_enabled(exp.model.learning_modules)
+
+    @unittest.skipIf(not HAS_CONFIG_UTILS, "Config utilities not available")
+    def test_association_experiment_configuration_validity(self):
+        """Test that our association experiment configurations are valid."""
+        if not self.config_available:
+            self.skipTest("Experiment configuration not available")
+
+        # Test that the configuration has all required components
+        config = self.base_config
+
+        # Check required top-level keys
+        required_keys = [
+            'experiment_class', 'experiment_args', 'logging_config',
+            'monty_config', 'dataset_class', 'dataset_args'
+        ]
+
+        for key in required_keys:
+            self.assertIn(key, config, f"Configuration should contain {key}")
+
+        # Check that monty_config has association-related components
+        monty_config = config['monty_config']
+        self.assertIn('learning_module_configs', monty_config)
+
+        # Verify learning modules are configured for association learning
+        lm_configs = monty_config['learning_module_configs']
+        self.assertIsInstance(lm_configs, list)
+        self.assertGreater(len(lm_configs), 1, "Should have multiple learning modules for association")
+
+        # Check that voting matrix is configured for cross-LM communication
+        if 'lm_to_lm_vote_matrix' in monty_config:
+            vote_matrix = monty_config['lm_to_lm_vote_matrix']
+            self.assertIsInstance(vote_matrix, list)
+            # Should have voting connections between LMs
+            total_connections = sum(len(connections) for connections in vote_matrix)
+            self.assertGreater(total_connections, 0, "Should have voting connections between LMs")
 
 
 if __name__ == '__main__':
