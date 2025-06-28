@@ -18,14 +18,11 @@ object IDs across different learning modules without requiring predefined labels
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any, Protocol, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    # This helps IDEs understand the expected interface without runtime overhead
-    pass
+from typing import Dict, List, Optional, Tuple, Any, TYPE_CHECKING, Protocol
 
 import numpy as np
 from scipy.spatial.transform import Rotation
+
 from tbp.monty.frameworks.utils.logging_utils import compute_pose_error
 
 logger = logging.getLogger(__name__)
@@ -83,11 +80,11 @@ def _extract_evidence_from_vote(vote_info: Any) -> float:
     elif isinstance(vote_info, (list, tuple)) and len(vote_info) > 0:
         # Handle a list of vote objects
         return max(getattr(vote, 'confidence', 0.0) for vote in vote_info)
+    elif hasattr(vote_info, 'non_morphological_features') and vote_info.non_morphological_features:
+        # Extract from CMP-compliant vote - prioritize evidence_strength
+        return vote_info.non_morphological_features.get('evidence_strength', vote_info.confidence)
     elif hasattr(vote_info, 'confidence'):
         return vote_info.confidence
-    elif hasattr(vote_info, 'non_morphological_features') and vote_info.non_morphological_features:
-        # Extract from CMP-compliant vote
-        return vote_info.non_morphological_features.get('evidence_strength', vote_info.confidence)
     else:
         return 0.0
 
@@ -247,13 +244,28 @@ class UnsupervisedAssociationMixin:
 
     # Type hints for IDE support - these will be provided by the mixed-in class
     if TYPE_CHECKING:
+        # These attributes will be provided by the class this mixin is combined with
         evidence: Dict[str, Any]
         object_evidence_threshold: float
         current_mlh: Dict[str, Any]
 
+        # These attributes are defined by this mixin itself
+        association_learning_enabled: bool
+        association_threshold: float
+        current_step: int
+        association_memory: Any
+
         def get_all_known_object_ids(self) -> List[str]:
             """Return all known object IDs."""
             ...
+
+        # These methods are defined by this mixin itself
+        def _get_current_high_evidence_hypotheses(self) -> List[str]: ...
+        def _record_co_occurrence(self, my_objects: List[str], other_lm_id: str,
+                                 other_object_id: str, other_evidence: float, vote_info: Any) -> None: ...
+        def _prune_association_memory(self) -> None: ...
+        def _check_interface_compatibility(self) -> bool: ...
+        def _map_votes_for_object(self, my_object_id: str, vote_data: Dict) -> List: ...
 
     def __init__(self, *args, **kwargs):
         """Initialize association capabilities."""
@@ -473,9 +485,9 @@ class UnsupervisedAssociationMixin:
 
             # Check if we have previous locations for movement pattern analysis
             if (hasattr(self, '_previous_my_locations') and
-                hasattr(self, '_previous_other_locations') and
-                len(self._previous_my_locations) > 0 and
-                len(self._previous_other_locations) > 0):
+                    hasattr(self, '_previous_other_locations') and
+                    len(self._previous_my_locations) > 0 and
+                    len(self._previous_other_locations) > 0):
 
                 # Calculate movement deltas
                 my_delta = my_loc_normalized - self._previous_my_locations[-1]
@@ -506,8 +518,8 @@ class UnsupervisedAssociationMixin:
 
                 # Fallback to improved distance calculation with better normalization
                 distance = np.linalg.norm(my_loc_normalized - other_loc_normalized)
-                similarity = float(np.exp(-distance / self.distance_tolerance) > 0.5)
-                return float(similarity)
+                similarity = float(np.exp(-distance / self.distance_tolerance))
+                return similarity
 
         except Exception as e:
             logger.debug(f"Error in improved location similarity calculation: {e}")
@@ -604,9 +616,9 @@ class UnsupervisedAssociationMixin:
 
             # Combine all temporal factors using configurable weights
             total_temporal_strength = (
-                self.recency_weight * recency_score +
-                self.periodicity_weight * periodicity_score +
-                self.clustering_weight * clustering_score
+                    self.recency_weight * recency_score +
+                    self.periodicity_weight * periodicity_score +
+                    self.clustering_weight * clustering_score
             )
 
             return min(total_temporal_strength, 1.0)
@@ -705,7 +717,14 @@ class UnsupervisedAssociationMixin:
 
     def _prune_association_memory(self):
         """Prune old or weak associations to manage memory usage."""
-        if len(self.association_memory) <= self.max_association_memory_size:
+        # Count total associations
+        total_associations = sum(
+            len(self.association_memory[my_obj][other_lm])
+            for my_obj in self.association_memory
+            for other_lm in self.association_memory[my_obj]
+        )
+
+        if total_associations <= self.max_association_memory_size:
             return
 
         # Collect all associations with their strengths

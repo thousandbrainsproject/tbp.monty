@@ -51,7 +51,7 @@ from tbp.monty.simulators.habitat.configs import (
 )
 
 # Default objects for testing
-test_objects = get_object_names_by_idx(range(5), "YCB")  # First 5 YCB objects
+test_objects = get_object_names_by_idx(0, 5)  # First 5 YCB objects
 
 # Base sensor module configuration
 base_sensor_module = {
@@ -101,7 +101,7 @@ base_motor_system = {
     "motor_system_class": MotorSystem,
     "motor_system_args": {
         "policy": make_informed_policy_config(
-            action_space_type="distant_agent_action_space",
+            action_space_type="distant_agent",
             action_sampler_class=ConstantSampler,
             action_sampler_args={"action": [0, 0, 0, 0, 1]},
         )
@@ -125,6 +125,8 @@ def create_experiment_config(monty_config, logging_config=None):
             "python_log_level": "INFO",
             "python_log_to_file": True,
             "python_log_to_stdout": True,
+            "python_log_to_stderr": False,
+            "run_name": "test_run",
             "wandb_handlers": [],
         }
 
