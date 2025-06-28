@@ -24,27 +24,9 @@ if TYPE_CHECKING:
     # This helps IDEs understand the expected interface without runtime overhead
     pass
 
-try:
-    import numpy as np
-
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-
-
-    # Create a minimal numpy-like interface for basic operations
-    class np:
-        @staticmethod
-        def array(data):
-            return data
-
-        @staticmethod
-        def linalg_norm(data):
-            if isinstance(data, (list, tuple)):
-                return sum(x ** 2 for x in data) ** 0.5
-            return abs(data)
-
-        linalg = type('linalg', (), {'norm': linalg_norm.__func__})()
+import numpy as np
+from scipy.spatial.transform import Rotation
+from tbp.monty.frameworks.utils.logging_utils import compute_pose_error
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +119,7 @@ def _extract_spatial_info_from_vote(vote_info: Any) -> Tuple[Any, Any]:
 
 
 def _calculate_location_similarity(my_location: Any, other_location: Any) -> float:
-    """Calculate similarity between two locations."""
+    """Calculate similarity between two locations (legacy method)."""
     # Handle both numpy arrays and lists
     my_loc = list(my_location) if hasattr(my_location, '__iter__') else [my_location]
     other_loc = list(other_location) if hasattr(other_location, '__iter__') else [other_location]
@@ -148,20 +130,40 @@ def _calculate_location_similarity(my_location: Any, other_location: Any) -> flo
 
 
 def _calculate_pose_similarity(my_pose: Any, other_pose: Any) -> float:
-    """Calculate similarity between two poses."""
+    """Calculate similarity between two poses using actual rotation comparison."""
     if my_pose is None or other_pose is None:
-        return 1.0  # Default if pose not available
+        return 0.5  # Neutral similarity when pose unavailable
 
-    # Simple pose similarity based on rotation matrix similarity
-    if hasattr(my_pose, 'as_matrix'):
-        try:
-            my_pose.as_matrix()
-            # Simple similarity check - this is a placeholder
-            return 0.8  # Default reasonable similarity
-        except (AttributeError, ValueError, TypeError):
-            # Handle specific exceptions that might occur during matrix operations
-            return 1.0
-    return 1.0
+    try:
+        # Ensure both poses are scipy Rotation objects
+        if hasattr(my_pose, 'as_matrix') and hasattr(other_pose, 'as_matrix'):
+            # Use existing pose error calculation from logging_utils
+            angular_error = compute_pose_error(my_pose, other_pose)
+            # Convert angular error to similarity score (0 error = 1.0 similarity)
+            # Normalize by π radians (maximum possible angular difference)
+            similarity = np.exp(-angular_error / np.pi)
+            return float(similarity)
+        elif hasattr(my_pose, 'as_matrix'):
+            # Try to convert other_pose to Rotation if it's a matrix
+            if hasattr(other_pose, 'shape') and other_pose.shape == (3, 3):
+                other_rotation = Rotation.from_matrix(other_pose)
+                angular_error = compute_pose_error(my_pose, other_rotation)
+                similarity = np.exp(-angular_error / np.pi)
+                return float(similarity)
+        elif hasattr(other_pose, 'as_matrix'):
+            # Try to convert my_pose to Rotation if it's a matrix
+            if hasattr(my_pose, 'shape') and my_pose.shape == (3, 3):
+                my_rotation = Rotation.from_matrix(my_pose)
+                angular_error = compute_pose_error(my_rotation, other_pose)
+                similarity = np.exp(-angular_error / np.pi)
+                return float(similarity)
+    except (AttributeError, ValueError, TypeError) as e:
+        # Handle any conversion or calculation errors gracefully
+        logger.debug(f"Error calculating pose similarity: {e}")
+        return 0.5  # Return neutral similarity on error
+
+    # Fallback for unsupported pose formats
+    return 0.5
 
 
 class UnsupervisedAssociationMixin:
@@ -208,6 +210,21 @@ class UnsupervisedAssociationMixin:
         self.temporal_consistency_weight = kwargs.get('temporal_consistency_weight', 0.2)
         self.co_occurrence_weight = kwargs.get('co_occurrence_weight', 0.5)
         self.max_association_memory_size = kwargs.get('max_association_memory_size', 1000)
+
+        # New configurable weights for spatial consistency calculation
+        self.location_weight = kwargs.get('location_weight', 0.7)
+        self.pose_weight = kwargs.get('pose_weight', 0.3)
+        self.temporal_recency_weight = kwargs.get('temporal_recency_weight', 0.1)
+
+        # Parameters for improved location similarity
+        self.distance_tolerance = kwargs.get('distance_tolerance', 1.0)
+        self.sensor_scale_estimate = kwargs.get('sensor_scale_estimate', 1.0)
+
+        # Parameters for temporal pattern analysis
+        self.temporal_decay_factor = kwargs.get('temporal_decay_factor', 0.99)
+        self.periodicity_weight = kwargs.get('periodicity_weight', 0.3)
+        self.clustering_weight = kwargs.get('clustering_weight', 0.2)
+        self.recency_weight = kwargs.get('recency_weight', 0.5)
 
         # Tracking variables
         self.current_step = 0
@@ -364,18 +381,77 @@ class UnsupervisedAssociationMixin:
             if my_location is None:
                 return None
 
-            # Calculate location similarity
-            location_similarity = _calculate_location_similarity(my_location, other_location)
+            # Calculate location similarity with improved method
+            location_similarity = self._calculate_location_similarity_improved(my_location, other_location)
 
             # Calculate pose similarity
             pose_similarity = _calculate_pose_similarity(my_pose, other_pose)
 
-            # Combine location and pose similarities
-            return 0.7 * location_similarity + 0.3 * pose_similarity
+            # Combine location and pose similarities using configurable weights
+            return self.location_weight * location_similarity + self.pose_weight * pose_similarity
 
         except Exception as e:
             logger.debug(f"Error calculating spatial consistency: {e}")
             return None
+
+    def _calculate_location_similarity_improved(self, my_location: Any, other_location: Any) -> float:
+        """Calculate improved location similarity with better normalization and scaling."""
+        try:
+            # Convert to numpy arrays for consistent handling
+            my_loc = np.array(my_location) if hasattr(my_location, '__iter__') else np.array([my_location])
+            other_loc = np.array(other_location) if hasattr(other_location, '__iter__') else np.array([other_location])
+
+            # Ensure same dimensionality
+            if len(my_loc) != len(other_loc):
+                logger.debug(f"Location dimension mismatch: {len(my_loc)} vs {len(other_loc)}")
+                return 0.5  # Neutral similarity for dimension mismatch
+
+            # Normalize by sensor scale estimates to handle different sensor ranges
+            my_loc_normalized = my_loc / self.sensor_scale_estimate
+            other_loc_normalized = other_loc / self.sensor_scale_estimate
+
+            # Check if we have previous locations for movement pattern analysis
+            if (hasattr(self, '_previous_my_locations') and
+                hasattr(self, '_previous_other_locations') and
+                len(self._previous_my_locations) > 0 and
+                len(self._previous_other_locations) > 0):
+
+                # Calculate movement deltas
+                my_delta = my_loc_normalized - self._previous_my_locations[-1]
+                other_delta = other_loc_normalized - self._previous_other_locations[-1]
+
+                # Compare movement patterns (more robust than absolute positions)
+                movement_distance = np.linalg.norm(my_delta - other_delta)
+                movement_similarity = np.exp(-movement_distance / self.distance_tolerance)
+
+                # Store current locations for next comparison
+                self._previous_my_locations.append(my_loc_normalized)
+                self._previous_other_locations.append(other_loc_normalized)
+
+                # Keep only recent history
+                if len(self._previous_my_locations) > 10:
+                    self._previous_my_locations = self._previous_my_locations[-10:]
+                    self._previous_other_locations = self._previous_other_locations[-10:]
+
+                return float(movement_similarity)
+            else:
+                # Initialize movement tracking
+                if not hasattr(self, '_previous_my_locations'):
+                    self._previous_my_locations = []
+                    self._previous_other_locations = []
+
+                self._previous_my_locations.append(my_loc_normalized)
+                self._previous_other_locations.append(other_loc_normalized)
+
+                # Fallback to improved distance calculation with better normalization
+                distance = np.linalg.norm(my_loc_normalized - other_loc_normalized)
+                similarity = np.exp(-distance / self.distance_tolerance)
+                return float(similarity)
+
+        except Exception as e:
+            logger.debug(f"Error in improved location similarity calculation: {e}")
+            # Fallback to original method
+            return _calculate_location_similarity(my_location, other_location)
 
     def get_association_strength(self, my_object_id: str, other_lm_id: str,
                                  other_object_id: str) -> float:
@@ -411,14 +487,14 @@ class UnsupervisedAssociationMixin:
         spatial_strength = association_data.spatial_consistency_score
 
         # 4. Temporal recency (decay factor for old associations)
-        temporal_strength = self._calculate_temporal_strength(association_data)
+        temporal_strength = self._calculate_temporal_strength_improved(association_data)
 
-        # Combine all factors
+        # Combine all factors using configurable weights
         total_strength = (
                 self.co_occurrence_weight * co_occurrence_strength +
                 self.temporal_consistency_weight * confidence_strength +
                 self.spatial_consistency_weight * spatial_strength +
-                0.1 * temporal_strength  # Small weight for recency
+                self.temporal_recency_weight * temporal_strength
         )
 
         return min(total_strength, 1.0)
@@ -438,15 +514,103 @@ class UnsupervisedAssociationMixin:
         return 1
 
     def _calculate_temporal_strength(self, association_data: AssociationData) -> float:
-        """Calculate temporal strength based on recency of associations."""
+        """Calculate temporal strength based on recency of associations (legacy method)."""
         if not association_data.temporal_context:
             return 0.0
 
         # Calculate how recent the last association was
         steps_since_last = self.current_step - association_data.last_updated_step
-        decay_factor = 0.99  # Decay rate per step
+        decay_factor = self.temporal_decay_factor
 
         return decay_factor ** steps_since_last
+
+    def _calculate_temporal_strength_improved(self, association_data: AssociationData) -> float:
+        """Calculate enhanced temporal strength with multiple factors."""
+        if not association_data.temporal_context:
+            return 0.0
+
+        try:
+            temporal_context = np.array(association_data.temporal_context)
+
+            # 1. Recency score - how recent the last association was
+            recency_score = self._calculate_recency_score(association_data)
+
+            # 2. Periodicity detection - look for regular patterns
+            periodicity_score = self._detect_periodicity(temporal_context)
+
+            # 3. Temporal clustering - how clustered the associations are
+            clustering_score = self._calculate_temporal_clustering(temporal_context)
+
+            # Combine all temporal factors using configurable weights
+            total_temporal_strength = (
+                self.recency_weight * recency_score +
+                self.periodicity_weight * periodicity_score +
+                self.clustering_weight * clustering_score
+            )
+
+            return min(total_temporal_strength, 1.0)
+
+        except Exception as e:
+            logger.debug(f"Error in improved temporal strength calculation: {e}")
+            # Fallback to original method
+            return self._calculate_temporal_strength(association_data)
+
+    def _calculate_recency_score(self, association_data: AssociationData) -> float:
+        """Calculate recency score with adaptive decay."""
+        steps_since_last = self.current_step - association_data.last_updated_step
+        return self.temporal_decay_factor ** steps_since_last
+
+    def _detect_periodicity(self, temporal_context: Any) -> float:
+        """Detect periodic patterns in temporal context."""
+        if len(temporal_context) < 3:
+            return 0.0
+
+        try:
+            # Calculate intervals between consecutive associations
+            intervals = np.diff(temporal_context)
+            if len(intervals) < 2:
+                return 0.0
+            interval_std = np.std(intervals)
+            interval_mean = np.mean(intervals)
+
+            if interval_mean == 0:
+                return 0.0
+
+            # Lower coefficient of variation indicates more regular pattern
+            coefficient_of_variation = interval_std / interval_mean
+            periodicity_score = np.exp(-coefficient_of_variation)
+
+            return float(periodicity_score)
+
+        except Exception as e:
+            logger.debug(f"Error detecting periodicity: {e}")
+            return 0.0
+
+    def _calculate_temporal_clustering(self, temporal_context: Any) -> float:
+        """Calculate how clustered the temporal associations are."""
+        if len(temporal_context) < 2:
+            return 0.0
+
+        try:
+            # Calculate the span of temporal context
+            time_span = temporal_context[-1] - temporal_context[0]
+
+            if time_span == 0:
+                return 1.0  # All associations at same time = perfect clustering
+
+            # Calculate density of associations
+            num_associations = len(temporal_context)
+            density = num_associations / time_span
+
+            # Normalize density score (higher density = better clustering)
+            # Use sigmoid-like function to map to [0, 1]
+            clustering_score = 2 / (1 + np.exp(-density)) - 1
+
+            return float(clustering_score)
+
+        except Exception as e:
+            logger.debug(f"Error calculating temporal clustering: {e}")
+            return 0.0
 
     def get_associated_object_ids(self, my_object_id: str, other_lm_id: str,
                                   min_strength: Optional[float] = None) -> List[Tuple[str, float]]:
