@@ -15,7 +15,11 @@ from pathlib import Path
 monty_root = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(monty_root))
 
-from tools.plot import objects_evidence_over_time, pose_error_over_time  # noqa: E402
+from tools.plot import (  # noqa: E402
+    correct_percentage_per_episode,
+    objects_evidence_over_time,
+    pose_error_over_time,
+)
 
 
 def main():
@@ -34,6 +38,7 @@ def main():
 
     objects_evidence_over_time.add_subparser(subparsers, parent_parser)
     pose_error_over_time.add_subparser(subparsers, parent_parser)
+    correct_percentage_per_episode.add_subparser(subparsers, parent_parser)
 
     args = parser.parse_args()
 
