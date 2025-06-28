@@ -258,9 +258,67 @@ def create_conservative_association_config():
     return create_experiment_config(monty_config, conservative_logging_config)
 
 
-# Export experiment configurations
-CONFIGS = {
-    "simple_cross_modal_association": create_simple_cross_modal_config(),
-    "multi_modal_association": create_multi_modal_config(),
-    "conservative_association": create_conservative_association_config(),
-}
+def create_association_strategy_comparison_config():
+    """Create configuration for comparing different association strategies."""
+    # Create multiple LM configs with different association parameters
+    lm_configs = []
+
+    # Strategy 1: Balanced weights
+    balanced_params = get_association_params_preset("balanced")
+    lm_configs.append(create_cross_modal_lm_configs(
+        num_lms=2,
+        association_params=balanced_params,
+        lm_class=UnsupervisedEvidenceGraphLM
+    ))
+
+    # Strategy 2: Spatial-focused
+    spatial_params = get_association_params_preset("spatial_focused")
+    lm_configs.append(create_cross_modal_lm_configs(
+        num_lms=2,
+        association_params=spatial_params,
+        lm_class=UnsupervisedEvidenceGraphLM
+    ))
+
+    # Strategy 3: Temporal-focused
+    temporal_params = get_association_params_preset("temporal_focused")
+    lm_configs.append(create_cross_modal_lm_configs(
+        num_lms=2,
+        association_params=temporal_params,
+        lm_class=UnsupervisedEvidenceGraphLM
+    ))
+
+    # Use the balanced config as the base
+    monty_config = create_unsupervised_association_monty_config(
+        lm_configs=lm_configs[0],  # Use balanced as base
+        motor_system_class=MotorSystem,
+        motor_system_args=make_informed_policy_config(
+            action_space_type="distant_agent",
+            action_sampler_class=ConstantSampler,
+        ),
+    )
+
+    # Comparison logging config with detailed metrics
+    comparison_logging_config = {
+        "python_log_level": "INFO",
+        "python_log_to_file": True,
+        "python_log_to_stdout": True,
+        "wandb_handlers": [],
+        "detailed_association_metrics": True,
+    }
+
+    return create_experiment_config(monty_config, comparison_logging_config)
+
+
+# Export experiment configurations following Monty patterns
+from benchmarks.configs.names import UnsupervisedAssociationExperiments
+from dataclasses import asdict
+
+# Create the experiments dataclass instance
+experiments = UnsupervisedAssociationExperiments(
+    simple_cross_modal_association=create_simple_cross_modal_config(),
+    multi_modal_association=create_multi_modal_config(),
+    association_strategy_comparison=create_association_strategy_comparison_config(),
+)
+
+# Convert to dictionary format expected by the benchmarks system
+CONFIGS = asdict(experiments)
