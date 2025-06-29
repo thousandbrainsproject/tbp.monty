@@ -64,7 +64,7 @@ class AssociationData:
             return 0.0
 
         weights = [decay_factor ** i for i in range(len(self.confidence_history))]
-        weights.reverse()  # Most recent gets highest weight
+        weights.reverse()  # Most recent gets the highest weight
 
         weighted_sum = sum(conf * weight for conf, weight in
                            zip(self.confidence_history, weights))
@@ -207,9 +207,9 @@ def _calculate_temporal_clustering(temporal_context: Any) -> float:
         time_span = temporal_context[-1] - temporal_context[0]
 
         if time_span == 0:
-            return 1.0  # All associations at same time = perfect clustering
+            return 1.0  # All associations at the same time = perfect clustering
 
-        # Calculate density of associations
+        # Calculate the density of associations
         num_associations = len(temporal_context)
         density = num_associations / time_span
 
@@ -342,7 +342,7 @@ class UnsupervisedAssociationMixin:
         self._prune_association_memory()
 
     def _get_current_high_evidence_hypotheses(self) -> List[str]:
-        """Get object IDs with evidence above threshold."""
+        """Get object IDs with evidence above a threshold."""
         high_evidence_objects = []
 
         # Ensure this mixin is used with a compatible class
@@ -442,9 +442,9 @@ class UnsupervisedAssociationMixin:
         return current_mlh.get('location'), current_mlh.get('rotation')
 
     def _calculate_spatial_consistency(self, vote_info: Any, my_object_id: str) -> Optional[float]:
-        """Calculate spatial consistency between my object and other LM's vote."""
+        """Calculate spatial consistency between my object and another LM's vote."""
         try:
-            # Extract spatial information from vote
+            # Extract spatial information from a vote
             other_location, other_pose = _extract_spatial_info_from_vote(vote_info)
             if other_location is None:
                 return None
@@ -573,7 +573,7 @@ class UnsupervisedAssociationMixin:
         return min(total_strength, 1.0)
 
     def _get_total_observations(self, object_id: str) -> int:
-        """Get total number of observations for an object."""
+        """Get the total number of observations for an object."""
         if not hasattr(self, 'evidence'):
             return 1  # Default to avoid division by zero
 

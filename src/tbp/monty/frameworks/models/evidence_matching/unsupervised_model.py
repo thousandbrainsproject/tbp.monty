@@ -215,7 +215,7 @@ class MontyForUnsupervisedAssociation(MontyForEvidenceGraphMatching):
             self.association_history = self.association_history[-1000:]
 
     def _count_total_associations(self) -> int:
-        """Count total number of learned associations across all LMs."""
+        """Count the total number of learned associations across all LMs."""
         total_associations = 0
 
         for lm in self.learning_modules:

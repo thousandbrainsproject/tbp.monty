@@ -14,7 +14,7 @@ Unit and integration tests for unsupervised object ID association functionality.
 This module contains two types of tests:
 
 1. Unit Tests (TestUnsupervisedAssociationUnit, TestAssociationData, etc.):
-   - Test individual components in isolation using mocks
+   - Test individual components in isolation using mock
    - Fast execution, focused on specific functionality
    - Test association mixin, data structures, and utility functions
 
@@ -22,7 +22,7 @@ This module contains two types of tests:
    - Test end-to-end functionality using real Monty experiments
    - Follow Monty's established integration testing patterns
    - Use actual configurations, run real training/evaluation cycles
-   - Validate that association learning works in complete system
+   - Validate that association learning works in a complete system
 """
 
 import unittest
@@ -200,7 +200,7 @@ class TestUnsupervisedAssociationMixin(unittest.TestCase):
         """Test getting objects with high evidence."""
         high_evidence_objects = self.mock_lm._get_current_high_evidence_hypotheses()
 
-        # Both objects should have evidence above threshold
+        # Both objects should have evidence above a threshold
         self.assertIn('object_1', high_evidence_objects)
         self.assertIn('object_2', high_evidence_objects)
 
@@ -312,7 +312,7 @@ class TestUnsupervisedEvidenceGraphLM(unittest.TestCase):
                 min_association_threshold=0.3,
             )
 
-            # Set up required attributes that would normally be set by parent
+            # Set up required attributes that parent would normally set
             self.lm.evidence = {'object_1': np.array([2.0, 1.5])}
             self.lm.object_evidence_threshold = 1.0
             self.lm.current_mlh = {
@@ -366,7 +366,7 @@ class TestUnsupervisedEvidenceGraphLM(unittest.TestCase):
         # Should have called parent's receive_votes
         mock_parent_receive.assert_called_once()
 
-        # Should have incremented episode step
+        # Should have an incremented episode step
         self.assertEqual(self.lm.episode_step, 1)
 
 
@@ -535,7 +535,7 @@ class TestUnsupervisedAssociationUnit(unittest.TestCase):
 
     def _verify_associations_learned(self):
         """Verify that associations have been properly learned."""
-        # Check association strength for cup (visual_object_1 <-> touch_object_A)
+        # Check association strength for a cup (visual_object_1 <-> touch_object_A)
         cup_association_strength = self.lm1.get_association_strength(
             'visual_object_1', 'touch_lm', 'touch_object_A'
         )
@@ -596,7 +596,7 @@ class TestUnsupervisedAssociationUnit(unittest.TestCase):
         """Test that association memory is properly managed."""
         # Test memory pruning
         original_max_size = self.lm1.max_association_memory_size
-        self.lm1.max_association_memory_size = 5  # Set small limit for testing
+        self.lm1.max_association_memory_size = 5  # Set a small limit for testing
 
         # Create many associations to trigger pruning
         for i in range(10):
@@ -692,7 +692,7 @@ class TestUnsupervisedAssociationIntegration(unittest.TestCase):
             config['logging_config']['output_dir'] = temp_dir
 
             try:
-                # Just test that the experiment can be initialized
+                # Test that the experiment can be initialized
                 exp = MontyObjectRecognitionExperiment(config)
 
                 # Test that experiment initializes correctly
