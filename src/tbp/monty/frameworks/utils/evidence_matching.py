@@ -258,6 +258,16 @@ class EvidenceSlopeTracker:
     This tracker supports adding, updating, pruning, and analyzing hypotheses per
     channel.
 
+    Note:
+        - One optimization might be to treat the array of tracked values as a ring-like
+            structure. Rather than shifting the values every time they are updated, we
+            could just iterate an index which determines where in the ring we are. Then
+            we would update one column, which based on the index, corresponds to the
+            most recent values.
+        - Another optimization is only track slopes not the actual evidence values. The
+            pairwise slopes for previous scores are not expected to change over time
+            and therefore can be calculated a single time and stored.
+
     Attributes:
         window_size: Number of past values to consider for slope calculation.
         min_age: Minimum number of updates before a hypothesis can be considered for
