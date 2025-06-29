@@ -13,6 +13,7 @@ from typing import Dict, List, Optional, Tuple
 from typing import OrderedDict as OrderedDictType
 
 import numpy as np
+import numpy.typing as npt
 
 from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
     ChannelHypotheses,
@@ -250,12 +251,214 @@ class ChannelMapper:
         return f"ChannelMapper({ranges})"
 
 
+class EvidenceSlopeTracker:
+    """Tracks the slopes of evidence streams over a sliding window per input channel.
+
+    Each input channel maintains its own hypotheses with independent evidence histories.
+    This tracker supports adding, updating, pruning, and analyzing hypotheses per
+    channel.
+
+    Note:
+        - One optimization might be to treat the array of tracked values as a ring-like
+            structure. Rather than shifting the values every time they are updated, we
+            could just iterate an index which determines where in the ring we are. Then
+            we would update one column, which based on the index, corresponds to the
+            most recent values.
+        - Another optimization is only track slopes not the actual evidence values. The
+            pairwise slopes for previous scores are not expected to change over time
+            and therefore can be calculated a single time and stored.
+
+    Attributes:
+        window_size: Number of past values to consider for slope calculation.
+        min_age: Minimum number of updates before a hypothesis can be considered for
+            removal.
+        evidence_buffer: Maps channel names to their hypothesis evidence buffers.
+        hyp_age: Maps channel names to hypothesis age counters.
+    """
+
+    def __init__(self, window_size: int = 3, min_age: int = 5) -> None:
+        """Initializes the EvidenceSlopeTracker.
+
+        Args:
+            window_size: Number of evidence points per hypothesis.
+            min_age: Minimum number of updates before removal is allowed.
+        """
+        self.window_size = window_size
+        self.min_age = min_age
+        self.evidence_buffer: dict[str, npt.NDArray[np.float64]] = {}
+        self.hyp_age: dict[str, npt.NDArray[np.int_]] = {}
+
+    def total_size(self, channel: str) -> int:
+        """Returns the number of hypotheses in a given channel.
+
+        Args:
+            channel: Name of the input channel.
+
+        Returns:
+            Number of hypotheses currently tracked in the channel.
+        """
+        return self.evidence_buffer.get(channel, np.empty((0, self.window_size))).shape[
+            0
+        ]
+
+    def removable_indices_mask(self, channel: str) -> npt.NDArray[np.bool_]:
+        """Returns a boolean mask for removable hypotheses in a channel.
+
+        Args:
+            channel: Name of the input channel.
+
+        Returns:
+            Boolean array indicating removable hypotheses (age >= min_age).
+        """
+        return self.hyp_age[channel] >= self.min_age
+
+    def add_hyp(self, num_new_hyp: int, channel: str) -> None:
+        """Adds new hypotheses to the specified input channel.
+
+        Args:
+            num_new_hyp: Number of new hypotheses to add.
+            channel: Name of the input channel.
+        """
+        new_data = np.full((num_new_hyp, self.window_size), np.nan)
+        new_age = np.zeros(num_new_hyp, dtype=int)
+
+        if channel not in self.evidence_buffer:
+            self.evidence_buffer[channel] = new_data
+            self.hyp_age[channel] = new_age
+        else:
+            self.evidence_buffer[channel] = np.vstack(
+                (self.evidence_buffer[channel], new_data)
+            )
+            self.hyp_age[channel] = np.concatenate((self.hyp_age[channel], new_age))
+
+    def update(self, values: npt.NDArray[np.float64], channel: str) -> None:
+        """Updates all hypotheses in a channel with new evidence values.
+
+        Args:
+            values: List or array of new evidence values.
+            channel: Name of the input channel.
+
+        Raises:
+            ValueError: If the channel doesn't exist or the number of values is
+                incorrect.
+        """
+        if channel not in self.evidence_buffer:
+            raise ValueError(f"Channel '{channel}' does not exist.")
+
+        if values.shape[0] != self.total_size(channel):
+            raise ValueError(
+                f"Expected {self.total_size(channel)} values, but got {len(values)}"
+            )
+
+        # Shift evidence buffer by one step
+        self.evidence_buffer[channel][:, :-1] = self.evidence_buffer[channel][:, 1:]
+
+        # Add new evidence data
+        self.evidence_buffer[channel][:, -1] = values
+
+        # Increment age
+        self.hyp_age[channel] += 1
+
+    def _calculate_slopes(self, channel: str) -> npt.NDArray[np.float64]:
+        """Computes the average slope of hypotheses in a channel.
+
+        This method calculates the slope of the evidence signal for each hypothesis by
+        subtracting adjacent values along the time dimension (i.e., computing deltas
+        between consecutive evidence values). It then computes the average of these
+        differences while ignoring any missing (NaN) values. For hypotheses with no
+        valid evidence differences (e.g., all NaNs), the slope is returned as NaN.
+
+        Args:
+            channel: Name of the input channel.
+
+        Returns:
+            Array of average slopes, one per hypothesis.
+        """
+        # Calculate the evidence differences
+        diffs = np.diff(self.evidence_buffer[channel], axis=1)
+
+        # Count the number of non-NaN values
+        valid_steps = np.sum(~np.isnan(diffs), axis=1).astype(np.float64)
+
+        # Set valid steps to Nan to avoid dividing by zero
+        valid_steps[valid_steps == 0] = np.nan
+
+        # Return the average slope for each tracked hypothesis, ignoring Nan
+        return np.nansum(diffs, axis=1) / valid_steps
+
+    def remove_hyp(self, hyp_ids: npt.NDArray[np.int_], channel: str) -> None:
+        """Removes specific hypotheses by index in the specified channel.
+
+        Args:
+            hyp_ids: List of hypothesis indices to remove.
+            channel: Name of the input channel.
+        """
+        mask = np.ones(self.total_size(channel), dtype=bool)
+        mask[hyp_ids] = False
+        self.evidence_buffer[channel] = self.evidence_buffer[channel][mask]
+        self.hyp_age[channel] = self.hyp_age[channel][mask]
+
+    def clear_hyp(self, channel: str) -> None:
+        """Clears the hypotheses in a specific channel.
+
+        Args:
+            channel: Name of the input channel.
+        """
+        if channel in self.evidence_buffer:
+            self.remove_hyp(np.arange(self.total_size(channel)), channel)
+
+    def calculate_keep_and_remove_ids(
+        self, num_keep: int, channel: str
+    ) -> tuple[npt.NDArray[np.int_], npt.NDArray[np.int_]]:
+        """Determines which hypotheses to keep and which to remove in a channel.
+
+        Hypotheses with the lowest average slope are selected for removal.
+
+        Args:
+            num_keep: Requested number of hypotheses to retain.
+            channel: Name of the input channel.
+
+        Returns:
+            - to_keep: Indices of hypotheses to retain.
+            - to_remove: Indices of hypotheses to remove.
+
+        Raises:
+            ValueError: If the channel does not exist.
+            ValueError: If the requested hypotheses to retain are more than available
+                hypotheses.
+        """
+        if channel not in self.evidence_buffer:
+            raise ValueError(f"Channel '{channel}' does not exist.")
+
+        total_size = self.total_size(channel)
+        if num_keep > total_size:
+            raise ValueError(
+                f"Cannot keep {num_keep} hypotheses; only {total_size} exist."
+            )
+        total_ids = np.arange(total_size)
+        num_remove = total_size - num_keep
+
+        # Retrieve valid slopes and sort them
+        removable_mask = self.removable_indices_mask(channel)
+        slopes = self._calculate_slopes(channel)
+        removable_slopes = slopes[removable_mask]
+        removable_ids = total_ids[removable_mask]
+        sorted_indices = np.argsort(removable_slopes)
+
+        # Calculate which ids to keep and which to remove
+        to_remove = removable_ids[sorted_indices[:num_remove]]
+        to_remove_mask = np.zeros(total_size, dtype=bool)
+        to_remove_mask[to_remove] = True
+        to_keep = total_ids[~to_remove_mask]
+        return to_keep, to_remove
+
+
 def evidence_update_threshold(
-    evidence_threshold_config: float | str,
+    evidence_threshold_config: float | str | None,
     x_percent_threshold: float | str,
     max_global_evidence: float,
     evidence_all_channels: np.ndarray,
-) -> float:
+) -> float | None:
     """Determine how much evidence a hypothesis should have to be updated.
 
     Args:
@@ -275,9 +478,9 @@ def evidence_update_threshold(
         InvalidEvidenceThresholdConfig: If `evidence_threshold_config` is
             not in the allowed values
     """
-    # return 0 for the threshold if there are no evidence scores
+    # Return 0 for the threshold if there are no evidence scores
     if evidence_all_channels.size == 0:
-        return 0
+        return 0.0
 
     if type(evidence_threshold_config) in [int, float]:
         return evidence_threshold_config
@@ -299,11 +502,12 @@ def evidence_update_threshold(
         x_percent_of_max = max_global_evidence / 100 * x_percent_threshold
         return max_global_evidence - x_percent_of_max
     elif evidence_threshold_config == "all":
-        return np.min(evidence_all_channels)
+        return None
     else:
         raise InvalidEvidenceThresholdConfig(
             "evidence_threshold_config not in "
-            "[int, float, '[int]%', 'mean', 'median', 'all', 'x_percent_threshold']"
+            "[int, float, '[int]%', 'mean', "
+            "'median', 'all', 'x_percent_threshold', 'None']"
         )
 
 
