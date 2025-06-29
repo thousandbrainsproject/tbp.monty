@@ -244,6 +244,22 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
             self.tracker.evidence_buffer[self.channel][:, -1], [1.0, 3.0]
         )
 
+    def test_clear_hyp_removes_all_hypotheses(self) -> None:
+        """Test that clear_hyp completely removes all hypotheses in a channel."""
+        self.tracker.add_hyp(4, self.channel)
+        self.tracker.update(np.array([1.0, 2.0, 3.0, 4.0]), self.channel)
+
+        # Confirm hypotheses were added
+        self.assertEqual(self.tracker.total_size(self.channel), 4)
+
+        # Clear them
+        self.tracker.clear_hyp(self.channel)
+
+        # Confirm the buffer and age arrays are empty
+        self.assertEqual(self.tracker.total_size(self.channel), 0)
+        self.assertEqual(self.tracker.evidence_buffer[self.channel].shape[0], 0)
+        self.assertEqual(self.tracker.hyp_age[self.channel].shape[0], 0)
+
     def test_calculate_slopes_correctly(self) -> None:
         """Test slope calculation over the sliding window."""
         self.tracker.add_hyp(1, self.channel)

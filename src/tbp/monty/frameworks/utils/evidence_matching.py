@@ -388,6 +388,15 @@ class EvidenceSlopeTracker:
         self.evidence_buffer[channel] = self.evidence_buffer[channel][mask]
         self.hyp_age[channel] = self.hyp_age[channel][mask]
 
+    def clear_hyp(self, channel: str) -> None:
+        """Clears the hypotheses in a specific channel.
+
+        Args:
+            channel: Name of the input channel.
+        """
+        if channel in self.evidence_buffer:
+            self.remove_hyp(np.arange(self.total_size(channel)), channel)
+
     def calculate_keep_and_remove_ids(
         self, num_keep: int, channel: str
     ) -> tuple[npt.NDArray[np.int_], npt.NDArray[np.int_]]:

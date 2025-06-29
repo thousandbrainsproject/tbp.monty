@@ -391,6 +391,9 @@ class ResamplingHypothesesUpdater:
         """
         # Return empty arrays for no hypotheses to sample
         if existing_count == 0:
+            # Clear all channel hypotheses from the tracker
+            tracker.clear_hyp(input_channel)
+
             return ChannelHypotheses(
                 input_channel=input_channel,
                 locations=np.zeros((0, 3)),
