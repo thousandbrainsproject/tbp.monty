@@ -41,8 +41,8 @@ def plot_correct_percentage_per_episode(exp_path: str) -> int:
     # Load detailed stats
     _, _, detailed_stats, _ = load_stats(exp_path, False, False, True, False)
 
-    correct_object_hits = []
-    episode_labels = []
+    correct_object_hits, episode_labels = [], []
+    total_correct, total_steps = 0, 0
 
     for _, episode_data in enumerate(detailed_stats.values()):
         evidences_data = episode_data["LM_0"]["max_evidence"]
@@ -53,6 +53,14 @@ def plot_correct_percentage_per_episode(exp_path: str) -> int:
 
         correct_object_hits.append(percentage)
         episode_labels.append(target_obj)
+
+        total_correct += count
+        total_steps += len(evidences_data)
+
+    # Insert summary bar
+    overall_percentage = (total_correct / total_steps) * 100
+    correct_object_hits.append(overall_percentage)
+    episode_labels.append("Overall")
 
     rcParams.update(
         {
@@ -66,11 +74,14 @@ def plot_correct_percentage_per_episode(exp_path: str) -> int:
         }
     )
 
+    # Make the summary bar's color different
+    colors = ["#8ecae6"] * (len(correct_object_hits) - 1) + ["#ffb703"]
+
     fig, ax = plt.subplots(figsize=(14, 6))
     bars = ax.bar(
         episode_labels,
         correct_object_hits,
-        color="#8ecae6",
+        color=colors,
         edgecolor="black",
         linewidth=1.2,
     )
