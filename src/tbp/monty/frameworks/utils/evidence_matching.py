@@ -267,6 +267,8 @@ class EvidenceSlopeTracker:
         - Another optimization is only track slopes not the actual evidence values. The
             pairwise slopes for previous scores are not expected to change over time
             and therefore can be calculated a single time and stored.
+        - We can also test returning a random subsample of indices with
+            slopes < mean(slopes) for `to_remove` instead of using `np.argsort`.
 
     Attributes:
         window_size: Number of past values to consider for slope calculation.
