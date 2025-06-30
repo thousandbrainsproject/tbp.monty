@@ -25,12 +25,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def plot_correct_percentage_per_episode(exp_path: str, learning_module: str) -> int:
+def plot_correct_percentage_per_episode(
+    exp_path: str, learning_module: str, target_object_key: str
+) -> int:
     """Bar chart showing how many steps the correct object had the highest evidence.
 
     Args:
         exp_path: Path to the experiment directory containing the detailed stats file.
         learning_module: The learning module to use for extracting evidence data.
+        target_object_key: The key for extracting labels from stats file.
+            choices are "primary" or "stepwise".
 
     Returns:
         Exit code.
@@ -47,7 +51,7 @@ def plot_correct_percentage_per_episode(exp_path: str, learning_module: str) -> 
 
     for _, episode_data in enumerate(detailed_stats.values()):
         evidences_data = episode_data[learning_module]["max_evidence"]
-        target_obj = episode_data["target"]["primary_target_object"]
+        target_obj = episode_data["target"][target_object_key + "_target_object"]
 
         count = sum(1 for ts in evidences_data if max(ts, key=ts.get) == target_obj)
         percentage = (count / len(evidences_data)) * 100
@@ -144,10 +148,18 @@ def add_subparser(
         default="LM_0",
         help='The name of the learning module (default: "LM_0").',
     )
+    parser.add_argument(
+        "-t",
+        "--target_object",
+        choices=["primary", "stepwise"],
+        default="primary",
+        help='Whether to use "primary_target_object" or "stepwise_target_object" '
+        'for labels (default: "primary").',
+    )
     parser.set_defaults(
         func=lambda args: sys.exit(
             plot_correct_percentage_per_episode(
-                args.experiment_log_dir, args.learning_module
+                args.experiment_log_dir, args.learning_module, args.target_object
             )
         )
     )
