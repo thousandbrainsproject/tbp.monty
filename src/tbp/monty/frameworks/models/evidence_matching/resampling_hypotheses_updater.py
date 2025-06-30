@@ -63,6 +63,15 @@ class ResamplingHypothesesUpdater:
     To reproduce the behavior of `DefaultHypothesesUpdater` sampling a fixed number of
     hypotheses only at the beginning of the episode, you can set
     `hypotheses_count_multiplier=1.0` and `hypotheses_existing_to_new_ratio=0.0`.
+
+    Note:
+        It would be better to decouple the amount of hypotheses added from the amount
+        deleted in each step. At the moment, this is decided by the
+        `hypotheses_count_multiplier`. For example, when the multiplier is set to 1.0,
+        the hypotheses sampled is equal to the hypotheses removed. We ideally can
+        decouple theses then use a slope threshold to decide on which hypotheses to
+        remove, and use prediction error or other heuristics to decide to how many
+        hypotheses to resample.
     """
 
     def __init__(
