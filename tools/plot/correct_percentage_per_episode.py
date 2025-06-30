@@ -25,11 +25,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def plot_correct_percentage_per_episode(exp_path: str) -> int:
+def plot_correct_percentage_per_episode(exp_path: str, learning_module: str) -> int:
     """Bar chart showing how many steps the correct object had the highest evidence.
 
     Args:
         exp_path: Path to the experiment directory containing the detailed stats file.
+        learning_module: The learning module to use for extracting evidence data.
 
     Returns:
         Exit code.
@@ -45,7 +46,7 @@ def plot_correct_percentage_per_episode(exp_path: str) -> int:
     total_correct, total_steps = 0, 0
 
     for _, episode_data in enumerate(detailed_stats.values()):
-        evidences_data = episode_data["LM_0"]["max_evidence"]
+        evidences_data = episode_data[learning_module]["max_evidence"]
         target_obj = episode_data["target"]["primary_target_object"]
 
         count = sum(1 for ts in evidences_data if max(ts, key=ts.get) == target_obj)
@@ -137,8 +138,16 @@ def add_subparser(
             "The directory containing the experiment log with the detailed stats file."
         ),
     )
+    parser.add_argument(
+        "-lm",
+        "--learning_module",
+        default="LM_0",
+        help='The name of the learning module (default: "LM_0").',
+    )
     parser.set_defaults(
         func=lambda args: sys.exit(
-            plot_correct_percentage_per_episode(args.experiment_log_dir)
+            plot_correct_percentage_per_episode(
+                args.experiment_log_dir, args.learning_module
+            )
         )
     )
