@@ -69,6 +69,7 @@ dev = [
     'pytest==7.1.1',
     'pytest-xdist==2.5.0',
     'pytest-cov==3.0.0',
+    'unittest-parametrize',
 
     # Python linter and formatter
     'ruff==0.11.4',
