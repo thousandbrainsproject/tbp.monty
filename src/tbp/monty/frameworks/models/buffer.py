@@ -460,16 +460,14 @@ class FeatureAtLocationBuffer(BaseBuffer):
         """
         all_channels = list(self.locations.keys())
         if len(all_channels) > 0:
+            # First try to find a channel with "patch" in the name (legacy behavior)
             for channel in all_channels:
-                # TODO: better way of checking this that doesn't rely on naming. Maybe
-                # store sensory_type together with channel when adding state to buffer?
                 if "patch" in channel:
                     return channel
-            raise ValueError(
-                "No sensor channel found in buffer. "
-                "get_first_sensory_input_channel assumes we have at least one"
-                f" sensor channel but channels are {all_channels}."
-            )
+
+            # If no "patch" channel found, return the first available channel
+            # This supports different sensor module naming schemes
+            return all_channels[0]
         else:
             return None
 

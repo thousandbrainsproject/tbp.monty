@@ -14,11 +14,12 @@ Experiment configurations for testing unsupervised object ID association learnin
 This module provides experiment configurations that demonstrate and test the
 unsupervised association learning capabilities between different learning modules.
 """
+import os
+
 from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
 from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
 )
-
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
     EvalExperimentArgs,
@@ -42,19 +43,20 @@ from tbp.monty.frameworks.models.evidence_matching.unsupervised_model import (
     MontyForUnsupervisedAssociation,
 )
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
+from tbp.monty.frameworks.models.motor_policies import InformedPolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.sensor_modules import (
     FeatureChangeSM,
 )
 from tbp.monty.simulators.habitat.configs import (
-    PatchViewFinderMontyWorldMountHabitatDatasetArgs,
+    PatchViewFinderMountHabitatDatasetArgs,
 )
 
 # Default objects for testing
 test_objects = get_object_names_by_idx(0, 5)  # First 5 YCB objects
 
-# Base sensor module configuration
-base_sensor_module = {
+# Base sensor module configuration for patch sensor
+base_sensor_module_patch = {
     "sensor_module_class": FeatureChangeSM,
     "sensor_module_args": {
         "sensor_module_id": "patch",
@@ -63,7 +65,49 @@ base_sensor_module = {
             "object_coverage",
             "rgba",
             "hsv",
-            "point_normal",
+            "pose_vectors",
+            "principal_curvatures_log",
+        ],
+        "save_raw_obs": False,
+        "delta_thresholds": {
+            "on_object": 0,
+            "distance": 0.01,
+        },
+    },
+}
+
+# Base sensor module configuration for view_finder sensor
+base_sensor_module_view_finder = {
+    "sensor_module_class": FeatureChangeSM,
+    "sensor_module_args": {
+        "sensor_module_id": "view_finder",
+        "features": [
+            "on_object",
+            "object_coverage",
+            "rgba",
+            "hsv",
+            "pose_vectors",
+            "principal_curvatures_log",
+        ],
+        "save_raw_obs": False,
+        "delta_thresholds": {
+            "on_object": 0,
+            "distance": 0.01,
+        },
+    },
+}
+
+# Base sensor module configuration for third sensor
+base_sensor_module_2 = {
+    "sensor_module_class": FeatureChangeSM,
+    "sensor_module_args": {
+        "sensor_module_id": "patch_2",
+        "features": [
+            "on_object",
+            "object_coverage",
+            "rgba",
+            "hsv",
+            "pose_vectors",
             "principal_curvatures_log",
         ],
         "save_raw_obs": False,
@@ -80,13 +124,37 @@ base_learning_module = {
     "learning_module_args": {
         "max_match_distance": 0.01,
         "tolerances": {
-            "hsv": [0.1, 0.2, 0.2],
-            "principal_curvatures_log": [1.0, 1.0],
+            "patch": {
+                "hsv": [0.1, 0.2, 0.2],
+                "principal_curvatures_log": [1.0, 1.0],
+                "pose_vectors": [0.1, 0.1, 0.1],
+            },
+            "view_finder": {
+                "hsv": [0.1, 0.2, 0.2],
+                "principal_curvatures_log": [1.0, 1.0],
+                "pose_vectors": [0.1, 0.1, 0.1],
+            },
+            "patch_2": {
+                "hsv": [0.1, 0.2, 0.2],
+                "principal_curvatures_log": [1.0, 1.0],
+                "pose_vectors": [0.1, 0.1, 0.1],
+            }
         },
         "feature_weights": {
             "patch": {
                 "hsv": [1, 0.5, 0.5],
                 "principal_curvatures_log": [1, 1],
+                "pose_vectors": [1, 1, 1],
+            },
+            "view_finder": {
+                "hsv": [1, 0.5, 0.5],
+                "principal_curvatures_log": [1, 1],
+                "pose_vectors": [1, 1, 1],
+            },
+            "patch_2": {
+                "hsv": [1, 0.5, 0.5],
+                "principal_curvatures_log": [1, 1],
+                "pose_vectors": [1, 1, 1],
             }
         },
         "object_evidence_threshold": 1.0,
@@ -100,7 +168,8 @@ base_learning_module = {
 base_motor_system = {
     "motor_system_class": MotorSystem,
     "motor_system_args": {
-        "policy": make_informed_policy_config(
+        "policy_class": InformedPolicy,
+        "policy_args": make_informed_policy_config(
             action_space_type="distant_agent",
             action_sampler_class=ConstantSampler,
             action_sampler_args={"action": [0, 0, 0, 0, 1]},
@@ -108,8 +177,26 @@ base_motor_system = {
     },
 }
 
-# Base dataset configuration
-base_dataset_args = PatchViewFinderMontyWorldMountHabitatDatasetArgs()
+# Base dataset configuration - use default which includes proper RGBD sensors
+base_dataset_args = PatchViewFinderMountHabitatDatasetArgs()
+
+# We need to update the transform to use our sensor IDs
+from tbp.monty.frameworks.environment_utils.transforms import MissingToMaxDepth, DepthTo3DLocations
+
+# Override the transform to use our sensor module IDs
+agent_args = base_dataset_args.env_init_args["agents"][0].agent_args
+base_dataset_args.transform = [
+    MissingToMaxDepth(agent_id=agent_args["agent_id"], max_depth=1),
+    DepthTo3DLocations(
+        agent_id=agent_args["agent_id"],
+        sensor_ids=["patch", "view_finder"],  # Use default sensor IDs from the agent
+        resolutions=agent_args["resolutions"],
+        world_coord=True,
+        zooms=agent_args["zooms"],
+        get_all_points=True,
+        use_semantic_sensor=False,
+    ),
+]
 
 # Base dataloader configuration
 base_dataloader_args = EnvironmentDataloaderPerObjectArgs(
@@ -123,11 +210,14 @@ def create_experiment_config(monty_config, logging_config=None):
     if logging_config is None:
         logging_config = {
             "python_log_level": "INFO",
+            "monty_log_level": "BASIC",
             "python_log_to_file": True,
             "python_log_to_stdout": True,
             "python_log_to_stderr": False,
             "run_name": "test_run",
+            "output_dir": os.getenv("MONTY_LOGS", "~/tbp/results/monty/"),
             "wandb_handlers": [],
+            "monty_handlers": [],
         }
 
     return {
@@ -167,11 +257,14 @@ def create_simple_cross_modal_config():
                 num_exploratory_steps=1000,
                 max_total_steps=2000,
             ),
-            "sensor_module_configs": [base_sensor_module, base_sensor_module],
+            "sensor_module_configs": {
+                "sensor_module_0": base_sensor_module_patch,
+                "sensor_module_1": base_sensor_module_view_finder,
+            },
             "learning_module_configs": lm_configs,
             "motor_system_config": base_motor_system,
-            "sm_to_agent_dict": {0: 0, 1: 0},  # Both sensors on same agent
-            "sm_to_lm_matrix": [[0], [1]],  # Each sensor to different LM
+            "sm_to_agent_dict": {"patch": "agent_id_0", "view_finder": "agent_id_0"},  # Both sensors on same agent
+            "sm_to_lm_matrix": [[0], [1]],  # Each sensor to different LM (patch->visual, view_finder->touch)
             "lm_to_lm_matrix": [[], []],  # No hierarchical connections
             "lm_to_lm_vote_matrix": [[1], [0]],  # Cross-voting between LMs
         },
@@ -184,12 +277,13 @@ def create_simple_cross_modal_config():
 
 
 def create_multi_modal_config():
-    """Create a multi-modal experiment configuration with 3 learning modules."""
-    # Create three learning modules representing different modalities
+    """Create a multi-modal experiment configuration with 2 learning modules using different sensors."""
+    # Create two learning modules representing different modalities
+    # Use patch sensor for visual LM and view_finder for touch LM
     lm_configs = create_cross_modal_lm_configs(
         base_learning_module,
-        num_lms=3,
-        modality_names=['visual', 'touch', 'proprioceptive'],
+        num_lms=2,
+        modality_names=['visual', 'touch'],
         association_params=get_association_params_preset('aggressive'),
     )
 
@@ -198,18 +292,21 @@ def create_multi_modal_config():
         base_monty_config={
             "monty_class": MontyForUnsupervisedAssociation,
             "monty_args": MontyArgs(
-                min_eval_steps=300,
-                min_train_steps=300,
-                num_exploratory_steps=1500,
-                max_total_steps=3000,
+                min_eval_steps=400,  # Longer to build stronger associations
+                min_train_steps=400,
+                num_exploratory_steps=2000,
+                max_total_steps=4000,
             ),
-            "sensor_module_configs": [base_sensor_module] * 3,
+            "sensor_module_configs": {
+                "sensor_module_0": base_sensor_module_patch,
+                "sensor_module_1": base_sensor_module_view_finder,
+            },
             "learning_module_configs": lm_configs,
             "motor_system_config": base_motor_system,
-            "sm_to_agent_dict": {0: 0, 1: 0, 2: 0},  # All sensors on same agent
-            "sm_to_lm_matrix": [[0], [1], [2]],  # Each sensor to different LM
-            "lm_to_lm_matrix": [[], [], []],  # No hierarchical connections
-            "lm_to_lm_vote_matrix": [[1, 2], [0, 2], [0, 1]],  # Full cross-voting
+            "sm_to_agent_dict": {"patch": "agent_id_0", "view_finder": "agent_id_0"},  # Both sensors on same agent
+            "sm_to_lm_matrix": [[0], [1]],  # Each sensor to different LM (patch->visual, view_finder->touch)
+            "lm_to_lm_matrix": [[], []],  # No hierarchical connections
+            "lm_to_lm_vote_matrix": [[1], [0]],  # Cross-voting between LMs
         },
         lm_configs=lm_configs,
         enable_association_analysis=True,
@@ -237,10 +334,13 @@ def create_conservative_association_config():
                 num_exploratory_steps=2000,
                 max_total_steps=4000,
             ),
-            "sensor_module_configs": [base_sensor_module, base_sensor_module],
+            "sensor_module_configs": {
+                "sensor_module_0": base_sensor_module_patch,
+                "sensor_module_1": base_sensor_module_view_finder,
+            },
             "learning_module_configs": lm_configs,
             "motor_system_config": base_motor_system,
-            "sm_to_agent_dict": {0: 0, 1: 0},
+            "sm_to_agent_dict": {"patch": "agent_id_0", "view_finder": "agent_id_0"},
             "sm_to_lm_matrix": [[0], [1]],
             "lm_to_lm_matrix": [[], []],
             "lm_to_lm_vote_matrix": [[1], [0]],
@@ -253,9 +353,13 @@ def create_conservative_association_config():
     # Custom logging config for conservative approach
     conservative_logging_config = {
         "python_log_level": "WARNING",  # Less verbose
+        "monty_log_level": "BASIC",
         "python_log_to_file": True,
         "python_log_to_stdout": False,
+        "output_dir": os.getenv("MONTY_LOGS", "~/tbp/results/monty/"),
+        "run_name": "conservative_association",
         "wandb_handlers": [],
+        "monty_handlers": [],
     }
 
     return create_experiment_config(monty_config, conservative_logging_config)
@@ -264,17 +368,55 @@ def create_conservative_association_config():
 def create_association_strategy_comparison_config():
     """Create configuration for comparing different association strategies."""
     # Define base components needed for the experiment
-    base_sensor_module_local = {
-        "sensor_module_class": "HabitatDistantPatchSM",  # Placeholder
-        "sensor_module_args": {"sensor_module_id": "patch"},
+    base_sensor_module_local_patch = {
+        "sensor_module_class": FeatureChangeSM,
+        "sensor_module_args": {
+            "sensor_module_id": "patch",
+            "features": [
+                "on_object",
+                "object_coverage",
+                "rgba",
+                "hsv",
+                "pose_vectors",
+                "principal_curvatures_log",
+            ],
+            "save_raw_obs": False,
+            "delta_thresholds": {
+                "on_object": 0,
+                "distance": 0.01,
+            },
+        },
+    }
+
+    base_sensor_module_local_view_finder = {
+        "sensor_module_class": FeatureChangeSM,
+        "sensor_module_args": {
+            "sensor_module_id": "view_finder",
+            "features": [
+                "on_object",
+                "object_coverage",
+                "rgba",
+                "hsv",
+                "pose_vectors",
+                "principal_curvatures_log",
+            ],
+            "save_raw_obs": False,
+            "delta_thresholds": {
+                "on_object": 0,
+                "distance": 0.01,
+            },
+        },
     }
 
     base_motor_system_local = {
         "motor_system_class": MotorSystem,
-        "motor_system_args": make_informed_policy_config(
-            action_space_type="distant_agent",
-            action_sampler_class=ConstantSampler,
-        ),
+        "motor_system_args": {
+            "policy_class": InformedPolicy,
+            "policy_args": make_informed_policy_config(
+                action_space_type="distant_agent",
+                action_sampler_class=ConstantSampler,
+            ),
+        },
     }
 
     # Create multiple LM configs with different association parameters
@@ -313,10 +455,13 @@ def create_association_strategy_comparison_config():
             num_exploratory_steps=2000,
             max_total_steps=4000,
         ),
-        "sensor_module_configs": [base_sensor_module_local, base_sensor_module_local],
+        "sensor_module_configs": {
+            "sensor_module_0": base_sensor_module_local_patch,
+            "sensor_module_1": base_sensor_module_local_view_finder,
+        },
         "learning_module_configs": lm_configs[0],  # Use balanced as base
         "motor_system_config": base_motor_system_local,
-        "sm_to_agent_dict": {0: 0, 1: 0},
+        "sm_to_agent_dict": {"patch": "agent_id_0", "view_finder": "agent_id_0"},
         "sm_to_lm_matrix": [[0], [1]],
         "lm_to_lm_matrix": [[], []],
         "lm_to_lm_vote_matrix": [[1], [0]],
@@ -332,9 +477,15 @@ def create_association_strategy_comparison_config():
     # Comparison logging config with detailed metrics
     comparison_logging_config = {
         "python_log_level": "INFO",
+        "monty_log_level": "BASIC",
         "python_log_to_file": True,
         "python_log_to_stdout": True,
+        "python_log_to_stderr": False,  # Add missing key
+        "log_parallel_wandb": False,  # Add missing key
+        "output_dir": os.getenv("MONTY_LOGS", "~/tbp/results/monty/") + "association_comparison",
+        "run_name": "association_comparison",
         "wandb_handlers": [],
+        "monty_handlers": [],
         "detailed_association_metrics": True,
     }
 

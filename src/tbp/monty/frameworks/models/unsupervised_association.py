@@ -261,10 +261,14 @@ class UnsupervisedAssociationMixin:
 
         # These methods are defined by this mixin itself
         def _get_current_high_evidence_hypotheses(self) -> List[str]: ...
+
         def _record_co_occurrence(self, my_objects: List[str], other_lm_id: str,
-                                 other_object_id: str, other_evidence: float, vote_info: Any) -> None: ...
+                                  other_object_id: str, other_evidence: float, vote_info: Any) -> None: ...
+
         def _prune_association_memory(self) -> None: ...
+
         def _check_interface_compatibility(self) -> bool: ...
+
         def _map_votes_for_object(self, my_object_id: str, vote_data: Dict) -> List: ...
 
     def __init__(self, *args, **kwargs):
@@ -276,32 +280,32 @@ class UnsupervisedAssociationMixin:
             lambda: defaultdict(lambda: defaultdict(AssociationData))
         )
 
-        # Configuration parameters
-        self.association_threshold = kwargs.get('association_threshold', 0.1)
-        self.min_association_threshold = kwargs.get('min_association_threshold', 0.3)
-        self.spatial_consistency_weight = kwargs.get('spatial_consistency_weight', 0.3)
-        self.temporal_consistency_weight = kwargs.get('temporal_consistency_weight', 0.2)
-        self.co_occurrence_weight = kwargs.get('co_occurrence_weight', 0.5)
-        self.max_association_memory_size = kwargs.get('max_association_memory_size', 1000)
+        # Configuration parameters - use getattr for parameters that may have been set by subclass
+        self.association_threshold = getattr(self, 'association_threshold', 0.1)
+        self.min_association_threshold = getattr(self, 'min_association_threshold', 0.3)
+        self.spatial_consistency_weight = getattr(self, 'spatial_consistency_weight', 0.3)
+        self.temporal_consistency_weight = getattr(self, 'temporal_consistency_weight', 0.2)
+        self.co_occurrence_weight = getattr(self, 'co_occurrence_weight', 0.5)
+        self.max_association_memory_size = getattr(self, 'max_association_memory_size', 1000)
 
         # New configurable weights for spatial consistency calculation
-        self.location_weight = kwargs.get('location_weight', 0.7)
-        self.pose_weight = kwargs.get('pose_weight', 0.3)
-        self.temporal_recency_weight = kwargs.get('temporal_recency_weight', 0.1)
+        self.location_weight = getattr(self, 'location_weight', 0.7)
+        self.pose_weight = getattr(self, 'pose_weight', 0.3)
+        self.temporal_recency_weight = getattr(self, 'temporal_recency_weight', 0.1)
 
         # Parameters for improved location similarity
-        self.distance_tolerance = kwargs.get('distance_tolerance', 1.0)
-        self.sensor_scale_estimate = kwargs.get('sensor_scale_estimate', 1.0)
+        self.distance_tolerance = getattr(self, 'distance_tolerance', 1.0)
+        self.sensor_scale_estimate = getattr(self, 'sensor_scale_estimate', 1.0)
 
         # Parameters for temporal pattern analysis
-        self.temporal_decay_factor = kwargs.get('temporal_decay_factor', 0.99)
-        self.periodicity_weight = kwargs.get('periodicity_weight', 0.3)
-        self.clustering_weight = kwargs.get('clustering_weight', 0.2)
-        self.recency_weight = kwargs.get('recency_weight', 0.5)
+        self.temporal_decay_factor = getattr(self, 'temporal_decay_factor', 0.99)
+        self.periodicity_weight = getattr(self, 'periodicity_weight', 0.3)
+        self.clustering_weight = getattr(self, 'clustering_weight', 0.2)
+        self.recency_weight = getattr(self, 'recency_weight', 0.5)
 
         # Tracking variables
         self.current_step = 0
-        self.association_learning_enabled = kwargs.get('association_learning_enabled', True)
+        self.association_learning_enabled = getattr(self, 'association_learning_enabled', True)
 
         logger.info(f"Initialized UnsupervisedAssociationMixin for LM {getattr(self, 'learning_module_id', 'unknown')}")
 

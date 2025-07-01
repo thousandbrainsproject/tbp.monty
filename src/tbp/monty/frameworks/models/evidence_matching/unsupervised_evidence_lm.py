@@ -68,7 +68,7 @@ class UnsupervisedEvidenceGraphLM(UnsupervisedAssociationMixin, EvidenceGraphLM)
 
     def __init__(self, *args, **kwargs):
         """Initialize the unsupervised evidence learning module."""
-        # Extract association-specific parameters
+        # Extract association-specific parameters before passing to parent
         association_params = {
             'association_threshold': kwargs.pop('association_threshold', 0.1),
             'min_association_threshold': kwargs.pop('min_association_threshold', 0.3),
@@ -79,15 +79,22 @@ class UnsupervisedEvidenceGraphLM(UnsupervisedAssociationMixin, EvidenceGraphLM)
             'association_learning_enabled': kwargs.pop('association_learning_enabled', True),
         }
 
+        # Extract learning_module_id before passing to parent
+        learning_module_id = kwargs.pop('learning_module_id', None)
+
         # Initialize parent classes
-        super().__init__(*args, **kwargs, **association_params)
+        super().__init__(*args, **kwargs)
+
+        # Set association parameters after parent initialization
+        for key, value in association_params.items():
+            setattr(self, key, value)
 
         # Track episode steps for association learning
         self.episode_step = 0
 
-        # Set learning_module_id if provided in kwargs
-        if 'learning_module_id' in kwargs:
-            self.learning_module_id = kwargs['learning_module_id']
+        # Set learning_module_id if provided
+        if learning_module_id is not None:
+            self.learning_module_id = learning_module_id
 
         lm_id = getattr(self, 'learning_module_id', 'unknown')
         logger.info(f"Initialized UnsupervisedEvidenceGraphLM {lm_id} "
