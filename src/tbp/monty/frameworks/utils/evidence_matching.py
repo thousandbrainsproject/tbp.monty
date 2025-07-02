@@ -460,7 +460,7 @@ def evidence_update_threshold(
     x_percent_threshold: float | str,
     max_global_evidence: float,
     evidence_all_channels: np.ndarray,
-) -> float | None:
+) -> float:
     """Determine how much evidence a hypothesis should have to be updated.
 
     Args:
