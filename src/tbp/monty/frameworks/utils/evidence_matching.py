@@ -456,7 +456,7 @@ class EvidenceSlopeTracker:
 
 
 def evidence_update_threshold(
-    evidence_threshold_config: float | str | None,
+    evidence_threshold_config: float | str,
     x_percent_threshold: float | str,
     max_global_evidence: float,
     evidence_all_channels: np.ndarray,
@@ -475,6 +475,13 @@ def evidence_update_threshold(
 
     Returns:
         The evidence update threshold.
+
+    Note:
+        The logic of `evidence_threshold_config="all"` can be optimized by
+        bypassing the `np.min` function here and bypassing the indexing of
+        `np.where` function in the displacer. We want to update all the existing
+        hypotheses, therefore there is no need to find the specific indices for
+        them in the hypotheses space.
 
     Raises:
         InvalidEvidenceThresholdConfig: If `evidence_threshold_config` is
@@ -504,12 +511,12 @@ def evidence_update_threshold(
         x_percent_of_max = max_global_evidence / 100 * x_percent_threshold
         return max_global_evidence - x_percent_of_max
     elif evidence_threshold_config == "all":
-        return None
+        return np.min(evidence_all_channels)
     else:
         raise InvalidEvidenceThresholdConfig(
             "evidence_threshold_config not in "
             "[int, float, '[int]%', 'mean', "
-            "'median', 'all', 'x_percent_threshold', 'None']"
+            "'median', 'all', 'x_percent_threshold']"
         )
 
 

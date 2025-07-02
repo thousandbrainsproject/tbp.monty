@@ -59,15 +59,14 @@ class EvidenceGraphLM(GraphLM):
             by this value before being added to the overall evidence of a hypothesis.
             This factor is only multiplied with the feature evidence (not the pose
             evidence as opposed to the present_weight).
-        evidence_threshold_config (float | str | None): How to decide which hypotheses
+        evidence_threshold_config: How to decide which hypotheses
             should be updated. When this parameter is either '[int]%' or
             'x_percent_threshold', then this parameter is applied to the evidence
             for the Most Likely Hypothesis (MLH) to determine a minimum evidence
             threshold in order for other hypotheses to be updated. Any hypotheses
             falling below the resulting evidence threshold do not get updated. The
             other options set a fixed threshold that does not take MLH evidence into
-            account. Using None will bypass threshold calculation and return None.
-            In [int, float, None, '[int]%', 'mean', 'median', 'all',
+            account. In [int, float, '[int]%', 'mean', 'median', 'all',
             'x_percent_threshold']. Defaults to 'all'.
         vote_evidence_threshold: Only send votes that have a scaled evidence above
             this threshold. Vote evidences are in the range of [-1, 1] so the threshold
