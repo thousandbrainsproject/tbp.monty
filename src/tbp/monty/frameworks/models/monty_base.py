@@ -504,7 +504,9 @@ class MontyBase(Monty):
 class LearningModuleBase(LearningModule):
     """Dummy placeholder class used only for tests."""
 
-    def __init__(self):
+    def __init__(
+        self, knn_backend="cpu", knn_nlist=1, knn_gpu_id=0, knn_batch_size=None
+    ):
         self.test_attr_1 = True
         self.test_attr_2 = True
 

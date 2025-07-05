@@ -73,6 +73,12 @@ dev = [
     # Python linter and formatter
     'ruff==0.11.4',
 ]
+gpu = [
+    'faiss-gpu>=1.7.0',
+]
+cpu = [
+    'faiss-cpu>=1.7.0',
+]
 generate_api_docs_tool = [
     'docutils>=0.17',
     'sphinx',
