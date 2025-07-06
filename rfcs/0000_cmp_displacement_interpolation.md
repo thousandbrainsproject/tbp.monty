@@ -61,6 +61,29 @@ result = interpolator.interpolate(
 displacement_vote, orientation_vote = result
 ```
 
+### Concrete Numerical Example
+
+To illustrate the geometric distortion problem, consider two sensors at 45° and 135° angles around a cylindrical object:
+
+**Sensor 1 (45°):**
+- Displacement: `[0.707, 0.707, 0.0]` (normalized)
+- Orientation: `[0.0, 0.0, 0.383, 0.924]` (quaternion for 45° Z-rotation)
+
+**Sensor 2 (135°):**
+- Displacement: `[-0.707, 0.707, 0.0]` (normalized)
+- Orientation: `[0.0, 0.0, 0.924, 0.383]` (quaternion for 135° Z-rotation)
+
+**Linear averaging (current):**
+- Displacement: `[0.0, 0.707, 0.0]` → Points at 90°, magnitude 0.707
+- Orientation: `[0.0, 0.0, 0.654, 0.654]` → Invalid quaternion (not normalized)
+
+**Geometric interpolation (proposed):**
+- Target angle: 90°
+- Displacement: `[0.0, 1.0, 0.0]` → Correct direction, proper magnitude
+- Orientation: `[0.0, 0.0, 0.707, 0.707]` → Valid normalized quaternion for 90°
+
+The linear approach produces a shortened displacement vector and an invalid orientation, while geometric interpolation maintains proper spatial relationships.
+
 ## Impact on Developers
 
 - **Sensor Modules**: Will output quaternion orientations alongside displacement vectors
@@ -103,10 +126,26 @@ class CMPDisplacementInterpolator:
 1. **Compute interpolation parameter**: `t = (target_angle - angle_1) / (angle_2 - angle_1)`
 
 2. **Orientation interpolation**: `orientation_result = SLERP(orientation_1, orientation_2, t)`
+   - **Antipodal quaternion handling**: If `dot(q1, q2) < 0`, negate one quaternion to ensure shortest path
+   - **Fallback**: If quaternions are nearly antipodal (`|dot(q1, q2)| < 0.01`), use linear interpolation with normalization
 
 3. **Displacement interpolation**: For each axis i ∈ {x, y, z}:
    - Solve linear system: `[sin(angle_1), cos(angle_1); sin(angle_2), cos(angle_2)] * [A_i; B_i] = [disp_1_i; disp_2_i]`
+   - **Singular matrix handling**: If `det(matrix) < 1e-10`, fall back to linear interpolation for that axis
    - Evaluate: `disp_result_i = A_i * sin(target_angle) + B_i * cos(target_angle)`
+
+4. **Validation**: Ensure output quaternion is normalized and displacement magnitude is reasonable
+
+## Computational Complexity
+
+**Per interpolation call:**
+- Quaternion SLERP: O(1) - 4 quaternion operations + 1 trigonometric function
+- Displacement fitting: O(1) - 3 × (2×2 matrix inversion + 2 trigonometric evaluations)
+- Total: ~50-100 floating point operations vs ~10 for linear interpolation
+
+**Memory overhead:** Minimal - no additional storage beyond input/output buffers
+
+**Scalability:** Linear with number of sensor pairs requiring interpolation
 
 ## Integration Points
 
@@ -130,8 +169,8 @@ The voting mechanisms in `src/tbp/monty/frameworks/models/graph_matching.py` wil
 
 ## Implementation Complexity
 - Requires quaternion mathematics knowledge for maintenance
-- Adds computational overhead compared to linear interpolation
-- Introduces new dependencies (scipy.spatial.transform if not already present)
+- Adds computational overhead compared to linear interpolation (~2-3x slower due to matrix operations)
+- Uses scipy.spatial.transform (already present in codebase via motor_policies.py and spatial_arithmetics.py)
 
 ## Edge Cases
 - **Antipodal quaternions**: When orientations are 180° apart, SLERP has ambiguous paths
@@ -192,12 +231,32 @@ The voting mechanisms in `src/tbp/monty/frameworks/models/graph_matching.py` wil
 - Displacement-based processing aligns with Thousand Brains Theory
 - Supports the biological motivation for avoiding location-centric approaches
 
+## Dependencies
+- **scipy.spatial.transform**: Already present in tbp.monty codebase (used in motor_policies.py, spatial_arithmetics.py)
+- **numpy**: Core dependency, already required
+- **quaternion**: Already used in motor_policies.py for quaternion operations
+- No new external dependencies required for this implementation
+
+# Validation Plan
+
+## Test Scenarios
+1. **Geometric accuracy tests**: Compare interpolated poses against analytical solutions for simple geometric patterns (circles, helixes)
+2. **Multi-sensor voting**: Measure voting accuracy improvement in controlled multi-LM scenarios
+3. **Regression testing**: Ensure existing experiments maintain comparable performance with new interpolation
+
+## Success Metrics
+- **Geometric error reduction**: <5% error in interpolated displacement magnitude and direction
+- **Orientation accuracy**: Quaternion interpolation error <0.1 radians from expected orientation
+- **Performance**: Interpolation overhead <10ms per vote in typical multi-sensor scenarios
+- **Compatibility**: No degradation in existing benchmark experiment accuracy
+
 # Unresolved questions
 
-1. **Quaternion normalization**: How should we handle numerical drift in quaternion magnitude?
-2. **Fallback strategies**: What should happen when sine fitting fails (singular matrices)?
-3. **Performance requirements**: What are acceptable computational costs for real-time CMP communication?
-4. **Validation metrics**: How do we measure improvement over current linear interpolation?
+1. **Quaternion normalization**: Proposed approach - renormalize after each SLERP operation and log warnings if drift >1e-6
+2. **Fallback strategies**: Proposed approach - graceful degradation to linear interpolation with logging for debugging
+3. **Performance requirements**: Target <10ms overhead per interpolation call based on typical CMP message frequencies
+4. **Parameter tuning**: Should sinusoidal fitting use weighted least squares based on sensor confidence?
+5. **Multi-angle interpolation**: How to extend beyond two-point interpolation for scenarios with >2 sensors?
 
 # Future possibilities
 
