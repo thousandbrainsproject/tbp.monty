@@ -7,30 +7,6 @@
 
 This RFC proposes enhancing non-morphological feature extraction in Monty's sensor modules by implementing multi-scale Local Binary Patterns (LBP) for texture analysis and enhanced depth processing for tactile-like features. The implementation uses a **pure composition approach** with a dedicated texture processor that can be integrated into any sensor module, improving object recognition and discrimination capabilities while maintaining rotation invariance as specified in the project documentation. This approach avoids multiple inheritance complexity and aligns with established architectural preferences in the codebase.
 
-## Quick Start
-
-**For users who want to try texture features immediately:**
-
-1. **Add texture features to your experiment config:**
-   ```python
-   features = ["on_object", "hsv", "pose_vectors", "lbp_texture", "depth_roughness"]
-   ```
-
-2. **Run your experiment** - texture features will be automatically extracted with sensible defaults
-
-3. **For better performance, add feature weights:**
-   ```python
-   feature_weights = {
-       "patch": {
-           "hsv": np.array([1, 0.5, 0.5]),
-           "lbp_texture": np.ones(18) * 0.7,  # LBP histogram
-           "depth_roughness": 1.0,
-       }
-   }
-   ```
-
-That's it! The system handles all the complexity internally while providing simple configuration options.
-
 ## Motivation
 
 ### Current Limitations
@@ -579,32 +555,32 @@ simplified_feature_mapping = {
 }
 ```
 
-#### Simplified Usage Examples
+#### Configuration Design Examples
 
-**Basic Usage (Minimal Configuration):**
+**Minimal Configuration Approach:**
 ```python
-# Just add texture features to existing feature list
+# Simple feature specification - complex parameters handled internally
 features = ["on_object", "hsv", "pose_vectors", "lbp_texture", "depth_roughness"]
 
+# Texture processor created automatically with sensible defaults
 sensor_module = HabitatDistantPatchSM(
     sensor_module_id="patch",
     features=features,
-    # texture_config defaults to sensible values
 )
 ```
 
-**Advanced Usage (Custom Configuration):**
+**Preset-Based Configuration:**
 ```python
-# Use preset configuration
-texture_config = texture_feature_configs["enhanced"]
+# Preset configurations for different complexity levels
+texture_config = {
+    "preset": "enhanced",  # "basic", "enhanced", or "complete"
+    "lbp_channels": "grayscale"  # optional customization
+}
 
 sensor_module = HabitatDistantPatchSM(
     sensor_module_id="patch",
-    features=texture_config["features"] + ["on_object", "hsv", "pose_vectors"],
-    texture_config={
-        "preset": "enhanced",  # or "basic", "complete"
-        "lbp_channels": "grayscale"  # or "rgb" for color texture
-    }
+    features=["on_object", "hsv", "pose_vectors", "lbp_texture", "depth_roughness"],
+    texture_config=texture_config
 )
 ```
 
