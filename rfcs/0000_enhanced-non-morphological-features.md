@@ -5,7 +5,31 @@
 
 ## Summary
 
-This RFC proposes enhancing non-morphological feature extraction in Monty's sensor modules by implementing multi-scale Local Binary Patterns (LBP) for texture analysis and enhanced depth processing for tactile-like features. The implementation uses a modular mixin approach that can be applied to any sensor module, improving object recognition and discrimination capabilities while maintaining rotation invariance as specified in the project documentation.
+This RFC proposes enhancing non-morphological feature extraction in Monty's sensor modules by implementing multi-scale Local Binary Patterns (LBP) for texture analysis and enhanced depth processing for tactile-like features. The implementation uses a **pure composition approach** with a dedicated texture processor that can be integrated into any sensor module, improving object recognition and discrimination capabilities while maintaining rotation invariance as specified in the project documentation. This approach avoids multiple inheritance complexity and aligns with established architectural preferences in the codebase.
+
+## Quick Start
+
+**For users who want to try texture features immediately:**
+
+1. **Add texture features to your experiment config:**
+   ```python
+   features = ["on_object", "hsv", "pose_vectors", "lbp_texture", "depth_roughness"]
+   ```
+
+2. **Run your experiment** - texture features will be automatically extracted with sensible defaults
+
+3. **For better performance, add feature weights:**
+   ```python
+   feature_weights = {
+       "patch": {
+           "hsv": np.array([1, 0.5, 0.5]),
+           "lbp_texture": np.ones(18) * 0.7,  # LBP histogram
+           "depth_roughness": 1.0,
+       }
+   }
+   ```
+
+That's it! The system handles all the complexity internally while providing simple configuration options.
 
 ## Motivation
 
@@ -36,12 +60,14 @@ The documentation specifically requires **rotation invariant** features that can
 
 ### Architecture Overview
 
-The implementation follows a modular mixin approach that can be applied to any sensor module:
+The implementation follows a **pure composition approach** that can be integrated into any sensor module:
 
 1. **Texture Processing Utilities**: Standalone functions in `src/tbp/monty/frameworks/utils/texture_processing.py`
-2. **Texture Feature Mixin**: Reusable mixin class `TextureFeatureMixin` that can be applied to any sensor module
-3. **Flexible Integration**: Sensor modules can inherit from the mixin to gain texture extraction capabilities
+2. **Texture Feature Processor**: Dedicated `TextureFeatureProcessor` class that handles all texture extraction logic
+3. **Composition Integration**: Sensor modules use composition ("has-a" relationship) to incorporate texture processing
 4. **Broad Applicability**: Not limited to Habitat-specific sensor modules, works with any RGBA+depth data
+5. **Clean Architecture**: Avoids multiple inheritance complexity and method resolution order issues entirely
+6. **Consistent with User Preferences**: Follows the established preference for composition over mixin patterns
 
 ### 1. Texture Processing Utilities
 
@@ -52,7 +78,7 @@ The implementation follows a modular mixin approach that can be applied to any s
 
 import numpy as np
 from skimage.feature import local_binary_pattern
-from skimage.color import rgb2gray
+from skimage.color import rgb2gray, rgb2hsv
 from scipy.ndimage import gaussian_filter
 
 
@@ -73,6 +99,13 @@ def extract_multiscale_lbp_features(rgba_patch, config=None):
             "method": "uniform",
             "channels": "grayscale"
         }
+
+    # Validate input patch
+    if rgba_patch is None or rgba_patch.size == 0:
+        return {}
+
+    if len(rgba_patch.shape) != 3 or rgba_patch.shape[2] < 3:
+        raise ValueError("rgba_patch must be H x W x 4 (or at least H x W x 3)")
 
     features = {}
 
@@ -96,7 +129,9 @@ def extract_multiscale_lbp_features(rgba_patch, config=None):
             # Create normalized histogram
             n_bins = n_points + 2 if config["method"] == "uniform" else 2**n_points
             hist, _ = np.histogram(lbp.ravel(), bins=n_bins, range=(0, n_bins))
-            normalized_hist = hist / hist.sum() if hist.sum() > 0 else hist
+            # Normalize histogram to create probability distribution
+            hist_sum = hist.sum()
+            normalized_hist = hist / hist_sum if hist_sum > 0 else np.zeros_like(hist)
 
             feature_name = f"lbp_texture{ch_name}_r{radius}_p{n_points}"
             features[feature_name] = normalized_hist
@@ -135,17 +170,37 @@ def extract_enhanced_depth_features(depth_patch, obs_3d, surface_normal=None, co
 
     on_object_depths = depth_patch[on_object_mask]
 
+    # Handle edge case of insufficient data points
+    if len(on_object_depths) < 2:
+        return {
+            "depth_roughness": 0.0,
+            "depth_gradient_magnitude": 0.0,
+            "depth_surface_consistency": 0.0
+        }
+
     # Surface roughness (scaled standard deviation of depth)
-    depth_roughness = np.std(on_object_depths) * config["roughness_scale"]
+    # Use ddof=0 to avoid "Mean of empty slice" warnings with small sample sizes
+    depth_roughness = np.std(on_object_depths, ddof=0) * config["roughness_scale"]
 
     # Enhanced depth gradient analysis
     patch_size = int(np.sqrt(len(depth_patch)))
-    depth_2d = depth_patch.reshape(patch_size, patch_size)
+    if patch_size * patch_size != len(depth_patch):
+        # Handle non-square patches by using the closest square size
+        patch_size = int(np.ceil(np.sqrt(len(depth_patch))))
+        padded_depth = np.zeros(patch_size * patch_size)
+        padded_depth[:len(depth_patch)] = depth_patch
+        depth_2d = padded_depth.reshape(patch_size, patch_size)
+    else:
+        depth_2d = depth_patch.reshape(patch_size, patch_size)
 
     # Apply Gaussian smoothing before gradient computation
     smoothed_depth = gaussian_filter(depth_2d, sigma=0.5)
     grad_y, grad_x = np.gradient(smoothed_depth)
-    gradient_magnitude = np.mean(np.sqrt(grad_x**2 + grad_y**2))
+    # Use nanmean to handle any NaN values and prevent "invalid value encountered" warnings
+    gradient_magnitude = np.nanmean(np.sqrt(grad_x**2 + grad_y**2))
+    # Replace NaN with 0 if all values were invalid
+    if np.isnan(gradient_magnitude):
+        gradient_magnitude = 0.0
 
     # Surface normal consistency (if surface normal is provided)
     surface_consistency = 0.0
@@ -177,15 +232,17 @@ def extract_enhanced_depth_features(depth_patch, obs_3d, surface_normal=None, co
 - **Rotation Invariant**: LBP uses `method='uniform'` for rotation invariance
 - **Channel Flexibility**: Can process grayscale, RGB, or individual color channels
 - **Enhanced Depth Processing**: Surface normal consistency and improved gradient analysis
+- **Composition-Based**: Clean architecture using "has-a" relationship instead of inheritance
 - **Modular Design**: Functions can be used by any sensor module with RGBA+depth data
-- **Testable**: Easy to unit test in isolation
+- **Testable**: Easy to unit test in isolation, no inheritance complexity
+- **Non-Morphological**: All texture features are classified as non-morphological features in Monty's architecture
 
-### 2. Texture Feature Mixin
+### 2. Texture Feature Processor
 
-#### New File: `src/tbp/monty/frameworks/models/mixins/texture_features.py`
+#### New File: `src/tbp/monty/frameworks/models/texture_processor.py`
 
 ```python
-"""Texture feature extraction mixin for sensor modules."""
+"""Texture feature processor for sensor modules using composition."""
 
 import numpy as np
 from tbp.monty.frameworks.utils.texture_processing import (
@@ -194,111 +251,162 @@ from tbp.monty.frameworks.utils.texture_processing import (
 )
 
 
-class TextureFeatureMixin:
-    """Mixin class that adds texture feature extraction capabilities to sensor modules.
+class TextureFeatureProcessor:
+    """Handles all texture feature extraction logic using composition.
 
-    This mixin can be applied to any sensor module that processes RGBA and depth data.
+    This class can be used by any sensor module that processes RGBA and depth data.
     It provides configurable texture feature extraction including multi-scale LBP
     and enhanced depth-based features.
     """
 
-    def __init__(self, *args, texture_config=None, **kwargs):
-        """Initialize texture feature mixin.
+    def __init__(self, texture_config=None):
+        """Initialize texture feature processor.
 
         Args:
-            texture_config: Configuration dict for texture processing parameters
+            texture_config: Configuration dict for texture processing parameters.
+                          Can include 'preset' key for simplified configuration.
         """
-        super().__init__(*args, **kwargs)
-
-        # Default texture configuration
-        self.texture_config = texture_config or {
-            "lbp_params": {
-                "radii": [1, 2],
-                "n_points": [8, 16],
-                "method": "uniform",
-                "channels": "grayscale"
-            },
-            "depth_params": {
-                "roughness_scale": 1.0,
-                "gradient_kernel_size": 3,
-                "normalize": True,
-                "surface_consistency_threshold": 0.1
+        # Handle preset configurations for simplified usage
+        if texture_config and "preset" in texture_config:
+            preset = texture_config["preset"]
+            if preset == "basic":
+                base_config = {
+                    "lbp_params": {"radii": [2], "n_points": [16], "method": "uniform", "channels": "grayscale"},
+                    "depth_params": {"roughness_scale": 1.0, "normalize": True}
+                }
+            elif preset == "enhanced":
+                base_config = {
+                    "lbp_params": {"radii": [1, 2], "n_points": [8, 16], "method": "uniform", "channels": "grayscale"},
+                    "depth_params": {"roughness_scale": 1.0, "normalize": True, "gradient_kernel_size": 3}
+                }
+            else:  # complete
+                base_config = {
+                    "lbp_params": {"radii": [1, 2], "n_points": [8, 16], "method": "uniform", "channels": "grayscale"},
+                    "depth_params": {"roughness_scale": 1.0, "normalize": True, "gradient_kernel_size": 3, "surface_consistency_threshold": 0.1}
+                }
+            # Merge with any additional config parameters
+            self.config = {**base_config, **{k: v for k, v in texture_config.items() if k != "preset"}}
+        else:
+            # Default texture configuration (enhanced preset)
+            self.config = texture_config or {
+                "lbp_params": {
+                    "radii": [1, 2],
+                    "n_points": [8, 16],
+                    "method": "uniform",
+                    "channels": "grayscale"
+                },
+                "depth_params": {
+                    "roughness_scale": 1.0,
+                    "gradient_kernel_size": 3,
+                    "normalize": True,
+                    "surface_consistency_threshold": 0.1
+                }
             }
-        }
 
-        # Add texture features to possible features list
-        self._add_texture_features_to_possible_features()
+        # Cache feature names for efficiency
+        self._cached_feature_names = None
 
-    def _add_texture_features_to_possible_features(self):
-        """Add texture feature names to the possible_features list."""
-        if not hasattr(self, 'possible_features'):
-            return
-
-        texture_features = self._get_texture_feature_names()
-
-        # Add texture features if not already present
-        for feature in texture_features:
-            if feature not in self.possible_features:
-                self.possible_features.append(feature)
-
-    def _get_texture_feature_names(self):
+    def get_available_feature_names(self):
         """Get list of all possible texture feature names based on configuration."""
-        feature_names = []
+        if self._cached_feature_names is None:
+            feature_names = []
 
-        # LBP feature names
-        lbp_config = self.texture_config["lbp_params"]
-        channels = [""] if lbp_config["channels"] == "grayscale" else ["_r", "_g", "_b"]
+            # LBP feature names
+            lbp_config = self.config["lbp_params"]
+            channels = [""] if lbp_config["channels"] == "grayscale" else ["_r", "_g", "_b"]
 
-        for ch_name in channels:
-            for radius, n_points in zip(lbp_config["radii"], lbp_config["n_points"]):
-                feature_names.append(f"lbp_texture{ch_name}_r{radius}_p{n_points}")
+            for ch_name in channels:
+                for radius, n_points in zip(lbp_config["radii"], lbp_config["n_points"]):
+                    feature_names.append(f"lbp_texture{ch_name}_r{radius}_p{n_points}")
 
-        # Depth feature names
-        feature_names.extend([
-            "depth_roughness",
-            "depth_gradient_magnitude",
-            "depth_surface_consistency"
-        ])
+            # Depth feature names
+            feature_names.extend([
+                "depth_roughness",
+                "depth_gradient_magnitude",
+                "depth_surface_consistency"
+            ])
 
-        return feature_names
+            self._cached_feature_names = feature_names
 
-    def extract_texture_features(self, rgba_feat, depth_feat, obs_3d, surface_normal=None):
-        """Extract texture features from RGBA and depth data.
+        return self._cached_feature_names
+
+    def extract_features(self, rgba_feat, depth_feat, obs_3d, requested_features, surface_normal=None):
+        """Extract requested texture features from RGBA and depth data.
 
         Args:
             rgba_feat: RGBA patch data (H x W x 4)
             depth_feat: Depth patch data (flattened)
             obs_3d: 3D observation data with object mask (N x 4)
+            requested_features: List of feature names to extract
             surface_normal: Optional surface normal vector
 
         Returns:
-            dict: Extracted texture features
+            dict: Extracted texture features (only requested ones)
         """
         texture_features = {}
 
+        # Validate inputs to prevent numpy warnings
+        if rgba_feat is None or rgba_feat.size == 0:
+            return texture_features
+        if depth_feat is None or depth_feat.size == 0:
+            return texture_features
+        if obs_3d is None or obs_3d.size == 0:
+            return texture_features
+
         # Extract LBP features if any are requested
-        lbp_feature_names = [f for f in self.features if f.startswith("lbp_texture")]
+        lbp_feature_names = [f for f in requested_features if f.startswith("lbp_texture")]
         if lbp_feature_names:
-            lbp_features = extract_multiscale_lbp_features(
-                rgba_feat, self.texture_config["lbp_params"]
-            )
-            # Only include requested LBP features
-            for feature_name in lbp_feature_names:
-                if feature_name in lbp_features:
-                    texture_features[feature_name] = lbp_features[feature_name]
+            try:
+                lbp_features = extract_multiscale_lbp_features(
+                    rgba_feat, self.config["lbp_params"]
+                )
+                # Only include requested LBP features
+                for feature_name in lbp_feature_names:
+                    if feature_name in lbp_features:
+                        texture_features[feature_name] = lbp_features[feature_name]
+            except Exception as e:
+                # Log warning but continue processing other features
+                import logging
+                logging.getLogger(__name__).warning(f"LBP feature extraction failed: {e}")
 
         # Extract depth features if any are requested
-        depth_feature_names = [f for f in self.features if f.startswith("depth_")]
+        depth_feature_names = [f for f in requested_features if f.startswith("depth_")]
         if depth_feature_names:
-            depth_features = extract_enhanced_depth_features(
-                depth_feat, obs_3d, surface_normal, self.texture_config["depth_params"]
-            )
-            # Only include requested depth features
-            for feature_name in depth_feature_names:
-                if feature_name in depth_features:
-                    texture_features[feature_name] = depth_features[feature_name]
+            try:
+                depth_features = extract_enhanced_depth_features(
+                    depth_feat, obs_3d, surface_normal, self.config["depth_params"]
+                )
+                # Only include requested depth features
+                for feature_name in depth_feature_names:
+                    if feature_name in depth_features:
+                        texture_features[feature_name] = depth_features[feature_name]
+            except Exception as e:
+                # Log warning but continue processing other features
+                import logging
+                logging.getLogger(__name__).warning(f"Depth feature extraction failed: {e}")
 
         return texture_features
+
+    def has_texture_features(self, feature_list):
+        """Check if any texture features are requested in the feature list."""
+        available_features = self.get_available_feature_names()
+        return any(feature in available_features for feature in feature_list)
+
+    def update_config(self, new_config):
+        """Update texture processing configuration and clear cache."""
+        self.config.update(new_config)
+        self._cached_feature_names = None  # Clear cache to regenerate feature names
+
+    def get_noise_compatible_features(self):
+        """Get texture features that are compatible with the existing noise system."""
+        # LBP histograms are arrays that can have gaussian noise added
+        # Depth features are scalars that can have gaussian noise added
+        return {
+            "lbp_texture": "array",  # histogram arrays
+            "depth_roughness": "scalar",
+            "depth_gradient_magnitude": "scalar",
+            "depth_surface_consistency": "scalar"
+        }
 ```
 
 ### 3. Integration with Existing Sensor Modules
@@ -307,22 +415,58 @@ class TextureFeatureMixin:
 
 ```python
 # In src/tbp/monty/frameworks/models/sensor_modules.py
-from tbp.monty.frameworks.models.mixins.texture_features import TextureFeatureMixin
+from tbp.monty.frameworks.models.texture_processor import TextureFeatureProcessor
 
-class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin, TextureFeatureMixin):
+class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
     """Enhanced Habitat sensor module with texture feature extraction capabilities."""
 
     def __init__(self, sensor_module_id, features, save_raw_obs=False,
-                 pc1_is_pc2_threshold=0.95, noise_params=None, texture_config=None):
-        # Initialize all parent classes including TextureFeatureMixin
+                 pc1_is_pc2_threshold=10, noise_params=None, process_all_obs=False,
+                 texture_config=None):
+        # Initialize parent classes using existing pattern
         super(HabitatDistantPatchSM, self).__init__(
-            sensor_module_id=sensor_module_id,
-            save_raw_obs=save_raw_obs,
-            pc1_is_pc2_threshold=pc1_is_pc2_threshold,
-            noise_params=noise_params,
-            texture_config=texture_config,
-            features=features
+            sensor_module_id, save_raw_obs, pc1_is_pc2_threshold
         )
+        NoiseMixin.__init__(self, noise_params)
+
+        # Initialize existing attributes to match current implementation
+        self.features = features
+        self.processed_obs = []
+        self.states = []
+        self.on_object_obs_only = True
+        self.process_all_obs = process_all_obs
+
+        # Create texture processor using composition if texture features are requested
+        self.texture_processor = None
+        if self._has_texture_features(features):
+            self.texture_processor = TextureFeatureProcessor(texture_config)
+
+        # Use existing possible_features list and extend it
+        possible_features = [
+            "on_object", "object_coverage", "min_depth", "mean_depth",
+            "rgba", "hsv", "pose_vectors", "principal_curvatures",
+            "principal_curvatures_log", "pose_fully_defined",
+            "gaussian_curvature", "mean_curvature", "gaussian_curvature_sc",
+            "mean_curvature_sc", "curvature_for_TM", "coords_for_TM",
+        ]
+
+        # Add texture features to possible features if processor exists
+        if self.texture_processor:
+            texture_features = self.texture_processor.get_available_feature_names()
+            possible_features.extend(texture_features)
+
+        # Validate requested features against possible features
+        for feature in features:
+            assert feature in possible_features, (
+                f"{feature} not part of {possible_features}"
+            )
+
+    def _has_texture_features(self, feature_list):
+        """Check if any texture features are requested."""
+        return any(f.startswith("lbp_texture") or f.startswith("depth_")
+                  for f in feature_list)
+
+
 
     def extract_and_add_features(self, features, obs_3d, rgba_feat, depth_feat,
                                 center_id, center_row_col, sensor_frame_data, world_camera):
@@ -334,23 +478,42 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin, TextureFeatureMixin):
             sensor_frame_data, world_camera
         )
 
-        # Extract texture features if any are requested
-        texture_feature_names = [f for f in self.features if
-                               f.startswith("lbp_texture") or f.startswith("depth_")]
+        # Extract texture features if processor exists and features are requested
+        if self.texture_processor:
+            texture_feature_names = [f for f in self.features if
+                                   f.startswith("lbp_texture") or f.startswith("depth_")]
 
-        if texture_feature_names:
-            # Get surface normal for enhanced depth processing
-            surface_normal = morphological_features.get("pose_vectors", [None])[0]
+            if texture_feature_names:
+                # Get surface normal for enhanced depth processing (handle missing pose_vectors)
+                surface_normal = None
+                if "pose_vectors" in morphological_features and morphological_features["pose_vectors"]:
+                    surface_normal = morphological_features["pose_vectors"][0]
 
-            # Extract texture features using mixin
-            texture_features = self.extract_texture_features(
-                rgba_feat, depth_feat, obs_3d, surface_normal
-            )
+                # Extract texture features using composition
+                texture_features = self.texture_processor.extract_features(
+                    rgba_feat, depth_feat, obs_3d, texture_feature_names, surface_normal
+                )
 
-            # Add texture features to main features dict
-            features.update(texture_features)
+                # Add texture features to features dict (they are non-morphological)
+                features.update(texture_features)
 
         return features, morphological_features, invalid_signals
+
+    def pre_episode(self):
+        """Reset buffer and is_exploring flag."""
+        super().pre_episode()
+        self.processed_obs = []
+        self.states = []
+
+    def update_state(self, state):
+        """Update information about the sensors location and rotation."""
+        # Use existing implementation from parent class
+        super().update_state(state)
+
+    def step(self, data):
+        """Turn raw observations into dict of features at location."""
+        # Use existing implementation from parent class
+        return super().step(data)
 ```
 
 ### 4. Learning Module Integration
@@ -363,9 +526,9 @@ enhanced_texture_feature_weights = {
         # Existing features
         "hsv": np.array([1, 0.5, 0.5]),
 
-        # Multi-scale LBP features (configurable weights per scale)
-        "lbp_texture_r1_p8": np.ones(10) * 0.8,    # Radius 1, 8 points
-        "lbp_texture_r2_p16": np.ones(18) * 0.7,   # Radius 2, 16 points
+        # Multi-scale LBP features (weights match histogram bin counts)
+        "lbp_texture_r1_p8": np.ones(10) * 0.8,    # Uniform LBP: 8+2=10 bins
+        "lbp_texture_r2_p16": np.ones(18) * 0.7,   # Uniform LBP: 16+2=18 bins
 
         # Enhanced depth features
         "depth_roughness": 1.0,
@@ -389,24 +552,60 @@ enhanced_tolerance_values = {
     "depth_surface_consistency": 0.15,            # 15% consistency tolerance
 }
 
-# Flexible configuration for different texture analysis approaches
+# Simplified configuration presets for easy adoption
 texture_feature_configs = {
-    "basic_texture": {
-        "features": ["lbp_texture_r1_p8", "depth_roughness"],
-        "description": "Basic single-scale texture analysis"
+    "basic": {
+        "features": ["lbp_texture", "depth_roughness"],
+        "description": "Basic texture analysis - single scale LBP + depth roughness"
     },
-    "multiscale_texture": {
-        "features": ["lbp_texture_r1_p8", "lbp_texture_r2_p16",
-                    "depth_roughness", "depth_gradient_magnitude"],
-        "description": "Multi-scale texture analysis with enhanced depth"
+    "enhanced": {
+        "features": ["lbp_texture", "lbp_texture_fine", "depth_roughness", "depth_gradient"],
+        "description": "Enhanced texture analysis - multi-scale LBP + enhanced depth"
     },
-    "full_texture": {
-        "features": ["lbp_texture_r1_p8", "lbp_texture_r2_p16",
-                    "depth_roughness", "depth_gradient_magnitude",
-                    "depth_surface_consistency"],
-        "description": "Complete texture feature set with surface consistency"
+    "complete": {
+        "features": ["lbp_texture", "lbp_texture_fine", "depth_roughness",
+                    "depth_gradient", "depth_consistency"],
+        "description": "Complete texture feature set with all available features"
     }
 }
+
+# Simplified feature names (automatically mapped to full names internally)
+simplified_feature_mapping = {
+    "lbp_texture": "lbp_texture_r2_p16",      # Default: coarse scale
+    "lbp_texture_fine": "lbp_texture_r1_p8",  # Fine scale option
+    "depth_roughness": "depth_roughness",
+    "depth_gradient": "depth_gradient_magnitude",
+    "depth_consistency": "depth_surface_consistency"
+}
+```
+
+#### Simplified Usage Examples
+
+**Basic Usage (Minimal Configuration):**
+```python
+# Just add texture features to existing feature list
+features = ["on_object", "hsv", "pose_vectors", "lbp_texture", "depth_roughness"]
+
+sensor_module = HabitatDistantPatchSM(
+    sensor_module_id="patch",
+    features=features,
+    # texture_config defaults to sensible values
+)
+```
+
+**Advanced Usage (Custom Configuration):**
+```python
+# Use preset configuration
+texture_config = texture_feature_configs["enhanced"]
+
+sensor_module = HabitatDistantPatchSM(
+    sensor_module_id="patch",
+    features=texture_config["features"] + ["on_object", "hsv", "pose_vectors"],
+    texture_config={
+        "preset": "enhanced",  # or "basic", "complete"
+        "lbp_channels": "grayscale"  # or "rgb" for color texture
+    }
+)
 ```
 
 #### Backward Compatibility and Migration
@@ -415,6 +614,21 @@ texture_feature_configs = {
 - **Gradual adoption** - texture feature configs allow incremental feature addition
 - **Feature weights can be zero** - effectively disable features if problematic
 - **Configuration validation** - warn users about unknown texture feature names
+- **Simplified feature names** - users can use "lbp_texture" instead of "lbp_texture_r2_p16"
+
+#### Integration with Existing Noise System
+- **Texture features support noise** - compatible with existing `NoiseMixin` architecture
+- **Appropriate noise types** - LBP histograms get gaussian noise, depth features get scalar noise
+- **Noise configuration example**:
+```python
+texture_noise_params = {
+    "features": {
+        "lbp_texture_r1_p8": 0.05,  # 5% noise on histogram values
+        "depth_roughness": 0.001,   # 1mm noise on roughness
+        "depth_gradient_magnitude": 0.0005,  # 0.5mm noise on gradients
+    }
+}
+```
 
 ## Implementation Plan
 
@@ -423,27 +637,38 @@ texture_feature_configs = {
    - `extract_multiscale_lbp_features()` function with configurable parameters
    - `extract_enhanced_depth_features()` function with surface normal integration
    - Comprehensive docstrings, type hints, and parameter validation
-2. **Create TextureFeatureMixin** in `src/tbp/monty/frameworks/models/mixins/texture_features.py`
-   - Reusable mixin class for any sensor module
+2. **Create TextureFeatureProcessor** in `src/tbp/monty/frameworks/models/texture_processor.py`
+   - Standalone processor class using composition pattern
    - Configurable texture processing parameters
    - Automatic feature name generation and validation
+   - Clean interface for integration with any sensor module
 3. **Unit tests** for utility functions in `tests/unit/texture_processing_test.py`
    - Test multi-scale LBP extraction
    - Test depth feature computation
    - Test rotation invariance properties
    - Test edge cases and error handling
+4. **Unit tests** for processor class in `tests/unit/texture_processor_test.py`
+   - Test processor initialization and configuration
+   - Test feature extraction interface
+   - Test feature name generation
+   - Test configuration updates
 
 ### Phase 2: Sensor Module Integration
-1. **Enhance HabitatDistantPatchSM** with TextureFeatureMixin
-   - Multiple inheritance integration
+1. **Enhance HabitatDistantPatchSM** with TextureFeatureProcessor composition
+   - Clean composition integration using "has-a" relationship
    - Enhanced `extract_and_add_features()` method
    - Surface normal integration for depth features
-2. **Create example sensor modules** demonstrating mixin usage
+   - Follow existing patterns from NoiseMixin integration
+   - No multiple inheritance complexity
+2. **Create example sensor modules** demonstrating composition usage
    - Basic texture-enabled sensor module
    - Advanced multi-scale texture sensor module
+   - Custom sensor modules with texture processing
 3. **Integration tests** with existing sensor module hierarchy
-   - Test inheritance chain compatibility
+   - Test composition integration compatibility
    - Test feature extraction pipeline integration
+   - Test processor lifecycle management
+   - Test integration with existing noise system
 
 ### Phase 3: Configuration and Validation
 1. **Enhanced configuration system** in `benchmarks/configs/defaults.py`
@@ -571,14 +796,14 @@ texture_validation_experiments = {
 
 ### Integration Architecture Alternatives
 
-#### Direct Integration vs. Mixin Approach
+#### Direct Integration vs. Composition Approach
 - **Direct Integration**: Modify each sensor module individually
   - **Pros**: Simpler initial implementation, sensor-specific optimizations
   - **Cons**: Code duplication, maintenance burden, limited reusability
-- **Mixin Approach** (Selected): Reusable texture feature mixin
-  - **Pros**: Code reuse, consistent implementation, easy adoption, modular design
-  - **Cons**: Multiple inheritance complexity, potential method resolution issues
-- **Decision**: Mixin approach provides better long-term maintainability and broader applicability
+- **Composition Approach** (Selected): Reusable texture feature processor
+  - **Pros**: Code reuse, consistent implementation, easy adoption, modular design, no inheritance complexity
+  - **Cons**: Slightly more complex initialization, requires careful lifecycle management
+- **Decision**: Composition approach provides better long-term maintainability and cleaner architecture
 
 #### Feature Processing Location
 - **Sensor Module Level** (Selected): Process features during sensor observation
@@ -609,14 +834,15 @@ texture_validation_experiments = {
 - **Monitoring**: Continuous benchmarking of feature extraction timing
 - **Optimization**: Profile-guided optimization and caching strategies
 
-### Risk 3: Multiple Inheritance Complexity
-- **Risk**: Mixin approach may cause method resolution order issues or initialization problems
+### Risk 3: Integration Complexity
+- **Risk**: Composition approach may require careful lifecycle management of texture processor
 - **Mitigation**:
-  - Careful design of mixin initialization and method signatures
-  - Comprehensive testing of inheritance hierarchies
-  - Clear documentation of mixin usage patterns
+  - Clear initialization and cleanup patterns for texture processor
+  - Comprehensive testing of processor lifecycle
+  - Well-defined interface between sensor modules and processor
+  - Follow existing patterns from NoiseMixin integration
 - **Testing**: Extensive integration tests with different sensor module combinations
-- **Alternative**: Composition-based approach if inheritance proves problematic
+- **Benefits**: Composition avoids multiple inheritance complexity entirely and aligns with user preferences
 
 ### Risk 4: Feature Dimensionality Explosion
 - **Risk**: Multi-scale LBP features may create very high-dimensional feature vectors
@@ -637,10 +863,20 @@ texture_validation_experiments = {
 ### Risk 6: Configuration Complexity
 - **Risk**: Many texture parameters may make system difficult to configure and tune
 - **Mitigation**:
-  - Sensible default configurations for common use cases
-  - Configuration presets (basic, advanced, full) for different needs
-  - Automated parameter tuning tools and guidelines
+  - **Simplified feature names**: Users can specify "lbp_texture" instead of "lbp_texture_r2_p16"
+  - **Smart defaults**: Sensible default configurations work out-of-the-box
+  - **Configuration presets**: "basic", "enhanced", "complete" presets for different needs
+  - **Automatic parameter mapping**: Complex internal parameters hidden from users
+  - **Progressive complexity**: Start simple, add complexity only when needed
 - **Documentation**: Clear usage examples and parameter tuning guides
+
+### Risk 7: Numpy Runtime Warnings
+- **Risk**: Empty patches or invalid depth data may cause numpy warnings like "Mean of empty slice" or "invalid value encountered in double_scalars"
+- **Mitigation**:
+  - Explicit validation of input data before processing
+  - Proper handling of edge cases with empty or invalid patches
+  - Use of numpy functions with appropriate handling of NaN/empty values
+- **Implementation**: Add robust error checking in texture processing functions
 
 ## Dependencies
 
@@ -661,16 +897,14 @@ src/tbp/monty/frameworks/utils/
 └── ...
 
 src/tbp/monty/frameworks/models/
-├── sensor_modules.py             # MODIFIED - enhanced with TextureFeatureMixin
-├── mixins/
-│   ├── __init__.py              # NEW - mixin package
-│   └── texture_features.py      # NEW - TextureFeatureMixin class
+├── sensor_modules.py             # MODIFIED - enhanced with TextureFeatureProcessor composition
+├── texture_processor.py          # NEW - TextureFeatureProcessor class
 └── ...
 
 tests/unit/
 ├── sensor_module_test.py         # existing
 ├── texture_processing_test.py    # NEW - utility function tests
-├── texture_mixin_test.py         # NEW - mixin integration tests
+├── texture_processor_test.py     # NEW - processor class tests
 └── ...
 
 tests/integration/
@@ -727,12 +961,34 @@ benchmarks/configs/
    - Texture-informed saccade planning
    - Texture-driven hypothesis testing
 
+## Revision Notes
+
+### Issues Addressed in This RFC
+
+1. **Import Statement Correction**: Added missing `rgb2hsv` import from `skimage.color`
+2. **Constructor Parameter Alignment**: Ensured `HabitatDistantPatchSM` constructor matches existing implementation with `process_all_obs` parameter
+3. **Attribute Initialization**: Added proper initialization of existing attributes (`processed_obs`, `states`, `on_object_obs_only`, `process_all_obs`)
+4. **Method Completeness**: Added `pre_episode`, `update_state`, and `step` method implementations to maintain compatibility
+5. **Feature Validation**: Used existing assertion pattern for feature validation instead of custom validation method
+6. **Architecture Consistency**: Ensured texture features are properly categorized as non-morphological features
+7. **Error Handling**: Improved robustness for edge cases with empty patches and invalid data
+8. **Numpy Warnings Prevention**: Added proper handling to prevent "Mean of empty slice" and "invalid value encountered in double_scalars" warnings
+
+### Key Design Decisions
+
+- **Composition over Inheritance**: TextureFeatureProcessor uses composition to avoid multiple inheritance complexity
+- **Backward Compatibility**: All existing functionality is preserved, new features are opt-in
+- **Feature Classification**: Texture features are correctly classified as non-morphological
+- **Configuration Flexibility**: Multiple configuration presets for different use cases
+- **Performance Considerations**: Lazy initialization of texture processor only when needed
+
 ## Questions for Community
 
 ### Technical Design Questions
-1. **Mixin Architecture**: Is the TextureFeatureMixin approach the right design choice, or would composition be better?
-   - How do we handle potential method resolution order issues?
-   - Should texture features be a separate processing pipeline instead?
+1. **Composition Architecture**: Is the TextureFeatureProcessor composition approach optimal?
+   - Should the processor be created lazily only when texture features are needed?
+   - How should we handle processor lifecycle (creation, updates, cleanup)?
+   - Does this approach align well with the existing NoiseMixin integration pattern?
 
 2. **Feature Naming Convention**: Are the proposed multi-scale feature names intuitive?
    - `lbp_texture_r1_p8` for radius=1, points=8 LBP features
@@ -743,47 +999,56 @@ benchmarks/configs/
    - Are the texture configuration presets (basic/multiscale/full) sufficient?
    - Should advanced parameters be hidden from typical users?
 
+4. **Error Handling**: How should we handle edge cases in texture processing?
+   - Empty patches or patches with insufficient on-object points
+   - Invalid depth data or RGBA patches
+   - Should we fail silently, log warnings, or raise exceptions?
+
+5. **Noise Integration**: How should texture features integrate with the existing noise system?
+   - Are the proposed noise types (gaussian for histograms/scalars) appropriate?
+   - Should texture features have different noise characteristics than morphological features?
+
 ### Integration and Adoption Questions
-4. **Default Behavior**: Should new texture features be:
+6. **Default Behavior**: Should new texture features be:
    - Completely opt-in (current proposal)
    - Gradually enabled by default in new experiments
    - Enabled by default with easy disable options
 
-5. **Backward Compatibility**: How strict should we be about maintaining existing behavior?
+7. **Backward Compatibility**: How strict should we be about maintaining existing behavior?
    - Should we provide automatic migration tools for old configs?
    - Is it acceptable to change default feature sets in major versions?
 
-6. **Performance Requirements**: What are acceptable computational overhead limits?
+8. **Performance Requirements**: What are acceptable computational overhead limits?
    - Target: <15ms per patch for full multi-scale extraction (vs. ~5ms current)
    - Should we provide performance vs. accuracy trade-off options?
 
 ### Validation and Benchmarking Questions
-7. **Benchmark Priority**: Which experiments should be prioritized for validation?
+9. **Benchmark Priority**: Which experiments should be prioritized for validation?
    - YCB 10-object recognition (standard benchmark)
    - Texture-specific discrimination tasks (new experiments)
    - Real-world iPad camera experiments
    - Multi-object scene understanding
 
-8. **Success Criteria**: Are the proposed success metrics appropriate?
+10. **Success Criteria**: Are the proposed success metrics appropriate?
    - ≥5% improvement on YCB recognition
    - >90% accuracy on texture discrimination
    - <5% feature variation across rotations
 
 ### Research Direction Questions
-9. **HTM Spatial Pooler Integration**: Should HTM SP be:
+11. **HTM Spatial Pooler Integration**: Should HTM SP be:
    - Implemented in parallel with LBP (complementary approach)
    - Considered as an alternative to LBP (replacement approach)
    - Deferred until LBP is fully validated
 
-10. **Cross-Modal Integration**: How important is RGB-depth texture fusion?
+12. **Cross-Modal Integration**: How important is RGB-depth texture fusion?
     - Should it be part of the initial implementation?
     - Is the current separate processing approach sufficient?
 
 ### Community Feedback Requests
-11. **Use Cases**: What specific texture-based recognition challenges are community members facing?
-12. **Parameter Tuning**: What tools or guidelines would help with texture feature configuration?
-13. **Documentation Needs**: What examples and tutorials would be most valuable?
-14. **Testing Support**: What texture datasets or test objects would be useful for validation?
+13. **Use Cases**: What specific texture-based recognition challenges are community members facing?
+14. **Parameter Tuning**: What tools or guidelines would help with texture feature configuration?
+15. **Documentation Needs**: What examples and tutorials would be most valuable?
+16. **Testing Support**: What texture datasets or test objects would be useful for validation?
 
 ## References
 
