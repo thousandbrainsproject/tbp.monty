@@ -436,9 +436,10 @@ class MontyForGraphMatching(MontyBase):
         """
         # TODO M: generalize to multiple sensor modules
 
-        if self.step_type == "matching_step":
-            self._pass_input_obs_to_motor_system(self.sensor_module_outputs[0])
-        elif self.sensor_module_outputs[0] is not None:
+        if (
+            self.step_type == "matching_step"
+            or self.sensor_module_outputs[0] is not None
+        ):
             self._pass_input_obs_to_motor_system(self.sensor_module_outputs[0])
 
     def _set_step_type_and_check_if_done(self):
