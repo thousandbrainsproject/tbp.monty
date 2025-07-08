@@ -100,7 +100,7 @@ The system proposed here doesn't have an exact 1:1 relationship with the superio
 Note: there is one part of our code that already implements SC-like behavior -- `GetGoodView`. This code uses raw sensor data and coordinates obtained via `DepthTo3DLocations`. With this data, it decides where it ought to look, and computes the necessary "look" actions used directly by the motor system. Niels has proposed reworking `GetGoodView` as an intermediate step to guide the development of this new system. I haven't given it much thought yet, but given that `GetGoodView` employs both translating and orienting actions, it could be an interesting spot to explore how motor systems decide which actions to perform to achieve a goal state.
 
 # Footnotes
-[^1]: For more discussion on how evidence drop-offs indicate changes to the sensed object's identity, see [RFC 9](https://github.com/thousandbrainsproject/tbp.monty/pull/196). Also see [here](https://thousandbrainsproject.readme.io/docs/use-off-object-observations) for a general discussion about how off-object observations may be used in the future. 
+[^1]: For more discussion on how evidence drop-offs indicate changes to the sensed object's identity, see [RFC 9](https://github.com/thousandbrainsproject/tbp.monty/pull/196). Also see ["Use Off-Object Observations"](https://thousandbrainsproject.readme.io/docs/use-off-object-observations) for a general discussion about how off-object observations may be used in the future. 
 
 [^2]: While this document is focused on inference, the model-free mechanisms proposed in this RFC seem well-suited to help improve unsupervised learning.
 
