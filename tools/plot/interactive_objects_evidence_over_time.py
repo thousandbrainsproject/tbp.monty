@@ -238,8 +238,8 @@ class GroundTruthSimulator:
     Attributes:
         target_object: Current vedo.Mesh representing the target object.
         sensor_object: Current vedo.Sphere representing the sensor position.
-        line_object: Current vedo.Line from sensor to patch/hit point.
-        title_object: Overlay text label for display.
+        line_object: Current vedo.Line from sensor to patch on object.
+        title_object: Text label title for simulator.
         target_name: The current object name being visualized.
     """
 
@@ -698,7 +698,7 @@ class InteractivePlot:
         )
 
 
-def plot_interactive_object_evidence_over_time(
+def plot_interactive_objects_evidence_over_time(
     exp_path: str,
     data_path: str,
     learning_module: str,
@@ -732,14 +732,14 @@ def add_subparser(
     subparsers: argparse._SubParsersAction,
     parent_parser: argparse.ArgumentParser | None = None,
 ) -> None:
-    """Add the interactive_object_evidence_over_time subparser to the main parser.
+    """Add the interactive_objects_evidence_over_time subparser to the main parser.
 
     Args:
         subparsers: The subparsers object from the main parser.
         parent_parser: Optional parent parser for shared arguments.
     """
     parser = subparsers.add_parser(
-        "interactive_object_evidence_over_time",
+        "interactive_objects_evidence_over_time",
         help="Creates an interactive plot of object evidence and sensor visualization.",
         parents=[parent_parser] if parent_parser else [],
     )
@@ -762,7 +762,7 @@ def add_subparser(
     )
     parser.set_defaults(
         func=lambda args: sys.exit(
-            plot_interactive_object_evidence_over_time(
+            plot_interactive_objects_evidence_over_time(
                 args.experiment_log_dir, args.objects_mesh_dir, args.learning_module
             )
         )
