@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
 
@@ -28,6 +29,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_unique_rotations,
     rotate_pose_dependent_features,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class FeatureGraphLM(GraphLM):
@@ -125,7 +128,7 @@ class FeatureGraphLM(GraphLM):
         object_id_vote = {}
         for obj in all_objects:
             object_id_vote[obj] = obj in possible_matches
-        logging.info(
+        logger.info(
             f"PM: {possible_matches} out of all: {all_objects} "
             f"-> vote: {object_id_vote}"
         )
@@ -161,7 +164,7 @@ class FeatureGraphLM(GraphLM):
                     vote_data["neg_object_id_votes"][possible_obj]
                     > vote_data["pos_object_id_votes"][possible_obj]
                 ):
-                    logging.info(f"Removing {possible_obj} from matches after vote.")
+                    logger.info(f"Removing {possible_obj} from matches after vote.")
                     self._remove_object_from_matches(possible_obj)
 
                 # Check that object is still in matches after ID update
@@ -170,7 +173,7 @@ class FeatureGraphLM(GraphLM):
                         self.NUM_OTHER_LMS
                     ):
                         k = vote_data["pos_location_votes"][possible_obj].shape[0]
-                        logging.info(f"only received {k} votes")
+                        logger.info(f"only received {k} votes")
                     else:
                         # k should not be > num_lms - 1
                         k = self.NUM_OTHER_LMS
@@ -197,7 +200,7 @@ class FeatureGraphLM(GraphLM):
                             self.possible_paths[possible_obj].pop(path_id)
                             self.possible_poses[possible_obj].pop(path_id)
                             removed_locations = np.vstack([removed_locations, location])
-                    logging.info(
+                    logger.info(
                         f"removed {removed_locations.shape[0] - 1} locations from "
                         f"possible matches for {possible_obj}"
                     )
@@ -234,7 +237,7 @@ class FeatureGraphLM(GraphLM):
             current_model_loc = model_locs[-1]
             scale = self.get_object_scale(object_id)  # NOTE: Scale doesn't work for FM
             pose_and_scale = np.concatenate([current_model_loc, r_euler[0], [scale]])
-            logging.debug(f"(location, rotation, scale): {pose_and_scale}")
+            logger.debug(f"(location, rotation, scale): {pose_and_scale}")
 
             # Update own state
             self.detected_pose = pose_and_scale
@@ -321,7 +324,7 @@ class FeatureGraphLM(GraphLM):
         else:  # has to be consequtive
             self.symmetry_evidence = 0
         if self._enough_symmetry_evidence_accumulated():
-            logging.info(f"Symmetry detected for poses {current_unique_poses}")
+            logger.info(f"Symmetry detected for poses {current_unique_poses}")
             return True
         else:
             return False
@@ -333,8 +336,6 @@ class FeatureGraphLM(GraphLM):
             Whether enough evidence for symmetry has been accumulated.
         """
         return self.symmetry_evidence >= self.required_symmetry_evidence
-
-    # ------------------ Logging & Saving ----------------------
 
     # ======================= Private ==========================
 
@@ -427,12 +428,12 @@ class FeatureGraphLM(GraphLM):
 
             self.possible_poses[graph_id] = new_possible_poses
             if len(self.possible_poses[graph_id]) < 10:
-                logging.info(
+                logger.info(
                     f"possible poses after matching for "
                     f"{graph_id}: {self.get_possible_poses()[graph_id]}"
                 )
         self.possible_paths[graph_id] = new_possible_paths
-        logging.debug(
+        logger.debug(
             f"possible paths after matching for "
             f"{graph_id}: {len(self.possible_paths[graph_id])}"
         )
@@ -624,7 +625,7 @@ class FeatureGraphLM(GraphLM):
             # 2 possibilities since the curvature directions may be flipped
             possible_s_d = possible_sensed_directions(sensed_directions, 2)
         else:
-            logging.debug(
+            logger.debug(
                 "PC 1 is similar to PC2 -> Their directions are not meaningful"
             )
             possible_s_d = possible_sensed_directions(
@@ -712,21 +713,26 @@ class FeatureGraphMemory(GraphMemory):
         node_directions = np.array(node_directions).reshape((3, 3))
         return node_directions
 
-    def get_nodes_with_matching_features(self, graph_id, features, list_of_lists=False):
+    def get_nodes_with_matching_features(
+        self,
+        graph_id,
+        features,
+        list_of_lists=False,
+    ) -> tuple[list, list]:
         """Get only nodes with matching features.
 
         Get a reduced list of nodes that includes only nodes with features
         that match the features dict passed here
 
         Args:
-            graph_id (str): The graph descriptor e.g. 'mug'
-            features (dict): The observed features to be matched
-            list_of_lists (bool, optional): should each location in the list be embedded
-            in its own list (useful for some downstream operations)
+            graph_id: The graph descriptor e.g. 'mug'
+            features: The observed features to be matched
+            list_of_lists: should each location in the list be embedded in its own list
+                (useful for some downstream operations)
             Defaults to False.
 
         Returns:
-            tuple(list, list): The reduced lists of ids / locs.
+            The reduced lists of ids / locs.
         """
         first_input_channel = list(features.keys())[0]
         all_node_ids = self.get_graph_node_ids(graph_id, first_input_channel)
@@ -753,7 +759,7 @@ class FeatureGraphMemory(GraphMemory):
 
     # ------------------- Main Algorithm -----------------------
 
-    def _match_all_node_features(self, features, input_channel, graph_id):
+    def _match_all_node_features(self, features, input_channel, graph_id) -> np.ndarray:
         """Match observed features to all nodes in the graph.
 
         Match a list of the currently observed object features to an array of
@@ -767,12 +773,12 @@ class FeatureGraphMemory(GraphMemory):
         a list of which vars are circular and then matches them differently
 
         Args:
-            features (dict): The observed features to be matched
+            features: The observed features to be matched
             input_channel: ?
-            graph_id (str): The graph descriptor e.g. 'mug'
+            graph_id: The graph descriptor e.g. 'mug'
 
         Returns:
-            np.ndarray: Array, where True~graph nodes matching ALL features,
+            Array, where True~graph nodes matching ALL features,
             False~graph nodes with any non-matching features
         """
         shape_to_use = self.feature_array[graph_id][input_channel].shape[1]

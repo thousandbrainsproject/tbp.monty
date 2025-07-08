@@ -61,12 +61,11 @@ class HabitatAgent:
         self.height = height
         self.sensors: List[SensorConfig] = []
 
-    def get_spec(self):
+    def get_spec(self) -> AgentConfiguration:
         """Returns a habitat-sim agent configuration.
 
         Returns:
-            :class:`habitat_sim.agent.AgentConfiguration` spec create from this
-            sensor module configuration.
+            Spec created from this sensor module configuration.
         """
         spec = AgentConfiguration()
         spec.height = self.height
@@ -91,14 +90,14 @@ class HabitatAgent:
         agent_state.rotation = rotation
         simulator.initialize_agent(self.agent_id, agent_state)
 
-    def process_observations(self, agent_obs):
+    def process_observations(self, agent_obs) -> dict:
         """Callback processing raw habitat agent observations to Monty-compatible ones.
 
         Args:
             agent_obs: Agent raw habitat-sim observations
 
         Returns:
-            dict: The processed observations grouped by sensor_id
+            The processed observations grouped by sensor_id
         """
         # Habitat raw sensor observations are flat where the observation key is
         # composed of the `sensor_id.sensor_type`. The default agent starts by
@@ -121,7 +120,7 @@ class HabitatAgent:
 class ActionSpaceMixin:
     """An auxiliary function for agent classes to return their action space."""
 
-    def get_action_space(self, spec):
+    def get_action_space(self, spec: AgentConfiguration) -> AgentConfiguration:
         """Creates and returns the agent's action space dictionary.
 
         Action space can be absolute, for distant-agent, or for surface-agent
@@ -133,10 +132,10 @@ class ActionSpaceMixin:
             2: (initial) constraint
 
         Args:
-            spec (AgentConfiguration): agent parameters
+            spec: Agent parameters.
 
         Returns:
-            AgentConfiguration: agent parameters updated with action space
+            Agent parameters updated with action space.
         """
         absolute_only_action_space = (
             ["set_yaw", 0.0, None],

@@ -24,8 +24,8 @@ class MotorSystem:
         """Initialize the motor system with a motor policy.
 
         Args:
-            policy (MotorPolicy): The motor policy to use.
-            state (Optional[MotorSystemState]): The initial state of the motor system.
+            policy: The motor policy to use.
+            state: The initial state of the motor system.
                 Defaults to None.
         """
         self._policy = policy
@@ -48,7 +48,7 @@ class MotorSystem:
         """Sets the experiment mode.
 
         Args:
-            mode (Literal["train", "eval"]): The experiment mode.
+            mode: The experiment mode.
         """
         self._policy.set_experiment_mode(mode)
 
@@ -58,7 +58,7 @@ class MotorSystem:
         Delegates to the motor policy.
 
         Returns:
-            (Action): The action to take.
+            The action to take.
         """
         action = self._policy(self._state)
         return action

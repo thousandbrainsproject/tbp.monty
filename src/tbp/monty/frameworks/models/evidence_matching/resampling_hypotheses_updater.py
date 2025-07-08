@@ -35,7 +35,10 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
     all_usable_input_channels,
 )
-from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
+from tbp.monty.frameworks.utils.evidence_matching import (
+    ChannelMapper,
+    EvidenceSlopeTracker,
+)
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_initial_possible_poses,
     possible_sensed_directions,
@@ -60,6 +63,15 @@ class ResamplingHypothesesUpdater:
     To reproduce the behavior of `DefaultHypothesesUpdater` sampling a fixed number of
     hypotheses only at the beginning of the episode, you can set
     `hypotheses_count_multiplier=1.0` and `hypotheses_existing_to_new_ratio=0.0`.
+
+    Note:
+        It would be better to decouple the amount of hypotheses added from the amount
+        deleted in each step. At the moment, this is decided by the
+        `hypotheses_count_multiplier`. For example, when the multiplier is set to 1.0,
+        the hypotheses sampled is equal to the hypotheses removed. We ideally can
+        decouple theses then use a slope threshold to decide on which hypotheses to
+        remove, and use prediction error or other heuristics to decide to how many
+        hypotheses to resample.
     """
 
     def __init__(
@@ -76,7 +88,7 @@ class ResamplingHypothesesUpdater:
             DefaultFeaturesForMatchingSelector
         ),
         hypotheses_count_multiplier: float = 1.0,
-        hypotheses_existing_to_new_ratio: float = 0.0,
+        hypotheses_existing_to_new_ratio: float = 0.1,
         initial_possible_poses: Literal["uniform", "informed"]
         | list[Rotation] = "informed",
         max_nneighbors: int = 3,
@@ -87,38 +99,37 @@ class ResamplingHypothesesUpdater:
         """Initializes the ResamplingHypothesesUpdater.
 
         Args:
-            feature_weights (dict): How much should each feature be weighted when
+            feature_weights: How much should each feature be weighted when
                 calculating the evidence update for hypothesis. Weights are stored in a
                 dictionary with keys corresponding to features (same as keys in
                 tolerances).
-            graph_memory (EvidenceGraphMemory): The graph memory to read graphs from.
-            max_match_distance (float): Maximum distance of a tested and stored location
+            graph_memory: The graph memory to read graphs from.
+            max_match_distance: Maximum distance of a tested and stored location
                 to be matched.
-            tolerances (dict): How much can each observed feature deviate from the
+            tolerances: How much can each observed feature deviate from the
                 stored features to still be considered a match.
-            feature_evidence_calculator (Type[FeatureEvidenceCalculator]): Class to
-                calculate feature evidence for all nodes. Defaults to the default
-                calculator.
-            feature_evidence_increment (int): Feature evidence (between 0 and 1) is
+            feature_evidence_calculator: Class to calculate feature evidence for all
+                nodes. Defaults to the default calculator.
+            feature_evidence_increment: Feature evidence (between 0 and 1) is
                 multiplied by this value before being added to the overall evidence of
                 a hypothesis. This factor is only multiplied with the feature evidence
                 (not the pose evidence as opposed to the present_weight). Defaults to 1.
-            features_for_matching_selector (Type[FeaturesForMatchingSelector]): Class to
+            features_for_matching_selector: Class to
                 select if features should be used for matching. Defaults to the default
                 selector.
-            hypotheses_count_multiplier (float): Scales the total number of hypotheses
+            hypotheses_count_multiplier: Scales the total number of hypotheses
                 every step. Defaults to 1.0.
-            hypotheses_existing_to_new_ratio (float): Controls the proportion of the
+            hypotheses_existing_to_new_ratio: Controls the proportion of the
                 existing vs. newly sampled hypotheses during resampling. Defaults to
                 0.0.
-            initial_possible_poses ("uniform" | "informed" | list[Rotation]): Initial
+            initial_possible_poses: Initial
                 possible poses that should be tested for. Defaults to "informed".
-            max_nneighbors (int): Maximum number of nearest neighbors to consider in the
+            max_nneighbors: Maximum number of nearest neighbors to consider in the
                 radius of a hypothesis for calculating the evidence. Defaults to 3.
-            past_weight (float): How much should the evidence accumulated so far be
+            past_weight: How much should the evidence accumulated so far be
                 weighted when combined with the evidence from the most recent
                 observation. Defaults to 1.
-            present_weight (float): How much should the current evidence be weighted
+            present_weight: How much should the current evidence be weighted
                 when added to the previous evidence. If past_weight and present_weight
                 add up to 1, the evidence is bounded and can't grow infinitely. Defaults
                 to 1.
@@ -127,7 +138,7 @@ class ResamplingHypothesesUpdater:
                 efficient policy and better parameters that may be possible to use
                 though and could help when moving from one object to another and to
                 generally make setting thresholds etc. more intuitive.
-            umbilical_num_poses (int): Number of sampled rotations in the direction of
+            umbilical_num_poses: Number of sampled rotations in the direction of
                 the plane perpendicular to the point normal. These are sampled at
                 umbilical points (i.e., points where PC directions are undefined).
         """
@@ -136,14 +147,6 @@ class ResamplingHypothesesUpdater:
         self.feature_weights = feature_weights
         self.features_for_matching_selector = features_for_matching_selector
         self.graph_memory = graph_memory
-        # Controls the shrinking or growth of hypothesis space size
-        # Cannot be less than 0
-        self.hypotheses_count_multiplier = max(0, hypotheses_count_multiplier)
-        # Controls the ratio of existing to newly sampled hypotheses
-        # Bounded between 0 and 1
-        self.hypotheses_existing_to_new_ratio = max(
-            0, min(hypotheses_existing_to_new_ratio, 1)
-        )
         self.initial_possible_poses = get_initial_possible_poses(initial_possible_poses)
         self.tolerances = tolerances
         self.umbilical_num_poses = umbilical_num_poses
@@ -165,6 +168,19 @@ class ResamplingHypothesesUpdater:
             use_features_for_matching=self.use_features_for_matching,
         )
 
+        # Controls the shrinking or growth of hypothesis space size
+        # Cannot be less than 0
+        self.hypotheses_count_multiplier = max(0, hypotheses_count_multiplier)
+
+        # Controls the ratio of existing to newly sampled hypotheses
+        # Bounded between 0 and 1
+        self.hypotheses_existing_to_new_ratio = max(
+            0, min(hypotheses_existing_to_new_ratio, 1)
+        )
+
+        # Dictionary of slope trackers, one for each graph_id
+        self.evidence_slope_trackers: dict[str, EvidenceSlopeTracker] = {}
+
     def update_hypotheses(
         self,
         hypotheses: Hypotheses,
@@ -183,18 +199,23 @@ class ResamplingHypothesesUpdater:
         channel in the graph.
 
         Args:
-            hypotheses (Hypotheses): Hypotheses for all input channels in the graph_id
-            features (dict): Input features
-            displacements (dict or None): Given displacements
-            graph_id (str): Identifier of the graph being updated
-            mapper (ChannelMapper): Mapper for the graph_id to extract data from
+            hypotheses: Hypotheses for all input channels in the graph_id
+            features: Input features
+            displacements: Given displacements
+            graph_id: Identifier of the graph being updated
+            mapper: Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
-            evidence_update_threshold (float): Evidence update threshold.
+            evidence_update_threshold: Evidence update threshold.
 
         Returns:
-            list[ChannelHypotheses]: The list of hypotheses updates to be applied to
-                each input channel.
+            The list of hypotheses updates to be applied to each input channel.
         """
+        # Initialize a `EvidenceSlopeTracker` to keep track of evidence slopes
+        # for hypotheses of a specific graph_id
+        if graph_id not in self.evidence_slope_trackers:
+            self.evidence_slope_trackers[graph_id] = EvidenceSlopeTracker()
+        tracker = self.evidence_slope_trackers[graph_id]
+
         input_channels_to_use = all_usable_input_channels(
             features, self.graph_memory.get_input_channels_in_graph(graph_id)
         )
@@ -208,6 +229,7 @@ class ResamplingHypothesesUpdater:
                 channel_features=features[input_channel],
                 graph_id=graph_id,
                 mapper=mapper,
+                tracker=tracker,
             )
 
             # Sample hypotheses based on their type
@@ -216,12 +238,14 @@ class ResamplingHypothesesUpdater:
                 hypotheses=hypotheses,
                 input_channel=input_channel,
                 mapper=mapper,
+                tracker=tracker,
             )
             informed_hypotheses = self._sample_informed(
                 channel_features=features[input_channel],
                 graph_id=graph_id,
                 informed_count=informed_count,
                 input_channel=input_channel,
+                tracker=tracker,
             )
 
             # We only displace existing hypotheses since the newly resampled hypotheses
@@ -239,20 +263,20 @@ class ResamplingHypothesesUpdater:
                 )
 
             # Concatenate and rebuild channel hypotheses
-            hypotheses_updates.append(
-                ChannelHypotheses(
-                    input_channel=input_channel,
-                    locations=np.vstack(
-                        [existing_hypotheses.locations, informed_hypotheses.locations]
-                    ),
-                    poses=np.vstack(
-                        [existing_hypotheses.poses, informed_hypotheses.poses]
-                    ),
-                    evidence=np.hstack(
-                        [existing_hypotheses.evidence, informed_hypotheses.evidence]
-                    ),
-                )
+            channel_hypotheses = ChannelHypotheses(
+                input_channel=input_channel,
+                locations=np.vstack(
+                    [existing_hypotheses.locations, informed_hypotheses.locations]
+                ),
+                poses=np.vstack([existing_hypotheses.poses, informed_hypotheses.poses]),
+                evidence=np.hstack(
+                    [existing_hypotheses.evidence, informed_hypotheses.evidence]
+                ),
             )
+            hypotheses_updates.append(channel_hypotheses)
+
+            # Update tracker evidence
+            tracker.update(channel_hypotheses.evidence, input_channel)
 
         return hypotheses_updates
 
@@ -260,10 +284,10 @@ class ResamplingHypothesesUpdater:
         """Calculate the number of hypotheses per node.
 
         Args:
-            channel_features (dict): Features for the input channel.
+            channel_features: Features for the input channel.
 
         Returns:
-            int: The number of hypotheses per node.
+            The number of hypotheses per node.
         """
         if self.initial_possible_poses is None:
             return (
@@ -280,21 +304,23 @@ class ResamplingHypothesesUpdater:
         channel_features: dict,
         graph_id: str,
         mapper: ChannelMapper,
+        tracker: EvidenceSlopeTracker,
     ) -> Tuple[int, int]:
         """Calculates the number of existing and informed hypotheses needed.
 
         Args:
-            input_channel (str): The channel for which to calculate hypothesis count.
-            channel_features (dict): Input channel features containing pose information.
-            graph_id (str): Identifier of the graph being queried.
-            mapper (ChannelMapper): Mapper for the graph_id to extract data from
+            input_channel: The channel for which to calculate hypothesis count.
+            channel_features: Input channel features containing pose information.
+            graph_id: Identifier of the graph being queried.
+            mapper: Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel
+            tracker: Slope tracker for the evidence values of a
+                graph_id
 
         Returns:
-            Tuple[int, int]: A tuple containing the number of existing and new
-                hypotheses needed. Existing hypotheses are maintained from existing ones
-                while new hypotheses will be initialized, informed by pose sensory
-                information.
+            A tuple containing the number of existing and new hypotheses needed.
+            Existing hypotheses are maintained from existing ones while new hypotheses
+            will be initialized, informed by pose sensory information.
 
         Notes:
             This function takes into account the following ratios:
@@ -339,6 +365,12 @@ class ResamplingHypothesesUpdater:
         if new_informed > full_informed_count:
             new_informed = full_informed_count
 
+        # Additional adjustment based on valid mask
+        must_keep = int(np.sum(~tracker.removable_indices_mask(input_channel)))
+        if must_keep > existing_maintained:
+            existing_maintained = must_keep
+            new_informed = needed - existing_maintained
+
         return (
             int(existing_maintained),
             int(new_informed),
@@ -350,21 +382,27 @@ class ResamplingHypothesesUpdater:
         hypotheses: Hypotheses,
         input_channel: str,
         mapper: ChannelMapper,
+        tracker: EvidenceSlopeTracker,
     ) -> ChannelHypotheses:
         """Samples the specified number of existing hypotheses to retain.
 
         Args:
-            existing_count (int): Number of existing hypotheses to sample.
-            hypotheses (Hypotheses): Hypotheses for all input channels in the graph_id.
-            input_channel (str): The channel for which to sample existing hypotheses.
-            mapper (ChannelMapper): Mapper for the graph_id to extract data from
+            existing_count: Number of existing hypotheses to sample.
+            hypotheses: Hypotheses for all input channels in the graph_id.
+            input_channel: The channel for which to sample existing hypotheses.
+            mapper: Mapper for the graph_id to extract data from
                 evidence, locations, and poses based on the input channel.
+            tracker: Slope tracker for the evidence values of a
+                graph_id
 
         Returns:
-            ChannelHypotheses: The sampled existing hypotheses.
+            The sampled existing hypotheses.
         """
         # Return empty arrays for no hypotheses to sample
         if existing_count == 0:
+            # Clear all channel hypotheses from the tracker
+            tracker.clear_hyp(input_channel)
+
             return ChannelHypotheses(
                 input_channel=input_channel,
                 locations=np.zeros((0, 3)),
@@ -372,13 +410,20 @@ class ResamplingHypothesesUpdater:
                 evidence=np.zeros(0),
             )
 
+        keep_ids, remove_ids = tracker.calculate_keep_and_remove_ids(
+            num_keep=existing_count,
+            channel=input_channel,
+        )
+
+        # Update tracker by removing the remove_ids
+        tracker.remove_hyp(remove_ids, input_channel)
+
         channel_hypotheses = mapper.extract_hypotheses(hypotheses, input_channel)
-        # TODO implement sampling based on evidence slope.
         return ChannelHypotheses(
             input_channel=channel_hypotheses.input_channel,
-            locations=channel_hypotheses.locations[:existing_count],
-            poses=channel_hypotheses.poses[:existing_count],
-            evidence=channel_hypotheses.evidence[:existing_count],
+            locations=channel_hypotheses.locations[keep_ids],
+            poses=channel_hypotheses.poses[keep_ids],
+            evidence=channel_hypotheses.evidence[keep_ids],
         )
 
     def _sample_informed(
@@ -387,6 +432,7 @@ class ResamplingHypothesesUpdater:
         informed_count: int,
         graph_id: str,
         input_channel: str,
+        tracker: EvidenceSlopeTracker,
     ) -> ChannelHypotheses:
         """Samples the specified number of fully informed hypotheses.
 
@@ -410,13 +456,15 @@ class ResamplingHypothesesUpdater:
         at every step.
 
         Args:
-            channel_features (dict): Input channel features.
-            informed_count (int): Number of fully informed hypotheses to sample.
-            graph_id (str): Identifier of the graph being queried.
-            input_channel (str): The channel for which to sample informed hypotheses.
+            channel_features: Input channel features.
+            informed_count: Number of fully informed hypotheses to sample.
+            graph_id: Identifier of the graph being queried.
+            input_channel: The channel for which to sample informed hypotheses.
+            tracker: Slope tracker for the evidence values of a
+                graph_id
 
         Returns:
-            ChannelHypotheses: The sampled informed hypotheses.
+            The sampled informed hypotheses.
 
         """
         # Return empty arrays for no hypotheses to sample
@@ -502,6 +550,9 @@ class ResamplingHypothesesUpdater:
                     for rotation in self.initial_possible_poses
                 ]
             )
+
+        # Add hypotheses to slope trackers
+        tracker.add_hyp(selected_feature_evidence.shape[0], input_channel)
 
         return ChannelHypotheses(
             input_channel=input_channel,

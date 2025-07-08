@@ -142,7 +142,7 @@ class TrainedGraphLM:
         """Number of observations in the specified episode.
 
         Returns:
-            the number of observations in the episode
+            The number of observations in the episode.
         """
         return len(self.episodes[episode_num].observations)
 

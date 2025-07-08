@@ -32,11 +32,16 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
 from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.models.states import State
-from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
+from tbp.monty.frameworks.utils.evidence_matching import (
+    ChannelMapper,
+    evidence_update_threshold,
+)
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     add_pose_features_to_tolerances,
     get_scaled_evidences,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class EvidenceGraphLM(GraphLM):
@@ -54,7 +59,7 @@ class EvidenceGraphLM(GraphLM):
             by this value before being added to the overall evidence of a hypothesis.
             This factor is only multiplied with the feature evidence (not the pose
             evidence as opposed to the present_weight).
-        evidence_update_threshold (float | str): How to decide which hypotheses
+        evidence_threshold_config: How to decide which hypotheses
             should be updated. When this parameter is either '[int]%' or
             'x_percent_threshold', then this parameter is applied to the evidence
             for the Most Likely Hypothesis (MLH) to determine a minimum evidence
@@ -147,7 +152,7 @@ class EvidenceGraphLM(GraphLM):
         tolerances: dict,
         feature_weights: dict,
         feature_evidence_increment=1,
-        evidence_update_threshold: float | str = "all",
+        evidence_threshold_config: float | str = "all",
         vote_evidence_threshold=0.8,
         past_weight=1,
         present_weight=1,
@@ -186,7 +191,7 @@ class EvidenceGraphLM(GraphLM):
         self.max_match_distance = max_match_distance
         self.tolerances = tolerances
         self.feature_evidence_increment = feature_evidence_increment
-        self.evidence_update_threshold = evidence_update_threshold
+        self.evidence_threshold_config = evidence_threshold_config
         self.vote_evidence_threshold = vote_evidence_threshold
         # ------ Weighting Params ------
         self.feature_weights = feature_weights
@@ -310,13 +315,13 @@ class EvidenceGraphLM(GraphLM):
                     # call this to prevent main thread from continuing in code
                     # before all evidences are updated.
                     thread.join()
-            logging.debug("Updating possible matches after vote")
+            logger.debug("Updating possible matches after vote")
             self.possible_matches = self._threshold_possible_matches()
             self.current_mlh = self._calculate_most_likely_hypothesis()
 
             self._add_votes_to_buffer_stats(vote_data)
 
-    def send_out_vote(self):
+    def send_out_vote(self) -> dict | None:
         """Send out hypotheses and the evidence for them.
 
         Votes are a dict and contain the following:
@@ -339,9 +344,8 @@ class EvidenceGraphLM(GraphLM):
         object will not send out a vote.
 
         Returns:
-            None or dict:
-                possible_states: The possible states.
-                sensed_pose_rel_body: The sensed pose relative to the body.
+            Dictionary with possible states and sensed poses relative to the body, or
+            None if we don't want the LM to vote.
         """
         if (
             self.buffer.get_num_observations_on_object() < 1
@@ -465,7 +469,7 @@ class EvidenceGraphLM(GraphLM):
         If we timed out it is None and we will not update the graph memory.
         """
         self.terminal_state = terminal_state
-        logging.debug(f"terminal state: {terminal_state}")
+        logger.debug(f"terminal state: {terminal_state}")
         if terminal_state is None:  # at beginning of episode
             graph_id = None
         elif (terminal_state == "no_match") or len(self.get_possible_matches()) == 0:
@@ -529,7 +533,7 @@ class EvidenceGraphLM(GraphLM):
                 pose_and_scale = np.concatenate(
                     [mlh["location"], r_euler, [mlh["scale"]]]
                 )
-                logging.debug(f"(location, rotation, scale): {pose_and_scale}")
+                logger.debug(f"(location, rotation, scale): {pose_and_scale}")
                 # Set LM variables to detected object & pose
                 self.detected_pose = pose_and_scale
                 self.detected_rotation_r = mlh["rotation"]
@@ -557,7 +561,7 @@ class EvidenceGraphLM(GraphLM):
                     self.buffer.add_overall_stats(symmetry_stats)
                 return pose_and_scale
             else:
-                logging.debug(f"object {object_id} detected but pose not resolved yet.")
+                logger.debug(f"object {object_id} detected but pose not resolved yet.")
                 return None
         else:
             return None
@@ -647,10 +651,10 @@ class EvidenceGraphLM(GraphLM):
             possible_object_hypotheses_ids = np.where(
                 self.evidence[object_id] > max_obj_evidence - x_percent_of_max
             )[0]
-            logging.debug(
+            logger.debug(
                 f"possible hpids: {possible_object_hypotheses_ids} for {object_id}"
             )
-            logging.debug(f"hpid evidence is > {max_obj_evidence} - {x_percent_of_max}")
+            logger.debug(f"hpid evidence is > {max_obj_evidence} - {x_percent_of_max}")
             return possible_object_hypotheses_ids
 
     def get_evidence_for_each_graph(self):
@@ -726,9 +730,9 @@ class EvidenceGraphLM(GraphLM):
         channel in the graph.
 
         Args:
-            features (dict): input features
-            displacements (dict or None): given displacements
-            graph_id (str): identifier of the graph being updated
+            features: input features
+            displacements: given displacements
+            graph_id: identifier of the graph being updated
         """
         start_time = time.time()
 
@@ -739,12 +743,14 @@ class EvidenceGraphLM(GraphLM):
             self.evidence[graph_id] = np.array([])
             self.possible_locations[graph_id] = np.array([])
             self.possible_poses[graph_id] = np.array([])
-            evidence_update_threshold = 0
-        else:
-            evidence_update_threshold = self._get_evidence_update_threshold(
-                max_global_evidence=self.current_mlh["evidence"],
-                evidence_all_channels=self.evidence[graph_id],
-            )
+
+        # Calculate the evidence_update_threshold
+        update_threshold = evidence_update_threshold(
+            self.evidence_threshold_config,
+            self.x_percent_threshold,
+            max_global_evidence=self.current_mlh["evidence"],
+            evidence_all_channels=self.evidence[graph_id],
+        )
 
         hypotheses_updates = self.hypotheses_updater.update_hypotheses(
             hypotheses=Hypotheses(
@@ -756,7 +762,7 @@ class EvidenceGraphLM(GraphLM):
             displacements=displacements,
             graph_id=graph_id,
             mapper=self.channel_hypothesis_mapping[graph_id],
-            evidence_update_threshold=evidence_update_threshold,
+            evidence_update_threshold=update_threshold,
         )
 
         if not hypotheses_updates:
@@ -767,7 +773,7 @@ class EvidenceGraphLM(GraphLM):
 
         end_time = time.time()
         assert not np.isnan(np.max(self.evidence[graph_id])), "evidence contains NaN."
-        logging.debug(
+        logger.debug(
             f"evidence update for {graph_id} took "
             f"{np.round(end_time - start_time, 2)} seconds."
             f" New max evidence: {np.round(np.max(self.evidence[graph_id]), 3)}"
@@ -790,8 +796,8 @@ class EvidenceGraphLM(GraphLM):
                 replaces the existing hypothesis space
 
         Args:
-            graph_id (str): The ID of the current graph to update.
-            new_hypotheses (ChannelHypotheses): The new hypotheses to set. These are the
+            graph_id: The ID of the current graph to update.
+            new_hypotheses: The new hypotheses to set. These are the
                 sets of location, pose, and evidence after applying movements to the
                 possible locations and updating their evidence scores. These could also
                 refer to newly initialized hypotheses if a hypothesis space did not
@@ -924,7 +930,7 @@ class EvidenceGraphLM(GraphLM):
         possible_locations = np.array(
             self.possible_locations[graph_id][possible_object_hypotheses_ids]
         )
-        logging.debug(f"{possible_locations.shape[0]} possible locations")
+        logger.debug(f"{possible_locations.shape[0]} possible locations")
 
         center_location = np.mean(possible_locations, axis=0)
         distances_to_center = np.linalg.norm(
@@ -932,7 +938,7 @@ class EvidenceGraphLM(GraphLM):
         )
         location_unique = np.max(distances_to_center) < self.path_similarity_threshold
         if location_unique:
-            logging.info(
+            logger.info(
                 "all possible locations are in radius "
                 f"{self.path_similarity_threshold} of {center_location}"
             )
@@ -940,7 +946,7 @@ class EvidenceGraphLM(GraphLM):
         possible_rotations = np.array(self.possible_poses[graph_id])[
             possible_object_hypotheses_ids
         ]
-        logging.debug(f"{possible_rotations.shape[0]} possible rotations")
+        logger.debug(f"{possible_rotations.shape[0]} possible rotations")
 
         # Compute the difference between each rotation matrix in the list of possible
         # rotations and the most likely rotation in radians.
@@ -975,7 +981,7 @@ class EvidenceGraphLM(GraphLM):
         """
         if self.last_possible_hypotheses is None:
             return False  # need more steps to meet symmetry condition
-        logging.debug(
+        logger.debug(
             f"\n\nchecking for symmetry for hp ids {possible_object_hypotheses_ids}"
             f" with last ids {self.last_possible_hypotheses}"
         )
@@ -985,13 +991,13 @@ class EvidenceGraphLM(GraphLM):
             hypothesis_overlap = previous_hyps.intersection(current_hyps)
             if len(hypothesis_overlap) / len(current_hyps) > 0.9:
                 # at least 90% of current possible ids were also in previous ids
-                logging.info("added symmetry evidence")
+                logger.info("added symmetry evidence")
                 self.symmetry_evidence += 1
             else:  # has to be consequtive
                 self.symmetry_evidence = 0
 
         if self._enough_symmetry_evidence_accumulated():
-            logging.info(
+            logger.info(
                 f"Symmetry detected for hypotheses {possible_object_hypotheses_ids}"
             )
             return True
@@ -1048,7 +1054,7 @@ class EvidenceGraphLM(GraphLM):
                     else:
                         shape = 1
                     default_weights = np.ones(shape) * default
-                    logging.debug(
+                    logger.debug(
                         f"adding {key} to feature_weights with value {default_weights}"
                     )
                     self.feature_weights[input_channel][key] = default_weights
@@ -1069,7 +1075,7 @@ class EvidenceGraphLM(GraphLM):
             The possible matches.
         """
         if len(self.graph_memory) == 0:
-            logging.info("no objects in memory yet.")
+            logger.info("no objects in memory yet.")
             return []
         graph_ids, graph_evidences = self.get_evidence_for_each_graph()
         # median_ge = np.median(graph_evidences)
@@ -1085,8 +1091,8 @@ class EvidenceGraphLM(GraphLM):
             )
             th = max_ge - x_percent_of_max if max_ge > 0 else 0
             pm = [graph_ids[i] for i, ge in enumerate(graph_evidences) if ge > th]
-            logging.debug(f"evidences for each object: {graph_evidences}")
-            logging.debug(
+            logger.debug(f"evidences for each object: {graph_evidences}")
+            logger.debug(
                 f"mean evidence: {np.round(mean_ge, 3)}, std: {np.round(std_ge, 3)}"
                 f" -> th={th}"
             )
@@ -1146,54 +1152,11 @@ class EvidenceGraphLM(GraphLM):
             if not mlh:  # No objects in memory
                 mlh = self.current_mlh
                 mlh["graph_id"] = "new_object0"
-            logging.info(
+            logger.info(
                 f"current most likely hypothesis: {mlh['graph_id']} "
                 f"with evidence {np.round(mlh['evidence'], 2)}"
             )
         return mlh
-
-    def _get_evidence_update_threshold(
-        self, max_global_evidence: float, evidence_all_channels: np.ndarray
-    ):
-        """Determine how much evidence a hypothesis should have to be updated.
-
-        Args:
-            max_global_evidence (float): Maximum evidence value from all hypotheses.
-            evidence_all_channels (np.ndarray): Evidence values for all hypotheses.
-
-        Returns:
-            The evidence update threshold.
-
-        Raises:
-            InvalidEvidenceUpdateThreshold: If `self.evidence_update_threshold` is
-                not in the allowed values
-        """
-        if type(self.evidence_update_threshold) in [int, float]:
-            return self.evidence_update_threshold
-        elif self.evidence_update_threshold == "mean":
-            return np.mean(evidence_all_channels)
-        elif self.evidence_update_threshold == "median":
-            return np.median(evidence_all_channels)
-        elif isinstance(
-            self.evidence_update_threshold, str
-        ) and self.evidence_update_threshold.endswith("%"):
-            percentage_str = self.evidence_update_threshold.strip("%")
-            percentage = float(percentage_str)
-            assert percentage >= 0 and percentage <= 100, (
-                "Percentage must be between 0 and 100"
-            )
-            x_percent_of_max = max_global_evidence * (percentage / 100)
-            return max_global_evidence - x_percent_of_max
-        elif self.evidence_update_threshold == "x_percent_threshold":
-            x_percent_of_max = max_global_evidence / 100 * self.x_percent_threshold
-            return max_global_evidence - x_percent_of_max
-        elif self.evidence_update_threshold == "all":
-            return np.min(evidence_all_channels)
-        else:
-            raise InvalidEvidenceUpdateThreshold(
-                "evidence_update_threshold not in "
-                "[int, float, '[int]%', 'mean', 'median', 'all', 'x_percent_threshold']"
-            )
 
     def _get_node_distance_weights(self, distances):
         node_distance_weights = (
@@ -1219,9 +1182,3 @@ class EvidenceGraphLM(GraphLM):
         stats["evidences"] = self.evidence
         stats["symmetry_evidence"] = self.symmetry_evidence
         return stats
-
-
-class InvalidEvidenceUpdateThreshold(ValueError):
-    """Raised when the evidence update threshold is invalid."""
-
-    pass

@@ -13,9 +13,11 @@ To follow along, open the `benchmarks/configs/my_experiments.py` file and paste 
 
 ```python
 import os
+from dataclasses import asdict
 
 import numpy as np
 
+from benchmarks.configs.names import MyExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     EvalLoggingConfig,
     MontyArgs,
@@ -31,7 +33,9 @@ from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
     MontyObjectRecognitionExperiment,
 )
-from tbp.monty.frameworks.models.evidence_matching import EvidenceGraphLM
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+    EvidenceGraphLM
+)
 from tbp.monty.frameworks.models.goal_state_generation import (
     EvidenceGoalStateGenerator,
 )
@@ -161,7 +165,7 @@ learning_module_0 = dict(
         # be considered certain enough to trigger a terminal condition (match).
         x_percent_threshold=20,
         # Update all hypotheses with evidence > x_percent_threshold (faster)
-        evidence_update_threshold="x_percent_threshold",
+        evidence_threshold_config="x_percent_threshold",
         # Config for goal state generator of LM which is used for model-based action
         # suggestions, such as hypothesis-testing actions.
         gsg_class=EvidenceGoalStateGenerator,

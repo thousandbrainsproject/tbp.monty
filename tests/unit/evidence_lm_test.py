@@ -16,7 +16,6 @@ pytest.importorskip(
 )
 
 import copy
-import logging
 import os
 import shutil
 import tempfile
@@ -784,11 +783,11 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
     def get_elm_with_two_fake_objects(
         self, fake_obs, fake_obs_two, initial_possible_poses, gsg_class, gsg_args
-    ):
+    ) -> EvidenceGraphLM:
         """Train on two fake observation objects.
 
         Returns:
-            EvidenceGraphLM: Evidence GraphLearning Module
+            Evidence GraphLearning Module
         """
         # Train on first object
         graph_lm = self.get_elm_with_fake_object(
@@ -1185,8 +1184,6 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
     def test_same_sequence_recognition_elm(self):
         """Test that the object is recognized with same action sequence."""
-        logging.basicConfig(level="DEBUG")
-
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
 
         graph_lm = self.get_elm_with_fake_object(self.fake_obs_learn)

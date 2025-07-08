@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
 
@@ -21,6 +22,8 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
+
+logger = logging.getLogger(__name__)
 
 
 class MontyBase(Monty):
@@ -229,7 +232,7 @@ class MontyBase(Monty):
         )
         return sensory_inputs
 
-    def _combine_inputs(self, inputs_from_sms, inputs_from_lms):
+    def _combine_inputs(self, inputs_from_sms, inputs_from_lms) -> dict | None:
         """Combine all inputs to an LM into one dict.
 
         An LM only receives input from another LM if it also receives input from
@@ -246,10 +249,9 @@ class MontyBase(Monty):
             inputs_from_lms: List of dicts of LM outputs.
 
         Returns:
-            dict of combined features and location from all inputs with
-                interesting features. If there are no inputs or none of them
-                are deemed interesting (i.e. off object or low confidence LM)
-                this returns None.
+            Combined features and location from all inputs with interesting features.
+            If there are no inputs or none of them are deemed interesting (i.e. off
+            object or low confidence LM) this returns None.
         """
         combined_inputs = [
             inputs_from_sms[i]
@@ -310,14 +312,14 @@ class MontyBase(Monty):
         if self.exceeded_min_steps:
             if self.step_type == "exploratory_step":
                 self._is_done = True
-                logging.info(f"finished exploring after {self.exploratory_steps} steps")
+                logger.info(f"finished exploring after {self.exploratory_steps} steps")
 
             elif self.step_type == "matching_step":
                 if self.experiment_mode == "train":
                     self.switch_to_exploratory_step()
                 else:
                     self._is_done = True
-                    logging.info(
+                    logger.info(
                         f"finished evaluating after {self.matching_steps} steps"
                     )
 
@@ -484,19 +486,19 @@ class MontyBase(Monty):
 
         if self.step_type == "matching_step":
             self.matching_steps += 1
-            logging.info(f"--- Global Matching Step {self.matching_steps} ---")
+            logger.info(f"--- Global Matching Step {self.matching_steps} ---")
         elif self.step_type == "exploratory_step":
             self.exploratory_steps += 1
 
     def switch_to_matching_step(self):
         self.step_type = "matching_step"
         self.is_seeking_match = True
-        logging.debug(f"Going into matching mode after {self.episode_steps} steps")
+        logger.debug(f"Going into matching mode after {self.episode_steps} steps")
 
     def switch_to_exploratory_step(self):
         self.step_type = "exploratory_step"
         self.is_seeking_match = False
-        logging.info(f"Going into exploratory mode after {self.matching_steps} steps")
+        logger.info(f"Going into exploratory mode after {self.matching_steps} steps")
 
 
 class LearningModuleBase(LearningModule):
@@ -550,7 +552,7 @@ class SensorModuleBase(SensorModule):
         self.state = None
 
     def __call__(self, observation):
-        logging.warning(
+        logger.warning(
             "SensorModuleBase only outputs placeholder values. Use a "
             "concrete SM implementation to actually extract features from "
             "the raw sensory data."
@@ -572,7 +574,7 @@ class SensorModuleBase(SensorModule):
         pass
 
     def step(self, data):
-        logging.warning(
+        logger.warning(
             "SensorModuleBase only outputs placeholder values. Use a "
             "concrete SM implementation to actually extract features from "
             "the raw sensory data."

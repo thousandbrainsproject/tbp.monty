@@ -9,8 +9,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-from typing import List, Type, cast
+from typing import Any, Callable
 
 import quaternion as qt
 from numpy import cos, pi, sin, sqrt
@@ -43,86 +42,34 @@ __all__ = [
 ]
 
 
-class ActionSampler(ABC):
-    """Declares the interface for an abstract Action factory.
+class ActionSampler:
+    """An Action factory that samples from a set of available action types."""
 
-    Used to generate Actions by sampling from a set of available action types.
-    """
-
-    def __init__(self, rng: Generator = None, actions: List[Type[Action]] = None):
-        self.rng = rng if rng is not None else default_rng()
-        self._actions = actions if actions is not None else []
-        self._action_names = [action.action_name() for action in self._actions]
-        self._method_names = [
+    def __init__(
+        self,
+        rng: Generator | None = None,
+        actions: list[type[Action]] | None = None,
+    ):
+        self.rng: Generator = rng if rng is not None else default_rng()
+        self._actions: list[type[Action]] = actions if actions is not None else []
+        self._action_names: list[str] = [
+            action.action_name() for action in self._actions
+        ]
+        self._method_names: list[str] = [
             f"sample_{action_name}" for action_name in self._action_names
         ]
-
-    @abstractmethod
-    def sample_look_down(self, agent_id: str) -> LookDown:
-        pass
-
-    @abstractmethod
-    def sample_look_up(self, agent_id: str) -> LookUp:
-        pass
-
-    @abstractmethod
-    def sample_move_forward(self, agent_id: str) -> MoveForward:
-        pass
-
-    @abstractmethod
-    def sample_move_tangentially(self, agent_id: str) -> MoveTangentially:
-        pass
-
-    @abstractmethod
-    def sample_orient_horizontal(self, agent_id: str) -> OrientHorizontal:
-        pass
-
-    @abstractmethod
-    def sample_orient_vertical(self, agent_id: str) -> OrientVertical:
-        pass
-
-    @abstractmethod
-    def sample_set_agent_pitch(self, agent_id: str) -> SetAgentPitch:
-        pass
-
-    @abstractmethod
-    def sample_set_agent_pose(self, agent_id: str) -> SetAgentPose:
-        pass
-
-    @abstractmethod
-    def sample_set_sensor_pitch(self, agent_id: str) -> SetSensorPitch:
-        pass
-
-    @abstractmethod
-    def sample_set_sensor_pose(self, agent_id: str) -> SetSensorPose:
-        pass
-
-    @abstractmethod
-    def sample_set_sensor_rotation(self, agent_id: str) -> SetSensorRotation:
-        pass
-
-    @abstractmethod
-    def sample_set_yaw(self, agent_id: str) -> SetYaw:
-        pass
-
-    @abstractmethod
-    def sample_turn_left(self, agent_id: str) -> TurnLeft:
-        pass
-
-    @abstractmethod
-    def sample_turn_right(self, agent_id: str) -> TurnRight:
-        pass
 
     def sample(self, agent_id: str) -> Action:
         """Sample a random action from the available action types.
 
         Returns:
-            A random action from the available action types.
+            Action: A random action from the available action types.
         """
-        random_create_method_name = self.rng.choice(self._method_names)
-        random_create_method = getattr(self, random_create_method_name)
-        action = random_create_method(agent_id)
-        return cast(Action, action)
+        random_create_method_name: str = self.rng.choice(self._method_names)
+        random_create_method: Callable[[str], Action] = getattr(
+            self, random_create_method_name
+        )
+        return random_create_method(agent_id)
 
 
 class ConstantSampler(ActionSampler):
@@ -143,19 +90,19 @@ class ConstantSampler(ActionSampler):
     def __init__(
         self,
         absolute_degrees: float = 0.0,
-        actions: List[Type[Action]] = None,
-        direction: VectorXYZ = None,
-        location: VectorXYZ = None,
-        rng: Generator = None,
+        actions: list[type[Action]] | None = None,
+        direction: VectorXYZ | None = None,
+        location: VectorXYZ | None = None,
+        rng: Generator | None = None,
         rotation_degrees: float = 5.0,
-        rotation_quat: QuaternionWXYZ = None,
+        rotation_quat: QuaternionWXYZ | None = None,
         translation_distance: float = 0.004,
-        **kwargs,  # Accept arbitrary keyword arguments for compatibility
-    ):
+        **kwargs: Any,  # Accept arbitrary keyword arguments for compatibility
+    ) -> None:
         super().__init__(actions=actions, rng=rng)
         self.absolute_degrees = absolute_degrees
-        self.direction = direction if direction is not None else [0.0, 0.0, 0.0]
-        self.location = location if location is not None else [0.0, 0.0, 0.0]
+        self.direction = direction if direction is not None else (0.0, 0.0, 0.0)
+        self.location = location if location is not None else (0.0, 0.0, 0.0)
         self.rotation_degrees = rotation_degrees
         self.rotation_quat = rotation_quat if rotation_quat is not None else qt.one
         self.translation_distance = translation_distance
@@ -236,15 +183,15 @@ class UniformlyDistributedSampler(ActionSampler):
 
     def __init__(
         self,
-        actions: List[Type[Action]] = None,
+        actions: list[type[Action]] | None = None,
         max_absolute_degrees: float = 360.0,
         min_absolute_degrees: float = 0.0,
         max_rotation_degrees: float = 20.0,
         min_rotation_degrees: float = 0.0,
         max_translation: float = 0.05,
         min_translation: float = 0.05,
-        rng: Generator = None,
-        **kwargs,  # Accept arbitrary keyword arguments for compatibility
+        rng: Generator | None = None,
+        **kwargs: Any,  # Accept arbitrary keyword arguments for compatibility
     ):
         super().__init__(actions=actions, rng=rng)
         self.max_absolute_degrees = max_absolute_degrees
@@ -256,15 +203,15 @@ class UniformlyDistributedSampler(ActionSampler):
 
     def _random_quaternion_wxyz(self) -> QuaternionWXYZ:
         u, v, w = self.rng.random(3)
-        return [
+        return (
             sqrt(1 - u) * sin(2 * pi * v),
             sqrt(1 - u) * cos(2 * pi * v),
             sqrt(u) * sin(2 * pi * w),
             sqrt(u) * cos(2 * pi * w),
-        ]
+        )
 
     def _random_vector_xyz(self) -> VectorXYZ:
-        return [self.rng.random() for _ in range(3)]
+        return (self.rng.random(), self.rng.random(), self.rng.random())
 
     def sample_look_down(self, agent_id: str) -> LookDown:
         rotation_degrees = self.rng.uniform(

@@ -15,7 +15,7 @@ def setup_env(monty_logs_dir_default: str = "~/tbp/results/monty/"):
     """Setup environment variables for Monty.
 
     Args:
-        monty_logs_dir_default (str): Default directory for Monty logs.
+        monty_logs_dir_default: Default directory for Monty logs.
     """
     monty_logs_dir = os.getenv("MONTY_LOGS")
 

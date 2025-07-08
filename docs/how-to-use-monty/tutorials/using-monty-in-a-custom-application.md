@@ -196,7 +196,7 @@ omniglot_inference = dict(
 > To run the above experiment, you first need to download the [Omniglot dataset](https://github.com/brendenlake/omniglot). You can do this by running `cd ~/tbp/data` and `git clone https://github.com/brendenlake/omniglot.git`. You will need to unzip the `omniglot/python/images_background.zip` and `omniglot/python/strokes_background.zip` files.
 
 To test this, go ahead and copy the configs above into the `benchmarks/configs/my_experiments.py` file. To complete the configs, you will need to add the following imports, sensor module config and model_path at the top of the file.
-```
+```python
 import os
 from dataclasses import asdict
 
@@ -219,9 +219,11 @@ from tbp.monty.frameworks.experiments import (
 	MontyObjectRecognitionExperiment,
 	MontySupervisedObjectPretrainingExperiment,
 )
-from tbp.monty.frameworks.models.evidence_matching import (
-	EvidenceGraphLM,
-	MontyForEvidenceGraphMatching,
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+	EvidenceGraphLM
+)
+from tbp.monty.frameworks.models.evidence_matching.model import (
+	MontyForEvidenceGraphMatching
 )
 from tbp.monty.frameworks.models.sensor_modules import (
 	DetailedLoggingSM,

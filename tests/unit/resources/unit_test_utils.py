@@ -162,13 +162,15 @@ class BaseGraphTestCases:
                 "quat_rotation": [1, 0, 0, 0],
             }
 
-        def string_to_array(self, array_string, get_positive_rotations=False):
+        def string_to_array(
+            self, array_string, get_positive_rotations=False
+        ) -> np.ndarray:
             """Convert string representation of an array into a numpy array.
 
             Is needed since the arrays we read out of the stats csv cells are strings.
 
             Returns:
-                np_array: numpy array
+                The newly created numpy array.
             """
             np_array = np.array([])
             for i in array_string.split("[")[1].split("]")[0].split(" "):

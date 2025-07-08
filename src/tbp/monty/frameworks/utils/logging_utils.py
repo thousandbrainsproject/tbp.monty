@@ -27,6 +27,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     rotations_to_quats,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def load_stats(
     exp_path,
@@ -357,7 +359,7 @@ def check_detection_accuracy_at_step(stats, last_n_step=1):
     return detection_stats
 
 
-def get_time_stats(all_ds, all_conditions):
+def get_time_stats(all_ds, all_conditions) -> pd.DataFrame:
     """Get summary of run times in a dataframe for each condition.
 
     Args:
@@ -365,7 +367,7 @@ def get_time_stats(all_ds, all_conditions):
         all_conditions: name of each condition
 
     Returns:
-        pd.DataFrame with runtime stats
+        Runtime stats.
     """
     time_stats = []
     for i, detailed_stats in enumerate(all_ds):
@@ -406,12 +408,12 @@ def compute_pose_error(
     the comparison.
 
     Args:
-        predicted_rotation (Rotation): Predicted rotation(s). Can be a single or list of
+        predicted_rotation: Predicted rotation(s). Can be a single or list of
             rotation.
-        target_rotation (Rotation): Target rotation. Must represent a single rotation.
+        target_rotation: Target rotation. Must represent a single rotation.
 
     Returns:
-        float: The minimum angular error in radians.
+        The minimum angular error in radians.
     """
     error = np.min((predicted_rotation * target_rotation.inv()).magnitude())
     return error
@@ -424,7 +426,7 @@ def get_overall_pose_error(stats, lm_id="LM_0"):
         This can now be obtained easier from the .csv stats.
 
     Args:
-        stats (dict): detailed stats
+        stats: detailed stats
         lm_id: id of learning module
 
     Returns:
@@ -811,7 +813,7 @@ def target_data_to_dict(target):
         target: target params
 
     Returns:
-        output_dict: dict with target params
+        dict with target params
     """
     output_dict = {}
     output_dict["primary_target_object"] = target["object"]
@@ -840,7 +842,7 @@ def format_columns_for_wandb(lm_dict):
         lm_dict: dict, part of a larger dict ~ {LM_0: lm_dict, LM_1: lm_dict}
 
     Returns:
-        dict: formatted lm_dict
+        formatted lm_dict
     """
     formatted_dict = copy.deepcopy(lm_dict)
     if "result" in formatted_dict:
@@ -900,13 +902,13 @@ def maybe_rename_existing_file(log_file, extension, report_count):
         old_name = log_file.split(extension)[0]
         new_name = old_name + "_old" + extension
 
-        logging.warning(
+        logger.warning(
             f"Output file {log_file} already exists. This file will be moved"
             f" to {new_name}"
         )
 
         if os.path.exists(new_name):
-            logging.warning(
+            logger.warning(
                 f"Output file {new_name} also already exists. This file will be removed"
                 " before renaming."
             )
@@ -918,12 +920,12 @@ def maybe_rename_existing_file(log_file, extension, report_count):
 def maybe_rename_existing_directory(path, report_count):
     if (report_count == 0) and os.path.exists(path):
         new_path = path + "_old"
-        logging.warning(
+        logger.warning(
             f"Output path {path} already exists. This path will be movedto {new_path}"
         )
 
         if os.path.exists(new_path):
-            logging.warning(
+            logger.warning(
                 f"{new_path} also exists, and will be removed before renaming"
             )
             os.remove(new_path)

@@ -54,10 +54,10 @@ class TheoreticalLimitLMLoggingMixin:
         target object) , and the pose error of the MLH hypothesis on the target object.
 
         Args:
-            stats (Dict[str, Any]): The existing statistics dictionary to augment.
+            stats: The existing statistics dictionary to augment.
 
         Returns:
-            Dict[str, Any]: Updated statistics dictionary.
+            Updated statistics dictionary.
         """
         stats["max_evidence"] = {k: max(v) for k, v in self.evidence.items()}
         stats["target_object_theoretical_limit"] = (
@@ -82,7 +82,7 @@ class TheoreticalLimitLMLoggingMixin:
         of the object.
 
         Returns:
-            float: The minimum achievable rotation error (in radians).
+            The minimum achievable rotation error (in radians).
         """
         hyp_rotations = Rotation.from_matrix(
             self.possible_poses[self.primary_target]
@@ -98,7 +98,7 @@ class TheoreticalLimitLMLoggingMixin:
         object with the ground truth rotation of the target object.
 
         Returns:
-            float: The rotation error (in radians).
+            The rotation error (in radians).
         """
         obj_rotation = self.get_mlh_for_object(self.primary_target)["rotation"].inv()
         target_rotation = Rotation.from_quat(self.primary_target_rotation_quat)
