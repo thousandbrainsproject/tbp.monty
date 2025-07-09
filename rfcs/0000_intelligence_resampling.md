@@ -130,9 +130,70 @@ Again, because the method depends on `search_locations`, we need a way to accoun
 
 ## How can we re-anchor hypotheses to model points for robustness to noise and distortions?
 
-In experiments where we have sensor noise, we may wish to "re-anchor" hypotheses to take into account of these distortions. By "re-anchoring", I will assume this means updating `locations` or `poses` attributes of the `Hypotheses` object. 
+In experiments where we have sensor noise, we may wish to "re-anchor" hypotheses to account for accumulated drift and distortions. By "re-anchoring", we mean updating the `locations` and `poses` attributes of the `Hypotheses` object to align with the underlying discretized model structure.
 
-> [!NOTE] Some Lateral Thoughts
-> Another potential way to deal with sensor noise is by adjusting the evidence scores such that it increases proportionally to sensor noise, i.e. evidence scores will accumulate more slowly when there are more noise. However, I do not think that this is a valid approach as we (read: LM) should not have knowledge of how much noise there is, or how much noise is added to sensor modules (SM). 
+### Back of the Envelop calculation for Sensor Noise
+
+- **Location noise**: 2mm Gaussian ($\sigma$ = 0.002m)
+- **Voxel size**: 6mm (0.3m max_size ÷ 50 voxels_per_dim)
+- **Noise-to-voxel ratio**: 33% - significant relative to discretization
+- **Rotation noise**: $2\degree$ per axis ($\sigma = 2.0\degree$)
+- **Rotation grid**: $45\degree$ intervals
+- **Noise-to-grid ratio**: 4.4% - more tolerant than location
+
+Without re-anchoring, drift accumulates as a random walk: $ 2 \times \sqrt{N}$ where $N$ is the number of steps taken. 
+- After 10 steps: ~6.3mm location drift (exceeds voxel size)
+- After 100 steps: ~20mm drift (over 3 voxels)
+
+### Location Re-anchoring Strategies
 
 
+#### 1. Maximum Likelihood Estimation (MLE) Approach
+
+For Gaussian noise $\mathcal{N}(0, \sigma^2)$, the MLE of true location from N observations is their weighted mean, with variance reduced by factor of $N$. From the equations above, i.e. $\mathbf{s}_i \sim \mathcal{N}(\mathbf{R}_i \mathbf{d}^{\text{channel}} + \mathbf{p}_i, \sigma^2 \mathbf{I})$, the optimal estimator of true location would be to "simply" find the mean of several noisy locations. The approach is similar to how we are taking weighted sum of evidence. The basic idea would be to consolidate nearby hypotheses using evidence-weighted averaging. There are several implementation details to consider, such as :
+
+1. How to threshold for high-evidence hypotheses?
+2. How to group or cluster them (e.g. clustering can be expensive, and maybe we just want to have a simple heuristic such as $\epsilon$-radius of the location of MLH)?
+3. Whether to consider hypotheses from different objects?
+
+A downstream RFC or PR should consider these questions if implementing. 
+
+**Note**: For noise in rotation (which is happening in SO(3) space and not Euclidean space), we should use a more "general" mean such as [this](https://en.wikipedia.org/wiki/Fr%C3%A9chet_mean). 
+
+#### 2. Voxel Center Re-anchoring Approach
+
+This approach leverages knowledge of the model's voxel structure in `GridObjectModels`. This would basically "snap" the location to the voxel center. This idea was inspired from `how-learning-modules-work.md`:
+
+> If max_voxels_per_dim would be set to 4 (as shown in this figure), then each voxel would be of size **2**cm<sup>3</sup> and any locations within that voxel cannot be distinguished.
+
+
+```python
+# some pseudocode
+def voxel_center_reanchoring(self, confidence_threshold=0.8):
+    """Snap high-confidence hypotheses to nearest voxel centers."""
+    voxel_size = self.graph_memory.max_graph_size / self.graph_memory.num_model_voxels_per_dim
+    
+    for graph_id in self.get_all_known_object_ids():
+        evidences = self.evidence[graph_id]
+        locations = self.possible_locations[graph_id]
+        
+        # Only re-anchor high-confidence hypotheses
+        high_conf_mask = evidences > confidence_threshold * np.max(evidences)
+        
+        for idx in np.where(high_conf_mask)[0]:
+            location = locations[idx]
+            
+            # Compute nearest voxel center
+            voxel_indices = np.round(location / voxel_size)
+            voxel_center = voxel_indices * voxel_size
+            
+            # Only snap if within half voxel (avoid wrong-voxel errors)
+            if np.linalg.norm(location - voxel_center) < voxel_size / 2:
+                self.possible_locations[graph_id][idx] = voxel_center
+```
+
+The benefit of this approach is that it should be faster than the MLE approach above, however, I'm not sure if voxel_size would be considered priviledged information to the LM (certainly we can reach for this information in software, but doesn't mean we _should_ do that.)
+
+**Note**: For rotation, we could similarly "snap" to nearest $45\degree$ increment. 
+
+Finally, neither of the above two approaches are mutually exclusive, and may be beneficial to implement a hybrid approach combining the two.
