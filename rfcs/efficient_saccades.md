@@ -11,12 +11,14 @@ In single-object, one-object-per-episode experiments, we make the following simp
 In general, the one-object criterion is not met when operating with compositional objects and multi-object scenes. For example, if a saccade moves a sensor module's small receptive field off one object and onto another, its downstream learning module has no way of knowing that it is looking at a different object. During learning, this would result in a single "object" model that contains points from several objects, thus violating the requirement that each object is stored in its own independent reference frame. During inference, integrating the off-object observations will likely result in having collected a set of locations that does not exist as a subset in any stored models. The ensuing weakening of true hypotheses intended to estimate the target region's object will eventually have to be "made up" for, assuming we later return to the target object, which ultimately results in delayed convergence[^2].
 
 This RFC outlines two main strategies aimed at improving the speed and robustness of object recognition with compositional objects and in multi-object environments.
-  1. We propose a strategy for selecting saccade targets that are contained within a region estimated to satisfy the one-object criterion. This depends on first having reasonably good estimates of the locations and spatial extents of one-object regions. To accomplish this, we plan to apply model-free segmentation techniques to wide field-of-view imagery. Model-based signals may also be used to generate segmentation maps de novo and/or refine model-free maps, but this topic is currently marked as an [open question](#open-questions).
+  1. We propose a strategy for selecting saccade targets that are contained within a region estimated to satisfy the one-object criterion. This depends on first having reasonably good estimates of the locations and spatial extents of one-object regions. To accomplish this, we plan to apply model-free segmentation techniques to wide field-of-view imagery. Model-based signals may also be used to generate segmentation maps de novo and/or refine model-free maps.
   2. In addition, we propose a set of optimization strategies designed to improve efficiency. In this context, efficiency refers to the number of steps taken to converge on an object and pose estimate. While these optimization strategies should improve inference speed in any setting (single-object, multi-object, etc.), faster inference may serve an additional purpose in the compositional/multi-object context; by reducing the number of steps needed to recognize an object, we may also reduce the likelihood of collecting mislabeled, off-object observations[^3].
 
 To implement these strategies, we propose the addition of two new components.
   - `SalienceMapSM`: a sensor module type that receives a wide, low-resolution field-of-view, performs model-free processing (e.g., salience estimation or segmentation), and outputs a set of CMP-compliant goal states.
   - `GoalStateSelector`: an arbiter that receives goal states from all sources (LMs and `SalienceMapSM`) and outputs a single goal state for the motor system.
+
+See [Architecture](#architecture) for details on these components.
 
 # Architecture
 
@@ -34,14 +36,14 @@ The primary purpose of the `SalienceMapSM` is to help action policies make bette
   - Segmentation: To support action policies that require staying on-object (or moving off-object).
   - Salience Detection: To support rapid inference by targeting an object's more informative areas.
 
-The results of these processes may be (a) used to filter out goal states and/or (b) embedded into `GoalState` objects. On the one hand, filtering is pretty unambiguous way to indicate whether a target location is worth considering at all. On the other hand, filtering out goal-states based on model-free criteria might prematurely eliminate candidates that would have been very promising had they been allowed to mix with model-based information. At this stage, I'm learning towards minimal output filtering since (a) we want to avoid repeatedly saccading between a handful of salient locations, and (b) the `GoalStateSelector`'s filtration should be "smarter" since it has access to model-based information[^4]. Some metadata will be added to each goal state's dictionary of non-morphological features (such as `region_id` and `salience`) which the `GoalStateSelector` can use to filter and rank goal states[^5]. 
+The results of these processes may be (a) used to filter out goal states and/or (b) embedded into `GoalState` objects. On the one hand, filtering is pretty unambiguous way to indicate whether a target location is worth considering at all. On the other hand, filtering out goal-states based on model-free criteria might prematurely eliminate candidates that would have been very promising had they been allowed to mix with model-based information. At this stage, I'm learning towards minimal output filtering since (a) we want to avoid repeatedly saccading between a handful of salient locations, and (b) the `GoalStateSelector`'s filtration should be "smarter" since it has access to model-based information[^4]. Some metadata will be added to each goal state's dictionary of non-morphological features (such as `object_id` to represent a model-free surface) which the `GoalStateSelector` can use to filter and rank goal states[^5]. 
 
 ### `GoalStateSelector`
 
   - **Type**: `object`
   - **Input**: All `GoalState` objects produced by LMs and the `SalienceMapSM`.
   - **Output**: `GoalState`
-  - **Consumers**: `MotorSystem`  
+  - **Consumers**: `MotorSystem`
 
 With the addition of a `SalienceMapSM`, the number of goal states generated at each time step will jump from ~1 to ~1000 (roughly). Consequently, we need something to pool LM- and SM-derived goal states together and decide which should be acted upon by the motor system. These requirements place the `GoalStateSelector` in a uniquely powerful position to integrate model-free and model-based data. In addition, it can easily maintain a recent history of visited (or at least attempted) locations since it has the final say about which goal state the motor system should attempt.
 
@@ -52,15 +54,15 @@ In its simplest/dumbest form, a `GoalStateSelector` could choose a goal state li
 If we take advantage of the `GoalStateSelectors`'s unique input/output values, we could instead do any or all of the following:
   - If an LM emitted a goal state, use it. In the case of multiple LM-derived goal states, pick the one with the greatest confidence value. If there are ties, select the one with the highest expected salience.
   - If no LM has emitted a goal state, focus on the `SalienceMapSM`'s goal state.
-    - Initialize some scoring variable for each goal state. Let's call it `priority`.
-    - Weight `priority` values based on `region_id` (e.g., make it zero or `nan` if it's on the wrong region, or simply filter out the off-object ones).
-    - Weight `priority` values by salience.
-    - Weight `priority` values by the magnitude of the displacement it would generate. (bigger displacements => faster hypothesis elimination)
-    - Weight `priority` values by a goal state's distance from previously visited areas.
+    - Initialize some scoring variable for each goal state to represent salience or priority. As `GoalState` objects already have a `confidence` attribute, we'll reuse that.
+    - Weight `confidence` values based on `object_id` (e.g., make it zero or `nan` if it's on the wrong region, or simply filter out the off-object ones).
+    - Weight `confidence` values by salience.
+    - Weight `confidence` values by the magnitude of the displacement it would generate. (bigger displacements => faster hypothesis elimination)
+    - Weight `confidence` values by a goal state's distance from previously visited areas.
 
 Some of these rules help satisfy the one-object criterion, and others support efficiency. There are a lot of things we could try here, and we won't know what works until we do. Other potential rules are left as an exercise for the reader.
 
-### Integration
+# Integration with Monty
 
 ### Executing Goal States
 This RFC would move us down a very goal-state-heavy path. It's easy to imagine that a distant agent performing inference will produce achievable goal states at every step. This is a pretty big departure from Monty's existing behavior in which goal states are only occasionally generated and acted upon. The remainder of the time, actions are derived from model-free policies.
@@ -83,6 +85,20 @@ The `MontyBase` or one of its subclass will need a `goal_state_selector` attribu
   
 **Potential issue**
   - All `MontyBase` subclasses appear to have the same set of attributes. I don't know how much code assumes that this is the case. If `MontyExperiment` classes assume a fixed set of attributes for initialization and logging, there could be a few pain points.
+
+It has been pointed out that the `GoalStateSelector` will receive goal states from LMs and SMs at different stages, and therefore we will run up against a synchronization issue eventually. Since all routing is planned to be performed by the `MontyClass`, my expectation is that we can pool goal states there and supply the `GoalStateSelector` with all goal states at once. But there are a few possible approaches here which we can discuss as they become more clear.
+
+# Long-Term Objectives and Discussion
+
+Following feedback and discussion, we have identified three objectives coupled to the functional and architectural changes proposed here.
+
+  1. Implement the functionality of `GetGoodView` for the distant agent within the proposed framework. Goal-state-generating SMs will provide the model-free signals used to orient the agent to on-object regions. These signals can be filtered out or ignored when learning modules emit goal states, and the filtering with be performed by a `GoalStateSelector`.
+  2. Integration of model-free segmentation and model-based policies to recognize an object before moving onto a new object. This objective is the primary topic driving this RFC, and it contains segmentation and efficiency approaches described in this RFC. See the [Summary](#summary) for motivation and approach.
+  3. Improve efficiency by learning and using sparser models. It has been suggested that our learned models are unnecessarily dense owing to the fact that non-salient and salient parts of an object are represented equally. If we can ensure that only the most salient parts of an object are attended to during inference, then we can effectively ignore (or at least sample less frequently) the non-salient areas during training without degrading performance.
+
+Each of these tasks is significant, likely warranting RFCs individually.
+
+Discussion on this RFC have also generated strong interest in extending goal-state-generation to all sensor modules. In this way, `SalienceMapSM` may be unique in how it processes data, but it will not necessarily be unique in its capacity to generate goal states. One of the main challenges in this RFC is determining how information will be routed. While the proposed architecture solves this problem in the restricted case of a single new SM that generates goal states, future work in which any SM may generate goal states may require a more generic or flexible approach. For the time being, I propose working on the intermediate objectives in a restricted setting (i.e., only `SalienceMapSM` will propose goal states). It'll be easier to discuss how to incorporate goal-state-generating functionality for all SMs in more concrete terms as work progresses.
 
 # Open Questions
  - Can/should we integrate model-based signals to inform segmentation or region selection?
