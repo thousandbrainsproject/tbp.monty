@@ -630,26 +630,26 @@ class InteractivePlot:
             bold=True,
         )
 
-    def align_camera(self, cam1: Any, cam2: Any) -> None:
+    def align_camera(self, cam_a: Any, cam_b: Any) -> None:
         """Align the camera objects."""
-        cam1.SetPosition(cam2.GetPosition())
-        cam1.SetFocalPoint(cam2.GetFocalPoint())
-        cam1.SetViewUp(cam2.GetViewUp())
-        cam1.SetClippingRange(cam2.GetClippingRange())
-        cam1.SetParallelScale(cam2.GetParallelScale())
+        cam_a.SetPosition(cam_b.GetPosition())
+        cam_a.SetFocalPoint(cam_b.GetFocalPoint())
+        cam_a.SetViewUp(cam_b.GetViewUp())
+        cam_a.SetClippingRange(cam_b.GetClippingRange())
+        cam_a.SetParallelScale(cam_b.GetParallelScale())
 
     def simulator_callback(self, widget: Button, event: str) -> None:
         """Align the ground truth renderer's camera with the MLH renderer."""
-        cam1 = self.plotter.renderers[1].GetActiveCamera()
-        cam2 = self.plotter.renderers[2].GetActiveCamera()
-        self.align_camera(cam1, cam2)
+        cam_a = self.plotter.renderers[1].GetActiveCamera()
+        cam_b = self.plotter.renderers[2].GetActiveCamera()
+        self.align_camera(cam_a, cam_b)
         self.plotter.render()
 
     def mlh_callback(self, widget: Button, event: str) -> None:
         """Align the MLH renderer's camera with the groundtruth renderer."""
-        cam1 = self.plotter.renderers[1].GetActiveCamera()
-        cam2 = self.plotter.renderers[2].GetActiveCamera()
-        self.align_camera(cam2, cam1)
+        cam_a = self.plotter.renderers[1].GetActiveCamera()
+        cam_b = self.plotter.renderers[2].GetActiveCamera()
+        self.align_camera(cam_b, cam_a)
         self.plotter.render()
 
     def slider_callback(self, widget: Slider2D, event: str) -> None:
