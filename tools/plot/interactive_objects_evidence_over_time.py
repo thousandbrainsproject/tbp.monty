@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import sys
 import time
 from pathlib import Path
@@ -20,12 +19,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import trimesh
 from vedo import (
-    Button,
     Line,
     Mesh,
     Plotter,
     Rectangle,
-    Slider2D,
     Sphere,
     Text2D,
     Text3D,
@@ -37,6 +34,8 @@ from tbp.monty.frameworks.utils.logging_utils import load_stats
 
 if TYPE_CHECKING:
     import argparse
+
+    from vedo import Button, Slider2D
 
 logger = logging.getLogger(__name__)
 
@@ -180,20 +179,17 @@ class DataExtractor:
                 obj_name: The object name to search for (e.g., "potted_meat_can").
 
             Returns:
-                Full path to the .glb.orig file if found, else None.
+                Full path to the .glb.orig file.
 
             Raises:
                 FileNotFoundError: If the .glb.orig file for the object is not found.
 
             """
-            for dirpath, dirnames, _ in os.walk(self.data_path):
-                for dirname in dirnames:
-                    if dirname.endswith(obj_name):
-                        glb_orig_path = os.path.join(
-                            dirpath, dirname, "google_16k", "textured.glb.orig"
-                        )
-                        if os.path.exists(glb_orig_path):
-                            return glb_orig_path
+            for path in Path(self.data_path).rglob("*"):
+                if path.is_dir() and path.name.endswith(obj_name):
+                    glb_orig_path = path / "google_16k" / "textured.glb.orig"
+                    if glb_orig_path.exists():
+                        return str(glb_orig_path)
 
             raise FileNotFoundError(
                 f"Could not find .glb.orig file for '{obj_name}' in '{self.data_path}'"
@@ -319,7 +315,7 @@ class GroundTruthSimulator:
             plotter.at(self.renderer_ix).add(line_obj)
         self.line_object.points = [sensor_pos, patch_loc]
 
-    def get_axes(self) -> dict[str, tuple[float, float]]:
+    def get_axes_dict(self) -> dict[str, tuple[float, float]]:
         """Returns axis ranges.
 
         Note:
@@ -407,7 +403,7 @@ class MlhSimulator:
             self.title_object = title_obj
             plotter.at(self.renderer_ix).add(title_obj)
 
-    def get_axes(self) -> dict[str, tuple[float, float]]:
+    def get_axes_dict(self) -> dict[str, tuple[float, float]]:
         """Returns axis ranges.
 
         Note:
@@ -502,7 +498,7 @@ class EvidencePlot:
         self.guide_line = Line(p0=(0, 0, 0), p1=(0, 80, 0), lw=2, c="black")
         self.added_plot_flag = False
 
-    def get_axes(self) -> dict:
+    def get_axes_dict(self) -> dict:
         """Returns axes settings for configuring the vedo Plotter.
 
         Returns:
@@ -569,7 +565,7 @@ class InteractivePlot:
         gt_sim: GroundTruthSimulator for rendering sensor and target objects.
         mlh_sim: MlhSimulator for visualizing most likely hypotheses.
         evidence_plotter: EvidencePlot for plotting evidence scores.
-        plt: The main vedo.Plotter instance managing multiple renderers.
+        plotter: The main vedo.Plotter instance managing multiple renderers.
         slider: The step slider widget.
         curr_slider_val: The last processed slider value.
         last_call_time: Timestamp of last callback execution (for throttling).
@@ -601,10 +597,10 @@ class InteractivePlot:
         )
 
         # Create a plotter with 3 renderers (2 on top, 1 on bottom)
-        self.plt = Plotter(shape="2/1", size=(1000, 1000), sharecam=False)
+        self.plotter = Plotter(shape="2/1", size=(1000, 1000), sharecam=False)
 
         # Create a slider on the plot
-        self.slider = self.plt.at(0).add_slider(
+        self.slider = self.plotter.at(0).add_slider(
             self.slider_callback,
             xmin=0,
             xmax=len(self.data_extractor) - 1,
@@ -617,7 +613,7 @@ class InteractivePlot:
         self.slider_callback(self.slider, None)
 
         # Create buttons for aligning cameras
-        self.plt.at(1).add_button(
+        self.plotter.at(1).add_button(
             self.simulator_callback,
             pos=(0.1, 0.9),
             states=["Align"],
@@ -625,7 +621,7 @@ class InteractivePlot:
             font="Calco",
             bold=True,
         )
-        self.plt.at(2).add_button(
+        self.plotter.at(2).add_button(
             self.mlh_callback,
             pos=(0.9, 0.9),
             states=["Align"],
@@ -644,17 +640,17 @@ class InteractivePlot:
 
     def simulator_callback(self, widget: Button, event: str) -> None:
         """Align the ground truth renderer's camera with the MLH renderer."""
-        cam1 = self.plt.renderers[1].GetActiveCamera()
-        cam2 = self.plt.renderers[2].GetActiveCamera()
+        cam1 = self.plotter.renderers[1].GetActiveCamera()
+        cam2 = self.plotter.renderers[2].GetActiveCamera()
         self.align_camera(cam1, cam2)
-        self.plt.render()
+        self.plotter.render()
 
     def mlh_callback(self, widget: Button, event: str) -> None:
         """Align the MLH renderer's camera with the groundtruth renderer."""
-        cam1 = self.plt.renderers[1].GetActiveCamera()
-        cam2 = self.plt.renderers[2].GetActiveCamera()
+        cam1 = self.plotter.renderers[1].GetActiveCamera()
+        cam2 = self.plotter.renderers[2].GetActiveCamera()
         self.align_camera(cam2, cam1)
-        self.plt.render()
+        self.plotter.render()
 
     def slider_callback(self, widget: Slider2D, event: str) -> None:
         """Respond to slider step change by updating all subplots.
@@ -667,9 +663,9 @@ class InteractivePlot:
             val != self.curr_slider_val
             and time.time() - self.last_call_time > self.throttle_time
         ):
-            self.gt_sim(plotter=self.plt, step=val)
-            self.mlh_sim(plotter=self.plt, step=val)
-            self.evidence_plotter(plotter=self.plt, step=val)
+            self.gt_sim(plotter=self.plotter, step=val)
+            self.mlh_sim(plotter=self.plotter, step=val)
+            self.evidence_plotter(plotter=self.plotter, step=val)
 
             self.curr_slider_val = val
             self.last_call_time = time.time()
@@ -681,17 +677,17 @@ class InteractivePlot:
         Args:
             resetcam: If True, resets camera for all renderers.
         """
-        self.plt.render()
-        self.plt.at(self.gt_sim.renderer_ix).show(
-            axes=self.gt_sim.get_axes(),
+        self.plotter.render()
+        self.plotter.at(self.gt_sim.renderer_ix).show(
+            axes=self.gt_sim.get_axes_dict(),
             resetcam=resetcam,
             interactive=False,
         )
-        self.plt.at(self.mlh_sim.renderer_ix).show(
-            axes=self.mlh_sim.get_axes(), resetcam=resetcam, interactive=False
+        self.plotter.at(self.mlh_sim.renderer_ix).show(
+            axes=self.mlh_sim.get_axes_dict(), resetcam=resetcam, interactive=False
         )
-        self.plt.at(self.evidence_plotter.renderer_ix).show(
-            axes=self.evidence_plotter.get_axes(),
+        self.plotter.at(self.evidence_plotter.renderer_ix).show(
+            axes=self.evidence_plotter.get_axes_dict(),
             camera=self.evidence_plotter.get_cam(),
             resetcam=False,
             interactive=True,
@@ -720,7 +716,8 @@ def plot_interactive_objects_evidence_over_time(
     if not Path(exp_path).exists():
         logger.error(f"Experiment path not found: {exp_path}")
         return 1
-    data_path = os.path.expanduser(data_path)
+
+    data_path = Path(data_path).expanduser()
 
     plot = InteractivePlot(exp_path, data_path, learning_module)
     plot.render(resetcam=True)
