@@ -315,7 +315,7 @@ class GroundTruthSimulator:
             plotter.at(self.renderer_ix).add(line_obj)
         self.line_object.points = [sensor_pos, patch_loc]
 
-    def get_axes_dict(self) -> dict[str, tuple[float, float]]:
+    def axes_dict(self) -> dict[str, tuple[float, float]]:
         """Returns axis ranges.
 
         Note:
@@ -403,7 +403,7 @@ class MlhSimulator:
             self.title_object = title_obj
             plotter.at(self.renderer_ix).add(title_obj)
 
-    def get_axes_dict(self) -> dict[str, tuple[float, float]]:
+    def axes_dict(self) -> dict[str, tuple[float, float]]:
         """Returns axis ranges.
 
         Note:
@@ -498,7 +498,7 @@ class EvidencePlot:
         self.guide_line = Line(p0=(0, 0, 0), p1=(0, 80, 0), lw=2, c="black")
         self.added_plot_flag = False
 
-    def get_axes_dict(self) -> dict:
+    def axes_dict(self) -> dict:
         """Returns axes settings for configuring the vedo Plotter.
 
         Returns:
@@ -540,7 +540,7 @@ class EvidencePlot:
 
         self.guide_line.points = [(step, 0, 0), (step, 80, 0)]
 
-    def get_cam(self) -> dict[str, tuple[float, float, float]]:
+    def cam_dict(self) -> dict[str, tuple[float, float, float]]:
         """Returns camera parameters for an overhead view of the plot.
 
         Returns:
@@ -679,16 +679,16 @@ class InteractivePlot:
         """
         self.plotter.render()
         self.plotter.at(self.gt_sim.renderer_ix).show(
-            axes=self.gt_sim.get_axes_dict(),
+            axes=self.gt_sim.axes_dict(),
             resetcam=resetcam,
             interactive=False,
         )
         self.plotter.at(self.mlh_sim.renderer_ix).show(
-            axes=self.mlh_sim.get_axes_dict(), resetcam=resetcam, interactive=False
+            axes=self.mlh_sim.axes_dict(), resetcam=resetcam, interactive=False
         )
         self.plotter.at(self.evidence_plotter.renderer_ix).show(
-            axes=self.evidence_plotter.get_axes_dict(),
-            camera=self.evidence_plotter.get_cam(),
+            axes=self.evidence_plotter.axes_dict(),
+            camera=self.evidence_plotter.cam_dict(),
             resetcam=False,
             interactive=True,
         )
