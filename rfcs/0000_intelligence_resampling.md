@@ -194,6 +194,87 @@ def voxel_center_reanchoring(self, confidence_threshold=0.8):
 
 The benefit of this approach is that it should be faster than the MLE approach above, however, I'm not sure if voxel_size would be considered priviledged information to the LM (certainly we can reach for this information in software, but doesn't mean we _should_ do that.)
 
-**Note**: For rotation, we could similarly "snap" to nearest $45\degree$ increment. 
-
 Finally, neither of the above two approaches are mutually exclusive, and may be beneficial to implement a hybrid approach combining the two.
+
+## How can we use prediction errors in off-object observations to eliminate hypotheses? 
+
+**Thought:** When a hypothesis predicts we should be on-object but we observe off-object (or vice versa), this error provides a strong evidence against that hypothesis. Let me think about the potential prediction error types:
+
+1. **On/Off Object Error**: A binary error where the hypothesis expected on-object but observed off-object
+2. **Feature Error**: Expected certain features but received "empty" or background features
+3. **Distance Error**: Expected distance vs. actual distance 
+
+This may be a slightly far-fetched idea, but possibly restructuring the `Hypotheses` class may open avenues to address this question (and possibly better suited for modeling compositional objects). 
+
+### Encapsulate Object_ID in Hypotheses class
+Instead of the current following structure where we have a hypothesis for each `graph_id`, perhaps we can try to include this information into the hypothesis itself, e.g.:
+```python
+# Option #1
+@dataclass
+class Hypotheses:
+    object_id: int # guess for what object it thinks it is, maybe like -1 if it doesn't think it's on object
+    evidence: np.ndarray # numpy array of confidence scores
+    locations: np.ndarray # numpy array of 3D positions in the object's reference frame
+    poses: np.ndarray # numpy array of 3x3 rotation matrices
+```
+Or we can keep the existing structure of a hypothesis for each `graph_id`, but have some way to compute the probability that it _thinks_ it is on object, e.g.:
+```python
+# Option 2
+@dataclass
+class Hypotheses:
+    on_object_probability: np.ndarray
+    evidence: np.ndarray # numpy array of confidence scores
+    locations: np.ndarray # numpy array of 3D positions in the object's reference frame
+    poses: np.ndarray # numpy array of 3x3 rotation matrices
+```
+Option 3: Combination of above with five fields including both `object_id` and `on_object_probability`.  
+
+With Option 1, the `EvidenceGraphLM` could store list of `Hypotheses` instead of primitives such as `self.evidence[graph_id]`. This is just a hunch at this point, but I can better imagine a child `EvidenceGraphLM` and parent `EvidenceGraphLM` storing two different `object_id`s but sharing the same location and poses. It's also a bit easier for me to imagine how voting may work in this manner. 
+
+With Option 2, the `on_object_probability` becomes a metric for which we can eliminate hypotheses, e.g. if it's too small, get rid of the hypothesis. Implementation-wise, there are several ways we can do this using distance-based or feature-based (or better yet, combination thereof), e.g.
+
+```python
+# some pseudocode for distance-based probability
+distance_to_surface = some_distance_function_like_L2(hypothesis.locations, nearest_node.location)
+hypothesis.on_object_probability = np.exp(-distance_to_surface / maybe_some_scaling_factor) # if far away, then the probability that hypothesis is on object gets exponentially smaller
+```
+
+```python
+# some pseudocode for feature-based probability
+# 1. Feature presence check
+has_features = not self._is_empty_features(observed_features)
+feature_presence_prob = 1.0 if has_features else 0.1
+
+# 2. Feature similarity if features exist
+if has_features and expected_features is not None:
+    # Compute similarity across different feature types
+    similarities = {}
+
+    if 'color' in observed_features and 'color' in expected_features:
+        color_sim = self._compute_color_similarity(
+            observed_features['color'],
+            expected_features['color']
+        )
+        similarities['color'] = color_sim
+
+    if 'texture' in observed_features and 'texture' in expected_features:
+        texture_sim = self._compute_texture_similarity(
+            observed_features['texture'],
+            expected_features['texture']
+        )
+        similarities['texture'] = texture_sim
+
+    if 'curvature' in observed_features and 'curvature' in expected_features:
+        curv_sim = self._compute_curvature_similarity(
+            observed_features['curvature'],
+            expected_features['curvature']
+        )
+        similarities['curvature'] = curv_sim
+
+    # Weighted average of similarities
+    if similarities:
+        feature_match_prob = np.mean(list(similarities.values()))
+```
+
+## How can we implement and test resampling informed by out-of-reference-frame observations?
+
