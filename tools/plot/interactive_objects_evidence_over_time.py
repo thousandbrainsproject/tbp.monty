@@ -444,7 +444,7 @@ class EvidencePlot:
         object_names = list(self.classes.keys())
 
         # Create a color mapping for distinct YCB object names
-        cmap = plt.get_cmap("tab10")
+        cmap = plt.cm.tab10
         num_colors = len(DISTINCT_OBJECTS)
         colors = {
             obj: cmap(i / num_colors)[:3] for i, obj in enumerate(DISTINCT_OBJECTS)
