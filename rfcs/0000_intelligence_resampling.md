@@ -278,3 +278,37 @@ if has_features and expected_features is not None:
 
 ## How can we implement and test resampling informed by out-of-reference-frame observations?
 
+(While this was the second question, I put it after the question regarding eliminating hypothesis because I think this is an extension, i.e. instead of eliminating, how can we re-anchor the hypothesis based on off-object observations. Please let me know if I'm understanding the problem correctly! :) I suppose it also goes back to the first question of how can we re-anchor or update hypothesis.)
+
+Some related questions I'd like to think about:
+  1. What can off-object information tell us? 
+
+Off-object observations provides negative space information. This creates boundary constraints over time.
+
+  2. When we're learning an object, we don't have a complete graph model. How do we deal with this?
+
+Early in learning, our object model is incomplete, and we need to distinguish between: (1) being off-object (beyond true boundary), (2) being on unexplored part of object, and maybe (3) we are in some concave region or hole?
+
+Also related to compositional objects, we may need a more principled approach to decide when to: (1) extend the existing object model, (2) decided we found a boundary, and (3) recognize we transitioned to a different object.
+
+On a tangential thought, finding "boundaries" via off-object observations could also be great to guide policies, though I won't delve into policies in this RFC.
+
+### More thoughts on Boundaries
+
+I'm beginning to think that off-object observations can provide very rich information than I previously thought. Let me think more about boundaries and their potential implications. (I think I'm beginning to sound like an LLM...)
+
+Boundaries could be a very efficient way to build 3D representations - I presume that mice/rats' whiskers are detecting boundaries to build such object models. A policy that could "trace boundaries" could be an efficient (e.g. fast converging) way to build a morphological model, and possibly take bigger steps within the boundary to efficiently "fill in the holes". Boundaries can also be a sparse representation of our pointcloud object - rather than ~2,000 points, the points along the boundaries of the pointcloud could be a data-efficient way to represent without using deep learning methods. I'm also thinking of "morphological models", e.g. in Excalidraw we have sometimes drawn objects in wireframe.
+
+A "naive" way to incorporate this information is to add a property to nodes of our object model on whether it is boundary node or not, e.g.
+```python
+@dataclass
+class BoundaryNode:
+    """Boundary-specific properties for a graph node."""
+    is_boundary: bool = False
+    boundary_confidence: float = 0.0  # How sure we are this is a boundary
+    boundary_normal: Optional[np.ndarray] = None  # Outward-facing normal
+    # and maybe more
+```
+Perhaps these boundary nodes can be connected based on object_id so we can have multiple boundaries needed for compositional objects. 
+
+I think I have gone off on lateral thinking from the original question, but landed on a pretty exciting idea for now. Let's see if I still think this is an exciting approach in days to come. 
