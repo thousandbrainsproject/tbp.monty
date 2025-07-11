@@ -55,7 +55,7 @@ Monty can use three types of action output to recognize the sensed objects effic
 3) It can adjust the settings of the probe, such as depth of field and gain. These are not required for object recognition to work, but they can help make recognition more efficient and robust.
 
 
-# Example 3: LEGO-based Robot
+# Example 3: LEGO-Based Robot
 
 During the May 2025 Robot Hackathon, we built a LEGO-based robot that used Monty to explore and learn about real-world objects. This project was our first full integration of Monty with a physical robot that could sense the environment on it's own and move in 3D space.
 
