@@ -11,6 +11,9 @@ from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
 from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
 
+SHAPES = ["box", "capsule", "cylinder", "ellipsoid", "sphere"]
+SHAPE_PARAMS = [param(s, id=s) for s in SHAPES]
+
 
 class MuJoCoSimulatorTestCase(ParametrizedTestCase):
     """Tests for the MuJoCo simulator."""
@@ -23,13 +26,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
 
     @parametrize(
         "shape",
-        [
-            param("box", id="box"),
-            param("capsule", id="capsule"),
-            param("cylinder", id="cylinder"),
-            param("ellipsoid", id="ellipsoid"),
-            param("sphere", id="sphere"),
-        ],
+        SHAPE_PARAMS,
     )
     def test_add_primitive_object(self, shape: str) -> None:
         sim = MuJoCoSimulator()
@@ -63,6 +60,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
 
         assert sim.model.ngeom == len(shapes)
         assert sim.get_num_objects() == len(shapes)
+        assert len(sim.spec.geoms) == len(shapes)
 
         spec_xml = sim.spec.to_xml()
         for i, shape in enumerate(shapes):

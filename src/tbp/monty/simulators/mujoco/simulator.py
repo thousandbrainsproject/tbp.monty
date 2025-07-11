@@ -19,6 +19,10 @@ from tbp.monty.frameworks.environments.embodied_environment import (
 from tbp.monty.simulators.simulator import Simulator
 
 
+class UnknownShapeType(RuntimeError):
+    """Raised when an unknown shape is requested."""
+
+
 class MuJoCoSimulator(Simulator):
     """Simulator implementation for MuJoCo.
 
@@ -45,11 +49,9 @@ class MuJoCoSimulator(Simulator):
         self.model, self.data = self.spec.recompile(self.model, self.data)
 
     def initialize_agent(self, agent_id, agent_state) -> None:
-        """Update agent runtime state."""
         pass
 
     def remove_all_objects(self) -> None:
-        """Remove all objects from the simulated environment."""
         self.spec = MjSpec()
         self._recompile()
         self._object_count = 0
@@ -62,28 +64,10 @@ class MuJoCoSimulator(Simulator):
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: Optional[str] = None,
-        enable_physics=False,
-        object_to_avoid=False,
+        enable_physics: bool = False,
+        object_to_avoid: bool = False,
         primary_target_bb: Optional[List] = None,
     ) -> None:
-        """Add new object to simulated environment.
-
-        Adds a new object based on the named object. This assumes that the set of
-        available objects are preloaded and keyed by name.
-
-        Args:
-            name: Registered object name
-            position: Initial absolute position of the object
-            rotation: Initial orientation of the object
-            scale: Initial object scale
-            semantic_id: Optional override object semantic ID
-            enable_physics: Whether to enable physics on the object
-            object_to_avoid: If True, ensure the object is not colliding with
-              other objects
-            primary_target_bb: If not None, this is a list of the min and
-              max corners of a bounding box for the primary object, used to prevent
-              obscuring the primary objet with the new object.
-        """
         obj_name = f"{name}_{self._object_count}"
 
         # TODO: support arbitrary objects from a registry
@@ -112,7 +96,7 @@ class MuJoCoSimulator(Simulator):
             scale: Initial scale of the object
 
         Raises:
-            ValueError: when the shape_type is unknown
+            UnknownShapeType: when the shape_type is unknown
         """
         world_body: MjsBody = self.spec.worldbody
 
@@ -165,43 +149,31 @@ class MuJoCoSimulator(Simulator):
                 quat=rotation,
             )
         else:
-            raise ValueError(f"Unknown MuJoCo primitive: {shape_type}")
+            raise UnknownShapeType(f"Unknown MuJoCo primitive: {shape_type}")
 
     def get_num_objects(self) -> int:
-        """Return the number of instantiated objects in the environment."""
         return self._object_count
 
-    def get_action_space(self):
-        """Returns the set of all available actions."""
+    def get_action_space(self) -> None:
         pass
 
-    def get_agent(self, agent_id):
-        """Return agent instance."""
+    def get_agent(
+        self,
+        agent_id: str,  # TODO - replace with newtype
+    ) -> None:
         pass
 
-    def get_observations(self):
-        """Get sensor observations."""
+    def get_observations(self) -> None:
         pass
 
-    def get_states(self):
-        """Get agent and sensor states."""
+    def get_states(self) -> None:
         pass
 
     def apply_action(self, action: Action) -> Dict[str, Dict]:
-        """Execute the given action in the environment.
-
-        Args:
-            action (Action): the action to execute
-
-        Returns:
-            (Dict[str, Dict]): A dictionary with the observations grouped by agent_id
-        """
-        pass
+        return {}
 
     def reset(self) -> None:
-        """Reset the simulator."""
         pass
 
     def close(self) -> None:
-        """Close any resources used by the simulator."""
         pass

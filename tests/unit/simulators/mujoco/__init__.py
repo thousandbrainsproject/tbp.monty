@@ -13,5 +13,5 @@ import pytest
 # add it for every module beneath here.
 pytest.importorskip(
     "mujoco",
-    reason="MuJoCo test suite skipped. MuJoCo optional dependency not installed.",
+    reason="MuJoCo optional dependency not installed.",
 )
