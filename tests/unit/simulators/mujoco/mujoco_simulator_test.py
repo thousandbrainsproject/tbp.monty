@@ -89,3 +89,11 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
 
         assert np.allclose(sim.model.geom("box_0").pos, np.array([1.0, 1.0, 2.0]))
         assert f'pos="1 1 2"' in sim.spec.to_xml()
+
+    def test_primitive_sphere_scaling(self) -> None:
+        """Test that scaling works correctly on a sphere."""
+        sim = MuJoCoSimulator()
+        sim.add_object("sphere", scale=(3.0, 3.0, 3.0))
+
+        assert np.allclose(sim.model.geom("sphere_0").size, np.array([1.5, 1.5, 1.5]))
+        assert f'size="1.5"' in sim.spec.to_xml()

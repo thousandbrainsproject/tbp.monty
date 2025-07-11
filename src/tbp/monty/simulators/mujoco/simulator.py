@@ -103,53 +103,27 @@ class MuJoCoSimulator(Simulator):
         # TODO: should we encapsulate primitive objects into bodies?
 
         if shape_type == "sphere":
-            world_body.add_geom(
-                name=obj_name,
-                type=mjtGeom.mjGEOM_SPHERE,
-                # Use first scale component as radius
-                size=[scale[0] * 0.5, 0.0, 0.0],
-                pos=position,
-                quat=rotation,
-            )
+            geom_type = mjtGeom.mjGEOM_SPHERE
         elif shape_type == "capsule":
-            world_body.add_geom(
-                name=obj_name,
-                type=mjtGeom.mjGEOM_CAPSULE,
-                # Size is radius and half-height from X and Y
-                size=[scale[0] * 0.5, scale[1] * 0.5, 0.0],
-                pos=position,
-                quat=rotation,
-            )
+            geom_type = mjtGeom.mjGEOM_CAPSULE
         elif shape_type == "ellipsoid":
-            world_body.add_geom(
-                name=obj_name,
-                type=mjtGeom.mjGEOM_ELLIPSOID,
-                # Size is radius in all three axes of the local frame
-                size=np.array(scale) * 0.5,
-                pos=position,
-                quat=rotation,
-            )
+            geom_type = mjtGeom.mjGEOM_ELLIPSOID
         elif shape_type == "cylinder":
-            world_body.add_geom(
-                name=obj_name,
-                type=mjtGeom.mjGEOM_CYLINDER,
-                # Size is radius and half-height, oriented along the Z axis
-                # TODO: should this be using X and Z instead of X and Y?
-                size=[scale[0] * 0.5, scale[1] * 0.5, 0.0],
-                pos=position,
-                quat=rotation,
-            )
+            geom_type = mjtGeom.mjGEOM_CYLINDER
         elif shape_type == "box":
-            world_body.add_geom(
-                name=obj_name,
-                type=mjtGeom.mjGEOM_BOX,
-                # MuJoCo box dimensions are half the distance
-                size=np.array(scale) * 0.5,
-                pos=position,
-                quat=rotation,
-            )
+            geom_type = mjtGeom.mjGEOM_BOX
         else:
             raise UnknownShapeType(f"Unknown MuJoCo primitive: {shape_type}")
+
+        world_body.add_geom(
+            name=obj_name,
+            type=geom_type,
+            # MuJoCo sizes are generally half-length or radii, so half of the
+            # sizes of the bounding box.
+            size=np.array(scale) * 0.5,
+            pos=position,
+            quat=rotation,
+        )
 
     def get_num_objects(self) -> int:
         return self._object_count
