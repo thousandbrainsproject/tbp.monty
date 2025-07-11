@@ -66,7 +66,7 @@ Monty itself ran on a nearby laptop, which communicated with the robot over a lo
 
 Rather than move the entire robot around an object, we placed the object on a rotating platform. As the object turned, the robot’s camera experienced the same kind of movement as if the robot were orbiting the object. This trick made things simpler mechanically while still allowing Monty to build a 3D model of the object using its depth and RGB observations.
 
-The core idea behind the project was to create a real robot that could explore the target object, learn what it looks like, and later recognize it — even if it was moved or rotated.
+The core idea behind the project was to create a real robot that could explore the target object, learn what it looks like, and later recognize it, even if it was moved or rotated.
 It was exciting to see Monty, originally tested in simulated environments, start to perceive and interact with the physical world in real time.
 
 
