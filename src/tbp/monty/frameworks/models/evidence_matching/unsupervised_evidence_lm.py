@@ -22,7 +22,7 @@ import numpy as np
 
 from tbp.monty.frameworks.models.evidence_matching.learning_module import EvidenceGraphLM
 from tbp.monty.frameworks.models.states import State
-from tbp.monty.frameworks.models.unsupervised_association import UnsupervisedAssociationMixin
+from tbp.monty.frameworks.models.unsupervised_association import UnsupervisedAssociator
 from tbp.monty.frameworks.utils.graph_matching_utils import get_scaled_evidences
 
 logger = logging.getLogger(__name__)
@@ -57,12 +57,12 @@ def _convert_to_parent_vote_format(vote_data):
     return vote_data
 
 
-class UnsupervisedEvidenceGraphLM(UnsupervisedAssociationMixin, EvidenceGraphLM):
+class UnsupervisedEvidenceGraphLM(EvidenceGraphLM):
     """
     Evidence-based learning module with unsupervised object ID association capabilities.
-    
+
     This class combines the evidence-based learning and matching capabilities of
-    EvidenceGraphLM with the unsupervised association learning from UnsupervisedAssociationMixin.
+    EvidenceGraphLM with the unsupervised association learning from UnsupervisedAssociator.
     It enables cross-modal learning without requiring predefined object labels.
     """
 
@@ -82,23 +82,25 @@ class UnsupervisedEvidenceGraphLM(UnsupervisedAssociationMixin, EvidenceGraphLM)
         # Extract learning_module_id before passing to parent
         learning_module_id = kwargs.pop('learning_module_id', None)
 
-        # Initialize parent classes
+        # Initialize parent class
         super().__init__(*args, **kwargs)
-
-        # Set association parameters after parent initialization
-        for key, value in association_params.items():
-            setattr(self, key, value)
-
-        # Track episode steps for association learning
-        self.episode_step = 0
 
         # Set learning_module_id if provided
         if learning_module_id is not None:
             self.learning_module_id = learning_module_id
 
+        # Create associator using composition
         lm_id = getattr(self, 'learning_module_id', 'unknown')
+        self.associator = UnsupervisedAssociator(
+            learning_module_id=lm_id,
+            **association_params
+        )
+
+        # Track episode steps for association learning
+        self.episode_step = 0
+
         logger.info(f"Initialized UnsupervisedEvidenceGraphLM {lm_id} "
-                    f"with association learning {'enabled' if self.association_learning_enabled else 'disabled'}")
+                    f"with association learning {'enabled' if self.associator.association_learning_enabled else 'disabled'}")
 
     def receive_votes(self, vote_data):
         """
@@ -114,14 +116,23 @@ class UnsupervisedEvidenceGraphLM(UnsupervisedAssociationMixin, EvidenceGraphLM)
         self.episode_step += 1
 
         # Extract association information from CMP-compliant votes
-        if self.association_learning_enabled:
+        if self.associator.association_learning_enabled:
             association_vote_data = self._extract_association_data_from_votes(vote_data)
 
             # Learn associations from co-occurrence patterns
-            self.update_associations(association_vote_data, self.episode_step)
+            self.associator.update_associations(
+                association_vote_data,
+                self.episode_step,
+                self.evidence,
+                self.object_evidence_threshold,
+                self.current_mlh
+            )
 
             # Map votes to my object IDs using learned associations
-            mapped_votes = self.map_votes_to_my_objects(association_vote_data)
+            mapped_votes = self.associator.map_votes_to_my_objects(
+                association_vote_data,
+                self.get_all_known_object_ids()
+            )
 
             # Convert back to format expected by parent class
             parent_vote_data = _convert_to_parent_vote_format(mapped_votes)
@@ -200,9 +211,9 @@ class UnsupervisedEvidenceGraphLM(UnsupervisedAssociationMixin, EvidenceGraphLM)
                 metadata["current_rotation"] = self.current_mlh['rotation']
 
         # Add association statistics if available
-        if hasattr(self, 'association_memory') and self.association_memory:
+        if hasattr(self, 'associator') and self.associator:
             metadata["total_associations"] = self._count_total_associations()
-            metadata["association_learning_enabled"] = self.association_learning_enabled
+            metadata["association_learning_enabled"] = self.associator.association_learning_enabled
 
         return metadata
 
@@ -212,8 +223,12 @@ class UnsupervisedEvidenceGraphLM(UnsupervisedAssociationMixin, EvidenceGraphLM)
         Returns:
             int: Total number of associations.
         """
-        if hasattr(self, 'association_memory') and self.association_memory:
-            return sum(len(obj_dict) for obj_dict in self.association_memory.values() if isinstance(obj_dict, dict))
+        if hasattr(self, 'associator') and self.associator.association_memory:
+            return sum(
+                len(other_lm_dict)
+                for my_obj_dict in self.associator.association_memory.values()
+                for other_lm_dict in my_obj_dict.values()
+            )
         return 0
 
     def _extract_association_data_from_votes(self, vote_data):

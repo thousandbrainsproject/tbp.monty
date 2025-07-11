@@ -224,110 +224,129 @@ def _calculate_temporal_clustering(temporal_context: Any) -> float:
         return 0.0
 
 
-class UnsupervisedAssociationMixin:
+class UnsupervisedAssociator:
     """
-    Mixin class that adds unsupervised object ID association capabilities
-    to learning modules.
+    Handles unsupervised object ID association learning for learning modules.
 
-    This mixin enables learning modules to discover correspondences between
+    This class enables learning modules to discover correspondences between
     their internal object representations and those of other learning modules
     without requiring predefined object labels.
 
-    This mixin expects to be combined with a class that implements the
-    LearningModuleProtocol interface (provides evidence, object_evidence_threshold,
-    current_mlh attributes and get_all_known_object_ids method).
+    The learning module should create an instance of this class and use it
+    via composition rather than inheritance.
 
     Example usage:
-        class MyLearningModule(UnsupervisedAssociationMixin, EvidenceGraphLM):
-            pass
+        class MyLearningModule(EvidenceGraphLM):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.associator = UnsupervisedAssociator(
+                    association_threshold=0.1,
+                    learning_module_id=self.learning_module_id
+                )
     """
 
-    # Type hints for IDE support - these will be provided by the mixed-in class
-    if TYPE_CHECKING:
-        # These attributes will be provided by the class this mixin is combined with
-        evidence: Dict[str, Any]
-        object_evidence_threshold: float
-        current_mlh: Dict[str, Any]
+    def __init__(self,
+                 learning_module_id: str,
+                 association_threshold: float = 0.1,
+                 min_association_threshold: float = 0.3,
+                 spatial_consistency_weight: float = 0.3,
+                 temporal_consistency_weight: float = 0.2,
+                 co_occurrence_weight: float = 0.5,
+                 max_association_memory_size: int = 1000,
+                 location_weight: float = 0.7,
+                 pose_weight: float = 0.3,
+                 temporal_recency_weight: float = 0.1,
+                 distance_tolerance: float = 1.0,
+                 sensor_scale_estimate: float = 1.0,
+                 temporal_decay_factor: float = 0.99,
+                 periodicity_weight: float = 0.3,
+                 clustering_weight: float = 0.2,
+                 recency_weight: float = 0.5,
+                 association_learning_enabled: bool = True):
+        """Initialize association capabilities.
 
-        # These attributes are defined by this mixin itself
-        association_learning_enabled: bool
-        association_threshold: float
-        current_step: int
-        association_memory: Any
-
-        def get_all_known_object_ids(self) -> List[str]:
-            """Return all known object IDs."""
-            ...
-
-        # These methods are defined by this mixin itself
-        def _get_current_high_evidence_hypotheses(self) -> List[str]: ...
-
-        def _record_co_occurrence(self, my_objects: List[str], other_lm_id: str,
-                                  other_object_id: str, other_evidence: float, vote_info: Any) -> None: ...
-
-        def _prune_association_memory(self) -> None: ...
-
-        def _check_interface_compatibility(self) -> bool: ...
-
-        def _map_votes_for_object(self, my_object_id: str, vote_data: Dict) -> List: ...
-
-    def __init__(self, *args, **kwargs):
-        """Initialize association capabilities."""
-        super().__init__(*args, **kwargs)
+        Args:
+            learning_module_id: Identifier for the learning module using this associator
+            association_threshold: Minimum evidence threshold for recording associations
+            min_association_threshold: Minimum strength threshold for using associations
+            spatial_consistency_weight: Weight for spatial consistency in association strength
+            temporal_consistency_weight: Weight for temporal consistency in association strength
+            co_occurrence_weight: Weight for co-occurrence count in association strength
+            max_association_memory_size: Maximum number of associations to keep in memory
+            location_weight: Weight for location similarity in spatial consistency
+            pose_weight: Weight for pose similarity in spatial consistency
+            temporal_recency_weight: Weight for temporal recency in association strength
+            distance_tolerance: Tolerance for location similarity calculations
+            sensor_scale_estimate: Scale estimate for sensor measurements
+            temporal_decay_factor: Decay factor for temporal analysis
+            periodicity_weight: Weight for periodicity in temporal analysis
+            clustering_weight: Weight for clustering in temporal analysis
+            recency_weight: Weight for recency in temporal analysis
+            association_learning_enabled: Whether association learning is enabled
+        """
+        self.learning_module_id = learning_module_id
 
         # Association memory: {my_object_id: {other_lm_id: {other_object_id: AssociationData}}}
         self.association_memory = defaultdict(
             lambda: defaultdict(lambda: defaultdict(AssociationData))
         )
 
-        # Configuration parameters - use getattr for parameters that may have been set by subclass
-        self.association_threshold = getattr(self, 'association_threshold', 0.1)
-        self.min_association_threshold = getattr(self, 'min_association_threshold', 0.3)
-        self.spatial_consistency_weight = getattr(self, 'spatial_consistency_weight', 0.3)
-        self.temporal_consistency_weight = getattr(self, 'temporal_consistency_weight', 0.2)
-        self.co_occurrence_weight = getattr(self, 'co_occurrence_weight', 0.5)
-        self.max_association_memory_size = getattr(self, 'max_association_memory_size', 1000)
+        # Configuration parameters
+        self.association_threshold = association_threshold
+        self.min_association_threshold = min_association_threshold
+        self.spatial_consistency_weight = spatial_consistency_weight
+        self.temporal_consistency_weight = temporal_consistency_weight
+        self.co_occurrence_weight = co_occurrence_weight
+        self.max_association_memory_size = max_association_memory_size
 
-        # New configurable weights for spatial consistency calculation
-        self.location_weight = getattr(self, 'location_weight', 0.7)
-        self.pose_weight = getattr(self, 'pose_weight', 0.3)
-        self.temporal_recency_weight = getattr(self, 'temporal_recency_weight', 0.1)
+        # Spatial consistency parameters
+        self.location_weight = location_weight
+        self.pose_weight = pose_weight
+        self.temporal_recency_weight = temporal_recency_weight
 
-        # Parameters for improved location similarity
-        self.distance_tolerance = getattr(self, 'distance_tolerance', 1.0)
-        self.sensor_scale_estimate = getattr(self, 'sensor_scale_estimate', 1.0)
+        # Location similarity parameters
+        self.distance_tolerance = distance_tolerance
+        self.sensor_scale_estimate = sensor_scale_estimate
 
-        # Parameters for temporal pattern analysis
-        self.temporal_decay_factor = getattr(self, 'temporal_decay_factor', 0.99)
-        self.periodicity_weight = getattr(self, 'periodicity_weight', 0.3)
-        self.clustering_weight = getattr(self, 'clustering_weight', 0.2)
-        self.recency_weight = getattr(self, 'recency_weight', 0.5)
+        # Temporal pattern analysis parameters
+        self.temporal_decay_factor = temporal_decay_factor
+        self.periodicity_weight = periodicity_weight
+        self.clustering_weight = clustering_weight
+        self.recency_weight = recency_weight
 
         # Tracking variables
         self.current_step = 0
-        self.association_learning_enabled = getattr(self, 'association_learning_enabled', True)
+        self.association_learning_enabled = association_learning_enabled
 
-        logger.info(f"Initialized UnsupervisedAssociationMixin for LM {getattr(self, 'learning_module_id', 'unknown')}")
+        logger.info(f"Initialized UnsupervisedAssociator for LM {learning_module_id}")
 
-    def update_associations(self, vote_data: Dict, current_step: int):
+    def update_associations(self, vote_data: Dict, current_step: int,
+                           learning_module_evidence: Dict[str, Any],
+                           learning_module_threshold: float,
+                           current_mlh: Dict[str, Any]):
         """
         Update object ID associations based on co-occurrence with other LMs.
-        
+
         Args:
             vote_data: Dictionary of votes from other learning modules
             current_step: Current step number for temporal tracking
+            learning_module_evidence: Evidence dictionary from the learning module
+            learning_module_threshold: Evidence threshold from the learning module
+            current_mlh: Current most likely hypothesis from the learning module
         """
         if not self.association_learning_enabled:
             return
 
         self.current_step = current_step
-        my_current_hypotheses = self._get_current_high_evidence_hypotheses()
+        my_current_hypotheses = self._get_current_high_evidence_hypotheses(
+            learning_module_evidence, learning_module_threshold
+        )
 
         if not my_current_hypotheses:
             return
 
         for other_lm_id, other_votes in vote_data.items():
-            if not isinstance(other_votes, dict):
+            if not other_votes or not hasattr(other_votes, 'items'):
                 continue
 
             for other_object_id, vote_info in other_votes.items():
@@ -339,76 +358,57 @@ class UnsupervisedAssociationMixin:
                         other_lm_id,
                         other_object_id,
                         other_evidence,
-                        vote_info
+                        vote_info,
+                        current_mlh
                     )
 
         # Prune old associations to manage memory
         self._prune_association_memory()
 
-    def _get_current_high_evidence_hypotheses(self) -> List[str]:
-        """Get object IDs with evidence above a threshold."""
+    def _get_current_high_evidence_hypotheses(self, evidence: Dict[str, Any],
+                                             threshold: float) -> List[str]:
+        """Get object IDs with evidence above threshold.
+
+        Args:
+            evidence: Evidence dictionary from the learning module
+            threshold: Evidence threshold from the learning module
+
+        Returns:
+            List of object IDs with evidence above threshold
+        """
         high_evidence_objects = []
 
-        # Ensure this mixin is used with a compatible class
-        if not self._check_interface_compatibility():
-            return high_evidence_objects
-
-        # Access attributes through the interface
-        threshold = getattr(self, 'object_evidence_threshold', 1.0)
-
         try:
-            # These calls are safe because we've checked interface compatibility
-            known_object_ids = self.get_all_known_object_ids()
-            evidence = self.evidence
-        except (AttributeError, TypeError) as e:
-            logger.warning(f"Error accessing required attributes: {e}")
-            return high_evidence_objects
-
-        for object_id in known_object_ids:
-            if object_id in evidence:
-                evidence_values = evidence[object_id]
+            for object_id, evidence_values in evidence.items():
                 # Handle both numpy arrays and lists
-                if hasattr(evidence_values, '__iter__'):
-                    max_evidence = max(evidence_values)
+                if hasattr(evidence_values, '__iter__') and not isinstance(evidence_values, str):
+                    max_evidence = float(max(evidence_values))
                 else:
-                    max_evidence = evidence_values
+                    max_evidence = float(evidence_values)
 
                 if max_evidence > threshold:
                     high_evidence_objects.append(object_id)
 
+        except (AttributeError, TypeError, ValueError) as e:
+            logger.warning(f"Error getting high evidence hypotheses: {e}")
+
         return high_evidence_objects
 
-    def _check_interface_compatibility(self) -> bool:
-        """
-        Check if this mixin is being used with a compatible class.
 
-        Returns:
-            True if the class provides the required interface, False otherwise.
-        """
-        required_attributes = ['evidence', 'object_evidence_threshold', 'current_mlh']
-        required_methods = ['get_all_known_object_ids']
-
-        # Check for required attributes
-        for attr in required_attributes:
-            if not hasattr(self, attr):
-                logger.warning(f"Required attribute '{attr}' not found. "
-                               f"UnsupervisedAssociationMixin should be used with a class "
-                               f"that implements LearningModuleProtocol.")
-                return False
-
-        # Check for required methods
-        for method in required_methods:
-            if not hasattr(self, method) or not callable(getattr(self, method)):
-                logger.warning(f"Required method '{method}' not found. "
-                               f"UnsupervisedAssociationMixin should be used with a class "
-                               f"that implements LearningModuleProtocol.")
-                return False
-
-        return True
 
     def _record_co_occurrence(self, my_objects: List[str], other_lm_id: str,
-                              other_object_id: str, other_evidence: float, vote_info: Any):
-        """Record co-occurrence between my objects and another LM's object."""
+                              other_object_id: str, other_evidence: float, vote_info: Any,
+                              current_mlh: Dict[str, Any]):
+        """Record co-occurrence between my objects and another LM's object.
+
+        Args:
+            my_objects: List of my object IDs with high evidence
+            other_lm_id: ID of the other learning module
+            other_object_id: Object ID from the other learning module
+            other_evidence: Evidence strength from the other learning module
+            vote_info: Vote information from the other learning module
+            current_mlh: Current most likely hypothesis from the learning module
+        """
         for my_object_id in my_objects:
             association_data = self.association_memory[my_object_id][other_lm_id][other_object_id]
 
@@ -419,7 +419,7 @@ class UnsupervisedAssociationMixin:
             association_data.update_confidence(other_evidence, self.current_step)
 
             # Update spatial consistency if spatial information is available
-            spatial_score = self._calculate_spatial_consistency(vote_info, my_object_id)
+            spatial_score = self._calculate_spatial_consistency(vote_info, my_object_id, current_mlh)
             if spatial_score is not None:
                 association_data.spatial_consistency_score = (
                         0.9 * association_data.spatial_consistency_score + 0.1 * spatial_score
@@ -434,19 +434,33 @@ class UnsupervisedAssociationMixin:
                          f"(count: {association_data.co_occurrence_count}, "
                          f"confidence: {association_data.get_average_confidence():.3f})")
 
-    def _get_my_spatial_info(self, my_object_id: str) -> Tuple[Any, Any]:
-        """Get my object's current spatial information."""
-        if not hasattr(self, 'current_mlh'):
-            return None, None
+    def _get_my_spatial_info(self, my_object_id: str, current_mlh: Dict[str, Any]) -> Tuple[Any, Any]:
+        """Get my object's current spatial information.
 
-        current_mlh = getattr(self, 'current_mlh', {})
-        if current_mlh.get('graph_id') != my_object_id:
+        Args:
+            my_object_id: The object ID to get spatial info for
+            current_mlh: Current most likely hypothesis from the learning module
+
+        Returns:
+            Tuple of (location, rotation) or (None, None) if not available
+        """
+        if not current_mlh or current_mlh.get('graph_id') != my_object_id:
             return None, None
 
         return current_mlh.get('location'), current_mlh.get('rotation')
 
-    def _calculate_spatial_consistency(self, vote_info: Any, my_object_id: str) -> Optional[float]:
-        """Calculate spatial consistency between my object and another LM's vote."""
+    def _calculate_spatial_consistency(self, vote_info: Any, my_object_id: str,
+                                     current_mlh: Dict[str, Any]) -> Optional[float]:
+        """Calculate spatial consistency between my object and another LM's vote.
+
+        Args:
+            vote_info: Vote information from another learning module
+            my_object_id: My object ID
+            current_mlh: Current most likely hypothesis from the learning module
+
+        Returns:
+            Spatial consistency score or None if spatial info is not available
+        """
         try:
             # Extract spatial information from a vote
             other_location, other_pose = _extract_spatial_info_from_vote(vote_info)
@@ -454,7 +468,7 @@ class UnsupervisedAssociationMixin:
                 return None
 
             # Get my object's current spatial information
-            my_location, my_pose = self._get_my_spatial_info(my_object_id)
+            my_location, my_pose = self._get_my_spatial_info(my_object_id, current_mlh)
             if my_location is None:
                 return None
 
@@ -673,7 +687,7 @@ class UnsupervisedAssociationMixin:
         """
         mapped = []
         for other_lm_id, other_votes in vote_data.items():
-            if not isinstance(other_votes, dict):
+            if not other_votes or not hasattr(other_votes, 'items'):
                 continue
             for other_object_id, vote_info in other_votes.items():
                 association_strength = self.get_association_strength(
@@ -686,12 +700,13 @@ class UnsupervisedAssociationMixin:
                                  f"(strength: {association_strength:.3f})")
         return mapped
 
-    def map_votes_to_my_objects(self, vote_data: Dict) -> Dict:
+    def map_votes_to_my_objects(self, vote_data: Dict, known_object_ids: List[str]) -> Dict:
         """
         Map incoming votes to my object IDs using learned associations.
 
         Args:
             vote_data: Dictionary of votes from other learning modules
+            known_object_ids: List of known object IDs from the learning module
 
         Returns:
             Dictionary mapping my object IDs to weighted votes
@@ -700,18 +715,6 @@ class UnsupervisedAssociationMixin:
 
         if not self.association_learning_enabled:
             # Fall back to original behavior if association learning is disabled
-            return vote_data
-
-        # Ensure this mixin is used with a compatible class
-        if not self._check_interface_compatibility():
-            logger.warning("Interface compatibility check failed, returning original votes")
-            return vote_data
-
-        try:
-            # This call is safe because we've checked interface compatibility
-            known_object_ids = self.get_all_known_object_ids()
-        except (AttributeError, TypeError) as e:
-            logger.warning(f"Error calling get_all_known_object_ids: {e}, returning original votes")
             return vote_data
 
         for my_object_id in known_object_ids:

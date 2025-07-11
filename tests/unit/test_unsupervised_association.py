@@ -35,7 +35,7 @@ from tbp.monty.frameworks.models.evidence_matching.unsupervised_evidence_lm impo
 )
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.models.unsupervised_association import (
-    UnsupervisedAssociationMixin,
+    UnsupervisedAssociator,
     AssociationData,
 )
 
@@ -93,9 +93,15 @@ class TestAssociationData(unittest.TestCase):
 
         avg_confidence = data.get_average_confidence()
 
-        # Should be weighted towards more recent values
-        self.assertGreater(avg_confidence, 0.5)
-        self.assertLessEqual(avg_confidence, 1.0)
+        # The method uses time weighting with decay_factor=0.95
+        # weights = [0.95^0, 0.95^1, 0.95^2] = [1.0, 0.95, 0.9025] (reversed for most recent first)
+        # So weights = [0.9025, 0.95, 1.0] for [0.5, 0.8, 0.9]
+        weights = [0.9025, 0.95, 1.0]
+        weighted_sum = 0.5 * 0.9025 + 0.8 * 0.95 + 0.9 * 1.0
+        weight_sum = sum(weights)
+        expected_avg = weighted_sum / weight_sum
+
+        self.assertAlmostEqual(avg_confidence, expected_avg, places=5)
 
 
 class TestCMPCompliance(unittest.TestCase):
@@ -161,44 +167,43 @@ class TestCMPCompliance(unittest.TestCase):
         np.testing.assert_array_equal(pose, pose_vectors)
 
 
-class TestUnsupervisedAssociationMixin(unittest.TestCase):
-    """Test the UnsupervisedAssociationMixin class."""
+class TestUnsupervisedAssociator(unittest.TestCase):
+    """Test the UnsupervisedAssociator class."""
 
     def setUp(self):
         """Set up test fixtures."""
+        self.associator = UnsupervisedAssociator(
+            learning_module_id="test_lm",
+            association_threshold=0.1,
+            min_association_threshold=0.3
+        )
 
-        # Create a mock class that includes the mixin
-        class MockLM(UnsupervisedAssociationMixin):
-            def __init__(self):
-                self.learning_module_id = "test_lm"
-                self.object_evidence_threshold = 1.0
-                self.evidence = {
-                    'object_1': np.array([2.0, 1.5, 0.5]),
-                    'object_2': np.array([1.8, 1.2, 0.3]),
-                }
-                self.current_mlh = {
-                    'graph_id': 'object_1',
-                    'location': [1.0, 2.0, 3.0],
-                    'rotation': Mock(),
-                    'scale': 1.0,
-                }
-                super().__init__()
-
-            def get_all_known_object_ids(self):
-                return list(self.evidence.keys())
-
-        self.mock_lm = MockLM()
+        # Mock learning module data
+        self.evidence = {
+            'object_1': np.array([2.0, 1.5, 0.5]),
+            'object_2': np.array([1.8, 1.2, 0.3]),
+        }
+        self.threshold = 1.0
+        self.current_mlh = {
+            'graph_id': 'object_1',
+            'location': [1.0, 2.0, 3.0],
+            'rotation': Mock(),
+            'scale': 1.0,
+        }
+        self.known_object_ids = list(self.evidence.keys())
 
     def test_initialization(self):
-        """Test that the mixin initializes correctly."""
-        self.assertIsNotNone(self.mock_lm.association_memory)
-        self.assertEqual(self.mock_lm.association_threshold, 0.1)
-        self.assertEqual(self.mock_lm.min_association_threshold, 0.3)
-        self.assertTrue(self.mock_lm.association_learning_enabled)
+        """Test that the associator initializes correctly."""
+        self.assertIsNotNone(self.associator.association_memory)
+        self.assertEqual(self.associator.association_threshold, 0.1)
+        self.assertEqual(self.associator.min_association_threshold, 0.3)
+        self.assertTrue(self.associator.association_learning_enabled)
 
     def test_get_current_high_evidence_hypotheses(self):
         """Test getting objects with high evidence."""
-        high_evidence_objects = self.mock_lm._get_current_high_evidence_hypotheses()
+        high_evidence_objects = self.associator._get_current_high_evidence_hypotheses(
+            self.evidence, self.threshold
+        )
 
         # Both objects should have evidence above a threshold
         self.assertIn('object_1', high_evidence_objects)
@@ -208,12 +213,12 @@ class TestUnsupervisedAssociationMixin(unittest.TestCase):
         """Test recording co-occurrence between objects."""
         vote_info = {'confidence': 0.8, 'location': [1.1, 2.1, 3.1]}
 
-        self.mock_lm._record_co_occurrence(
-            ['object_1'], 'other_lm', 'other_object', 0.8, vote_info
+        self.associator._record_co_occurrence(
+            ['object_1'], 'other_lm', 'other_object', 0.8, vote_info, self.current_mlh
         )
 
         # Check that association was recorded
-        association_data = self.mock_lm.association_memory['object_1']['other_lm']['other_object']
+        association_data = self.associator.association_memory['object_1']['other_lm']['other_object']
         self.assertEqual(association_data.co_occurrence_count, 1)
         self.assertEqual(len(association_data.confidence_history), 1)
 
@@ -221,12 +226,12 @@ class TestUnsupervisedAssociationMixin(unittest.TestCase):
         """Test association strength calculation."""
         # Record some associations
         vote_info = {'confidence': 0.8}
-        self.mock_lm._record_co_occurrence(
-            ['object_1'], 'other_lm', 'other_object', 0.8, vote_info
+        self.associator._record_co_occurrence(
+            ['object_1'], 'other_lm', 'other_object', 0.8, vote_info, self.current_mlh
         )
 
         # Calculate association strength
-        strength = self.mock_lm.get_association_strength('object_1', 'other_lm', 'other_object')
+        strength = self.associator.get_association_strength('object_1', 'other_lm', 'other_object')
 
         self.assertGreater(strength, 0.0)
         self.assertLessEqual(strength, 1.0)
@@ -239,17 +244,17 @@ class TestUnsupervisedAssociationMixin(unittest.TestCase):
 
         # Record multiple co-occurrences for strong association
         for _ in range(5):
-            self.mock_lm._record_co_occurrence(
-                ['object_1'], 'other_lm', 'strong_object', 0.9, vote_info_strong
+            self.associator._record_co_occurrence(
+                ['object_1'], 'other_lm', 'strong_object', 0.9, vote_info_strong, self.current_mlh
             )
 
         # Record single co-occurrence for weak association
-        self.mock_lm._record_co_occurrence(
-            ['object_1'], 'other_lm', 'weak_object', 0.2, vote_info_weak
+        self.associator._record_co_occurrence(
+            ['object_1'], 'other_lm', 'weak_object', 0.2, vote_info_weak, self.current_mlh
         )
 
         # Get associated objects
-        associated = self.mock_lm.get_associated_object_ids('object_1', 'other_lm', min_strength=0.1)
+        associated = self.associator.get_associated_object_ids('object_1', 'other_lm', min_strength=0.1)
 
         # Should return both, sorted by strength
         self.assertGreater(len(associated), 0)
@@ -263,8 +268,8 @@ class TestUnsupervisedAssociationMixin(unittest.TestCase):
         # Set up some associations
         vote_info = {'confidence': 0.8}
         for _ in range(3):
-            self.mock_lm._record_co_occurrence(
-                ['object_1'], 'other_lm', 'other_object', 0.8, vote_info
+            self.associator._record_co_occurrence(
+                ['object_1'], 'other_lm', 'other_object', 0.8, vote_info, self.current_mlh
             )
 
         # Create CMP-compliant vote data
@@ -290,7 +295,7 @@ class TestUnsupervisedAssociationMixin(unittest.TestCase):
         }
 
         # Map votes
-        mapped_votes = self.mock_lm.map_votes_to_my_objects(vote_data)
+        mapped_votes = self.associator.map_votes_to_my_objects(vote_data, self.known_object_ids)
 
         # Should have mapped votes for object_1
         self.assertIn('object_1', mapped_votes)
@@ -324,9 +329,9 @@ class TestUnsupervisedEvidenceGraphLM(unittest.TestCase):
     def test_initialization(self):
         """Test that the enhanced LM initializes correctly."""
         self.assertEqual(self.lm.learning_module_id, "test_lm")
-        self.assertEqual(self.lm.association_threshold, 0.1)
-        self.assertEqual(self.lm.min_association_threshold, 0.3)
-        self.assertTrue(self.lm.association_learning_enabled)
+        self.assertEqual(self.lm.associator.association_threshold, 0.1)
+        self.assertEqual(self.lm.associator.min_association_threshold, 0.3)
+        self.assertTrue(self.lm.associator.association_learning_enabled)
 
     @patch('tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM.receive_votes')
     def test_receive_votes_with_association_learning(self, mock_parent_receive):
@@ -448,7 +453,7 @@ class TestUnsupervisedAssociationUnit(unittest.TestCase):
     def _create_mock_lm(self, lm_id, object_ids):
         """Create a mock learning module with association capabilities."""
 
-        class MockLM(UnsupervisedAssociationMixin):
+        class MockLM:
             def __init__(self, learning_module_id, known_objects):
                 self.learning_module_id = learning_module_id
                 self.known_objects = known_objects
@@ -459,7 +464,12 @@ class TestUnsupervisedAssociationUnit(unittest.TestCase):
                     'location': [0.0, 0.0, 0.0],
                     'rotation': None
                 }
-                super().__init__()
+                # Create associator using composition
+                self.associator = UnsupervisedAssociator(
+                    learning_module_id=learning_module_id,
+                    association_threshold=0.1,
+                    min_association_threshold=0.3
+                )
 
             def get_all_known_object_ids(self):
                 return self.known_objects
@@ -505,7 +515,13 @@ class TestUnsupervisedAssociationUnit(unittest.TestCase):
             }
 
             # Update associations
-            self.lm1.update_associations(vote_data_for_lm1, step)
+            self.lm1.associator.update_associations(
+                vote_data_for_lm1,
+                step,
+                self.lm1.evidence,
+                self.lm1.object_evidence_threshold,
+                self.lm1.current_mlh
+            )
 
         # Scenario 2: Both LMs detect the same ball (visual_object_2 <-> touch_object_B)
         for step in range(10, 20):
@@ -531,26 +547,32 @@ class TestUnsupervisedAssociationUnit(unittest.TestCase):
                 }
             }
 
-            self.lm1.update_associations(vote_data_for_lm1, step)
+            self.lm1.associator.update_associations(
+                vote_data_for_lm1,
+                step,
+                self.lm1.evidence,
+                self.lm1.object_evidence_threshold,
+                self.lm1.current_mlh
+            )
 
     def _verify_associations_learned(self):
         """Verify that associations have been properly learned."""
         # Check association strength for a cup (visual_object_1 <-> touch_object_A)
-        cup_association_strength = self.lm1.get_association_strength(
+        cup_association_strength = self.lm1.associator.get_association_strength(
             'visual_object_1', 'touch_lm', 'touch_object_A'
         )
         self.assertGreater(cup_association_strength, 0.3,
                           "Cup association should be strong after co-occurrence")
 
         # Check association strength for ball (visual_object_2 <-> touch_object_B)
-        ball_association_strength = self.lm1.get_association_strength(
+        ball_association_strength = self.lm1.associator.get_association_strength(
             'visual_object_2', 'touch_lm', 'touch_object_B'
         )
         self.assertGreater(ball_association_strength, 0.3,
                           "Ball association should be strong after co-occurrence")
 
         # Check that wrong associations are weak
-        wrong_association_strength = self.lm1.get_association_strength(
+        wrong_association_strength = self.lm1.associator.get_association_strength(
             'visual_object_1', 'touch_lm', 'touch_object_B'
         )
         self.assertLess(wrong_association_strength, 0.1,
@@ -575,7 +597,10 @@ class TestUnsupervisedAssociationUnit(unittest.TestCase):
         }
 
         # Map votes to visual LM's object IDs
-        mapped_votes = self.lm1.map_votes_to_my_objects(incoming_votes)
+        mapped_votes = self.lm1.associator.map_votes_to_my_objects(
+            incoming_votes,
+            self.lm1.get_all_known_object_ids()
+        )
 
         # Verify mapping results
         self.assertIn('visual_object_1', mapped_votes,
@@ -595,8 +620,8 @@ class TestUnsupervisedAssociationUnit(unittest.TestCase):
     def test_association_memory_management(self):
         """Test that association memory is properly managed."""
         # Test memory pruning
-        original_max_size = self.lm1.max_association_memory_size
-        self.lm1.max_association_memory_size = 5  # Set a small limit for testing
+        original_max_size = self.lm1.associator.max_association_memory_size
+        self.lm1.associator.max_association_memory_size = 5  # Set a small limit for testing
 
         # Create many associations to trigger pruning
         for i in range(10):
@@ -609,20 +634,26 @@ class TestUnsupervisedAssociationUnit(unittest.TestCase):
                     }
                 }
             }
-            self.lm1.update_associations(vote_data, i)
+            self.lm1.associator.update_associations(
+                vote_data,
+                i,
+                self.lm1.evidence,
+                self.lm1.object_evidence_threshold,
+                self.lm1.current_mlh
+            )
 
         # Verify memory was pruned
         total_associations = sum(
-            len(self.lm1.association_memory[my_obj][other_lm])
-            for my_obj in self.lm1.association_memory
-            for other_lm in self.lm1.association_memory[my_obj]
+            len(self.lm1.associator.association_memory[my_obj][other_lm])
+            for my_obj in self.lm1.associator.association_memory
+            for other_lm in self.lm1.associator.association_memory[my_obj]
         )
 
-        self.assertLessEqual(total_associations, self.lm1.max_association_memory_size,
+        self.assertLessEqual(total_associations, self.lm1.associator.max_association_memory_size,
                            "Association memory should be pruned when limit is exceeded")
 
         # Restore original size
-        self.lm1.max_association_memory_size = original_max_size
+        self.lm1.associator.max_association_memory_size = original_max_size
 
 
 def _count_total_associations(learning_modules):
