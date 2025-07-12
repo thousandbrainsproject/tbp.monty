@@ -14,6 +14,7 @@ import logging
 import os
 from collections import deque
 from itertools import chain
+from pathlib import Path
 from sys import getsizeof
 
 import numpy as np
@@ -914,7 +915,7 @@ def maybe_rename_existing_file(log_file, extension, report_count):
             )
             os.remove(new_name)
 
-        os.rename(log_file, new_name)
+        Path(log_file).rename(new_name)
 
 
 def maybe_rename_existing_directory(path, report_count):
@@ -930,7 +931,7 @@ def maybe_rename_existing_directory(path, report_count):
             )
             os.remove(new_path)
 
-        os.rename(path, new_path)
+        Path(path).rename(new_path)
 
 
 def get_rgba_frames_single_sm(observations):
