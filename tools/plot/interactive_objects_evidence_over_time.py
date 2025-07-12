@@ -162,6 +162,29 @@ class DataExtractor:
     def __len__(self) -> int:
         return len(self.target_names)
 
+    def _find_glb_file(self, obj_name: str) -> str:
+        """Search for the .glb.orig file of a given YCB object in a directory.
+
+        Args:
+            obj_name: The object name to search for (e.g., "potted_meat_can").
+
+        Returns:
+            Full path to the .glb.orig file.
+
+        Raises:
+            FileNotFoundError: If the .glb.orig file for the object is not found.
+
+        """
+        for path in Path(self.data_path).rglob("*"):
+            if path.is_dir() and path.name.endswith(obj_name):
+                glb_orig_path = path / "google_16k" / "textured.glb.orig"
+                if glb_orig_path.exists():
+                    return str(glb_orig_path)
+
+        raise FileNotFoundError(
+            f"Could not find .glb.orig file for '{obj_name}' in '{self.data_path}'"
+        )
+
     def create_mesh(self, obj_name: str) -> Mesh:
         """Reads a 3D object file in glb format and returns a Vedo Mesh object.
 
@@ -171,32 +194,7 @@ class DataExtractor:
         Returns:
             vedo.Mesh object with UV texture and transformed orientation.
         """
-
-        def find_glb_file(obj_name: str) -> str:
-            """Search for the .glb.orig file of a given YCB object in a directory.
-
-            Args:
-                obj_name: The object name to search for (e.g., "potted_meat_can").
-
-            Returns:
-                Full path to the .glb.orig file.
-
-            Raises:
-                FileNotFoundError: If the .glb.orig file for the object is not found.
-
-            """
-            for path in Path(self.data_path).rglob("*"):
-                if path.is_dir() and path.name.endswith(obj_name):
-                    glb_orig_path = path / "google_16k" / "textured.glb.orig"
-                    if glb_orig_path.exists():
-                        return str(glb_orig_path)
-
-            raise FileNotFoundError(
-                f"Could not find .glb.orig file for '{obj_name}' in '{self.data_path}'"
-            )
-
-        # read the glb file
-        file_path = find_glb_file(obj_name)
+        file_path = self._find_glb_file(obj_name)
         with open(file_path, "rb") as f:
             mesh = trimesh.load_mesh(f, file_type="glb")
 
