@@ -66,7 +66,6 @@ class DataExtractor:
         mlh_positions: List of MLH sensor positions per timestep.
         mlh_rotations: List of MLH object rotations per timestep.
         sensor_positions: List of sensor (agent) positions per timestep.
-        sensor_rotations: List of sensor (agent) rotations per timestep.
         patch_locations: List of observed patch locations per timestep.
         target_transitions: List of episode lengths (number of LM steps).
         primary_target_objects: List of primary target object names per episode.
@@ -95,8 +94,6 @@ class DataExtractor:
         self.mlh_rotations: list[list[float]] = []
 
         self.sensor_positions: list[list[float]] = []
-        self.sensor_rotations: list[list[float]] = []
-
         self.patch_locations: list[list[float]] = []
 
         self.target_transitions: list[int] = []
@@ -149,7 +146,6 @@ class DataExtractor:
             ):
                 if processed_step:
                     self.sensor_positions.append(seq_step[1]["agent_id_0"]["position"])
-                    self.sensor_rotations.append(seq_step[1]["agent_id_0"]["rotation"])
 
         # Make sure that the agent positions (sampled by processed steps) is the same
         # length as the other logged data
@@ -248,7 +244,7 @@ class GroundTruthSimulator:
 
     def data_at_step(
         self, step: int
-    ) -> tuple[str, list[float], list[float], list[float], list[float], list[float]]:
+    ) -> tuple[str, list[float], list[float], list[float], list[float]]:
         """Extract all relevant data for a given timestep.
 
         Args:
@@ -256,14 +252,13 @@ class GroundTruthSimulator:
 
         Returns:
             Tuple containing target name, position, rotation, sensor position,
-            sensor rotation, and patch location.
+            and patch location.
         """
         return (
             self.data_extractor.target_names[step],
             self.data_extractor.target_positions[step],
             self.data_extractor.target_rotations[step],
             self.data_extractor.sensor_positions[step],
-            self.data_extractor.sensor_rotations[step],
             self.data_extractor.patch_locations[step],
         )
 
@@ -275,8 +270,8 @@ class GroundTruthSimulator:
             step: The timestep to visualize.
         """
         # Extract relevant time-step data
-        obj_name, target_pos, target_rot, sensor_pos, sensor_rot, patch_loc = (
-            self.data_at_step(step)
+        obj_name, target_pos, target_rot, sensor_pos, patch_loc = self.data_at_step(
+            step
         )
 
         # Check if target object does not exist or needs updating
