@@ -609,7 +609,7 @@ class InteractivePlot:
         )
         self.curr_slider_val = None
         self.last_call_time = time.time()
-        self.slider_callback(self.slider, None)
+        self.slider_callback(self.slider, "")
 
         # Create buttons for aligning cameras
         self.plotter.at(1).add_button(
@@ -637,21 +637,21 @@ class InteractivePlot:
         cam_a.SetClippingRange(cam_b.GetClippingRange())
         cam_a.SetParallelScale(cam_b.GetParallelScale())
 
-    def simulator_callback(self, widget: Button, event: str) -> None:
+    def simulator_callback(self, _widget: Button, _event: str) -> None:
         """Align the ground truth renderer's camera with the MLH renderer."""
         cam_a = self.plotter.renderers[1].GetActiveCamera()
         cam_b = self.plotter.renderers[2].GetActiveCamera()
         self.align_camera(cam_a, cam_b)
         self.plotter.render()
 
-    def mlh_callback(self, widget: Button, event: str) -> None:
+    def mlh_callback(self, _widget: Button, _event: str) -> None:
         """Align the MLH renderer's camera with the groundtruth renderer."""
         cam_a = self.plotter.renderers[1].GetActiveCamera()
         cam_b = self.plotter.renderers[2].GetActiveCamera()
         self.align_camera(cam_b, cam_a)
         self.plotter.render()
 
-    def slider_callback(self, widget: Slider2D, event: str) -> None:
+    def slider_callback(self, widget: Slider2D, _event: str) -> None:
         """Respond to slider step change by updating all subplots.
 
         Note: This function is throttled to prevent recursion depth errors
