@@ -159,7 +159,7 @@ class DataExtractor:
             == len(self.patch_locations)
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.target_names)
 
     def create_mesh(self, obj_name: str) -> Mesh:
@@ -198,16 +198,15 @@ class DataExtractor:
         # read the glb file
         file_path = find_glb_file(obj_name)
         with open(file_path, "rb") as f:
-            mesh = trimesh.load(f, file_type="glb")
+            mesh = trimesh.load_mesh(f, file_type="glb")
 
         # create mesh from vertices and faces
-        geometry = list(mesh.geometry.values())[0]
-        obj = Mesh([geometry.vertices, geometry.faces])
+        obj = Mesh([mesh.vertices, mesh.faces])
 
         # add texture
         obj.texture(
-            tname=np.array(geometry.visual.material.baseColorTexture),
-            tcoords=geometry.visual.uv,
+            tname=np.array(mesh.visual.material.baseColorTexture),
+            tcoords=mesh.visual.uv,
         )
 
         # Shift to geometry mean and rotate to the up/front of the glb
