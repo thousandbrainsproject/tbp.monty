@@ -248,7 +248,9 @@ class GroundTruthSimulator:
         self.title_object = None
         self.target_name = None
 
-    def data_at_step(self, step: int) -> tuple:
+    def data_at_step(
+        self, step: int
+    ) -> tuple[str, list[float], list[float], list[float], list[float], list[float]]:
         """Extract all relevant data for a given timestep.
 
         Args:
@@ -350,7 +352,9 @@ class MlhSimulator:
         self.title_object = None
         self.mlh_name = None
 
-    def data_at_step(self, step: int) -> tuple:
+    def data_at_step(
+        self, step: int
+    ) -> tuple[str, list[float], list[float], list[float]]:
         """Get MLH data for a given timestep.
 
         Args:
@@ -497,7 +501,7 @@ class EvidencePlot:
         self.guide_line = Line(p0=(0, 0, 0), p1=(0, 80, 0), lw=2, c="black")
         self.added_plot_flag = False
 
-    def axes_dict(self) -> dict:
+    def axes_dict(self) -> dict[str, Any]:
         """Returns axes settings for configuring the vedo Plotter.
 
         Returns:
@@ -579,18 +583,14 @@ class InteractivePlot:
     ):
         self.throttle_time = throttle_time
 
-        # Initialize the data extractor
         self.data_extractor = DataExtractor(exp_path, data_path, learning_module)
 
-        # Initialize the ground truth simulator
         self.gt_sim = GroundTruthSimulator(
             data_extractor=self.data_extractor, renderer_ix=1
         )
 
-        # Initialize the MLH simulator
         self.mlh_sim = MlhSimulator(data_extractor=self.data_extractor, renderer_ix=2)
 
-        # Initialize the Evidence Plotter
         self.evidence_plotter = EvidencePlot(
             data_extractor=self.data_extractor, renderer_ix=0
         )
@@ -716,7 +716,7 @@ def plot_interactive_objects_evidence_over_time(
         logger.error(f"Experiment path not found: {exp_path}")
         return 1
 
-    data_path = Path(data_path).expanduser()
+    data_path = str(Path(data_path).expanduser())
 
     plot = InteractivePlot(exp_path, data_path, learning_module)
     plot.render(resetcam=True)
