@@ -104,6 +104,7 @@ class UnsupervisedAssociationExperiments:
     simple_cross_modal_association: dict
     multi_modal_association: dict
     association_strategy_comparison: dict
+    unsupervised_5lm_77obj_benchmark: dict
 
 
 NAMES.extend(field.name for field in fields(UnsupervisedAssociationExperiments))

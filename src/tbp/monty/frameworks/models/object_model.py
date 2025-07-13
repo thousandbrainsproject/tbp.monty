@@ -746,6 +746,10 @@ class GridObjectModel(GraphObjectModel):
         Returns:
             New average location for a voxel.
         """
+        # Handle empty new_locations_in_voxel to prevent numpy warnings
+        if len(new_locations_in_voxel) == 0:
+            return previous_loc_in_voxel if previous_loc_in_voxel is not None else np.array([0.0, 0.0, 0.0])
+
         avg_loc = np.mean(new_locations_in_voxel, axis=0)
         # Only average with previous location if there was one stored there before.
         # since self._observation_count already includes the new observations it needs
@@ -787,7 +791,11 @@ class GridObjectModel(GraphObjectModel):
             if feature == "hsv":
                 avg_feat = np.zeros(3)
                 avg_feat[0] = circular_mean(feats[:, 0])
-                avg_feat[1:] = np.mean(feats[:, 1:], axis=0)
+                # Handle empty feats to prevent numpy warnings
+                if len(feats) > 0:
+                    avg_feat[1:] = np.mean(feats[:, 1:], axis=0)
+                else:
+                    avg_feat[1:] = 0.0
             elif feature == "pose_vectors":
                 avg_feat = pv_mean
             elif feature in ["on_object", "pose_fully_defined"]:
@@ -795,7 +803,11 @@ class GridObjectModel(GraphObjectModel):
                 # NOTE: object_id may need its own most common function until
                 # IDs actually represent similarities
             else:
-                avg_feat = np.mean(feats, axis=0)
+                # Handle empty feats to prevent numpy warnings
+                if len(feats) > 0:
+                    avg_feat = np.mean(feats, axis=0)
+                else:
+                    avg_feat = 0.0
             # Only take average if there was a feature stored here before.
             # since self._observation_count already includes the new obs
             # this needs to be > the number of new feature obs in the voxel.

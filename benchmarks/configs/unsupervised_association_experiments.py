@@ -20,6 +20,10 @@ from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
 from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
 )
+from tbp.monty.frameworks.loggers.monty_handlers import (
+    BasicCSVStatsHandler,
+    ReproduceEpisodeHandler,
+)
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
     EvalExperimentArgs,
@@ -492,6 +496,147 @@ def create_association_strategy_comparison_config():
     return create_experiment_config(monty_config, comparison_logging_config)
 
 
+def create_5lm_77obj_benchmark_config():
+    """
+    Create a 5-LM unsupervised association learning experiment that trains from scratch.
+
+    This experiment trains 5 learning modules with unsupervised association capabilities
+    from scratch (no pretrained models) to learn object representations and associations
+    through cross-modal coordination. After training, it evaluates on 77 YCB objects.
+    """
+    import numpy as np
+    from tbp.monty.frameworks.config_utils.config_args import (
+        FiveLMMontySOTAConfig,
+        MontyArgs,
+    )
+    from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+        EnvironmentDataloaderPerObjectArgs,
+        EvalExperimentArgs,
+        RandomRotationObjectInitializer,
+        get_object_names_by_idx,
+    )
+    from tbp.monty.frameworks.environments.embodied_data import (
+        EnvironmentDataset,
+        InformedEnvironmentDataLoader,
+    )
+    from tbp.monty.simulators.habitat.configs import FiveLMMountHabitatDatasetArgs
+    from benchmarks.configs.ycb_experiments import (
+        default_5sm_config,
+        min_eval_steps,
+        model_path_5lms_77obj,
+    )
+
+    # Create 5 LMs with unsupervised association capabilities
+    # These will learn object representations and associations from scratch
+    balanced_params = get_association_params_preset("balanced")
+
+    # Ensure association learning is enabled for training from scratch
+    balanced_params["association_learning_enabled"] = True
+
+    # Create individual LM configs
+    lm_configs = {}
+    for i in range(5):
+        lm_configs[f"learning_module_{i}"] = {
+            "learning_module_class": UnsupervisedEvidenceGraphLM,
+            "learning_module_args": {
+                "learning_module_id": f"lm_{i}",
+                "max_match_distance": 0.01,
+                "tolerances": {
+                    f"patch_{i}": {
+                        "hsv": np.array([0.1, 0.2, 0.2]),
+                        "principal_curvatures_log": np.array([1.0, 1.0]),
+                    },
+                },
+                "feature_weights": {
+                    f"patch_{i}": {
+                        "hsv": np.array([1.0, 0.5, 0.5]),
+                    },
+                },
+                "graph_delta_thresholds": {
+                    f"patch_{i}": {
+                        "distance": 0.01,
+                        "pose": 30,
+                    },
+                },
+                **balanced_params
+            },
+        }
+
+    # Create the experiment config for unsupervised association learning from scratch
+    experiment_config = {
+        "experiment_class": MontyObjectRecognitionExperiment,
+        "experiment_args": EvalExperimentArgs(
+            model_name_or_path=None,  # Start from scratch - no pretrained labels
+            n_train_epochs=3,  # Enable training for association learning
+            n_eval_epochs=1,  # Evaluate after training
+            min_lms_match=3,  # Same as baseline
+            do_train=True,  # Enable training for unsupervised association learning
+            do_eval=True,  # Evaluate the learned associations
+            max_train_steps=1000,  # Allow sufficient training for association learning
+            max_eval_steps=500,   # Same as baseline for fair comparison
+        ),
+        "dataset_class": EnvironmentDataset,
+        "train_dataloader_class": InformedEnvironmentDataLoader,
+        "eval_dataloader_class": InformedEnvironmentDataLoader,
+        "logging_config": {
+            "python_log_level": "INFO",
+            "monty_log_level": "BASIC",
+            "python_log_to_file": True,
+            "python_log_to_stdout": True,
+            "python_log_to_stderr": False,
+            "log_parallel_wandb": False,
+            "output_dir": os.getenv("MONTY_LOGS", "~/tbp/results/monty/") + "unsupervised_5lm_from_scratch",
+            "run_name": "unsupervised_5lm_from_scratch_benchmark",
+            "wandb_handlers": [],
+            "monty_handlers": [
+                BasicCSVStatsHandler,
+                ReproduceEpisodeHandler,
+            ],
+        },
+        "monty_config": {
+            "monty_class": MontyForUnsupervisedAssociation,
+            "monty_args": MontyArgs(
+                min_eval_steps=min_eval_steps,
+            ),
+            "sensor_module_configs": default_5sm_config,
+            "learning_module_configs": lm_configs,
+            "motor_system_config": {
+                "motor_system_class": MotorSystem,
+                "motor_system_args": {
+                    "policy_class": InformedPolicy,
+                    "policy_args": make_informed_policy_config(
+                        action_space_type="distant_agent",
+                        action_sampler_class=ConstantSampler,
+                    ),
+                },
+            },
+            "sm_to_agent_dict": {
+                "patch_0": "agent_id_0",
+                "patch_1": "agent_id_0",
+                "patch_2": "agent_id_0",
+                "patch_3": "agent_id_0",
+                "patch_4": "agent_id_0",
+                "view_finder": "agent_id_0",
+            },
+            "sm_to_lm_matrix": [[0], [1], [2], [3], [4]],
+            "lm_to_lm_matrix": [[], [], [], [], []],
+            "lm_to_lm_vote_matrix": [[1, 2, 3, 4], [0, 2, 3, 4], [0, 1, 3, 4], [0, 1, 2, 4], [0, 1, 2, 3]],
+        },
+        "dataset_args": FiveLMMountHabitatDatasetArgs(),
+        "train_dataloader_args": EnvironmentDataloaderPerObjectArgs(
+            object_names=get_object_names_by_idx(0, 30),  # Use 30 objects for association learning
+            object_init_sampler=RandomRotationObjectInitializer(),
+        ),
+        "eval_dataloader_args": EnvironmentDataloaderPerObjectArgs(
+            object_names=get_object_names_by_idx(0, 77),  # Use all 77 objects like baseline
+            object_init_sampler=RandomRotationObjectInitializer(),
+        ),
+    }
+
+    return experiment_config
+
+
+
 # Export experiment configurations following Monty patterns
 from benchmarks.configs.names import UnsupervisedAssociationExperiments
 from dataclasses import asdict
@@ -501,6 +646,7 @@ experiments = UnsupervisedAssociationExperiments(
     simple_cross_modal_association=create_simple_cross_modal_config(),
     multi_modal_association=create_multi_modal_config(),
     association_strategy_comparison=create_association_strategy_comparison_config(),
+    unsupervised_5lm_77obj_benchmark=create_5lm_77obj_benchmark_config(),
 )
 
 # Convert to dictionary format expected by the benchmarks system

@@ -40,21 +40,38 @@ def _convert_to_parent_vote_format(vote_data):
     Returns:
         Vote data in format expected by parent class
     """
-    if not vote_data or isinstance(vote_data, list):
-        return vote_data
+    if not vote_data:
+        return {}
+
+    # If it's a list, we can't convert it properly without object IDs
+    if isinstance(vote_data, list):
+        return {}
+
+    # If it's a dict, flatten the structure
     if isinstance(vote_data, dict):
-        converted_votes = []
-        stack = [vote_data]
-        while stack:
-            obj = stack.pop()
-            if isinstance(obj, dict):
-                stack.extend(obj.values())
-            elif isinstance(obj, list):
-                stack.extend(obj)
-            else:
-                converted_votes.append(obj)
-        return converted_votes
-    return vote_data
+        flattened_votes = {}
+
+        # Iterate through each LM's votes
+        for lm_id, lm_votes in vote_data.items():
+            if isinstance(lm_votes, dict):
+                # Merge object votes from this LM
+                for object_id, votes in lm_votes.items():
+                    if object_id in flattened_votes:
+                        # Combine votes for the same object from different LMs
+                        if isinstance(votes, list):
+                            flattened_votes[object_id].extend(votes)
+                        else:
+                            flattened_votes[object_id].append(votes)
+                    else:
+                        # First votes for this object
+                        if isinstance(votes, list):
+                            flattened_votes[object_id] = votes.copy()
+                        else:
+                            flattened_votes[object_id] = [votes]
+
+        return flattened_votes
+
+    return {}
 
 
 class UnsupervisedEvidenceGraphLM(EvidenceGraphLM):
@@ -341,7 +358,7 @@ class UnsupervisedEvidenceGraphLM(EvidenceGraphLM):
         self.episode_step = 0
 
         # Log association statistics at the beginning of each episode
-        if self.association_learning_enabled and logger.isEnabledFor(logging.INFO):
+        if self.associator.association_learning_enabled and logger.isEnabledFor(logging.INFO):
             stats = self.get_association_statistics()
             logger.info(f"LM {self.learning_module_id} association stats: "
                         f"{stats['total_associations']} total, "
@@ -353,7 +370,7 @@ class UnsupervisedEvidenceGraphLM(EvidenceGraphLM):
         super().post_episode()
 
         # Log final association statistics for this episode
-        if self.association_learning_enabled and logger.isEnabledFor(logging.DEBUG):
+        if self.associator.association_learning_enabled and logger.isEnabledFor(logging.DEBUG):
             stats = self.get_association_statistics()
             logger.debug(f"LM {self.learning_module_id} end-of-episode association stats: {stats}")
 
@@ -361,7 +378,7 @@ class UnsupervisedEvidenceGraphLM(EvidenceGraphLM):
         """Get output with association information."""
         output = super().get_output()
 
-        if output is not None and self.association_learning_enabled:
+        if output is not None and self.associator.association_learning_enabled:
             # Add association statistics to output for analysis
             if hasattr(output, 'non_morphological_features'):
                 if output.non_morphological_features is None:
@@ -369,3 +386,38 @@ class UnsupervisedEvidenceGraphLM(EvidenceGraphLM):
                 output.non_morphological_features['association_stats'] = self.get_association_statistics()
 
         return output
+
+    def get_association_statistics(self):
+        """Get statistics about learned associations."""
+        if not hasattr(self, 'associator') or not self.associator.association_memory:
+            return {
+                'total_associations': 0,
+                'strong_associations': 0,
+                'average_strength': 0.0
+            }
+
+        total_associations = 0
+        strong_associations = 0
+        total_strength = 0.0
+
+        for my_obj_dict in self.associator.association_memory.values():
+            for other_lm_dict in my_obj_dict.values():
+                for other_obj_id, association_data in other_lm_dict.items():
+                    total_associations += 1
+                    strength = self.associator.get_association_strength(
+                        list(self.associator.association_memory.keys())[0],  # my_object_id
+                        list(my_obj_dict.keys())[0],  # other_lm_id
+                        other_obj_id
+                    )
+                    total_strength += strength
+                    if strength > self.associator.min_association_threshold:
+                        strong_associations += 1
+
+        # Handle empty total_associations to prevent numpy warnings
+        average_strength = total_strength / total_associations if total_associations > 0 else 0.0
+
+        return {
+            'total_associations': total_associations,
+            'strong_associations': strong_associations,
+            'average_strength': average_strength
+        }
