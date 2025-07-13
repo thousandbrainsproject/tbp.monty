@@ -15,7 +15,6 @@ import numpy as np
 
 from tbp.monty.frameworks.loggers.exp_logger import TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import (
-    LearningModule,
     Monty,
     SensorModule,
 )
