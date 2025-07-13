@@ -12,6 +12,16 @@ This is a high-level RFC on intelligence resampling in Monty, considering the be
 2. How can we implement and test resampling informed by out-of-reference-frame observations?
 3. How can we use prediction errors in off-object observations to eliminate hypotheses? 
 
+## Changelog
+
+- 2025/07/12
+    - Updated understanding of re-anchoring, distortion, and noise in [Question 1](#how-can-we-re-anchor-hypotheses-to-model-points-for-robustness-to-noise-and-distortions).
+    - Removed idea on using Maximum Likelihood Estimation [Question 1](#how-can-we-re-anchor-hypotheses-to-model-points-for-robustness-to-noise-and-distortions) and slightly updated Voxel-center snapping approach.
+    - Added new section on [how to represent off-object observations](#how-can-we-represent-off-object-observations).
+
+<details>
+<summary>Previous Notes on Basic Understanding</summary>
+
 ## Basic Understanding
 
 ### Current State of Hypotheses in Monty
@@ -126,46 +136,21 @@ A look at the method `_calculate_evidence_for_new_locations()`:
 """
 ```
 Again, because the method depends on `search_locations`, we need a way to account for this when there is sensor noise added. 
-
+</details>
 
 ## How can we re-anchor hypotheses to model points for robustness to noise and distortions?
 
-In experiments where we have sensor noise, we may wish to "re-anchor" hypotheses to account for accumulated drift and distortions. By "re-anchoring", we mean updating the `locations` and `poses` attributes of the `Hypotheses` object to align with the underlying discretized model structure.
+*[Update after 1:1 Meeting on 2025/07/10 with Niels L.]* "Re-anchoring" means updating the `locations` of the `Hypotheses` object to **an existing point** in the object model. The re-anchoring mechanism should be informed by feature observations. 
 
-### Back of the Envelop calculation for Sensor Noise
+An example of "distortion" is like the bent TBP logo vs. "standard" TBP logo (TODO: include image for clarity and reference for readers). By noise, it refers to those arising from bad path integration (TODO: also include image). 
 
-- **Location noise**: 2mm Gaussian ($\sigma$ = 0.002m)
-- **Voxel size**: 6mm (0.3m max_size ÷ 50 voxels_per_dim)
-- **Noise-to-voxel ratio**: 33% - significant relative to discretization
-- **Rotation noise**: $2\degree$ per axis ($\sigma = 2.0\degree$)
-- **Rotation grid**: $45\degree$ intervals
-- **Noise-to-grid ratio**: 4.4% - more tolerant than location
-
-Without re-anchoring, drift accumulates as a random walk: $ 2 \times \sqrt{N}$ where $N$ is the number of steps taken. 
-- After 10 steps: ~6.3mm location drift (exceeds voxel size)
-- After 100 steps: ~20mm drift (over 3 voxels)
-
-### Location Re-anchoring Strategies
-
-
-#### 1. Maximum Likelihood Estimation (MLE) Approach
-
-For Gaussian noise $\mathcal{N}(0, \sigma^2)$, the MLE of true location from N observations is their weighted mean, with variance reduced by factor of $N$. From the equations above, i.e. $\mathbf{s}_i \sim \mathcal{N}(\mathbf{R}_i \mathbf{d}^{\text{channel}} + \mathbf{p}_i, \sigma^2 \mathbf{I})$, the optimal estimator of true location would be to "simply" find the mean of several noisy locations. The approach is similar to how we are taking weighted sum of evidence. The basic idea would be to consolidate nearby hypotheses using evidence-weighted averaging. There are several implementation details to consider, such as :
-
-1. How to threshold for high-evidence hypotheses?
-2. How to group or cluster them (e.g. clustering can be expensive, and maybe we just want to have a simple heuristic such as $\epsilon$-radius of the location of MLH)?
-3. Whether to consider hypotheses from different objects?
-
-A downstream RFC or PR should consider these questions if implementing. 
-
-**Note**: For noise in rotation (which is happening in SO(3) space and not Euclidean space), we should use a more "general" mean such as [this](https://en.wikipedia.org/wiki/Fr%C3%A9chet_mean). 
-
-#### 2. Voxel Center Re-anchoring Approach
+### Voxel Center Re-anchoring Approach
 
 This approach leverages knowledge of the model's voxel structure in `GridObjectModels`. This would basically "snap" the location to the voxel center. This idea was inspired from `how-learning-modules-work.md`:
 
 > If max_voxels_per_dim would be set to 4 (as shown in this figure), then each voxel would be of size **2**cm<sup>3</sup> and any locations within that voxel cannot be distinguished.
 
+*[Update after 1:1 Meeting on 2025/07/10 with Niels L.]* I think the Voxel-center snapping idea may still be used (I am not for or against, just that it may still be compatible with my updated understanding of re-anchoring). I only slightly updated the `voxel_center_reanchoring()` pseudocode to use some feature comparison to find voxel to "snap" to.
 
 ```python
 # some pseudocode
@@ -183,18 +168,10 @@ def voxel_center_reanchoring(self, confidence_threshold=0.8):
         for idx in np.where(high_conf_mask)[0]:
             location = locations[idx]
             
-            # Compute nearest voxel center
-            voxel_indices = np.round(location / voxel_size)
-            voxel_center = voxel_indices * voxel_size
-            
-            # Only snap if within half voxel (avoid wrong-voxel errors)
-            if np.linalg.norm(location - voxel_center) < voxel_size / 2:
-                self.possible_locations[graph_id][idx] = voxel_center
+            # Find voxel that is similar in terms of features
+            voxel = find_voxel_with_similar_features()
+            self.possible_locations[graph_id][idx] = voxel.locations
 ```
-
-The benefit of this approach is that it should be faster than the MLE approach above, however, I'm not sure if voxel_size would be considered priviledged information to the LM (certainly we can reach for this information in software, but doesn't mean we _should_ do that.)
-
-Finally, neither of the above two approaches are mutually exclusive, and may be beneficial to implement a hybrid approach combining the two.
 
 ## How can we use prediction errors in off-object observations to eliminate hypotheses? 
 
@@ -312,3 +289,47 @@ class BoundaryNode:
 Perhaps these boundary nodes can be connected based on object_id so we can have multiple boundaries needed for compositional objects. 
 
 I think I have gone off on lateral thinking from the original question, but landed on a pretty exciting idea for now. Let's see if I still think this is an exciting approach in days to come. 
+
+### How can we represent off-object observations?
+
+I think to represent off-object observations, it is important to think of **empty/absent features ARE still features**. Currently, features are stored in dictionaries with channel-specific data. Below is a Python class version that can handle both on-object and off-object observations.
+
+```python
+# some pseudocode
+class FeatureSpace:
+    """All observations including 'empty'."""
+    def __init__(self, base_features: list, include_metadata: bool = True):
+        self.base_features = base_features # list of features we are observing/measuring
+        self.include_metadata # completely optional but I think 
+
+    def encode_observation(self, raw_observation: dict) -> dict:
+        features = {}
+
+        for feat_name in self.base_features:
+            if feat_name in raw_observation:
+                features.append(raw_observation[feat_name])
+            else:
+                # Add feature values that represent for 'empty-ness'
+                features.append(self._get_missing_value(feat_name))
+        
+            if self.include_metadata:
+                # Information that might capture "emptiness"
+                feature_count = ... # number of features from raw_observation
+                feature_variance = ... # empty feature will likely have no variance, also maybe including variance for color or pose may or may not be helpful in the future 
+                features.append(feature_count, feature_variance)
+        return features
+    
+    def _get_missing_values(self, feat_name: str):
+        """Define what 'empty' means for each feature type.
+
+        This can get really tricky depending on the feature, so just take it as an example. An actual PR should very seriously consider these.
+        """
+        missing_values = {
+            "color": [0, 0, 0] # black
+            "depth": max_depth # 1 meter?
+            # etc.
+        }
+        return missing_values[feat_name]
+```
+
+#### Implications to FeatureChangeSM and Evidence Scores
