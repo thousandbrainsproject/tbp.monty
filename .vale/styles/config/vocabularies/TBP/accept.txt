@@ -37,6 +37,7 @@ worldimages
 [Ii]nitializer
 resample
 actuations
+Knudstrup
 Calli
 [oO]mniglot
 iter
