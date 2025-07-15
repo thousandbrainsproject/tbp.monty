@@ -353,11 +353,7 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
         # equivalent. If we average over opposing directions, we will get noise.
         cd1_dirs = get_right_hand_angle(cds1, cds2[0], normed_norm_mean) < 0
         cds1[cd1_dirs] = -cds1[cd1_dirs]
-        # Handle empty cds1 to prevent numpy warnings
-        if len(cds1) > 0:
-            cd1_mean = np.mean(cds1, axis=0)
-        else:
-            cd1_mean = cds1[0] if len(cds1) > 0 else np.array([1.0, 0.0, 0.0])
+        cd1_mean = np.mean(cds1, axis=0)
         normed_cd1_mean = cd1_mean / np.linalg.norm(cd1_mean)
         # Get the second cd by calculating a vector orthogonal to cd1 and pn.
         cd2_mean = np.cross(normed_norm_mean, normed_cd1_mean)

@@ -259,15 +259,11 @@ def get_scaled_evidences(evidences, per_object=False):
         for graph_id in evidences.keys():
 
                 if max_evidence >= 1:
-                    # Handle case where all evidences are the same
-                    if max_evidence == min_evidence:
-                        scaled_evidences[graph_id] = np.zeros_like(evidences[graph_id])
-                    else:
-                        scaled_evidences[graph_id] = (evidences[graph_id] - min_evidence) / (
-                            max_evidence - min_evidence
-                        )
-                        # put in range(-1, 1)
-                        scaled_evidences[graph_id] = (scaled_evidences[graph_id] - 0.5) * 2
+                    scaled_evidences[graph_id] = (evidences[graph_id] - min_evidence) / (
+                        max_evidence - min_evidence
+                    )
+                    # put in range(-1, 1)
+                    scaled_evidences[graph_id] = (scaled_evidences[graph_id] - 0.5) * 2
                 else:
                     # If largest value is <1, don't scale them -> don't increase any
                     # evidences. Instead just make sure they are in the right range.
