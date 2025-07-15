@@ -57,11 +57,6 @@ from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
 )
 from tbp.monty.frameworks.models.graph_matching import MontyForGraphMatching
-from tbp.monty.frameworks.models.monty_base import (
-    LearningModuleBase,
-    MontyBase,
-    SensorModuleBase,
-)
 from tbp.monty.frameworks.models.motor_policies import (
     BasePolicy,
     InformedPolicy,
@@ -561,80 +556,6 @@ class MontyConfig:
     lm_to_lm_matrix: Dict
     lm_to_lm_vote_matrix: Dict
     monty_args: Union[Dict, MontyArgs]
-
-
-@dataclass
-class SingleCameraMontyConfig(MontyConfig):
-    monty_class: Callable = MontyBase
-    learning_module_configs: Union[dataclass, Dict] = field(
-        default_factory=lambda: dict(
-            learning_module_1=dict(
-                learning_module_class=LearningModuleBase,
-                learning_module_args={},
-            )
-        )
-    )
-    sensor_module_configs: Union[dataclass, Dict] = field(
-        default_factory=lambda: dict(
-            sensor_module_0=dict(
-                sensor_module_class=SensorModuleBase,
-                sensor_module_args=dict(sensor_module_id="sensor_id_0"),
-            ),
-        )
-    )
-    motor_system_config: Union[dataclass, Dict] = field(
-        default_factory=MotorSystemConfig
-    )
-    sm_to_agent_dict: Dict = field(
-        default_factory=lambda: dict(sensor_id_0="agent_id_0")
-    )
-    sm_to_lm_matrix: List = field(default_factory=lambda: [[0]])
-    lm_to_lm_matrix: Optional[List] = None
-    lm_to_lm_vote_matrix: Optional[List] = None
-    monty_args: Union[Dict, MontyArgs] = field(default_factory=MontyArgs)
-
-
-@dataclass
-class BaseMountMontyConfig(MontyConfig):
-    monty_class: Callable = MontyBase
-    learning_module_configs: Union[dataclass, Dict] = field(
-        default_factory=lambda: dict(
-            learning_module_0=dict(
-                learning_module_class=LearningModuleBase,
-                learning_module_args={},
-            ),
-            learning_module_1=dict(
-                learning_module_class=LearningModuleBase,
-                learning_module_args={},
-            ),
-        )
-    )
-    sensor_module_configs: Union[dataclass, Dict] = field(
-        default_factory=lambda: dict(
-            sensor_module_0=dict(
-                sensor_module_class=SensorModuleBase,
-                sensor_module_args=dict(sensor_module_id="sensor_id_0"),
-            ),
-            sensor_module_1=dict(
-                sensor_module_class=SensorModuleBase,
-                sensor_module_args=dict(sensor_module_id="sensor_id_1"),
-            ),
-        )
-    )
-    motor_system_config: Union[dataclass, Dict] = field(
-        default_factory=MotorSystemConfig
-    )
-    sm_to_agent_dict: Dict = field(
-        # TODO: move SAM to config args?
-        default_factory=lambda: dict(
-            sensor_id_0="agent_id_0",
-            sensor_id_1="agent_id_0",
-        )
-    )
-    sm_to_lm_matrix: List = field(default_factory=lambda: [[0], [1]])
-    lm_to_lm_matrix: Optional[List] = None
-    lm_to_lm_vote_matrix: Optional[List] = None
-    monty_args: Union[Dict, MontyArgs] = field(default_factory=MontyArgs)
 
 
 @dataclass
