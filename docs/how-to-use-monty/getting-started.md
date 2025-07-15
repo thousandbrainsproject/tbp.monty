@@ -34,6 +34,41 @@ Next, you need to **clone the repository onto your device**. To do that, open th
 > [!NOTE]
 > If you want the same setup as we use at the Thousand Brains Project by default, clone the repository at `${HOME}/tbp/`. If you don't have a `tbp` folder in your home directory yet you can run `cd ~; mkdir tbp; cd tbp` to create it. It's not required to clone the code in this folder but it is the path we assume in our tutorials.
 
+> [!NOTE]
+> **Maintainers**
+>
+> We typically set the `thousandbrainsproject/tbp.monty` repository as our `upstream` remote:
+>
+> ```
+> $ git remote add upstream git@github.com:thousandbrainsproject/tbp.monty.git
+> $ git remote -v
+> origin  git@github.com:your_github_username/tbp.monty.git (fetch)
+> origin  git@github.com:your_github_username/tbp.monty.git (push)
+> upstream        git@github.com:thousandbrainsproject/tbp.monty.git (fetch)
+> upstream        git@github.com:thousandbrainsproject/tbp.monty.git (push)
+> ```
+>
+> To prevent unintentional pushes directly to `upstream` repository, you can configure `upstream (push)` to be invalid:
+>
+> ```
+> $ git remote set-url upstream --push "readonly"
+> $ git remote -v
+> origin  git@github.com:your_github_username/tbp.monty.git (fetch)
+> origin  git@github.com:your_github_username/tbp.monty.git (push)
+> upstream        git@github.com:thousandbrainsproject/tbp.monty.git (fetch)
+> upstream        readonly (push)
+> ```
+>
+> This will result then error as follows:
+> ```
+> $ git push upstream main
+> fatal: 'readonly' does not appear to be a git repository
+> fatal: Could not read from remote repository.
+>
+> Please make sure you have the correct access rights
+> and the repository exists.
+> ```
+
 ## 1.2 Make Sure Your Local Copy is Up-to-Date
 
 If you just forked and cloned this repository, you may skip this step, but any other time you get back to this code, you will want to synchronize it to work with the latest changes.
