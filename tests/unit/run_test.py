@@ -27,10 +27,7 @@ from unittest import mock
 import magnum as mn
 import numpy as np
 
-from tbp.monty.frameworks.config_utils.config_args import (
-    LoggingConfig,
-    SingleCameraMontyConfig,
-)
+from tbp.monty.frameworks.config_utils.config_args import LoggingConfig
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     ExperimentArgs,
 )
@@ -43,6 +40,9 @@ from tbp.monty.frameworks.run import main, run
 from tbp.monty.simulators.habitat import SingleSensorAgent
 from tbp.monty.simulators.habitat.configs import (
     SinglePTZHabitatDatasetArgs,
+)
+from tests.unit.frameworks.config_utils.fakes.config_args import (
+    FakeSingleCameraMontyConfig,
 )
 
 DATASET_LEN = 1000
@@ -118,7 +118,7 @@ class MontyRunTest(unittest.TestCase):
                     monty_log_level="TEST",
                     monty_handlers=[],
                 ),
-                "monty_config": SingleCameraMontyConfig(),
+                "monty_config": FakeSingleCameraMontyConfig(),
                 "dataset_class": EnvironmentDataset,
                 "dataset_args": SinglePTZHabitatDatasetArgs(),
                 "train_dataloader_class": EnvironmentDataLoader,
@@ -139,7 +139,7 @@ class MontyRunTest(unittest.TestCase):
                     monty_log_level="TEST",
                     monty_handlers=[],
                 ),
-                "monty_config": SingleCameraMontyConfig(),
+                "monty_config": FakeSingleCameraMontyConfig(),
                 "dataset_class": EnvironmentDataset,
                 "dataset_args": SinglePTZHabitatDatasetArgs(),
                 "train_dataloader_class": EnvironmentDataLoader,

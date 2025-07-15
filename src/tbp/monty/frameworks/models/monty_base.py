@@ -15,7 +15,6 @@ import numpy as np
 
 from tbp.monty.frameworks.loggers.exp_logger import TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import (
-    LearningModule,
     Monty,
     SensorModule,
 )
@@ -499,51 +498,6 @@ class MontyBase(Monty):
         self.step_type = "exploratory_step"
         self.is_seeking_match = False
         logger.info(f"Going into exploratory mode after {self.matching_steps} steps")
-
-
-class LearningModuleBase(LearningModule):
-    """Dummy placeholder class used only for tests."""
-
-    def __init__(self):
-        self.test_attr_1 = True
-        self.test_attr_2 = True
-
-    def reset(self):
-        pass
-
-    def matching_step(self, inputs):
-        pass
-
-    def exploratory_step(self, inputs):
-        pass
-
-    def receive_votes(self, inputs):
-        pass
-
-    def send_out_vote(self):
-        pass
-
-    def state_dict(self):
-        return dict(test_attr_1=self.test_attr_1, test_attr_2=self.test_attr_2)
-
-    def load_state_dict(self, state_dict):
-        self.test_attr_1 = state_dict["test_attr_1"]
-        self.test_attr_2 = state_dict["test_attr_2"]
-
-    def pre_episode(self):
-        pass
-
-    def post_episode(self):
-        pass
-
-    def set_experiment_mode(self, inputs):
-        pass
-
-    def propose_goal_state(self):
-        pass
-
-    def get_output(self):
-        pass
 
 
 class SensorModuleBase(SensorModule):

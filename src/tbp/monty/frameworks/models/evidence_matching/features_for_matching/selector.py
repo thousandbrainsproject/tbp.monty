@@ -30,9 +30,10 @@ class DefaultFeaturesForMatchingSelector:
     ) -> dict[str, bool]:
         use_features = {}
         for input_channel in tolerances.keys():
-            if input_channel not in feature_weights.keys():
-                use_features[input_channel] = False
-            elif feature_evidence_increment <= 0:
+            if (
+                input_channel not in feature_weights.keys()
+                or feature_evidence_increment <= 0
+            ):
                 use_features[input_channel] = False
             else:
                 feature_weights_provided = (
