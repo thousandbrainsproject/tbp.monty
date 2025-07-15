@@ -54,6 +54,8 @@ simulator_mujoco = [
 analysis = [
     'ipython',
     'seaborn',
+    'vedo',
+    'trimesh',
 ]
 build = [
     'build'
