@@ -149,7 +149,6 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
 def get_object_graph_stats(graph_to_target, target_to_graph):
     n_objects_per_graph = [len(graph_to_target[k]) for k in graph_to_target.keys()]
     n_graphs_per_object = [len(target_to_graph[k]) for k in target_to_graph.keys()]
-
     results = dict(
         mean_objects_per_graph=np.mean(n_objects_per_graph),
         mean_graphs_per_object=np.mean(n_graphs_per_object),
