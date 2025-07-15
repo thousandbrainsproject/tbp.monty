@@ -6,11 +6,18 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+import xml.etree.ElementTree as ET
+from typing import List
+from xml.etree.ElementTree import Element
+
 import numpy as np
+import pytest
+from mujoco import MjSpec
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
 from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
 
+# Parameters for add primitive object tests
 SHAPES = ["box", "capsule", "cylinder", "ellipsoid", "sphere"]
 SHAPE_PARAMS = [param(s, id=s) for s in SHAPES]
 
@@ -20,9 +27,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
 
     def test_initial_scene_is_empty(self) -> None:
         sim = MuJoCoSimulator()
-        assert sim.model.ngeom == 0
-        assert sim.get_num_objects() == 0
-        assert len(sim.spec.geoms) == 0
+        self.assert_counts_equal(sim, 0)
 
     @parametrize(
         "shape",
@@ -32,16 +37,14 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         sim = MuJoCoSimulator()
         sim.add_object(shape)
 
-        assert sim.model.ngeom == 1
-        assert sim.get_num_objects() == 1
-        assert len(sim.spec.geoms) == 1
-
+        self.assert_counts_equal(sim, 1)
         # 1. Check that the spec was updated
-        spec_xml = sim.spec.to_xml()
-        # Sphere is the default and so its type doesn't end up in the resulting XML
+        geom_elems = self.parse_spec_geoms(sim.spec)
         if shape != "sphere":
-            assert f'type="{shape}"' in spec_xml
-        assert f'name="{shape}_0"' in spec_xml
+            # Sphere is the default and so its type doesn't end up in the resulting XML
+            assert geom_elems[0].attrib["type"] == f"{shape}"
+        assert geom_elems[0].attrib["name"] == f"{shape}_0"
+
         # 2. Check that the model was updated
         # This raises if it doesn't exist
         sim.model.geom(f"{shape}_0")
@@ -53,18 +56,16 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         suffixed with their "object number", an increasing index of the objects in the
         scene. So, several objects should be numbered in the order they were added.
         """
-        shapes = ["box", "capsule", "cylinder"]
+        shapes = ["box", "box", "box"]
         sim = MuJoCoSimulator()
         for shape in shapes:
             sim.add_object(shape)
 
-        assert sim.model.ngeom == len(shapes)
-        assert sim.get_num_objects() == len(shapes)
-        assert len(sim.spec.geoms) == len(shapes)
-
-        spec_xml = sim.spec.to_xml()
+        self.assert_counts_equal(sim, len(shapes))
+        geom_elems = self.parse_spec_geoms(sim.spec)
         for i, shape in enumerate(shapes):
-            assert f'name="{shape}_{i}"' in spec_xml
+            # Objects should appear in the spec XML in the same order as they were added
+            assert geom_elems[i].attrib["name"] == f"{shape}_{i}"
             # Raises if geom doesn't exist with ID
             sim.model.geom(f"{shape}_{i}")
 
@@ -73,22 +74,17 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         sim.add_object("box")
         sim.add_object("capsule")
 
-        assert sim.model.ngeom == 2
-        assert sim.get_num_objects() == 2
-        assert len(sim.spec.geoms) == 2
-
+        self.assert_counts_equal(sim, 2)
         sim.remove_all_objects()
-
-        assert sim.model.ngeom == 0
-        assert sim.get_num_objects() == 0
-        assert len(sim.spec.geoms) == 0
+        self.assert_counts_equal(sim, 0)
 
     def test_primitive_object_positioning(self) -> None:
         sim = MuJoCoSimulator()
         sim.add_object("box", position=(1.0, 1.0, 2.0))
 
         assert np.allclose(sim.model.geom("box_0").pos, np.array([1.0, 1.0, 2.0]))
-        assert f'pos="1 1 2"' in sim.spec.to_xml()
+        geom_elems = self.parse_spec_geoms(sim.spec)
+        assert geom_elems[0].attrib["pos"] == "1 1 2"
 
     def test_primitive_sphere_scaling(self) -> None:
         """Test that scaling works correctly on a sphere."""
@@ -96,4 +92,20 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         sim.add_object("sphere", scale=(3.0, 3.0, 3.0))
 
         assert np.allclose(sim.model.geom("sphere_0").size, np.array([1.5, 1.5, 1.5]))
-        assert f'size="1.5"' in sim.spec.to_xml()
+        geom_elems = self.parse_spec_geoms(sim.spec)
+        assert geom_elems[0].attrib["size"] == "1.5"
+
+    @staticmethod
+    def assert_counts_equal(sim: MuJoCoSimulator, count: int) -> None:
+        assert sim.model.ngeom == count
+        assert sim.get_num_objects() == count
+        assert len(sim.spec.geoms) == count
+
+    @staticmethod
+    def parse_spec_geoms(spec: MjSpec) -> List[Element]:
+        spec_xml = spec.to_xml()
+        parsed_xml = ET.fromstring(spec_xml)  # noqa: S314
+        world_body = parsed_xml.find("worldbody")
+        if world_body is None:
+            pytest.fail("Couldn't find <worldbody> in MuJoCo spec")
+        return world_body.findall("geom")
