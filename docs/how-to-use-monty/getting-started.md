@@ -59,7 +59,7 @@ Next, you need to **clone the repository onto your device**. To do that, open th
 > upstream        readonly (push)
 > ```
 >
-> This will result then error as follows:
+> With the above setup, attempting to push to `upstream` will result in the following error:
 > ```
 > $ git push upstream main
 > fatal: 'readonly' does not appear to be a git repository
