@@ -150,13 +150,9 @@ def get_object_graph_stats(graph_to_target, target_to_graph):
     n_objects_per_graph = [len(graph_to_target[k]) for k in graph_to_target.keys()]
     n_graphs_per_object = [len(target_to_graph[k]) for k in target_to_graph.keys()]
 
-    # Handle empty lists to prevent numpy warnings
-    mean_objects_per_graph = np.mean(n_objects_per_graph) if len(n_objects_per_graph) > 0 else 0.0
-    mean_graphs_per_object = np.mean(n_graphs_per_object) if len(n_graphs_per_object) > 0 else 0.0
-
     results = dict(
-        mean_objects_per_graph=mean_objects_per_graph,
-        mean_graphs_per_object=mean_graphs_per_object,
+        mean_objects_per_graph=np.mean(n_objects_per_graph),
+        mean_graphs_per_object=np.mean(n_graphs_per_object),
     )
     return results
 
@@ -446,11 +442,7 @@ def get_overall_pose_error(stats, lm_id="LM_0"):
                 Rotation.from_quat(detected), Rotation.from_quat(target)
             )
             errors.append(err)
-    # Handle empty errors to prevent numpy warnings
-    if len(errors) > 0:
-        return np.round(np.mean(errors), 4)
-    else:
-        return 0.0
+    return np.round(np.mean(errors), 4)
 
 
 def print_overall_stats(stats):

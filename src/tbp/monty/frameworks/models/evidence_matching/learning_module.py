@@ -664,11 +664,7 @@ class EvidenceGraphLM(GraphLM):
             return ["patch_off_object"], [0]
         graph_evidences = []
         for graph_id in graph_ids:
-            # Handle empty evidence arrays to prevent numpy warnings
-            if self.evidence[graph_id].size == 0:
-                graph_evidences.append(0.0)
-            else:
-                graph_evidences.append(np.max(self.evidence[graph_id]))
+            graph_evidences.append(np.max(self.evidence[graph_id]))
         return graph_ids, np.array(graph_evidences)
 
     def get_all_evidences(self):
@@ -825,11 +821,7 @@ class EvidenceGraphLM(GraphLM):
             # Add current mean evidence to give the new hypotheses a fighting
             # chance.
             # TODO H: Test mean vs. median here.
-            # Handle empty evidence arrays to prevent numpy warnings
-            if self.evidence[graph_id].size > 0:
-                current_mean_evidence = np.mean(self.evidence[graph_id])
-            else:
-                current_mean_evidence = 0.0
+            current_mean_evidence = np.mean(self.evidence[graph_id])
             new_evidence = new_evidence + current_mean_evidence
 
         # The mapper update function calls below automatically resize the
@@ -1086,10 +1078,6 @@ class EvidenceGraphLM(GraphLM):
             logger.info("no objects in memory yet.")
             return []
         graph_ids, graph_evidences = self.get_evidence_for_each_graph()
-        # Handle empty graph_evidences to prevent numpy warnings
-        if len(graph_evidences) == 0:
-            return []
-
         # median_ge = np.median(graph_evidences)
         mean_ge = np.mean(graph_evidences)
         max_ge = np.max(graph_evidences)

@@ -171,12 +171,7 @@ class DetailedLoggingSM(SensorModuleBase):
         if "min_depth" in self.features:
             features["min_depth"] = np.min(depth_feat[obs_3d[:, 3] != 0])
         if "mean_depth" in self.features:
-            # Handle empty depth values to prevent numpy warnings
-            depth_values = depth_feat[obs_3d[:, 3] != 0]
-            if len(depth_values) > 0:
-                features["mean_depth"] = np.mean(depth_values)
-            else:
-                features["mean_depth"] = 0.0
+            features["mean_depth"] = np.mean(depth_feat[obs_3d[:, 3] != 0])
         if "hsv" in self.features:
             rgba = rgba_feat[center_row_col, center_row_col]
             hsv = rgb2hsv(rgba[:3])
