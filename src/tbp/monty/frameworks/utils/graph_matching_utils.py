@@ -282,16 +282,21 @@ def get_scaled_evidences(evidences, per_object=False):
                 if evidences[graph_id].size == 0:
                     scaled_evidences[graph_id] = evidences[graph_id]  # Keep empty array
                     continue
-            if max_evidence >= 1:
-                scaled_evidences[graph_id] = (evidences[graph_id] - min_evidence) / (
-                    max_evidence - min_evidence
-                )
-                # put in range(-1, 1)
-                scaled_evidences[graph_id] = (scaled_evidences[graph_id] - 0.5) * 2
-            else:
-                # If largest value is <1, don't scale them -> don't increase any
-                # evidences. Instead just make sure they are in the right range.
-                scaled_evidences[graph_id] = np.clip(evidences[graph_id], -1, 1)
+
+                if max_evidence >= 1:
+                    # Handle case where all evidences are the same
+                    if max_evidence == min_evidence:
+                        scaled_evidences[graph_id] = np.zeros_like(evidences[graph_id])
+                    else:
+                        scaled_evidences[graph_id] = (evidences[graph_id] - min_evidence) / (
+                            max_evidence - min_evidence
+                        )
+                        # put in range(-1, 1)
+                        scaled_evidences[graph_id] = (scaled_evidences[graph_id] - 0.5) * 2
+                else:
+                    # If largest value is <1, don't scale them -> don't increase any
+                    # evidences. Instead just make sure they are in the right range.
+                    scaled_evidences[graph_id] = np.clip(evidences[graph_id], -1, 1)
     return scaled_evidences
 
 
