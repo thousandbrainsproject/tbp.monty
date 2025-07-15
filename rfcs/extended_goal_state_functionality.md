@@ -10,6 +10,8 @@ Briefly, the most significant changes proposed here are as follows:
  3. The role of the `GoalStateSelector` is to produce a single output goal state from any number of input goal states.
  4. Motor systems will be responsible for selecting a policy appropriate to the goal state chosen by the `GoalStateSelector`.
  
+**Note**: This RFC is an outgrowthh of [a previous RFC](https://github.com/thousandbrainsproject/tbp.monty/pull/328). Review that document for additional context, especially with respect to the improved saccade efficiency and supporting compositional and multi-object configurations. This RFC is intentionally limited to only the architectural changes required to facilitate those objectives.
+
 # Implementation
 
 ![Information Flow](extended_goal_state_functionality/architecture_overview.png)
