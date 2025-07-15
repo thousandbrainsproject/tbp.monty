@@ -8,7 +8,6 @@
 # https://opensource.org/licenses/MIT.
 from typing import Dict, List, Optional
 
-import numpy as np
 from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
 
 from tbp.monty.frameworks.actions.actions import Action
@@ -118,9 +117,7 @@ class MuJoCoSimulator(Simulator):
         world_body.add_geom(
             name=obj_name,
             type=geom_type,
-            # MuJoCo sizes are generally half-length or radii, so half of the
-            # sizes of the bounding box.
-            size=np.array(scale) * 0.5,
+            size=scale,
             pos=position,
             quat=rotation,
         )

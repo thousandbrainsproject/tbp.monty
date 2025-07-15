@@ -86,14 +86,22 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         geom_elems = self.parse_spec_geoms(sim.spec)
         assert geom_elems[0].attrib["pos"] == "1 1 2"
 
+    def test_primitive_box_scaling(self) -> None:
+        sim = MuJoCoSimulator()
+        sim.add_object("box", scale=(3.0, 3.0, 3.0))
+
+        assert np.allclose(sim.model.geom("box_0").size, np.array([3.0, 3.0, 3.0]))
+        geom_elems = self.parse_spec_geoms(sim.spec)
+        assert geom_elems[0].attrib["size"] == "3 3 3"
+
     def test_primitive_sphere_scaling(self) -> None:
         """Test that scaling works correctly on a sphere."""
         sim = MuJoCoSimulator()
         sim.add_object("sphere", scale=(3.0, 3.0, 3.0))
 
-        assert np.allclose(sim.model.geom("sphere_0").size, np.array([1.5, 1.5, 1.5]))
+        assert np.allclose(sim.model.geom("sphere_0").size, np.array([3.0, 3.0, 3.0]))
         geom_elems = self.parse_spec_geoms(sim.spec)
-        assert geom_elems[0].attrib["size"] == "1.5"
+        assert geom_elems[0].attrib["size"] == "3"
 
     @staticmethod
     def assert_counts_equal(sim: MuJoCoSimulator, count: int) -> None:
