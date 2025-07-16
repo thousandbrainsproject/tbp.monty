@@ -35,7 +35,7 @@ All of the above changes are meant to mirror existing learning-module/GSG behavi
 
 ### `MotorSystem`
  - Will be initialized with any number of policies. As before, these will all be model-free.
- - Will perform policy/action selection based on a given goal state. Note that a goal state may not always be set, in which case it is expected that an appropriate model-free policy will be selected to produce an action.
+ - Will perform policy/action selection based on a given goal state. Note that a goal state may not always be set, in which case it is expected that an appropriate model-free policy will be selected to produce an action. For example, when goal-states from `GetGoodView` are not used, the motor system can randomly saccade.
 
 ### `GoalState`
  - May be augmented with metadata indicating the target of the goal, such as the agent's position or a sensor's sensed location.
