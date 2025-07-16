@@ -460,11 +460,10 @@ class FeatureAtLocationBuffer(BaseBuffer):
         """Get name of first sensory (coming from SM) input channel in buffer.
 
         Returns:
-            The name of the first sensory (coming from SM) input channel in buffer,
-            or None if no sensory channels are found.
+            The name of the first sensory (coming from SM) input channel in buffer.
 
         Raises:
-            ValueError: If no sensory channels are found in the buffer when expected.
+            ValueError: If no sensory channels are found in the buffer.
         """
         all_channels = list(self.locations.keys())
         if len(all_channels) == 0:
@@ -476,8 +475,13 @@ class FeatureAtLocationBuffer(BaseBuffer):
                 self.channel_sensory_types[channel] == "sensory"):
                 return channel
 
-        # If we reach here, no sensory channels were found
-        return None
+        # If we reach here, no sensory channels were found but channels exist
+        # This means we have channels but none are sensory (e.g., only view_finder, LM)
+        raise ValueError(
+            f"No sensory input channels found in buffer. "
+            f"Available channels: {all_channels}. "
+            f"Channel types: {self.channel_sensory_types}"
+        )
 
     def set_individual_ts(self, object_id, pose):
         """Update self.stats with the individual LMs terminal state."""
