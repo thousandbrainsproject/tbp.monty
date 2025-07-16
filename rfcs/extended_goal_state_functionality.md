@@ -30,7 +30,7 @@ All of the above changes are meant to mirror existing learning-module/GSG behavi
 
 ### `Monty`
  - Will have a `gss` attribute to hold a `GoalStateSelector`.
- - Existing machinery that collects goal states, performs selection, and updates the motor system will be replaced. More specifically, `Monty` will collect goal states from both learning modules and sensor modules, but it will defer goal state selection to its `gss` object. The output of the `gss` object will then be used to update the motor system.
+ - Existing machinery that collects goal states, performs selection, and updates the motor system will be replaced. More specifically, `Monty` will collect goal states from both learning modules and sensor modules, but it will defer goal state selection to its `gss` object. The output of the `gss` object will then be used to update the motor system. See the for-loop associated with `best_goal_confidence` in `_pass_infos_to_motor_system` for how this is currently implemented.
  - Optionally, `Monty` may be equipped with additional `lm_to_gss` and `sm_to_gss` connectivity matrices to support more complex routing pathways, but this is not an immediate need.
 
 ### `MotorSystem`
