@@ -34,7 +34,7 @@ All of the above changes are meant to mirror existing learning-module/GSG behavi
  - Optionally, `Monty` may be equipped with additional `lm_to_gss` and `sm_to_gss` connectivity matrices to support more complex routing pathways, but this is not an immediate need.
 
 ### `MotorSystem`
- - Will be initialized with any number of policies.
+ - Will be initialized with any number of policies. As before, these will all be model-free.
  - Will perform policy/action selection based on a given goal state. Note that a goal state may not always be set, in which case it is expected that an appropriate model-free policy will be selected to produce an action.
 
 ### `GoalState`
