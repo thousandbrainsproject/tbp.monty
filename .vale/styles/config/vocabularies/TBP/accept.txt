@@ -25,6 +25,7 @@ colliculus
 affordances
 [Ss]ubgoals
 KDTree
+Knudstrup
 resampling
 wandb
 distractor
