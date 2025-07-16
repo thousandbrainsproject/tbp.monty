@@ -40,7 +40,11 @@ All of the above changes are meant to mirror existing learning-module/GSG behavi
 ### `GoalState`
  - May be augmented with metadata indicating the target of the goal, such as the agent's position or a sensor's sensed location.
 
-Specific modifications to `GoalState` objects are not yet well understood. However, we expect that additional metadata may be required for the motor system to make correct judgments about which policy to select. For example, implementing behavior like `GetGoodView` will require some way to distinguish between goal states that specify an agent's translation and goal states specifying an orienting motion.
+Specific modifications to `GoalState` objects are not yet well understood. However, we expect that additional metadata may be required for the motor system to make correct judgments about which policies and actions to select. To understand why, consider that a goal state currently contains a location and (optionally) morphological and non-morphological metadata. In principal, "location" could refer to many things -- the position of an agent, a sensed location in 3D space, etc. In practice, goal states have only been used to represent a sensed location, and policies have safely assumed that any goal state means "observation located at xyz".
+
+In contrast, a behavior like `GetGoodView` performs agent translation in addition to sensor rotations. Therefore, a goal-state-driven implemention of `GetGoodView` would produce some goal states in which "location" should be interpreted as "agent located at xyz" and not "observation located at xyz". Our current thinking is that we can attach disambiguating metadata to goal states which can be used by the motor system to select the appropriate action without being specific about how it is chosen or executed.
+
+However, adding new metadata in the form of non-morphological features will be limited to only what is needed for appropriate policies/action selection. We do not want to specify an entirely new set of features when the subject of a goal state changes. For example, goal states that target an agent's position and goal states that target a sensed location may both have an "object_id" feature, though its meaning may change based on context.
 
 # Long-Term Objectives
 
