@@ -15,7 +15,9 @@ import quaternion
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.models.monty_base import SensorModuleBase
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+
+# from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.sensor_processing import (
     get_point_normal_naive,
@@ -30,7 +32,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 logger = logging.getLogger(__name__)
 
 
-class DetailedLoggingSM(SensorModuleBase):
+class DetailedLoggingSM(SensorModule):
     """Sensor module that keeps track of raw observations for logging."""
 
     def __init__(
@@ -56,7 +58,9 @@ class DetailedLoggingSM(SensorModuleBase):
             weight_curvature: determines whether to use the "weighted" (True) or
                 "unweighted" (False) implementation for principal curvature extraction.
         """
-        super(DetailedLoggingSM, self).__init__(sensor_module_id)
+        super().__init__()
+        self.sensor_module_id = sensor_module_id
+        self.state = None
         self.save_raw_obs = save_raw_obs
         self.raw_observations = []
         self.sm_properties = []
@@ -117,6 +121,12 @@ class DetailedLoggingSM(SensorModuleBase):
         # saved
         self.visited_locs = []
         self.visited_normals = []
+
+    def post_episode(self):
+        pass
+
+    def set_experiment_mode(self, mode: str):
+        pass
 
     def extract_and_add_features(
         self,
