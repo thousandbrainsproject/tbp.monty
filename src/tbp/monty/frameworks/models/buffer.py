@@ -471,8 +471,10 @@ class FeatureAtLocationBuffer(BaseBuffer):
 
         # Find the first channel marked as sensory
         for channel in all_channels:
-            if (channel in self.channel_sensory_types and
-                self.channel_sensory_types[channel] == "sensory"):
+            if (
+                channel in self.channel_sensory_types
+                and self.channel_sensory_types[channel] == "sensory"
+            ):
                 return channel
 
         # If we reach here, no sensory channels were found but channels exist
