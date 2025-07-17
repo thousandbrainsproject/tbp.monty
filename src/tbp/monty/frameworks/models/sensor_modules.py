@@ -58,7 +58,6 @@ class DetailedLoggingSM(SensorModule):
             weight_curvature: determines whether to use the "weighted" (True) or
                 "unweighted" (False) implementation for principal curvature extraction.
         """
-        super().__init__()
         self.sensor_module_id = sensor_module_id
         self.state = None
         self.save_raw_obs = save_raw_obs
