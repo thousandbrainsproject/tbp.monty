@@ -129,7 +129,7 @@ class DetailedLoggingSM(SensorModule):
     def post_episode(self):
         pass
 
-    def set_experiment_mode(self, mode: str):
+    def set_experiment_mode(self, mode):
         pass
 
     def extract_and_add_features(
