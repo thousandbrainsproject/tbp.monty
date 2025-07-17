@@ -17,6 +17,7 @@ from tbp.monty.frameworks.models.states import State
 
 class FakeSensorModule(SensorModule):
     """Dummy placeholder class used only for tests."""
+
     def __init__(self, sensor_module_id: str):
         self.sensor_module_id = sensor_module_id
 
