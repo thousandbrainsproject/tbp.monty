@@ -79,6 +79,11 @@ class DetailedLoggingSM(SensorModule):
             raw_observations=self.raw_observations, sm_properties=self.sm_properties
         )
 
+    def update_state(self, state):
+        """Update information about the sensors location and rotation."""
+        # TODO: This stores the entire AgentState. Extract sensor-specific state.
+        self.state = state
+
     def step(self, data):
         """Add raw observations to SM buffer."""
         if self.save_raw_obs and not self.is_exploring:
