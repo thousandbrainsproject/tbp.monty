@@ -16,8 +16,6 @@ from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
-
-# from tbp.monty.frameworks.models.motor_system_state import AgentState
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.sensor_processing import (
     get_point_normal_naive,
