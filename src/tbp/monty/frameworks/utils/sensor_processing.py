@@ -123,7 +123,12 @@ def get_point_normal_naive(point_cloud, patch_radius_frac=2.5):
                 norm1 = norm2 = [0, 0, 1]
                 valid_pn = False
                 found_point_normal = True
-    norm = np.mean([norm1, norm2], axis=0)
+    # Handle case where norms might be None to prevent numpy warnings
+    valid_norms = [n for n in [norm1, norm2] if n is not None]
+    if len(valid_norms) == 0:
+        norm = np.array([0, 0, 1])
+    else:
+        norm = np.mean(valid_norms, axis=0)
     # norm = np.cross(vec1_norm, vec2_norm)
     norm = norm / np.linalg.norm(norm)
 
@@ -232,6 +237,12 @@ def get_point_normal_total_least_squares(
 
         # Compute matrix M and p_mean for TLS regression
         n_points = neighbors_on_obj.shape[0]
+        # Handle empty neighbors_on_obj to prevent numpy warnings
+        if n_points == 0:
+            n_dir = np.array([0.0, 0.0, 1.0])
+            valid_pn = False
+            return n_dir, valid_pn
+
         x_mat = neighbors_on_obj.copy()
         p_mean = 1 / n_points * np.mean(x_mat, axis=0, keepdims=True).T
         m_mat = 1 / n_points * np.matmul(x_mat.T, x_mat) - np.matmul(p_mean, p_mean.T)
