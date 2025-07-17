@@ -295,16 +295,16 @@ class SensorModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def update_state(self, state):
+        pass
+
+    @abc.abstractmethod
     def step(self, data):
         """Called on each step.
 
         Args:
             data: Sensor observations
         """
-        pass
-
-    @abc.abstractmethod
-    def update_state(self, state):
         pass
 
     @abc.abstractmethod
