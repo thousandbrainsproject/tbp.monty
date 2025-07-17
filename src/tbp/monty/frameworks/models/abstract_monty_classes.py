@@ -316,3 +316,7 @@ class SensorModule(metaclass=abc.ABCMeta):
     def post_episode(self):
         """This method is called after each episode."""
         pass
+
+    @abc.abstractmethod
+    def set_experiment_mode(self, mode: str):
+        pass
