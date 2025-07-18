@@ -56,6 +56,7 @@ class DetailedLoggingSM(SensorModule):
                 value will raise an error.
             weight_curvature: determines whether to use the "weighted" (True) or
                 "unweighted" (False) implementation for principal curvature extraction.
+            **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
 
