@@ -135,7 +135,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
     # ------------------- Main Algorithm -----------------------
 
-    def step_gsg(self, observations):
+    def step(self, observations):
         """Step the GSG.
 
         Check whether the GSG's output and driving goal-states are achieved, and
