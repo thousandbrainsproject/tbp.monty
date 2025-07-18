@@ -16,8 +16,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
     MontyConfig,
     MotorSystemConfig,
 )
-from tbp.monty.frameworks.models.monty_base import MontyBase, SensorModuleBase
+from tbp.monty.frameworks.models.monty_base import MontyBase
 from tests.unit.frameworks.models.fakes.learning_modules import FakeLearningModule
+from tests.unit.frameworks.models.fakes.sensor_modules import FakeSensorModule
 
 
 @dataclass
@@ -34,7 +35,7 @@ class FakeSingleCameraMontyConfig(MontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=SensorModuleBase,
+                sensor_module_class=FakeSensorModule,
                 sensor_module_args=dict(sensor_module_id="sensor_id_0"),
             ),
         )
