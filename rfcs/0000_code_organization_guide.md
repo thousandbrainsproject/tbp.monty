@@ -188,7 +188,7 @@ class Monty(Protocol):
 
 _Why_: Inheritance hierarchy allows for overriding methods. As class hierarchies deepen, override analysis becomes more complex. The issue is not how the code functions but the difficulty of reasoning about behavior when multiple layers of overrides are possible. The deeper the hierarchy, the more difficult it is to track what code a specific instance uses, and it makes it unclear where functionality should be overridden. Modifying code with a deep inheritance hierarchy is also complex, in that any change can have cascading effects up and down the hierarchy.
 
-Most of the time, **you should default to not using inheritance hierarchy, and instead, reach for other ways to assemble functionality**. Inheritance is appropriate for an is-a relationship, but this is quite a rare occurrence in practice. A lot of things seem like they form an is-a relationship, but the odds of that relationship being maintained drop off dramatically as the code evolves and the hierarchy deepens.
+Most of the time, **you should default to not using inheritance hierarchy, and instead, reach for other ways to assemble functionality**. Inheritance is appropriate for an _is-a_ relationship, but this is quite a rare occurrence in practice. A lot of things seem like they form an _is-a_ relationship, but the odds of that relationship being maintained drop off dramatically as the code evolves and the hierarchy deepens.
 
 ```python
 class Rectangle:
