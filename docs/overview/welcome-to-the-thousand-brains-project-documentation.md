@@ -49,7 +49,7 @@ We are excited to have you here!  Our intention for making the project open-sour
 | <a href="https://www.linkedin.com/company/thousand-brains-project" style="display: flex; align-items: center;"><img src="../figures/overview/linkedin.png" alt="LinkedIn" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;LinkedIn&nbsp;Page</a> | Get the latest news and announcements |
 
 # Citing This Project
-If you're writing a publication that references the Thousand Brains Project, please consider citing one of our papers
+If you're writing a publication that references the Thousand Brains Project or Monty, please cite our papers as appropriate
 
 [Thousand Brains Project white paper](https://arxiv.org/abs/2412.18354):
 ```
