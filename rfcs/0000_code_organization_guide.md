@@ -69,119 +69,20 @@ Protocols document a _behaves-like-a_ relationship.
 
 _Why_: We want to catch errors as early as possible, and using Protocols allows us to do this at type check time. Using abstract classes delays this until class instantiation, once the program runs.
 
-There is no material difference **in the context of usage and expectation documentation** between using Protocols and abstract classes. In other contexts, Protocols are favorable because they allow us to raise errors at type check time and, due to structural typing, do not require inheritance. Compare the code below to [Monty definition in abtract_monty_classes.py](https://github.com/thousandbrainsproject/tbp.monty/blob/c886e187c47aac6135a15b72052c71e34009a92b/src/tbp/monty/frameworks/models/abstract_monty_classes.py#L15).
+There is no material difference **in the context of usage and expectation documentation** between using Protocols and abstract classes. In other contexts, Protocols are favorable because they allow us to raise errors at type check time and, due to structural typing, do not require inheritance.
 
 ```python
-class Monty(Protocol):
-    ###
-    # Methods that specify the algorithm
-    ###
-    def _matching_step(self, observation):
-        """Step format for matching observations to graph.
+# Protocols raise errors during type check when monty.unimplemented() is written:
+class MontyProtocol(Protocol):
+	def implemented(self): ...
+	def unimplemented(self): ...
 
-        Used during training or evaluation.
-        """
-        self.aggregate_sensory_inputs(observation)
-        self._step_learning_modules()
-        self._vote()
-        self._pass_goal_states()
-        self._pass_infos_to_motor_system()
-        self._set_step_type_and_check_if_done()
-        self._post_step()
+class DefaultMonty:
+	def implemented(self):
+		pass
 
-    def _exploratory_step(self, observation):
-        """Step format for adding data to an existing model.
-
-        Used only during training.
-        """
-        self.aggregate_sensory_inputs(observation)
-        self._step_learning_modules()
-        self._pass_infos_to_motor_system()
-        self._set_step_type_and_check_if_done()
-        self._post_step()
-
-    def step(self, observation):
-        """Take a matching, exploratory, or custom user-defined step.
-
-        Step taken depends on the value of self.step_type.
-        """
-        ...
-
-    def aggregate_sensory_inputs(self, observation):
-        """Receive data from dataloader/env, organize on a per sensor module basis."""
-        ...
-
-    def _step_learning_modules(self):
-        """Pass data from SMs to LMs, and have each LM take a step.
-
-        LM step type depends on self.step_type.
-        """
-        ...
-
-    def _vote(self):
-        """Share information across learning modules.
-
-        Use LM.send_out_vote and LM.receive_votes.
-        """
-        ...
-
-    def _pass_goal_states(self):
-        """Pass goal states in the network between learning-modules.
-
-        Aggregate any goal states for sending to the motor-system.
-        """
-        ...
-
-    def _pass_infos_to_motor_system(self):
-        """Pass input observations and goal states to the motor system."""
-        ...
-
-    def _set_step_type_and_check_if_done(self):
-        """Check terminal conditions and decide if to change the step type.
-
-        Update what self.is_done returns to the experiment.
-        """
-        ...
-
-    def _post_step(self):
-        """Hook for doing things like updating counters."""
-        ...
-
-    ###
-    # Saving, loading, and logging
-    ###
-
-    def state_dict(self):
-        """Return a serializable dict with everything needed to save/load monty."""
-        ...
-
-    def load_state_dict(self, state_dict):
-        """Take a state dict as an argument and set state for monty and children."""
-        ...
-
-    ###
-    # Methods that interact with the experiment
-    ###
-
-    def pre_episode(self):
-        """Recursively call pre_episode on child classes."""
-        ...
-
-    def post_episode(self):
-        """Recursively call post_episode on child classes."""
-        ...
-
-    def set_experiment_mode(self, mode):
-        """Set the experiment mode.
-
-        Update state variables based on which method (train or evaluate) is being
-        called at the experiment level.
-        """
-        ...
-
-    def is_done(self):
-        """Return bool to tell the experiment if we are done with this episode."""
-        ...
+monty: MontyProtocol = DefaultMonty() # ok
+monty.unimplemented() # fails type check
 ```
 
 ## Inheritance hierarchy SHALL have at most one level of inheritance
