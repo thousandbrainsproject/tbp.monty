@@ -19,11 +19,11 @@ _Why do we want to move to Protocols eventually?_ We want to catch errors as ear
 # ABCs raises errors during instantiation when/if constructor is called:
 class Monty(ABC):
 	def implemented(self):
-pass
+		pass
 
-@abstractmethod
-def unimplemented(self):
-	pass
+	@abstractmethod
+	def unimplemented(self):
+		pass
 
 class DefaultMonty(Monty):
 	pass
@@ -94,7 +94,7 @@ Most of the time, **you should default to not using inheritance hierarchy, and i
 ```python
 class Rectangle:
 	def __init__(self, length: float, height: float) -> None:
-		super().__init__() # See You SHOULD always include call to super().__init__() in your __init__ methods
+		super().__init__() # See "You SHOULD always include call to super().__init__() ..." section below
 		self._length = length
 		self._height = height
 
@@ -175,15 +175,15 @@ What if we now want to replace the DefaultAreaComputer with a different implemen
 class TooComplicatedAreaComputer:
 	@staticmethod
 	def area(length: float, height: float) -> float:
-return 4 * (length / 2) * (height / 2)
+		return 4 * (length / 2) * (height / 2)
 
 # Use new computer in Rectangle
 class Rectangle:
-def __init__(self, length: float, height: float) -> None:
+	def __init__(self, length: float, height: float) -> None:
 		super().__init__()
-self._length = length
-self._height = height
-self._area_computer = TooComplicatedAreaComputer
+		self._length = length
+		self._height = height
+		self._area_computer = TooComplicatedAreaComputer
 
 	# --unchanged code omitted--
 ```
@@ -455,7 +455,7 @@ child = Child()
 # > Child init
 ```
 
-The problems begin when inherited classes all have __init__ defined.
+The problems begin when inherited classes all have `__init__` defined.
 
 ```python
 # Correct and expected
@@ -490,7 +490,7 @@ class Parent:
 
 class Mixin:
     def __init__(self) -> None:
-	 super().__init__()
+	 	super().__init__()
         print("Mixin init")
 
 class Child(Parent, Mixin):
@@ -516,7 +516,7 @@ class Parent:
 
 class Mixin:
     def __init__(self) -> None:
-	 # super().__init__() skipped
+	 	# super().__init__() skipped
         print("Mixin init")
 
 class Child(Mixin, Parent):
@@ -534,12 +534,12 @@ child = Child()
 
 class Parent:
     def __init__(self) -> None:
-        # super().__init__() skipped
+		# super().__init__() skipped
         print("Parent init")
 
 class Mixin:
     def __init__(self) -> None:
-	 super().__init__()
+	 	super().__init__()
         print("Mixin init")
 
 class Child(Parent, Mixin):
