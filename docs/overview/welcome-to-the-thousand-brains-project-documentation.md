@@ -51,7 +51,7 @@ We are excited to have you here!  Our intention for making the project open-sour
 # Citing This Project
 If you're writing a publication that references the Thousand Brains Project, please consider citing one of our papers
 
-[TBP white paper](https://arxiv.org/abs/2412.18354):
+[Thousand Brains Project white paper](https://arxiv.org/abs/2412.18354):
 ```
 @misc{thousandbrainsproject2024,
       title={The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence},
