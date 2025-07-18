@@ -553,4 +553,3 @@ child = Child()
 # > Parent init
 # > Child init
 ```
-
