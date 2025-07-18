@@ -11,15 +11,9 @@ from __future__ import annotations
 
 import logging
 
-import numpy as np
-
 from tbp.monty.frameworks.loggers.exp_logger import TestLogger
-from tbp.monty.frameworks.models.abstract_monty_classes import (
-    Monty,
-    SensorModule,
-)
+from tbp.monty.frameworks.models.abstract_monty_classes import Monty
 from tbp.monty.frameworks.models.motor_system import MotorSystem
-from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
 
 logger = logging.getLogger(__name__)
@@ -498,62 +492,3 @@ class MontyBase(Monty):
         self.step_type = "exploratory_step"
         self.is_seeking_match = False
         logger.info(f"Going into exploratory mode after {self.matching_steps} steps")
-
-
-class SensorModuleBase(SensorModule):
-    def __init__(self, sensor_module_id):
-        self.sensor_module_id = sensor_module_id
-        self.state = None
-
-    def __call__(self, observation):
-        logger.warning(
-            "SensorModuleBase only outputs placeholder values. Use a "
-            "concrete SM implementation to actually extract features from "
-            "the raw sensory data."
-        )
-        return State(
-            location=np.zeros(3),  # Placeholder
-            morphological_features={
-                "pose_vectors": np.eye(3),
-                "pose_fully_defined": True,
-            },  # Placeholder
-            non_morphological_features=observation,
-            confidence=1,
-            use_state=True,
-            sender_id="SM_0",  # Placeholder
-            sender_type="SM",
-        )
-
-    def state_dict(self):
-        pass
-
-    def step(self, data):
-        logger.warning(
-            "SensorModuleBase only outputs placeholder values. Use a "
-            "concrete SM implementation to actually extract features from "
-            "the raw sensory data."
-        )
-        return State(
-            location=np.zeros(3),  # Placeholder
-            morphological_features={
-                "pose_vectors": np.eye(3),
-                "pose_fully_defined": True,
-            },  # Placeholder
-            non_morphological_features=data,
-            confidence=1,
-            use_state=True,
-            sender_id="SM_0",  # Placeholder
-            sender_type="SM",
-        )
-
-    def update_state(self, state):
-        self.state = state
-
-    def pre_episode(self):
-        pass
-
-    def post_episode(self):
-        pass
-
-    def set_experiment_mode(self, mode):
-        self.experiment_mode = mode

@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 
 import abc
-from typing import Callable
 
 
 class Monty(metaclass=abc.ABCMeta):
@@ -286,13 +285,17 @@ class GoalStateGenerator(metaclass=abc.ABCMeta):
         pass
 
 
-class SensorModule(abc.ABC, Callable):
+class SensorModule(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def state_dict(self):
         """Return a serializable dict with this sensor module's state.
 
         Includes everything needed to save/load this sensor module.
         """
+        pass
+
+    @abc.abstractmethod
+    def update_state(self, state):
         pass
 
     @abc.abstractmethod
@@ -305,10 +308,6 @@ class SensorModule(abc.ABC, Callable):
         pass
 
     @abc.abstractmethod
-    def update_state(self, state):
-        pass
-
-    @abc.abstractmethod
     def pre_episode(self):
         """This method is called before each episode."""
         pass
@@ -316,4 +315,8 @@ class SensorModule(abc.ABC, Callable):
     @abc.abstractmethod
     def post_episode(self):
         """This method is called after each episode."""
+        pass
+
+    @abc.abstractmethod
+    def set_experiment_mode(self, mode: str):
         pass
