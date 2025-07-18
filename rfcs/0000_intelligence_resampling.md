@@ -18,6 +18,9 @@ This is a high-level RFC on intelligence resampling in Monty, considering the be
     - Updated understanding of re-anchoring, distortion, and noise in [Question 1](#how-can-we-re-anchor-hypotheses-to-model-points-for-robustness-to-noise-and-distortions).
     - Removed idea on using Maximum Likelihood Estimation [Question 1](#how-can-we-re-anchor-hypotheses-to-model-points-for-robustness-to-noise-and-distortions) and slightly updated Voxel-center snapping approach.
     - Added new section on [how to represent off-object observations](#how-can-we-represent-off-object-observations).
+- 2025/07/18
+    - Added section on [Implications to FeatureChangeSM and Evidence Scores](#implications-to-featurechangesm-and-evidence-scores)
+    - TL;DR: I think we have a decently solid idea on how to utilize off-object observations to elimninate hypotheses (Question 3). 
 
 <details>
 <summary>Previous Notes on Basic Understanding</summary>
@@ -300,7 +303,7 @@ class FeatureSpace:
     """All observations including 'empty'."""
     def __init__(self, base_features: list, include_metadata: bool = True):
         self.base_features = base_features # list of features we are observing/measuring
-        self.include_metadata # completely optional but I think 
+        self.include_metadata # completely optional but may be helpful in distinguishing whether the feature is from "empty" or off-object or real observation
 
     def encode_observation(self, raw_observation: dict) -> dict:
         features = {}
@@ -327,9 +330,58 @@ class FeatureSpace:
         missing_values = {
             "color": [0, 0, 0] # black
             "depth": max_depth # 1 meter?
-            # etc.
+            # need to think about "empty" for point_normal, curvature, etc.
         }
         return missing_values[feat_name]
 ```
 
-#### Implications to FeatureChangeSM and Evidence Scores
+### Implications to FeatureChangeSM and Evidence Scores
+
+#### FeatureChangeSM
+With the above `class FeatureSpace`:
+- Changes in features from on-object to on-object will still work as existing.  
+- Off-object to on-object (and vice versa) will be a significant change, and LM will receive "empty" features if moving from on-object to off-object.
+- Off-object to off-object may have feature changes, depending on how we define "empty" values. 
+- The off-object observation should trigger FeatureChangeSM but _**should not create new nodes in the object model**_.
+
+Changes that would be made to `sensor_module.py`:
+
+1. Handling of `def check_feature_change()` in `sensor_modules.py`
+
+Current `check_feature_change()`:
+```python
+if not observed_features.get_on_object():
+    # Even for the surface-agent sensor, do not return a feature for LM
+    # processing that is not on the object
+    logger.debug(f"No new point because not on object")
+    return False
+```
+
+This part will very likely need to be updated to handle off-object observations. 
+
+2. The `use_state` flag
+
+**Note**: The `use_state` flag "is a bool indicating whether the input is 'interesting'" which indicates that it merits processing by the learning module.
+
+For simplicity, we could set `use_state` for off-object observations to be `True` so the observation information can be used. A more sophisticated method can be used if we don't want _all_ off-object observations to be sent to LM - to be thought more during actual implementation. 
+
+#### EvidenceGraphLM / Evidence Updating Mechanism
+
+We will need to add some logic to handle off-object observations, e.g.
+```python
+def process_observation(self, state):
+    if state.is_off_object():  # Detected via feature signature
+        # Use for hypothesis elimination
+        self.eliminate_hypotheses_at_location(state.location)
+        # Or lower evidence 
+    else:
+        # Normal on-object processing
+        self.update_evidence(state)
+```
+
+1. The `_calculate_evidence_for_new_locations()` method
+
+Existing mechanism already penalizes mismatches - however, for off-objects observations, we may want to always give large negative evidence regardless of the magnitude of difference (or in case the difference between on-object and off-object are not large enough).
+
+This will naturally decrease evidence score for hypotheses predicting "on-object" at locations near where we observe off-observations! :)
+
