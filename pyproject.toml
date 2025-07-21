@@ -336,3 +336,6 @@ namespaces = true
 [tool.setuptools.package-data]
 # habitat-sim resources
 'tbp.monty.simulators.resources' = ['*.json', '*.yml', '*.txt']
+
+[tool.uv]
+environments = ["sys_platform == 'uv configuration is not yet supported'"]
