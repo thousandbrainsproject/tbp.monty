@@ -416,17 +416,17 @@ See https://eugeneyan.com/writing/uncommon-python/#using-super-in-base-classes f
 # Correct and expected
 
 class Parent:
-    def __init__(self) -> None:
-        super().__init__()
-        print("Parent init")
+	def __init__(self) -> None:
+		super().__init__()
+		print("Parent init")
 
 class Mixin:
-    pass
+	pass
 
 class Child(Mixin, Parent):
-    def __init__(self) -> None:
-        super().__init__()
-        print("Child init")
+	def __init__(self) -> None:
+		super().__init__()
+		print("Child init")
 
 child = Child()
 
@@ -436,17 +436,17 @@ child = Child()
 
 # Also correct and expected
 class Parent:
-    def __init__(self) -> None:
-        super().__init__()
-        print("Parent init")
+	def __init__(self) -> None:
+		super().__init__()
+		print("Parent init")
 
 class Mixin:
-    pass
+	pass
 
 class Child(Parent, Mixin):
-    def __init__(self) -> None:
-        super().__init__()
-        print("Child init")
+	def __init__(self) -> None:
+		super().__init__()
+		print("Child init")
 
 child = Child()
 
@@ -461,19 +461,19 @@ The problems begin when inherited classes all have `__init__` defined.
 # Correct and expected
 
 class Parent:
-    def __init__(self) -> None:
-        super().__init__()
-        print("Parent init")
+	def __init__(self) -> None:
+		super().__init__()
+		print("Parent init")
 
 class Mixin:
-    def __init__(self) -> None:
-        super().__init__()
-        print("Mixin init")
+	def __init__(self) -> None:
+		super().__init__()
+		print("Mixin init")
 
 class Child(Mixin, Parent):
-    def __init__(self) -> None:
-        super().__init__()
-        print("Child init")
+	def __init__(self) -> None:
+		super().__init__()
+		print("Child init")
 
 child = Child()
 
@@ -484,19 +484,19 @@ child = Child()
 
 # Also correct and expected
 class Parent:
-    def __init__(self) -> None:
-        super().__init__()
-        print("Parent init")
+	def __init__(self) -> None:
+		super().__init__()
+		print("Parent init")
 
 class Mixin:
-    def __init__(self) -> None:
-	 	super().__init__()
-        print("Mixin init")
+	def __init__(self) -> None:
+		super().__init__()
+		print("Mixin init")
 
 class Child(Parent, Mixin):
-    def __init__(self) -> None:
-        super().__init__()
-        print("Child init")
+	def __init__(self) -> None:
+		super().__init__()
+		print("Child init")
 
 child = Child()
 
@@ -510,19 +510,19 @@ child = Child()
 # class Child(Mixin, Parent) where we skip super().__init__() in Mixin
 
 class Parent:
-    def __init__(self) -> None:
-        super().__init__()
-        print("Parent init")
+	def __init__(self) -> None:
+		super().__init__()
+		print("Parent init")
 
 class Mixin:
-    def __init__(self) -> None:
-	 	# super().__init__() skipped
-        print("Mixin init")
+	def __init__(self) -> None:
+		# super().__init__() skipped
+		print("Mixin init")
 
 class Child(Mixin, Parent):
-    def __init__(self) -> None:
-        super().__init__()
-        print("Child init")
+	def __init__(self) -> None:
+		super().__init__()
+		print("Child init")
 
 child = Child()
 
@@ -533,19 +533,19 @@ child = Child()
 # class Child(Parent, Mixin) where we skip super().__init__() in Parent
 
 class Parent:
-    def __init__(self) -> None:
+	def __init__(self) -> None:
 		# super().__init__() skipped
-        print("Parent init")
+		print("Parent init")
 
 class Mixin:
-    def __init__(self) -> None:
-	 	super().__init__()
-        print("Mixin init")
+	def __init__(self) -> None:
+		super().__init__()
+		print("Mixin init")
 
 class Child(Parent, Mixin):
-    def __init__(self) -> None:
-        super().__init__()
-        print("Child init")
+	def __init__(self) -> None:
+		super().__init__()
+		print("Child init")
 
 child = Child()
 
