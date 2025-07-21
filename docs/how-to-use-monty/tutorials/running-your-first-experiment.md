@@ -19,16 +19,20 @@ from dataclasses import asdict
 
 from benchmarks.configs.names import MyExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
-    SingleCameraMontyConfig,
-    LoggingConfig
+    LoggingConfig,
+    PatchAndViewMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     ExperimentArgs,
     get_env_dataloader_per_object_by_idx,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
-from tbp.monty.frameworks.experiments import MontyExperiment
-from tbp.monty.simulators.habitat.configs import SinglePTZHabitatDatasetArgs
+from tbp.monty.frameworks.experiments.pretraining_experiments import (
+    MontySupervisedObjectPretrainingExperiment,
+)
+from tbp.monty.simulators.habitat.configs import (
+    PatchViewFinderMountHabitatDatasetArgs,
+)
 
 #####
 # To test your env and help you familiarize yourself with the code, we'll run the simplest possible
@@ -38,21 +42,19 @@ from tbp.monty.simulators.habitat.configs import SinglePTZHabitatDatasetArgs
 #####
 
 first_experiment = dict(
-    experiment_class=MontyExperiment,
+    experiment_class=MontySupervisedObjectPretrainingExperiment,
     logging_config=LoggingConfig(),
     experiment_args=ExperimentArgs(
         do_eval=False,
         max_train_steps=1,
         n_train_epochs=1,
     ),
-    monty_config=SingleCameraMontyConfig(),
+    monty_config=PatchAndViewMontyConfig(),
     # Data{set, loader} config
     dataset_class=ED.EnvironmentDataset,
-    dataset_args=SinglePTZHabitatDatasetArgs(),
+    dataset_args=PatchViewFinderMountHabitatDatasetArgs(),
     train_dataloader_class=ED.EnvironmentDataLoaderPerObject,
     train_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=1),
-    eval_dataloader_class=ED.EnvironmentDataLoaderPerObject,
-    eval_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=1),
 )
 
 experiments = MyExperiments(
@@ -88,7 +90,7 @@ Experiments are implemented as Python classes with methods like `train` and `eva
 
 One epoch will run training (or evaluation) on all the specified objects.  An epoch generally consists of multiple episodes, one for each object, or for each pose of an object in the environment. An episode is one training or evaluating session with one single object. This episode consists of a sequence of steps. What happens in a step depends on the particular experiment, but an example would be: shifting the agent's position, reading sensor inputs, transforming sensor inputs to features, and adding these features to an object model. For more details on this default experiment setup see [this section from the Monty documentation](../../how-monty-works/experiment.md).
 
-If you examine the `MontyExperiment` class, you will also notice that there are related methods like `{pre,post}_epoch`, and `{pre,post}_episode`. **With inheritance or mixin classes, you can use these methods to customize what happens before during and after each epoch, or episode. **Also notice that each method contains calls to a logger. Logger classes can also be customized to log specific information at each control point. Finally, we save a model with the `save_state_dict` method at the end of each epoch. All told, the sequence of method calls goes something like
+If you examine the `MontyExperiment` class, the parent class of `MontySupervisedObjectPretrainingExperiment`, you will notice that there are related methods like `{pre,post}_epoch`, and `{pre,post}_episode`. **With inheritance or mixin classes, you can use these methods to customize what happens before during and after each epoch, or episode.** For example, `MontySupervisedObjectPretrainingExperiment` reimplements `pre_episode` and `post_epoch` to provide extra functionality specific to pretraining experiments. Also notice that each method contains calls to a logger. Logger classes can also be customized to log specific information at each control point. Finally, we save a model with the `save_state_dict` method at the end of each epoch. All told, the sequence of method calls goes something like
 
 - `MontyExperiment.train` (loops over epochs)
   - Do pre-train logging.
@@ -107,19 +109,21 @@ If you examine the `MontyExperiment` class, you will also notice that there are 
       - Do post-epoch logging.
   - Do post-train logging.
 
-and **this is exactly the procedure that was executed when you ran `python run.py -e first_experiment`.** When we run Monty in evaluation mode, the same sequence of calls is initiated by `MontyExperiment.evaluate` minus the model updating step in `MontyExperiment.post_episode`. See [here](../../how-monty-works/experiment.md) for more details on epochs, episodes, and steps.
+and **this is exactly the procedure that was executed when you ran `python run.py -e first_experiment`.** (Please note that we're writing `MontyExperiment` in the above sequence rather than `MontySupervisedObjectPretrainingExperiment` for the sake of generality). When we run Monty in evaluation mode, the same sequence of calls is initiated by `MontyExperiment.evaluate` minus the model updating step in `MontyExperiment.post_episode`. See [here](../../how-monty-works/experiment.md) for more details on epochs, episodes, and steps.
 
 ## Model
 
-The model is specified in the `monty_config` field of the `first_experiment` config as a `SingleCameraMontyConfig` which is in turn defined within `src/tbp/monty/frameworks/config_utils/config_args.py`. Yes, that's a config within a config. The reason for nesting configs is that the model is an ensemble of LearningModules (LMs), and SensorModules (SMs), each of which could potentially have their own configuration as well. For more details on configuring custom learning or sensor modules see [this guide](../customizing-monty.md).
+The model is specified in the `monty_config` field of the `first_experiment` config as a `PatchAndViewMontyConfig` which is in turn defined within `src/tbp/monty/frameworks/config_utils/config_args.py`. Yes, that's a config within a config. The reason for nesting configs is that the model is an ensemble of LearningModules (LMs), and SensorModules (SMs), each of which could potentially have their own configuration as well. For more details on configuring custom learning or sensor modules see [this guide](../customizing-monty.md).
 
-For now, we will start with the simplest version of this complex system. The `SingleCameraMontyConfig` dataclass has fields `learning_module_configs` and `sensor_module_configs` where each key is the name of an LM (or SM resp.), and each value is the full config for that model component. **Our first model has only one LM and one SM**. Note that the `sm_to_agent_dict` field of the model config maps each SM to an "agent" (i.e. a moveable part), and only a single agent is specified, meaning that our model has one moveable part with one sensor attached to it. In particular, it has an RGBD camera attached to it.
+For now, we will start with one of the simpler and most common versions of this complex system. The `PatchAndViewMontyConfig` dataclass has fields `learning_module_configs` and `sensor_module_configs` where each key is the name of an LM (or SM resp.), and each value is the full config for that model component. **Our first model has one LM and two SMs**. Why two SMs and only 1 LM? One SM provides the LM with processed observations, while the second SM is used solely to initialize the agent at the beginning of the experiment.
+
+Note that the `sm_to_agent_dict` field of the model config maps each SM to an "agent" (i.e. a moveable part), and only a single agent is specified, meaning that our model has one moveable part with one sensor attached to it. In particular, it has an RGBD camera attached to it.
 
 ## Steps
 
 By now, we know that an experiment relies on `train` and `evaluate` methods, that each of these runs one or more `epochs`, which consists of one or more `episodes`, and finally each `episode` repeatedly calls `model.step`. Now we will start unpacking each of these levels, starting with the innermost loop over `steps`.
 
-In `SingleCameraMontyConfig`, notice that the model class is specified as `MontyBase` (`src/tbp/monty/frameworks/models/monty_base`), which is a subclass of an abstract class defined in `src/tbp/monty/frameworks/models/abstract_monty_classes`. In here you will see that there are two template methods for two types of steps: `_exploratory_step` and `_matching_step`. In turn, each of these steps is defined as a sequence of calls to other abstract methods, including `_set_step_type_and_check_if_done`, which is a point at which the step type can be switched. The conceptual difference between these types of steps is that **during exploratory steps, no inference is attempted**, which means no voting and no keeping track of which objects or poses are possible matches to the current observation. Each time `model.step` is called in the experimental procedure listed under the "Episodes and Epochs" heading, either `_exploratory_step` or `_matching_step` will be called. In a typical experiment, training consists of running `_matching_step` until a) an object is recognized, or b) all known objects are ruled out, or c) a step counter exceeds a threshold. Regardless of how matching-steps is terminated, the system then switches to running exploratory step so as to gather more observations and build a more complete model of an object.
+In `PatchAndViewMontyConfig`, notice that the model class is specified as `MontyForGraphMatching` (`src/tbp/monty/frameworks/models/graph_matching.py`), which is a subclass of `MontyBase` defined in `src/tbp/monty/frameworks/models/monty_base.py`, which in turn is a subclass of `Monty`, an abstract base class defined in `src/tbp/monty/frameworks/models/abstract_monty_classes.py`. In the abstract base class `Monty`, you will see that there are two template methods for two types of steps: `_exploratory_step` and `_matching_step`. In turn, each of these steps is defined as a sequence of calls to other abstract methods, including `_set_step_type_and_check_if_done`, which is a point at which the step type can be switched. The conceptual difference between these types of steps is that **during exploratory steps, no inference is attempted**, which means no voting and no keeping track of which objects or poses are possible matches to the current observation. Each time `model.step` is called in the experimental procedure listed under the "Episodes and Epochs" heading, either `_exploratory_step` or `_matching_step` will be called. In a typical experiment, training consists of running `_matching_step` until a) an object is recognized, or b) all known objects are ruled out, or c) a step counter exceeds a threshold. Regardless of how matching-steps is terminated, the system then switches to running exploratory step so as to gather more observations and build a more complete model of an object.
 
 You can, of course, customize step types and when to switch between step types by defining subclasses or mixins. To set the initial step type, use `model.pre_episode`. To adjust when and how to switch step types, use `_set_step_type_and_check_if_done`.
 
