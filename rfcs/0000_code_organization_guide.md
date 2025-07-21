@@ -270,7 +270,7 @@ class Rectangle:
 
 ## To share a functionality implementation that reads the state of the instance being mixed with, mixins MAY be used
 
-For sharing functionality, mixins only implement a shared behaves-like-a functionality. They add functionality, they do not add state. However, mixins SHALL NOT add state to the instance being mixed with. Every time you find yourself in need of state when working on a mixin, switch to composition instead.
+For sharing functionality, mixins only implement a shared behaves-like-a functionality. They add functionality, however, mixins SHALL NOT add state to the instance being mixed with. Every time you find yourself in need of state when working on a mixin, switch to composition instead.
 
 _Why_: When Mixins do not add state, they are not terrible for implementing shared functionality. That’s why you MAY use them for this. However, when Mixins add state, you must look at two places for the state to understand the implementation instead of one. Having to look in two places is an example of incidental complexity, where it is not inherent to the problem being solved. Incidental complexity should be minimized.
 
