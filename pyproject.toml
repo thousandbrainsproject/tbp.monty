@@ -338,4 +338,4 @@ namespaces = true
 'tbp.monty.simulators.resources' = ['*.json', '*.yml', '*.txt']
 
 [tool.uv]
-environments = ["sys_platform == 'uv configuration is not yet supported'"]
+environments = ["sys_platform == 'uv tool is not yet supported'"]
