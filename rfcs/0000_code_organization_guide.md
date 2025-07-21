@@ -28,7 +28,11 @@ class Monty(ABC):
 class DefaultMonty(Monty):
 	pass
 
-monty= DefaultMonty() # runtime error
+def invoke(monty: Monty):
+	monty.unimplemented()
+
+monty = DefaultMonty() # runtime error & fails type check
+invoke(monty)  # OK, no type error
 
 # ---
 
@@ -43,12 +47,15 @@ class Monty:
 class DefaultMonty(Monty):
 	pass
 
-monty = DefaultMonty() # ok
-monty.unimplemented() # runtime error
+def invoke(monty: Monty):
+	monty.unimplemented()  # runtime error
+
+monty = DefaultMonty() # OK, no type error
+invoke(monty) # OK, no type error
 
 # ---
 
-# Protocols raise errors during type check when monty.unimplemented() is written:
+# Protocols raise errors during type check when attempting use:
 class MontyProtocol(Protocol):
 	def implemented(self): ...
 	def unimplemented(self): ...
@@ -57,8 +64,12 @@ class DefaultMonty:
 	def implemented(self):
 		pass
 
-monty: MontyProtocol = DefaultMonty() # ok
-monty.unimplemented() # fails type check
+def invoke(monty: MontyProtocol):
+	monty.unimplemented()  # runtime error
+
+monty = DefaultMonty()  # OK
+other: MontyProtocol = DefaultMonty() # fails type check
+invoke(monty)  # fails type check
 ```
 
 While abstract classes MAY be used, you SHOULD prefer Protocols.
