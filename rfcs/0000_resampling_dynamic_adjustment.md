@@ -19,9 +19,9 @@ as it tries to make sense of this high prediction error.
 
 This RFC proposes the following:
 1. Redefine the resampling parameters to decouple the amount of resampled hypotheses from deleted hypotheses. At the moment,
-these are tightly coupled to satisfy the hypothesis space size multiplier parameter. More details in the [parameters decoupling](<0000_resampling_dynamic_adjustment#Resampling Parameters Decoupling>) section. 
+these are tightly coupled to satisfy the hypothesis space size multiplier parameter.
 2. Allow resampling to be informed by Monty's step-wise performance metrics (e.g., confidence and prediction error), this will
-enable dynamic resizing of the hypothesis space. More details in the [Monty-informed resampling](<0000_resampling_dynamic_adjustment#Monty-Informed Resampling>) section.
+enable dynamic resizing of the hypothesis space.
 3. Optimize the `EvidenceSlopeTracker` to run faster. More specifically, implement these [notes](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/frameworks/utils/evidence_matching.py?plain=1#L261-L271).
 
 
