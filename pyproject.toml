@@ -26,7 +26,7 @@ dependencies = [
     'scikit-learn==1.3.2', # imported via conda (conda-forge::scikit-learn)
     'scipy', # imported via conda (conda-forge::scipy)
     'sympy', # imported via conda (conda-forge::sympy)
-    'torch', # imported via conda (pytorch::pytorch)
+    'torch==1.11.0', # imported via conda (pytorch::pytorch)
     'torchvision', # imported via conda (pytorch::torchvision)
     'torch-geometric', # imported via conda (pyg::pyg)
     'tqdm', # imported via conda (conda-forge::tqdm)
