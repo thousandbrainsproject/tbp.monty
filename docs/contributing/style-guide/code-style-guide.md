@@ -60,7 +60,7 @@ This guidance does not dictate the only way to implement functionality. There ar
 
 Please note that there are differences between research and platform requirements. While research needs speed and agility, the platform needs modularity and stability. These are different and can conflict. The guidance here is for the platform. _**If you are a researcher, you MAY ignore this guidance in your prototype and code in the way most effective for you and your task.**_ Later, if your prototype works and needs to be integrated into Monty, then we will refactor the prototype to correspond to the guidance here.
 
-### Abstract classes MAY be used to specify interfaces without implementations:
+### Abstract Classes MAY Be Used to Specify Interfaces Without Implementations
 
 _Why?_ We want to move to [Protocols](https://typing.python.org/en/latest/spec/protocol.html#protocols) eventually. Keeping the abstract classes free of implementation makes it easier to transition to Protocols in the future. Whereas, having an abstract class with some implementation requires additional refactoring when we transition to Protocols.
 
@@ -125,7 +125,7 @@ invoke(monty)  # fails type check
 
 While abstract classes MAY be used, you SHOULD prefer Protocols.
 
-### Protocols SHOULD be preferred to document usage and expectations
+### Protocols SHOULD Be Preferred to Document Usage and Expectations
 
 Protocols document a _behaves-like-a_ relationship.
 
@@ -147,7 +147,7 @@ monty: MontyProtocol = DefaultMonty() # ok
 monty.unimplemented() # fails type check
 ```
 
-### Inheritance hierarchy SHALL have at most one level of inheritance
+### Inheritance Hierarchy SHALL Have at Most One Level of Inheritance
 
 _Why_: Inheritance hierarchy allows for overriding methods. As class hierarchies deepen, override analysis becomes more complex. The issue is not how the code functions but the difficulty of reasoning about behavior when multiple layers of overrides are possible. The deeper the hierarchy, the more difficult it is to track what code a specific instance uses, and it makes it unclear where functionality should be overridden. Modifying code with a deep inheritance hierarchy is also complex, in that any change can have cascading effects up and down the hierarchy.
 
@@ -276,7 +276,7 @@ class Rectangle:
 
 If we want our code to change rapidly, to try out different ideas, and to configure existing code with these variants, using modular components for functionality reuse instead of inheritance allows for changes to remain small in scope without affecting unrelated functionality up and down the inheritance chain.
 
-### Bare functions or static methods SHOULD be used to share a functionality implementation that does not access instance state
+### Bare Functions or Static Methods SHOULD Be Used to Share a Functionality Implementation That Does Not Access Instance State
 
 _Why_: Do not require state that you don’t access. Functions without state are vastly easier to reuse, refactor, reason about, and test.
 
@@ -330,7 +330,7 @@ class Rectangle:
 		return self._area_computer(self._length, self._height)
 ```
 
-### To share a functionality implementation that reads the state of the instance being mixed with, mixins MAY be used
+### To Share a Functionality Implementation That Reads the State of the Instance Being Mixed With, Mixins MAY Be Used
 
 For sharing functionality, mixins only implement a shared behaves-like-a functionality. They add functionality, however, mixins SHALL NOT add state to the instance being mixed with. Every time you find yourself in need of state when working on a mixin, switch to composition instead.
 
@@ -367,7 +367,7 @@ class Rectangle(RectangleAreaMixin):
 		super().__init__(length, height)
 ```
 
-### Composition SHOULD be used to share a functionality implementation that needs its own state
+### Composition SHOULD Be Used to Share a Functionality Implementation That Needs Its Own State
 
 Composition is used to implement a _has-a_ relationship.
 
@@ -462,7 +462,7 @@ class Circle:
 		return self._resize_counter.count
 ```
 
-### You SHOULD always include call to super().__init__() in your __init__ methods
+### You SHOULD Always Include Call to `super().__init__()` in Your `__init__` Methods
 
 _Why_: This avoids possible issues with multiple inheritance by opting into “cooperative multiple inheritance.”
 
