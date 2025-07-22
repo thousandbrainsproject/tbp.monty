@@ -472,7 +472,7 @@ See https://eugeneyan.com/writing/uncommon-python/#using-super-in-base-classes f
 
 > [!NOTE]
 >
-> `print` call occurs _after_ the call to `super().__init__()`. Output would be in different order if `print` ocurred before the  `super().__init__()` call.
+> `print` call occurs _after_ the call to `super().__init__()`. Output would be in different order if `print` occurred before the  `super().__init__()` call.
 
 ```python
 # Correct and expected
