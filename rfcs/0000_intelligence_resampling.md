@@ -21,6 +21,8 @@ This is a high-level RFC on intelligence resampling in Monty, considering the be
 - 2025/07/18
     - Added section on [Implications to FeatureChangeSM and Evidence Scores](#implications-to-featurechangesm-and-evidence-scores)
     - TL;DR: I think we have a decently solid idea on how to utilize off-object observations to elimninate hypotheses (Question 3). 
+- 2025/07/21
+    - Added section on [How can we re-anchor based on observed features?](#how-can-we-re-anchor-based-on-observed-features)
 
 <details>
 <summary>Previous Notes on Basic Understanding</summary>
@@ -175,6 +177,20 @@ def voxel_center_reanchoring(self, confidence_threshold=0.8):
             voxel = find_voxel_with_similar_features()
             self.possible_locations[graph_id][idx] = voxel.locations
 ```
+
+### How can we re-anchor based on observed features?
+
+One way may be to store SIFT features for each node in an object model while learning, and then re-anchoring based on observed SIFT features to the SIFT features in stored object model. We likely do not want to re-anchor when there is multiple matches, i.e. it means the observed SIFT feature is not very unique. To reduce the number of matches, we can also filter for unique SIFT features when learning (instead of storing all identified SIFT features). If there is a match, then we can simply calculate the difference in the SIFT orientations to re-anchor the hypothesis. An example of this is the bent logo - it will have the same SIFT features as a regular logo that we can use to match, and then compare the orientation difference to re-anchor.
+
+#### Brief SIFT Background
+
+A SIFT feature consists of:
+1. Keypoint location (x, y)
+2. Scale 
+3. Orientation 
+4. 128-dim descriptor vector
+
+The descriptor vector can be used to find matches, and the orientation (and keypoint location) can be used to re-anchor the hypothesis. 
 
 ## How can we use prediction errors in off-object observations to eliminate hypotheses? 
 
