@@ -268,7 +268,6 @@ ignore = [
     "PT018", # PT018: Assertion should be broken down into multiple parts
     "PT027", # PT027: Use `pytest.raises` instead of unittest-style `assertRaises`
     "PTH103", # PTH103: `os.makedirs()` should be replaced by `Path.mkdir(parents=True)`
-    "PTH104", # PTH104: `os.rename()` should be replaced by `Path.rename()`
     "PTH107", # PTH107: `os.remove()` should be replaced by `Path.unlink()`
     "PTH110", # PTH110: `os.path.exists()` should be replaced by `Path.exists()`
     "PTH111", # PTH111: `os.path.expanduser()` should be replaced by `Path.expanduser()`
