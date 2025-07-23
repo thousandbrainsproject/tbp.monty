@@ -168,7 +168,7 @@ def get_initial_possible_poses(initial_possible_pose_type) -> list[Rotation] | N
 
 
 def add_pose_features_to_tolerances(tolerances, default_tolerances=20) -> dict:
-    """Add surface_normal and curvature_direction default tolerances if not set.
+    """Add default `pose_vectors` tolerances if not set.
 
     Returns:
         Tolerances dictionary with added pose_vectors if not set.
