@@ -22,7 +22,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 logger = logging.getLogger(__name__)
 
 
-def get_surface_normal_naive(point_cloud, patch_radius_frac=2.5):
+def surface_normal_naive(point_cloud, patch_radius_frac=2.5):
     """Estimate surface normal.
 
     This is a very simplified alternative to open3d's estimate_normals where we
@@ -127,7 +127,7 @@ def get_surface_normal_naive(point_cloud, patch_radius_frac=2.5):
     return norm, valid_sn
 
 
-def get_surface_normal_ordinary_least_squares(
+def surface_normal_ordinary_least_squares(
     sensor_frame_data, world_camera, center_id, neighbor_patch_frac=3.2
 ):
     """Extracts the surface normal direction from a noisy point-cloud.
@@ -154,7 +154,7 @@ def get_surface_normal_ordinary_least_squares(
     if point_cloud[center_id, 3] > 0:
         # Define local neighborhood for least-squares fitting
         # Only use neighbors that lie on an object to extract surface normals
-        neighbors_on_obj = get_center_neighbors(
+        neighbors_on_obj = center_neighbors(
             point_cloud, center_id, neighbor_patch_frac
         )
 
@@ -195,7 +195,7 @@ def get_surface_normal_ordinary_least_squares(
     return surface_normal, valid_sn
 
 
-def get_surface_normal_total_least_squares(
+def surface_normal_total_least_squares(
     point_cloud_base, center_id, view_dir, neighbor_patch_frac=3.2
 ):
     """Extracts the surface normal direction from a noisy point-cloud.
@@ -223,7 +223,7 @@ def get_surface_normal_total_least_squares(
     if point_cloud[center_id, 3] > 0:
         # Define local neighborhood for least-squares fitting
         # Only use neighbors that lie on an object to extract surface normals
-        neighbors_on_obj = get_center_neighbors(
+        neighbors_on_obj = center_neighbors(
             point_cloud, center_id, neighbor_patch_frac
         )
 
@@ -258,7 +258,7 @@ def get_surface_normal_total_least_squares(
 
 # Old implementation for principal curvature extraction. Refer to
 # get_principal_curvatures() function for new implementation.
-def get_curvature_at_point(point_cloud, center_id, normal):
+def curvature_at_point(point_cloud, center_id, normal):
     """Compute principal curvatures from point cloud.
 
     Computes the two principal curvatures of a 2D surface and corresponding
@@ -377,7 +377,7 @@ def get_curvature_at_point(point_cloud, center_id, normal):
     return k1, k2, dir1, dir2, valid_pc
 
 
-def get_principal_curvatures(
+def principal_curvatures(
     point_cloud_base,
     center_id,
     n_dir,
@@ -453,7 +453,7 @@ def get_principal_curvatures(
         if weighted:
             # Compute the weights for weighted least-square regression
             n_points = on_obj.shape[0]
-            weights = get_weight_matrix(
+            weights = weight_matrix(
                 n_points, center_id, neighbor_patch_frac=neighbor_patch_frac
             )
             weights = weights[on_obj, :]  # Filter off-object points
@@ -524,7 +524,7 @@ def get_principal_curvatures(
     return k1, k2, pc1_dir, pc2_dir, valid_pc
 
 
-def get_center_neighbors(point_cloud, center_id, neighbor_patch_frac):
+def center_neighbors(point_cloud, center_id, neighbor_patch_frac):
     """Get neighbors within a given neighborhood of the patch center.
 
     Returns:
@@ -540,7 +540,7 @@ def get_center_neighbors(point_cloud, center_id, neighbor_patch_frac):
     neighbor_radius = patch_width / neighbor_patch_frac
 
     # Compute pixel distances to patch center (in pixel space).
-    dist_to_center = get_pixel_dist_to_center(n_points, patch_width, center_id)
+    dist_to_center = pixel_dist_to_center(n_points, patch_width, center_id)
 
     # Use distances to define local neighborhood.
     is_neighbor = dist_to_center <= neighbor_radius
@@ -552,7 +552,7 @@ def get_center_neighbors(point_cloud, center_id, neighbor_patch_frac):
     return neighbors_on_obj
 
 
-def get_weight_matrix(n_points, center_id, neighbor_patch_frac=2.13):
+def weight_matrix(n_points, center_id, neighbor_patch_frac=2.13):
     """Extracts individual pixel weights for least-squares fitting.
 
     Weight for each pixel is sampled from a gaussian distribution based on its distance
@@ -572,7 +572,7 @@ def get_weight_matrix(n_points, center_id, neighbor_patch_frac=2.13):
     sigma = patch_width / neighbor_patch_frac
 
     # Compute pixel distances to patch center (in pixel space).
-    dist_to_center = get_pixel_dist_to_center(n_points, patch_width, center_id)
+    dist_to_center = pixel_dist_to_center(n_points, patch_width, center_id)
 
     # Compute weight matrix based on those distances
     w_coefs = (
@@ -585,7 +585,7 @@ def get_weight_matrix(n_points, center_id, neighbor_patch_frac=2.13):
     return w_diag
 
 
-def get_pixel_dist_to_center(n_points, patch_width, center_id):
+def pixel_dist_to_center(n_points, patch_width, center_id):
     """Extracts the relative distance of each pixel to patch center (in pixel space).
 
     Returns:

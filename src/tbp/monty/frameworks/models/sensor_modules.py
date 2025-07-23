@@ -18,12 +18,12 @@ from skimage.color import rgb2hsv
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.sensor_processing import (
-    get_principal_curvatures,
-    get_surface_normal_naive,
-    get_surface_normal_ordinary_least_squares,
-    get_surface_normal_total_least_squares,
     log_sign,
+    principal_curvatures,
     scale_clip,
+    surface_normal_naive,
+    surface_normal_ordinary_least_squares,
+    surface_normal_total_least_squares,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 
@@ -162,7 +162,7 @@ class DetailedLoggingSM(SensorModule):
             obs_3d, sensor_frame_data, center_id, world_camera
         )
 
-        k1, k2, dir1, dir2, valid_pc = get_principal_curvatures(
+        k1, k2, dir1, dir2, valid_pc = principal_curvatures(
             obs_3d, center_id, surface_normal, weighted=self.weight_curvature
         )
         # TODO: test using log curvatures instead
@@ -328,17 +328,17 @@ class DetailedLoggingSM(SensorModule):
     def _get_surface_normals(self, obs_3d, sensor_frame_data, center_id, world_camera):
         if self.surface_normal_method == "TLS":
             # Version with Total Least-Squares (TLS) fitting
-            surface_normal, valid_sn = get_surface_normal_total_least_squares(
+            surface_normal, valid_sn = surface_normal_total_least_squares(
                 obs_3d, center_id, world_camera[:3, 2]
             )
         elif self.surface_normal_method == "OLS":
             # Version with Ordinary Least-Squares (TLS) fitting
-            surface_normal, valid_sn = get_surface_normal_ordinary_least_squares(
+            surface_normal, valid_sn = surface_normal_ordinary_least_squares(
                 sensor_frame_data, world_camera, center_id
             )
         elif self.surface_normal_method == "naive":
             # Naive version
-            surface_normal, valid_sn = get_surface_normal_naive(
+            surface_normal, valid_sn = surface_normal_naive(
                 obs_3d, patch_radius_frac=2.5
             )
         # old version for estimating with open3d (slow on lambda node)
