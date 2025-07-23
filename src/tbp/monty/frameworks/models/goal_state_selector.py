@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class GoalStateSelector:
-    """Select the best goal state from a list of goal states."""
+    """Monty component used to select a single goal state from many."""
 
     def select(self, goal_states: list[GoalState]) -> GoalState | None:
         """Select the best goal state from a list of goal states.
@@ -26,7 +26,8 @@ class GoalStateSelector:
             goal_states: A list of goal states.
 
         Returns:
-            The best goal state.
+            The goal state with the highest confidence value or `None` if no
+            valid goal states were supplied.
         """
         # Remove "None" goal states
         goal_states = [gs for gs in goal_states if gs is not None and gs.use_state]
