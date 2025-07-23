@@ -270,7 +270,7 @@ def get_scaled_evidences(evidences, per_object=False):
     return scaled_evidences
 
 
-def get_custom_distances(nearest_node_locs, search_locs, search_pns, search_curvature):
+def get_custom_distances(nearest_node_locs, search_locs, search_sns, search_curvature):
     """Calculate custom distances modulated by surface normal and curvature.
 
     Args:
@@ -278,7 +278,7 @@ def get_custom_distances(nearest_node_locs, search_locs, search_pns, search_curv
             shape=(num_hyp, max_nneighbors, 3)
         search_locs: search locations for each hypothesis.
             shape=(num_hyp, 3)
-        search_pns: sensed surface normal rotated by hypothesis pose.
+        search_sns: sensed surface normal rotated by hypothesis pose.
             shape=(num_hyp, 3)
         search_curvature: magnitude of sensed curvature (maximum if using
             two principal curvatures). Is used to modulate the search spheres
@@ -300,16 +300,16 @@ def get_custom_distances(nearest_node_locs, search_locs, search_pns, search_curv
     # the query normal. Points with dot product 0 are in this plane, higher
     # magnitudes of the dot product means they are further away from that plane
     # (-> should have larger distance).
-    dot_products = np.einsum("ijk,ik->ij", differences, search_pns)
+    dot_products = np.einsum("ijk,ik->ij", differences, search_sns)
     # Calculate the eucledian distances. shape=(num_hyp, max_nneighbors)
     eucledian_dists = np.linalg.norm(differences, axis=2)
     # Calculate the total distances by adding the absolute dot product to the
-    # eucledian distances. We multiply the dot product by 1/curvature to modulate
+    # euclidean distances. We multiply the dot product by 1/curvature to modulate
     # the flatness of the search sphere. If the curvature is large we want to be
     # able to go further out of the sphere while we want to stay close to the point
     # normal plane if we have a curvature close to 0.
     # To have a minimum wiggle room above and below the plane, even if we have 0
-    # curvature (and to avoide division by 0) we add 0.5 to the denominator.
+    # curvature (and to avoid division by 0) we add 0.5 to the denominator.
     # shape=(num_hyp, max_nneighbors).
     custom_nearest_node_dists = eucledian_dists + np.abs(dot_products) * (
         1 / (np.abs(search_curvature) + 0.5)

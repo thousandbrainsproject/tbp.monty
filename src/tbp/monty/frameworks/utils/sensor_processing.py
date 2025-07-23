@@ -154,9 +154,7 @@ def surface_normal_ordinary_least_squares(
     if point_cloud[center_id, 3] > 0:
         # Define local neighborhood for least-squares fitting
         # Only use neighbors that lie on an object to extract surface normals
-        neighbors_on_obj = center_neighbors(
-            point_cloud, center_id, neighbor_patch_frac
-        )
+        neighbors_on_obj = center_neighbors(point_cloud, center_id, neighbor_patch_frac)
 
         # Solve linear least-square regression: X^{T}X w = X^{T}y <==> Aw = b
         x_mat = neighbors_on_obj.copy()
@@ -223,9 +221,7 @@ def surface_normal_total_least_squares(
     if point_cloud[center_id, 3] > 0:
         # Define local neighborhood for least-squares fitting
         # Only use neighbors that lie on an object to extract surface normals
-        neighbors_on_obj = center_neighbors(
-            point_cloud, center_id, neighbor_patch_frac
-        )
+        neighbors_on_obj = center_neighbors(point_cloud, center_id, neighbor_patch_frac)
 
         # Compute matrix M and p_mean for TLS regression
         n_points = neighbors_on_obj.shape[0]
