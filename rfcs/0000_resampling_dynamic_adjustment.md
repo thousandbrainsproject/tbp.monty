@@ -70,8 +70,13 @@ my preferred starting point.
 #### The resampling parameter
 
 This parameter would rely on Monty's confidence of the existing hypotheses and its prediction
-errors to determine how many new hypotheses are to be resampled. One useful idea is to combine
-these two quantities into a single metric; Monty’s surprise (placeholder name).
+errors to determine how many new hypotheses are to be resampled.
+Confidence can be considered a long-term integration signal. It is built up over time as hypotheses
+accumulate evidence. This cumulative score, when paired with something like `x_percent_threshold`,
+can provide a strong estimate of Monty's belief.
+On the other hand, a prediction error is a short-term signal. It conveys how well Monty's current
+hypotheses match the latest observation, or the last few observations (to smooth out noise).
+One useful idea is to combine these two quantities into a single metric; Monty’s surprise (placeholder name).
 This "surprise" metric captures how unexpected the current observation is, given Monty’s current belief:
 
 * A high prediction error in high-confidence hypotheses (i.e., high surprise)
@@ -86,6 +91,18 @@ We can use existing `x_percent_threshold` logic to calculate confidence, whereas
 easily be derived from the evidence score based on morphological and non-morphological features match. Note
 that the exact formula for calculating "Monty’s surprise" is considered an implementation detail and is
 therefore out of scope for this RFC.
+
+##### Note on biological plausibility
+
+Biological neurons have different time constants for integrating synaptic inputs.
+Different neuron types can have different integration properties, for example, inhibitory tend to integrate and spike
+2-3 times faster[^1] than excitatory neurons.
+In addition, different types of synaptic channels (e.g. AMPA, NMDA) can have different temporal integration windows compared
+to one-another, as well as to the neuron as a whole.
+Finally, there is the added flexibility of dendritic compartments which might have different integration properties[^2] ,
+or having a separate population of neurons integrating (pooling) a summary representation.
+All-in-all its both unsurprising that we are finding ourselves in need of at-least two measures of evidence at different
+time-scales, and this seems perfectly consistent with what biology could implement.
 
 
 ## Optimization Tricks
@@ -123,4 +140,20 @@ This is how I've planned the subtasks of this RFC, if approved.
 3. Change deletion parameter to a fixed threshold and resampling parameter to Monty's surprise.
     * Run unsupervised inference benchmarks and hyperparameter sweep on YCB benchmarks
 
- 
+# Complementary Work on Prediction Error and Resampling
+
+This work is complementary to parallel work on resampling.
+In particular, The [RFC on Intelligent Resampling in Monty](https://github.com/thousandbrainsproject/tbp.monty/pull/366) is
+working out the conceptual details of how prediction errors resulting from observations off an object can inform resampling.
+These observations correspond to seeing another object, or not sensing anything at all (e.g. the finger
+held in empty space), resulting in a high prediction error.
+
+Notably, this parallel work is exploring how the CMP signal from a SM should be formulated and processed
+such that these kinds of observations result in a prediction error.
+The RFC here however considers how prediction errors should be integrated over time, and the resulting resampling
+strategies that follow from them.
+
+
+[^1]: Markram, Henry, et al. "Interneurons of the neocortical inhibitory system." Nature reviews neuroscience 5.10 (2004): 793-807.
+
+[^2]: Wright, William J., Nathan G. Hedrick, and Takaki Komiyama. "Distinct synaptic plasticity rules operate across dendritic compartments in vivo during learning." Science 388.6744 (2025): 322-328.
