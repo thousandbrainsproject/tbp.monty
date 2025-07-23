@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Iterable
 
 from tbp.monty.frameworks.models.states import GoalState
 
@@ -19,11 +20,11 @@ logger = logging.getLogger(__name__)
 class GoalStateSelector:
     """Monty component used to select a single goal state from many."""
 
-    def select(self, goal_states: list[GoalState]) -> GoalState | None:
+    def select(self, goal_states: Iterable[GoalState | None]) -> GoalState | None:
         """Select the best goal state from a list of goal states.
 
         Args:
-            goal_states: A list of goal states.
+            goal_states: An iterable containing `GoalState` (or `None`) objects.
 
         Returns:
             The goal state with the highest confidence value or `None` if no
