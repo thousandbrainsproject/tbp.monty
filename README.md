@@ -55,7 +55,17 @@ If you would like to receive updates, follow us on [Bluesky](https://bsky.app/pr
 If you have further questions or suggestions for collaborations, don't hesitate to contact us directly at **info@thousandbrains.org**.
 
 # Citing the Project
-If you would like to refer to Monty's capabilities and advantages over deep learning, please cite this pre-print:
+If you would like to refer to Monty's capabilities and advantages over deep learning, please cite these pre-print papers:
+
+[TBP white paper](https://arxiv.org/abs/2412.18354):
+```
+@misc{thousandbrainsproject2024,
+      title={The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence},
+      author={Viviane Clay and Niels Leadholm and Jeff Hawkins},
+      year={2024},
+      eprint={2412.18354},
+}
+```
 
 [Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference](https://arxiv.org/abs/2507.04494):
 ```
