@@ -38,7 +38,7 @@ All of the above changes are meant to mirror existing learning-module/GSG behavi
  - Will perform policy/action selection based on a given goal state. Note that a goal state may not always be set, in which case it is expected that an appropriate model-free policy will be selected to produce an action. For example, when goal-states from `GetGoodView` are not used, the motor system can randomly saccade.
 
 ### `GoalState`
- - May be augmented with metadata indicating the target of the goal, such as the agent's position or a sensor's sensed location.
+ - May be augmented with metadata indicating the target of the goal, such as the agent's position or a sensor's sensed location. Specific modifications to `GoalState` will likely evolve as they become more expressive. For example, a goal states may eventually capture a drive to observing anywhere within some bounded region rather than a specific point in space.
 
 Specific modifications to `GoalState` objects are not yet well understood. However, we expect that additional metadata may be required for the motor system to make correct judgments about which policies and actions to select. To understand why, consider that a goal state currently contains a location and (optionally) morphological and non-morphological metadata. In principal, "location" could refer to many things -- the position of an agent, a sensed location in 3D space, etc. In practice, goal states have only been used to represent a sensed location, and policies have safely assumed that any goal state means "observation located at xyz".
 
