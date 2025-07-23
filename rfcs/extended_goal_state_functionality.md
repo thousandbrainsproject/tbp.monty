@@ -29,8 +29,8 @@ Many other Monty components will require modification. Below is a non-exhaustive
 All of the above changes are meant to mirror existing learning-module/GSG behavior.
 
 ### `Monty`
- - Will have a `gss` attribute to hold a `GoalStateSelector`.
- - Existing machinery that collects goal states, performs selection, and updates the motor system will be replaced. More specifically, `Monty` will collect goal states from both learning modules and sensor modules, but it will defer goal state selection to its `gss` object. The output of the `gss` object will then be used to update the motor system. See the for-loop associated with `best_goal_confidence` in `_pass_infos_to_motor_system` for how this is currently implemented.
+ - Will have a `goal_state_selector` attribute to hold a `GoalStateSelector`.
+ - Existing machinery that collects goal states, performs selection, and updates the motor system will be replaced. More specifically, `Monty` will collect goal states from both learning modules and sensor modules, but it will defer goal state selection to its `goal_state_selector` object. The output of the `goal_state_selector` object will then be used to update the motor system. See the for-loop associated with `best_goal_confidence` in `_pass_infos_to_motor_system` for how this is currently implemented.
  - Optionally, `Monty` may be equipped with additional `lm_to_gss` and `sm_to_gss` connectivity matrices to support more complex routing pathways, but this is not an immediate need.
 
 ### `MotorSystem`
@@ -65,7 +65,7 @@ The changes proposed here may disrupt the existing goal-state-execution system. 
 We are still determining the best way to verify when a goal state has been achieved. As it stands, each `GoalStateGenerator` performs this task by reaching into its parent LM, grabbing its input observations, and comparing them with the previously generated goal state. Setting aside parent-access, reimplementing this pattern for goal-state-generating sensor modules won't work for a couple of reasons:
   1. The sensor module's GSG may have produced any number of goal states on the previous step. We need some way to indicate which goal state (if any) was selected and attempted. Note that multi-LM systems can also produce multiple goal states, so there is already a need to implement this behavior.
   2. The observations delivered to the GSG's owning/parent LM or SM may not necessarily contain the information needed to check whether a goal state was achieved. For example, an SM may generate a goal state targeting the agent's position. In this case a goal-state-generator may need access to proprioceptive data for computing goal-state-success. We can also imagine a goal might be to have a minimum percentage of the visual field occuppied an object. In this case, success can only be computed with raw sensor data which isn't available to the GSG (by default).
-  
+
 For the time being, we will continue the approach that the GSG must be able to map an output goal state into a sensory prediction and, finally, determine whether the predicted and actual observations are equivalent. In principal, mappings between goals and predictions may be learned or innate, but our approach will focus on the later for now.
 
 ### Future Complexity
