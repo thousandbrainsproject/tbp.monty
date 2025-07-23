@@ -30,7 +30,7 @@ class GoalStateSelector:
             The goal state with the highest confidence value or `None` if no
             valid goal states were supplied.
         """
-        # Remove "None" goal states
+        # Remove "None" goal states and goal states with `use_state` set to `False`.
         goal_states = [gs for gs in goal_states if gs is not None and gs.use_state]
         if not goal_states:
             return None
