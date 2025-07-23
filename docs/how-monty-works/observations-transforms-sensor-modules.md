@@ -39,7 +39,7 @@ For an overview of **which type of data processing belongs where please refer to
 In this implementation, some features are extracted using all of the information in the sensor patch (e.g. locations of all points in the patch for surface normal and curvature calculation) but then refer to the center of the patch (e.g. only the curvature and surface normal of the center are returned). At the moment all the feature extraction is predefined but in the future, one could also imagine some features being learned.
 
 ## Surface Normals and Principle Curvatures
-We can use the surface normal and principal curvature to define the orientation of the sensor patch. The following video describes what those represent.
+We can use the surface normal (previously referred to as point-normal) and principal curvature to define the orientation of the sensor patch. The following video describes what those represent.
 [Surface Normals and Principle Curvatures](https://res.cloudinary.com/dtnazefys/video/upload/v1731342526/point_normal.mp4)
 
 ## CMP and the State Class
