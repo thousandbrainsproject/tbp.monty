@@ -55,7 +55,7 @@ If you would like to receive updates, follow us on [Bluesky](https://bsky.app/pr
 If you have further questions or suggestions for collaborations, don't hesitate to contact us directly at **info@thousandbrains.org**.
 
 # Citing the Project
-If you would like to refer to Monty's capabilities and advantages over deep learning, please cite these pre-print papers:
+If you're writing a publication that references the Thousand Brains Project, please cite 
 
 [TBP white paper](https://arxiv.org/abs/2412.18354):
 ```
@@ -66,6 +66,9 @@ If you would like to refer to Monty's capabilities and advantages over deep lear
       eprint={2412.18354},
 }
 ```
+
+
+If you would like to refer to Monty's capabilities and advantages over deep learning, please cite
 
 [Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference](https://arxiv.org/abs/2507.04494):
 ```
