@@ -1065,7 +1065,7 @@ class PolicyTest(unittest.TestCase):
                 np.isclose(
                     current_pose[1], agent_direction * (-1), rtol=1.0e-3, atol=1.0e-2
                 )
-            ), "Agent should be (approximately) looking down on the point-normal"
+            ), "Agent should be (approximately) looking down on the surface normal"
 
     def test_core_following_principal_curvature(self):
         """Test ability of surface agent to follow principal curvature.

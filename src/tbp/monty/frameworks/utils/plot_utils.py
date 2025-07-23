@@ -829,7 +829,7 @@ def show_one_step(
     show_num_pos=None,
     show_full_path=False,
     color_by_curvature=False,
-    show_point_normals=False,
+    show_surface_normals=False,
     norm_len=0.01,
     ax_range=0.05,
 ):
@@ -960,7 +960,7 @@ def show_one_step(
                 c=color,
                 s=size,
             )
-            if show_point_normals:
+            if show_surface_normals:
                 norm = model_normals[closest_node_id]
                 # print("norm at closest node (black): " + str(norm))
                 # print(

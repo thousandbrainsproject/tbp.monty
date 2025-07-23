@@ -119,7 +119,7 @@ def already_in_list(
                         redundant_point = False
                         break
                 elif feature == "pose_vectors":
-                    # TODO S: currently just looking at first pose vector (pn)
+                    # TODO S: currently just looking at first pose vector (sn)
                     angle_between = get_angle(
                         features["pose_vectors"][feature_idx][:3],
                         features["pose_vectors"][query_id][:3],
@@ -321,7 +321,7 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
     # Check the angle between all surface normals relative to the first curvature
     # directions. Then look at how many are positive vs. negative and use the ones
     # that make up the majority. So if 5 pns point one way and 10 in the opposite,
-    # we will use the 10 and discard the rest. This avoids averaging over pns that
+    # we will use the 10 and discard the rest. This avoids averaging over sns that
     # are from opposite sides of an objects surface.
     valid_pose_vecs = np.where(np.any(pose_vecs, axis=1))[0]
     if len(valid_pose_vecs) == 0:

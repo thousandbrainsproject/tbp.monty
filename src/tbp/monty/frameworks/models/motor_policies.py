@@ -1566,14 +1566,14 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             degrees that the agent needs to turn
         """
-        original_point_normal = self.processed_observations.get_point_normal()
+        original_surface_normal = self.processed_observations.get_surface_normal()
 
         inverse_quaternion_rotation = self.get_inverse_agent_rot(state)
 
-        rotated_point_normal = qt.rotate_vectors(
-            inverse_quaternion_rotation, original_point_normal
+        rotated_surface_normal = qt.rotate_vectors(
+            inverse_quaternion_rotation, original_surface_normal
         )
-        x, y, z = rotated_point_normal
+        x, y, z = rotated_surface_normal
 
         if orienting == "horizontal":
             return -np.degrees(np.arctan(x / z)) if z != 0 else -np.sign(x) * 90.0
@@ -1820,7 +1820,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # TODO: This value doesn't seem to be used anywhere
             self.action_details["z_defined_pc"].append(
                 [
-                    self.processed_observations.get_point_normal(),
+                    self.processed_observations.get_surface_normal(),
                     self.processed_observations.get_curvature_directions(),
                 ]
             )

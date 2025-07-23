@@ -139,7 +139,7 @@ class State:
         """
         return self.morphological_features["pose_vectors"][pose_vector_index]
 
-    def get_point_normal(self):
+    def get_surface_normal(self):
         """Return the surface normal vector.
 
         Raises:
@@ -148,7 +148,7 @@ class State:
         if self.sender_type == "SM":
             return self.get_nth_pose_vector(0)
         else:
-            raise ValueError("Sender type must be SM to get point normal.")
+            raise ValueError("Sender type must be SM to get surface normal.")
 
     def get_pose_vectors(self):
         """Return the pose vectors."""

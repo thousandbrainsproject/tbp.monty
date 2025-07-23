@@ -22,7 +22,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 logger = logging.getLogger(__name__)
 
 
-def get_point_normal_naive(point_cloud, patch_radius_frac=2.5):
+def get_surface_normal_naive(point_cloud, patch_radius_frac=2.5):
     """Estimate surface normal.
 
     This is a very simplified alternative to open3d's estimate_normals where we
@@ -38,7 +38,7 @@ def get_point_normal_naive(point_cloud, patch_radius_frac=2.5):
     Args:
         point_cloud: list of 3d coordinates and whether the points are on the
             object or not. shape = [n, 4]
-        patch_radius_frac: Fraction of observation size to use for PN calculation.
+        patch_radius_frac: Fraction of observation size to use for SN calculation.
             Default of 2.5 means that we look half_obs_dim//2.5 to the left, right, up
             and down. With a resolution of 64x64 that would be 12 pixels. The
             calculated tan_len (in this example 12) describes the distance of pixels
@@ -49,7 +49,7 @@ def get_point_normal_naive(point_cloud, patch_radius_frac=2.5):
 
     Returns:
         norm: Estimated surface normal at center of patch
-        valid_pn: Boolean for whether the surface normal was valid or not (True by
+        valid_sn: Boolean for whether the surface normal was valid or not (True by
             default); an invalid surface normal means there were not enough points in
             the patch to make any estimate of the surface normal
     """
@@ -58,9 +58,9 @@ def get_point_normal_naive(point_cloud, patch_radius_frac=2.5):
     center_id = half_obs_dim + obs_dim * half_obs_dim
     assert patch_radius_frac > 1, "patch_radius_frac needs to be > 1"
     tan_len = int(half_obs_dim // patch_radius_frac)
-    found_point_normal = False
-    valid_pn = True
-    while not found_point_normal:
+    found_surface_normal = False
+    valid_sn = True
+    while not found_surface_normal:
         center_id_up = half_obs_dim + obs_dim * (half_obs_dim - tan_len)
         center_id_down = half_obs_dim + obs_dim * (half_obs_dim + tan_len)
 
@@ -74,20 +74,20 @@ def get_point_normal_naive(point_cloud, patch_radius_frac=2.5):
         vecright_norm = vecright / np.linalg.norm(vecright)
         vecleft_norm = vecleft / np.linalg.norm(vecleft)
 
-        # check if tan_len up and right end up on the object and calculate pn from those
+        # check if tan_len up and right end up on the object and calculate sn from those
         norm1, norm2 = None, None
         if (point_cloud[center_id_up, 3] > 0) and (
             point_cloud[center_id + tan_len, 3] > 0
         ):
             norm1 = -np.cross(vecup_norm, vecright_norm)
         # check if tan_len down and left end up on the object and calculate
-        # pn from those
+        # sn from those
         if (point_cloud[center_id_down, 3] > 0) and (
             point_cloud[center_id - tan_len, 3] > 0
         ):
             norm2 = -np.cross(vecdown_norm, vecleft_norm)
 
-        # If any of the surrounding points were not on the object only use one pn.
+        # If any of the surrounding points were not on the object only use one sn.
         if norm1 is None:
             norm1 = norm2
         if norm2 is None:
@@ -100,7 +100,7 @@ def get_point_normal_naive(point_cloud, patch_radius_frac=2.5):
                 norm1 = np.cross(vecup_norm, vecleft_norm)
 
             # check if tan_len down and left end up on the object and calculate
-            # pn from those
+            # sn from those
 
             if (point_cloud[center_id_down, 3] > 0) and (
                 point_cloud[center_id + tan_len, 3] > 0
@@ -111,26 +111,26 @@ def get_point_normal_naive(point_cloud, patch_radius_frac=2.5):
             if norm2 is None:
                 norm2 = norm1
         if norm1 is not None:
-            found_point_normal = True
+            found_surface_normal = True
         else:
             # if none of the combinations worked then 3/4 points are off the object
             # -> try a smaller tan_len
             tan_len = tan_len // 2
             if tan_len < 1:
                 # logger.debug(
-                #     "Too many off object points around center for point-normal"
+                #     "Too many off object points around center for surface normal"
                 # )
                 norm1 = norm2 = [0, 0, 1]
-                valid_pn = False
-                found_point_normal = True
+                valid_sn = False
+                found_surface_normal = True
     norm = np.mean([norm1, norm2], axis=0)
     # norm = np.cross(vec1_norm, vec2_norm)
     norm = norm / np.linalg.norm(norm)
 
-    return norm, valid_pn
+    return norm, valid_sn
 
 
-def get_point_normal_ordinary_least_squares(
+def get_surface_normal_ordinary_least_squares(
     sensor_frame_data, world_camera, center_id, neighbor_patch_frac=3.2
 ):
     """Extracts the surface normal direction from a noisy point-cloud.
@@ -147,8 +147,8 @@ def get_point_normal_ordinary_least_squares(
             local neighborhood within which to perform the least-squares fitting.
 
     Returns:
-        point_normal: Estimated surface normal at center of patch
-        valid_pn: Boolean for whether the surface normal was valid or not. Defaults
+        surface_normal: Estimated surface normal at center of patch
+        valid_sn: Boolean for whether the surface normal was valid or not. Defaults
             to True. An invalid surface normal means there were not enough points in
             the patch to make any estimate of the surface normal
     """
@@ -168,37 +168,37 @@ def get_point_normal_ordinary_least_squares(
         a_mat = np.matmul(x_mat.T, x_mat)
         b = np.matmul(x_mat.T, y)
 
-        valid_pn = True
+        valid_sn = True
         if non_singular_mat(a_mat):
             w = np.linalg.solve(a_mat, b)
 
             # Compute surface normal from fitted weights and normalize it
-            point_normal = np.ones((3,))
-            point_normal[:2] = -w[:2].copy()
-            point_normal = point_normal / np.linalg.norm(point_normal)
+            surface_normal = np.ones((3,))
+            surface_normal[:2] = -w[:2].copy()
+            surface_normal = surface_normal / np.linalg.norm(surface_normal)
 
             # Make sure surface normal points upwards
-            if point_normal[2] < 0:
-                point_normal *= -1
+            if surface_normal[2] < 0:
+                surface_normal *= -1
 
             # Express surface normal back to world coordinate frame
-            point_normal = np.matmul(world_camera[:3, :3], point_normal)
+            surface_normal = np.matmul(world_camera[:3, :3], surface_normal)
 
         else:  # Not enough point to compute
-            point_normal = np.array([0.0, 0.0, 1.0])
-            valid_pn = False
-            logger.debug("Warning : Singular matrix encountered in get_point_normal!")
+            surface_normal = np.array([0.0, 0.0, 1.0])
+            valid_sn = False
+            logger.debug("Warning : Singular matrix encountered in get_surface_normal!")
 
     # Patch center does not lie on an object
     else:
-        point_normal = np.array([0.0, 0.0, 1.0])
-        valid_pn = False
+        surface_normal = np.array([0.0, 0.0, 1.0])
+        valid_sn = False
         logger.debug("Warning : Patch center does not lie on an object!")
 
-    return point_normal, valid_pn
+    return surface_normal, valid_sn
 
 
-def get_point_normal_total_least_squares(
+def get_surface_normal_total_least_squares(
     point_cloud_base, center_id, view_dir, neighbor_patch_frac=3.2
 ):
     """Extracts the surface normal direction from a noisy point-cloud.
@@ -217,7 +217,7 @@ def get_point_normal_total_least_squares(
 
     Returns:
         norm: Estimate surface normal at center of patch
-        valid_pn: Boolean for whether the surface normal was valid or not. Defaults
+        valid_sn: Boolean for whether the surface normal was valid or not. Defaults
             to True. An invalid surface normal means there were not enough points in
             the patch to make any estimate of the surface normal
     """
@@ -240,40 +240,40 @@ def get_point_normal_total_least_squares(
             # find eigenvector of M with min eigenvalue
             eig_val, eig_vec = np.linalg.eig(m_mat)
             n_dir = eig_vec[:, np.argmin(eig_val)]
-            valid_pn = True
+            valid_sn = True
 
-            # Align PN with viewing direction
+            # Align SN with viewing direction
             if np.dot(view_dir, n_dir) < 0:
                 n_dir *= -1
         except np.linalg.LinAlgError:
             n_dir = np.array([0.0, 0.0, 1.0])
-            valid_pn = False
+            valid_sn = False
             logger.debug("Warning : Non-diagonalizable matrix for PN estimation!")
 
     # Patch center does not lie on an object
     else:
         n_dir = np.array([0.0, 0.0, 1.0])
-        valid_pn = False
+        valid_sn = False
         logger.debug("Warning : Patch center does not lie on an object!")
 
-    return n_dir, valid_pn
+    return n_dir, valid_sn
 
 
-# Old version to get point normal with open3d. Leaving it here in
+# Old version to get surface normal with open3d. Leaving it here in
 # case we ever want to refer back to it.
-# def get_point_normal_open3d(
+# def get_surface_normal_open3d(
 #     point_cloud, center_id, sensor_location, on_object_only=True
 # ):
-#     """Estimate point normal at the center point of a point cloud.
+#     """Estimate surface normal at the center point of a point cloud.
 #
 #     Args:
 #         point_cloud: List of 3D locations
 #         center_id: ID of center point in the point cloud
-#         sensor_location: location of sensor. Used to have the point normal
+#         sensor_location: location of sensor. Used to have the surface normal
 #             point towards the sensor.
 #
 #     Returns:
-#         Point normal at center_id
+#         Surface normal at center_id
 #     """
 #     if on_object_only and point_cloud[center_id, 3] <= 0:
 #         # center of sensor patch is not on object
@@ -295,8 +295,7 @@ def get_point_normal_total_least_squares(
 #     )
 #     pcd.orient_normals_towards_camera_location(camera_location=sensor_location)
 
-#     point_normal = pcd.normals[adjusted_center_id]
-#     return point_normal
+#     return pcd.normals[adjusted_center_id]
 
 
 # Old implementation for principal curvature extraction. Refer to
