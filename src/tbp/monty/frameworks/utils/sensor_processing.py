@@ -23,15 +23,15 @@ logger = logging.getLogger(__name__)
 
 
 def get_point_normal_naive(point_cloud, patch_radius_frac=2.5):
-    """Estimate point normal.
+    """Estimate surface normal.
 
     This is a very simplified alternative to open3d's estimate_normals where we
     make use of several assumptions specific to our case:
     - we know which locations are neighboring locations from the camera patch
       arrangement
-    - we only need the point normal at the center of the patch
+    - we only need the surface normal at the center of the patch
 
-    TODO: Calculate point normal from multiple points at different distances (tan_len
+    TODO: Calculate surface normal from multiple points at different distances (tan_len
           values) and then take the average of them. Test if this improves robustness
           to raw sensor noise.
 
@@ -42,16 +42,16 @@ def get_point_normal_naive(point_cloud, patch_radius_frac=2.5):
             Default of 2.5 means that we look half_obs_dim//2.5 to the left, right, up
             and down. With a resolution of 64x64 that would be 12 pixels. The
             calculated tan_len (in this example 12) describes the distance of pixels
-            used to span up the two tangent vectors to calculate the point normals.
-            These two vectors are then used to calculate the point normal by taking
-            the cross product. If we set tan_len to a larger value the point normal
+            used to span up the two tangent vectors to calculate the surface normals.
+            These two vectors are then used to calculate the surface normal by taking
+            the cross product. If we set tan_len to a larger value the surface normal
             is more influenced by the global shape of the patch.
 
     Returns:
-        norm: Estimated point normal at center of patch
-        valid_pn: Boolean for whether the point-normal was valid or not (True by
-            default); an invalid point-normal means there were not enough points in
-            the patch to make any estimate of the point-normal
+        norm: Estimated surface normal at center of patch
+        valid_pn: Boolean for whether the surface normal was valid or not (True by
+            default); an invalid surface normal means there were not enough points in
+            the patch to make any estimate of the surface normal
     """
     obs_dim = int(np.sqrt(point_cloud.shape[0]))
     half_obs_dim = obs_dim // 2
@@ -133,7 +133,7 @@ def get_point_normal_naive(point_cloud, patch_radius_frac=2.5):
 def get_point_normal_ordinary_least_squares(
     sensor_frame_data, world_camera, center_id, neighbor_patch_frac=3.2
 ):
-    """Extracts the point-normal direction from a noisy point-cloud.
+    """Extracts the surface normal direction from a noisy point-cloud.
 
     Uses ordinary least-square fitting with error minimization along the view
     direction.
@@ -147,16 +147,16 @@ def get_point_normal_ordinary_least_squares(
             local neighborhood within which to perform the least-squares fitting.
 
     Returns:
-        point_normal: Estimated point normal at center of patch
-        valid_pn: Boolean for whether the point-normal was valid or not. Defaults
-            to True. An invalid point-normal means there were not enough points in
-            the patch to make any estimate of the point-normal
+        point_normal: Estimated surface normal at center of patch
+        valid_pn: Boolean for whether the surface normal was valid or not. Defaults
+            to True. An invalid surface normal means there were not enough points in
+            the patch to make any estimate of the surface normal
     """
     point_cloud = sensor_frame_data.copy()
     # Make sure that patch center is on the object
     if point_cloud[center_id, 3] > 0:
         # Define local neighborhood for least-squares fitting
-        # Only use neighbors that lie on an object to extract point normals
+        # Only use neighbors that lie on an object to extract surface normals
         neighbors_on_obj = get_center_neighbors(
             point_cloud, center_id, neighbor_patch_frac
         )
@@ -177,11 +177,11 @@ def get_point_normal_ordinary_least_squares(
             point_normal[:2] = -w[:2].copy()
             point_normal = point_normal / np.linalg.norm(point_normal)
 
-            # Make sure point-normal points upwards
+            # Make sure surface normal points upwards
             if point_normal[2] < 0:
                 point_normal *= -1
 
-            # Express point-normal back to world coordinate frame
+            # Express surface normal back to world coordinate frame
             point_normal = np.matmul(world_camera[:3, :3], point_normal)
 
         else:  # Not enough point to compute
@@ -201,7 +201,7 @@ def get_point_normal_ordinary_least_squares(
 def get_point_normal_total_least_squares(
     point_cloud_base, center_id, view_dir, neighbor_patch_frac=3.2
 ):
-    """Extracts the point-normal direction from a noisy point-cloud.
+    """Extracts the surface normal direction from a noisy point-cloud.
 
     Uses total least-square fitting. Error minimization is independent of view
     direction.
@@ -211,21 +211,21 @@ def get_point_normal_total_least_squares(
             patch is provided i.e. no preliminary filtering of off-object points).
         center_id: id of the center point in point_cloud.
         view_dir: viewing direction used to adjust the sign of the estimated
-            point-normal.
+            surface normal.
         neighbor_patch_frac: fraction of the patch width that defines the
             local neighborhood within which to perform the least-squares fitting.
 
     Returns:
-        norm: Estimated point normal at center of patch
-        valid_pn: Boolean for whether the point-normal was valid or not. Defaults
-            to True. An invalid point-normal means there were not enough points in
-            the patch to make any estimate of the point-normal
+        norm: Estimate surface normal at center of patch
+        valid_pn: Boolean for whether the surface normal was valid or not. Defaults
+            to True. An invalid surface normal means there were not enough points in
+            the patch to make any estimate of the surface normal
     """
     point_cloud = point_cloud_base.copy()
     # Make sure that patch center is on the object
     if point_cloud[center_id, 3] > 0:
         # Define local neighborhood for least-squares fitting
-        # Only use neighbors that lie on an object to extract point normals
+        # Only use neighbors that lie on an object to extract surface normals
         neighbors_on_obj = get_center_neighbors(
             point_cloud, center_id, neighbor_patch_frac
         )
@@ -462,7 +462,7 @@ def get_principal_curvatures(
         on_obj = point_cloud[:, 3] > 0
         point_cloud = point_cloud[on_obj, :3]
 
-        # find two directions u_dir and v_dir orthogonal to point-normal (n_dir):
+        # find two directions u_dir and v_dir orthogonal to surface normal (n_dir):
         # If n_dir's z coef is 0 then normal is pointing in (x,y) plane
         u_dir = (
             np.array([1.0, 0.0, -n_dir[0] / n_dir[2]])
@@ -520,7 +520,7 @@ def get_principal_curvatures(
             params = np.linalg.solve(a_mat, b)
 
             # Step 3) compute 1st and 2nd fundamental forms guv and buv:
-            # TODO: Extract improved point normal estimate from fitted curve
+            # TODO: Extract improved surface normal estimate from fitted curve
             guv = np.zeros((2, 2))
             guv[0, 0] = 1 + params[3] * params[3]
             guv[0, 1] = params[3] * params[4]
@@ -651,8 +651,8 @@ def point_pair_features(pos_i, pos_j, normal_i, normal_j):
     Args:
         pos_i: Location of point 1
         pos_j: Location of point 2
-        normal_i: Point normal of point 1
-        normal_j: Point normal of point 2
+        normal_i: Surface normal of point 1
+        normal_j: Surface normal of point 2
 
     Returns:
         Point pair feature

@@ -92,7 +92,7 @@ supervised_pre_training_base = dict(
                     graph_delta_thresholds=dict(
                         patch=dict(
                             distance=0.001,
-                            # Only first pose vector (point normal) is currently used
+                            # Only first pose vector (surface normal) is currently used
                             pose_vectors=[np.pi / 8, np.pi * 2, np.pi * 2],
                             principal_curvatures_log=[1, 1],
                             hsv=[0.1, 1, 1],

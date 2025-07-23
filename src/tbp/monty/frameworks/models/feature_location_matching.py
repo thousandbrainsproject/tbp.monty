@@ -61,9 +61,9 @@ class FeatureGraphLM(GraphLM):
                 being learned, and thereby whether to include a new point or not. By
                 default, we only consider the distance between points, using a
                 threshold of 0.001 (determined in remove_close_points). Can also
-                specify thresholds based on e.g. point-normal angle difference, or
+                specify thresholds based on e.g. surface normal angle difference, or
                 principal curvature magnitude difference.
-            path_similarity_threshold: How similar do paths have to be to be
+            path_similarity_threshold: How similar do paths have to be
                 considered the same in the terminal condition check.
             pose_similarity_threshold: difference between two poses to be considered
                 unique when checking for the terminal condition (in radians).
@@ -72,7 +72,7 @@ class FeatureGraphLM(GraphLM):
             initial_possible_poses: initial possible poses that should be tested for.
                 In ["uniform", "informed", list]. default = "informed".
             umbilical_num_poses: Number of samples rotations in the direction
-                of the plane perpendicular to the point normal.
+                of the plane perpendicular to the surface normal.
         """
         super(FeatureGraphLM, self).__init__()
         self.graph_memory = FeatureGraphMemory(
@@ -522,7 +522,7 @@ class FeatureGraphLM(GraphLM):
         """Determine whether pose features match.
 
         Compares the angle between observed and stored pose_vectors (from SM this
-        corresponds to point normal and curvature direction) and checks whether it is
+        corresponds to surface normal and curvature direction) and checks whether it is
         below the specified tolerance.
 
         Args:

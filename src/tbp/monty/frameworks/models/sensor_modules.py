@@ -50,7 +50,7 @@ class DetailedLoggingSM(SensorModule):
             pc1_is_pc2_threshold: maximum difference between pc1 and pc2 to be
                 classified as being roughly the same (ignore curvature directions).
             point_normal_method: in ['TLS' (default), 'OLS', 'naive']. Determines which
-                implementation to use for point-normal extraction ("TLS" stands for
+                implementation to use for surface normal extraction ("TLS" stands for
                 total least-squares (default), "OLS" for ordinary least-squares, 'naive'
                 for the original tangent vector cross-product implementation). Any other
                 value will raise an error.
@@ -147,17 +147,17 @@ class DetailedLoggingSM(SensorModule):
     ):
         """Extract features specified in self.features from sensor patch.
 
-        Returns the features in the patch, and True if the point-normal
+        Returns the features in the patch, and True if the surface normal
         or principal curvature directions were ill-defined.
 
         Returns:
             features: The features in the patch.
             morphological_features: ?
-            invalid_signals: True if the point-normal or principal curvature directions
-                were ill-defined.
+            invalid_signals: True if the surface normal or principal curvature
+                directions were ill-defined.
         """
         # ------------ Extract Morphological Features ------------
-        # Get point normal for graph matching with features
+        # Get surface normal for graph matching with features
         point_normal, valid_pn = self._get_point_normals(
             obs_3d, sensor_frame_data, center_id, world_camera
         )
@@ -193,7 +193,7 @@ class DetailedLoggingSM(SensorModule):
             hsv = rgb2hsv(rgba[:3])
             features["hsv"] = hsv
 
-        # Note we only determine curvature if we could determine a valid point-normal
+        # Note we only determine curvature if we could determine a valid surface normal
         if any("curvature" in feat for feat in self.features) and valid_pn:
             if valid_pc:
                 # Only process the below features if the principal curvature was valid,
@@ -238,7 +238,7 @@ class DetailedLoggingSM(SensorModule):
             on_object_only: If False, do the following:
                 - If the center of the image is not on the object, but some other part
                     of the object is in the image, continue with feature extraction
-                - Get the point normal for the whole image, not just the parts of the
+                - Get the surface normal for the whole image, not just the parts of the
                     image that include an object.
 
         Returns:
@@ -293,7 +293,7 @@ class DetailedLoggingSM(SensorModule):
         # Sensor module returns features at a location in the form of a State class.
         # use_state is a bool indicating whether the input is "interesting",
         # which indicates that it merits processing by the learning module; by default
-        # it will always be True so long as the point-normal and principal curvature
+        # it will always be True so long as the surface normal and principal curvature
         # directions were valid; certain SMs and policies used separately can also set
         # it to False under appropriate conditions
 

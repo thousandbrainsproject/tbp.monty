@@ -271,18 +271,18 @@ def get_scaled_evidences(evidences, per_object=False):
 
 
 def get_custom_distances(nearest_node_locs, search_locs, search_pns, search_curvature):
-    """Calculate custom distances modulated by point normal and curvature.
+    """Calculate custom distances modulated by surface normal and curvature.
 
     Args:
         nearest_node_locs: locations of nearest nodes to search_locs.
             shape=(num_hyp, max_nneighbors, 3)
         search_locs: search locations for each hypothesis.
             shape=(num_hyp, 3)
-        search_pns: sensed point normal rotated by hypothesis pose.
+        search_pns: sensed surface normal rotated by hypothesis pose.
             shape=(num_hyp, 3)
         search_curvature: magnitude of sensed curvature (maximum if using
             two principal curvatures). Is used to modulate the search spheres
-            thickness in the direction of the point normal.
+            thickness in the direction of the surface normal.
             shape=1
 
     Returns:
@@ -484,7 +484,7 @@ def possible_sensed_directions(
             and PC2 (e.g., object can be upside down), therefore we sample both
             directions.
         - If num_hyps_per_node is not 2: this function samples additional poses in
-            the plane perpendicular to the sensed point normal.
+            the plane perpendicular to the sensed surface normal.
 
     Arguments:
         sensed_directions: An array of sensed directions.
