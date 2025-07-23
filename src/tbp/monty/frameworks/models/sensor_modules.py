@@ -341,15 +341,6 @@ class DetailedLoggingSM(SensorModule):
             surface_normal, valid_sn = surface_normal_naive(
                 obs_3d, patch_radius_frac=2.5
             )
-        # old version for estimating with open3d (slow on lambda node)
-        # to use, uncomment lines below and import open3d
-        # elif self.surface_normal_method == "open3d":
-        #     surface_normal_alt = get_surface_normal_open3d(
-        #         obs_3d,
-        #         center_id,
-        #         sensor_location=self.state["location"],
-        #         on_object_only=True,
-        #     )
         else:
             raise ValueError(
                 "surface_normal_method must be in ['TLS' (default), 'OLS', 'naive']."
@@ -421,7 +412,7 @@ class NoiseMixin:
 
     def add_noise_to_feat_value(self, feat_name, feat_val):
         if isinstance(feat_val, bool):
-            # Flip boolian variable with probability specified in
+            # Flip boolean variable with probability specified in
             # noise_params
             if self.rng.random() < self.noise_params["features"][feat_name]:
                 new_feat_val = not (feat_val)
