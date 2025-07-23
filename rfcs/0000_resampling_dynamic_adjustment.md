@@ -12,7 +12,7 @@ and step-wise prediction error. Dynamic adjustment of the hypothesis space will 
 hypotheses only as needed, which is expected to improve Monty's run time as the hypothesis space can be smaller.
 
 Consider a scenario where, after a few steps of observing an object, Monty is confident in its prediction of the object
-id and its pose. In such case, continuing to resample will only slow down the recognition as it adds more computational
+ID and its pose. In such a case, continuing to resample will only slow down the recognition as it adds more computational
 overhead due to processing the unnecessarily resampled hypotheses at every step. However, if this high confidence is
 challenged with an unexpected observation (e.g., object swap), Monty should be smart enough to sample more hypotheses
 as it tries to make sense of this high prediction error.
@@ -60,11 +60,11 @@ hypotheses to sample. Unlike the current implementation, we propose to have Mont
 #### The deletion parameter
 
 This will likely be a fixed threshold on the evidence slope. A fixed threshold
-would allow different objects to scale their hypothesis spaces independently, which is desirable effect.
+would allow different objects to scale their hypothesis spaces independently, which is a desirable effect.
 That said, we could also consider more adaptive approaches. For example, the threshold could
 be adjusted dynamically to maintain a fixed number of top-performing hypotheses as a
 function of the object graph size (e.g., always keep the top 70 hypotheses for an object graph with
-100 nodes. These adaptive alternatives are worth exploring, but the simplest fixed-threshold option is the
+100 nodes). These adaptive alternatives are worth exploring, but the simplest fixed-threshold option is the
 my preferred starting point.
 
 #### The resampling parameter
