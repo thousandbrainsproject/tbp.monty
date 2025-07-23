@@ -117,9 +117,6 @@ def get_surface_normal_naive(point_cloud, patch_radius_frac=2.5):
             # -> try a smaller tan_len
             tan_len = tan_len // 2
             if tan_len < 1:
-                # logger.debug(
-                #     "Too many off object points around center for surface normal"
-                # )
                 norm1 = norm2 = [0, 0, 1]
                 valid_sn = False
                 found_surface_normal = True
@@ -257,45 +254,6 @@ def get_surface_normal_total_least_squares(
         logger.debug("Warning : Patch center does not lie on an object!")
 
     return n_dir, valid_sn
-
-
-# Old version to get surface normal with open3d. Leaving it here in
-# case we ever want to refer back to it.
-# def get_surface_normal_open3d(
-#     point_cloud, center_id, sensor_location, on_object_only=True
-# ):
-#     """Estimate surface normal at the center point of a point cloud.
-#
-#     Args:
-#         point_cloud: List of 3D locations
-#         center_id: ID of center point in the point cloud
-#         sensor_location: location of sensor. Used to have the surface normal
-#             point towards the sensor.
-#
-#     Returns:
-#         Surface normal at center_id
-#     """
-#     if on_object_only and point_cloud[center_id, 3] <= 0:
-#         # center of sensor patch is not on object
-#         return [0, 0, 1]
-#     if on_object_only:
-#         on_obj = point_cloud[:, 3] > 0
-#         adjusted_center_id = sum(on_obj[:center_id])
-#         point_cloud = point_cloud[on_obj, :3]
-#     else:
-#         # consider even off-object points
-#         adjusted_center_id = center_id
-#         point_cloud = point_cloud[:, :3]
-
-#     pcd = o3d.geometry.PointCloud()
-#     pcd.points = o3d.utility.Vector3dVector(point_cloud)
-#     # This is what takes long on cloud CPUs (~0.002s on laptop but 0.3 on cloud)
-#     pcd.estimate_normals(
-#         search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=64)
-#     )
-#     pcd.orient_normals_towards_camera_location(camera_location=sensor_location)
-
-#     return pcd.normals[adjusted_center_id]
 
 
 # Old implementation for principal curvature extraction. Refer to
