@@ -3,55 +3,7 @@ title: Style Guide
 ---
 # Code Style Guide
 
-We follow the [PEP8](https://peps.python.org/pep-0008/) Python style guide.
-
-Additional style guidelines are enforced by [Ruff](https://docs.astral.sh/ruff/) and configured in [pyproject.toml](https://github.com/thousandbrainsproject/tbp.monty/blob/main/pyproject.toml).
-
-To quickly check if your code is formatted correctly, run `ruff check` in the `tbp.monty` directory.
-
-## Code Formatting
-
-We use [Ruff](https://docs.astral.sh/ruff/) to check proper code formatting with a **line length of 88**.
-
-A convenient way to ensure your code is formatted correctly is using the [ruff formatter](https://docs.astral.sh/ruff/formatter/). If you use VSCode, you can get the [Ruff VSCode extension](https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff) and set it to format on save (modified lines only) so your code always looks nice and matches our style requirements.
-
-## Code Docstrings
-
-We adopted the Google Style for docstrings. For more details, see the [Google Python Style Guide - 3.8 Comments and Docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings).
-
-## Libraries
-
-### NumPy Preferred Over PyTorch
-
-After discovering that PyTorch-to-NumPy conversions (and the reverse) were a significant speed bottleneck in our algorithms, we decided to consistently use NumPy to represent the data in our system.
-
-We still require the PyTorch library since we use it for certain things, such as multiprocessing. However, please use NumPy operations for any vector and matrix operations whenever possible. If you think you cannot work with NumPy and need to use Torch, consider opening an RFC first to increase the chances of your PR being merged.
-
-Another reason we discourage using PyTorch is to add a barrier for deep-learning to creep into Monty. Although we don't have a fundamental issue with contributors using deep learning, we worry that it will be the first thing someone's mind goes to when solving a problem (when you have a hammer...). We want contributors to think intentionally about whether deep-learning is the best solution for what they want to solve. Monty relies on very different principles than those most ML practitioners are used to, and so it is useful to think outside of the mental framework of deep-learning. More importantly, evidence that the brain can perform the long-range weight transport required by deep-learning's cornerstone algorithm - back-propagation - is extremely scarce. We are developing a system that, like the mammalian brain, should be able to use _local_ learning signals to rapidly update representations, while also remaining robust under conditions of continual learning. As a general rule therefore, please avoid PyTorch, and the algorithm that it is usually leveraged to support - back-propagation!
-
-You can read more about our views on deep learning in Monty in our [FAQ](../how-monty-works/faq-monty.md#why-does-monty-not-make-use-of-deep-learning).
-
-## Source Code Copyright and License Header
-
-All source code files must have a copyright and license header. The header must be placed at the top of the file, on the first line, before any other code. For example, in Python:
-
-```python
-# Copyright <YEARS> Thousand Brains Project
-#
-# Copyright may exist in Contributors' modifications
-# and/or contributions to the work.
-#
-# Use of this source code is governed by the MIT
-# license that can be found in the LICENSE file or at
-# https://opensource.org/licenses/MIT.
-```
-
-The `<YEARS>` is the year of the file's creation, and an optional sequence or range of years if the file has been modified over time. For example, if a file was created in 2024 and not modified again, the first line of the header should be `# Copyright 2024 Thousand Brains Project`. If the file has been modified in consecutive years between 2022 and 2024, the header should be `# Copyright 2022-2024 Thousand Brains Project`. If the file has been modified in multiple non-consecutive years in 2022, then in 2024 and 2025, the header should be `# Copyright 2022,2024-2025 Thousand Brains Project`.
-
-In other words, if you are creating a new file, add the copyright and license header with the current year. If you are modifying an existing file and the header does not include the current year, then add the current year to the header. You should never need to modify anything aside from the year in the very first line of the header.
-
-> [!NOTE]
-> While we deeply value and appreciate every contribution, the source code file header is reserved for essential copyright and license information and will not be used for contributor acknowledgments.
+See the [Code Style Guide](./style-guide/code-style-guide.md).
 
 # GitHub Actions
 

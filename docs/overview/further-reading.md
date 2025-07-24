@@ -277,6 +277,10 @@ Hole, K. J., & Ahmad, S. (2021). **A thousand brains: Toward biologically constr
 
 Clay, V., Leadholm, N., & Hawkins, J. (2024). **The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence.** arXiv. <https://arxiv.org/abs/2412.18354#>
 
+Leadholm, N., Clay, V., Knudstrup, S., Lee, H., Hawkins, J. (2025) **Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference** arXiv. <https://arxiv.org/abs/2507.04494>
+
+Hawkins, J., Leadholm, N., Clay, V. (2025) **Hierarchy or Heterarchy? A Theory of Long-Range Connections for the Sensorimotor Brain** arXiv. <https://arxiv.org/abs/2507.05888>
+
 # Other Resources
 ## Videos
 As we are working on the neuroscience theory, we are publishing recordings of those meetings on [our YouTube channel](https://www.youtube.com/@thousandbrainsproject/videos). Those videos contain our most up-to-date thinking and the questions we are struggling with on a day-to-day basis. If you are curious in the neuroscience behind this project, you can have a look at your [brainstorming](https://www.youtube.com/watch?v=VTy9KIUvAj4&list=PLXpTU6oIscrkYkv1qoN5Ctod9qr7NbgKg) and [review](https://www.youtube.com/watch?v=FPLQaGPK24k&list=PLXpTU6oIscrkY-n0p2ulFeZJFBVpOSf4J) video series. For a short introduction to the project you can have a look at our [quick-start series](https://www.youtube.com/watch?v=tbqZHVlK4sE&list=PLXpTU6oIscrn5ImFcRJQ3ameHbMWNd9Df) and for a longer overview of key aspects of the project our [core video series](https://www.youtube.com/watch?v=Pody7qWszHg&list=PLXpTU6oIscrlEoV5pOaX5Swnow-xO9xwk&pp=0gcJCV8EOCosWNin).

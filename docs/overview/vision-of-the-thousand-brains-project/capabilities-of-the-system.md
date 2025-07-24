@@ -49,13 +49,13 @@ Finally, here is a video that walks through all of the system's current capabili
 
 [block:embed]
 {
-  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2FyJBhZkkZ-XM%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DyJBhZkkZ-XM&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2FyJBhZkkZ-XM%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
-  "url": "https://www.youtube.com/watch?v=yJBhZkkZ-XM",
-  "title": "2024/01 - Current Capabilities of the first TBP Implementation, Monty",
+  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2F3d4DmnODLnE%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D3d4DmnODLnE&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2F3d4DmnODLnE%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
+  "url": "https://www.youtube.com/watch?v=3d4DmnODLnE",
+  "title": "2025/07 - Thousand-Brains Systems: Sensorimotor Intelligence for Rapid Robust Learning and Inference",
   "favicon": "https://www.youtube.com/favicon.ico",
-  "image": "https://i.ytimg.com/vi/yJBhZkkZ-XM/hqdefault.jpg",
+  "image": "https://i.ytimg.com/vi/3d4DmnODLnE/hqdefault.jpg",
   "provider": "https://www.youtube.com/",
-  "href": "https://www.youtube.com/watch?v=yJBhZkkZ-XM",
+  "href": "https://www.youtube.com/watch?v=3d4DmnODLnE",
   "typeOfEmbed": "youtube"
 }
 [/block]
