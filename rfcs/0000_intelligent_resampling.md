@@ -12,8 +12,8 @@ This is a high-level RFC on intelligence resampling in Monty, considering the be
 ## Note on Terminology
 
 In neuroscience, the term "re-anchoring" may be used broadly. In this RFC, we divide re-anchoring into either:
-1. **Remapping** - when we re-anchor to a new object
-2. **Realignment** - when we re-anchor to correct for phase and orientation within a reference frame
+1. **Remapping** - when we re-anchor to a new object, i.e. a different reference frame
+2. **Realignment** - when we re-anchor to correct for location (_phase_ in biology) and orientation within a reference frame
 
 This RFC primarily focuses on realignment of hypotheses.
 
