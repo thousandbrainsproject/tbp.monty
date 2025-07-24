@@ -134,7 +134,7 @@ _Why_: We want to catch errors as early as possible, and using Protocols allows 
 There is no material difference **in the context of usage and expectation documentation** between using Protocols and abstract classes. In other contexts, Protocols are favorable because they allow us to raise errors at type check time and, due to structural typing, do not require inheritance.
 
 ```python
-# Protocols raise errors during type check when monty.unimplemented() is written:
+# Protocols raise errors during type check when attempting use:
 class MontyProtocol(Protocol):
 	def implemented(self): ...
 	def unimplemented(self): ...
