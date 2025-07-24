@@ -182,3 +182,4 @@ Viviane
 Inferencing
 LEGOs
 reimplement
+serializable
