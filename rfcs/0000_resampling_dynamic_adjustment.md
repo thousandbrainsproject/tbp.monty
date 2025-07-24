@@ -54,18 +54,9 @@ space sizes to prevent unbounded growth or collapse.
 
 ## Monty-Informed Resampling
 
-The resampling procedure consists of two main components: (1) which hypotheses to delete, and (2) how many new
-hypotheses to sample. Unlike the current implementation, we propose to have Monty control these details as follows:
+The resampling procedure consists of two main components: (1) how many new hypotheses to sample, and (2) which hypotheses
+to delete. Unlike the current implementation, we propose to have Monty control these details as follows:
 
-#### The deletion parameter
-
-This will likely be a fixed threshold on the evidence slope. A fixed threshold
-would allow different objects to scale their hypothesis spaces independently, which is a desirable effect.
-That said, we could also consider more adaptive approaches. For example, the threshold could
-be adjusted dynamically to maintain a fixed number of top-performing hypotheses as a
-function of the object graph size (e.g., always keep the top 70 hypotheses for an object graph with
-100 nodes). These adaptive alternatives are worth exploring, but the simplest fixed-threshold option is the
-my preferred starting point.
 
 #### The resampling parameter
 
@@ -91,6 +82,24 @@ We can use existing `x_percent_threshold` logic to calculate confidence, whereas
 easily be derived from the evidence score based on morphological and non-morphological features match. Note
 that the exact formula for calculating "Monty’s surprise" is considered an implementation detail and is
 therefore out of scope for this RFC.
+
+
+#### The deletion parameter
+
+This will likely be a fixed threshold on the evidence slope. A fixed threshold
+would allow different objects to scale their hypothesis spaces independently, which is a desirable effect.
+That said, we could also consider more adaptive approaches. For example, the threshold could
+be adjusted dynamically to maintain a fixed number of top-performing hypotheses as a
+function of the object graph size (e.g., always keep the top 70 hypotheses for an object graph with
+100 nodes). These adaptive alternatives are worth exploring, but the simplest fixed-threshold option is the
+my preferred starting point.
+
+Another possible approach is to also use Monty’s surprise to guide hypothesis deletion.
+In this case, low surprise could serve as a signal to prune the hypothesis space.
+While this does introduce some coupling between deletion and resampling, both responding to
+the same surprise signal, it still allows for independent heuristics to guide each process.
+This is fundamentally different from the current implementation, where deletion and resampling hypotheses
+counts are tightly linked through shared parameters like the `hypothesis_count_multiplier`.
 
 ##### Note on biological plausibility
 
