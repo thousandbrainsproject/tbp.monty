@@ -106,7 +106,7 @@ class TheoreticalLimitLMLoggingMixin:
 
         This includes:
             - IDs of removed and added hypotheses.
-            - Evidence slopes and ages of hypotheses in the channel.
+            - Evidence, evidence slopes and ages of hypotheses in the channel.
             - Hypotheses rotations and pose errors to the target rotations.
 
         Args:
@@ -118,6 +118,7 @@ class TheoreticalLimitLMLoggingMixin:
                 - remove_ids: Hypotheses removed during resampling. Note that these
                     IDs can only be used to index hypotheses from the previous timestep.
                 - add_ids: Hypotheses added during resampling at the current timestep.
+                - evidence: The hypotheses evidence scores.
                 - evidence_slopes: The slopes extracted from the `EvidenceSlopeTracker`
                 - ages: The ages of the hypotheses as tracked by the
                     `EvidenceSlopeTracker`.
@@ -131,10 +132,14 @@ class TheoreticalLimitLMLoggingMixin:
             self.possible_poses[graph_id], channel_stats.input_channel
         )
         channel_rotations_inv = Rotation.from_matrix(channel_rotations).inv()
+        channel_evidence = mapper.extract(
+            self.evidence[graph_id], channel_stats.input_channel
+        )
 
         stats = {}
         stats["remove_ids"] = channel_stats.removed_hypotheses_ids
         stats["add_ids"] = channel_stats.added_hypotheses_ids
+        stats["evidence"] = channel_evidence
         stats["evidence_slopes"] = tracker._calculate_slopes(
             channel_stats.input_channel
         )
