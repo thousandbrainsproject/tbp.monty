@@ -8,6 +8,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import copy
 import json
 import logging
@@ -18,6 +20,7 @@ from pathlib import Path
 from sys import getsizeof
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import quaternion
 import torch
@@ -390,8 +393,8 @@ def get_time_stats(all_ds, all_conditions) -> pd.DataFrame:
 
 
 def compute_pose_error(
-    predicted_rotation: Rotation, target_rotation: Rotation
-) -> float:
+    predicted_rotation: Rotation, target_rotation: Rotation, return_min: bool = True
+) -> npt.NDArray[np.float64] | float:
     """Computes the minimum angular pose error between predicted and target rotations.
 
     Both inputs must be instances of `scipy.spatial.transform.Rotation`. The
@@ -412,11 +415,15 @@ def compute_pose_error(
         predicted_rotation: Predicted rotation(s). Can be a single or list of
             rotation.
         target_rotation: Target rotation. Must represent a single rotation.
+        return_min: Returns the minimum pose error for a list of rotations,
+            otherwise, returns a list of pose errors. Defaults to True.
 
     Returns:
-        The minimum angular error in radians.
+        The angular error in radians.
     """
-    error = np.min((predicted_rotation * target_rotation.inv()).magnitude())
+    error = (predicted_rotation * target_rotation.inv()).magnitude()
+    if return_min:
+        error = np.min(error)
     return error
 
 
