@@ -9,21 +9,21 @@ This is a high-level RFC on intelligence resampling in Monty, considering the be
 2. How can we implement and test resampling informed by out-of-reference-frame movement?
 3. How can we use prediction errors in off-object observations to eliminate hypotheses? 
 
-## Note on Terminology
+## How can we realign hypotheses to model points for robustness to noise and distortions?
+
+Realigning means updating the `locations` or `poses` of the `Hypotheses` object to an existing point in the object model. This mechanism is informed by feature observations.
+
+### Note on Terminology
 
 In neuroscience, the term "re-anchoring" may be used broadly. In this RFC, we divide re-anchoring into either:
 1. **Remapping** - when we re-anchor to a new object
 2. **Realignment** - when we re-anchor to correct for phase and orientation within a reference frame
 
-This RFC primarily focuses on realignment of hypotheses.
-
-## How can we realign hypotheses to model points for robustness to noise and distortions?
-
-Realigning means updating the `locations` or `poses` of the `Hypotheses` object to an existing point in the object model. This mechanism is informed by feature observations.
-
-**Distortion** refers to cases where features, object parts, or morphologies appear at different locations and rotations than expected in the original model (e.g., a bent TBP logo vs. the standard TBP logo). **Noise** refers to errors in location estimates from imperfect path integration, such as inaccuracies in optic flow, proprioception, or inertial measurement units that lead to imperfect estimates of movement displacement and direction.
+This part of the RFC primarily focuses on realignment of hypotheses.
 
 ### Problem Statement and Proposed Solution
+
+**Distortion** refers to cases where features, object parts, or morphologies appear at different locations and rotations than expected in the original model (e.g., a bent TBP logo vs. the standard TBP logo). **Noise** refers to errors in location estimates from imperfect path integration, such as inaccuracies in optic flow, proprioception, or inertial measurement units that lead to imperfect estimates of movement displacement and direction.
 
 The `Hypotheses` class in `tbp.monty==0.8.0` is defined as follows:
 
