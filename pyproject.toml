@@ -254,7 +254,6 @@ ignore = [
     "PIE807", # PIE807: Prefer `list` over useless lambda
     "PLE0302", # PLE0302: The special method `__getitem__` expects 2 parameters, 1 was given
     "PLR0402", # PLR0402: Use from {module} import {name} in lieu of alias
-    "PLE0605", # PLE0605: Invalid format for `__all__`, must be `tuple` or `list`
     "PLR0911", # PLR0911: Too many return statements
     "PLR0912", # PLR0912: Too many branches
     "PLR0913", # PLR0913: Too many arguments in function definition

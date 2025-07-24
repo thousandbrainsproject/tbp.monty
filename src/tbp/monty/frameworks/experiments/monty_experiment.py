@@ -46,7 +46,7 @@ from tbp.monty.frameworks.utils.dataclass_utils import (
     get_subset_of_args,
 )
 
-__all__ = {"MontyExperiment"}
+__all__ = ["MontyExperiment"]
 
 logger = logging.getLogger("tbp.monty")
 
