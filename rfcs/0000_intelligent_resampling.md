@@ -79,14 +79,17 @@ This scenario may occur during inference when sensor noise exceeds the matching 
 
 #### Computational Complexity
 
-Re-anchoring can be computationally expensive due to two factors: (1) the number of observed features (more features require more distance calculations), and (2) the number of nodes in the object model (more nodes require more comparisons).
+Re-anchoring can be computationally expensive due to three factors: (1) the number of observed features (more features require more distance calculations), (2) the number of nodes in the object model (more nodes require more comparisons), and (3) the number of hypotheses we want to re-anchor. 
 
 Currently, case 1 is not a major concern since we only have "few" features (e.g. `rgba` and `pose_vectors`). However, future implementations should consider efficient distance calculations and prioritizing feature subsets. For example, comparing `rgba` for a uniformly colored object (like a red mug) provides little discriminative value.
 
 Case 2 is more concerning until we develop sparser models. We should benchmark comparison times against ~2,000 points in an object model. Potential optimizations include:
 
-- **Local search**: Compare only points within an $\epsilon$-radius of the current location, assuming realignment targets nearby points. This is valid if we realign frequently to prevent large error accumulation.
+- **Local search**: Compare only points within an $\epsilon$-radius of the current location, assuming realignment targets nearby points. This is valid if we realign frequently to prevent large error accumulation. Note that we may need to dynamically adjust $\epsilon$ to increase search area in case of large distortions. 
+- **Selective re-anchoring**: Apply re-anchoring only to hypotheses exhibiting both high confidence and large prediction error, as described by the "surprise" metric in [Ramy's RFC](https://github.com/thousandbrainsproject/tbp.monty/pull/390). This approach reduces computational overhead by avoiding unnecessary comparisons for low-confidence hypotheses or cases with low prediction error.
 - **Landmark prioritization**: Prioritize comparisons with nodes previously "marked" as containing unique features. 
+
+Of the above three options, I think **selective re-anchoring** should be prioritized first, then **landmark prioritization**. Note that **landmark prioritization** will require us to update our object model's nodes to store "important" attribute first. 
 
 #### How can sparse models affect location accuracy?
 
