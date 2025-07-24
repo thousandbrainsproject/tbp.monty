@@ -49,7 +49,9 @@ We are excited to have you here!  Our intention for making the project open-sour
 | <a href="https://www.linkedin.com/company/thousand-brains-project" style="display: flex; align-items: center;"><img src="../figures/overview/linkedin.png" alt="LinkedIn" height="15" style="opacity: 1; transition: opacity 0.2s; &:hover { opacity: 0.8; }" pointer-events="none">&nbsp;LinkedIn&nbsp;Page</a> | Get the latest news and announcements |
 
 # Citing This Project
-If you're writing a publication that references the Thousand Brains Project, please cite our [TBP white paper](https://arxiv.org/abs/2412.18354):
+If you're writing a publication that references the Thousand Brains Project or Monty, please cite our papers as appropriate
+
+[Thousand Brains Project white paper](https://arxiv.org/abs/2412.18354):
 ```
 @misc{thousandbrainsproject2024,
       title={The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence},
@@ -59,5 +61,31 @@ If you're writing a publication that references the Thousand Brains Project, ple
       archivePrefix={arXiv},
       primaryClass={cs.AI},
       url={https://arxiv.org/abs/2412.18354},
+}
+```
+
+[Hierarchy or Heterarchy? A Theory of Long-Range Connections for the Sensorimotor Brain](https://arxiv.org/abs/2507.05888):
+```
+@misc{hawkins2025hierarchyheterarchytheorylongrange,
+      title={Hierarchy or Heterarchy? A Theory of Long-Range Connections for the Sensorimotor Brain},
+      author={Jeff Hawkins and Niels Leadholm and Viviane Clay},
+      year={2025},
+      eprint={2507.05888},
+      archivePrefix={arXiv},
+      primaryClass={q-bio.NC},
+      url={https://arxiv.org/abs/2507.05888},
+}
+```
+
+[Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference](https://arxiv.org/abs/2507.04494):
+```
+@misc{leadholm2025thousandbrainssystemssensorimotorintelligence,
+      title={Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference}, 
+      author={Niels Leadholm and Viviane Clay and Scott Knudstrup and Hojae Lee and Jeff Hawkins},
+      year={2025},
+      eprint={2507.04494},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2507.04494}, 
 }
 ```
