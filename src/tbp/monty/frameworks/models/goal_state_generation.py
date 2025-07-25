@@ -711,7 +711,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         Returns:
             A dictionary containing the hypothesis to test, the target location and
-            point-normal of the target point on the object.
+            surface normal of the target point on the object.
         """
         mlh = self.parent_lm.get_current_mlh()
         mlh_id = mlh["graph_id"]
@@ -770,9 +770,9 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         """Specify a goal state for the motor-actuator.
 
         Based on a target location (in object-centric coordinates) and the associated
-        point-normal of that location, specify a goal state for the motor-actuator,
+        surface normal of that location, specify a goal state for the motor-actuator,
         such that any sensors associated with the motor-actuator should be pointed down
-        at and observing the target location (i.e. parallel to the point-normal).
+        at and observing the target location (i.e. parallel to the surface normal).
 
         For the movement to have a high probability of arriving at the desired location,
         the current hypothesis of the object ID and pose used to inform the movement
@@ -783,8 +783,8 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         Args:
             observations: The current observations, which should include the sensory
                 input.
-            target_info: A dictionary containing the target location and point-normal of
-                the target point on the object.
+            target_info: A dictionary containing the target location and surface normal
+                of the target point on the object.
             goal_confidence: The confidence of the goal-state, which should be in the
                 range [0, 1]. This is used by receiving modules to weigh the
                 importance of the goal-state relative to other goal-states.
@@ -814,11 +814,11 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # The target location on the object's surface in global/body-centric coordinates
         proposed_surface_loc = sensory_input.location + rotated_disp
 
-        # Rotate the learned point normal (which was commited to memory assuming a
+        # Rotate the learned surface normal (which was commited to memory assuming a
         # default 0,0,0 orientation of the object)
         target_pn_rotated = object_rot.apply(target_info["target_pn"])
 
-        # Scale the point-normal by the desired distance x1.5 (i.e. so that we start
+        # Scale the surface normal by the desired distance x1.5 (i.e. so that we start
         # a bit further away from the object; we will separately move forward if we
         # are indeed facing it)
         surface_displacement = target_pn_rotated * self.desired_object_distance * 1.5

@@ -18,12 +18,12 @@ from skimage.color import rgb2hsv
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.sensor_processing import (
-    get_point_normal_naive,
-    get_point_normal_ordinary_least_squares,
-    get_point_normal_total_least_squares,
-    get_principal_curvatures,
     log_sign,
+    principal_curvatures,
     scale_clip,
+    surface_normal_naive,
+    surface_normal_ordinary_least_squares,
+    surface_normal_total_least_squares,
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 
@@ -38,7 +38,7 @@ class DetailedLoggingSM(SensorModule):
         sensor_module_id,
         save_raw_obs,
         pc1_is_pc2_threshold=10,
-        point_normal_method="TLS",
+        surface_normal_method="TLS",
         weight_curvature=True,
         **kwargs,
     ):
@@ -49,11 +49,11 @@ class DetailedLoggingSM(SensorModule):
             save_raw_obs: Whether to save raw sensory input for logging.
             pc1_is_pc2_threshold: maximum difference between pc1 and pc2 to be
                 classified as being roughly the same (ignore curvature directions).
-            point_normal_method: in ['TLS' (default), 'OLS', 'naive']. Determines which
-                implementation to use for point-normal extraction ("TLS" stands for
-                total least-squares (default), "OLS" for ordinary least-squares, 'naive'
-                for the original tangent vector cross-product implementation). Any other
-                value will raise an error.
+            surface_normal_method: in ['TLS' (default), 'OLS', 'naive']. Determines
+                which implementation to use for surface normal extraction ("TLS" stands
+                for total least-squares (default), "OLS" for ordinary least-squares,
+                'naive' for the original tangent vector cross-product implementation).
+                Any other value will raise an error.
             weight_curvature: determines whether to use the "weighted" (True) or
                 "unweighted" (False) implementation for principal curvature extraction.
             **kwargs: Additional keyword arguments.
@@ -66,7 +66,7 @@ class DetailedLoggingSM(SensorModule):
         self.raw_observations = []
         self.sm_properties = []
         self.pc1_is_pc2_threshold = pc1_is_pc2_threshold
-        self.point_normal_method = point_normal_method
+        self.surface_normal_method = surface_normal_method
         self.weight_curvature = weight_curvature
 
     def state_dict(self):
@@ -147,23 +147,23 @@ class DetailedLoggingSM(SensorModule):
     ):
         """Extract features specified in self.features from sensor patch.
 
-        Returns the features in the patch, and True if the point-normal
+        Returns the features in the patch, and True if the surface normal
         or principal curvature directions were ill-defined.
 
         Returns:
             features: The features in the patch.
             morphological_features: ?
-            invalid_signals: True if the point-normal or principal curvature directions
-                were ill-defined.
+            invalid_signals: True if the surface normal or principal curvature
+                directions were ill-defined.
         """
         # ------------ Extract Morphological Features ------------
-        # Get point normal for graph matching with features
-        point_normal, valid_pn = self._get_point_normals(
+        # Get surface normal for graph matching with features
+        surface_normal, valid_sn = self._get_surface_normals(
             obs_3d, sensor_frame_data, center_id, world_camera
         )
 
-        k1, k2, dir1, dir2, valid_pc = get_principal_curvatures(
-            obs_3d, center_id, point_normal, weighted=self.weight_curvature
+        k1, k2, dir1, dir2, valid_pc = principal_curvatures(
+            obs_3d, center_id, surface_normal, weighted=self.weight_curvature
         )
         # TODO: test using log curvatures instead
         if np.abs(k1 - k2) < self.pc1_is_pc2_threshold:
@@ -174,7 +174,7 @@ class DetailedLoggingSM(SensorModule):
         morphological_features = {
             "pose_vectors": np.vstack(
                 [
-                    point_normal,
+                    surface_normal,
                     dir1,
                     dir2,
                 ]
@@ -193,8 +193,8 @@ class DetailedLoggingSM(SensorModule):
             hsv = rgb2hsv(rgba[:3])
             features["hsv"] = hsv
 
-        # Note we only determine curvature if we could determine a valid point-normal
-        if any("curvature" in feat for feat in self.features) and valid_pn:
+        # Note we only determine curvature if we could determine a valid surface normal
+        if any("curvature" in feat for feat in self.features) and valid_sn:
             if valid_pc:
                 # Only process the below features if the principal curvature was valid,
                 # and therefore we have a defined k1, k2 etc.
@@ -224,9 +224,9 @@ class DetailedLoggingSM(SensorModule):
             # policies
             features["pose_fully_defined"] = False
 
-        invalid_signals = (not valid_pn) or (not valid_pc)
+        invalid_signals = (not valid_sn) or (not valid_pc)
         if invalid_signals:
-            logger.debug("Either the point-normal or pc-directions were ill-defined")
+            logger.debug("Either the surface-normal or pc-directions were ill-defined")
 
         return features, morphological_features, invalid_signals
 
@@ -238,7 +238,7 @@ class DetailedLoggingSM(SensorModule):
             on_object_only: If False, do the following:
                 - If the center of the image is not on the object, but some other part
                     of the object is in the image, continue with feature extraction
-                - Get the point normal for the whole image, not just the parts of the
+                - Get the surface normal for the whole image, not just the parts of the
                     image that include an object.
 
         Returns:
@@ -293,7 +293,7 @@ class DetailedLoggingSM(SensorModule):
         # Sensor module returns features at a location in the form of a State class.
         # use_state is a bool indicating whether the input is "interesting",
         # which indicates that it merits processing by the learning module; by default
-        # it will always be True so long as the point-normal and principal curvature
+        # it will always be True so long as the surface normal and principal curvature
         # directions were valid; certain SMs and policies used separately can also set
         # it to False under appropriate conditions
 
@@ -325,37 +325,28 @@ class DetailedLoggingSM(SensorModule):
 
         return observed_state
 
-    def _get_point_normals(self, obs_3d, sensor_frame_data, center_id, world_camera):
-        if self.point_normal_method == "TLS":
+    def _get_surface_normals(self, obs_3d, sensor_frame_data, center_id, world_camera):
+        if self.surface_normal_method == "TLS":
             # Version with Total Least-Squares (TLS) fitting
-            point_normal, valid_pn = get_point_normal_total_least_squares(
+            surface_normal, valid_sn = surface_normal_total_least_squares(
                 obs_3d, center_id, world_camera[:3, 2]
             )
-        elif self.point_normal_method == "OLS":
+        elif self.surface_normal_method == "OLS":
             # Version with Ordinary Least-Squares (TLS) fitting
-            point_normal, valid_pn = get_point_normal_ordinary_least_squares(
+            surface_normal, valid_sn = surface_normal_ordinary_least_squares(
                 sensor_frame_data, world_camera, center_id
             )
-        elif self.point_normal_method == "naive":
+        elif self.surface_normal_method == "naive":
             # Naive version
-            point_normal, valid_pn = get_point_normal_naive(
+            surface_normal, valid_sn = surface_normal_naive(
                 obs_3d, patch_radius_frac=2.5
             )
-        # old version for estimating with open3d (slow on lambda node)
-        # to use, uncomment lines below and import open3d
-        # elif self.point_normal_method == "open3d":
-        #     point_normal_alt = get_point_normal_open3d(
-        #         obs_3d,
-        #         center_id,
-        #         sensor_location=self.state["location"],
-        #         on_object_only=True,
-        #     )
         else:
             raise ValueError(
-                "point_normal_method must be in ['TLS' (default), 'OLS', 'naive']."
+                "surface_normal_method must be in ['TLS' (default), 'OLS', 'naive']."
             )
 
-        return point_normal, valid_pn
+        return surface_normal, valid_sn
 
 
 class NoiseMixin:
@@ -372,7 +363,7 @@ class NoiseMixin:
         noise_amount specifies the standard deviation of the gaussian noise sampled
         for real valued features. For boolian features it specifies the probability
         that the boolean flips.
-        If we are dealing with normed vectors (point_normal or curvature_directions)
+        If we are dealing with normed vectors (surface_normal or curvature_directions)
         the noise is applied by rotating the vector given a sampled rotation. Otherwise
         noise is just added onto the perceived feature value.
 
@@ -421,7 +412,7 @@ class NoiseMixin:
 
     def add_noise_to_feat_value(self, feat_name, feat_val):
         if isinstance(feat_val, bool):
-            # Flip boolian variable with probability specified in
+            # Flip boolean variable with probability specified in
             # noise_params
             if self.rng.random() < self.noise_params["features"][feat_name]:
                 new_feat_val = not (feat_val)
@@ -443,7 +434,7 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
     """Sensor Module that turns Habitat camera obs into features at locations.
 
     Takes in camera rgba and depth input and calculates locations from this.
-    It also extracts features which are currently: on_object, rgba, point_normal,
+    It also extracts features which are currently: on_object, rgba, surface_normal,
     curvature.
     """
 
@@ -460,7 +451,7 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
 
         Args:
             sensor_module_id: Name of sensor module.
-            features: Which features to extract. In [on_object, rgba, point_normal,
+            features: Which features to extract. In [on_object, rgba, surface_normal,
                 principal_curvatures, curvature_directions, gaussian_curvature,
                 mean_curvature]
             save_raw_obs: Whether to save raw sensory input for logging.
@@ -471,7 +462,7 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
                 TODO: remove?
 
         Note:
-            When using feature at location matching with graphs, point_normal and
+            When using feature at location matching with graphs, surface_normal and
             on_object needs to be in the list of features.
 
         Note:
@@ -599,7 +590,7 @@ class FeatureChangeSM(HabitatDistantPatchSM):
     """Sensor Module that turns Habitat camera obs into features at locations.
 
     Takes in camera rgba and depth input and calculates locations from this.
-    It also extracts features which are currently: on_object, rgba, point_normal,
+    It also extracts features which are currently: on_object, rgba, surface_normal,
     curvature.
     """
 
@@ -616,7 +607,7 @@ class FeatureChangeSM(HabitatDistantPatchSM):
 
         Args:
             sensor_module_id: Name of sensor module.
-            features: Which features to extract. In [on_object, rgba, point_normal,
+            features: Which features to extract. In [on_object, rgba, surface_normal,
                 principal_curvatures, curvature_directions, gaussian_curvature,
                 mean_curvature]
             delta_thresholds: thresholds for each feature to be considered a
