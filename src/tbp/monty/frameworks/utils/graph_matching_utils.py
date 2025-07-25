@@ -241,62 +241,32 @@ def get_scaled_evidences(evidences, per_object=False):
     scaled_evidences = {}
     if per_object:
         for graph_id in evidences.keys():
-            # Handle empty evidence arrays
-            if evidences[graph_id].size == 0:
-                scaled_evidences[graph_id] = evidences[graph_id]  # Keep empty array
-                continue
-
-            min_ev = np.min(evidences[graph_id])
-            max_ev = np.max(evidences[graph_id])
-
-            # Handle case where all evidences are the same
-            if max_ev == min_ev:
-                scaled_evidences[graph_id] = np.zeros_like(evidences[graph_id])
-            else:
-                scaled_evidences[graph_id] = (
-                    evidences[graph_id] - min_ev
-                ) / (max_ev - min_ev)
-                # put in range(-1, 1)
-                scaled_evidences[graph_id] = (scaled_evidences[graph_id] - 0.5) * 2
+            scaled_evidences[graph_id] = (
+                evidences[graph_id] - np.min(evidences[graph_id])
+            ) / (np.max(evidences[graph_id]) - np.min(evidences[graph_id]))
+            # put in range(-1, 1)
+            scaled_evidences[graph_id] = (scaled_evidences[graph_id] - 0.5) * 2
     else:
         min_evidence = np.inf
         max_evidence = -np.inf
         for graph_id in evidences.keys():
-            # Handle empty evidence arrays
-            if evidences[graph_id].size == 0:
-                continue
-
             minev = np.min(evidences[graph_id])
             if minev < min_evidence:
                 min_evidence = minev
             maxev = np.max(evidences[graph_id])
             if maxev > max_evidence:
                 max_evidence = maxev
-        # Handle case where all evidence arrays were empty
-        if min_evidence == np.inf or max_evidence == -np.inf:
-            for graph_id in evidences.keys():
-                scaled_evidences[graph_id] = evidences[graph_id]  # Keep original (empty) arrays
-        else:
-            for graph_id in evidences.keys():
-                # Handle empty evidence arrays
-                if evidences[graph_id].size == 0:
-                    scaled_evidences[graph_id] = evidences[graph_id]  # Keep empty array
-                    continue
-
-                if max_evidence >= 1:
-                    # Handle case where all evidences are the same
-                    if max_evidence == min_evidence:
-                        scaled_evidences[graph_id] = np.zeros_like(evidences[graph_id])
-                    else:
-                        scaled_evidences[graph_id] = (evidences[graph_id] - min_evidence) / (
-                            max_evidence - min_evidence
-                        )
-                        # put in range(-1, 1)
-                        scaled_evidences[graph_id] = (scaled_evidences[graph_id] - 0.5) * 2
-                else:
-                    # If largest value is <1, don't scale them -> don't increase any
-                    # evidences. Instead just make sure they are in the right range.
-                    scaled_evidences[graph_id] = np.clip(evidences[graph_id], -1, 1)
+        for graph_id in evidences.keys():
+            if max_evidence >= 1:
+                scaled_evidences[graph_id] = (evidences[graph_id] - min_evidence) / (
+                    max_evidence - min_evidence
+                )
+                # put in range(-1, 1)
+                scaled_evidences[graph_id] = (scaled_evidences[graph_id] - 0.5) * 2
+            else:
+                # If largest value is <1, don't scale them -> don't increase any
+                # evidences. Instead just make sure they are in the right range.
+                scaled_evidences[graph_id] = np.clip(evidences[graph_id], -1, 1)
     return scaled_evidences
 
 

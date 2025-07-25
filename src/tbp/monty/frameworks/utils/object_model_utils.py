@@ -335,10 +335,6 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
     if (sum(pns_to_use) < len(pns_to_use) // 2) or (sum(pns_to_use) == 0):
         pns_to_use = np.logical_not(pns_to_use)
     # Take the mean of all pns pointing in the same half sphere spanned by the cds.
-    # Handle empty arrays to prevent numpy warnings
-    if np.sum(pns_to_use) == 0:
-        logger.debug("No valid point normals to use for mean calculation")
-        return None, False
     norm_mean = np.mean(pns[pns_to_use], axis=0)
     # Make sure the mean vector still has unit length.
     normed_norm_mean = norm_mean / np.linalg.norm(norm_mean)
@@ -357,11 +353,7 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
         # equivalent. If we average over opposing directions, we will get noise.
         cd1_dirs = get_right_hand_angle(cds1, cds2[0], normed_norm_mean) < 0
         cds1[cd1_dirs] = -cds1[cd1_dirs]
-        # Handle empty cds1 to prevent numpy warnings
-        if len(cds1) > 0:
-            cd1_mean = np.mean(cds1, axis=0)
-        else:
-            cd1_mean = cds1[0] if len(cds1) > 0 else np.array([1.0, 0.0, 0.0])
+        cd1_mean = np.mean(cds1, axis=0)
         normed_cd1_mean = cd1_mean / np.linalg.norm(cd1_mean)
         # Get the second cd by calculating a vector orthogonal to cd1 and pn.
         cd2_mean = np.cross(normed_norm_mean, normed_cd1_mean)
@@ -401,18 +393,10 @@ def circular_mean(values):
     Returns:
         Mean value.
     """
-    # Handle empty values to prevent numpy warnings
-    if len(values) == 0:
-        return 0.0
-
     # convert to radians
     angles = np.array(values) * 2 * np.pi
     # calculate circular mean
-    # Handle empty angles to prevent numpy warnings
-    if len(angles) == 0:
-        mean_angle = 0.0
-    else:
-        mean_angle = np.arctan2(np.mean(np.sin(angles)), np.mean(np.cos(angles)))
+    mean_angle = np.arctan2(np.mean(np.sin(angles)), np.mean(np.cos(angles)))
     # Make sure returned values are positive
     if mean_angle < 0:
         mean_angle += 2 * np.pi

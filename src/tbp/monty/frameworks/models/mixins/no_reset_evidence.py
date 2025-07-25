@@ -59,7 +59,7 @@ class TheoreticalLimitLMLoggingMixin:
         Returns:
             Updated statistics dictionary.
         """
-        stats["max_evidence"] = {k: max(v) if len(v) > 0 else 0.0 for k, v in self.evidence.items()}
+        stats["max_evidence"] = {k: max(v) for k, v in self.evidence.items()}
         stats["target_object_theoretical_limit"] = (
             self._theoretical_limit_target_object_pose_error()
         )
