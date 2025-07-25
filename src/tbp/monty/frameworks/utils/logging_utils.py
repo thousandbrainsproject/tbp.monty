@@ -391,6 +391,7 @@ def get_time_stats(all_ds, all_conditions) -> pd.DataFrame:
     time_stats.columns = ["model_type", "time", "step"]
     return time_stats
 
+
 def compute_pose_errors(
     predicted_rotation: Rotation, target_rotation: Rotation
 ) -> npt.NDArray[np.float64] | float:

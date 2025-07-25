@@ -47,6 +47,7 @@ logger = logging.getLogger(__name__)
 HypothesesUpdateTelemetry = Optional[Dict[str, Any]]
 HypothesesUpdaterTelemetry = Dict[str, Any]
 
+
 class HypothesesUpdater(Protocol):
     def update_hypotheses(
         self,
