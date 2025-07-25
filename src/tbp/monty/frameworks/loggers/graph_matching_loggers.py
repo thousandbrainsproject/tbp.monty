@@ -385,7 +385,9 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                 else np.nan
             ),
             "overall/avg_num_monty_steps": (
-                np.mean(stats["monty_steps"]) if len(stats["monty_steps"]) > 0 else np.nan
+                np.mean(stats["monty_steps"])
+                if len(stats["monty_steps"]) > 0
+                else np.nan
             ),
             "overall/avg_num_monty_matching_steps": (
                 np.mean(stats["monty_matching_steps"])
