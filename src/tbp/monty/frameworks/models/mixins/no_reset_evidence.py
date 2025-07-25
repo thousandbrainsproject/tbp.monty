@@ -7,6 +7,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 from typing import Any, Dict
 
 from scipy.spatial.transform import Rotation
@@ -14,7 +16,10 @@ from scipy.spatial.transform import Rotation
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
-from tbp.monty.frameworks.utils.logging_utils import compute_pose_error
+from tbp.monty.frameworks.utils.logging_utils import (
+    compute_pose_error,
+    compute_pose_errors,
+)
 
 
 class TheoreticalLimitLMLoggingMixin:
@@ -64,6 +69,54 @@ class TheoreticalLimitLMLoggingMixin:
             self._theoretical_limit_target_object_pose_error()
         )
         stats["target_object_pose_error"] = self._mlh_target_object_pose_error()
+        stats["resampling_telemetry"] = self._resampling_telemetry()
+        return stats
+
+    def _resampling_telemetry(self) -> dict[str, dict[str, dict[str, Any]]]:
+        """Compile resampling telemetry across all objects and input channels.
+
+        Returns:
+            A nested dictionary of {graph_id: {input_channel: resampling_telemetry}}.
+        """
+        stats = {}
+        for graph_id, graph_telemetry in self.hypotheses_updater_telemetry.items():
+            stats[graph_id] = {
+                input_channel: self._channel_resampling_telemetry(
+                    graph_id, input_channel, channel_telemetry
+                )
+                for input_channel, channel_telemetry in graph_telemetry.items()
+            }
+        return stats
+
+    def _channel_resampling_telemetry(
+        self, graph_id: str, input_channel: str, channel_telemetry: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Assemble resampling telemetry for specific graph ID and input channel.
+
+        Args:
+            graph_id: The graph ID.
+            input_channel: The input channel.
+            channel_telemetry: Telemetry for the specific input channel.
+
+        Returns:
+            A dictionary containing telemetry in `channel_telemetry` and:
+                - evidence: The hypotheses evidence scores.
+                - rotations: Rotations of the hypotheses. Note that the buffer encoder
+                    will encode those as euler "xyz" rotations in degrees.
+                - pose_errors: Rotation errors relative to the target pose.
+        """
+        mapper = self.channel_hypothesis_mapping[graph_id]
+        channel_rotations = mapper.extract(self.possible_poses[graph_id], input_channel)
+        channel_rotations_inv = Rotation.from_matrix(channel_rotations).inv()
+        channel_evidence = mapper.extract(self.evidence[graph_id], input_channel)
+
+        stats: dict[str, Any] = channel_telemetry.copy()
+        stats["evidence"] = channel_evidence
+        stats["rotations"] = channel_rotations_inv
+        stats["pose_errors"] = compute_pose_errors(
+            channel_rotations_inv,
+            Rotation.from_quat(self.primary_target_rotation_quat),
+        )
         return stats
 
     def _theoretical_limit_target_object_pose_error(self) -> float:
