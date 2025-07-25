@@ -22,10 +22,7 @@ import tempfile
 import unittest
 from pprint import pprint
 
-from tbp.monty.frameworks.config_utils.config_args import (
-    LoggingConfig,
-    SingleCameraMontyConfig,
-)
+from tbp.monty.frameworks.config_utils.config_args import LoggingConfig
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     DebugExperimentArgs,
     EnvironmentDataLoaderPerObjectEvalArgs,
@@ -38,6 +35,9 @@ from tbp.monty.frameworks.experiments import MontyExperiment
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsSinglePTZ,
     SinglePTZHabitatDatasetArgs,
+)
+from tests.unit.frameworks.config_utils.fakes.config_args import (
+    FakeSingleCameraMontyConfig,
 )
 
 
@@ -52,7 +52,7 @@ class BaseConfigTest(unittest.TestCase):
             logging_config=LoggingConfig(
                 output_dir=self.output_dir, python_log_level="DEBUG"
             ),
-            monty_config=SingleCameraMontyConfig(),
+            monty_config=FakeSingleCameraMontyConfig(),
             dataset_class=ED.EnvironmentDataset,
             dataset_args=SinglePTZHabitatDatasetArgs(
                 env_init_args=EnvInitArgsSinglePTZ(data_path=None).__dict__

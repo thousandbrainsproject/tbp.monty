@@ -207,13 +207,11 @@ def move_reproducibility_data(base_dir, parallel_dirs):
         assert "eval_episode_0_target.txt" in files
         action_file = f"eval_episode_{cnt}_actions.jsonl"
         target_file = f"eval_episode_{cnt}_target.txt"
-        os.rename(
-            os.path.join(rdir, "eval_episode_0_actions.jsonl"),
-            os.path.join(outdir, action_file),
+        Path(os.path.join(rdir, "eval_episode_0_actions.jsonl")).rename(
+            os.path.join(outdir, action_file)
         )
-        os.rename(
-            os.path.join(rdir, "eval_episode_0_target.txt"),
-            os.path.join(outdir, target_file),
+        Path(os.path.join(rdir, "eval_episode_0_target.txt")).rename(
+            os.path.join(outdir, target_file)
         )
 
 

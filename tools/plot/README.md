@@ -6,7 +6,10 @@ A tool that plots a figure from experiment log output.
 
 Ensure you setup Monty. See [Getting Started - 2. Set up Your Environment](https://thousandbrainsproject.readme.io/docs/getting-started#2-set-up-your-environment).
 
-No additional dependencies are required.
+The visualization tool requires installing extra python packages under [`analysis`](https://github.com/thousandbrainsproject/tbp.monty/blob/c886e187c47aac6135a15b72052c71e34009a92b/pyproject.toml?plain=1#L54) with:
+```bash
+pip install -e '.[analysis]'
+```
 
 ## Usage
 

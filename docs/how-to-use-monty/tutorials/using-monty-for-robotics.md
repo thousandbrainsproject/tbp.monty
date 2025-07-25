@@ -45,7 +45,7 @@ For the ultrasound demo project, we went through the same thought process as out
 
 Both the location information and the ultrasound recordings are streamed to a laptop that runs Monty. To stream the ultrasound data, we can write a small iOS app, similar to the MontyMeetsWorld app, using the ultrasound device SDK. Once the ultrasound image arrives on the laptop, Monty can move a small patch over it. It can also use the tracked sensor location in the room to integrate the physical movement of the probe.
 
-A custom sensor module can then extract features and poses from the ultrasound image. The pose could be extracted from the point normal detected at borders in the patch. Features could summarize information about measured density and texture.
+A custom sensor module can then extract features and poses from the ultrasound image. The pose could be extracted from the surface normal detected at borders in the patch. Features could summarize information about measured density and texture.
 
 For the first test, we plan to recognize 3D objects inside a phantom (a clear bag filled with fluid). For simplicity, the objects can be learned beforehand in simulation, similar to the Monty Meets World application. However, since we have 6DOF pose tracking of the sensor, we could also learn the objects directly from the ultrasound data in the real world.
 
@@ -54,7 +54,28 @@ Monty can use three types of action output to recognize the sensed objects effic
 2) It can suggest a location in the room for the human operator to move the ultrasound probe to in order to get a different view. 
 3) It can adjust the settings of the probe, such as depth of field and gain. These are not required for object recognition to work, but they can help make recognition more efficient and robust.
 
+
+# Example 3: LEGO-Based Robot
+
+During the May 2025 Robot Hackathon, we built a LEGO-based robot that used Monty to explore and learn about real-world objects. This project was our first full integration of Monty with a physical robot that could sense the environment on it's own and move in 3D space.
+
+![Setup for using Monty on Lego Robot.](../../figures/how-to-use-monty/lego_example.png)
+
+The robot was built from LEGO Technic parts, Raspberry Pi boards, and off-the-shelf sensors. We used two Pis, one to control the motors and read from a depth sensor, and another to read the RGB image sensor.
+Monty itself ran on a nearby laptop, which communicated with the robot over a local Wi-Fi network. This setup allowed us to keep the computation off the robot while still enabling real-time streaming of sensor data and motor commands.
+
+Rather than move the entire robot around an object, we placed the object on a rotating platform. As the object turned, the robot’s camera experienced the same kind of movement as if the robot were orbiting the object. This trick made things simpler mechanically while still allowing Monty to build a 3D model of the object using its depth and RGB observations.
+
+The core idea behind the project was to create a real robot that could explore the target object, learn what it looks like, and later recognize it, even if it was moved or rotated.
+It was exciting to see Monty, originally tested in simulated environments, start to perceive and interact with the physical world in real time.
+
+
+> 📘 Follow Along
+> 
+> If you’re curious to see how this was set up, you can check out the [Everything Is Awesome repository](https://github.com/thousandbrainsproject/everything_is_awesome).
+> We include the parts list, Raspberry Pi setup guides, custom `everything_is_awesome` classes and some project visualizations.
+
+
+
 # Conclusion
 The current solution for running Monty on robots is to stream the sensor data and action commands back and forth between the robot and a Monty instance running on a laptop. Outside of that, defining a custom data loader and environments for Monty is analogous to how it was outlined in the [previous tutorial](./using-monty-in-a-custom-application.md).
-
-

@@ -23,23 +23,21 @@ The desired cadence for Issue Triage is at least once per business day.
 
 A **Maintainer** will check the Issue for validity.
 
-Do not assign priority or severity to Issues (see: [RFC 2 PR and Issue Review](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0002_pr_and_issue_review.md#issue)).
-
-Do not assign **Maintainers** to Issues. Issues remain unassigned so that anyone can work on them (see: [RFC 2 PR and Issue Review](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0002_pr_and_issue_review.md#feature-requests-1)).
-
 Do not reproduce or fix bugs during triage.
 
-## Title
+## Evaluation Criteria
+
+### Title
 
 A short descriptive title.
 
-## Description
+### Description
 
 Ideally, the Issue creator followed the instructions in the Issue templates.
 
 If not, and more information is needed, _do not close the Issue_. Instead, proceed with triage, request more information by commenting on the Issue, and add a `needs discussion` label to indicate that additional information is required. Remember to add the `triaged` label to indicate that the Issue was triaged after you applied any additional labels.
 
-## Validity
+### Validity
 
 A valid Issue is on-topic, well-formatted, contains expected information, and does not violate the code of conduct.
 
@@ -54,6 +52,16 @@ Multiple labels can be assigned to an Issue.
 - `invalid`: Apply this label if you are rejecting the Issue for validity.
 - `needs discussion`: Apply this label if the Issue is missing information to determine what to do with it.
 - `triaged`: At a minimum, apply this label if the Issue is valid and you have triaged it.
+
+## Priority & Severity
+
+Do not assign priority or severity to Issues (see: [RFC 2 PR and Issue Review](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0002_pr_and_issue_review.md#issue)).
+
+## Assignment & Mentions
+
+Do not assign **Maintainers** to Issues. Issues remain unassigned so that anyone can work on them (see: [RFC 2 PR and Issue Review](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0002_pr_and_issue_review.md#feature-requests-1)).
+
+If you feel that someone should be notified of the Issue, make a comment and mention them in the comment.
 
 # Pull Request Triage
 
@@ -87,11 +95,13 @@ A valid Pull Request is on-topic, well-formatted, contains expected information,
 
 A Draft Pull Request is ignored and not triaged.
 
-## Title
+## Evaluation Criteria
+
+### Title
 
 A short descriptive title.
 
-## Description
+### Description
 
 If the Pull Request claims to resolve an Issue, that Issue is linked and valid.
 
@@ -99,7 +109,7 @@ If the Pull Request is standalone, it clearly and concisely describes what is be
 
 If the Pull Request is related to a previous RFC process, the RFC document is referenced.
 
-## Commit History
+### Commit History
 
 Pull Request branches from a recent `main` commit.
 
@@ -121,3 +131,15 @@ Multiple labels can be assigned to a Pull Request. For example, an `enhancement`
 - `invalid`: Apply this label if you are rejecting the Pull Request for validity.
 - `rfc:proposal`: Apply this label if the Pull Request is a [Request For Comments (RFC)](../request-for-comments-rfc.md).
 - `triaged`: At a minimum, apply this label if the Pull Request is valid, you triaged it, and it should continue the [Pull Request Flow](../pull-requests/pull-request-flow.md).
+
+## Priority & Severity
+
+Do not assign priority or severity to Pull Requests.
+
+## Assignment
+
+Use your judgement to assign the Pull Request to one or more **Maintainers** for review (this is the [GitHub Assignees feature](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/assigning-issues-and-pull-requests-to-other-github-users)). Note that for RFCs, the meaning of the Assignees list is different (see [Request For Comments (RFC)](../request-for-comments-rfc.md)).
+
+Use your judgement to request a review for the Pull Request from one or more people (this is the [GitHub Reviewers feature](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/requesting-a-pull-request-review)).
+
+If you feel that someone should be notified of the Issue, make a comment and mention them in the comment.

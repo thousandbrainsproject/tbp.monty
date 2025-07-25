@@ -829,7 +829,7 @@ def show_one_step(
     show_num_pos=None,
     show_full_path=False,
     color_by_curvature=False,
-    show_point_normals=False,
+    show_surface_normals=False,
     norm_len=0.01,
     ax_range=0.05,
 ):
@@ -960,7 +960,7 @@ def show_one_step(
                 c=color,
                 s=size,
             )
-            if show_point_normals:
+            if show_surface_normals:
                 norm = model_normals[closest_node_id]
                 # print("norm at closest node (black): " + str(norm))
                 # print(
@@ -1396,8 +1396,8 @@ class PolicyPlot:
         """Plot the core object model.
 
         Note that all coordinates used for plotting are relative to the world
-        coordinates, hence e.g. point normals do not need to be rotated by the object's
-        orientation in the environment; the only rotation that needs to be done
+        coordinates, hence e.g. surface normals do not need to be rotated by the
+        object's orientation in the environment; the only rotation that needs to be done
         therefore is to get the learned object points (in their arbitrary, internal
         reference frame) to align with the actual rotation of the object in the
         environment
@@ -1707,7 +1707,7 @@ class PolicyPlot:
                 )
 
     def add_lm_processing(self, step_iter):
-        """Visualize the point-normal associated with an LM-processed step."""
+        """Visualize the surface normal associated with an LM-processed step."""
         detailed_features = self.detailed_stats[str(self.episode)]["SM_0"][
             "processed_observations"
         ]
@@ -1716,7 +1716,7 @@ class PolicyPlot:
 
         # Compare indices associated with tangential movements and
         # LM processing; when a tangential movement was also
-        # associated with sending data to LM, add a point normal
+        # associated with sending data to LM, add a surface normal
         if (
             np.where(self.tangential_steps_mask)[0][step_iter]
             in np.where(self.lm_steps_mask)[0]
@@ -2009,7 +2009,7 @@ def plot_graph_mismatch(
     # NB how we aim to plot both reference objects in the reference frame of the first
     # object, by correcting the second one
     # Further note the order of indexing the xyz accounts for the y axis being
-    # the vertical axis in Habitat; this is also done for e.g. the point-normal
+    # the vertical axis in Habitat; this is also done for e.g. the surface normal
     ax.scatter(
         top_mlh_graph[:, 0],
         top_mlh_graph[:, 2],
@@ -2062,7 +2062,7 @@ def plot_graph_mismatch(
         s=400,
     )
 
-    # Note that point-normal is in global environmental coordinates, not
+    # Note that surface normal is in global environmental coordinates, not
     # the environmental coordinates in which the second object was learned,
     # therefore transform by inverse
     second_pn = second_mlh["rotation"].inv().apply(current_pn)
