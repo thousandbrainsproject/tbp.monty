@@ -278,7 +278,7 @@ class EvidenceSlopeTracker:
         hyp_age: Maps channel names to hypothesis age counters.
     """
 
-    def __init__(self, window_size: int = 3, min_age: int = 5) -> None:
+    def __init__(self, window_size: int = 12, min_age: int = 5) -> None:
         """Initializes the EvidenceSlopeTracker.
 
         Args:
