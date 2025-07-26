@@ -225,7 +225,7 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         )
 
         # Slopes: (3.0 - 4.0) + (4.0 - 5.0) = (-1) + (-1) = -2 / 2 = -1.0
-        slopes = self.tracker._calculate_slopes(self.channel)
+        slopes = self.tracker.calculate_slopes(self.channel)
         self.assertAlmostEqual(slopes[0], -1.0)
 
     def test_update_raises_on_wrong_length(self) -> None:
@@ -267,7 +267,7 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         self.tracker.update(np.array([2.0]), self.channel)
         self.tracker.update(np.array([3.0]), self.channel)
 
-        slopes = self.tracker._calculate_slopes(self.channel)
+        slopes = self.tracker.calculate_slopes(self.channel)
         expected_slope = ((2.0 - 1.0) + (3.0 - 2.0)) / 2  # = 1.0
         self.assertAlmostEqual(slopes[0], expected_slope)
 
