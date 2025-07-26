@@ -59,6 +59,9 @@ class FeatureAtLocationBuffer(BaseBuffer):
 
         self.displacements = {}
 
+        # Store sender_type for each channel to avoid relying on naming conventions
+        self.channel_sender_types = {}
+
         self.stats = {
             "detected_path": None,
             "detected_location_on_model": [None, None, None],  # model ref frame
@@ -121,6 +124,10 @@ class FeatureAtLocationBuffer(BaseBuffer):
         any_obs_on_obj = False
         for state in list_of_data:
             input_channel = state.sender_id
+
+            # Store sender_type for this channel
+            self.channel_sender_types[input_channel] = state.sender_type
+
             self._add_loc_to_location_buffer(input_channel, state.location)
             if input_channel not in self.features.keys():
                 self.features[input_channel] = {}
@@ -456,22 +463,28 @@ class FeatureAtLocationBuffer(BaseBuffer):
             The name of the first sensory (coming from SM) input channel in buffer.
 
         Raises:
-            ValueError: If no sensor channels are found in the buffer
+            ValueError: If no sensory channels are found in the buffer.
         """
         all_channels = list(self.locations.keys())
-        if len(all_channels) > 0:
-            for channel in all_channels:
-                # TODO: better way of checking this that doesn't rely on naming. Maybe
-                # store sensory_type together with channel when adding state to buffer?
-                if "patch" in channel:
-                    return channel
-            raise ValueError(
-                "No sensor channel found in buffer. "
-                "get_first_sensory_input_channel assumes we have at least one"
-                f" sensor channel but channels are {all_channels}."
-            )
-        else:
+        if len(all_channels) == 0:
             return None
+
+        # Find first channel with sender_type "SM"
+        # This avoids relying on naming conventions like "patch"
+        for channel in all_channels:
+            if (
+                channel in self.channel_sender_types
+                and self.channel_sender_types[channel] == "SM"
+            ):
+                return channel
+
+        # If we reach here, no sensory channels were found but channels exist
+        # This means we have channels but none are sensory (e.g., only view_finder, LM)
+        raise ValueError(
+            f"No sensory input channels found in buffer. "
+            f"Available channels: {all_channels}. "
+            f"Channel sender types: {self.channel_sender_types}"
+        )
 
     def set_individual_ts(self, object_id, pose):
         """Update self.stats with the individual LMs terminal state."""
