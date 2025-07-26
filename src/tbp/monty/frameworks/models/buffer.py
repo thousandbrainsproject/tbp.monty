@@ -59,8 +59,8 @@ class FeatureAtLocationBuffer(BaseBuffer):
 
         self.displacements = {}
 
-        # Store sensory type information for each channel to avoid relying on naming
-        self.channel_sensory_types = {}
+        # Store sender_type for each channel to avoid relying on naming conventions
+        self.channel_sender_types = {}
 
         self.stats = {
             "detected_path": None,
@@ -125,8 +125,8 @@ class FeatureAtLocationBuffer(BaseBuffer):
         for state in list_of_data:
             input_channel = state.sender_id
 
-            # Store sensory type information for this channel
-            self._store_channel_sensory_type(input_channel, state)
+            # Store sender_type for this channel
+            self.channel_sender_types[input_channel] = state.sender_type
 
             self._add_loc_to_location_buffer(input_channel, state.location)
             if input_channel not in self.features.keys():
@@ -469,11 +469,12 @@ class FeatureAtLocationBuffer(BaseBuffer):
         if len(all_channels) == 0:
             return None
 
-        # Find the first channel marked as sensory
+        # Find first channel with sender_type "SM"
+        # This avoids relying on naming conventions like "patch"
         for channel in all_channels:
             if (
-                channel in self.channel_sensory_types
-                and self.channel_sensory_types[channel] == "sensory"
+                channel in self.channel_sender_types
+                and self.channel_sender_types[channel] == "SM"
             ):
                 return channel
 
@@ -482,7 +483,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
         raise ValueError(
             f"No sensory input channels found in buffer. "
             f"Available channels: {all_channels}. "
-            f"Channel types: {self.channel_sensory_types}"
+            f"Channel sender types: {self.channel_sender_types}"
         )
 
     def set_individual_ts(self, object_id, pose):
@@ -593,34 +594,6 @@ class FeatureAtLocationBuffer(BaseBuffer):
         # existing_feat has shape (last_stored_step, attr_shape)
         new_vals[: existing_vals.shape[0], : existing_vals.shape[1]] = existing_vals
         return new_vals
-
-    def _store_channel_sensory_type(self, input_channel, state):
-        """Store sensory type information for a channel based on the state.
-
-        This determines whether a channel represents actual sensory input that should
-        be used by learning modules, or auxiliary channels like view_finder that are
-        used for experimental instrumentation.
-
-        Args:
-            input_channel: The channel identifier (sender_id from state).
-            state: The State object containing sender information.
-        """
-        if input_channel not in self.channel_sensory_types:
-            # Determine sensory type based on sender_id and sender_type
-            if state.sender_type == "SM":
-                # Distinguish between actual sensory modules and view_finder
-                if "view_finder" in input_channel:
-                    self.channel_sensory_types[input_channel] = "view_finder"
-                else:
-                    # This is an actual sensory module that should be used for learning
-                    self.channel_sensory_types[input_channel] = "sensory"
-            elif state.sender_type == "LM":
-                self.channel_sensory_types[input_channel] = "learning_module"
-            elif state.sender_type == "GSG":
-                self.channel_sensory_types[input_channel] = "goal_state_generator"
-            else:
-                # Unknown sender type, mark as unknown
-                self.channel_sensory_types[input_channel] = "unknown"
 
 
 class BufferEncoder(json.JSONEncoder):
