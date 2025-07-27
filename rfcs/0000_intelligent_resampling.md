@@ -7,7 +7,7 @@ This is a high-level RFC on intelligence resampling in Monty, considering the be
 
 1. How can we realign hypotheses to model points for robustness to noise and distortions?
 2. How can we implement and test resampling informed by out-of-reference-frame movement?
-3. How can we use prediction errors in off-object observations to eliminate hypotheses? 
+3. How can we use prediction errors to eliminate hypotheses? 
 
 ## How can we realign hypotheses to model points for robustness to noise and distortions?
 
@@ -51,31 +51,17 @@ At a high level, realigning a hypothesis involves matching **observed features**
 
 Below we work through some key questions and implications:
 
-#### How can we meaningfully compare features?
+#### What constitutes a valid match?
 
-The comparison method depends on the specific feature type. For now, we can leverage existing code in the `check_feature_change()` method of the `FeatureChangeSM` class. As of `tbp.monty==0.8.0`, we have the following distance definitions for `hsv` and `pose_vectors`:
+A match involves comparisons between features. The `_calculate_evidence_for_new_locations()` in `hypotheses_displacer.py` already computes the error between stored pose features and observed pose features, as well as non-morphological features (also see `class DefaultFeatureEvidenceCalculator` in `calculator.py`), weighted by distance to nearest nodes. This RFC and initial implementation will not be concerned with computing feature similarity/error.
 
-```python
-# HSV (line 717)
-hue_d = min(abs(current_hue - last_hue), 1 - abs(current_hue - last_hue))
-
-# Pose Vectors (line 729)
-angle_between = get_angle(last_feat[0],current_feat[0],)
-```
-
-For a valid "match", all $N$ features must be similar within specified thresholds. _Why all?_ This requirement is necessary because partial matches can be uninformative, e.g., if `hsv` matches but `pose_vectors` do not, this provides little information for objects with uniform color (e.g., a red mug).
-
-**Note**: Future extensions of observed features in Monty should consider meaningful distance metrics. The examples above demonstrate cases where L2 distance is not suitable.  
+For a valid "match", all $N$ features must be similar within specified thresholds. _Why all?_ This requirement is necessary because partial matches can be uninformative, e.g., if `rgba` matches but `pose_vectors` do not, this provides little information for objects with uniform color (e.g., a red mug).
 
 #### What if there are multiple matches?
 
 Multiple matches indicate that the observed feature set exists at multiple locations in the object model, i.e. the observed features are not sufficiently distinct. Increasing the number of measured features (larger $N$) reduces the likelihood of such "collisions." It is also not necessary to realign at every step - we may choose not to realign if there are multiple matches, and only realign if there is a unique match.
 
 **Note**: We may want to "mark" nodes in the graph object model when unique matches occur, indicating they contain distinctive features. These landmark nodes could be valuable for learning sparse object models and may improve computational efficiency (see below).
-
-#### What if there are no matches?
-
-This scenario may occur during inference when sensor noise exceeds the matching threshold. We could temporarily increase the matching threshold to find a match, penalizing the evidence proportionally to the threshold increase required. The simplest/initial implementation may consider skipping "no match" cases (i.e., no realignment), though this mechanism could potentially be used to decrease evidence scores.
 
 #### Computational Complexity
 
@@ -86,37 +72,97 @@ Currently, case 1 is not a major concern since we only have "few" features (e.g.
 Case 2 is more concerning until we develop sparser models. We should benchmark comparison times against ~2,000 points in an object model. Potential optimizations include:
 
 - **Local search**: Compare only points within an $\epsilon$-radius of the current location, assuming realignment targets nearby points. This is valid if we realign frequently to prevent large error accumulation. Note that we may need to dynamically adjust $\epsilon$ to increase search area in case of large distortions. 
-- **Selective re-anchoring**: Apply re-anchoring only to hypotheses exhibiting both high confidence and large prediction error, as described by the "surprise" metric in [Ramy's RFC](https://github.com/thousandbrainsproject/tbp.monty/pull/390). This approach reduces computational overhead by avoiding unnecessary comparisons for low-confidence hypotheses or cases with low prediction error.
 - **Landmark prioritization**: Prioritize comparisons with nodes previously "marked" as containing unique features. 
+
+For Case 3, we can apply:
+- **Selective re-anchoring**: Apply re-anchoring only to hypotheses exhibiting both high confidence and large prediction error, as described by the "surprise" metric in [Ramy's RFC](https://github.com/thousandbrainsproject/tbp.monty/pull/390). This approach reduces computational overhead by avoiding unnecessary comparisons for low-confidence hypotheses or cases with low prediction error.
 
 Of the above three options, I think **selective re-anchoring** should be prioritized first, then **landmark prioritization**. Note that **landmark prioritization** will require us to update our object model's nodes to store "important" attribute first. 
 
 #### How can sparse models affect location accuracy?
 
-In sparse models, the nearest stored point might be significantly distant from the actual location. Several mitigation strategies are possible:
+The impact of sparse models on location accuracy depends on both **sparsity** and **distinctiveness**. Here, sparsity refers to the density of stored points in the object model, while distinctiveness refers to how unique or identifying the features at those points are. 
 
-1. **Constrained re-anchoring**: Limit re-anchoring to points within an $\epsilon$-radius to prevent large positional jumps.
+1. Sparse models with distinctive features represent the ideal case for realignment. When distinctive features are sparsely distributed throughout an object model, each stored point acts as a reliable landmark. Successful feature matching at these locations provides strong evidence for accurate realignment because distinctive features, by definition, are unlikely to be confused with features from other locations. In this scenario, realigning to the exact stored location is typically appropriate and beneficial.
+2. Sparse models with non-distinctive features present significant challenges. For example, consider a large, uniformly colored ball where we have sparsely sampled points across its surface. The features at any stored point (e.g., similar curvature, identical color) could match observations from many other locations on the sphere. Even if we achieve a "successful" feature match, realigning to that specific stored point may introduce substantial location error if the true location is far from the stored point. 
 
+Several additional techniques to consider when re-anchoring in sparse models: 
+
+1. **Constrained re-anchoring**: Limit re-anchoring to points within an $\epsilon$-radius to prevent large positional jumps, particularly important for non-distinctive sparse models.
 2. **Interpolation**: Instead of snapping to existing model points, re-anchor to an intermediate position between the hypothesis location and the model location. The interpolation weight could be based on feature matching confidence, which can be proportional to distance error when comparison features. This may create a "virtual anchor point", i.e. a point not necessarily stored in the model (to preserve sparsity) while still benefiting from re-anchoring.
+3. **Confidence-based realignment**: Only perform realignment when feature matches indicate high distinctiveness, which can be estimated by the uniqueness of the feature combination within the object model.
 
-For sparse models, matching only when features are distinctive becomes even more critical.
+### Example: Re-anchoring a Specific Hypothesis
+
+Here we go through a specifc case of re-anchoring the pose of a particular hypothesis. 
+
+Recall that in an object model, at each node in the graph, we store `pose_vectors` which are 3x3 matrix of surface normal and principal curvature directions at that point. In a hypothesis, the `poses` attribute is a 3x3 rotation matrix that represents the object's orientation in the world. 
+
+**Note**: We may wish to use different variable names to make it clearer that `pose_vectors` are local surface properties, while the `poses` attribute in `class Hypotheses` is a global object orientation. They both happen to be 3x3 matrices, but in `pose_vectors` this is because three vectors are stacked together (i.e. surface normal, principal curvature direction 1 and 2), while `poses` is a 3x3 rotation matrix (with no individual row meanings). 
+
+In `_get_all_informed_possible_poses()` in `hypotheses_updater.py`, it calls `align_multiple_orthonormal_vectors()` which calculates the rotation that would transform the current sensor orientation to match the stored orientation at that node. 
+
+**Proposed implementation**:
+
+```python
+def realign_pose(hypothesis_k, observed_pose_vectors, stored_pose_vectors):
+    """Find minimal rotation correction to align pose vectors.
+    
+    Solves the problem of:
+    R_correction x R_current x stored_pose_vectors = observed_pose_vectors
+
+    We want to calculate R_correction based on stored, observed, and current hypothesis' pose, 
+    then update the hypothesis' pose with R_correction x R_current. 
+    """
+    # Current pose from hypothesis
+    R_current = hypothesis_k.poses[k]
+    
+    # Compute pose vectors in object reference frame
+    current_pose_vectors = R_current @ stored_pose_vectors.T 
+    current_pose_vectors = current_pose_vectors.T # to transform back into row vectors of surface normal, principal curvature direction 1 and 2
+    
+    # Find rotation that best aligns current to observed_pose_vectors (use existing method)
+    R_correction = align_multiple_orthonomral_vectors(current_pose_vectors.reshape(1, 3, 3), observed_pose_vectors)
+    
+    # Update hypothesis pose
+    hypothesis_k.poses[k] = R_correction @ R_current
+```
+
+Note that we could also use `R_correction` to see if we should reject re-anchoring, e.g. if the angle associatd with `R_correction` is larger than some threshold then it might mean we had a false match. 
+
+This approach extends the current hypothesis initialization logic (which determines initial poses based on sensor observations) to allow pose updates during realignment. 
+
+**Minor Side Note**: If the above approach works, we could likely remove the following code where we sample from Von Mises distribution.
+```python
+for _ in range(n_samples):
+    # If we do this we need a better terminal condition for similar
+    # rotations or more robustness. n_sample currently set to 0.
+    rand_rot = self.rng.vonmises(0, kappa, 3)
+    rot = Rotation.from_euler(
+        "xyz", [rand_rot[0], rand_rot[1], rand_rot[2]]
+    )
+    r_sample = r * rot
+```
 
 #### What are the implications for unsupervised learning?
 
-Re-anchoring during unsupervised learning has several important implications that require careful consideration. Re-anchoring changes where we think we are 
-(which may possibly affect policy or what we decide to learn next), which could lead to missing parts of the object (by skipping areas from re-anchoring). 
+The benefits of re-alignment extend beyond immediate hypothesis correction to fundamental improvements in learning. In biology, path integration is inherently noisy due to imperfect sensors and movement estimates. Re-alignment using distinctive features acts as a corrective mechanism, similar to how landmarks are used in Simultaneous Localization and Mapping (SLAM) algorithms.
 
-Potential mitigation strategies include:
+In lifelong SLAM and multi-session SLAM, robots continuously operate in varied and changing environments without prior knowledge of what environment they are in. In these cases, a robot must detect whether it has moved into a new environment (e.g. indoor to outdoor) or is revisiting the same environment under different conditions (e.g. day vs. night). This is achieved through _continuous loop closure detection_, where robots monitor and detect previously visited places by comparing features from the current scene to all previously encountered locations. Like in our hypotheses realignment problem, robots need to prevent false positives in matching, as re-anchoring changes where we think we are (which may possibly affect policy or what we decide to learn next), which could lead to missing parts of the object (by skipping areas from re-anchoring). 
 
-1. **Frequency control**: The re-anchoring frequency should be a configurable parameter. We may need to disable re-anchoring during early exploration phases until sufficient steps have been taken.
+There are several techniques to mitigate false positives: 
 
-2. **Delayed re-anchoring**: To increase confidence in re-anchoring decisions, we could **delay** re-anchoring until multiple consistent feature matches are observed across several steps. This approach may also better reflects real-world experiences, where we may accumulate/experience features at several locations (or across time in case of looking at objects through straws) - the relative positions of multiple features and experiential history provide stronger localization cues than a single distinctive feature match. 
+1. Extract more and distinctive features.
+2. Require matches across multiple features simultaneously (i.e. multi-modal matching across vision and touch).
+3. Temporal consistency across multiple timesteps. To increase confidence in re-anchoring decisions, we could **delay** re-anchoring until multiple consistent feature matches are observed across several steps. This approach may also better reflects real-world experiences, where we may accumulate/experience features at several locations (or across time in case of looking at objects through straws) - the relative positions of multiple features and experiential history provide stronger localization cues than a single distinctive feature match. 
+4. Frequency control: The re-anchoring frequency should be a configurable parameter. We may need to disable re-anchoring during early exploration phases until sufficient steps have been taken, or adjust frequency of re-anchoring inversely proportional to number of steps.
 
 ## How can we implement and test resampling informed by out-of-reference-frame movement?
 
 The aim of this question is to eliminate hypotheses when they have moved outside the object's reference frame. Figure 1 illustrates this scenario.
 
 <img src="./0000_intelligent_resampling/out_of_reference_frame_movement.png" alt="Out of reference frame movement" style="width:80%; height:auto; display: block; margin: 0 auto;"/>
+
 _Figure 1_. Case where hypothesis has moved out of object's reference frame. 
 
 ### Implementation Strategy
@@ -134,18 +180,27 @@ _Figure 2_. **Left**: Naive approach requires comparing distances to all ~2,000 
 
 While sparse models may reduce this computational burden, the convex hull approach should still provide significant performance improvements. 
 
-## How can we use prediction errors in off-object observations to eliminate hypotheses? 
+## How can we use prediction errors to eliminate hypotheses? 
 
 Figure 3 illustrates two types of prediction errors that may arise in Monty and can be used to eliminate hypotheses.
 
 <img src="./0000_intelligent_resampling/predicion_error.png" alt="Prediction errors in Monty" style="width:70%; height:auto; display: block; margin: 0 auto;"/>
+
 _Figure 3_. Two cases where prediction errors may arise in Monty.
 
 ### Case 1: Hypothesis believes it is within an object but has actually moved off the object
 
-**Note**: There is also a scenario where the hypothesis has moved off one object and landed on another object. This can be handled by Case 2, since features sensed from a different object will presumably result in large prediction errors.
+This case can be further divided into two distinct scenarios:
 
-To compute prediction errors, we need a representation of "null" observations. We define "null" features as the absence of **morphological** features (surface normal and principal curvatures), since depending on the sensing modality (vision or touch), not all **non-morphological features** may be detected.
+#### Case 1a: Moving onto another object or background
+
+The hypothesis has moved off the target object and landed on another object or the background environment. Features sensed from this different object or background will presumably result in large prediction errors compared to the expected features from the original object model. This scenario can be handled using the same mechanisms as Case 2, since the mismatch between expected and observed features provides a clear signal for hypothesis elimination.
+
+#### Case 1b: Genuinely sensing nothing
+
+The hypothesis has moved to a location where the sensor is genuinely not detecting anything. In this scenario, the sensor provides no meaningful signal rather than conflicting features.
+
+For Case 1b, we need a representation of "null" observations to compute prediction errors. We define "null" features as the absence of **morphological** features (surface normal and principal curvatures), since depending on the sensing modality (vision or touch), not all **non-morphological features** may be detected.
 
 **Current representation**: In the existing implementation, off-object observations result in an empty dictionary for `morphological_features`:
 
@@ -226,7 +281,7 @@ class PredictionErrorHypothesesDisplacer(HypothesesDisplacer): # or just update 
         ...
 ``` 
 
-### Implications for FeatureChangeSMNo, 
+### Implications for FeatureChangeSM
 
 The following changes would be made to `sensor_module.py`:
 
@@ -256,4 +311,9 @@ A `False` value currently prevents null observations from being processed by LM.
 
 ### When we're learning an object, we don't have a complete graph model. How do we deal with this?
 
-During object learning, we lack a complete graph model, creating challenges for prediction error interpretation. Prediction errors can signal both the need to eliminate hypotheses and the need to update the model. I think one way to go about this is to store a `num_visited` in nodes of object models (similar to if were to add `is_distinct` during realignment in Question 1). This informaton can be utilized to see if the prediction error is occuring at a point where it has been visited frequently or not - if visited frequently, then it is likely a prediction error. If not, then it may just be a part of the model that hasn't been explored enough. 
+During object learning, prediction errors create a fundamental ambiguity: they can signal either (1) the need to eliminate incorrect hypotheses, or (2) the need to update an incomplete model with new information. This challenge becomes particularly complex when learning and inference are interleaved, or when the distinction between "pure learning" and "pure inference" modes is not clearly defined. In pure inference mode, we may use prediction errors to eliminate hypotheses assuming the object model is considered complete. In pure learning mode, prediction errors may indicate model needs updating since the model is incomplete. 
+
+To treat learning and inference as lying on a continuum, we can utilize metadata stored in object models (e.g. `_observation_count` in `GridObjectModel`) as a proxy/heuristic to use prediction errors in one way or another. For example, if we have frequently visited a location, we can bias it towards hypothesis elimination (even if the object model is not complete), and vice versa. Other additional heuristics could be:
+
+- **Temporal consistency**: Require multiple consecutive prediction errors before eliminating hypotheses in partially learned models
+- **Error magnitude thresholds**: Always eliminate if the error is large; for small errors depends on confidence
