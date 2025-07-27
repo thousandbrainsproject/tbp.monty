@@ -459,7 +459,7 @@ class PolicyTest(unittest.TestCase):
         # rotated, this means it is pointing towards/away from the sensor, rather than
         # orthogonal to it; in experiments, PC vectors pointing towards +z in the
         # reference frame of the sensor/agent can happen if the surface agent has failed
-        # to orient such that it is looking down at the point-normal
+        # to orient such that it is looking down at the surface normal
         fo_2_corrupt_z = copy.deepcopy(fo_2)
         fo_2_corrupt_z["morphological_features"]["pose_vectors"] = np.array(
             [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
@@ -1018,10 +1018,10 @@ class PolicyTest(unittest.TestCase):
                     )
 
     def test_surface_policy_orientation(self):
-        """Test ability of surface agent to orient to a point-normal.
+        """Test ability of surface agent to orient to a surface normal.
 
         Test that the surface-agent correctly orients to be pointing down at an
-        observed point-normal.
+        observed surface normal.
 
         Begins the episode by facing a cube whose surface is pointing away from
         the agent at an odd angle.
@@ -1042,7 +1042,7 @@ class PolicyTest(unittest.TestCase):
                 if loader_step == 3:  # Surface agent should have re-oriented
                     break
 
-            # Most recently observed point-normal sent to the learning module
+            # Most recently observed surface normal sent to the learning module
             current_pose = exp.model.learning_modules[0].buffer.get_current_pose(
                 input_channel="first"
             )
@@ -1065,7 +1065,7 @@ class PolicyTest(unittest.TestCase):
                 np.isclose(
                     current_pose[1], agent_direction * (-1), rtol=1.0e-3, atol=1.0e-2
                 )
-            ), "Agent should be (approximately) looking down on the point-normal"
+            ), "Agent should be (approximately) looking down on the surface normal"
 
     def test_core_following_principal_curvature(self):
         """Test ability of surface agent to follow principal curvature.
@@ -1102,7 +1102,7 @@ class PolicyTest(unittest.TestCase):
         motor_system._state["agent_id_0"]["rotation"] = qt.quaternion(1, 0, 0, 0)
 
         # Step 1
-        # fake_obs_pc contains observations including the point-normal and principal
+        # fake_obs_pc contains observations including the surface normal and principal
         # curvature directions in the global/environment reference frame; the movement
         # (specifically tangential translation) that the agent should take is
         # also in environmental coordinates, so we compare these

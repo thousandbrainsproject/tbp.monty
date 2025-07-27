@@ -508,8 +508,8 @@ class FeatureAtLocationBuffer(BaseBuffer):
             # this time step and then add the sensed feature. This makes
             # sure the same index in different feature array corresponds to
             # the same time step and location.
-            self.features[input_channel][attr_name] = (
-                np.empty((len(self.locations), attr_shape)) * np.nan
+            self.features[input_channel][attr_name] = np.full(
+                (len(self.locations), attr_shape), np.nan
             )
         else:
             padded_feat = self._fill_old_values_with_nans(
@@ -547,8 +547,8 @@ class FeatureAtLocationBuffer(BaseBuffer):
         if input_channel not in self.displacements.keys():
             self.displacements[input_channel] = {}
         if disp_name not in self.displacements[input_channel].keys():
-            self.displacements[input_channel][disp_name] = (
-                np.empty((len(self.locations), len(disp_val))) * np.nan
+            self.displacements[input_channel][disp_name] = np.full(
+                (len(self.locations), len(disp_val)), np.nan
             )
 
         padded_vals = self._fill_old_values_with_nans(
@@ -576,7 +576,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             The padded values.
         """
         # create new np array filled with nans of size (current_step, new_val_len)
-        new_vals = np.empty((len(self) + 1, new_val_len)) * np.nan
+        new_vals = np.full((len(self) + 1, new_val_len), np.nan)
         # Replace nans with stored values for this feature.
         # existing_feat has shape (last_stored_step, attr_shape)
         new_vals[: existing_vals.shape[0], : existing_vals.shape[1]] = existing_vals

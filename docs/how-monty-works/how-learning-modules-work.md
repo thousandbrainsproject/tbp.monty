@@ -62,11 +62,11 @@ Object models are stored in the graph memory and typically contain information a
 
 A graph is constructed from a list of observations (poses, features). Each observation can become a node in the graph which in turn connects to its nearest neighbors in the graph (or by temporal sequence), indicated by the edges of the graph. **Each edge has a displacement associated with it** which is the action that is required to move from one node to the other. Edges can also have other information associated with them, for instance, rotation invariant point pair features (Drost et al., 2010). **Each node can have multiple features associated with it** or simply indicate that the object exists there (morphology). Each node must contain location and orientation information in a common reference frame (object centric with an arbitrary origin).
 
-![A Graph of features (nodes), linked by displacements (edges). Each node represents a relative location and stores three pose vectors (for example the point normal and the two principal curvature directions). Nodes can also have pose-independent features associated with them such as color and curvature. The graph stored in memory can then be used to recognize objects from actual feature-pose observations.](../figures/how-monty-works/full_graph.png#width=300px)
+![A Graph of features (nodes), linked by displacements (edges). Each node represents a relative location and stores three pose vectors (for example the surface normal and the two principal curvature directions). Nodes can also have pose-independent features associated with them such as color and curvature. The graph stored in memory can then be used to recognize objects from actual feature-pose observations.](../figures/how-monty-works/full_graph.png#width=300px)
 
-## What are Point Normals and Principal Curvatures?
+## What are Surface Normals and Principal Curvatures?
 
-See the video in this section for more details: [Point Normals and Principal Curvatures](observations-transforms-sensor-modules.md#point-normals-and-principal-curvatures)
+See the video in this section for more details: [Surface Normals and Principal Curvatures](observations-transforms-sensor-modules.md#surface-normals-and-principal-curvatures)
 
 
 **Similar nodes in a graph** (no significant difference in pose or features to an existing node) **are removed** (see above figure) and nodes could have a variety of features attached to them. Removing similar points from a graph helps us to be more efficient when matching and avoids storing redundant information in memory. This way we store more points where features change quickly (like where the handle attaches to the mug) and fewer points where features are not changing as much (like on a flat surface).

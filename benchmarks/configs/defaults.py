@@ -118,7 +118,7 @@ min_eval_steps = 20
 
 monty_models_dir = os.getenv("MONTY_MODELS")
 
-# v6 : Using TLS for point-normal estimation
+# v6 : Using TLS for surface normal estimation
 # v7 : Updated for State class support + using new feature names like pose_vectors
 # v8 : Using separate graph per input channel
 # v9 : Using models trained on 14 unique rotations
