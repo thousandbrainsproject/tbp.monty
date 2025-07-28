@@ -414,7 +414,7 @@ class MontyExperiment:
                         "You are using a DETAILED logger with sensor module "
                         f"{sm.sensor_module_id} but 'save_raw_obs' is False. "
                         "Consider setting 'save_raw_obs' to True to log and visualize "
-                        "the patch RGB raw values."
+                        "the SM RGB raw values."
                     )
 
         # monty_log_level determines if we used Basic or Detailed logger
