@@ -6,7 +6,7 @@
 This is a high-level RFC on intelligence resampling in Monty, considering the below three questions:
 
 1. How can we realign hypotheses to model points for robustness to noise and distortions?
-2. How can we implement and test resampling informed by out-of-reference-frame movement?
+2. How can we use out-of-reference-frame movement to efficiently eliminate hypotheses?
 3. How can we use prediction errors to eliminate hypotheses? 
 
 ## How can we realign hypotheses to model points for robustness to noise and distortions?
