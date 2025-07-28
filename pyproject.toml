@@ -29,8 +29,8 @@ dependencies = [
     'torch==1.11.0', # imported via conda (pytorch::pytorch)
     'torchvision', # imported via conda (pytorch::torchvision)
     'torch-geometric==2.1.0.post1', # imported via conda (pyg::pyg)
-    'torch-sparse==0.6.15', # imported via conda (pyg::pyg)
-    'torch-scatter==2.0.9', # imported via conda (pyg::pyg)
+    'torch-sparse==0.6.15', # imported via conda (pytorch::pytorch-sparse)
+    'torch-scatter==2.0.9', # imported via conda (pytorch::pytorch-scatter)
     'tqdm', # imported via conda (conda-forge::tqdm)
     'typing-extensions',
     'wandb', # imported via conda (conda-forge::wandb)

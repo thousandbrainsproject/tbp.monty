@@ -41,11 +41,12 @@ dependencies:
   - conda-forge::tqdm
   - conda-forge::wandb
   - conda-forge::wget
-  - pyg::pyg
+  - pyg::pyg=2.1.0
+  - pyg::pytorch-scatter=2.0.9
+  - pyg::pytorch-sparse=0.6.15
   - pytorch::pytorch=1.11.0
   - pytorch::torchvision
 
   - pip
   - pip:
       - -e .[dev]
-
