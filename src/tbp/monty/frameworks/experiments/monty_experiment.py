@@ -409,7 +409,7 @@ class MontyExperiment:
 
         if has_detailed_logger:
             for sm in self.model.sensor_modules:
-                if hasattr(sm, "save_raw_abs") and not sm.save_raw_obs:
+                if hasattr(sm, "save_raw_obs") and not sm.save_raw_obs:
                     logger.warning(
                         "You are using a DETAILED logger with sensor module "
                         f"{sm.sensor_module_id} but 'save_raw_obs' is False. "
