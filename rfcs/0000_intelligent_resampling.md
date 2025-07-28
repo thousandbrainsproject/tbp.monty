@@ -157,7 +157,7 @@ There are several techniques to mitigate false positives:
 3. Temporal consistency across multiple timesteps. To increase confidence in re-anchoring decisions, we could **delay** re-anchoring until multiple consistent feature matches are observed across several steps. This approach may also better reflects real-world experiences, where we may accumulate/experience features at several locations (or across time in case of looking at objects through straws) - the relative positions of multiple features and experiential history provide stronger localization cues than a single distinctive feature match. 
 4. Frequency control: The re-anchoring frequency should be a configurable parameter. We may need to disable re-anchoring during early exploration phases until sufficient steps have been taken, or adjust frequency of re-anchoring inversely proportional to number of steps.
 
-## How can we implement and test resampling informed by out-of-reference-frame movement?
+## 2. How can we use out-of-reference-frame movement to efficiently eliminate hypotheses?
 
 The aim of this question is to eliminate hypotheses when they have moved outside the object's reference frame. Figure 1 illustrates this scenario.
 
