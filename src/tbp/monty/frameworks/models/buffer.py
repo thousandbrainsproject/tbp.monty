@@ -479,7 +479,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
                 return channel
 
         # If we reach here, no sensory channels were found but channels exist
-        # This means we have channels but none are sensory (e.g., only view_finder, LM)
+        # This means we have channels but none are SMs that output CMP-compliant State observations (e.g., only view_finder, LM)
         raise ValueError(
             f"No sensory input channels found in buffer. "
             f"Available channels: {all_channels}. "
