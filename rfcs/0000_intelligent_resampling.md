@@ -9,7 +9,7 @@ This is a high-level RFC on intelligence resampling in Monty, considering the be
 2. How can we implement and test resampling informed by out-of-reference-frame movement?
 3. How can we use prediction errors to eliminate hypotheses? 
 
-## How can we realign hypotheses to model points for robustness to noise and distortions?
+## 1. How can we realign hypotheses to model points for robustness to noise and distortions?
 
 Realigning means updating the `locations` or `poses` of the `Hypotheses` object to an existing point in the object model. This mechanism is informed by feature observations.
 
@@ -157,7 +157,7 @@ There are several techniques to mitigate false positives:
 3. Temporal consistency across multiple timesteps. To increase confidence in re-anchoring decisions, we could **delay** re-anchoring until multiple consistent feature matches are observed across several steps. This approach may also better reflects real-world experiences, where we may accumulate/experience features at several locations (or across time in case of looking at objects through straws) - the relative positions of multiple features and experiential history provide stronger localization cues than a single distinctive feature match. 
 4. Frequency control: The re-anchoring frequency should be a configurable parameter. We may need to disable re-anchoring during early exploration phases until sufficient steps have been taken, or adjust frequency of re-anchoring inversely proportional to number of steps.
 
-## How can we implement and test resampling informed by out-of-reference-frame movement?
+## 2. How can we implement and test resampling informed by out-of-reference-frame movement?
 
 The aim of this question is to eliminate hypotheses when they have moved outside the object's reference frame. Figure 1 illustrates this scenario.
 
@@ -180,7 +180,7 @@ _Figure 2_. **Left**: Naive approach requires comparing distances to all ~2,000 
 
 While sparse models may reduce this computational burden, the convex hull approach should still provide significant performance improvements. 
 
-## How can we use prediction errors to eliminate hypotheses? 
+## 3. How can we use prediction errors to eliminate hypotheses? 
 
 Figure 3 illustrates two types of prediction errors that may arise in Monty and can be used to eliminate hypotheses.
 
