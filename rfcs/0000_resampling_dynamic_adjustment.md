@@ -22,7 +22,6 @@ This RFC proposes the following:
 these are tightly coupled to satisfy the hypothesis space size multiplier parameter.
 2. Allow resampling to be informed by Monty's step-wise performance metrics (e.g., confidence and prediction error), this will
 enable dynamic resizing of the hypothesis space.
-3. Optimize the `EvidenceSlopeTracker` to run faster. More specifically, implement these [notes](https://github.com/thousandbrainsproject/tbp.monty/blob/730f4d9608e498af3d7d2d97c465b33340aaf648/src/tbp/monty/frameworks/utils/evidence_matching.py?plain=1#L261-L271).
 
 
 ## Resampling Parameters Decoupling
@@ -114,39 +113,13 @@ All-in-all its both unsurprising that we are finding ourselves in need of at-lea
 time-scales, and this seems perfectly consistent with what biology could implement.
 
 
-## Optimization Tricks
-
-This RFC also proposes addressing several performance improvements to the `EvidenceSlopeTracker`.
-These changes were discussed previously and are summarized below:
-
-#### Ring buffer for slope updates
-
-As suggested by Niels, we can replace the current method of shifting hypotheses indices by
-one at every step with a more efficient ring buffer structure. This avoids unnecessary
-array copying by using pointer-based indexing for inserting new data. The required changes
-are minimal:
-- Maintain a pointer to track where the next evidence entry should go.
-- Update the pointer each step, wrapping around the buffer as needed.
-
-#### Storing slopes instead of raw evidence
-
-Viviane suggested that instead of storing evidence values and computing their differences
-at each step, we can directly store the evidence slope values. This way we would not need
-to calculate the [`np.diff()`](https://github.com/thousandbrainsproject/tbp.monty/blob/730f4d9608e498af3d7d2d97c465b33340aaf648/src/tbp/monty/frameworks/utils/evidence_matching.py?plain=1#L380)
-of the evidence scores at every step. This might require some modifications especially
-because the first datapoint won't have a slope value, so it must still be stored in order
-to compute the first slope on the next step.
-
 # Plan of Work
 
 This is how I've planned the subtasks of this RFC, if approved.
 
-1. Implement the suggested code optimizations.
-    - Ensure that the performance didn't change from previous experiments.
-    - Measure the improvement in run time performance.
-2. Decouple resampling parameters
+1. Decouple resampling parameters
     - Attempt to reproduce existing benchmarks by setting deletion and resampling to 10%
-3. Change deletion parameter to a fixed threshold and resampling parameter to Monty's surprise.
+2. Change deletion parameter to a fixed threshold and resampling parameter to Monty's surprise.
     - Run unsupervised inference benchmarks and hyperparameter sweep on YCB benchmarks
 
 # Complementary Work on Prediction Error and Resampling
