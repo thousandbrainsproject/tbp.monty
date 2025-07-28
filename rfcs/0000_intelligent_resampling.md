@@ -124,7 +124,7 @@ def realign_pose(hypothesis_k, observed_pose_vectors, stored_pose_vectors):
     current_pose_vectors = current_pose_vectors.T # to transform back into row vectors of surface normal, principal curvature direction 1 and 2
     
     # Find rotation that best aligns current to observed_pose_vectors (use existing method)
-    R_correction = align_multiple_orthonomral_vectors(current_pose_vectors.reshape(1, 3, 3), observed_pose_vectors)
+    R_correction = align_multiple_orthonormal_vectors(current_pose_vectors.reshape(1, 3, 3), observed_pose_vectors)
     
     # Update hypothesis pose
     hypothesis_k.poses[k] = R_correction @ R_current
