@@ -168,7 +168,7 @@ def get_initial_possible_poses(initial_possible_pose_type) -> list[Rotation] | N
 
 
 def add_pose_features_to_tolerances(tolerances, default_tolerances=20) -> dict:
-    """Add point_normal and curvature_direction default tolerances if not set.
+    """Add default `pose_vectors` tolerances if not set.
 
     Returns:
         Tolerances dictionary with added pose_vectors if not set.
@@ -270,19 +270,19 @@ def get_scaled_evidences(evidences, per_object=False):
     return scaled_evidences
 
 
-def get_custom_distances(nearest_node_locs, search_locs, search_pns, search_curvature):
-    """Calculate custom distances modulated by point normal and curvature.
+def get_custom_distances(nearest_node_locs, search_locs, search_sns, search_curvature):
+    """Calculate custom distances modulated by surface normal and curvature.
 
     Args:
         nearest_node_locs: locations of nearest nodes to search_locs.
             shape=(num_hyp, max_nneighbors, 3)
         search_locs: search locations for each hypothesis.
             shape=(num_hyp, 3)
-        search_pns: sensed point normal rotated by hypothesis pose.
+        search_sns: sensed surface normal rotated by hypothesis pose.
             shape=(num_hyp, 3)
         search_curvature: magnitude of sensed curvature (maximum if using
             two principal curvatures). Is used to modulate the search spheres
-            thickness in the direction of the point normal.
+            thickness in the direction of the surface normal.
             shape=1
 
     Returns:
@@ -300,16 +300,16 @@ def get_custom_distances(nearest_node_locs, search_locs, search_pns, search_curv
     # the query normal. Points with dot product 0 are in this plane, higher
     # magnitudes of the dot product means they are further away from that plane
     # (-> should have larger distance).
-    dot_products = np.einsum("ijk,ik->ij", differences, search_pns)
+    dot_products = np.einsum("ijk,ik->ij", differences, search_sns)
     # Calculate the eucledian distances. shape=(num_hyp, max_nneighbors)
     eucledian_dists = np.linalg.norm(differences, axis=2)
     # Calculate the total distances by adding the absolute dot product to the
-    # eucledian distances. We multiply the dot product by 1/curvature to modulate
+    # euclidean distances. We multiply the dot product by 1/curvature to modulate
     # the flatness of the search sphere. If the curvature is large we want to be
     # able to go further out of the sphere while we want to stay close to the point
     # normal plane if we have a curvature close to 0.
     # To have a minimum wiggle room above and below the plane, even if we have 0
-    # curvature (and to avoide division by 0) we add 0.5 to the denominator.
+    # curvature (and to avoid division by 0) we add 0.5 to the denominator.
     # shape=(num_hyp, max_nneighbors).
     custom_nearest_node_dists = eucledian_dists + np.abs(dot_products) * (
         1 / (np.abs(search_curvature) + 0.5)
@@ -484,7 +484,7 @@ def possible_sensed_directions(
             and PC2 (e.g., object can be upside down), therefore we sample both
             directions.
         - If num_hyps_per_node is not 2: this function samples additional poses in
-            the plane perpendicular to the sensed point normal.
+            the plane perpendicular to the sensed surface normal.
 
     Arguments:
         sensed_directions: An array of sensed directions.

@@ -139,7 +139,7 @@ class ResamplingHypothesesUpdater:
                 though and could help when moving from one object to another and to
                 generally make setting thresholds etc. more intuitive.
             umbilical_num_poses: Number of sampled rotations in the direction of
-                the plane perpendicular to the point normal. These are sampled at
+                the plane perpendicular to the surface normal. These are sampled at
                 umbilical points (i.e., points where PC directions are undefined).
         """
         self.feature_evidence_calculator = feature_evidence_calculator
