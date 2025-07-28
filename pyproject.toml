@@ -28,7 +28,9 @@ dependencies = [
     'sympy', # imported via conda (conda-forge::sympy)
     'torch==1.11.0', # imported via conda (pytorch::pytorch)
     'torchvision', # imported via conda (pytorch::torchvision)
-    'torch-geometric', # imported via conda (pyg::pyg)
+    'torch-geometric==2.1.0.post1', # imported via conda (pyg::pyg)
+    'torch-sparse==0.6.15', # imported via conda (pyg::pyg)
+    'torch-scatter==2.0.9', # imported via conda (pyg::pyg)
     'tqdm', # imported via conda (conda-forge::tqdm)
     'typing-extensions',
     'wandb', # imported via conda (conda-forge::wandb)
@@ -335,3 +337,7 @@ namespaces = true
 [tool.setuptools.package-data]
 # habitat-sim resources
 'tbp.monty.simulators.resources' = ['*.json', '*.yml', '*.txt']
+
+[tool.uv]
+# Extra index for PyTorch extensions
+find-links = ["https://data.pyg.org/whl/torch-1.11.0+cpu.html"]
