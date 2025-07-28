@@ -96,7 +96,7 @@ Several additional techniques to consider when re-anchoring in sparse models:
 
 ### Example: Re-anchoring a Specific Hypothesis
 
-Here we go through a specifc case of re-anchoring the pose of a particular hypothesis. 
+Here we go through a specific case of re-anchoring the pose of a particular hypothesis. In particular, if we have decided to re-align to a point, how can we adjust our hypothesis of the object rotation to ensure it aligns with this new point?
 
 Recall that in an object model, at each node in the graph, we store `pose_vectors` which are 3x3 matrix of surface normal and principal curvature directions at that point. In a hypothesis, the `poses` attribute is a 3x3 rotation matrix that represents the object's orientation in the world. 
 
