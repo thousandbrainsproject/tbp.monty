@@ -19,7 +19,7 @@ In neuroscience, the term "re-anchoring" may be used broadly. In this RFC, we di
 1. **Remapping** - when we re-anchor to a new object, i.e. a different reference frame
 2. **Realignment** - when we re-anchor to correct for location (_phase_ in biology) and orientation within a reference frame
 
-This part of the RFC primarily focuses on realignment of hypotheses.
+This part of the RFC focuses on how we can benefit from realignment of hypotheses.
 
 ### Problem Statement and Proposed Solution
 
