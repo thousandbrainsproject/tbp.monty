@@ -465,21 +465,19 @@ class FeatureAtLocationBuffer(BaseBuffer):
         Raises:
             ValueError: If no sensory channels are found in the buffer.
         """
-        all_channels = list(self.locations.keys())
+        all_channels = list(self.channel_sender_types.keys())
         if len(all_channels) == 0:
             return None
 
         # Find first channel with sender_type "SM"
         # This avoids relying on naming conventions like "patch"
         for channel in all_channels:
-            if (
-                channel in self.channel_sender_types
-                and self.channel_sender_types[channel] == "SM"
-            ):
+            if self.channel_sender_types[channel] == "SM":
                 return channel
 
         # If we reach here, no sensory channels were found but channels exist
-        # This means we have channels but none are SMs that output CMP-compliant State observations (e.g., only view_finder, LM)
+        # This means we have channels but none are SMs that output CMP-compliant
+        # State observations (e.g., only view_finder, LM)
         raise ValueError(
             f"No sensory input channels found in buffer. "
             f"Available channels: {all_channels}. "
