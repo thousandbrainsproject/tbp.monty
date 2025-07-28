@@ -6,7 +6,7 @@
 This is a high-level RFC on intelligence resampling in Monty, considering the below three questions:
 
 1. How can we realign hypotheses to model points for robustness to noise and distortions?
-2. How can we implement and test resampling informed by out-of-reference-frame movement?
+2. How can we use out-of-reference-frame movement to efficiently eliminate hypotheses?
 3. How can we use prediction errors to eliminate hypotheses? 
 
 ## 1. How can we realign hypotheses to model points for robustness to noise and distortions?
@@ -19,11 +19,13 @@ In neuroscience, the term "re-anchoring" may be used broadly. In this RFC, we di
 1. **Remapping** - when we re-anchor to a new object, i.e. a different reference frame
 2. **Realignment** - when we re-anchor to correct for location (_phase_ in biology) and orientation within a reference frame
 
-This part of the RFC primarily focuses on realignment of hypotheses.
+This part of the RFC focuses on how we can benefit from realignment of hypotheses.
 
 ### Problem Statement and Proposed Solution
 
-**Distortion** refers to cases where features, object parts, or morphologies appear at different locations and rotations than expected in the original model (e.g., a bent TBP logo vs. the standard TBP logo). **Noise** refers to errors in location estimates from imperfect path integration, such as inaccuracies in optic flow, proprioception, or inertial measurement units that lead to imperfect estimates of movement displacement and direction.
+**Distortion** refers to cases where features, object parts, or morphologies appear at different locations and rotations than expected in the original model (e.g., a bent TBP logo vs. the standard TBP logo). We want Monty to recognize a distorted object as related to the original object in its memory, rather than always treating it as an entirely new object. 
+
+**Noise** refers to errors in location estimates from imperfect path integration, such as inaccuracies in optic flow, proprioception, or inertial measurement units that lead to imperfect estimates of movement displacement and direction. Naturally, we want hypotheses to be robust to such noise. 
 
 The `Hypotheses` class in `tbp.monty==0.8.0` is defined as follows:
 
@@ -53,7 +55,7 @@ Below we work through some key questions and implications:
 
 #### What constitutes a valid match?
 
-A match involves comparisons between features. The `_calculate_evidence_for_new_locations()` in `hypotheses_displacer.py` already computes the error between stored pose features and observed pose features, as well as non-morphological features (also see `class DefaultFeatureEvidenceCalculator` in `calculator.py`), weighted by distance to nearest nodes. This RFC and initial implementation will not be concerned with computing feature similarity/error.
+A match involves comparisons between features. The `_calculate_evidence_for_new_locations()` in `hypotheses_displacer.py` already computes the error between stored pose features and observed pose features, as well as non-morphological features (also see `class DefaultFeatureEvidenceCalculator` in `calculator.py`), weighted by distance to nearest nodes. This RFC and initial implementation will not be concerned with changing how we compute feature similarity/error.
 
 For a valid "match", all $N$ features must be similar within specified thresholds. _Why all?_ This requirement is necessary because partial matches can be uninformative, e.g., if `rgba` matches but `pose_vectors` do not, this provides little information for objects with uniform color (e.g., a red mug).
 
@@ -77,7 +79,7 @@ Case 2 is more concerning until we develop sparser models. We should benchmark c
 For Case 3, we can apply:
 - **Selective re-anchoring**: Apply re-anchoring only to hypotheses exhibiting both high confidence and large prediction error, as described by the "surprise" metric in [Ramy's RFC](https://github.com/thousandbrainsproject/tbp.monty/pull/390). This approach reduces computational overhead by avoiding unnecessary comparisons for low-confidence hypotheses or cases with low prediction error.
 
-Of the above three options, I think **selective re-anchoring** should be prioritized first, then **landmark prioritization**. Note that **landmark prioritization** will require us to update our object model's nodes to store "important" attribute first. 
+Of the above three options, I think **selective re-anchoring** should be prioritized first, then **landmark prioritization**. Note that **landmark prioritization** will require us to update our object model's nodes to store "important" attributes first. 
 
 #### How can sparse models affect location accuracy?
 
@@ -94,7 +96,7 @@ Several additional techniques to consider when re-anchoring in sparse models:
 
 ### Example: Re-anchoring a Specific Hypothesis
 
-Here we go through a specifc case of re-anchoring the pose of a particular hypothesis. 
+Here we go through a specific case of re-anchoring the pose of a particular hypothesis. In particular, if we have decided to re-align to a point, how can we adjust our hypothesis of the object rotation to ensure it aligns with this new point?
 
 Recall that in an object model, at each node in the graph, we store `pose_vectors` which are 3x3 matrix of surface normal and principal curvature directions at that point. In a hypothesis, the `poses` attribute is a 3x3 rotation matrix that represents the object's orientation in the world. 
 
@@ -157,7 +159,7 @@ There are several techniques to mitigate false positives:
 3. Temporal consistency across multiple timesteps. To increase confidence in re-anchoring decisions, we could **delay** re-anchoring until multiple consistent feature matches are observed across several steps. This approach may also better reflects real-world experiences, where we may accumulate/experience features at several locations (or across time in case of looking at objects through straws) - the relative positions of multiple features and experiential history provide stronger localization cues than a single distinctive feature match. 
 4. Frequency control: The re-anchoring frequency should be a configurable parameter. We may need to disable re-anchoring during early exploration phases until sufficient steps have been taken, or adjust frequency of re-anchoring inversely proportional to number of steps.
 
-## 2. How can we implement and test resampling informed by out-of-reference-frame movement?
+## 2. How can we use out-of-reference-frame movement to efficiently eliminate hypotheses?
 
 The aim of this question is to eliminate hypotheses when they have moved outside the object's reference frame. Figure 1 illustrates this scenario.
 
