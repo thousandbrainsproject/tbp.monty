@@ -23,7 +23,9 @@ This part of the RFC focuses on how we can benefit from realignment of hypothese
 
 ### Problem Statement and Proposed Solution
 
-**Distortion** refers to cases where features, object parts, or morphologies appear at different locations and rotations than expected in the original model (e.g., a bent TBP logo vs. the standard TBP logo). **Noise** refers to errors in location estimates from imperfect path integration, such as inaccuracies in optic flow, proprioception, or inertial measurement units that lead to imperfect estimates of movement displacement and direction.
+**Distortion** refers to cases where features, object parts, or morphologies appear at different locations and rotations than expected in the original model (e.g., a bent TBP logo vs. the standard TBP logo). We want Monty to recognize a distorted object as related to the original object in its memory, rather than always treating it as an entirely new object. 
+
+**Noise** refers to errors in location estimates from imperfect path integration, such as inaccuracies in optic flow, proprioception, or inertial measurement units that lead to imperfect estimates of movement displacement and direction. Naturally, we want hypotheses to be robust to such noise. 
 
 The `Hypotheses` class in `tbp.monty==0.8.0` is defined as follows:
 
