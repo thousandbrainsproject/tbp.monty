@@ -350,13 +350,11 @@ To treat learning and inference as lying on a continuum, we can utilize metadata
 
 - **Observation frequency** (e.g., `_observation_count` in `GridObjectModel`): Frequently visited locations with high observation counts suggest the model is well-learned at that location, biasing toward hypothesis elimination rather than model updates.
 
+- **Compositionality**: When prediction errors occur at specific locations on an otherwise well-matched familiar object, consider learning the modification as a compositional element rather than updating the base model. This preserves the integrity of well-learned models while capturing local variations or modifications.
+
 - **Error magnitude thresholds**: Very large prediction errors across all features may suggest a novel object requiring a new model. Moderate errors might indicate the need for model updates or hypothesis refinement.
 
 - **Feature-specific patterns**: If morphological features match but non-morphological features (like color) differ significantly, this might indicate object variations / keyframe / need to separate morphological and feature models.
-
-- **Temporal consistency**: Multiple consecutive prediction errors at different locations strengthen the signal for model learning/updating, while isolated errors might just indicate noisy observations.
-
-- **Model confidence metrics**: Models with high overall confidence (based on total observations and coverage) are less likely to need updates, suggesting hypothesis elimination is appropriate.
 
 #### Example of Chipped Coffee Mug 
 
@@ -366,4 +364,5 @@ Consider the TBP mug that we are very familiar that is now slightly chipped. Bel
 2. **Hypothesis coverage**: The hypothesis for where we are on the mug would remain valid across many locations during movement (handle, sides, rim); it would only result in a prediction error / risk elimination when we move to the chip, the point at which we would want to signal learning in a model.
 3. **Observation frequency**: The mug model has high observation counts from frequent use, suggesting we shouldn't discard the entire model.
 4. **Feature patterns**: Morphological features (surface curvature) would differ at the chip location, but non-morphological features (color, texture) might remain consistent.
-5. **Decision**: The heuristics would likely lead to updating the existing mug model to incorporate the chip as a variation, rather than learning an entirely new object or just eliminating hypotheses. This allows us to maintain our knowledge about the mug while adapting to its new physical state.
+5. **Compositionality**: Since the chip is a localized modification at specific coordinates on an otherwise familiar object, the system could learn it compositionally - preserving the original mug model while learning the chip as a local variation.
+6. **Decision**: The heuristics would guide the system to learn the chipped area as a compositional modification rather than corrupting the well-learned base mug model. This allows us to maintain our knowledge about the standard mug shape while capturing this specific instance's variation. The lower-level mug model remains intact and reusable, while the chip information is stored as a localized modification.
