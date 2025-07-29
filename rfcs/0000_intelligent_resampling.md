@@ -205,7 +205,7 @@ The hypothesis has moved off the target object and landed on another object or t
 
 #### Case 1b: Genuinely sensing nothing
 
-The hypothesis has moved to a location where the sensor is genuinely not detecting anything. In this scenario, the sensor provides no meaningful signal rather than conflicting features.
+The hypothesis has moved to a location where the sensor is genuinely not detecting anything. This scenario is particularly relevant for touch sensors, which only provide readings when in physical contact with a surface. When a touch sensor moves off an object into empty space, it cannot detect any features at all. In contrast, vision sensors will always detect something (even if just background) unless completely occluded. In this scenario, the sensor provides no meaningful signal rather than conflicting features.
 
 For Case 1b, we need a representation of "null" observations to compute prediction errors. We define "null" features as the absence of **morphological** features (surface normal and principal curvatures), since depending on the sensing modality (vision or touch), not all **non-morphological features** may be detected.
 
