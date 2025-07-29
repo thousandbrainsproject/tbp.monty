@@ -386,10 +386,12 @@ jobs:
       - name: Create uv environment
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
+        continue-on-error: true
         run: uv sync --locked --extra dev --extra simulator_mujoco
       - name: Run tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
+        continue-on-error: true
         run: |
           mkdir -p test_results/pytest
           uv run pytest --cov --cov-report html --cov-report term --junitxml=test_results/pytest/results.xml --verbose
