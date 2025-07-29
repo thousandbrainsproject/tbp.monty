@@ -360,7 +360,7 @@ To treat learning and inference as lying on a continuum, we can utilize metadata
 
 #### Example of Chipped Coffee Mug 
 
-Consider the TBP mug that we are very familiar that is slightly chipped. Below are how the above heuristics may apply:
+Consider the TBP mug that we are very familiar that is now slightly chipped. Below are how the above heuristics may apply:
 
 1. **Initial detection**: When sensing the chipped area, we would get prediction errors since the surface geometry differs from our stored model.
 2. **Hypothesis coverage**: Most hypotheses about the mug would remain valid (handle, overall shape, color) while only hypotheses near the chip would be eliminated.
