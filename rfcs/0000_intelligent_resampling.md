@@ -218,7 +218,7 @@ This compositional strategy ensures that:
 - Novel object combinations are learned hierarchically without corrupting base models
 - Out-of-reference-frame elimination continues to work efficiently at each level
 
-## 3. How can we use prediction errors to eliminate hypotheses? 
+## 3. How can we use prediction errors to eliminate hypotheses when the sensor has moved off of an object? 
 
 **Motivation**: While Question 2 addresses hypotheses that have moved beyond object boundaries (using path integration), this section focuses on using sensory prediction errors to eliminate hypotheses that are still within the object's reference frame but at incorrect locations. This is fundamentally different because it relies on feature mismatches rather than spatial boundaries.
 
