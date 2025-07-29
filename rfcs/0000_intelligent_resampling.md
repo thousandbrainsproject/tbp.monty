@@ -9,6 +9,10 @@ This is a high-level RFC on intelligence resampling in Monty, considering the be
 2. How can we use out-of-reference-frame movement to efficiently eliminate hypotheses?
 3. How can we use prediction errors to eliminate hypotheses? 
 
+We address these questions together because they share a common theme: dynamically adjusting hypotheses based on sensorimotor predictions and observations. By examining them jointly, we can better understand their relationships and avoid redundant future work. While these questions would be implemented as separate features, this RFC focuses on the conceptual framework rather than implementation details.
+
+Question 1 addresses the most complex challenge, while Questions 2 and 3 are related but explore subtly different mechanisms for hypothesis elimination. Throughout this RFC, we will also consider how these resampling strategies might interact with unsupervised learning, examining both potential benefits and challenges.
+
 ## 1. How can we realign hypotheses to model points for robustness to noise and distortions?
 
 Realigning means updating the `locations` or `poses` of the `Hypotheses` object to an existing point in the object model. This mechanism is informed by feature observations.
