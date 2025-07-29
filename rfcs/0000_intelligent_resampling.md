@@ -108,9 +108,18 @@ In `_get_all_informed_possible_poses()` in `hypotheses_updater.py`, it calls `al
 
 **Proposed implementation**:
 
+When we decide to realign a hypothesis to a new point in the object model (after feature matching), we need to update the hypothesis's pose. The `stored_pose_vectors` parameter comes from this new target point in the object model that we're realigning to:
+
 ```python
 def realign_pose(hypothesis_k, observed_pose_vectors, stored_pose_vectors):
     """Find minimal rotation correction to align pose vectors.
+    
+    Args:
+        hypothesis_k: The hypothesis being realigned
+        observed_pose_vectors: The pose vectors from current sensor observation
+        stored_pose_vectors: The pose vectors from the NEW point in the object model 
+                           that we are realigning to (after feature matching identified
+                           this as the best match)
     
     Solves the problem of:
     R_correction x R_current x stored_pose_vectors = observed_pose_vectors
