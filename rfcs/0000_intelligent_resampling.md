@@ -159,7 +159,7 @@ A crucial aspect of SLAM is its bootstrapping nature, which creates a positive f
 - **Models inform path integration**: As object models become more complete and accurate, they provide better landmarks for re-alignment, correcting drift in path integration
 - **Path integration informs models**: Corrected position estimates (via re-alignment) lead to more accurate placement of new features in the model, improving model quality
 
-The bidirectional relationship enables unsupervised learning where both localization and mapping improve together over time
+The bidirectional relationship enables unsupervised learning where both localization and mapping improve together over time.
 
 In lifelong SLAM and multi-session SLAM, robots continuously operate in varied and changing environments without prior knowledge of what environment they are in. In these cases, a robot must detect whether it has moved into a new environment (e.g. indoor to outdoor) or is revisiting the same environment under different conditions (e.g. day vs. night). This is achieved through _continuous loop closure detection_, where robots monitor and detect previously visited places by comparing features from the current scene to all previously encountered locations. Like in our hypotheses realignment problem, robots need to prevent false positives in matching, as re-anchoring changes where we think we are, which could lead to missing parts or distorted object models. 
 
