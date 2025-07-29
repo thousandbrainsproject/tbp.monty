@@ -126,7 +126,7 @@ def realign_pose(hypothesis_k, observed_pose_vectors, stored_pose_vectors):
     current_pose_vectors = current_pose_vectors.T # to transform back into row vectors of surface normal, principal curvature direction 1 and 2
     
     # Find rotation that best aligns current to observed_pose_vectors (use existing method)
-    R_correction = align_multiple_orthonomral_vectors(current_pose_vectors.reshape(1, 3, 3), observed_pose_vectors)
+    R_correction = align_multiple_orthonormal_vectors(current_pose_vectors.reshape(1, 3, 3), observed_pose_vectors)
     
     # Update hypothesis pose
     hypothesis_k.poses[k] = R_correction @ R_current
@@ -152,13 +152,13 @@ for _ in range(n_samples):
 
 The benefits of re-alignment extend beyond immediate hypothesis correction to fundamental improvements in learning. In biology, path integration is inherently noisy due to imperfect sensors and movement estimates. Re-alignment using distinctive features acts as a corrective mechanism, similar to how landmarks are used in Simultaneous Localization and Mapping (SLAM) algorithms.
 
-In lifelong SLAM and multi-session SLAM, robots continuously operate in varied and changing environments without prior knowledge of what environment they are in. In these cases, a robot must detect whether it has moved into a new environment (e.g. indoor to outdoor) or is revisiting the same environment under different conditions (e.g. day vs. night). This is achieved through _continuous loop closure detection_, where robots monitor and detect previously visited places by comparing features from the current scene to all previously encountered locations. Like in our hypotheses realignment problem, robots need to prevent false positives in matching, as re-anchoring changes where we think we are (which may possibly affect policy or what we decide to learn next), which could lead to missing parts of the object (by skipping areas from re-anchoring). 
+In lifelong SLAM and multi-session SLAM, robots continuously operate in varied and changing environments without prior knowledge of what environment they are in. In these cases, a robot must detect whether it has moved into a new environment (e.g. indoor to outdoor) or is revisiting the same environment under different conditions (e.g. day vs. night). This is achieved through _continuous loop closure detection_, where robots monitor and detect previously visited places by comparing features from the current scene to all previously encountered locations. Like in our hypotheses realignment problem, robots need to prevent false positives in matching, as re-anchoring changes where we think we are, which could lead to missing parts or distorted object models. 
 
 There are several techniques to mitigate false positives: 
 
 1. Extract more and distinctive features.
 2. Require matches across multiple features simultaneously (i.e. multi-modal matching across vision and touch).
-3. Temporal consistency across multiple timesteps. To increase confidence in re-anchoring decisions, we could **delay** re-anchoring until multiple consistent feature matches are observed across several steps. This approach may also better reflects real-world experiences, where we may accumulate/experience features at several locations (or across time in case of looking at objects through straws) - the relative positions of multiple features and experiential history provide stronger localization cues than a single distinctive feature match. 
+3. Temporal consistency across multiple timesteps. To increase confidence in re-anchoring decisions, we could **delay** re-anchoring until multiple consistent feature matches are observed across several steps. This approach may also better reflect real-world experiences, where we may accumulate/experience features at several locations (or across time in case of looking at objects through straws) - the relative positions of multiple features and experiential history provide stronger localization cues than a single distinctive feature match. 
 4. Frequency control: The re-anchoring frequency should be a configurable parameter. We may need to disable re-anchoring during early exploration phases until sufficient steps have been taken, or adjust frequency of re-anchoring inversely proportional to number of steps.
 
 ## 2. How can we use out-of-reference-frame movement to efficiently eliminate hypotheses?
