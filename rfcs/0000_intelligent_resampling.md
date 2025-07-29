@@ -220,7 +220,7 @@ This compositional strategy ensures that:
 
 ## 3. How can we use prediction errors to eliminate hypotheses when the sensor has moved off of an object? 
 
-**Motivation**: While Question 2 addresses hypotheses that have moved beyond object boundaries (using path integration), this section focuses on using sensory prediction errors to eliminate hypotheses that are still within the object's reference frame but at incorrect locations. This is fundamentally different because it relies on feature mismatches rather than spatial boundaries.
+**Motivation**: While Question 2 addresses hypotheses that have moved beyond object boundaries (using path integration), this section focuses on using sensory prediction errors to eliminate hypotheses that are still within the object's reference frame but at incorrect locations because the sensor has actually moved off of the object. This is fundamentally different because it relies on sensed feature mismatches rather than spatial boundaries of the reference frames.
 
 **Current limitation**: In the current implementation, off-object observations are not passed to the Learning Module (LM). The `FeatureChangeSM` class filters out observations where `on_object` is False, preventing the LM from using these observations for hypothesis elimination. This means we cannot currently leverage all types of prediction errors for intelligent resampling.
 
