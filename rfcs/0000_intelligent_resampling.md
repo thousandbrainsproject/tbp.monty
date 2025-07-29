@@ -264,29 +264,7 @@ This representation ensures that all observations have consistent keys regardles
 
 ### Case 2: Hypothesis remains within the object but expected features are incorrect due to location or pose mismatch
 
-This scenario is far more common than Case 1.
-
-**Current state**: The existing `hypotheses_displacer.py` already handles feature mismatches by:
-- Computing pose evidence based on angle errors between observed and stored pose vectors
-- Calculating feature evidence for non-morphological features (e.g., color)
-- Combining evidence with distance-based weights
-
-A possible improvement may simply just be able to handle "null" features since there are existing mechanisms for handling feature mismatches.
-
-```python
-class PredictionErrorHypothesesDisplacer(HypothesesDisplacer): # or just update existing DefaultHypothesisDisplacer class
-    def _calculate_evidence_for_new_locations(
-        self, graph_id, input_channel, search_locations, 
-        channel_possible_poses, channel_features
-    ):
-        # Handle off-object observations
-        if not channel_features.get("on_object", True):
-            num_hypotheses = search_locations.shape[0]
-            return np.ones(num_hypotheses) * self.off_object_penalty  # e.g., -100
-        
-        # existing code
-        ...
-``` 
+This scenario is already handled by the existing `hypotheses_displacer.py`, which computes evidence based on feature mismatches. No changes are needed for Case 2, except to handle null observations from Case 1b.
 
 ### Implications for FeatureChangeSM
 
