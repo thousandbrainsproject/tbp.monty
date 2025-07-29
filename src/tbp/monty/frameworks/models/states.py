@@ -132,15 +132,15 @@ class State:
     def get_nth_pose_vector(self, pose_vector_index):
         """Return the nth pose vector.
 
-        When self.sender_type == "SM", the first pose vector is the point normal and the
-        second and third are the curvature directions. When self.sender_type == "LM",
-        the pose vectors correspond to the rotation of the object relative to the model
-        learned of it.
+        When self.sender_type == "SM", the first pose vector is the surface normal and
+        the second and third are the curvature directions.
+        When self.sender_type == "LM", the pose vectors correspond to the rotation of
+        the object relative to the model learned of it.
         """
         return self.morphological_features["pose_vectors"][pose_vector_index]
 
-    def get_point_normal(self):
-        """Return the point normal vector.
+    def get_surface_normal(self):
+        """Return the surface normal vector.
 
         Raises:
             ValueError: If `self.sender_type` is not SM
@@ -148,7 +148,7 @@ class State:
         if self.sender_type == "SM":
             return self.get_nth_pose_vector(0)
         else:
-            raise ValueError("Sender type must be SM to get point normal.")
+            raise ValueError("Sender type must be SM to get surface normal.")
 
     def get_pose_vectors(self):
         """Return the pose vectors."""

@@ -656,7 +656,7 @@ class GraphLM(LearningModule):
         if len(self.get_possible_matches()) == 0:
             self.set_individual_ts(terminal_state="no_match")
 
-        self.gsg.step_gsg(observations)
+        self.gsg.step(observations)
 
         stats = self.collect_stats_to_save()
         self.buffer.update_stats(stats, append=self.has_detailed_logger)

@@ -15,7 +15,7 @@ Note that in Habitat (and therefore the Monty code-base), the "z" direction is p
 
 ## Environment vs. Monty's Internal Rotation
 
-Note that the rotation that learning modules store in their Most-Likely Hypothesis (MLH) is the rotation required to transform a feature (such as a point-normal) to match the feature on the object in the environment. As such, it is the _inverse_ of the actual orientation of the object in the environment.
+Note that the rotation that learning modules store in their Most-Likely Hypothesis (MLH) is the rotation required to transform a feature (such as a surface normal) to match the feature on the object in the environment. As such, it is the _inverse_ of the actual orientation of the object in the environment.
 
 ## Sensor Updates in Habitat
 

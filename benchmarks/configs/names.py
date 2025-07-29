@@ -19,12 +19,13 @@ here and the corresponding experiment configurations drift apart. For additional
 discussion, see: https://github.com/thousandbrainsproject/tbp.monty/pull/153.
 """
 
-from dataclasses import dataclass, fields
+import inspect
+import sys
+from dataclasses import dataclass, fields, is_dataclass
 
 from benchmarks.configs.follow_ups.names import NAMES as FOLLOW_UP_NAMES
 
 NAMES = []
-
 NAMES.extend(FOLLOW_UP_NAMES)
 
 
@@ -38,15 +39,9 @@ class MontyWorldExperiments:
     multi_object_world_image_on_scanned_model: dict
 
 
-NAMES.extend(field.name for field in fields(MontyWorldExperiments))
-
-
 @dataclass
 class MontyWorldHabitatExperiments:
     randrot_noise_sim_on_scan_monty_world: dict
-
-
-NAMES.extend(field.name for field in fields(MontyWorldHabitatExperiments))
 
 
 @dataclass
@@ -58,9 +53,6 @@ class PretrainingExperiments:
     only_surf_agent_training_10simobj: dict
     only_surf_agent_training_allobj: dict
     only_surf_agent_training_numenta_lab_obj: dict
-
-
-NAMES.extend(field.name for field in fields(PretrainingExperiments))
 
 
 @dataclass
@@ -87,16 +79,10 @@ class YcbExperiments:
     randrot_noise_77obj_5lms_dist_agent: dict
 
 
-NAMES.extend(field.name for field in fields(YcbExperiments))
-
-
 @dataclass
 class UnsupervisedInferenceExperiments:
     unsupervised_inference_distinctobj_surf_agent: dict
     unsupervised_inference_distinctobj_dist_agent: dict
-
-
-NAMES.extend(field.name for field in fields(UnsupervisedInferenceExperiments))
 
 
 @dataclass
@@ -105,4 +91,7 @@ class MyExperiments:
     pass
 
 
-NAMES.extend(field.name for field in fields(MyExperiments))
+current_module = sys.modules[__name__]
+for _name, obj in inspect.getmembers(current_module):
+    if inspect.isclass(obj) and is_dataclass(obj):
+        NAMES.extend(f.name for f in fields(obj))
