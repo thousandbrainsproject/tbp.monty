@@ -224,15 +224,13 @@ This compositional strategy ensures that:
 
 **Current limitation**: In the current implementation, off-object observations are not passed to the Learning Module (LM). The `FeatureChangeSM` class filters out observations where `on_object` is False, preventing the LM from using these observations for hypothesis elimination. This means we cannot currently leverage all types of prediction errors for intelligent resampling.
 
-Figure 4 illustrates two types of prediction errors that may arise in Monty and could be used to eliminate hypotheses if we modify how sensory observations are processed and forwarded.
-
-<img src="./0000_intelligent_resampling/predicion_error.png" alt="Prediction errors in Monty" style="width:70%; height:auto; display: block; margin: 0 auto;"/>
-
-_Figure 4_. Two cases where prediction errors may arise in Monty.
+Below we examine two types of prediction errors that may arise in Monty and could be used to eliminate hypotheses if we modify how sensory observations are processed and forwarded.
 
 ### Case 1: Hypothesis believes it is within an object but has actually moved off the object
 
-This case can be further divided into two distinct scenarios:
+<img src="./0000_intelligent_resampling/prediction_error_case1.png" alt="Prediction Error Case 1" style="width:80%; height:auto; display: block; margin: 0 auto;"/>
+
+_Figure 4_. Two scenarios where a hypothesis believes it remains on the object but has actually moved off. **Case 1a (top)**: The sensor moves off the mug onto background or another object. **Case 1b (bottom)**: The sensor moves off the mug into empty space, sensing nothing (particularly relevant for touch sensors).
 
 #### Case 1a: Moving onto another object or background
 
@@ -298,6 +296,10 @@ This representation ensures that all observations have consistent keys regardles
 **Note**: Off-object observations should trigger FeatureChangeSM but **should not create new nodes in the object model**
 
 ### Case 2: Hypothesis remains within the object but expected features are incorrect due to location or pose mismatch
+
+<img src="./0000_intelligent_resampling/prediction_error_case2.png" alt="Prediction Error Case 2" style="width:80%; height:auto; display: block; margin: 0 auto;"/>
+
+_Figure 5_. Hypothesis remains within the object boundaries but at an incorrect location. The hypothesis believes it moved from the mug body to the handle, but actually moved to a different location on the body. This location mismatch results in incorrect feature predictions.
 
 This scenario is already handled by the existing `hypotheses_displacer.py`, which computes evidence based on feature mismatches. No changes are needed for Case 2, except to handle null observations from Case 1b.
 
