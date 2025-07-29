@@ -41,97 +41,103 @@ How we organize our activity can have consequences at how successful we are in e
 
 For research, we want to be able to minimize the cost of change. In research, ideas can change rapidly. For an example, one can trace a history and the timeline of research into [Modeling Object Behaviors](https://www.youtube.com/playlist?list=PLXpTU6oIscrn_v8pVxwJKnfKPpKSMEUvU). We want to be able to rapidly try new experiments, new theories, new implementations. We want minimal friction between an idea and experimental data. Since experiments can have a high failure rate, when we write prototype code, it is possible that most or some of it will be thrown away or significantly altered based on what we learn from the experiments.
 
-For a platform, there is only so much change that platform users can absorb. While we intend for the platform to always stay up to date with the latest capabilities discovered through research, those capabilities need a level of stability before being incorporated in the the platform. Even if we were to rapidly iterate on platform internals, any externally facing interface benefits from being stable. When the improvements from a change are significant, change may be easier to adopt. In general, the platform users are focused on solving their own business problems and want to minimize the cost of using our platform in toil, time, and treasure.
+For a platform, there is only so much change that platform users can absorb. While we intend for the platform to always stay up to date with the latest capabilities discovered through research, those capabilities need a level of stability before being incorporated into the platform. Even if we were to rapidly iterate on platform internals, any externally facing interface benefits from being stable. While significant improvements make changes easier to adopt, in general, the platform users are focused on doing their own research and/or solving their own business problems and want to minimize the cost of using our platform in toil, time, and treasure.
 
 ### Conflicting Goals
 
-TODO: continue the RFC...
+So, our challenge is to navigate the conflicting goals of research and platform development. Research is the source of new capabilities. Platform is the stability on which solutions are built.
 
-# Guide-level explanation
+# Rapid Prototyping Followed By Platform Integration
 
-> Explain the proposal as if it was already included in Monty and you were teaching it to another Monty user. That generally means:
->
-> - Introducing new named concepts.
-> - Explaining the feature largely in terms of examples.
-> - Explaining how Monty developers should *think* about the feature and how it should impact the way they use Monty. It should explain the impact as concretely as possible.
-> - If applicable, provide sample error messages, deprecation warnings, or migration guidance.
-> - If applicable, describe the differences between teaching this to existing Monty users and new Monty users.
-> - If applicable, include pictures or other media if possible to visualize the idea.
-> - If applicable, provide pseudo plots (even if hand-drawn) showing the intended impact on performance (e.g., the model converges quicker, accuracy is better, etc.).
-> - Discuss how this impacts the ability to read, understand, and maintain Monty code. Code is read and modified far more often than written; will the proposed feature make code easier to maintain?
->
-> Keep in mind that it may be appropriate to defer some details to the [Reference-level explanation](#reference-level-explanation) section.
->
-> For implementation-oriented RFCs, this section should focus on how developer contributors should think about the change and give examples of its concrete impact. For administrative RFCs, this section should provide an example-driven introduction to the policy and explain its impact in concrete terms.
+The general approach going forward is to enable rapid research prototypes without imposing platform stability requirements.
 
-# Reference-level explanation
+1. Researchers will create prototypes on their Monty forks and iterate rapidly there.
+2. Once the prototypes demonstrate stable capability, researchers will pair with engineers on an implementation project.
+3. The implementation project results in merging of the capability to Monty `main`.
 
-> This is the technical portion of the RFC. Explain the design in sufficient detail that:
->
-> - Its interaction with other features is clear.
-> - It is reasonably clear how the feature would be implemented.
-> - Corner cases are dissected by example.
->
-> The section should return to the examples from the previous section and explain more fully how the detailed proposal makes those examples work.
+```mermaid
+flowchart LR
+    T(Theory) --> P(Prototype on a fork)
+    P -- Feedback --> T
+    P --> W{New capability stable?}
+    W -- No --> P
+    W -- Yes --> IM(Implementation Project)
+    IM -- Merge --> Monty(Monty main)
+```
+
+## Implementation Project
+
+The implementation project is a project because it may require major refactoring of the prototype or of Monty in order to integrate the new capability. It may be a single pull request, or it may be a long running effort as we reorganize all of Monty. The working prototype is helpful as it becomes a working specification of what needs to be implemented.
+
+This is the stage at which maintaining platform stability comes into consideration, not before.
+
+An additional benefit of an implementation project is that it functions as a knowledge exchange between researchers and engineers. Researchers catch up on the latest platform conventions, and engineers catch up on the latest capability and theory.
+
+## Prototypes
+
+The main goal of a prototype is to provide feedback for the Thousand Brains Theory. By explicitly not merging prototypes, we shorten the feedback loop:
+
+```mermaid
+---
+title: Desirable feedback loop
+---
+flowchart LR
+    T(Theory) --> P(Prototype on a fork)
+    P -- Feedback --> T
+```
+
+It may be tempting to build a prototype in a way compatible with a stable platform. This may work in some cases. The problem with adopting this approach in general is that the platform might not be suited for the prototype needs.  We do not want the feedback loop to include merging to Monty `main`:
+
+```mermaid
+---
+title: Undesirable feedback loop
+---
+flowchart LR
+    T(Theory) --> P(Prototype on a fork)
+    P --> W{New capability stable?}
+    W -- No --> P
+    W -- Yes --> IM(Implementation Project)
+    IM -- Merge --> Monty(Monty main)
+    Monty -- Feedback --> T
+```
+
+
+It could be the case that a new capability highlights a need to refactor the platform and the time spent attempting to comply with platform requirements would be wasted. Researchers should feel free to do what is easiest and hack what is necessary. Reviewing the hacks and what is easier during an implementation project are useful information for improving the platform in the long term.
 
 # Drawbacks
 
-> Why should we *not* do this? Please consider:
->
-> - Implementation cost, both in terms of code size and complexity
-> - Whether the proposed feature can be implemented outside of Monty
-> - The impact on teaching people Monty
-> - Integration of this feature with other existing and planned features
-> - The cost of migrating existing Monty users (is it a breaking change?)
->
-> There are tradeoffs to choosing any path. Please attempt to identify them here.
+### Twice The Work
+
+For any capability that goes through this process, it will be created at least twice. The first time, as a prototype, the second time as a pull request to Monty `main`.
+
+### Implementation Project Is Time Away From Research
+
+Once the prototyped capability is stable and ready for integration with the platform, the researcher is pulled away from research and into software engineering.
+
+### Engineers Become Overwhelmed With Implementation Projects
+
+Building the platform is essential to our vision. Engineers' primary focus is on advancing toward that goal. If there are many implementation projects to integrate, they may take up all available capacity and the progress on the platform itself may slow or come to a halt. Additionally, a bottleneck here could result in the worst of all worlds as we make no progress on the platform and researchers are caught up in software engineering, making no progress on theory.
 
 # Rationale and alternatives
 
-> - Why is this design the best in the space of possible designs?
-> - What other designs have been considered, and what is the rationale for not choosing them?
-> - What is the impact of not doing this?
+The approach outlined in this RFC is based on the assumption that we will evolve the existing Monty code (`tbp.monty`) into our long-term stable platform. As of this writing, the Monty implementation is closely coupled to research and experimental needs. Implementation projects exist to translate from research and experimental needs to long-term stable platform needs.
 
-# Prior art and references
+### Second System
 
-> Discuss prior art, both the good and the bad, in relation to this proposal.
-> A few examples of what this can include are:
->
-> - References
-> - Does this functionality exist in other frameworks, and what experience has their community had?
-> - Papers: Are there any published papers or great posts that discuss this? If you have some relevant papers to refer to, this can serve as a more detailed theoretical background.
-> - Is this done by some other community and what were their experiences with it?
-> - What lessons can we learn from what other communities have done here?
->
-> This section is intended to encourage you as an author to think about the lessons from other frameworks and provide readers of your RFC with a fuller picture.
-> If there is no prior art, that is fine. Your ideas are interesting to us, whether they are brand new or adaptations from other places.
->
-> Note that while precedent set by other frameworks is some motivation, it does not on its own motivate an RFC.
-> Please consider that Monty sometimes intentionally diverges from common approaches.
+An alternative approach would be to leave the Monty code (`tbp.monty`) as is and let it support primarily research needs. There would be less need for implementation projects, as the goal of the Monty code would be to support speed and agility. The platform would be created as a separate code base (`tbp.platform`), and it could pursue its goal of stability without interfering with research, absorbing any new `tbp.monty` capabilities as needed.
+
+The primary reason we should not write a new `tbp.platform` is because there are numerous examples of that approach failing. Rewriting code from scratch often seems like a good idea, but it comes with challenges that end in a long-term wasted effort on a code base that is never adopted. Joel Spolsky has a helpful blog post on the topic: [Things You Should Never Do, Part I](https://www.joelonsoftware.com/2000/04/06/things-you-should-never-do-part-i/), quoted liberally below:
+
+> (...) They did it by making the **single worst strategic mistake** that any software company can make: They decided to rewrite the code from scratch. (...) There's a subtle reason that programmers always want to throw away the code and start over. The reason is that they think the old code is a mess. And here is the interesting observation: _they are probably wrong._ (...) You are putting yourself in an extremely dangerous position where you will be shipping an old version of the code for several years (...) ... problems can be solved, one at a time, by carefully moving code, refactoring, changing interfaces. They can be done by one programmer working carefully and checking [their] changes all at once, so that nobody else is disrupted. Even fairly major architectural changes can be done without _throwing away the code_. (...) It's important to remember that when you start from scratch there is **absolutely no reason** to believe that you are going to do a better job than you did the first time. (...) You're just going to make most of the old mistakes again, and introduce some new problems that weren't in the original version.
+
+The current code evolved through actual use solving real problems.
+
+We are a small team. Maintaining two major code bases will become challenging with our available personnel.
+
+It may be the case that a second system might succeed, but we defer that attempt to the community.
 
 # Unresolved questions
 
-> Optional, but suggested for first drafts.
->
-> What parts of the design are still TBD?
+### What Is a Stable Platform?
 
-# Future possibilities
-
-> Optional.
->
-> Think about what the natural extension and evolution of your proposal would
-> be and how it would affect Monty and the Thousand Brains Project as a whole in a holistic way.
-> Try to use this section as a tool to more fully consider all possible
-> interactions with the Thousand Brains Project and Monty in your proposal.
-> Also consider how this all fits into the future of Monty.
->
-> This is also a good place to "dump ideas" if they are out of the scope of the
-> RFC you are writing but otherwise related.
->
-> If you have tried and cannot think of any future possibilities,
-> you may simply state that you cannot think of anything.
->
-> Note that having something written down in the future-possibilities section
-> is not a reason to accept the current or a future RFC; such notes should be
-> in the section on motivation or rationale in this or subsequent RFCs.
-> The section merely provides additional information.
+Throughout this RFC, the platform is only loosely defined. There is ongoing work intended to fill in the details of what are our 1.0 platform ambitions, but these are out of scope for this RFC.
