@@ -78,7 +78,7 @@ Currently, case 1 is not a major concern since we only have "few" features (e.g.
 Case 2 is more concerning until we develop sparser models. We should benchmark comparison times against ~2,000 points in an object model. Potential optimizations include:
 
 - **Local search**: Compare only points within an $\epsilon$-radius of the current location, assuming realignment targets nearby points. This is valid if we realign frequently to prevent large error accumulation. Note that we may need to dynamically adjust $\epsilon$ to increase search area in case of large distortions. 
-- **Landmark prioritization**: Prioritize comparisons with nodes previously "marked" as containing unique features. 
+- **Landmark prioritization**: Prioritize comparisons with nodes previously "marked" as containing unique features. This approach directly relates to hypothesis-testing policy target points, where we identify and reuse distinctive landmark features that rapidly disambiguate between similar objects or poses. For more details on this future work direction, see [Reuse Hypothesis-Testing Policy Target Points](https://thousandbrainsproject.readme.io/docs/reuse-hypothesis-testing-policy-target-points). 
 
 For Case 3, we can apply:
 - **Selective re-anchoring**: Apply re-anchoring only to hypotheses exhibiting both high confidence and large prediction error, as described by the "surprise" metric in [Ramy's RFC](https://github.com/thousandbrainsproject/tbp.monty/pull/390). This approach reduces computational overhead by avoiding unnecessary comparisons for low-confidence hypotheses or cases with low prediction error.
