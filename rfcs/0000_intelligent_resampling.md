@@ -341,7 +341,7 @@ This challenge becomes particularly complex when learning and inference are inte
 
 The key challenge is deciding whether to:
 - Learn an entirely new object model (when encountering a truly novel object)
-- Update an existing model (when encountering a known object in a new setting, e.g. different lighting)
+- Update an existing model; this might be necessary when encountering a known object in a new setting (e.g. different lighting), if the model is incomplete (e.g. unexplored part), or it has changed (e.g., your favorite mug now has a chip in it)
 - Simply eliminate incorrect hypotheses (when the models are sufficient but we're at the wrong location)
 
 To treat learning and inference as lying on a continuum, we can utilize metadata stored in object models as a proxy/heuristic to use prediction errors in one way or another. Other heuristics may be:
