@@ -25,6 +25,11 @@ In neuroscience, the term "re-anchoring" may be used broadly. In this RFC, we di
 
 This part of the RFC focuses on how we can benefit from realignment of hypotheses.
 
+<img src="./0000_intelligent_resampling/realignment.png" alt="Realignment" style="width:80%; height:auto; display: block; margin: 0 auto;"/> 
+<img src="./0000_intelligent_resampling/remapping.png" alt="Remapping" style="width:80%; height:auto; display: block; margin: 0 auto;"/>
+
+_Figure 1_. **Left (Realignment)**: Correcting hypothesis location and orientation within the same object's reference frame. The hypothesis location adjusts on the coffee mug to align with the actual sensor position. **Right (Remapping)**: Switching hypothesis to a completely different object's reference frame. The hypothesis jumps from a fork to a spoon, representing a change in object identity.
+
 ### Problem Statement and Proposed Solution
 
 **Distortion** refers to cases where features, object parts, or morphologies appear at different locations and rotations than expected in the original model (e.g., a bent TBP logo vs. the standard TBP logo). We want Monty to recognize a distorted object as related to the original object in its memory, rather than always treating it as an entirely new object. 
@@ -169,11 +174,11 @@ There are several techniques to mitigate false positives:
 
 The aim of this question is to eliminate hypotheses when they have moved outside the object's reference frame. When a hypothesis predicts the sensor is still on the object but path integration indicates movement beyond the object's boundaries, we can confidently eliminate that hypothesis without waiting for feature mismatches. This allows us to quickly remove irrelevant hypotheses and resample better ones, and relates to [rfc: dynamic adjustment for hypotheses resampling](https://github.com/thousandbrainsproject/tbp.monty/pull/390). 
 
-Figure 1 illustrates out-of-reference-frame movement. 
+Figure 2 illustrates out-of-reference-frame movement. 
 
 <img src="./0000_intelligent_resampling/out_of_reference_frame_movement.png" alt="Out of reference frame movement" style="width:80%; height:auto; display: block; margin: 0 auto;"/>
 
-_Figure 1_. Case where hypothesis has moved out of object's reference frame. 
+_Figure 2_. Case where hypothesis has moved out of object's reference frame. 
 
 ### Implementation Strategy
 
@@ -183,11 +188,11 @@ We propose eliminating hypotheses that are more than 10% away from the object's 
 
 A naive approach would find the nearest point and determine if it exceeds the distance threshold. To minimize the computational cost of nearest-point searches, we propose approximating the object model with a convex hull and comparing only against the points that constitute this hull.
 
-Figure 2 demonstrates this concept using a 2D example. While object model points exist in 3D space, the convex hull optimization principle remains applicable.
+Figure 3 demonstrates this concept using a 2D example. While object model points exist in 3D space, the convex hull optimization principle remains applicable.
 
 <img src="./0000_intelligent_resampling/convex_hull_example_naive.png" alt="Naive approach" style="width:45%; height:auto;"/> <img src="./0000_intelligent_resampling/convex_hull_example_convex_hull.png" alt="Convex hull approach" style="width:45%; height:auto;"/>
 
-_Figure 2_. **Left**: Naive approach requires comparing distances to all ~2,000 points in the object model to determine if a hypothesis is out of reference frame. **Right**: Convex hull approach pre-computes a convex hull (after training or during pre-epoch in inference) and reduces comparisons to only the hull's points.
+_Figure 3_. **Left**: Naive approach requires comparing distances to all ~2,000 points in the object model to determine if a hypothesis is out of reference frame. **Right**: Convex hull approach pre-computes a convex hull (after training or during pre-epoch in inference) and reduces comparisons to only the hull's points.
 
 While sparse models may reduce this computational burden, the convex hull approach should still provide significant performance improvements. 
 
@@ -219,11 +224,11 @@ This compositional strategy ensures that:
 
 **Current limitation**: In the current implementation, off-object observations are not passed to the Learning Module (LM). The `FeatureChangeSM` class filters out observations where `on_object` is False, preventing the LM from using these observations for hypothesis elimination. This means we cannot currently leverage all types of prediction errors for intelligent resampling.
 
-Figure 3 illustrates two types of prediction errors that may arise in Monty and could be used to eliminate hypotheses if we modify how sensory observations are processed and forwarded.
+Figure 4 illustrates two types of prediction errors that may arise in Monty and could be used to eliminate hypotheses if we modify how sensory observations are processed and forwarded.
 
 <img src="./0000_intelligent_resampling/predicion_error.png" alt="Prediction errors in Monty" style="width:70%; height:auto; display: block; margin: 0 auto;"/>
 
-_Figure 3_. Two cases where prediction errors may arise in Monty.
+_Figure 4_. Two cases where prediction errors may arise in Monty.
 
 ### Case 1: Hypothesis believes it is within an object but has actually moved off the object
 
