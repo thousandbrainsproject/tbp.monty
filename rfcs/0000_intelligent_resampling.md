@@ -298,9 +298,35 @@ A `False` value currently prevents null observations from being processed by LM.
 
 ### When we're learning an object, we don't have a complete graph model. How do we deal with this?
 
-During object learning, prediction errors create a fundamental ambiguity: they can signal either (1) the need to eliminate incorrect hypotheses, or (2) the need to update an incomplete model with new information. This challenge becomes particularly complex when learning and inference are interleaved, or when the distinction between "pure learning" and "pure inference" modes is not clearly defined. In pure inference mode, we may use prediction errors to eliminate hypotheses assuming the object model is considered complete. In pure learning mode, prediction errors may indicate model needs updating since the model is incomplete. 
+During object learning, prediction errors present a complex decision point: they may indicate (1) incorrect hypotheses that should be eliminated, (2) an incomplete model that needs updating, or (3) both. These interpretations are not mutually exclusive - a large prediction error might mean we should eliminate current hypotheses AND learn or update our models.
 
-To treat learning and inference as lying on a continuum, we can utilize metadata stored in object models (e.g. `_observation_count` in `GridObjectModel`) as a proxy/heuristic to use prediction errors in one way or another. For example, if we have frequently visited a location, we can bias it towards hypothesis elimination (even if the object model is not complete), and vice versa. Other additional heuristics could be:
+This challenge becomes particularly complex when learning and inference are interleaved, or when the distinction between "pure learning" and "pure inference" modes is not clearly defined. In pure inference mode, we may use prediction errors to eliminate hypotheses assuming the object model is considered complete. In pure learning mode, prediction errors may indicate model needs updating since the model is incomplete.
 
-- **Temporal consistency**: Require multiple consecutive prediction errors before eliminating hypotheses in partially learned models
-- **Error magnitude thresholds**: Always eliminate if the error is large; for small errors depends on confidence
+The key challenge is deciding whether to:
+- Learn an entirely new object model (when encountering a truly novel object)
+- Update an existing model (when encountering a known object in a new setting, e.g. different lighting)
+- Simply eliminate incorrect hypotheses (when the models are sufficient but we're at the wrong location)
+
+To treat learning and inference as lying on a continuum, we can utilize metadata stored in object models as a proxy/heuristic to use prediction errors in one way or another. Other heuristics may be:
+
+- **Hypothesis coverage**: If some hypotheses remain valid after prediction errors, the existing models are likely sufficient and we should focus on hypothesis elimination. However, if all hypotheses are eliminated (or less than a certain percentage threshold), we may need to learn a new model or update an existing one.
+
+- **Observation frequency** (e.g., `_observation_count` in `GridObjectModel`): Frequently visited locations with high observation counts suggest the model is well-learned at that location, biasing toward hypothesis elimination rather than model updates.
+
+- **Error magnitude thresholds**: Very large prediction errors across all features may suggest a novel object requiring a new model. Moderate errors might indicate the need for model updates or hypothesis refinement.
+
+- **Feature-specific patterns**: If morphological features match but non-morphological features (like color) differ significantly, this might indicate object variations / keyframe / need to separate morphological and feature models.
+
+- **Temporal consistency**: Multiple consecutive prediction errors at different locations strengthen the signal for model learning/updating, while isolated errors might just indicate noisy observations.
+
+- **Model confidence metrics**: Models with high overall confidence (based on total observations and coverage) are less likely to need updates, suggesting hypothesis elimination is appropriate.
+
+#### Example of Chipped Coffee Mug 
+
+Consider the TBP mug that we are very familiar that is slightly chipped. Below are how the above heuristics may apply:
+
+1. **Initial detection**: When sensing the chipped area, we would get prediction errors since the surface geometry differs from our stored model.
+2. **Hypothesis coverage**: Most hypotheses about the mug would remain valid (handle, overall shape, color) while only hypotheses near the chip would be eliminated.
+3. **Observation frequency**: The mug model has high observation counts from frequent use, suggesting we shouldn't discard the entire model.
+4. **Feature patterns**: Morphological features (surface curvature) would differ at the chip location, but non-morphological features (color, texture) might remain consistent.
+5. **Decision**: The heuristics would likely lead to updating the existing mug model to incorporate the chip as a variation, rather than learning an entirely new object or just eliminating hypotheses. This allows us to maintain our knowledge about the mug while adapting to its new physical state.
