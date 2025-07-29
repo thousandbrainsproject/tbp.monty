@@ -59,7 +59,6 @@ class FeatureAtLocationBuffer(BaseBuffer):
 
         self.displacements = {}
 
-        # Store sender_type for each channel to avoid relying on naming conventions
         self.channel_sender_types = {}
 
         self.stats = {
@@ -125,7 +124,6 @@ class FeatureAtLocationBuffer(BaseBuffer):
         for state in list_of_data:
             input_channel = state.sender_id
 
-            # Store sender_type for this channel
             self.channel_sender_types[input_channel] = state.sender_type
 
             self._add_loc_to_location_buffer(input_channel, state.location)
@@ -469,8 +467,6 @@ class FeatureAtLocationBuffer(BaseBuffer):
         if len(all_channels) == 0:
             return None
 
-        # Find first channel with sender_type "SM"
-        # This avoids relying on naming conventions like "patch"
         for channel in all_channels:
             if self.channel_sender_types[channel] == "SM":
                 return channel
