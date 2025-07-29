@@ -190,6 +190,28 @@ _Figure 2_. **Left**: Naive approach requires comparing distances to all ~2,000 
 
 While sparse models may reduce this computational burden, the convex hull approach should still provide significant performance improvements. 
 
+### Implications for Unsupervised Learning and Incomplete Models
+
+When dealing with unsupervised learning and incomplete models, the out-of-reference-frame elimination strategy requires careful consideration:
+
+**Model familiarity bias**: For familiar objects (those with high observation counts), we might be more aggressive in eliminating hypotheses that move out of the reference frame. This is generally beneficial as it allows faster convergence for well-known objects.
+
+**Adaptive thresholds**: For objects still being learned (low observation counts), we might use larger tolerance thresholds before eliminating hypotheses, allowing for exploration of potentially larger or differently shaped variants of the object.
+
+#### Compositionality 
+
+One consideration is how to handle modifications to familiar objects without corrupting well-learned models. For example, consider a familiar TBP mug with a fork glued to it. Rather than updating the mug model to include this modification, a compositional approach works as follows:
+
+1. **Lower-level preservation**: The lower-level LM maintains its original mug model unchanged
+2. **Hypothesis elimination**: When the sensor moves from the mug surface to the fork, the mug hypothesis is correctly eliminated (having moved outside the mug's reference frame)
+3. **Higher-level composition**: A higher-level LM learns the new composite object as a combination of mug and fork components
+
+This compositional strategy ensures that:
+- Well-learned models remain stable and reusable
+- The system can still recognize standalone mugs using the preserved model
+- Novel object combinations are learned hierarchically without corrupting base models
+- Out-of-reference-frame elimination continues to work efficiently at each level
+
 ## 3. How can we use prediction errors to eliminate hypotheses? 
 
 **Motivation**: While Question 2 addresses hypotheses that have moved beyond object boundaries (using path integration), this section focuses on using sensory prediction errors to eliminate hypotheses that are still within the object's reference frame but at incorrect locations. This is fundamentally different because it relies on feature mismatches rather than spatial boundaries.
