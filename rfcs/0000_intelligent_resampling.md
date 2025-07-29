@@ -172,7 +172,7 @@ There are several techniques to mitigate false positives:
 
 ## 2. How can we use out-of-reference-frame movement to efficiently eliminate hypotheses?
 
-The aim of this question is to eliminate hypotheses when they have moved outside the object's reference frame. When a hypothesis predicts the sensor is still on the object but path integration indicates movement beyond the object's boundaries, we can confidently eliminate that hypothesis without waiting for feature mismatches. This allows us to quickly remove irrelevant hypotheses and resample better ones, and relates to [rfc: dynamic adjustment for hypotheses resampling](https://github.com/thousandbrainsproject/tbp.monty/pull/390). 
+The aim of this question is to eliminate hypotheses when they have moved outside the object's reference frame. When path integration indicates a hypothesis has moved beyond the object's boundaries, we can confidently eliminate that hypothesis without waiting for feature mismatches. This allows us to quickly remove irrelevant hypotheses and resample better ones, and relates to [rfc: dynamic adjustment for hypotheses resampling](https://github.com/thousandbrainsproject/tbp.monty/pull/390). 
 
 Figure 2 illustrates out-of-reference-frame movement. 
 
