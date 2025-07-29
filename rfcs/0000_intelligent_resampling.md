@@ -104,8 +104,6 @@ Here we go through a specific case of re-anchoring the pose of a particular hypo
 
 Recall that in an object model, at each node in the graph, we store `pose_vectors` which are 3x3 matrix of surface normal and principal curvature directions at that point. In a hypothesis, the `poses` attribute is a 3x3 rotation matrix that represents the object's orientation in the world. 
 
-**Note**: We may wish to use different variable names to make it clearer that `pose_vectors` are local surface properties, while the `poses` attribute in `class Hypotheses` is a global object orientation. They both happen to be 3x3 matrices, but in `pose_vectors` this is because three vectors are stacked together (i.e. surface normal, principal curvature direction 1 and 2), while `poses` is a 3x3 rotation matrix (with no individual row meanings). 
-
 In `_get_all_informed_possible_poses()` in `hypotheses_updater.py`, it calls `align_multiple_orthonormal_vectors()` which calculates the rotation that would transform the current sensor orientation to match the stored orientation at that node. 
 
 **Proposed implementation**:
