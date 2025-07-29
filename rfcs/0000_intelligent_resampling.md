@@ -268,6 +268,8 @@ This scenario is already handled by the existing `hypotheses_displacer.py`, whic
 
 ### Implications for FeatureChangeSM
 
+**Current limitation**: As mentioned earlier, `FeatureChangeSM` currently filters out off-object observations, preventing the LM from receiving them. This filtering happens in the `check_feature_change()` method, which returns `False` for off-object observations. To enable prediction error-based hypothesis elimination for null observations (Case 1b), we need to modify how `FeatureChangeSM` handles these observations.
+
 The following changes would be made to `sensor_module.py`:
 
 **1. Handling `check_feature_change()` in `sensor_modules.py`**
