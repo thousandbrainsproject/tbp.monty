@@ -186,9 +186,32 @@ A naive approach would find the nearest point and determine if it exceeds the di
 Figure 2 demonstrates this concept using a 2D example. While object model points exist in 3D space, the convex hull optimization principle remains applicable.
 
 <img src="./0000_intelligent_resampling/convex_hull_example_naive.png" alt="Naive approach" style="width:45%; height:auto;"/> <img src="./0000_intelligent_resampling/convex_hull_example_convex_hull.png" alt="Convex hull approach" style="width:45%; height:auto;"/>
+
 _Figure 2_. **Left**: Naive approach requires comparing distances to all ~2,000 points in the object model to determine if a hypothesis is out of reference frame. **Right**: Convex hull approach pre-computes a convex hull (after training or during pre-epoch in inference) and reduces comparisons to only the hull's points.
 
 While sparse models may reduce this computational burden, the convex hull approach should still provide significant performance improvements. 
+
+### Implications for Unsupervised Learning and Incomplete Models
+
+When dealing with unsupervised learning and incomplete models, the out-of-reference-frame elimination strategy requires careful consideration:
+
+**Model familiarity bias**: For familiar objects (those with high observation counts), we might be more aggressive in eliminating hypotheses that move out of the reference frame. This is generally beneficial as it allows faster convergence for well-known objects.
+
+**Adaptive thresholds**: For objects still being learned (low observation counts), we might use larger tolerance thresholds before eliminating hypotheses, allowing for exploration of potentially larger or differently shaped variants of the object.
+
+#### Compositionality 
+
+One consideration is how to handle modifications to familiar objects without corrupting well-learned models. For example, consider a familiar TBP mug with a fork glued to it. Rather than updating the mug model to include this modification, a compositional approach works as follows:
+
+1. **Lower-level preservation**: The lower-level LM maintains its original mug model unchanged
+2. **Hypothesis elimination**: When the sensor moves from the mug surface to the fork, the mug hypothesis is correctly eliminated (having moved outside the mug's reference frame)
+3. **Higher-level composition**: A higher-level LM learns the new composite object as a combination of mug and fork components
+
+This compositional strategy ensures that:
+- Well-learned models remain stable and reusable
+- The system can still recognize standalone mugs using the preserved model
+- Novel object combinations are learned hierarchically without corrupting base models
+- Out-of-reference-frame elimination continues to work efficiently at each level
 
 ## 3. How can we use prediction errors to eliminate hypotheses? 
 
