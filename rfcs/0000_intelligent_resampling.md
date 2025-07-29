@@ -136,18 +136,6 @@ Note that we could also use `R_correction` to see if we should reject re-anchori
 
 This approach extends the current hypothesis initialization logic (which determines initial poses based on sensor observations) to allow pose updates during realignment. 
 
-**Minor Side Note**: If the above approach works, we could likely remove the following code where we sample from Von Mises distribution.
-```python
-for _ in range(n_samples):
-    # If we do this we need a better terminal condition for similar
-    # rotations or more robustness. n_sample currently set to 0.
-    rand_rot = self.rng.vonmises(0, kappa, 3)
-    rot = Rotation.from_euler(
-        "xyz", [rand_rot[0], rand_rot[1], rand_rot[2]]
-    )
-    r_sample = r * rot
-```
-
 #### What are the implications for unsupervised learning?
 
 The benefits of re-alignment extend beyond immediate hypothesis correction to fundamental improvements in learning. In biology, path integration is inherently noisy due to imperfect sensors and movement estimates. Re-alignment using distinctive features acts as a corrective mechanism, similar to how landmarks are used in Simultaneous Localization and Mapping (SLAM) algorithms.
