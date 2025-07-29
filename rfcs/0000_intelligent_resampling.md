@@ -363,7 +363,7 @@ To treat learning and inference as lying on a continuum, we can utilize metadata
 Consider the TBP mug that we are very familiar that is now slightly chipped. Below are how the above heuristics may apply:
 
 1. **Initial detection**: When sensing the chipped area, we would get prediction errors since the surface geometry differs from our stored model.
-2. **Hypothesis coverage**: Most hypotheses about the mug would remain valid (handle, overall shape, color) while only hypotheses near the chip would be eliminated.
+2. **Hypothesis coverage**: The hypothesis for where we are on the mug would remain valid across many locations during movement (handle, sides, rim); it would only result in a prediction error / risk elimination when we move to the chip, the point at which we would want to signal learning in a model.
 3. **Observation frequency**: The mug model has high observation counts from frequent use, suggesting we shouldn't discard the entire model.
 4. **Feature patterns**: Morphological features (surface curvature) would differ at the chip location, but non-morphological features (color, texture) might remain consistent.
 5. **Decision**: The heuristics would likely lead to updating the existing mug model to incorporate the chip as a variation, rather than learning an entirely new object or just eliminating hypotheses. This allows us to maintain our knowledge about the mug while adapting to its new physical state.
