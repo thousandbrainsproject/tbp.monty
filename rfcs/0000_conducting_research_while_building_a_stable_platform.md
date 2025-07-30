@@ -11,7 +11,7 @@ We believe that the research and the platform are essential to our vision. We wa
 
 There lies an inherent challenge to achieving our vision. From the perspective of supply and demand competition in the marketplace, the activities of research and platform building differ in their characteristics. Some of what makes for good research, directly conflicts with what makes for a good platform, and vice versa.
 
-The below characteristics and properties are intended to contrast the state of our Research, as well as the Platform today and in the future. These are not precisely defined concepts, but intended more as a general guide to consider various aspects and conceptualize the differences. If one or two of these seems confusing, they can be skipped in favor of all the other ones. They are drawn from [the four stages of evolution as described in Wardley Mapping](https://help.mapkeep.com/microdoctrine/understand-what-is-being-considered/understand-evolution).
+The below characteristics and properties are intended to contrast the state of our Research, as well as the Platform today and in the future. These are not precisely defined concepts, but intended more as a general guide to consider various aspects and conceptualize the differences. If one or two of these seems confusing, they can be skipped in favor of all the other ones. They are drawn from [the four stages of evolution as described in Wardley Mapping](https://help.mapkeep.com/microdoctrine/understand-what-is-being-considered/understand-evolution#detailed-description).
 
 | Characteristic / Property | Research | Platform (today) | Platform (future) |
 |---|---|---|---|
