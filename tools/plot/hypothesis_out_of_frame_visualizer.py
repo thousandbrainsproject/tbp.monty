@@ -9,9 +9,9 @@
 
 from __future__ import annotations
 
-import os
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
@@ -22,9 +22,11 @@ from scipy.spatial.transform import Rotation as R
 from vedo import (
     Points,
     Plotter,
+    Sphere,
     Text2D,
     settings,
 )
+
 from tbp.monty.frameworks.run_env import setup_env
 
 if TYPE_CHECKING:
@@ -124,26 +126,39 @@ class ObjectModel:
 def load_object_model(
     exp_name: str,
     object_name: str,
-    features: Optional[list[str]] = ["rgba"],
+    features: Optional[list[str]] = None,
     lm_id: int = 0,
 ) -> ObjectModel:
+    """Load an object model from a pretraining experiment.
+
+    Args:
+        exp_name: The name of the experiment.
+        object_name: The name of the object.
+        features: The features to load from the object model.
+        lm_id: The ID of the LM to load the object model from.
+
+    Returns:
+        The object model.
+
+    Raises:
+        ValueError: If the experiment name does not contain 'dist' or 'surf'.
+    """
+    if features is None:
+        features = ["rgba"]
+
     monty_models_dir = Path(os.getenv("MONTY_MODELS"))
     pretrain_dir = monty_models_dir / "pretrained_ycb_v10"
 
     if "dist" in exp_name:
-        pretrain_dir = (
-            pretrain_dir / "supervised_pre_training_all_objects" / "pretrained"
-        )
+        pretrain_dir = pretrain_dir / "supervised_pre_training_base" / "pretrained"
     elif "surf" in exp_name:
-        pretrain_dir = (
-            pretrain_dir / "supervised_pre_training_surface_view" / "pretrained"
-        )
+        pretrain_dir = pretrain_dir / "surf_agent_1lm_77obj" / "pretrained"
     else:
         raise ValueError(
             f"The experiment name must contain 'dist' or 'surf' in order to load correct pretrained model for objects."
         )
 
-    model_path = pretrain_dir / "checkpoints" / "model.pt"
+    model_path = pretrain_dir / "model.pt"
 
     data = torch.load(model_path, map_location=torch.device("cpu"))
     data = data["lm_dict"][lm_id]["graph_memory"][object_name]["patch"]
@@ -165,21 +180,35 @@ def load_object_model(
 
 
 class TargetHypothesisVisualizer:
-    """Visualize target object hypotheses from a single timestep."""
+    """Interactive visualization of target object hypotheses across timesteps."""
 
-    def __init__(
-        self, json_path: str, model_name: str = "dist_agent_1lm", timestep: int = 25
-    ):
+    def __init__(self, json_path: str, model_name: str = "dist_agent_1lm"):
         self.json_path = json_path
         self.model_name = model_name
-        self.timestep = timestep  # Default to last timestep (25) in episode 0
+        self.current_timestep = 0
+
+        # Will store data for all timesteps
+        self.all_target_locations = []
+        self.all_target_evidences = []
+        self.all_mlh_locations = []
+        self.all_mlh_rotations = []
+        self.all_mlh_graph_ids = []
+
+        # Visualization objects
+        self.hypothesis_points = None
+        self.object_points = None
+        self.object_center = None
+        self.mlh_sphere = None
+        self.stats_text = None
+        self.slider = None
+        self.plotter = None
 
         # Load data
         self.load_episode_data()
         self.load_target_model()
 
     def load_episode_data(self) -> None:
-        """Load first episode data from JSON file."""
+        """Load all timesteps data from JSON file."""
         print(f"Loading episode data from: {self.json_path}")
 
         with open(self.json_path, "r") as f:
@@ -202,30 +231,48 @@ class TargetHypothesisVisualizer:
 
         print(f"Target object for episode 0: {self.target_object_name}")
 
-        # Extract target object hypothesis data for the specified timestep
-        if self.timestep >= len(self.lm_data["possible_locations"]):
-            print(
-                f"Warning: timestep {self.timestep} not available, using last timestep"
-            )
-            self.timestep = len(self.lm_data["possible_locations"]) - 1
+        # Get number of timesteps
+        self.num_timesteps = len(self.lm_data["possible_locations"])
+        print(f"Episode has {self.num_timesteps} timesteps")
 
-        timestep_data = self.lm_data["possible_locations"][self.timestep]
-        if self.target_object_name not in timestep_data:
-            raise ValueError(
-                f"No {self.target_object_name} data found at timestep {self.timestep}"
-            )
+        # Extract data for all timesteps
+        for timestep in range(self.num_timesteps):
+            timestep_data = self.lm_data["possible_locations"][timestep]
+            if self.target_object_name in timestep_data:
+                self.all_target_locations.append(
+                    np.array(timestep_data[self.target_object_name])
+                )
+                self.all_target_evidences.append(
+                    np.array(
+                        self.lm_data["evidences"][timestep][self.target_object_name]
+                    )
+                )
+            else:
+                # Empty data for this timestep
+                self.all_target_locations.append(np.array([]))
+                self.all_target_evidences.append(np.array([]))
 
-        self.target_locations = np.array(timestep_data[self.target_object_name])
-        self.target_evidences = np.array(
-            self.lm_data["evidences"][self.timestep][self.target_object_name]
-        )
-
-        print(
-            f"Loaded {len(self.target_locations)} {self.target_object_name} hypotheses from timestep {self.timestep}"
-        )
-        print(
-            f"Evidence range: [{self.target_evidences.min():.4f}, {self.target_evidences.max():.4f}]"
-        )
+            # Extract MLH data if available
+            if "current_mlh" in self.lm_data and timestep < len(
+                self.lm_data["current_mlh"]
+            ):
+                mlh_data = self.lm_data["current_mlh"][timestep]
+                if "location" in mlh_data:
+                    self.all_mlh_locations.append(np.array(mlh_data["location"]))
+                else:
+                    self.all_mlh_locations.append(None)
+                if "rotation" in mlh_data:
+                    self.all_mlh_rotations.append(np.array(mlh_data["rotation"]))
+                else:
+                    self.all_mlh_rotations.append(None)
+                if "graph_id" in mlh_data:
+                    self.all_mlh_graph_ids.append(mlh_data["graph_id"])
+                else:
+                    self.all_mlh_graph_ids.append(None)
+            else:
+                self.all_mlh_locations.append(None)
+                self.all_mlh_rotations.append(None)
+                self.all_mlh_graph_ids.append(None)
 
         # Get target object pose
         self.target_position = np.array(
@@ -241,23 +288,6 @@ class TargetHypothesisVisualizer:
         )
         print(f"{self.target_object_name} is at position: {self.target_position}")
 
-        # Check for current MLH (Most Likely Hypothesis) data
-        self.mlh_location = None
-        self.mlh_rotation = None
-        self.mlh_graph_id = None
-        if "current_mlh" in self.lm_data and self.timestep < len(
-            self.lm_data["current_mlh"]
-        ):
-            mlh_data = self.lm_data["current_mlh"][self.timestep]
-            if "location" in mlh_data:
-                self.mlh_location = np.array(mlh_data["location"])
-                print(f"Current MLH location: {self.mlh_location}")
-            if "rotation" in mlh_data:
-                self.mlh_rotation = np.array(mlh_data["rotation"])
-            if "graph_id" in mlh_data:
-                self.mlh_graph_id = mlh_data["graph_id"]
-                print(f"Current MLH object: {self.mlh_graph_id}")
-
     def load_target_model(self) -> None:
         """Load the target object model."""
         try:
@@ -271,107 +301,27 @@ class TargetHypothesisVisualizer:
             print(f"Warning: Could not load {self.target_object_name} model: {e}")
             self.target_model = None
 
-    def create_visualization(self) -> None:
-        """Create the visualization with vedo."""
-        plotter = Plotter(
-            title=f"Sensor Location Hypotheses for {self.target_object_name.title()} - Episode 0, Timestep {self.timestep}"
+    def create_interactive_visualization(self) -> None:
+        """Create interactive visualization with slider for timestep navigation."""
+        self.plotter = Plotter(
+            title=f"Sensor Location Hypotheses for {self.target_object_name.title()} - Episode 0"
         )
 
-        # Add target object model if available
-        if self.target_model is not None:
-            # Transform model to target pose
-            model = self.target_model.copy()
-            # model = model.rotated(self.target_rotation, degrees=True)
-            # model = model + self.target_position
-
-            # Create point cloud - use a single color for simplicity
-            object_points = Points(model.pos, c="cyan")
-            object_points.point_size(10)  # Larger size for better visibility
-            plotter.add(object_points)
-
-            # Add label
-            plotter.add(
-                Text2D(
-                    f"{self.target_object_name.title()} Object (Ground Truth)",
-                    pos="top-left",
-                    s=1,
-                )
-            )
-
-        # Create hypothesis points colored by evidence
-        # Normalize evidence to [0, 1] for coloring
-        # Use log scale for better visualization due to wide range
-        evidence_shifted = (
-            self.target_evidences - self.target_evidences.min() + 1.0
-        )  # Shift to positive
-        evidence_log = np.log(evidence_shifted)
-        evidence_norm = (evidence_log - evidence_log.min()) / (
-            evidence_log.max() - evidence_log.min() + 1e-8
+        # Add slider
+        self.slider = self.plotter.add_slider(
+            self.slider_callback,
+            xmin=0,
+            xmax=self.num_timesteps - 1,
+            value=0,
+            pos=[(0.2, 0.05), (0.8, 0.05)],
+            title="Timestep",
         )
 
-        print(
-            f"Evidence normalization - Min: {evidence_norm.min():.3f}, Max: {evidence_norm.max():.3f}"
-        )
+        # Initial visualization
+        self.update_visualization(0)
 
-        # Create points with color based on evidence
-        hypothesis_points = Points(self.target_locations)
-        hypothesis_points.point_size(4)  # Smaller size for hypotheses
-
-        # Apply colormap using the standard vedo approach
-        hypothesis_points.pointdata["Evidence"] = evidence_norm
-        hypothesis_points = hypothesis_points.cmap("coolwarm", "Evidence")
-        # hypothesis_points.alpha(0.6)  # Make points semi-transparent
-
-        plotter.add(hypothesis_points)
-
-        # Add a sphere at the object center to make it more visible
-        from vedo import Sphere, Line
-
-        object_center = Sphere(self.target_position, r=0.03, c="red")
-        plotter.add(object_center)
-        plotter.add(Text2D("Object Center", pos=(0.5, 0.95), s=0.8, c="red"))
-
-        # Add current MLH location if available
-        if self.mlh_location is not None:
-            mlh_sphere = Sphere(self.mlh_location, r=0.01, c="magenta")
-            plotter.add(mlh_sphere)
-            mlh_label = f"Current MLH"
-            if self.mlh_graph_id:
-                mlh_label += f" ({self.mlh_graph_id})"
-            plotter.add(Text2D(mlh_label, pos=(0.05, 0.05), s=0.8, c="magenta"))
-
-        # Add colorbar
-        # Note: Colorbar causing issues with vedo, commenting out for now
-        # hypothesis_points.add_scalarbar(title="Evidence\n(log scale)",
-        #                                horizontal=False,
-        #                                pos=(0.85, 0.5))
-
-        # Add statistics text
-        max_evidence_idx = np.argmax(self.target_evidences)
-        max_evidence_location = self.target_locations[max_evidence_idx]
-        stats_text = (
-            f"Target: {self.target_object_name}\n"
-            f"Object position: [{self.target_position[0]:.3f}, {self.target_position[1]:.3f}, {self.target_position[2]:.3f}]\n"
-            f"Timestep: {self.timestep}\n"
-            f"Total sensor location hypotheses: {len(self.target_locations)}\n"
-            f"Evidence range: [{self.target_evidences.min():.4f}, "
-            f"{self.target_evidences.max():.4f}]\n"
-            f"Best sensor hypothesis: [{max_evidence_location[0]:.3f}, {max_evidence_location[1]:.3f}, {max_evidence_location[2]:.3f}]"
-        )
-
-        # Add MLH info if available
-        if self.mlh_location is not None:
-            stats_text += f"\nCurrent MLH location: [{self.mlh_location[0]:.3f}, {self.mlh_location[1]:.3f}, {self.mlh_location[2]:.3f}]"
-            if self.mlh_graph_id:
-                stats_text += f"\nCurrent MLH object: {self.mlh_graph_id}"
-        plotter.add(Text2D(stats_text, pos="bottom-left", s=0.8))
-
-        # Add color legend
-        plotter.add(Text2D("Blue = Low Evidence", pos=(0.85, 0.6), s=0.8, c="blue"))
-        plotter.add(Text2D("Red = High Evidence", pos=(0.85, 0.55), s=0.8, c="red"))
-
-        # Set camera and axes
-        plotter.show(
+        # Show
+        self.plotter.show(
             axes={
                 "xtitle": "X",
                 "ytitle": "Y",
@@ -384,18 +334,118 @@ class TargetHypothesisVisualizer:
             interactive=True,
         )
 
+    def slider_callback(self, widget, event) -> None:
+        """Handle slider value changes."""
+        timestep = int(round(widget.GetRepresentation().GetValue()))
+        if timestep != self.current_timestep:
+            self.update_visualization(timestep)
+            self.plotter.render()
+
+    def update_visualization(self, timestep: int) -> None:
+        """Update visualization for given timestep."""
+        self.current_timestep = timestep
+
+        # Get data for current timestep
+        if (
+            timestep >= len(self.all_target_locations)
+            or len(self.all_target_locations[timestep]) == 0
+        ):
+            print(f"No data available for timestep {timestep}")
+            return
+
+        target_locations = self.all_target_locations[timestep]
+        target_evidences = self.all_target_evidences[timestep]
+        mlh_location = self.all_mlh_locations[timestep]
+        mlh_graph_id = self.all_mlh_graph_ids[timestep]
+
+        # Remove previous objects if they exist
+        if self.hypothesis_points is not None:
+            self.plotter.remove(self.hypothesis_points)
+        if self.mlh_sphere is not None:
+            self.plotter.remove(self.mlh_sphere)
+        if self.stats_text is not None:
+            self.plotter.remove(self.stats_text)
+
+        # Add target object model on first call
+        if self.object_points is None and self.target_model is not None:
+            # Transform model to target pose
+            model = self.target_model.copy()
+            # model = model.rotated(self.target_rotation, degrees=True)
+            # model = model + self.target_position
+
+            # Create point cloud
+            self.object_points = Points(model.pos, c="gray")
+            self.object_points.point_size(10)
+            self.plotter.add(self.object_points)
+
+            # Add label
+            self.plotter.add(
+                Text2D(
+                    f"{self.target_object_name.title()} Object (Ground Truth)",
+                    pos="top-left",
+                    s=1,
+                )
+            )
+
+        # Create hypothesis points colored by evidence
+        if len(target_evidences) > 0:
+            # Normalize evidence to [0, 1] for coloring
+            # Use log scale for better visualization
+            evidence_shifted = (
+                target_evidences - target_evidences.min() + 1.0
+            )  # Shift to positive
+            evidence_log = np.log(evidence_shifted)
+            evidence_norm = (evidence_log - evidence_log.min()) / (
+                evidence_log.max() - evidence_log.min() + 1e-8
+            )
+
+            # Create points with color based on evidence
+            self.hypothesis_points = Points(target_locations)
+            self.hypothesis_points.point_size(8)  # Increased from 4 to 8
+
+            # Apply colormap - using 'jet' for better contrast
+            self.hypothesis_points.pointdata["Evidence"] = evidence_norm
+            self.hypothesis_points = self.hypothesis_points.cmap("jet", "Evidence")
+            self.plotter.add(self.hypothesis_points)
+
+        # Add current MLH location if available
+        if mlh_location is not None:
+            self.mlh_sphere = Sphere(mlh_location, r=0.005, c="red")
+            self.plotter.add(self.mlh_sphere)
+
+        # Update statistics text
+        if len(target_evidences) > 0:
+            max_evidence_idx = np.argmax(target_evidences)
+            max_evidence_location = target_locations[max_evidence_idx]
+            stats_text = (
+                f"Target: {self.target_object_name}\n"
+                f"Object position: [{self.target_position[0]:.3f}, {self.target_position[1]:.3f}, {self.target_position[2]:.3f}]\n"
+                f"Timestep: {timestep}\n"
+                f"Total sensor location hypotheses: {len(target_locations)}\n"
+                f"Evidence range: [{target_evidences.min():.4f}, "
+                f"{target_evidences.max():.4f}]\n"
+                f"Best sensor hypothesis: [{max_evidence_location[0]:.3f}, {max_evidence_location[1]:.3f}, {max_evidence_location[2]:.3f}]"
+            )
+
+            # Add MLH info if available
+            if mlh_location is not None:
+                stats_text += f"\nCurrent MLH location: [{mlh_location[0]:.3f}, {mlh_location[1]:.3f}, {mlh_location[2]:.3f}]"
+                if mlh_graph_id:
+                    stats_text += f"\nCurrent MLH object: {mlh_graph_id}"
+
+            self.stats_text = Text2D(stats_text, pos="top-right", s=0.7)
+            self.plotter.add(self.stats_text)
+
 
 def plot_target_hypotheses(
     exp_path: str,
     model_name: str = "dist_agent_1lm",
-    timestep: int = 25,
 ) -> int:
-    """Plot target object hypotheses for a single timestep.
+    """Plot target object hypotheses with interactive timestep slider.
 
     Args:
         exp_path: Path to experiment directory containing detailed_run_stats.json
         model_name: Name of pretrained model to load object from
-        timestep: Which timestep to visualize (0-25 for episode 0)
 
     Returns:
         Exit code
@@ -407,8 +457,8 @@ def plot_target_hypotheses(
         return 1
 
     try:
-        visualizer = TargetHypothesisVisualizer(str(json_path), model_name, timestep)
-        visualizer.create_visualization()
+        visualizer = TargetHypothesisVisualizer(str(json_path), model_name)
+        visualizer.create_interactive_visualization()
         return 0
     except Exception as e:
         logger.error(f"Error creating visualization: {e}")
@@ -422,7 +472,7 @@ def add_subparser(
     """Add the hypothesis_out_of_frame subparser to the main parser."""
     parser = subparsers.add_parser(
         "hypothesis_out_of_frame",
-        help="Visualize target object hypothesis locations for a single timestep.",
+        help="Interactive visualization of target object hypothesis locations.",
         parents=[parent_parser] if parent_parser else [],
     )
     parser.add_argument(
@@ -434,50 +484,11 @@ def add_subparser(
         default="dist_agent_1lm",
         help="Name of pretrained model to load target object from.",
     )
-    parser.add_argument(
-        "--timestep",
-        type=int,
-        default=25,
-        help="Which timestep to visualize (0-25 for episode 0).",
-    )
     parser.set_defaults(
         func=lambda args: sys.exit(
             plot_target_hypotheses(
                 args.experiment_log_dir,
                 args.model_name,
-                args.timestep,
             )
-        )
-    )
-
-
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Visualize target object hypothesis locations for a single timestep."
-    )
-    parser.add_argument(
-        "experiment_log_dir",
-        help="The directory containing the detailed_run_stats.json file.",
-    )
-    parser.add_argument(
-        "--model_name",
-        default="dist_agent_1lm",
-        help="Name of pretrained model to load target object from.",
-    )
-    parser.add_argument(
-        "--timestep",
-        type=int,
-        default=25,
-        help="Which timestep to visualize (0-25 for episode 0).",
-    )
-
-    args = parser.parse_args()
-    sys.exit(
-        plot_target_hypotheses(
-            args.experiment_log_dir,
-            args.model_name,
-            args.timestep,
         )
     )
