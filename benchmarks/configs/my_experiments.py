@@ -14,7 +14,9 @@ from benchmarks.configs.names import MyExperiments
 from benchmarks.configs.ycb_experiments import (
     randrot_noise_10distinctobj_dist_agent,
 )
-from tbp.monty.frameworks.config_utils.config_args import DetailedEvidenceLMLoggingConfig
+from tbp.monty.frameworks.config_utils.config_args import (
+    DetailedEvidenceLMLoggingConfig,
+)
 # Add your experiment configurations here
 # e.g.: my_experiment_config = dict(...)
 
