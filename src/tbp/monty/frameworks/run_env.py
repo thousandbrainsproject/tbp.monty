@@ -16,10 +16,10 @@ from pathlib import Path
 from typing import Dict, Union
 
 # Environment variable names
-MONTY_LOGS_VAR = "MONTY_LOGS"
-MONTY_MODELS_VAR = "MONTY_MODELS"
-MONTY_DATA_VAR = "MONTY_DATA"
-WANDB_DIR_VAR = "WANDB_DIR"
+MONTY_LOGS = "MONTY_LOGS"
+MONTY_MODELS = "MONTY_MODELS"
+MONTY_DATA = "MONTY_DATA"
+WANDB_DIR = "WANDB_DIR"
 
 # Type alias for path-like objects
 PathLike = Union[str, Path]
@@ -74,24 +74,24 @@ def setup_env(
 
     # Set up MONTY_LOGS
     monty_logs_dir = _get_or_set_env_var(
-        MONTY_LOGS_VAR, default_value=monty_logs_dir_default
+        MONTY_LOGS, default_value=monty_logs_dir_default
     )
-    env_paths[MONTY_LOGS_VAR] = monty_logs_dir
+    env_paths[MONTY_LOGS] = monty_logs_dir
 
     # Set up MONTY_MODELS (depends on MONTY_LOGS)
     monty_models_default = str(Path(monty_logs_dir) / "pretrained_models")
     monty_models_dir = _get_or_set_env_var(
-        MONTY_MODELS_VAR, default_value=monty_models_default
+        MONTY_MODELS, default_value=monty_models_default
     )
-    env_paths[MONTY_MODELS_VAR] = monty_models_dir
+    env_paths[MONTY_MODELS] = monty_models_dir
 
     # Set up MONTY_DATA
-    monty_data_dir = _get_or_set_env_var(MONTY_DATA_VAR, default_value="~/tbp/data/")
-    env_paths[MONTY_DATA_VAR] = monty_data_dir
+    monty_data_dir = _get_or_set_env_var(MONTY_DATA, default_value="~/tbp/data/")
+    env_paths[MONTY_DATA] = monty_data_dir
 
     # Set up WANDB_DIR (uses MONTY_LOGS as default)
-    wandb_dir = _get_or_set_env_var(WANDB_DIR_VAR, default_value=monty_logs_dir)
-    env_paths[WANDB_DIR_VAR] = wandb_dir
+    wandb_dir = _get_or_set_env_var(WANDB_DIR, default_value=monty_logs_dir)
+    env_paths[WANDB_DIR] = wandb_dir
 
     return env_paths
 
