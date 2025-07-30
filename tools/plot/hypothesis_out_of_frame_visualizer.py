@@ -22,8 +22,8 @@ from scipy.spatial import ConvexHull
 from scipy.spatial.transform import Rotation as R
 from vedo import (
     Mesh,
-    Points,
     Plotter,
+    Points,
     Sphere,
     Text2D,
     settings,
@@ -114,13 +114,13 @@ class ObjectModel:
         out.pos = pos
         return out
 
-    def __add__(self, translation: np.ndarray) -> "ObjectModel":
+    def __add__(self, translation: np.ndarray) -> ObjectModel:
         translation = np.asarray(translation)
         out = self.copy(deep=True)
         out.pos += translation
         return out
 
-    def __sub__(self, translation: np.ndarray) -> "ObjectModel":
+    def __sub__(self, translation: np.ndarray) -> ObjectModel:
         translation = np.asarray(translation)
         return self + (-translation)
 
@@ -157,7 +157,8 @@ def load_object_model(
         pretrain_dir = pretrain_dir / "surf_agent_1lm_77obj" / "pretrained"
     else:
         raise ValueError(
-            f"The experiment name must contain 'dist' or 'surf' in order to load correct pretrained model for objects."
+            "The experiment name must contain 'dist' or 'surf' in order to load "
+            "correct pretrained model for objects."
         )
 
     model_path = pretrain_dir / "model.pt"
@@ -207,10 +208,20 @@ class TargetHypothesisVisualizer:
         self.object_points = None
         self.object_center = None
         self.object_convex_hull = None
+        self.object_convex_hull_edges = None
+        self.convex_hull_visible = True
         self.mlh_sphere = None
         self.stats_text = None
         self.slider = None
         self.plotter = None
+        self.hull_button = None
+
+        # Store current data for display
+        self.current_target_locations = None
+        self.current_target_evidences = None
+        
+        # Store convex hull
+        self.expanded_hull = None
 
         # Load data
         self.load_episode_data()
@@ -304,7 +315,8 @@ class TargetHypothesisVisualizer:
                 self.model_name, self.target_object_name
             )
             print(
-                f"Loaded {self.target_object_name} model with {len(self.target_model.pos)} points"
+                f"Loaded {self.target_object_name} model with "
+                f"{len(self.target_model.pos)} points"
             )
         except Exception as e:
             print(f"Warning: Could not load {self.target_object_name} model: {e}")
@@ -313,7 +325,10 @@ class TargetHypothesisVisualizer:
     def create_interactive_visualization(self) -> None:
         """Create interactive visualization with slider for timestep navigation."""
         self.plotter = Plotter(
-            title=f"Sensor Location Hypotheses for {self.target_object_name.title()} - Episode 0"
+            title=(
+                f"Sensor Location Hypotheses for {self.target_object_name.title()} "
+                "- Episode 0"
+            )
         )
 
         # Add slider
@@ -329,6 +344,16 @@ class TargetHypothesisVisualizer:
         # Initial visualization
         self.update_visualization(0)
 
+        # Add toggle button for convex hull
+        self.hull_button = self.plotter.add_button(
+            self.toggle_convex_hull,
+            pos=(0.9, 0.1),
+            states=["Hide Hull", "Show Hull"],
+            font="Calco",
+            bold=True,
+        )
+
+
         # Show
         self.plotter.show(
             axes={
@@ -343,9 +368,9 @@ class TargetHypothesisVisualizer:
             interactive=True,
         )
 
-    def slider_callback(self, widget, event) -> None:
+    def slider_callback(self, widget, event) -> None:  # noqa: ARG002
         """Handle slider value changes."""
-        timestep = int(round(widget.GetRepresentation().GetValue()))
+        timestep = round(widget.GetRepresentation().GetValue())
         if timestep != self.current_timestep:
             self.update_visualization(timestep)
             self.plotter.render()
@@ -367,9 +392,17 @@ class TargetHypothesisVisualizer:
         mlh_location = self.all_mlh_locations[timestep]
         mlh_graph_id = self.all_mlh_graph_ids[timestep]
 
+        # Store current data
+        self.current_target_locations = target_locations
+        self.current_target_evidences = target_evidences
+
         # Remove previous objects if they exist
         if self.hypothesis_points is not None:
-            self.plotter.remove(self.hypothesis_points)
+            if isinstance(self.hypothesis_points, list):
+                for pts in self.hypothesis_points:
+                    self.plotter.remove(pts)
+            else:
+                self.plotter.remove(self.hypothesis_points)
         if self.mlh_sphere is not None:
             self.plotter.remove(self.mlh_sphere)
         if self.stats_text is not None:
@@ -399,42 +432,81 @@ class TargetHypothesisVisualizer:
                 )
             )
 
-        # Create hypothesis points colored by evidence
+        # Create hypothesis points colored by whether they're inside convex hull
         if len(target_evidences) > 0:
-            # Normalize evidence to [0, 1] for coloring
-            # Use log scale for better visualization
-            evidence_shifted = (
-                target_evidences - target_evidences.min() + 1.0
-            )  # Shift to positive
-            evidence_log = np.log(evidence_shifted)
-            evidence_norm = (evidence_log - evidence_log.min()) / (
-                evidence_log.max() - evidence_log.min() + 1e-8
-            )
+            # Check if each hypothesis point is inside the convex hull
+            in_hull = np.zeros(len(target_locations), dtype=bool)
 
-            # Create points with color based on evidence
-            self.hypothesis_points = Points(target_locations)
-            self.hypothesis_points.point_size(8)  # Increased from 4 to 8
+            if hasattr(self, 'expanded_hull') and self.expanded_hull is not None:
+                # Check each point against the convex hull
+                for i, point in enumerate(target_locations):
+                    # A point is inside a convex hull if it can be expressed as a 
+                    # convex combination of the hull's vertices
+                    # We use the Delaunay triangulation approach
+                    in_hull[i] = self.is_point_in_hull(point, self.expanded_hull)
 
-            # Apply colormap - using 'jet' for better contrast
-            self.hypothesis_points.pointdata["Evidence"] = evidence_norm
-            self.hypothesis_points = self.hypothesis_points.cmap("jet", "Evidence")
-            self.plotter.add(self.hypothesis_points)
+            # Separate points into inside and outside groups
+            inside_points = target_locations[in_hull]
+            outside_points = target_locations[~in_hull]
+
+            # Create a list to hold all point clouds
+            point_clouds = []
+
+            # Create points for inside hull (green)
+            if len(inside_points) > 0:
+                inside_pts = Points(inside_points, c="green")
+                inside_pts.point_size(8)
+                point_clouds.append(inside_pts)
+                self.plotter.add(inside_pts)
+
+            # Create points for outside hull (red)
+            if len(outside_points) > 0:
+                outside_pts = Points(outside_points, c="red")  # Use darker red
+                outside_pts.point_size(4)  # Smaller size than green points
+                point_clouds.append(outside_pts)
+                self.plotter.add(outside_pts)
+
+            # Store reference to all point clouds for removal later
+            self.hypothesis_points = point_clouds
 
         # Add current MLH location if available
         if mlh_location is not None:
-            self.mlh_sphere = Sphere(mlh_location, r=0.005, c="red")
+            # Check if MLH is inside convex hull
+            mlh_color = "red"  # Default color
+            if hasattr(self, 'expanded_hull') and self.expanded_hull is not None:
+                if self.is_point_in_hull(mlh_location, self.expanded_hull):
+                    mlh_color = "green"  # Inside hull
+                else:
+                    mlh_color = "red"    # Outside hull
+            
+            self.mlh_sphere = Sphere(mlh_location, r=0.005, c=mlh_color)
             self.plotter.add(self.mlh_sphere)
 
         # Update statistics text
         if len(target_evidences) > 0:
             max_evidence_idx = np.argmax(target_evidences)
             max_evidence_location = target_locations[max_evidence_idx]
+
+            # Count points inside/outside hull
+            num_inside = 0
+            num_outside = 0
+            if hasattr(self, 'expanded_hull') and self.expanded_hull is not None:
+                for point in target_locations:
+                    if self.is_point_in_hull(point, self.expanded_hull):
+                        num_inside += 1
+                    else:
+                        num_outside += 1
+            else:
+                num_outside = len(target_locations)
+
             stats_text = (
                 f"Target: {self.target_object_name}\n"
                 f"Object position: [{self.target_position[0]:.3f}, "
                 f"{self.target_position[1]:.3f}, {self.target_position[2]:.3f}]\n"
                 f"Timestep: {timestep}\n"
                 f"Total sensor location hypotheses: {len(target_locations)}\n"
+                f"Inside convex hull: {num_inside} (green)\n"
+                f"Outside convex hull: {num_outside} (red)\n"
                 f"Evidence range: [{target_evidences.min():.4f}, "
                 f"{target_evidences.max():.4f}]\n"
                 f"Best sensor hypothesis: [{max_evidence_location[0]:.3f}, "
@@ -443,15 +515,68 @@ class TargetHypothesisVisualizer:
 
             # Add MLH info if available
             if mlh_location is not None:
+                # Check MLH hull status
+                mlh_status = "outside hull"
+                if hasattr(self, 'expanded_hull') and self.expanded_hull is not None:
+                    if self.is_point_in_hull(mlh_location, self.expanded_hull):
+                        mlh_status = "inside hull (green)"
+                    else:
+                        mlh_status = "outside hull (red)"
+                
                 stats_text += (
                     f"\nCurrent MLH location: [{mlh_location[0]:.3f}, "
-                    f"{mlh_location[1]:.3f}, {mlh_location[2]:.3f}]"
+                    f"{mlh_location[1]:.3f}, {mlh_location[2]:.3f}] - {mlh_status}"
                 )
                 if mlh_graph_id:
                     stats_text += f"\nCurrent MLH object: {mlh_graph_id}"
 
             self.stats_text = Text2D(stats_text, pos="top-right", s=0.7)
             self.plotter.add(self.stats_text)
+
+    def toggle_convex_hull(self, widget, event) -> None:
+        """Toggle the visibility of the convex hull."""
+        self.convex_hull_visible = not self.convex_hull_visible
+
+        if self.object_convex_hull is not None:
+            if self.convex_hull_visible:
+                self.object_convex_hull.on()
+                if self.object_convex_hull_edges is not None:
+                    self.object_convex_hull_edges.on()
+            else:
+                self.object_convex_hull.off()
+                if self.object_convex_hull_edges is not None:
+                    self.object_convex_hull_edges.off()
+
+        # Update button text
+        if self.hull_button is not None:
+            self.hull_button.switch()
+
+        self.plotter.render()
+
+    def is_point_in_hull(self, point: np.ndarray, hull: ConvexHull) -> bool:
+        """Check if a point is inside a convex hull.
+        
+        Args:
+            point: 3D point to check
+            hull: ConvexHull object
+            
+        Returns:
+            True if point is inside hull, False otherwise
+        """
+        # Get the equations of the hull facets (planes)
+        # Each equation is of the form: a*x + b*y + c*z + d <= 0 for points inside
+        equations = hull.equations
+        
+        # Check if point satisfies all plane equations
+        # Homogeneous coordinates: append 1 to the point
+        point_h = np.append(point, 1)
+        
+        # Check all facets
+        distances = equations @ point_h
+        
+        # Point is inside if all distances are <= tolerance
+        # Using small positive tolerance to handle numerical errors
+        return bool(np.all(distances <= 1e-10))
 
     def create_convex_hull(self, model: ObjectModel) -> None:
         """Create a convex hull around the object with padding.
@@ -483,10 +608,10 @@ class TargetHypothesisVisualizer:
         expanded_vertices = np.array(expanded_vertices)
 
         # Create new convex hull from expanded vertices
-        expanded_hull = ConvexHull(expanded_vertices)
+        self.expanded_hull = ConvexHull(expanded_vertices)
 
         # Create mesh from convex hull
-        faces = expanded_hull.simplices
+        faces = self.expanded_hull.simplices
 
         # Create vedo Mesh
         self.object_convex_hull = Mesh([expanded_vertices, faces])
@@ -495,14 +620,13 @@ class TargetHypothesisVisualizer:
         self.object_convex_hull.wireframe(False)  # Show as solid with transparency
 
         # Add edge representation for better visibility
-        edges = self.object_convex_hull.clone()
-        edges.wireframe(True)
-        edges.color("blue")
-        edges.alpha(0.5)
+        self.object_convex_hull_edges = self.object_convex_hull.clone()
+        self.object_convex_hull_edges.wireframe(True)
+        self.object_convex_hull_edges.color("blue")
+        self.object_convex_hull_edges.alpha(0.5)
 
         self.plotter.add(self.object_convex_hull)
-        self.plotter.add(edges)
-
+        self.plotter.add(self.object_convex_hull_edges)
 
 def plot_target_hypotheses(
     exp_path: str,
