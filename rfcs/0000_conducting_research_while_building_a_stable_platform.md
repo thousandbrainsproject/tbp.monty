@@ -47,7 +47,7 @@ For a platform, there is only so much change that platform users can absorb. Whi
 
 ### Conflicting Goals
 
-So, our challenge is to navigate the conflicting goals of research and platform development. Research is the source of new capabilities. Platform, on which solution are built, is usable and stable.
+So, our challenge is to navigate the conflicting goals of research and platform development. Research is the source of new capabilities. Platform, on which solutions are built, is usable and stable.
 
 # Rapid Prototyping Followed By Platform Integration
 
