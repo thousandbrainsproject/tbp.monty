@@ -18,8 +18,10 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import torch
+from scipy.spatial import ConvexHull
 from scipy.spatial.transform import Rotation as R
 from vedo import (
+    Mesh,
     Points,
     Plotter,
     Sphere,
@@ -182,10 +184,16 @@ def load_object_model(
 class TargetHypothesisVisualizer:
     """Interactive visualization of target object hypotheses across timesteps."""
 
-    def __init__(self, json_path: str, model_name: str = "dist_agent_1lm"):
+    def __init__(
+        self,
+        json_path: str,
+        model_name: str = "dist_agent_1lm",
+        bounding_box_padding: float = 0.1,
+    ):
         self.json_path = json_path
         self.model_name = model_name
         self.current_timestep = 0
+        self.hull_padding = bounding_box_padding  # Percentage padding for convex hull
 
         # Will store data for all timesteps
         self.all_target_locations = []
@@ -198,6 +206,7 @@ class TargetHypothesisVisualizer:
         self.hypothesis_points = None
         self.object_points = None
         self.object_center = None
+        self.object_convex_hull = None
         self.mlh_sphere = None
         self.stats_text = None
         self.slider = None
@@ -378,6 +387,9 @@ class TargetHypothesisVisualizer:
             self.object_points.point_size(10)
             self.plotter.add(self.object_points)
 
+            # Create convex hull
+            self.create_convex_hull(model)
+
             # Add label
             self.plotter.add(
                 Text2D(
@@ -419,33 +431,90 @@ class TargetHypothesisVisualizer:
             max_evidence_location = target_locations[max_evidence_idx]
             stats_text = (
                 f"Target: {self.target_object_name}\n"
-                f"Object position: [{self.target_position[0]:.3f}, {self.target_position[1]:.3f}, {self.target_position[2]:.3f}]\n"
+                f"Object position: [{self.target_position[0]:.3f}, "
+                f"{self.target_position[1]:.3f}, {self.target_position[2]:.3f}]\n"
                 f"Timestep: {timestep}\n"
                 f"Total sensor location hypotheses: {len(target_locations)}\n"
                 f"Evidence range: [{target_evidences.min():.4f}, "
                 f"{target_evidences.max():.4f}]\n"
-                f"Best sensor hypothesis: [{max_evidence_location[0]:.3f}, {max_evidence_location[1]:.3f}, {max_evidence_location[2]:.3f}]"
+                f"Best sensor hypothesis: [{max_evidence_location[0]:.3f}, "
+                f"{max_evidence_location[1]:.3f}, {max_evidence_location[2]:.3f}]"
             )
 
             # Add MLH info if available
             if mlh_location is not None:
-                stats_text += f"\nCurrent MLH location: [{mlh_location[0]:.3f}, {mlh_location[1]:.3f}, {mlh_location[2]:.3f}]"
+                stats_text += (
+                    f"\nCurrent MLH location: [{mlh_location[0]:.3f}, "
+                    f"{mlh_location[1]:.3f}, {mlh_location[2]:.3f}]"
+                )
                 if mlh_graph_id:
                     stats_text += f"\nCurrent MLH object: {mlh_graph_id}"
 
             self.stats_text = Text2D(stats_text, pos="top-right", s=0.7)
             self.plotter.add(self.stats_text)
 
+    def create_convex_hull(self, model: ObjectModel) -> None:
+        """Create a convex hull around the object with padding.
+
+        Args:
+            model: The object model to create convex hull for
+        """
+        # Get object points
+        points = model.pos
+
+        # Calculate the center of the object
+        center = np.mean(points, axis=0)
+
+        # Compute convex hull
+        hull = ConvexHull(points)
+
+        # Get hull vertices
+        hull_points = points[hull.vertices]
+
+        # Expand hull vertices by moving them away from center
+        expanded_vertices = []
+        for vertex in hull_points:
+            # Calculate direction from center to vertex
+            direction = vertex - center
+            # Normalize and scale by (1 + padding percentage)
+            expanded_vertex = center + direction * (1 + self.hull_padding)
+            expanded_vertices.append(expanded_vertex)
+
+        expanded_vertices = np.array(expanded_vertices)
+
+        # Create new convex hull from expanded vertices
+        expanded_hull = ConvexHull(expanded_vertices)
+
+        # Create mesh from convex hull
+        faces = expanded_hull.simplices
+
+        # Create vedo Mesh
+        self.object_convex_hull = Mesh([expanded_vertices, faces])
+        self.object_convex_hull.color("cyan")
+        self.object_convex_hull.alpha(0.2)
+        self.object_convex_hull.wireframe(False)  # Show as solid with transparency
+
+        # Add edge representation for better visibility
+        edges = self.object_convex_hull.clone()
+        edges.wireframe(True)
+        edges.color("blue")
+        edges.alpha(0.5)
+
+        self.plotter.add(self.object_convex_hull)
+        self.plotter.add(edges)
+
 
 def plot_target_hypotheses(
     exp_path: str,
     model_name: str = "dist_agent_1lm",
+    bounding_box_padding: float = 0.1,
 ) -> int:
     """Plot target object hypotheses with interactive timestep slider.
 
     Args:
         exp_path: Path to experiment directory containing detailed_run_stats.json
         model_name: Name of pretrained model to load object from
+        bounding_box_padding: Padding percentage for bounding box (default: 0.1 = 10%)
 
     Returns:
         Exit code
@@ -457,12 +526,15 @@ def plot_target_hypotheses(
         return 1
 
     try:
-        visualizer = TargetHypothesisVisualizer(str(json_path), model_name)
+        visualizer = TargetHypothesisVisualizer(
+            str(json_path), model_name, bounding_box_padding
+        )
         visualizer.create_interactive_visualization()
-        return 0
-    except Exception as e:
-        logger.error(f"Error creating visualization: {e}")
+    except Exception:
+        logger.exception("Error creating visualization")
         return 1
+    else:
+        return 0
 
 
 def add_subparser(
@@ -484,11 +556,18 @@ def add_subparser(
         default="dist_agent_1lm",
         help="Name of pretrained model to load target object from.",
     )
+    parser.add_argument(
+        "--bounding_box_padding",
+        type=float,
+        default=0.1,
+        help="Padding percentage for bounding box (default: 0.1 = 10%).",
+    )
     parser.set_defaults(
         func=lambda args: sys.exit(
             plot_target_hypotheses(
                 args.experiment_log_dir,
                 args.model_name,
+                args.bounding_box_padding,
             )
         )
     )
