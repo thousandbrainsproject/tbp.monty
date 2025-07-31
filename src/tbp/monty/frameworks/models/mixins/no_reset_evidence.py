@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -30,9 +30,16 @@ class HypothesesUpdaterChannelTelemetry:
     """Telemetry from HypothesesUpdater for a single input channel."""
 
     hypotheses_updater: dict[str, Any]
+    """Any telemetry from the hypotheses updater."""
     evidence: npt.NDArray[np.float64]
+    """The hypotheses evidence scores."""
     rotations: npt.NDArray[np.float64]
-    pose_errors: npt.NDArray[np.float64] | float
+    """Rotations of the hypotheses.
+
+    Note that the buffer encoder will encode those as euler "xyz" rotations in degrees.
+    """
+    pose_errors: npt.NDArray[np.float64]
+    """Rotation errors relative to the target pose."""
 
 
 HypothesesUpdaterGraphTelemetry = Dict[str, HypothesesUpdaterChannelTelemetry]
@@ -121,11 +128,7 @@ class TheoreticalLimitLMLoggingMixin:
             channel_telemetry: Telemetry for the specific input channel.
 
         Returns:
-            A dictionary containing telemetry in `channel_telemetry` and:
-                - evidence: The hypotheses evidence scores.
-                - rotations: Rotations of the hypotheses. Note that the buffer encoder
-                    will encode those as euler "xyz" rotations in degrees.
-                - pose_errors: Rotation errors relative to the target pose.
+            HypothesesUpdaterChannelTelemetry for the given graph ID and input channel.
         """
         mapper = self.channel_hypothesis_mapping[graph_id]
         channel_rotations = mapper.extract(self.possible_poses[graph_id], input_channel)
@@ -136,9 +139,12 @@ class TheoreticalLimitLMLoggingMixin:
             hypotheses_updater=channel_telemetry.copy(),
             evidence=channel_evidence,
             rotations=channel_rotations_inv,
-            pose_errors=compute_pose_errors(
-                channel_rotations_inv,
-                Rotation.from_quat(self.primary_target_rotation_quat),
+            pose_errors=cast(
+                npt.NDArray[np.float64],
+                compute_pose_errors(
+                    channel_rotations_inv,
+                    Rotation.from_quat(self.primary_target_rotation_quat),
+                ),
             ),
         )
 
