@@ -60,7 +60,7 @@ To contribute a substantial change to Monty, you must first merge the RFC into t
    - This step is taken when enough of the tradeoffs have been discussed so that the Maintainers can decide. This does not require consensus amongst all participants in the RFC thread (which is usually impossible). However, the argument supporting the disposition of the RFC needs to have already been clearly articulated, and there should not be a strong consensus _against_ that position. Maintainers use their best judgment in taking this step, and the FCP itself ensures there is ample time and notification for stakeholders to push back if it is made prematurely.
    - For RFCs with lengthy discussions, the motion for FCP is usually preceded by a _summary comment_ that attempts to outline the current state of the discussion and major tradeoffs/points of disagreement.
 8. The FCP lasts **until all Maintainers approve or abstain from the disposition**. This way, all stakeholders can lodge any final objections before reaching a decision.
-9. Once the FCP elapses, the **RFC is either merged or closed.** If substantial new arguments or ideas are raised, the FCP is canceled, and the RFC goes back into development mode. The assigned Maintainer is the responsible for merging or closing.
+9. Once the FCP elapses, the **RFC is either merged or closed.** If substantial new arguments or ideas are raised, the FCP is canceled, and the RFC goes back into development mode. The assigned Maintainer is the one responsible for merging or closing.
    > [!NOTE]
    > Maintainers
    >
