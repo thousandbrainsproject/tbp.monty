@@ -290,14 +290,13 @@ class HypothesesVisualizer:
         self.hull_padding = bounding_box_padding
 
         # Data for all timesteps
-        self.all_target_locations = []
-        self.all_target_evidences = []
+        self.all_hypotheses_locations = []
+        self.all_hypotheses_evidences = []
         self.all_mlh_locations = []
         self.all_mlh_rotations = []
         self.all_mlh_graph_ids = []
 
-        # Visualization objects
-        self.hypothesis_points = None
+        self.hypotheses = None
         self.object_points = None
         self.object_center = None
         self.object_convex_hull = None
@@ -349,17 +348,17 @@ class HypothesesVisualizer:
         for timestep in range(self.num_timesteps):
             timestep_data = self.lm_data["possible_locations"][timestep]
             if self.target_object_name in timestep_data:
-                self.all_target_locations.append(
+                self.all_hypotheses_locations.append(
                     np.array(timestep_data[self.target_object_name])
                 )
-                self.all_target_evidences.append(
+                self.all_hypotheses_evidences.append(
                     np.array(
                         self.lm_data["evidences"][timestep][self.target_object_name]
                     )
                 )
             else:
-                self.all_target_locations.append(np.array([]))
-                self.all_target_evidences.append(np.array([]))
+                self.all_hypotheses_locations.append(np.array([]))
+                self.all_hypotheses_evidences.append(np.array([]))
 
             # Extract MLH data if available
             if "current_mlh" in self.lm_data and timestep < len(
@@ -383,7 +382,6 @@ class HypothesesVisualizer:
                 self.all_mlh_rotations.append(None)
                 self.all_mlh_graph_ids.append(None)
 
-        # Get target object pose
         self.target_position = np.array(
             self.target_data.get(
                 "primary_target_position", self.target_data.get("position", [0, 0, 0])
@@ -395,13 +393,14 @@ class HypothesesVisualizer:
                 self.target_data.get("euler_rotation", [0, 0, 0]),
             )
         )
-        logger.info(f"{self.target_object_name} is at position: {self.target_position}")
+        logger.info(
+            f"{self.target_object_name} is at position: {self.target_position} "
+            f"and rotation: {self.target_rotation}"
+        )
 
     def load_target_model(self) -> None:
         """Load the target object model."""
-        self.target_model = load_object_model(
-            self.model_name, self.target_object_name
-        )
+        self.target_model = load_object_model(self.model_name, self.target_object_name)
         logger.info(
             f"Loaded {self.target_object_name} model with "
             f"{len(self.target_model.pos)} points"
@@ -450,33 +449,27 @@ class HypothesesVisualizer:
         """Update visualization for given timestep."""
         self.current_timestep = timestep
 
-        # Get data for current timestep
-        target_locations, target_evidences, mlh_location, mlh_graph_id = (
+        hypotheses_locations, hypotheses_evidences, mlh_location, mlh_graph_id = (
             self._get_timestep_data(timestep)
         )
 
-        # Cleanup previous visualizations
         self._cleanup_previous_visualizations()
 
-        # Initialize object visualization on first call
         if self.object_points is None and self.target_model is not None:
             self._initialize_object_visualization()
 
-        # Create hypothesis points
-        if len(target_evidences) > 0:
-            self._add_hypotheses(target_locations, target_evidences)
+        self._add_hypotheses(hypotheses_locations, hypotheses_evidences)
+        self._add_mlh_sphere(mlh_location)
 
-        # Add MLH sphere if available
-        if mlh_location is not None:
-            self._add_mlh_sphere(mlh_location)
-
-        # Update statistics text
-        if len(target_evidences) > 0:
-            stats_text = self._create_statistics_text(
-                timestep, target_locations, target_evidences, mlh_location, mlh_graph_id
-            )
-            self.stats_text = Text2D(stats_text, pos="top-right", s=0.7)
-            self.plotter.add(self.stats_text)
+        stats_text = self._create_statistics_text(
+            timestep,
+            hypotheses_locations,
+            hypotheses_evidences,
+            mlh_location,
+            mlh_graph_id,
+        )
+        self.stats_text = Text2D(stats_text, pos="top-right", s=0.7)
+        self.plotter.add(self.stats_text)
 
     def slider_callback(self, widget: Slider2D, _event: str) -> None:
         """Respond to slider step by updating the visualization."""
@@ -505,31 +498,31 @@ class HypothesesVisualizer:
 
     def _get_timestep_data(self, timestep: int) -> tuple:
         """Get data for a specific timestep.
-        
+
         Args:
             timestep: The timestep to retrieve data for
-            
+
         Returns:
-            Tuple of (target_locations, target_evidences, mlh_location, mlh_graph_id)
+            Tuple of (hypotheses_locations, hypotheses_evidences, mlh_location, mlh_graph_id)
         """
-        target_locations = self.all_target_locations[timestep]
-        target_evidences = self.all_target_evidences[timestep]
+        hypotheses_locations = self.all_hypotheses_locations[timestep]
+        hypotheses_evidences = self.all_hypotheses_evidences[timestep]
         mlh_location = self.all_mlh_locations[timestep]
         mlh_graph_id = self.all_mlh_graph_ids[timestep]
 
-        self.current_target_locations = target_locations
-        self.current_target_evidences = target_evidences
+        self.current_hypotheses_locations = hypotheses_locations
+        self.current_hypotheses_evidences = hypotheses_evidences
 
-        return target_locations, target_evidences, mlh_location, mlh_graph_id
+        return hypotheses_locations, hypotheses_evidences, mlh_location, mlh_graph_id
 
     def _cleanup_previous_visualizations(self) -> None:
         """Remove previous visualization objects from the plotter."""
-        if self.hypothesis_points is not None:
-            if isinstance(self.hypothesis_points, list):
-                for pts in self.hypothesis_points:
+        if self.hypotheses is not None:
+            if isinstance(self.hypotheses, list):
+                for pts in self.hypotheses:
                     self.plotter.remove(pts)
             else:
-                self.plotter.remove(self.hypothesis_points)
+                self.plotter.remove(self.hypotheses)
         if self.mlh_sphere is not None:
             self.plotter.remove(self.mlh_sphere)
         if self.stats_text is not None:
@@ -554,10 +547,10 @@ class HypothesesVisualizer:
 
     def _count_points_in_hull(self, points: np.ndarray) -> tuple[int, int]:
         """Count how many points are inside and outside the hull.
-        
+
         Args:
             points: Array of 3D points to check
-            
+
         Returns:
             Tuple of (num_inside, num_outside)
         """
@@ -573,52 +566,49 @@ class HypothesesVisualizer:
         return num_inside, num_outside
 
     def _add_hypotheses(
-        self, target_locations: np.ndarray, target_evidences: np.ndarray
+        self, hypotheses_locations: np.ndarray, hypotheses_evidences: np.ndarray
     ) -> None:
         """Create hypothesis points colored by whether they're inside convex hull.
-        
+
         Args:
-            target_locations: Array of hypothesis locations
-            target_evidences: Array of evidence values for each hypothesis
+            hypotheses_locations: Array of hypothesis locations
+            hypotheses_evidences: Array of evidence values for each hypothesis
         """
         # Check if each hypothesis point is inside the convex hull
-        in_hull = np.zeros(len(target_locations), dtype=bool)
+        in_hull = np.zeros(len(hypotheses_locations), dtype=bool)
 
-        for i, point in enumerate(target_locations):
+        for i, point in enumerate(hypotheses_locations):
             in_hull[i] = is_point_in_hull(point, self.expanded_hull)
 
-        # Separate points into inside and outside groups
-        inside_points = target_locations[in_hull]
-        outside_points = target_locations[~in_hull]
+        inside_points = hypotheses_locations[in_hull]
+        outside_points = hypotheses_locations[~in_hull]
 
-        # Create a list to hold all point clouds
+        # Plot hypotheses separately for inside and outside hull with different colors
         point_clouds = []
 
-        # Create points for inside hull (green)
         if len(inside_points) > 0:
             inside_pts = Points(inside_points, c="green")
             inside_pts.point_size(8)
             point_clouds.append(inside_pts)
             self.plotter.add(inside_pts)
 
-        # Create points for outside hull (red)
         if len(outside_points) > 0:
             outside_pts = Points(outside_points, c="red")
-            outside_pts.point_size(4)  # Smaller size than green points
+            outside_pts.point_size(4)
             point_clouds.append(outside_pts)
             self.plotter.add(outside_pts)
 
-        # Store reference to all point clouds for removal later
-        self.hypothesis_points = point_clouds
+        self.hypotheses = point_clouds
 
     def _add_mlh_sphere(self, mlh_location: np.ndarray) -> None:
         """Add MLH sphere visualization.
-        
+
         Args:
             mlh_location: 3D location of the most likely hypothesis
         """
-        # Check if MLH is inside convex hull
-        mlh_color = "green" if is_point_in_hull(mlh_location, self.expanded_hull) else "red"
+        mlh_color = (
+            "green" if is_point_in_hull(mlh_location, self.expanded_hull) else "red"
+        )
 
         self.mlh_sphere = Sphere(mlh_location, r=0.005, c=mlh_color)
         self.plotter.add(self.mlh_sphere)
@@ -650,56 +640,41 @@ class HypothesesVisualizer:
     def _create_statistics_text(
         self,
         timestep: int,
-        target_locations: np.ndarray,
-        target_evidences: np.ndarray,
-        mlh_location: np.ndarray | None,
-        mlh_graph_id: str | None,
+        hypotheses_locations: np.ndarray,
+        hypotheses_evidences: np.ndarray,
+        mlh_location: np.ndarray,
+        mlh_graph_id: str,
     ) -> str:
         """Create statistics text for display.
-        
+
         Args:
             timestep: Current timestep
-            target_locations: Array of hypothesis locations
-            target_evidences: Array of evidence values
-            mlh_location: Location of most likely hypothesis (or None)
-            mlh_graph_id: Graph ID of most likely hypothesis (or None)
-            
+            hypotheses_locations: Array of hypothesis locations
+            hypotheses_evidences: Array of evidence values
+            mlh_location: Location of most likely hypothesis
+            mlh_graph_id: Graph ID of most likely hypothesis
+
         Returns:
             Formatted statistics text
         """
-        max_evidence_idx = np.argmax(target_evidences)
-        max_evidence_location = target_locations[max_evidence_idx]
-
-        # Count points inside/outside hull
-        num_inside, num_outside = self._count_points_in_hull(target_locations)
+        num_inside, num_outside = self._count_points_in_hull(hypotheses_locations)
 
         stats_text = (
             f"Target: {self.target_object_name}\n"
             f"Object position: [{self.target_position[0]:.3f}, "
             f"{self.target_position[1]:.3f}, {self.target_position[2]:.3f}]\n"
+            f"Object rotation: [{self.target_rotation[0]:.3f}, "
+            f"{self.target_rotation[1]:.3f}, {self.target_rotation[2]:.3f}]\n\n"
             f"Timestep: {timestep}\n"
-            f"Total sensor location hypotheses: {len(target_locations)}\n"
+            f"Total number of hypotheses: {len(hypotheses_locations)}\n"
             f"Inside convex hull: {num_inside} (green)\n"
             f"Outside convex hull: {num_outside} (red)\n"
-            f"Evidence range: [{target_evidences.min():.4f}, "
-            f"{target_evidences.max():.4f}]\n"
-            f"Best sensor hypothesis: [{max_evidence_location[0]:.3f}, "
-            f"{max_evidence_location[1]:.3f}, {max_evidence_location[2]:.3f}]"
+            f"Evidence range: [{hypotheses_evidences.min():.4f}, "
+            f"{hypotheses_evidences.max():.4f}]\n"
+            f"Current MLH object: {mlh_graph_id}\n"
+            f"MLH location: [{mlh_location[0]:.3f}, {mlh_location[1]:.3f}, "
+            f"{mlh_location[2]:.3f}]"
         )
-
-        # Add MLH info if available
-        if mlh_location is not None:
-            mlh_status = (
-                "inside hull (green)"
-                if is_point_in_hull(mlh_location, self.expanded_hull)
-                else "outside hull (red)"
-            )
-            stats_text += (
-                f"\nCurrent MLH location: [{mlh_location[0]:.3f}, "
-                f"{mlh_location[1]:.3f}, {mlh_location[2]:.3f}] - {mlh_status}"
-            )
-            if mlh_graph_id:
-                stats_text += f"\nCurrent MLH object: {mlh_graph_id}"
 
         return stats_text
 
@@ -725,9 +700,7 @@ def plot_target_hypotheses(
         logger.error(f"Could not find detailed_run_stats.json at {json_path}")
         return 1
 
-    visualizer = HypothesesVisualizer(
-        str(json_path), model_name, bounding_box_padding
-    )
+    visualizer = HypothesesVisualizer(str(json_path), model_name, bounding_box_padding)
     visualizer.create_interactive_visualization()
 
     return 0
