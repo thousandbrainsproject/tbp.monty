@@ -116,7 +116,7 @@ When we decide to realign a hypothesis to a new point in the object model (after
 
 ```python
 def realign_pose(hypothesis_k, observed_pose_vectors, stored_pose_vectors):
-    """Find minimal rotation correction to align pose vectors.
+    """Realign hypothesis pose to match a new point in the object model.
     
     Args:
         hypothesis_k: The hypothesis being realigned
@@ -124,25 +124,14 @@ def realign_pose(hypothesis_k, observed_pose_vectors, stored_pose_vectors):
         stored_pose_vectors: The pose vectors from the NEW point in the object model 
                            that we are realigning to (after feature matching identified
                            this as the best match)
-    
-    Solves the problem of:
-    R_correction x R_current x stored_pose_vectors = observed_pose_vectors
-
-    We want to calculate R_correction based on stored, observed, and current hypothesis' pose, 
-    then update the hypothesis' pose with R_correction x R_current. 
     """
-    # Current pose from hypothesis
-    R_current = hypothesis_k.poses
-    
-    # Compute pose vectors in object reference frame
-    current_pose_vectors = R_current @ stored_pose_vectors.T 
-    current_pose_vectors = current_pose_vectors.T # to transform back into row vectors of surface normal, principal curvature direction 1 and 2
-    
-    # Find rotation that best aligns current to observed_pose_vectors (use existing method)
-    R_correction = align_multiple_orthonormal_vectors(current_pose_vectors.reshape(1, 3, 3), observed_pose_vectors)
-    
     # Update hypothesis pose
-    hypothesis_k.poses[k] = R_correction @ R_current
+    updated_pose = align_multiple_orthonormal_vectors(
+          stored_pose_vectors.reshape(1, 3, 3),
+          observed_pose_vectors,
+          as_scipy=False
+    )
+    return updated_pose
 ```
 
 Note that we could also use `R_correction` to see if we should reject re-anchoring, e.g. if the angle associatd with `R_correction` is larger than some threshold then it might mean we had a false match. 
