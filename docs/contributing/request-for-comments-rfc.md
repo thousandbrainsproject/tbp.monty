@@ -55,12 +55,12 @@ To contribute a substantial change to Monty, you must first merge the RFC into t
 4. **Submit an RFC [Pull Request](./pull-requests.md)**. As a pull request, the RFC will receive design feedback from the broader community, and you should be prepared to revise it in response. Title your pull request starting with `RFC` and the title of your proposal. For example, `RFC My Proposal`.
 5. Each RFC Pull Request will be triaged, given an `rfc:proposal` label, and assigned to a Maintainer who will serve as your primary point of contact for the RFC. If you are a Maintainer and you wrote the RFC, you are the point of contact and you should assign the RFC Pull Request to yourself.
 6. **Build consensus and integrate feedback**. RFCs with broad support are much more likely to make progress than those that don't receive any comments. Contact the RFC Pull Request assignee for help identifying stakeholders and obstacles.
-7. In due course, one of the Maintainers will propose a "**motion for final comment period (FCP)**" along with the _disposition_ for the RFC (merge or close).
+7. In due course, one of the Maintainers will propose a "**motion for final comment period (FCP)**" along with the _disposition_ for the RFC (merge or close). If you are a Maintainer and the author of the RFC, you can propose the FCP yourself.
    - This can happen quickly, or it can take a while.
    - This step is taken when enough of the tradeoffs have been discussed so that the Maintainers can decide. This does not require consensus amongst all participants in the RFC thread (which is usually impossible). However, the argument supporting the disposition of the RFC needs to have already been clearly articulated, and there should not be a strong consensus _against_ that position. Maintainers use their best judgment in taking this step, and the FCP itself ensures there is ample time and notification for stakeholders to push back if it is made prematurely.
    - For RFCs with lengthy discussions, the motion for FCP is usually preceded by a _summary comment_ that attempts to outline the current state of the discussion and major tradeoffs/points of disagreement.
 8. The FCP lasts **until all Maintainers approve or abstain from the disposition**. This way, all stakeholders can lodge any final objections before reaching a decision.
-9. Once the FCP elapses, the **RFC is either merged or closed.** If substantial new arguments or ideas are raised, the FCP is canceled, and the RFC goes back into development mode.
+9. Once the FCP elapses, the **RFC is either merged or closed.** If substantial new arguments or ideas are raised, the FCP is canceled, and the RFC goes back into development mode. The assigned Maintainer is the responsible for merging or closing.
    > [!NOTE]
    > Maintainers
    >
