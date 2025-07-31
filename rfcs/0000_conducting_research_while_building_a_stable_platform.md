@@ -77,7 +77,7 @@ An additional benefit of an implementation project is that it functions as a kno
 
 ## Prototypes
 
-The main goal of a prototype is to provide feedback for the Thousand Brains Theory. By explicitly not merging prototypes, we shorten the feedback loop:
+The main goal of a prototype is to provide feedback for the Thousand Brains Theory. By explicitly not merging prototypes into the main `tbp.monty` repository, we shorten the feedback loop:
 
 ```mermaid
 ---
@@ -123,6 +123,29 @@ Building the platform is essential to our vision. Engineers' primary focus is on
 # Rationale and alternatives
 
 The approach outlined in this RFC is based on the assumption that we will evolve the existing Monty code (`tbp.monty`) into our long-term stable platform. As of this writing, the Monty implementation is closely coupled to research and experimental needs. Implementation projects exist to translate from research and experimental needs to long-term stable platform needs.
+
+### Status Quo
+
+We could maintain the current state of affairs. It is worth noting that the status quo is not the worst possible undesirable feedback loop previously highlighted. What we currently do is a combination of researchers conducting experiments on forks but also merging the experimental code into `tbp.monty`. A multi-track/multi-tasking approach.
+
+```mermaid
+---
+title: Status quo feedback loop
+---
+flowchart LR
+    T(Theory) --> P(Prototype on a fork)
+    P -- Feedback --> T
+    P --> W{Partial functionality?}
+    W -- No --> P
+    W -- Merge --> Monty(Monty main)
+    Monty -- Feedback --> T
+```
+
+With the status quo, the fast feedback loop already exists. Partial functionality is merged when it is deemed ready.
+
+This approach avoids the whole concept of an implementation project, and focuses on integrating the code one pull request at a time. Merging to Monty usually calls for additional design and refactoring. If the merged partial functionality will not change, then merging partial functionality one pull request at a time is the better approach. The challenge comes if the partial functionality changes too often, before the new capability is settled. This leads to multiple rounds of rework.
+
+This RFC proposes to avoid multiple rounds of rework so that researchers can spend what we assume would be most of their time in the prototype-theory feedback loop, followed by batching all the design and refactoring merge work into a single integration project.
 
 ### Second System
 
