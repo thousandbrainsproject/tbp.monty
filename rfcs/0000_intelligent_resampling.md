@@ -52,7 +52,7 @@ class Hypotheses:
     poses: np.ndarray # numpy array of 3x3 rotation matrices, shape
 ```
 
-**Current limitation:** When a hypothesis is initialized, its `poses` attribute remains fixed. While we can create new hypotheses with different poses, these start from zero evidence and require time to accumulate confidence.
+**Current limitation:** When a hypothesis is initialized, its `poses` attribute remains fixed. While we can create new hypotheses with different poses, these start from zero evidence and require time to accumulate evidence.
 
 **Objective:** Implement a mechanism to update the location or pose of existing hypotheses without resetting their accumulated evidence values.
 
@@ -333,7 +333,7 @@ The key challenge is deciding whether to:
 - Update an existing model; this might be necessary when encountering a known object in a new setting (e.g. different lighting), if the model is incomplete (e.g. unexplored part), or it has changed (e.g., your favorite mug now has a chip in it)
 - Simply eliminate incorrect hypotheses (when the models are sufficient but we're at the wrong location/on a different object)
 
-To treat learning and inference as lying on a continuum, we can utilize metadata stored in object models as a proxy/heuristic to use prediction errors in one way or another. Heuristics may be:
+To deal with continuous learning and refinement of potentially incomplete models, we can utilize metadata stored in object models as a proxy/heuristic to use prediction errors in one way or another. Heuristics may be:
 
 - **Hypothesis coverage**: If some hypotheses remain valid after prediction errors, the existing models are likely sufficient and we should focus on hypothesis elimination. However, if all hypotheses are eliminated (or less than a certain percentage threshold), we may need to learn a new model or update an existing one.
 
