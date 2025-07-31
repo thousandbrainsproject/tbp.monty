@@ -9,8 +9,11 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Dict
 
+import numpy as np
+import numpy.typing as npt
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
@@ -20,6 +23,23 @@ from tbp.monty.frameworks.utils.logging_utils import (
     compute_pose_error,
     compute_pose_errors,
 )
+
+
+@dataclass
+class HypothesesUpdaterChannelTelemetry:
+    """Telemetry from HypothesesUpdater for a single input channel."""
+
+    hypotheses_updater: dict[str, Any]
+    evidence: npt.NDArray[np.float64]
+    rotations: npt.NDArray[np.float64]
+    pose_errors: npt.NDArray[np.float64] | float
+
+
+HypothesesUpdaterGraphTelemetry = Dict[str, HypothesesUpdaterChannelTelemetry]
+"""HypothesesUpdaterChannelTelemetry indexed by input channel."""
+
+HypothesesUpdaterTelemetry = Dict[str, HypothesesUpdaterGraphTelemetry]
+"""HypothesesUpdaterGraphTelemetry indexed by graph ID."""
 
 
 class TheoreticalLimitLMLoggingMixin:
@@ -74,13 +94,13 @@ class TheoreticalLimitLMLoggingMixin:
             stats["hypotheses_updater_telemetry"] = hypotheses_updater_telemetry
         return stats
 
-    def _hypotheses_updater_telemetry(self) -> dict[str, dict[str, dict[str, Any]]]:
+    def _hypotheses_updater_telemetry(self) -> HypothesesUpdaterTelemetry:
         """Compile hypotheses updater telemetry across all objects and input channels.
 
         Returns:
             A nested dictionary of {graph_id: {input_channel: channel_telemetry}}.
         """
-        stats = {}
+        stats: HypothesesUpdaterTelemetry = {}
         for graph_id, graph_telemetry in self.hypotheses_updater_telemetry.items():
             stats[graph_id] = {
                 input_channel: self._channel_telemetry(
@@ -92,7 +112,7 @@ class TheoreticalLimitLMLoggingMixin:
 
     def _channel_telemetry(
         self, graph_id: str, input_channel: str, channel_telemetry: dict[str, Any]
-    ) -> dict[str, Any]:
+    ) -> HypothesesUpdaterChannelTelemetry:
         """Assemble channel telemetry for specific graph ID and input channel.
 
         Args:
@@ -112,15 +132,15 @@ class TheoreticalLimitLMLoggingMixin:
         channel_rotations_inv = Rotation.from_matrix(channel_rotations).inv()
         channel_evidence = mapper.extract(self.evidence[graph_id], input_channel)
 
-        stats: dict[str, Any] = {}
-        stats["hypotheses_updater"] = channel_telemetry.copy()
-        stats["evidence"] = channel_evidence
-        stats["rotations"] = channel_rotations_inv
-        stats["pose_errors"] = compute_pose_errors(
-            channel_rotations_inv,
-            Rotation.from_quat(self.primary_target_rotation_quat),
+        return HypothesesUpdaterChannelTelemetry(
+            hypotheses_updater=channel_telemetry.copy(),
+            evidence=channel_evidence,
+            rotations=channel_rotations_inv,
+            pose_errors=compute_pose_errors(
+                channel_rotations_inv,
+                Rotation.from_quat(self.primary_target_rotation_quat),
+            ),
         )
-        return stats
 
     def _theoretical_limit_target_object_pose_error(self) -> float:
         """Compute the theoretical minimum rotation error on the target object.
