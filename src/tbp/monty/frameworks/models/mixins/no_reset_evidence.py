@@ -112,7 +112,8 @@ class TheoreticalLimitLMLoggingMixin:
         channel_rotations_inv = Rotation.from_matrix(channel_rotations).inv()
         channel_evidence = mapper.extract(self.evidence[graph_id], input_channel)
 
-        stats: dict[str, Any] = channel_telemetry.copy()
+        stats: dict[str, Any] = {}
+        stats["channel_telemetry"] = channel_telemetry.copy()
         stats["evidence"] = channel_evidence
         stats["rotations"] = channel_rotations_inv
         stats["pose_errors"] = compute_pose_errors(
