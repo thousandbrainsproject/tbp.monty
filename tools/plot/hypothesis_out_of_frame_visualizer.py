@@ -47,12 +47,14 @@ from tbp.monty.frameworks.run_env import setup_env
 if TYPE_CHECKING:
     import argparse
 
+    from vedo import Button, Slider2D
+
 logger = logging.getLogger(__name__)
 
 # Vedo settings
 settings.immediate_rendering = False
 settings.default_font = "Theemim"
-settings.default_backend = "vtk"  # Use vtk backend for standalone scripts
+settings.window_splitting_position = 0.5
 
 setup_env()
 
@@ -195,8 +197,48 @@ def load_object_model(
     return ObjectModel(points, features=feature_dict)
 
 
-class TargetHypothesisVisualizer:
-    """Interactive visualization of target object hypotheses across timesteps."""
+def is_point_in_hull(point: np.ndarray, hull: ConvexHull) -> bool:
+    """Check if a point is inside a convex hull.
+
+    Args:
+        point: 3D point to check
+        hull: ConvexHull object
+
+    Returns:
+        True if point is inside hull, False otherwise
+    """
+    # Get the equations of the hull facets (planes)
+    # Each equation is of the form: a*x + b*y + c*z + d <= 0 for points inside
+    equations = hull.equations
+
+    # Check if point satisfies all plane equations
+    # Homogeneous coordinates: append 1 to the point
+    point_h = np.append(point, 1)
+
+    # Check all facets
+    distances = equations @ point_h
+
+    # Point is inside if all distances are <= tolerance
+    # Using small positive tolerance to handle numerical errors
+    return bool(np.all(distances <= 1e-10))
+
+
+class HypothesesVisualizer:
+    """Interactive visualizer for analyzing sensor location hypotheses over time.
+
+    Args:
+        json_path: Path to the detailed_run_stats.json file containing episode data.
+        model_name: Name of pretrained model to load object from. Defaults to "dist_agent_1lm".
+        bounding_box_padding: Padding percentage for convex hull expansion. Defaults to 0.1.
+
+    Attributes:
+        hypothesis_points: Current vedo.Points representing sensor location hypotheses.
+        object_points: Current vedo.Points representing the target object point cloud.
+        object_convex_hull: Current vedo.Mesh representing the expanded convex hull.
+        mlh_sphere: Current vedo.Sphere representing the most likely hypothesis location.
+        stats_text: Text label showing statistics for current timestep.
+        target_object_name: The current object name being visualized.
+    """
 
     def __init__(
         self,
@@ -207,9 +249,9 @@ class TargetHypothesisVisualizer:
         self.json_path = json_path
         self.model_name = model_name
         self.current_timestep = 0
-        self.hull_padding = bounding_box_padding  # Percentage padding for convex hull
+        self.hull_padding = bounding_box_padding
 
-        # Will store data for all timesteps
+        # Data for all timesteps
         self.all_target_locations = []
         self.all_target_evidences = []
         self.all_mlh_locations = []
@@ -229,20 +271,21 @@ class TargetHypothesisVisualizer:
         self.plotter = None
         self.hull_button = None
 
-        # Store current data for display
         self.current_target_locations = None
         self.current_target_evidences = None
-        
-        # Store convex hull
+
         self.expanded_hull = None
 
-        # Load data
         self.load_episode_data()
         self.load_target_model()
 
     def load_episode_data(self) -> None:
-        """Load all timesteps data from JSON file."""
-        print(f"Loading episode data from: {self.json_path}")
+        """Load all timesteps data from JSON file.
+
+        Raises:
+            ValueError: If the episode 0 data is not found.
+        """
+        logger.info(f"Loading episode data from: {self.json_path}")
 
         with open(self.json_path, "r") as f:
             first_line = f.readline().strip()
@@ -255,18 +298,14 @@ class TargetHypothesisVisualizer:
         else:
             raise ValueError("Could not find episode 0 data")
 
-        # Get the actual target object name
         self.target_object_name = self.target_data.get(
             "primary_target_object", self.target_data.get("object", "")
         )
-        if not self.target_object_name:
-            raise ValueError("Could not determine target object name from episode data")
 
-        print(f"Target object for episode 0: {self.target_object_name}")
+        logger.info(f"Target object for episode 0: {self.target_object_name}")
 
-        # Get number of timesteps
         self.num_timesteps = len(self.lm_data["possible_locations"])
-        print(f"Episode has {self.num_timesteps} timesteps")
+        logger.info(f"Episode has {self.num_timesteps} timesteps")
 
         # Extract data for all timesteps
         for timestep in range(self.num_timesteps):
@@ -281,7 +320,6 @@ class TargetHypothesisVisualizer:
                     )
                 )
             else:
-                # Empty data for this timestep
                 self.all_target_locations.append(np.array([]))
                 self.all_target_evidences.append(np.array([]))
 
@@ -319,21 +357,17 @@ class TargetHypothesisVisualizer:
                 self.target_data.get("euler_rotation", [0, 0, 0]),
             )
         )
-        print(f"{self.target_object_name} is at position: {self.target_position}")
+        logger.info(f"{self.target_object_name} is at position: {self.target_position}")
 
     def load_target_model(self) -> None:
         """Load the target object model."""
-        try:
-            self.target_model = load_object_model(
-                self.model_name, self.target_object_name
-            )
-            print(
-                f"Loaded {self.target_object_name} model with "
-                f"{len(self.target_model.pos)} points"
-            )
-        except Exception as e:
-            print(f"Warning: Could not load {self.target_object_name} model: {e}")
-            self.target_model = None
+        self.target_model = load_object_model(
+            self.model_name, self.target_object_name
+        )
+        logger.info(
+            f"Loaded {self.target_object_name} model with "
+            f"{len(self.target_model.pos)} points"
+        )
 
     def create_interactive_visualization(self) -> None:
         """Create interactive visualization with slider for timestep navigation."""
@@ -343,8 +377,8 @@ class TargetHypothesisVisualizer:
                 "- Episode 0"
             )
         )
+        self.update_visualization(timestep=0)
 
-        # Add slider
         self.slider = self.plotter.add_slider(
             self.slider_callback,
             xmin=0,
@@ -353,21 +387,14 @@ class TargetHypothesisVisualizer:
             pos=[(0.2, 0.05), (0.8, 0.05)],
             title="Timestep",
         )
-
-        # Initial visualization
-        self.update_visualization(0)
-
-        # Add toggle button for convex hull
         self.hull_button = self.plotter.add_button(
-            self.toggle_convex_hull,
+            self.toggle_convex_hull_callback,
             pos=(0.9, 0.1),
             states=["Hide Hull", "Show Hull"],
             font="Calco",
             bold=True,
         )
 
-
-        # Show
         self.plotter.show(
             axes={
                 "xtitle": "X",
@@ -381,8 +408,8 @@ class TargetHypothesisVisualizer:
             interactive=True,
         )
 
-    def slider_callback(self, widget, event) -> None:  # noqa: ARG002
-        """Handle slider value changes."""
+    def slider_callback(self, widget: Slider2D, _event: str) -> None:
+        """Respond to slider step by updating the visualization."""
         timestep = round(widget.GetRepresentation().GetValue())
         if timestep != self.current_timestep:
             self.update_visualization(timestep)
@@ -392,12 +419,11 @@ class TargetHypothesisVisualizer:
         """Update visualization for given timestep."""
         self.current_timestep = timestep
 
-        # Get data for current timestep
         if (
             timestep >= len(self.all_target_locations)
             or len(self.all_target_locations[timestep]) == 0
         ):
-            print(f"No data available for timestep {timestep}")
+            logger.warning(f"No data available for timestep {timestep}")
             return
 
         target_locations = self.all_target_locations[timestep]
@@ -450,13 +476,13 @@ class TargetHypothesisVisualizer:
             # Check if each hypothesis point is inside the convex hull
             in_hull = np.zeros(len(target_locations), dtype=bool)
 
-            if hasattr(self, 'expanded_hull') and self.expanded_hull is not None:
+            if hasattr(self, "expanded_hull") and self.expanded_hull is not None:
                 # Check each point against the convex hull
                 for i, point in enumerate(target_locations):
-                    # A point is inside a convex hull if it can be expressed as a 
+                    # A point is inside a convex hull if it can be expressed as a
                     # convex combination of the hull's vertices
                     # We use the Delaunay triangulation approach
-                    in_hull[i] = self.is_point_in_hull(point, self.expanded_hull)
+                    in_hull[i] = is_point_in_hull(point, self.expanded_hull)
 
             # Separate points into inside and outside groups
             inside_points = target_locations[in_hull]
@@ -486,12 +512,12 @@ class TargetHypothesisVisualizer:
         if mlh_location is not None:
             # Check if MLH is inside convex hull
             mlh_color = "red"  # Default color
-            if hasattr(self, 'expanded_hull') and self.expanded_hull is not None:
-                if self.is_point_in_hull(mlh_location, self.expanded_hull):
+            if hasattr(self, "expanded_hull") and self.expanded_hull is not None:
+                if is_point_in_hull(mlh_location, self.expanded_hull):
                     mlh_color = "green"  # Inside hull
                 else:
-                    mlh_color = "red"    # Outside hull
-            
+                    mlh_color = "red"  # Outside hull
+
             self.mlh_sphere = Sphere(mlh_location, r=0.005, c=mlh_color)
             self.plotter.add(self.mlh_sphere)
 
@@ -503,9 +529,9 @@ class TargetHypothesisVisualizer:
             # Count points inside/outside hull
             num_inside = 0
             num_outside = 0
-            if hasattr(self, 'expanded_hull') and self.expanded_hull is not None:
+            if hasattr(self, "expanded_hull") and self.expanded_hull is not None:
                 for point in target_locations:
-                    if self.is_point_in_hull(point, self.expanded_hull):
+                    if is_point_in_hull(point, self.expanded_hull):
                         num_inside += 1
                     else:
                         num_outside += 1
@@ -530,12 +556,12 @@ class TargetHypothesisVisualizer:
             if mlh_location is not None:
                 # Check MLH hull status
                 mlh_status = "outside hull"
-                if hasattr(self, 'expanded_hull') and self.expanded_hull is not None:
-                    if self.is_point_in_hull(mlh_location, self.expanded_hull):
+                if hasattr(self, "expanded_hull") and self.expanded_hull is not None:
+                    if is_point_in_hull(mlh_location, self.expanded_hull):
                         mlh_status = "inside hull (green)"
                     else:
                         mlh_status = "outside hull (red)"
-                
+
                 stats_text += (
                     f"\nCurrent MLH location: [{mlh_location[0]:.3f}, "
                     f"{mlh_location[1]:.3f}, {mlh_location[2]:.3f}] - {mlh_status}"
@@ -546,7 +572,7 @@ class TargetHypothesisVisualizer:
             self.stats_text = Text2D(stats_text, pos="top-right", s=0.7)
             self.plotter.add(self.stats_text)
 
-    def toggle_convex_hull(self, widget, event) -> None:
+    def toggle_convex_hull_callback(self, _widget: Button, _event: str) -> None:
         """Toggle the visibility of the convex hull."""
         self.convex_hull_visible = not self.convex_hull_visible
 
@@ -565,31 +591,6 @@ class TargetHypothesisVisualizer:
             self.hull_button.switch()
 
         self.plotter.render()
-
-    def is_point_in_hull(self, point: np.ndarray, hull: ConvexHull) -> bool:
-        """Check if a point is inside a convex hull.
-        
-        Args:
-            point: 3D point to check
-            hull: ConvexHull object
-            
-        Returns:
-            True if point is inside hull, False otherwise
-        """
-        # Get the equations of the hull facets (planes)
-        # Each equation is of the form: a*x + b*y + c*z + d <= 0 for points inside
-        equations = hull.equations
-        
-        # Check if point satisfies all plane equations
-        # Homogeneous coordinates: append 1 to the point
-        point_h = np.append(point, 1)
-        
-        # Check all facets
-        distances = equations @ point_h
-        
-        # Point is inside if all distances are <= tolerance
-        # Using small positive tolerance to handle numerical errors
-        return bool(np.all(distances <= 1e-10))
 
     def create_convex_hull(self, model: ObjectModel) -> None:
         """Create a convex hull around the object with padding.
@@ -641,6 +642,7 @@ class TargetHypothesisVisualizer:
         self.plotter.add(self.object_convex_hull)
         self.plotter.add(self.object_convex_hull_edges)
 
+
 def plot_target_hypotheses(
     exp_path: str,
     model_name: str = "dist_agent_1lm",
@@ -662,23 +664,24 @@ def plot_target_hypotheses(
         logger.error(f"Could not find detailed_run_stats.json at {json_path}")
         return 1
 
-    try:
-        visualizer = TargetHypothesisVisualizer(
-            str(json_path), model_name, bounding_box_padding
-        )
-        visualizer.create_interactive_visualization()
-    except Exception:
-        logger.exception("Error creating visualization")
-        return 1
-    else:
-        return 0
+    visualizer = HypothesesVisualizer(
+        str(json_path), model_name, bounding_box_padding
+    )
+    visualizer.create_interactive_visualization()
+
+    return 0
 
 
 def add_subparser(
     subparsers: argparse._SubParsersAction,
     parent_parser: argparse.ArgumentParser | None = None,
 ) -> None:
-    """Add the hypothesis_out_of_frame subparser to the main parser."""
+    """Add the hypothesis_out_of_frame subparser to the main parser.
+
+    Args:
+        subparsers: The subparsers object from the main parser.
+        parent_parser: Optional parent parser for shared arguments.
+    """
     parser = subparsers.add_parser(
         "hypothesis_out_of_frame",
         help="Interactive visualization of target object hypothesis locations.",
