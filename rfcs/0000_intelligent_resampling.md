@@ -7,7 +7,7 @@ This is a high-level RFC on intelligence resampling in Monty, considering the be
 
 1. How can we realign hypotheses to model points for robustness to noise and distortions?
 2. How can we use out-of-reference-frame movement to efficiently eliminate hypotheses?
-3. How can we use prediction errors to eliminate hypotheses when the sensor has moved off of an object? 
+3. How can we send and process off-object observations in Monty?
 
 We address these questions together because they share a common theme: dynamically adjusting hypotheses based on sensorimotor predictions and observations. By examining them jointly, we can better understand their relationships and avoid redundant future work. While these questions would be implemented as separate features, this RFC focuses on the conceptual framework rather than implementation details.
 
@@ -218,7 +218,7 @@ This compositional strategy ensures that:
 - Novel object combinations are learned hierarchically without corrupting base models
 - Out-of-reference-frame elimination continues to work efficiently at each level
 
-## 3. How can we use prediction errors to eliminate hypotheses when the sensor has moved off of an object? 
+## 3. How can we send and process off-object observations in Monty?
 
 **Motivation**: While Question 2 addresses hypotheses that have moved beyond object boundaries (using path integration), this section focuses on using sensory prediction errors to eliminate hypotheses that are still within the object's reference frame but at incorrect locations because the sensor has actually moved off of the object. This is fundamentally different because it relies on sensed feature mismatches rather than spatial boundaries of the reference frames.
 
