@@ -29,7 +29,7 @@ The below characteristics and properties are intended to contrast the state of o
 | _Failure_ | high / tolerated / assumed | moderate / unsurprising but disappointed | not tolerated, focus on constant improvement / operational efficiency and surprised by failure |
 | _Market action_ | gambling / driven by gut | gambling / driven by gut | exploring "found" value / market analysis / listening to customers |
 | _Efficiency_ | reducing the cost of change (experimentation and prototyping) | reducing the cost of waste (learning and stability) | reducing the cost of waste (learning and stability) / reducing the cost of deviation (volume operations) |
-| _Decision drivers_ | culture / analysis & synthesis | culture / analysis & synthesis | analysis & synthesis / previous experience |
+| _Decision drivers_ | research / analysis & synthesis | culture / analysis & synthesis | analysis & synthesis / previous experience |
 
 While the characteristics of the platform in the future will be quite different from ongoing research in general (which we're planning for), today's platform already differs in two significant aspects: _Failure_ and _Efficiency_.
 
