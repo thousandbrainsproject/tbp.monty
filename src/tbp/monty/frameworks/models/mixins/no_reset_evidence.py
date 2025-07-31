@@ -69,29 +69,29 @@ class TheoreticalLimitLMLoggingMixin:
             self._theoretical_limit_target_object_pose_error()
         )
         stats["target_object_pose_error"] = self._mlh_target_object_pose_error()
-        stats["resampling_telemetry"] = self._resampling_telemetry()
+        stats["hypotheses_updater_telemetry"] = self._hypotheses_updater_telemetry()
         return stats
 
-    def _resampling_telemetry(self) -> dict[str, dict[str, dict[str, Any]]]:
-        """Compile resampling telemetry across all objects and input channels.
+    def _hypotheses_updater_telemetry(self) -> dict[str, dict[str, dict[str, Any]]]:
+        """Compile hypotheses updater telemetry across all objects and input channels.
 
         Returns:
-            A nested dictionary of {graph_id: {input_channel: resampling_telemetry}}.
+            A nested dictionary of {graph_id: {input_channel: channel_telemetry}}.
         """
         stats = {}
         for graph_id, graph_telemetry in self.hypotheses_updater_telemetry.items():
             stats[graph_id] = {
-                input_channel: self._channel_resampling_telemetry(
+                input_channel: self._channel_telemetry(
                     graph_id, input_channel, channel_telemetry
                 )
                 for input_channel, channel_telemetry in graph_telemetry.items()
             }
         return stats
 
-    def _channel_resampling_telemetry(
+    def _channel_telemetry(
         self, graph_id: str, input_channel: str, channel_telemetry: dict[str, Any]
     ) -> dict[str, Any]:
-        """Assemble resampling telemetry for specific graph ID and input channel.
+        """Assemble channel telemetry for specific graph ID and input channel.
 
         Args:
             graph_id: The graph ID.

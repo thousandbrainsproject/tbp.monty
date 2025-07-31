@@ -452,7 +452,8 @@ class ResamplingHypothesesUpdater:
                 graph_id
 
         Returns:
-            The sampled existing hypotheses.
+            A tuple of sampled existing hypotheses and the IDs of the hypotheses to
+            remove.
         """
         # Return empty arrays for no hypotheses to sample
         if existing_count == 0:
