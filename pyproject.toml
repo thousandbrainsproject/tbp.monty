@@ -165,6 +165,7 @@ explicit_package_bases = true
 # TODO: Remove global ignore and handle missing type stubs
 ignore_missing_imports = true
 mypy_path = "src"
+strict = true
 warn_unused_configs = true
 
 [tool.ruff]
