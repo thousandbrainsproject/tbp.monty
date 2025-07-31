@@ -307,11 +307,16 @@ class HypothesesVisualizer:
         self.slider = None
         self.plotter = None
         self.hull_button = None
+        self.hypotheses_filter_slider = None
 
         self.current_target_locations = None
         self.current_target_evidences = None
 
         self.expanded_hull = None
+
+        # Filtering settings
+        self.max_hypotheses_to_show = None  # None means show all
+        self.total_hypotheses_count = 0
 
         self.load_episode_data()
         self.load_target_model()
@@ -432,6 +437,16 @@ class HypothesesVisualizer:
             bold=True,
         )
 
+        self.hypotheses_filter_slider = self.plotter.add_slider(
+            self.hypotheses_filter_slider_callback,
+            xmin=0,
+            xmax=100,
+            value=100,
+            pos=[(0.2, 0.12), (0.8, 0.12)],
+            title="Top N% Hypotheses",
+            show_value=True,
+        )
+
         self.plotter.show(
             axes={
                 "xtitle": "X",
@@ -496,6 +511,17 @@ class HypothesesVisualizer:
 
         self.plotter.render()
 
+    def hypotheses_filter_slider_callback(self, widget: Slider2D, _event: str) -> None:
+        """Handle filter slider changes."""
+        percentage = widget.GetRepresentation().GetValue()
+        self.max_hypotheses_to_show = int(
+            len(self.current_hypotheses_locations) * percentage / 100
+        )
+
+        self.update_visualization(self.current_timestep)
+        self.plotter.render()
+
+
     def _get_timestep_data(self, timestep: int) -> tuple:
         """Get data for a specific timestep.
 
@@ -503,7 +529,8 @@ class HypothesesVisualizer:
             timestep: The timestep to retrieve data for
 
         Returns:
-            Tuple of (hypotheses_locations, hypotheses_evidences, mlh_location, mlh_graph_id)
+            Tuple of (hypotheses_locations, hypotheses_evidences, mlh_location,
+            mlh_graph_id)
         """
         hypotheses_locations = self.all_hypotheses_locations[timestep]
         hypotheses_evidences = self.all_hypotheses_evidences[timestep]
@@ -574,14 +601,30 @@ class HypothesesVisualizer:
             hypotheses_locations: Array of hypothesis locations
             hypotheses_evidences: Array of evidence values for each hypothesis
         """
-        # Check if each hypothesis point is inside the convex hull
-        in_hull = np.zeros(len(hypotheses_locations), dtype=bool)
+        # Store total count before filtering
+        self.total_hypotheses_count = len(hypotheses_locations)
 
-        for i, point in enumerate(hypotheses_locations):
+        # Filter hypotheses based on max_hypotheses_to_show
+        if (
+            self.max_hypotheses_to_show is not None
+            and len(hypotheses_locations) > self.max_hypotheses_to_show
+        ):
+            # Sort by evidence values (descending) and take top N
+            sorted_indices = np.argsort(hypotheses_evidences)[::-1]
+            top_indices = sorted_indices[: self.max_hypotheses_to_show]
+
+            # Filter locations
+            filtered_locations = hypotheses_locations[top_indices]
+        else:
+            filtered_locations = hypotheses_locations
+        # Check if each hypothesis point is inside the convex hull
+        in_hull = np.zeros(len(filtered_locations), dtype=bool)
+
+        for i, point in enumerate(filtered_locations):
             in_hull[i] = is_point_in_hull(point, self.expanded_hull)
 
-        inside_points = hypotheses_locations[in_hull]
-        outside_points = hypotheses_locations[~in_hull]
+        inside_points = filtered_locations[in_hull]
+        outside_points = filtered_locations[~in_hull]
 
         # Plot hypotheses separately for inside and outside hull with different colors
         point_clouds = []
@@ -657,7 +700,16 @@ class HypothesesVisualizer:
         Returns:
             Formatted statistics text
         """
-        num_inside, num_outside = self._count_points_in_hull(hypotheses_locations)
+        if (
+            self.max_hypotheses_to_show is not None
+            and len(hypotheses_locations) > self.max_hypotheses_to_show
+        ):
+            sorted_indices = np.argsort(hypotheses_evidences)[::-1]
+            top_indices = sorted_indices[: self.max_hypotheses_to_show]
+            filtered_locations = hypotheses_locations[top_indices]
+            num_inside, num_outside = self._count_points_in_hull(filtered_locations)
+        else:
+            num_inside, num_outside = self._count_points_in_hull(hypotheses_locations)
 
         stats_text = (
             f"Target: {self.target_object_name}\n"
@@ -666,7 +718,7 @@ class HypothesesVisualizer:
             f"Object rotation: [{self.target_rotation[0]:.3f}, "
             f"{self.target_rotation[1]:.3f}, {self.target_rotation[2]:.3f}]\n\n"
             f"Timestep: {timestep}\n"
-            f"Total number of hypotheses: {len(hypotheses_locations)}\n"
+            f"Total hypotheses: {len(hypotheses_locations)} (showing top {self.max_hypotheses_to_show})\n"
             f"Inside convex hull: {num_inside} (green)\n"
             f"Outside convex hull: {num_outside} (red)\n"
             f"Evidence range: [{hypotheses_evidences.min():.4f}, "
