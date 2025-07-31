@@ -132,7 +132,7 @@ def realign_pose(hypothesis_k, observed_pose_vectors, stored_pose_vectors):
     then update the hypothesis' pose with R_correction x R_current. 
     """
     # Current pose from hypothesis
-    R_current = hypothesis_k.poses[k]
+    R_current = hypothesis_k.poses
     
     # Compute pose vectors in object reference frame
     current_pose_vectors = R_current @ stored_pose_vectors.T 
