@@ -100,8 +100,7 @@ The impact of sparse models on location accuracy depends on both **sparsity** an
 Several additional techniques to consider when re-anchoring in sparse models: 
 
 1. **Constrained re-anchoring**: Limit re-anchoring to points within an $\epsilon$-radius to prevent large positional jumps, particularly important for non-distinctive sparse models.
-2. **Interpolation**: Instead of snapping to existing model points, re-anchor to an intermediate position between the hypothesis location and the model location. The interpolation weight could be based on feature matching confidence, which can be proportional to distance error when comparison features. This may create a "virtual anchor point", i.e. a point not necessarily stored in the model (to preserve sparsity) while still benefiting from re-anchoring.
-3. **Confidence-based realignment**: Only perform realignment when feature matches indicate high distinctiveness, which can be estimated by the uniqueness of the feature combination within the object model.
+2. **Confidence-based realignment**: Only perform realignment when feature matches indicate high distinctiveness, which can be estimated by the uniqueness of the feature combination within the object model.
 
 ### Example: Re-anchoring a Specific Hypothesis
 
