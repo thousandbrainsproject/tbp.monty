@@ -165,6 +165,10 @@ autodoc_mock_imports = [
     "torch_geometric",
     "torchvision",
 ]
+autodoc_default_options = {
+    # Make sphinx generate docs for specific dunder methods
+    "special-members": "__init__",
+}
 # If true, the current module name will be prepended to all description
 # unit titles (such as .. function::).
 add_module_names = False

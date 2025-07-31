@@ -25,6 +25,7 @@ colliculus
 affordances
 [Ss]ubgoals
 KDTree
+Knudstrup
 resampling
 wandb
 distractor
@@ -180,3 +181,5 @@ Montymentous
 Viviane
 Inferencing
 LEGOs
+reimplement
+serializable

@@ -41,14 +41,14 @@ Configs with `base` in their name test each object in the 14 orientations in whi
 
 Configs with `randrot` in their name test each object in 10 random, new rotations (different rotations for each object).
 
-Configs with `noise` in their name test with noisy sensor modules where we add Gaussian noise to the sensed locations (0.002), point-normals (2), curvature directions (2), log curvatures (0.1), pose_fully_defined (0.01), and hue (0.1). Numbers in brackets are the standard deviations used for sampling the noisy observations. Note that the learned models were acquired without sensor noise. The image below should visualize how much location noise we get during inference but the LM still contains the noiseless models shown above.
+Configs with `noise` in their name test with noisy sensor modules where we add Gaussian noise to the sensed locations (0.002), surface normals (2), curvature directions (2), log curvatures (0.1), pose_fully_defined (0.01), and hue (0.1). Numbers in brackets are the standard deviations used for sampling the noisy observations. Note that the learned models were acquired without sensor noise. The image below should visualize how much location noise we get during inference but the LM still contains the noiseless models shown above.
 
 ![](../figures/overview/graph_noise_002.png#width=400px)
 
 
-Configs with `rawnoise` in the name test with noisy raw sensor input where Gaussian noise is applied directly to the depth image which is used for location, point normal, and curvature estimation. Here we use a standard deviation of 0.001. This allows us to test the noise robustness of the sensor module compared to testing the noise robustness of the learning module in the `noise` experiments.
+Configs with `rawnoise` in the name test with noisy raw sensor input where Gaussian noise is applied directly to the depth image which is used for location, surface normal, and curvature estimation. Here we use a standard deviation of 0.001. This allows us to test the noise robustness of the sensor module compared to testing the noise robustness of the learning module in the `noise` experiments.
 
-Note that all benchmark experiments were performed with the total least-squares regression implementation for computing the point-normals, and the distance-weighted quadratic regression for the principal curvatures (with their default parameters).
+Note that all benchmark experiments were performed with the total least-squares regression implementation for computing the surface normals, and the distance-weighted quadratic regression for the principal curvatures (with their default parameters).
 
 ## Shorter Experiments with 10 Objects
 
@@ -81,7 +81,7 @@ The following results are obtained from experiments on the entire YCB dataset (7
   Since we need to be able to deal with noise, it can happen that objects that are similar to each other get confused. In particular, objects that only differ in some specific locations (like the fork and the spoon) can be difficult to distinguish if the policy doesn't efficiently move to the distinguishable features and if there is noise.
 
 - **Why is raw sensor noise so much worse than the standard noise condition?**
-  This is not related to the capabilities of the learning module but to the sensor module. Currently, our point normal and principal curvature estimates are not implemented to be very robust to sensor noise such that noise in the depth image can distort the point normal by more than 70 degrees. We don't want our learning module to be robust to this much noise in the point normals but instead want the sensor module to communicate better features. We already added some improvements on our point normal estimates which helped a lot on the raw noise experiment.
+  This is not related to the capabilities of the learning module but to the sensor module. Currently, our surface normal and principal curvature estimates are not implemented to be very robust to sensor noise such that noise in the depth image can distort the surface normal by more than 70 degrees. We don't want our learning module to be robust to this much noise in the surface normals but instead want the sensor module to communicate better features. We already added some improvements on our surface normal estimates which helped a lot on the raw noise experiment.
 
 - **Why do the distant agent experiments take longer and have more episodes where the most likely hypothesis is used?**
   Since the distant agent policy is less efficient in how it explores a given view (random walk of tilting the camera), we take more steps to converge with the distant agent or sometimes do not resolve the object at all (this is when we reach a time-out and use the MLH). If we have to take more steps for each episode, the runtime also increases.

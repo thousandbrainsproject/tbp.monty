@@ -654,7 +654,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         # TODO In general what would be best/cleanest way of routing information,
         # e.g. perhaps the learning module should just pass a *displacement* (in
-        # internal coordinates, and a target point-normal)
+        # internal coordinates, and a target surface normal)
         # Could also consider making use of decide_location_for_movement (or
         # decide_location_for_movement_matching)
 

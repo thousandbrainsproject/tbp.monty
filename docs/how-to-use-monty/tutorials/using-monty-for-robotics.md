@@ -45,7 +45,7 @@ For the ultrasound demo project, we went through the same thought process as out
 
 Both the location information and the ultrasound recordings are streamed to a laptop that runs Monty. To stream the ultrasound data, we can write a small iOS app, similar to the MontyMeetsWorld app, using the ultrasound device SDK. Once the ultrasound image arrives on the laptop, Monty can move a small patch over it. It can also use the tracked sensor location in the room to integrate the physical movement of the probe.
 
-A custom sensor module can then extract features and poses from the ultrasound image. The pose could be extracted from the point normal detected at borders in the patch. Features could summarize information about measured density and texture.
+A custom sensor module can then extract features and poses from the ultrasound image. The pose could be extracted from the surface normal detected at borders in the patch. Features could summarize information about measured density and texture.
 
 For the first test, we plan to recognize 3D objects inside a phantom (a clear bag filled with fluid). For simplicity, the objects can be learned beforehand in simulation, similar to the Monty Meets World application. However, since we have 6DOF pose tracking of the sensor, we could also learn the objects directly from the ultrasound data in the real world.
 
@@ -79,5 +79,3 @@ It was exciting to see Monty, originally tested in simulated environments, start
 
 # Conclusion
 The current solution for running Monty on robots is to stream the sensor data and action commands back and forth between the robot and a Monty instance running on a laptop. Outside of that, defining a custom data loader and environments for Monty is analogous to how it was outlined in the [previous tutorial](./using-monty-in-a-custom-application.md).
-
-
