@@ -155,7 +155,7 @@ Multiple concerns arise with this approach.
 
 One concern arises if we decided to not keep the two code bases in sync. `tbp.platform` would develop and diverge according to its needs.
 
-The other concern if we decided to keep the two code bases in sync. This creates two additional streams of work. New capabilities would be ported over from `tbp.monty` to `tbp.platform`, and stable cleaned systems and frameworks would be ported from `tbp.platform` to `tbp.monty`. Depending on the cadence of research changes to `tbp.monty`, this might introduce entirely new and interesting complexity of merge conflicts.
+The other concern arises if we decided to keep the two code bases in sync. This creates two additional streams of work. New capabilities would be ported over from `tbp.monty` to `tbp.platform`, and stable cleaned systems and frameworks would be ported from `tbp.platform` to `tbp.monty`. Depending on the cadence of research changes to `tbp.monty`, this might introduce entirely new and interesting complexity of merge conflicts.
 
 Having a single code base would eliminate the above concerns.
 
