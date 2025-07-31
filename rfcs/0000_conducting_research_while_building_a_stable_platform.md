@@ -151,7 +151,15 @@ This RFC proposes to avoid multiple rounds of rework so that researchers can spe
 
 An alternative approach would be to leave the Monty code (`tbp.monty`) as is and let it support primarily research needs. There would be less need for implementation projects, as the goal of the Monty code would be to support speed and agility. The platform would be created as a separate code base (`tbp.platform`), and it could pursue its goal of stability without interfering with research, absorbing any new `tbp.monty` capabilities as needed.
 
-The primary reason we should not write a new `tbp.platform` is because there are numerous examples of that approach failing. Rewriting code from scratch often seems like a good idea, but it comes with challenges that end in a long-term wasted effort on a code base that is never adopted. Joel Spolsky has a helpful blog post on the topic: [Things You Should Never Do, Part I](https://www.joelonsoftware.com/2000/04/06/things-you-should-never-do-part-i/), quoted liberally below:
+Multiple concerns arise with this approach.
+
+One concern arises if we decided to not keep the two code bases in sync. `tbp.platform` would develop and diverge according to its needs.
+
+The other concern if we decided to keep the two code bases in sync. This creates two additional streams of work. New capabilities would be ported over from `tbp.monty` to `tbp.platform`, and stable cleaned systems and frameworks would be ported from `tbp.platform` to `tbp.monty`. Depending on the cadence of research changes to `tbp.monty`, this might introduce entirely new and interesting complexity of merge conflicts.
+
+Having a single code base would eliminate the above concerns.
+
+Another reason we should not write a new `tbp.platform` is because there are numerous examples of that approach failing. Rewriting code from scratch often seems like a good idea, but it comes with challenges that end in a long-term wasted effort on a code base that is never adopted. Joel Spolsky has a helpful blog post on the topic: [Things You Should Never Do, Part I](https://www.joelonsoftware.com/2000/04/06/things-you-should-never-do-part-i/), quoted liberally below:
 
 > (...) They did it by making the **single worst strategic mistake** that any software company can make: They decided to rewrite the code from scratch. (...) There's a subtle reason that programmers always want to throw away the code and start over. The reason is that they think the old code is a mess. And here is the interesting observation: _they are probably wrong._ (...) You are putting yourself in an extremely dangerous position where you will be shipping an old version of the code for several years (...) ... problems can be solved, one at a time, by carefully moving code, refactoring, changing interfaces. They can be done by one programmer working carefully and checking [their] changes all at once, so that nobody else is disrupted. Even fairly major architectural changes can be done without _throwing away the code_. (...) It's important to remember that when you start from scratch there is **absolutely no reason** to believe that you are going to do a better job than you did the first time. (...) You're just going to make most of the old mistakes again, and introduce some new problems that weren't in the original version.
 
