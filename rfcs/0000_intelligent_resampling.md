@@ -52,7 +52,7 @@ class Hypotheses:
     poses: np.ndarray # numpy array of 3x3 rotation matrices, shape
 ```
 
-**Current limitation:** When a hypothesis is initialized, its `poses` attribute remains fixed. While we can create new hypotheses with different poses, these start from zero evidence and require time to accumulate confidence.
+**Current limitation:** When a hypothesis is initialized, its `poses` attribute remains fixed. While we can create new hypotheses with different poses, these start from zero evidence and require time to accumulate evidence.
 
 **Objective:** Implement a mechanism to update the location or pose of existing hypotheses without resetting their accumulated evidence values.
 
