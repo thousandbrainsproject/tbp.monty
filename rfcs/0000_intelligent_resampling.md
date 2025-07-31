@@ -104,39 +104,40 @@ Several additional techniques to consider when re-anchoring in sparse models:
 
 ### Example: Re-anchoring a Specific Hypothesis
 
-Here we go through a specific case of re-anchoring the pose of a particular hypothesis. In particular, if we have decided to re-align to a point, how can we adjust our hypothesis of the object rotation to ensure it aligns with this new point?
+Here we go through a specific case of re-anchoring both the location and rotation of a particular hypothesis. 
 
-Recall that in an object model, at each node in the graph, we store `pose_vectors` which are 3x3 matrix of surface normal and principal curvature directions at that point. In a hypothesis, the `poses` attribute is a 3x3 rotation matrix that represents the object's orientation in the world. 
+Recall that in an object model, at each node in the graph, we store:
+- `location`: The 3D position of that point in the object's reference frame
+- `pose_vectors`: A 3x3 matrix of surface normal and principal curvature directions at that point
 
-In `_get_all_informed_possible_poses()` in `hypotheses_updater.py`, it calls `align_multiple_orthonormal_vectors()` which calculates the rotation that would transform the current sensor orientation to match the stored orientation at that node. 
+In a hypothesis:
+- `locations`: numpy array of 3D positions in the object's reference frame  
+- `poses`: numpy array of 3x3 rotation matrices representing the object's orientation in the world
 
 **Proposed implementation**:
 
-When we decide to realign a hypothesis to a new point in the object model (after feature matching), we need to update the hypothesis's pose. The `stored_pose_vectors` parameter comes from this new target point in the object model that we're realigning to:
-
 ```python
-def realign_pose(hypothesis_k, observed_pose_vectors, stored_pose_vectors):
-    """Realign hypothesis pose to match a new point in the object model.
+def realign_hypothesis(hypotheses, hypothesis_idx, target_location, 
+                      observed_pose_vectors, stored_pose_vectors):
+    """Realign a hypothesis to a new point in the object model.
     
     Args:
-        hypothesis_k: The hypothesis being realigned
+        hypotheses: The Hypotheses object containing all hypotheses
+        hypothesis_idx: Index of the hypothesis to realign
+        target_location: The 3D location of the matched point in the object model
         observed_pose_vectors: The pose vectors from current sensor observation
         stored_pose_vectors: The pose vectors from the NEW point in the object model 
-                           that we are realigning to (after feature matching identified
-                           this as the best match)
+                           that we are realigning to
     """
-    # Update hypothesis pose
-    updated_pose = align_multiple_orthonormal_vectors(
-          stored_pose_vectors.reshape(1, 3, 3),
-          observed_pose_vectors,
-          as_scipy=False
-    )
-    return updated_pose
+    hypotheses.locations[hypothesis_idx] = target_location
+    hypotheses.poses[hypothesis_idx] = align_multiple_orthonormal_vectors(
+        stored_pose_vectors.reshape(1, 3, 3),
+        observed_pose_vectors,
+        as_scipy=False
+    )[0]
 ```
 
-Note that we could also use `R_correction` to see if we should reject re-anchoring, e.g. if the angle associatd with `R_correction` is larger than some threshold then it might mean we had a false match. 
-
-This approach extends the current hypothesis initialization logic (which determines initial poses based on sensor observations) to allow pose updates during realignment. 
+This approach extends the current hypothesis initialization logic (which determines initial poses based on sensor observations) to allow location and rotation updates during realignment.
 
 #### What are the implications for unsupervised learning?
 
