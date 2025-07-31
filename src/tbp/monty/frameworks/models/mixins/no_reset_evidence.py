@@ -102,11 +102,7 @@ class TheoreticalLimitLMLoggingMixin:
         return stats
 
     def _hypotheses_updater_telemetry(self) -> HypothesesUpdaterTelemetry:
-        """Compile hypotheses updater telemetry across all objects and input channels.
-
-        Returns:
-            A nested dictionary of {graph_id: {input_channel: channel_telemetry}}.
-        """
+        """Returns HypothesesUpdaterTelemetry for all objects and input channels."""
         stats: HypothesesUpdaterTelemetry = {}
         for graph_id, graph_telemetry in self.hypotheses_updater_telemetry.items():
             stats[graph_id] = {
