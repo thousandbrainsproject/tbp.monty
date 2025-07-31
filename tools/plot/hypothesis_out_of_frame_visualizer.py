@@ -7,6 +7,19 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+"""Interactive visualization tool for analyzing hypotheses.
+
+This tool visualizes hypotheses' locations across timesteps, showing which
+hypotheses fall inside or outside the object's convex hull boundary.
+
+This visualizer requires that experiments have been run with detailed logging
+enabled to generate detailed_run_stats.json files. To enable detailed logging,
+use DetailedEvidenceLMLoggingConfig in your experiment configuration.
+
+Usage:
+    python tools/plot/cli.py hypothesis_out_of_frame <experiment_log_dir>
+"""
+
 from __future__ import annotations
 
 import json
