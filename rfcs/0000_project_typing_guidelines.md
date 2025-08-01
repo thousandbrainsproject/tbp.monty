@@ -101,7 +101,7 @@ _Nominal typing_ is a type system in which the name of the type is what matters 
 
 More complex types, like dataclasses and regular classes, are examples of nominal types in Python. Two dataclasses with the same fields but different names would type-check as different types. Classes and dataclasses (which are a convenience for defining certain kinds of classes) are more opaque than anything to do with the fields or methods they have. Different classes are different types and the only way instances of those classes can type check as each other is if one is a subclass of another (this is the [_subtype polymorphism_](https://en.wikipedia.org/wiki/Polymorphism_(computer_science)#Subtyping) behaviour provided by object-oriented languages).
 
-Python also provides _newtype_s which can be used to define nominal types for basic types that would normally be structurally typed. An example of a newtype would be to define the concept of radians and degrees for angles a system, and ensure that they can't be used in the wrong places.
+Python also provides `NewType`s which can be used to define nominal types for basic types that would normally be structurally typed. An example of a newtype would be to define the concept of radians and degrees for angles a system, and ensure that they can't be used in the wrong places.
 
 ```python
 Radians = NewType('Radians', float)
