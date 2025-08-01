@@ -289,7 +289,7 @@ This representation ensures that all observations have consistent keys regardles
 
 _Figure 5_. Hypothesis remains within the object boundaries but at an incorrect location. The hypothesis believes it moved from the mug body to the handle, but actually moved to a different location on the body. This location mismatch results in incorrect feature predictions.
 
-This scenario is already handled by the existing `hypotheses_displacer.py`, which computes evidence based on feature mismatches. No changes are needed for Case 2, except to handle null observations from Case 1b.
+This scenario is already handled by the existing `hypotheses_displacer.py`, which computes evidence based on feature mismatches. No changes are needed for Case 2.
 
 ### Implications for FeatureChangeSM
 
