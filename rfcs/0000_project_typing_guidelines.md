@@ -53,9 +53,11 @@ _Structural typing_ is a type system in which the structure of the type is what 
 
 Basic types like `str`, `list`, and `dict[int, str]` are examples of structural types in Python. Nothing about a `dict[int, str]` indicates what those keys or values represent, and any dictionary that takes integers as keys and has strings as values would type-check against that type.
 
-Type aliases are structural types; they DO NOT lead to nominal types. From the type checker's perspective, they are replaced with the type that they alias. They are only a convenience for not having to write out long structural types.
+Type aliases are structural types; they **do not** lead to nominal types. From the type checker's perspective, they are replaced with the type that they alias. They are only a convenience for not having to write out long structural types.
 
-Structural types should not be used when possible because they don't define the concepts that the types represent, reducing their usefulness.
+While Protocols provide structural subtyping, they are an exception to this guidance and SHOULD be used for _static duck typing_ (see the [section on duck typing](#protocols-should-be-used-to-define-behaviour-that-would-normally-be-duck-typed) for details).
+
+Structural types SHOULD NOT be used when possible because they don't define the concepts that the types represent, reducing their usefulness.
 
 ```python
 # Type alias for a quaternion
@@ -75,7 +77,7 @@ quat: Quaternion = (1.0, 0.0, 0.0, 0.0) # this is just of type `tuple`
 norm = normalize_quaternion(quat) # is this giving valid results?
 ```
 
-Alternative ways to model a quaternion are using newtypes or dataclasses, both forms of _nominal types_ (see the next section for details on the benefits of nominal types). Which to choose would depend on whether additional functionality is needed, or for easier compatibility with third-party libraries.
+Alternative ways to model a quaternion are using newtypes or dataclasses, both forms of _nominal types_ (see [the next section](#nominal-typing-should-be-used-to-name-concepts-using-types) for details on the benefits of nominal types). Which to choose would depend on whether additional functionality is needed, or for easier compatibility with third-party libraries.
 
 ```python
 @dataclass
@@ -121,7 +123,7 @@ rads_to_degrees(another_angle)
 rads_to_degrees(270.0)
 ```
 
-Another example would be to codify the order of a quaternion (since there is disagreement between libraries whether to use WXYZ or XYZW) and then check usages (see the example in the previous section).
+Another example would be to codify the order of a quaternion (since there is disagreement between libraries whether to use WXYZ or XYZW) and then check usages (see the example in [the previous section](#structural-typing-should-not-be-used-when-possible)).
 
 Newtypes should be used when **no additional functionality** beyond the underlying type is needed, but metadata about the type needs to be tracked. An example of this would be unsafe and safe strings in a web application. They shouldn’t be confused because they can lead to security vulnerabilities, but with newtypes we can help the author to think about which is being used.
 
