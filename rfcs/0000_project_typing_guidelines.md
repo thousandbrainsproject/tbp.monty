@@ -161,10 +161,10 @@ Protocols allow for defining abstract interfaces that types can satisfy to allow
 
 Some third-party libraries, especially ones that are extensions written in another languge like C, provide poor type hinting, meaning the majority of the benefits that come from static type checking aren't available. To minimize this surface area, we should isolate code that uses these third-party libraries, wrapping them in functions or methods that provide the correct types that the rest of our code expects.
 
-Even in libraries like NumPy that purport to have typing hints available, sometimes those are less useful. For example, a lot of functions return `npt.NDArray[Any]` when we know for certain that the type should be `npt.NDArray[float]`. In cases like these, we want to isolate the chaos and return the types we want.
+Even in libraries like NumPy that purport to have typing hints available, sometimes those are less useful. For example, a lot of functions return `npt.NDArray[Any]` when we know for certain that the type should be `npt.NDArray[np.float64]`. In cases like these, we want to isolate the chaos and return the types we want.
 
 ```python
-def do_maths(input: ...) -> npt.NDArray[float]:
+def do_maths(input: ...) -> npt.NDArray[np.float64]:
     # do lots of Numpy calls
     return result
 ```
