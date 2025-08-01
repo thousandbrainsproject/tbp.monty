@@ -28,6 +28,7 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
     DefaultHypothesesUpdater,
     HypothesesUpdater,
+    HypothesesUpdaterTelemetry,
 )
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
 from tbp.monty.frameworks.models.graph_matching import GraphLM
@@ -173,7 +174,7 @@ class EvidenceGraphLM(GraphLM):
         hypotheses_updater_args: dict | None = None,
         *args,
         **kwargs,
-    ):
+    ) -> None:
         kwargs["initialize_base_modules"] = False
         super(EvidenceGraphLM, self).__init__(*args, **kwargs)
         # --- LM components ---
@@ -251,6 +252,7 @@ class EvidenceGraphLM(GraphLM):
             tolerances=self.tolerances,
         )
         self.hypotheses_updater = hypotheses_updater_class(**hypotheses_updater_args)
+        self.hypotheses_updater_telemetry: HypothesesUpdaterTelemetry = {}
 
     # =============== Public Interface Functions ===============
 
@@ -752,18 +754,23 @@ class EvidenceGraphLM(GraphLM):
             evidence_all_channels=self.evidence[graph_id],
         )
 
-        hypotheses_updates = self.hypotheses_updater.update_hypotheses(
-            hypotheses=Hypotheses(
-                evidence=self.evidence[graph_id],
-                locations=self.possible_locations[graph_id],
-                poses=self.possible_poses[graph_id],
-            ),
-            features=features,
-            displacements=displacements,
-            graph_id=graph_id,
-            mapper=self.channel_hypothesis_mapping[graph_id],
-            evidence_update_threshold=update_threshold,
+        hypotheses_updates, hypotheses_update_telemetry = (
+            self.hypotheses_updater.update_hypotheses(
+                hypotheses=Hypotheses(
+                    evidence=self.evidence[graph_id],
+                    locations=self.possible_locations[graph_id],
+                    poses=self.possible_poses[graph_id],
+                ),
+                features=features,
+                displacements=displacements,
+                graph_id=graph_id,
+                mapper=self.channel_hypothesis_mapping[graph_id],
+                evidence_update_threshold=update_threshold,
+            )
         )
+
+        if hypotheses_update_telemetry is not None:
+            self.hypotheses_updater_telemetry[graph_id] = hypotheses_update_telemetry
 
         if not hypotheses_updates:
             return
