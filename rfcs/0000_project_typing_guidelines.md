@@ -99,29 +99,29 @@ A rule of thumb in most cases would be to ask whether the type needs to be expos
 
 _Nominal typing_ is a type system in which the name of the type is what matters for type checking. Two values with the same structure but different names are distinct types in this system (see the Python glossary for a stricter definition of [nominal type](https://typing.python.org/en/latest/spec/glossary.html#term-nominal)).
 
-More complex types, like dataclasses and regular classes, are examples of nominal types in Python. Two dataclasses with the same fields but different names would type-check as different types. Classes and dataclasses (which are a convenience for defining certain kinds of classes) are more opaque than anything to do with the fields or methods they have. Different classes are different types and the only way instances of those classes can type check as each other is if one is a subclass of another. 
+More complex types, like dataclasses and regular classes, are examples of nominal types in Python. Two dataclasses with the same fields but different names would type-check as different types. Classes and dataclasses (which are a convenience for defining certain kinds of classes) are more opaque than anything to do with the fields or methods they have. Different classes are different types and the only way instances of those classes can type check as each other is if one is a subclass of another (this is the [_subtype polymorphism_](https://en.wikipedia.org/wiki/Polymorphism_(computer_science)#Subtyping) behaviour provided by object-oriented languages).
 
-Python also provides _newtype_s which can be used to define nominal types for basic types that would normally be structurally typed. An example of a newtype would be to define the concept of an integer ID for a user or agent in a system, and ensure that they can't be used in the wrong places.
+Python also provides _newtype_s which can be used to define nominal types for basic types that would normally be structurally typed. An example of a newtype would be to define the concept of radians and degrees for angles a system, and ensure that they can't be used in the wrong places.
 
 ```python
-UserID = NewType('UserID', int)
-AgentID = NewType('AgentID', int)
+Radians = NewType('Radians', float)
+Degrees = NewType('Degrees', float)
 
-# Both UserID and AgentID are integers, but they cannot be swapped.
-def activate_agent(agent: AgentID, actor: UserID) -> None:
+# Both Radians and Degrees are floats, but they cannot be swapped.
+def rads_to_degrees(rads: Radians) -> Degrees:
     pass
 
-user_id = UserID(1)
-agent_id = AgentID(2)
+right_angle = Radians(Math.pi / 4)
+another_angle = Degrees(180.0)
 
-activate_agent(agent_id, user_id) # works fine
-# FAILS to typecheck: "UserID" is not "AgentID", etc.
-activate_agent(user_id, agent_id)
-# FAILS to typecheck: "int" is not "UserID"/"AgentID"
-activate_agent(1, 2)
+rads_to_degrees(right_angle) # works fine
+# FAILS to typecheck: "Degrees" is not "Radians", etc.
+rads_to_degrees(another_angle)
+# FAILS to typecheck: "float" is not "Radians", etc.
+rads_to_degrees(270.0)
 ```
 
-Another example would be to codify the order of a quaternion (since there is disagreement between libraries whether to use WXYZ or XYZW) and then check usages.
+Another example would be to codify the order of a quaternion (since there is disagreement between libraries whether to use WXYZ or XYZW) and then check usages (see the example in the previous section).
 
 Newtypes should be used when **no additional functionality** beyond the underlying type is needed, but metadata about the type needs to be tracked. An example of this would be unsafe and safe strings in a web application. They shouldn’t be confused because they can lead to security vulnerabilities, but with newtypes we can help the author to think about which is being used.
 
