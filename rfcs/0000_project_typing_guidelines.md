@@ -104,8 +104,8 @@ More complex types, like dataclasses and regular classes, are examples of nomina
 Python also provides `NewType`s which can be used to define nominal types for basic types that would normally be structurally typed. An example of a newtype would be to define the concept of radians and degrees for angles in a system, and ensure that they can't be used in the wrong places.
 
 ```python
-Radians = NewType('Radians', float)
-Degrees = NewType('Degrees', float)
+Radians = NewType("Radians", float)
+Degrees = NewType("Degrees", float)
 
 # Both Radians and Degrees are floats, but they cannot be swapped.
 def rads_to_degrees(rads: Radians) -> Degrees:
@@ -126,8 +126,8 @@ Another example would be to codify the order of a quaternion (since there is dis
 Newtypes should be used when **no additional functionality** beyond the underlying type is needed, but metadata about the type needs to be tracked. An example of this would be unsafe and safe strings in a web application. They shouldn’t be confused because they can lead to security vulnerabilities, but with newtypes we can help the author to think about which is being used.
 
 ```python
-UnsafeString = NewType('UnsafeString', str)
-SafeString = NewType('SafeString', str)
+UnsafeString = NewType("UnsafeString", str)
+SafeString = NewType("SafeString", str)
 
 def render_with_content(template: SafeString, content: SafeString):
     # This isn't the best way to do this but it's an example
