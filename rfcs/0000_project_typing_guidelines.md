@@ -31,11 +31,11 @@ The type assigned to arguments should be as abstract as possible when specifying
 
 ```python
 # Don't restrict the argument to a List
-def double_list(l: List[int]) -> List[int]
+def double_list(l: List[int]) -> List[int]:
     return [x * 2 for x in l]
 
 # Instead, use a collection type
-def double_coll(c: Collection[int]) -> List[int]
+def double_coll(c: Collection[int]) -> List[int]:
     return [x * 2 for x in c]
 ```
 
@@ -62,8 +62,8 @@ Structural types SHOULD NOT be used when possible because they don't define the 
 ```python
 # Type alias for a quaternion
 # This doesn't define a new type, it just allows the function
-# definiton below to be shorter.
-Quaternion = Tuple[float, float, float float]
+# definition below to be shorter.
+Quaternion = Tuple[float, float, float, float]
 
 def normalize_quaternion(quat: Quaternion):
     # Is it this?
@@ -132,7 +132,7 @@ UnsafeString = NewType("UnsafeString", str)
 SafeString = NewType("SafeString", str)
 
 def render_with_content(template: SafeString, content: SafeString):
-    # This isn't the best way to do this but it's an example
+    # This isn't the best way to do this, but it's an example
     return format(template, content)
 
 def sanitize_string(s: UnsafeString) -> SafeString:
@@ -161,7 +161,7 @@ Protocols allow for defining abstract interfaces that types can satisfy to allow
 
 ### Third-party libraries with poor type hinting SHOULD be isolated as much as possible.
 
-Some third-party libraries, especially ones that are extensions written in another languge like C, provide poor type hinting, meaning the majority of the benefits that come from static type checking aren't available. To minimize this surface area, we should isolate code that uses these third-party libraries, wrapping them in functions or methods that provide the correct types that the rest of our code expects.
+Some third-party libraries, especially ones that are extensions written in another language like C, provide poor type hinting, meaning the majority of the benefits that come from static type checking aren't available. To minimize this surface area, we should isolate code that uses these third-party libraries, wrapping them in functions or methods that provide the correct types that the rest of our code expects.
 
 Even in libraries like NumPy that purport to have typing hints available, sometimes those are less useful. For example, a lot of functions return `npt.NDArray[Any]` when we know for certain that the type should be `npt.NDArray[np.float64]`. In cases like these, we want to isolate the chaos and return the types we want.
 
