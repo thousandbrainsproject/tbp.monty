@@ -159,6 +159,18 @@ Protocols allow for defining abstract interfaces that types can satisfy to allow
 
 ### Third-party libraries with poor type hinting SHOULD be isolated as much as possible.
 
-Some third-party libraries (e.g., Numpy/Scipy) provide poor type hinting, meaning the majority of the benefits that come from static type checking aren't available. To minimize this surface area, we should isolate code that uses these third-party libraries, wrapping them in functions or methods that provide the correct types that the rest of our code expects.
+Some third-party libraries, especially ones that are extensions written in another languge like C, provide poor type hinting, meaning the majority of the benefits that come from static type checking aren't available. To minimize this surface area, we should isolate code that uses these third-party libraries, wrapping them in functions or methods that provide the correct types that the rest of our code expects.
 
-This would be a good place to use nominal types to define things like quaternions in a particular order so that callers don't pass the wrong values into these external library functions.
+Even in libraries like NumPy that purport to have typing hints available, sometimes those are less useful. For example, a lot of functions return `npt.NDArray[Any]` when we know for certain that the type should be `npt.NDArray[float]`. In cases like these, we want to isolate the chaos and return the types we want.
+
+```python
+def do_maths(input: ...) -> npt.NDArray[float]:
+    # do lots of Numpy calls
+    return result
+```
+
+This might require the use of [`typing.cast()`](https://docs.python.org/3/library/typing.html#typing.cast) to satisfy the type checker.
+
+The granularity SHOULD NOT be individual NumPy functions, but rather whole operations in our code where we are using multiple NumPy functions in a row. We're not trying to make a wrapper for poorly typed libraries, but making sure when we return things into our code, store values on objects, etc. that we're giving them useful types.
+
+This would be also good place to use nominal types to define _input_ argument types like quaternion tuples that have a particular order so that callers don't pass the wrong values into these external library functions. See the nominal type guidance above.
