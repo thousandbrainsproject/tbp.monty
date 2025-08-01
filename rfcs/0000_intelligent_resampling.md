@@ -188,7 +188,7 @@ While sparse models may reduce this computational burden, the convex hull approa
 
 When dealing with unsupervised learning and incomplete models, the out-of-reference-frame elimination strategy requires careful consideration:
 
-**Model familiarity bias**: For familiar objects (those with high observation counts), we might be more aggressive in eliminating hypotheses that move out of the reference frame. This is generally beneficial as it allows faster convergence for well-known objects.
+**Model familiarity bias**: For familiar objects (those with high observation counts), we could be more aggressive in eliminating hypotheses that move out of the reference frame. This is generally beneficial as it allows faster convergence for well-known objects.
 
 **Adaptive thresholds**: For objects still being learned (low observation counts), we might use larger tolerance thresholds before eliminating hypotheses, allowing for exploration of potentially larger or differently shaped variants of the object.
 
