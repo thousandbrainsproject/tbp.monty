@@ -101,7 +101,6 @@ class MontyBase(Monty):
         # Number of steps in which at least 1 LM was updated. Is not the same as each
         # individual LMs number of matching steps
         self.matching_steps = 0
-        self.episodes = 0
         self.epochs = 0
 
         if self.sm_to_lm_matrix is None:
@@ -344,7 +343,6 @@ class MontyBase(Monty):
             sm.pre_episode()
 
     def post_episode(self):
-        self.episodes += 1
         for lm in self.learning_modules:
             lm.post_episode()
 
