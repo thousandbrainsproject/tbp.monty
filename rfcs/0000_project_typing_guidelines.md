@@ -75,7 +75,7 @@ quat: Quaternion = (1.0, 0.0, 0.0, 0.0) # this is just of type `tuple`
 norm = normalize_quaternion(quat) # is this giving valid results?
 ```
 
-Alternative ways to model a quaternion are using newtypes or dataclasses, both forms of _nominal types_. Which to choose would depend on whether additional functionality is needed, or for easier compatibility with third-party libraries.
+Alternative ways to model a quaternion are using newtypes or dataclasses, both forms of _nominal types_ (see the next section for details on the benefits of nominal types). Which to choose would depend on whether additional functionality is needed, or for easier compatibility with third-party libraries.
 
 ```python
 @dataclass
@@ -89,7 +89,7 @@ class Quaternion:
 QuaternionWXYZ = NewType("QuaternionWXYZ", Tuple[float, float, float, float])
 ```
 
-The dataclass approach forces the author to specify which coefficient they want to access, removing ambiguity, while the newtype still requires the author to be careful about which `float` in the `tuple` is the one they want, but the name helps indicate which it is.
+The dataclass approach forces the author to specify which coefficient they want to access, removing ambiguity, while the newtype still requires the author to be careful about which `float` in the `tuple` is the one they want, but the name helps indicate which it is. The newtype also prevents passing a raw tuple where a `QuaternionWXYZ` is expected without explicitly turning it into one.
 
 An exception to this guideline would be the types of **internal** fields of a class, like the `float`s in the Quaternion dataclass in the previous example. Oftentimes those don’t need to be anything more specific than the underlying structural type. An example might be a name field on a class, which could simply be a `str`. Unless there is some extra metadata, e.g. the `str` is untrusted user input that should be handled carefully, a simple `str` will suffice. This can also apply to things like lists, sets, and dictionaries.
 
