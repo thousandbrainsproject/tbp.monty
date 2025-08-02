@@ -132,7 +132,7 @@ class DefaultHypothesesUpdater:
                 though and could help when moving from one object to another and to
                 generally make setting thresholds etc. more intuitive.
             umbilical_num_poses: Number of sampled rotations in the direction of
-                the plane perpendicular to the point normal. These are sampled at
+                the plane perpendicular to the surface normal. These are sampled at
                 umbilical points (i.e., points where PC directions are undefined).
         """
         self.feature_evidence_calculator = feature_evidence_calculator
@@ -252,7 +252,7 @@ class DefaultHypothesesUpdater:
 
         Similar to _get_informed_possible_poses but doesn't require looping over nodes
 
-        For this we use the point normal and curvature directions and check how
+        For this we use the surface normal and curvature directions and check how
         they would have to be rotated to match between sensed and stored vectors
         at each node. If principal curvature is similar in both directions, the
         direction vectors cannot inform this and we have to uniformly sample multiple
@@ -333,7 +333,7 @@ class DefaultHypothesesUpdater:
             initial_possible_channel_rotations = np.array(
                 initial_possible_channel_rotations
             )
-        # There will always be two feature weights (point normal and curvature
+        # There will always be two feature weights (surface normal and curvature
         # direction). If there are no more weight we are not using features for
         # matching and skip this step. Doing matching with only morphology can
         # currently be achieved in two ways. Either we don't specify tolerances

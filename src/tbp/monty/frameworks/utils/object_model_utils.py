@@ -119,7 +119,7 @@ def already_in_list(
                         redundant_point = False
                         break
                 elif feature == "pose_vectors":
-                    # TODO S: currently just looking at first pose vector (pn)
+                    # TODO S: currently just looking at first pose vector (sn)
                     angle_between = get_angle(
                         features["pose_vectors"][feature_idx][:3],
                         features["pose_vectors"][query_id][:3],
@@ -198,7 +198,7 @@ def remove_close_points(point_cloud, features, graph_delta_thresholds, old_graph
         )
     if "pose_vectors" not in graph_delta_thresholds.keys():
         # By default, we will still consider a nearby point as new if the difference
-        # in point-normals suggests it is on the other side of an object
+        # in surface normals suggests it is on the other side of an object
         # NOTE: currently not looking at curvature directions/second pose vector
         graph_delta_thresholds["pose_vectors"] = [np.pi / 2, np.pi * 2, np.pi * 2]
 
@@ -307,21 +307,21 @@ def get_cubic_patches(arr_shape, centers, size):
 def pose_vector_mean(pose_vecs, pose_fully_defined):
     """Calculate mean of pose vectors.
 
-    This takes into account that point normals may contain observations from two
+    This takes into account that surface normals may contain observations from two
     surface sides and curvature directions have an ambiguous direction. It also
     enforces them to stay orthogonal.
 
-    If not pose_fully_defined, the curvature directions are meaningless and we just
-    return the first observation. Theoretically this shouldn't matter but it can save
+    If not pose_fully_defined, the curvature directions are meaningless, and we just
+    return the first observation. Theoretically this shouldn't matter, but it can save
     some computation time.
 
     Returns:
         ?
     """
-    # Check the angle between all point normals relative to the first curvature
+    # Check the angle between all surface normals relative to the first curvature
     # directions. Then look at how many are positive vs. negative and use the ones
     # that make up the majority. So if 5 pns point one way and 10 in the opposite,
-    # we will use the 10 and discard the rest. This avoids averaging over pns that
+    # we will use the 10 and discard the rest. This avoids averaging over sns that
     # are from opposite sides of an objects surface.
     valid_pose_vecs = np.where(np.any(pose_vecs, axis=1))[0]
     if len(valid_pose_vecs) == 0:

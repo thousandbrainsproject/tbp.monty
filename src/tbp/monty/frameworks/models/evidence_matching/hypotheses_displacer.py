@@ -269,7 +269,7 @@ class DefaultHypothesesDisplacer:
         # matter.
         node_distance_weights[mask] = 1
 
-        # If no feature weights are provided besides the ones for point_normal
+        # If no feature weights are provided besides the ones for surface_normal
         # and curvature_directions we don't need to calculate feature evidence.
         if self.use_features_for_matching[input_channel]:
             # add evidence if features match

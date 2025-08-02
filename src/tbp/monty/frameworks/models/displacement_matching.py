@@ -48,7 +48,7 @@ class DisplacementGraphLM(GraphLM):
                 being learned, and thereby whether to include a new point or not. By
                 default, we only consider the distance between points, using a threshold
                 of 0.001 (determined in remove_close_points). Can also specify
-                thresholds based on e.g. point-normal angle difference, or principal
+                thresholds based on e.g. surface normal angle difference, or principal
                 curvature magnitude difference.
         """
         super(DisplacementGraphLM, self).__init__()
@@ -416,7 +416,7 @@ class DisplacementGraphLM(GraphLM):
             )
             pos2 = torch.tensor(obs_to_use.location)
             norm1 = torch.tensor(
-                # element 0 of current pose is location, element 1 is point normal
+                # element 0 of current pose is location, element 1 is surface normal
                 self.buffer.get_current_pose(input_channel=obs_to_use.sender_id)[1],
                 dtype=torch.float64,
             )

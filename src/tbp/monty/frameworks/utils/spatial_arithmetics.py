@@ -74,7 +74,7 @@ def get_angle(vec1, vec2):
     """Get angle between two vectors.
 
     NOTE: for efficiency reasons we assume vec1 and vec2 are already
-    normalized (which is the case for point normals and curvature
+    normalized (which is the case for surface normals and curvature
     directions).
 
     Args:
@@ -257,7 +257,7 @@ def non_singular_mat(a):
 def get_more_directions_in_plane(vecs, n_poses) -> List[np.ndarray]:
     """Get a list of unit vectors, evenly spaced in a plane orthogonal to vecs[0].
 
-    This is used to sample possible poses orthogonal to the point normal when the
+    This is used to sample possible poses orthogonal to the surface normal when the
     curvature directions are undefined (like on a flat surface).
 
     Args:
@@ -360,7 +360,7 @@ def rotate_pose_dependent_features(features, ref_frame_rots) -> dict:
 
 
 def rotate_multiple_pose_dependent_features(features, ref_frame_rot) -> dict:
-    """Rotate point normal and curv dirs given a rotation matrix.
+    """Rotate surface normal and curve dirs given a rotation matrix.
 
     Args:
         features: dict of features with pose vectors to rotate.
