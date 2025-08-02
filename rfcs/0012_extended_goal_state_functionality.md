@@ -1,5 +1,5 @@
 - Start Date: 2025-07-15
-- RFC PR: 
+- RFC PR: https://github.com/thousandbrainsproject/tbp.monty/pull/376
 
 # Summary
 This RFC proposes several additions to Monty's architecture aimed at expanding the scope of Monty's goal-state system. The new components and pathways presented here were originally conceived of to improve the [efficiency of saccades driven by model-free and model-based signals](https://thousandbrainsproject.readme.io/docs/implement-efficient-saccades-driven-by-model-free-and-model-based-signals) and to [expand support for compositional objects](https://thousandbrainsproject.readme.io/docs/short-term-goals) and [multi-object environments](https://thousandbrainsproject.readme.io/docs/model-based-policy-to-recognize-an-object-before-moving-onto-a-new-object). However, several of the proposed changes to Monty's architecture are quite general, and we expect them to be broadly useful beyond our original objectives.
@@ -14,7 +14,7 @@ Briefly, the most significant changes proposed here are as follows:
 
 # Implementation
 
-![Information Flow](extended_goal_state_functionality/architecture_overview.png)
+![Information Flow](0012_extended_goal_state_functionality/architecture_overview.png)
 **Proposed Routing Pathways**. Learning module (LM) and sensor module (SM) derived goal states will be routed to the `GoalStateSelector`, and the `GoalStateSelector`'s output will be routed to the motor system.
 
 The `GoalStateSelector` will receive any number of goal states derived from learning and sensor modules, and it will produce at most one goal state for consumption by the motor system. There are many potential strategies for choosing a goal state, but the simplest initial approach will be to select the goal state with the largest `confidence` value. In this way, it will act exactly as the `Monty` class currently does. More complex methods are outside the scope of this RFC.
