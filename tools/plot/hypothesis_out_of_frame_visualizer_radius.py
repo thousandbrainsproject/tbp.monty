@@ -7,17 +7,21 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-"""Interactive visualization tool for analyzing hypotheses.
+"""Interactive visualization tool for analyzing hypotheses using radius-based evidence.
 
 This tool visualizes hypotheses' locations across timesteps, showing which
-hypotheses fall inside or outside the object's convex hull boundary.
+hypotheses fall inside or outside the max_match_distance radius from object points.
+
+The distance calculation uses the custom distance metric from Monty's evidence matching
+system, which considers both spatial distance and surface normal alignment. This 
+accurately reflects how Monty computes evidence during hypothesis matching.
 
 This visualizer requires that experiments have been run with detailed logging
 enabled to generate detailed_run_stats.json files. To enable detailed logging,
 use DetailedEvidenceLMLoggingConfig in your experiment configuration.
 
 Usage:
-    python tools/plot/cli.py hypothesis_out_of_frame <experiment_log_dir>
+    python tools/plot/cli.py hypothesis_out_of_frame_radius <experiment_log_dir>
 """
 
 from __future__ import annotations
@@ -31,10 +35,8 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import torch
-from scipy.spatial import ConvexHull
 from scipy.spatial.transform import Rotation as R
 from vedo import (
-    Mesh,
     Plotter,
     Points,
     Sphere,
@@ -43,6 +45,10 @@ from vedo import (
 )
 
 from tbp.monty.frameworks.run_env import setup_env
+from tbp.monty.frameworks.utils.graph_matching_utils import (
+    get_custom_distances,
+    get_relevant_curvature,
+)
 
 if TYPE_CHECKING:
     import argparse
@@ -197,75 +203,83 @@ def load_object_model(
     return ObjectModel(points, features=feature_dict)
 
 
-def is_point_in_hull(point: np.ndarray, hull: ConvexHull) -> bool:
-    """Check if a point is inside a convex hull.
-
+def compute_distances_to_object(
+    hypothesis_locations: np.ndarray,
+    object_points: np.ndarray,
+    hypothesis_rotations: np.ndarray,
+    object_features: Optional[dict] = None,
+) -> np.ndarray:
+    """Compute minimum distance from each hypothesis to any object point.
+    
+    This function uses the custom distance calculation from get_custom_distances
+    which considers surface normal alignment and curvature modulation, matching
+    how Monty actually computes evidence.
+    
     Args:
-        point: 3D point to check
-        hull: ConvexHull object
-
+        hypothesis_locations: Array of hypothesis locations (n_hypotheses, 3)
+        object_points: Array of object points (n_points, 3)
+        hypothesis_rotations: Rotation matrices for each hypothesis (n_hypotheses, 3, 3)
+        object_features: Optional dict containing object features like curvatures
+    
     Returns:
-        True if point is inside hull, False otherwise
+        Array of minimum distances for each hypothesis (n_hypotheses,)
     """
-    # Get the equations of the hull facets (planes)
-    # Each equation is of the form: a*x + b*y + c*z + d <= 0 for points inside
-    equations = hull.equations
-
-    # Check if point satisfies all plane equations
-    # Homogeneous coordinates: append 1 to the point
-    point_h = np.append(point, 1)
-
-    # Check all facets
-    distances = equations @ point_h
-
-    # Point is inside if all distances are <= tolerance
-    # Using small positive tolerance to handle numerical errors
-    return bool(np.all(distances <= 1e-10))
-
-
-def compute_hull(points: np.ndarray, padding: float = 0.0) -> ConvexHull:
-    """Compute a convex hull around points with optional padding.
-
-    Args:
-        points: Array of 3D points (n_points, 3)
-        padding: Padding percentage to expand the hull (default: 0.0)
-
-    Returns:
-        ConvexHull object of the expanded hull
-    """
-    center = np.mean(points, axis=0)
-
-    hull = ConvexHull(points)
-
-    if padding == 0.0:
-        return hull
-
-    hull_points = points[hull.vertices]
-
-    # Expand hull vertices by moving them away from center
-    expanded_vertices = []
-    for vertex in hull_points:
-        direction = vertex - center
-        expanded_vertex = center + direction * (1 + padding)
-        expanded_vertices.append(expanded_vertex)
-
-    expanded_vertices = np.array(expanded_vertices)
-
-    return ConvexHull(expanded_vertices)
+    min_distances = np.zeros(len(hypothesis_locations))
+    
+    for i, (hypothesis, rotation) in enumerate(
+        zip(hypothesis_locations, hypothesis_rotations)
+    ):
+        # Extract surface normal from rotation matrix
+        # The third column (z-axis) of rotation matrix is the surface normal
+        surface_normal = rotation[:, 2]
+        
+        # Reshape for get_custom_distances format
+        # nearest_node_locs shape: (1, n_points, 3)
+        # search_locs shape: (1, 3)
+        # search_sns shape: (1, 3)
+        nearest_node_locs = object_points.reshape(1, -1, 3)
+        search_locs = hypothesis.reshape(1, 3)
+        search_sns = surface_normal.reshape(1, 3)
+        
+        # Try to get curvature from object features if available
+        if object_features is not None:
+            if hasattr(object_features, 'principal_curvatures_log'):
+                # Use average curvature magnitude from object
+                curvatures = np.abs(object_features.principal_curvatures_log)
+                curvature = np.mean(np.max(curvatures, axis=1))
+            elif hasattr(object_features, 'principal_curvatures'):
+                curvatures = np.abs(object_features.principal_curvatures)
+                curvature = np.mean(np.max(curvatures, axis=1))
+            else:
+                # Default curvature if not available
+                curvature = 1.0
+        else:
+            curvature = 1.0
+        
+        # Get custom distances to all object points
+        custom_dists = get_custom_distances(
+            nearest_node_locs,
+            search_locs,
+            search_sns,
+            curvature
+        )
+        min_distances[i] = np.min(custom_dists)
+    
+    return min_distances
 
 
-class HypothesesVisualizer:
-    """Interactive visualizer for analyzing sensor location hypotheses over time.
+class HypothesesRadiusVisualizer:
+    """Interactive visualizer for analyzing sensor location hypotheses using radius-based evidence.
 
     Args:
         json_path: Path to the detailed_run_stats.json file containing episode data.
         model_name: Name of pretrained model to load object from. Defaults to "dist_agent_1lm".
-        bounding_box_padding: Padding percentage for convex hull expansion. Defaults to 0.1.
+        max_match_distance: Maximum distance for matching (default: 0.05).
 
     Attributes:
         hypothesis_points: Current vedo.Points representing sensor location hypotheses.
         object_points: Current vedo.Points representing the target object point cloud.
-        object_convex_hull: Current vedo.Mesh representing the expanded convex hull.
+        radius_spheres: List of spheres showing radius around object points.
         mlh_sphere: Current vedo.Sphere representing the most likely hypothesis location.
         stats_text: Text label showing statistics for current timestep.
         target_object_name: The current object name being visualized.
@@ -275,16 +289,17 @@ class HypothesesVisualizer:
         self,
         json_path: str,
         model_name: str = "dist_agent_1lm",
-        bounding_box_padding: float = 0.1,
+        max_match_distance: float = 0.05,
     ):
         self.json_path = json_path
         self.model_name = model_name
         self.current_timestep = 0
-        self.hull_padding = bounding_box_padding
+        self.max_match_distance = max_match_distance
 
         # Data for all timesteps
         self.all_hypotheses_locations = []
         self.all_hypotheses_evidences = []
+        self.all_hypotheses_rotations = []
         self.all_mlh_locations = []
         self.all_mlh_rotations = []
         self.all_mlh_graph_ids = []
@@ -292,20 +307,19 @@ class HypothesesVisualizer:
         self.hypotheses = None
         self.object_points = None
         self.object_center = None
-        self.object_convex_hull = None
-        self.object_convex_hull_edges = None
-        self.convex_hull_visible = True
+        self.radius_spheres = []
+        self.radius_visible = True
         self.mlh_sphere = None
         self.stats_text = None
         self.slider = None
         self.plotter = None
-        self.hull_button = None
+        self.radius_button = None
         self.hypotheses_filter_slider = None
 
         self.current_target_locations = None
         self.current_target_evidences = None
+        self.current_hypotheses_rotations = None
 
-        self.expanded_hull = None
 
         # Filtering settings
         self.max_hypotheses_to_show = None  # None means show all
@@ -354,9 +368,15 @@ class HypothesesVisualizer:
                         self.lm_data["evidences"][timestep][self.target_object_name]
                     )
                 )
+                # Extract rotation data - it's always available according to user
+                rotation_data = self.lm_data["possible_rotations"][timestep]
+                self.all_hypotheses_rotations.append(
+                    np.array(rotation_data[self.target_object_name])
+                )
             else:
                 self.all_hypotheses_locations.append(np.array([]))
                 self.all_hypotheses_evidences.append(np.array([]))
+                self.all_hypotheses_rotations.append(np.array([]))
 
             # Extract MLH data if available
             if "current_mlh" in self.lm_data and timestep < len(
@@ -398,17 +418,31 @@ class HypothesesVisualizer:
 
     def load_target_model(self) -> None:
         """Load the target object model."""
-        self.target_model = load_object_model(self.model_name, self.target_object_name)
+        # Load model with additional features for better distance calculation
+        features_to_load = [
+            "rgba", 
+            "pose_vectors",
+            "pose_fully_defined",
+            "principal_curvatures",
+            "principal_curvatures_log",
+            "hsv"
+        ]
+        self.target_model = load_object_model(
+            self.model_name, 
+            self.target_object_name,
+            features=features_to_load
+        )
         logger.info(
             f"Loaded {self.target_object_name} model with "
-            f"{len(self.target_model.pos)} points"
+            f"{len(self.target_model.pos)} points and features: "
+            f"{list(self.target_model.__dict__.keys())}"
         )
 
     def create_interactive_visualization(self) -> None:
         """Create interactive visualization with slider for timestep navigation."""
         self.plotter = Plotter(
             title=(
-                f"Sensor Location Hypotheses for {self.target_object_name.title()} "
+                f"Sensor Location Hypotheses (Radius-based) for {self.target_object_name.title()} "
                 "- Episode 0"
             )
         )
@@ -422,10 +456,10 @@ class HypothesesVisualizer:
             pos=[(0.2, 0.05), (0.8, 0.05)],
             title="Timestep",
         )
-        self.hull_button = self.plotter.add_button(
-            self.toggle_convex_hull_callback,
+        self.radius_button = self.plotter.add_button(
+            self.toggle_radius_callback,
             pos=(0.9, 0.1),
-            states=["Hide Hull", "Show Hull"],
+            states=["Hide Radius", "Show Radius"],
             font="Calco",
             bold=True,
         )
@@ -457,7 +491,7 @@ class HypothesesVisualizer:
         """Update visualization for given timestep."""
         self.current_timestep = timestep
 
-        hypotheses_locations, hypotheses_evidences, mlh_location, mlh_graph_id = (
+        hypotheses_locations, hypotheses_evidences, hypotheses_rotations, mlh_location, mlh_graph_id = (
             self._get_timestep_data(timestep)
         )
 
@@ -466,7 +500,7 @@ class HypothesesVisualizer:
         if self.object_points is None and self.target_model is not None:
             self._initialize_object_visualization()
 
-        self._add_hypotheses(hypotheses_locations, hypotheses_evidences)
+        self._add_hypotheses(hypotheses_locations, hypotheses_evidences, hypotheses_rotations)
         self._add_mlh_sphere(mlh_location)
 
         stats_text = self._create_statistics_text(
@@ -486,21 +520,18 @@ class HypothesesVisualizer:
             self.update_visualization(timestep)
             self.plotter.render()
 
-    def toggle_convex_hull_callback(self, _widget: Button, _event: str) -> None:
-        """Toggle the visibility of the convex hull."""
-        self.convex_hull_visible = not self.convex_hull_visible
+    def toggle_radius_callback(self, _widget: Button, _event: str) -> None:
+        """Toggle the visibility of the radius spheres."""
+        self.radius_visible = not self.radius_visible
 
-        if self.convex_hull_visible:
-            self.object_convex_hull.on()
-            if self.object_convex_hull_edges is not None:
-                self.object_convex_hull_edges.on()
-        else:
-            self.object_convex_hull.off()
-            if self.object_convex_hull_edges is not None:
-                self.object_convex_hull_edges.off()
+        for sphere in self.radius_spheres:
+            if self.radius_visible:
+                sphere.on()
+            else:
+                sphere.off()
 
-        if self.hull_button is not None:
-            self.hull_button.switch()
+        if self.radius_button is not None:
+            self.radius_button.switch()
 
         self.plotter.render()
 
@@ -522,18 +553,20 @@ class HypothesesVisualizer:
             timestep: The timestep to retrieve data for
 
         Returns:
-            Tuple of (hypotheses_locations, hypotheses_evidences, mlh_location,
-            mlh_graph_id)
+            Tuple of (hypotheses_locations, hypotheses_evidences, hypotheses_rotations,
+            mlh_location, mlh_graph_id)
         """
         hypotheses_locations = self.all_hypotheses_locations[timestep]
         hypotheses_evidences = self.all_hypotheses_evidences[timestep]
+        hypotheses_rotations = self.all_hypotheses_rotations[timestep]
         mlh_location = self.all_mlh_locations[timestep]
         mlh_graph_id = self.all_mlh_graph_ids[timestep]
 
         self.current_hypotheses_locations = hypotheses_locations
         self.current_hypotheses_evidences = hypotheses_evidences
+        self.current_hypotheses_rotations = hypotheses_rotations
 
-        return hypotheses_locations, hypotheses_evidences, mlh_location, mlh_graph_id
+        return hypotheses_locations, hypotheses_evidences, hypotheses_rotations, mlh_location, mlh_graph_id
 
     def _cleanup_previous_visualizations(self) -> None:
         """Remove previous visualization objects from the plotter."""
@@ -555,7 +588,7 @@ class HypothesesVisualizer:
         self.object_points.point_size(10)
         self.plotter.add(self.object_points)
 
-        self._add_convex_hull(model.pos)
+        self._add_radius_spheres(model.pos)
 
         self.plotter.add(
             Text2D(
@@ -565,34 +598,36 @@ class HypothesesVisualizer:
             )
         )
 
-    def _count_points_in_hull(self, points: np.ndarray) -> tuple[int, int]:
-        """Count how many points are inside and outside the hull.
+    def _count_points_within_radius(self, points: np.ndarray) -> tuple[int, int]:
+        """Count how many points are within max_match_distance of object.
 
         Args:
             points: Array of 3D points to check
 
         Returns:
-            Tuple of (num_inside, num_outside)
+            Tuple of (num_within_radius, num_outside_radius)
         """
-        num_inside = 0
-        num_outside = 0
-
-        for point in points:
-            if is_point_in_hull(point, self.expanded_hull):
-                num_inside += 1
-            else:
-                num_outside += 1
-
-        return num_inside, num_outside
+        # For counting, we need rotation data which we don't have for filtered points
+        # So we use a simplified calculation here
+        distances = np.zeros(len(points))
+        for i, point in enumerate(points):
+            euclidean_dists = np.linalg.norm(self.target_model.pos - point, axis=1)
+            distances[i] = np.min(euclidean_dists)
+        num_within = np.sum(distances <= self.max_match_distance)
+        num_outside = np.sum(distances > self.max_match_distance)
+        
+        return num_within, num_outside
 
     def _add_hypotheses(
-        self, hypotheses_locations: np.ndarray, hypotheses_evidences: np.ndarray
+        self, hypotheses_locations: np.ndarray, hypotheses_evidences: np.ndarray,
+        hypotheses_rotations: np.ndarray
     ) -> None:
-        """Create hypothesis points colored by whether they're inside convex hull.
+        """Create hypothesis points colored by whether they're within radius.
 
         Args:
             hypotheses_locations: Array of hypothesis locations
             hypotheses_evidences: Array of evidence values for each hypothesis
+            hypotheses_rotations: Array of rotation matrices for each hypothesis
         """
         # Store total count before filtering
         self.total_hypotheses_count = len(hypotheses_locations)
@@ -606,27 +641,34 @@ class HypothesesVisualizer:
             sorted_indices = np.argsort(hypotheses_evidences)[::-1]
             top_indices = sorted_indices[: self.max_hypotheses_to_show]
 
-            # Filter locations
+            # Filter locations and rotations
             filtered_locations = hypotheses_locations[top_indices]
+            filtered_rotations = hypotheses_rotations[top_indices]
         else:
             filtered_locations = hypotheses_locations
-        # Check if each hypothesis point is inside the convex hull
-        in_hull = np.zeros(len(filtered_locations), dtype=bool)
+            filtered_rotations = hypotheses_rotations
+            
+        # Compute distances to object using rotation data and object features
+        distances = compute_distances_to_object(
+            filtered_locations, 
+            self.target_model.pos,
+            filtered_rotations,
+            self.target_model
+        )
+        
+        # Separate points based on distance threshold
+        within_radius = distances <= self.max_match_distance
+        within_points = filtered_locations[within_radius]
+        outside_points = filtered_locations[~within_radius]
 
-        for i, point in enumerate(filtered_locations):
-            in_hull[i] = is_point_in_hull(point, self.expanded_hull)
-
-        inside_points = filtered_locations[in_hull]
-        outside_points = filtered_locations[~in_hull]
-
-        # Plot hypotheses separately for inside and outside hull with different colors
+        # Plot hypotheses separately for inside and outside radius with different colors
         point_clouds = []
 
-        if len(inside_points) > 0:
-            inside_pts = Points(inside_points, c="green")
-            inside_pts.point_size(8)
-            point_clouds.append(inside_pts)
-            self.plotter.add(inside_pts)
+        if len(within_points) > 0:
+            within_pts = Points(within_points, c="green")
+            within_pts.point_size(8)
+            point_clouds.append(within_pts)
+            self.plotter.add(within_pts)
 
         if len(outside_points) > 0:
             outside_pts = Points(outside_points, c="red")
@@ -642,36 +684,45 @@ class HypothesesVisualizer:
         Args:
             mlh_location: 3D location of the most likely hypothesis
         """
-        mlh_color = (
-            "green" if is_point_in_hull(mlh_location, self.expanded_hull) else "red"
-        )
+        # Compute distance to object
+        # For MLH, we use the MLH rotation if available
+        if self.all_mlh_rotations[self.current_timestep] is not None:
+            mlh_rotation = self.all_mlh_rotations[self.current_timestep].reshape(1, 3, 3)
+        else:
+            # Fallback: create identity rotation
+            mlh_rotation = np.eye(3).reshape(1, 3, 3)
+            
+        distance = compute_distances_to_object(
+            mlh_location.reshape(1, -1), 
+            self.target_model.pos,
+            mlh_rotation,
+            self.target_model
+        )[0]
+        mlh_color = "green" if distance <= self.max_match_distance else "red"
 
         self.mlh_sphere = Sphere(mlh_location, r=0.005, c=mlh_color)
         self.plotter.add(self.mlh_sphere)
 
-    def _add_convex_hull(self, points: np.ndarray) -> None:
-        """Add a convex hull visualization to the plotter.
+    def _add_radius_spheres(self, points: np.ndarray) -> None:
+        """Add radius spheres around object points for visualization.
 
         Args:
-            points: Array of 3D points to create convex hull for
+            points: Array of 3D points to create radius spheres for
         """
-        self.expanded_hull = compute_hull(points, self.hull_padding)
-        hull_vertices = self.expanded_hull.points[self.expanded_hull.vertices]
-        faces = self.expanded_hull.simplices
-
-        self.object_convex_hull = Mesh([hull_vertices, faces])
-        self.object_convex_hull.color("cyan")
-        self.object_convex_hull.alpha(0.2)
-        self.object_convex_hull.wireframe(False)  # Show as solid with transparency
-
-        # Add edge representation for better visibility
-        self.object_convex_hull_edges = self.object_convex_hull.clone()
-        self.object_convex_hull_edges.wireframe(True)
-        self.object_convex_hull_edges.color("blue")
-        self.object_convex_hull_edges.alpha(0.5)
-
-        self.plotter.add(self.object_convex_hull)
-        self.plotter.add(self.object_convex_hull_edges)
+        # Sample points to avoid too many spheres
+        max_spheres = 20
+        if len(points) > max_spheres:
+            indices = np.random.choice(len(points), max_spheres, replace=False)
+            sampled_points = points[indices]
+        else:
+            sampled_points = points
+            
+        for point in sampled_points:
+            sphere = Sphere(point, r=self.max_match_distance, c="cyan")
+            sphere.alpha(0.1)
+            sphere.wireframe(True)
+            self.radius_spheres.append(sphere)
+            self.plotter.add(sphere)
 
     def _create_statistics_text(
         self,
@@ -700,9 +751,9 @@ class HypothesesVisualizer:
             sorted_indices = np.argsort(hypotheses_evidences)[::-1]
             top_indices = sorted_indices[: self.max_hypotheses_to_show]
             filtered_locations = hypotheses_locations[top_indices]
-            num_inside, num_outside = self._count_points_in_hull(filtered_locations)
+            num_within, num_outside = self._count_points_within_radius(filtered_locations)
         else:
-            num_inside, num_outside = self._count_points_in_hull(hypotheses_locations)
+            num_within, num_outside = self._count_points_within_radius(hypotheses_locations)
 
         stats_text = (
             f"Target: {self.target_object_name}\n"
@@ -712,8 +763,8 @@ class HypothesesVisualizer:
             f"{self.target_rotation[1]:.3f}, {self.target_rotation[2]:.3f}]\n\n"
             f"Timestep: {timestep}\n"
             f"Total hypotheses: {len(hypotheses_locations)} (showing top {self.max_hypotheses_to_show})\n"
-            f"Inside convex hull: {num_inside} (green)\n"
-            f"Outside convex hull: {num_outside} (red)\n"
+            f"Within radius ({self.max_match_distance:.3f}): {num_within} (green)\n"
+            f"Outside radius: {num_outside} (red)\n"
             f"Evidence range: [{hypotheses_evidences.min():.4f}, "
             f"{hypotheses_evidences.max():.4f}]\n"
             f"Current MLH object: {mlh_graph_id}\n"
@@ -727,14 +778,14 @@ class HypothesesVisualizer:
 def plot_target_hypotheses(
     exp_path: str,
     model_name: str = "dist_agent_1lm",
-    bounding_box_padding: float = 0.1,
+    max_match_distance: float = 0.05,
 ) -> int:
     """Plot target object hypotheses with interactive timestep slider.
 
     Args:
         exp_path: Path to experiment directory containing detailed_run_stats.json
         model_name: Name of pretrained model to load object from
-        bounding_box_padding: Padding percentage for bounding box (default: 0.1 = 10%)
+        max_match_distance: Maximum distance for matching (default: 0.05)
 
     Returns:
         Exit code
@@ -745,7 +796,7 @@ def plot_target_hypotheses(
         logger.error(f"Could not find detailed_run_stats.json at {json_path}")
         return 1
 
-    visualizer = HypothesesVisualizer(str(json_path), model_name, bounding_box_padding)
+    visualizer = HypothesesRadiusVisualizer(str(json_path), model_name, max_match_distance)
     visualizer.create_interactive_visualization()
 
     return 0
@@ -762,8 +813,8 @@ def add_subparser(
         parent_parser: Optional parent parser for shared arguments.
     """
     parser = subparsers.add_parser(
-        "hypothesis_out_of_frame",
-        help="Interactive visualization of target object hypothesis locations.",
+        "hypothesis_out_of_frame_radius",
+        help="Interactive visualization of target object hypothesis locations using radius-based evidence.",
         parents=[parent_parser] if parent_parser else [],
     )
     parser.add_argument(
@@ -776,17 +827,17 @@ def add_subparser(
         help="Name of pretrained model to load target object from.",
     )
     parser.add_argument(
-        "--bounding_box_padding",
+        "--max_match_distance",
         type=float,
-        default=0.1,
-        help="Padding percentage for bounding box (default: 0.1 = 10%).",
+        default=0.05,
+        help="Maximum distance for matching (default: 0.05).",
     )
     parser.set_defaults(
         func=lambda args: sys.exit(
             plot_target_hypotheses(
                 args.experiment_log_dir,
                 args.model_name,
-                args.bounding_box_padding,
+                args.max_match_distance,
             )
         )
     )

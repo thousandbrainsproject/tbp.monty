@@ -18,6 +18,7 @@ sys.path.append(str(monty_root))
 from tools.plot import (  # noqa: E402
     correct_percentage_per_episode,
     hypothesis_out_of_frame_visualizer,
+    hypothesis_out_of_frame_visualizer_radius,
     interactive_objects_evidence_over_time,
     objects_evidence_over_time,
     pose_error_over_time,
@@ -43,6 +44,7 @@ def main():
     correct_percentage_per_episode.add_subparser(subparsers, parent_parser)
     interactive_objects_evidence_over_time.add_subparser(subparsers, parent_parser)
     hypothesis_out_of_frame_visualizer.add_subparser(subparsers, parent_parser)
+    hypothesis_out_of_frame_visualizer_radius.add_subparser(subparsers, parent_parser)
 
     args = parser.parse_args()
 
