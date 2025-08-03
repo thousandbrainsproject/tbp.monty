@@ -514,7 +514,6 @@ class HypothesesVisualizer:
         self.update_visualization(self.current_timestep)
         self.plotter.render()
 
-
     def _get_timestep_data(self, timestep: int) -> tuple:
         """Get data for a specific timestep.
 
