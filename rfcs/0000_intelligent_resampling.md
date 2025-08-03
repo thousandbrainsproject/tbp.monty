@@ -170,19 +170,34 @@ _Figure 2_. Case where hypothesis has moved out of object's reference frame.
 
 ### Implementation Strategy
 
-We propose eliminating hypotheses that are more than 10% away from the object's boundary. This percentage threshold is arbitrary but was chosen as a relative distance (rather than a fixed distance like 3 cm) to accommodate objects of different sizes. This elimination step should occur after updating hypotheses but before the next sensing step. 
+The existing `_calculate_evidence_for_new_locations()` method in `hypotheses_displacer.py` already provides a mechanism for handling out-of-reference-frame hypotheses through the `max_match_distance` parameter. 
 
-### Computational Complexity
+1. **Distance-based evidence calculation**: For each hypothesis location, the method finds up to `max_nneighbors` nearest points in the object model using a KDTree
+2. **Custom distance metric**: Instead of simple Euclidean distance, it uses `get_custom_distances()` which considers:
+   - Spatial distance between hypothesis and stored points
+   - Alignment of surface normals
+   - Local curvature properties
+3. **Evidence assignment**: When all nearest neighbors are beyond `max_match_distance`, the hypothesis receives evidence of -1, effectively marking it as invalid
 
-A naive approach would find the nearest point and determine if it exceeds the distance threshold. To minimize the computational cost of nearest-point searches, we propose approximating the object model with a convex hull and comparing only against the points that constitute this hull.
+This approach naturally creates a "soft boundary" around the object model, where hypotheses beyond this boundary can be eliminated. 
 
-Figure 3 demonstrates this concept using a 2D example. While object model points exist in 3D space, the convex hull optimization principle remains applicable.
+The `max_match_distance` parameter effectively defines how far from the object surface a hypothesis can be before being considered invalid. 
 
-<img src="./0000_intelligent_resampling/convex_hull_example_naive.png" alt="Naive approach" style="width:45%; height:auto;"/> <img src="./0000_intelligent_resampling/convex_hull_example_convex_hull.png" alt="Convex hull approach" style="width:45%; height:auto;"/>
+### Computational Considerations
 
-_Figure 3_. **Left**: Naive approach requires comparing distances to all ~2,000 points in the object model to determine if a hypothesis is out of reference frame. **Right**: Convex hull approach pre-computes a convex hull (after training or during pre-epoch in inference) and reduces comparisons to only the hull's points.
+With thousands of hypotheses (e.g., 17,760 in some cases), distance calculations can become computationally expensive. While determining which subset of hypotheses to evaluate is out of scope for this RFC, we note potential optimizations:
 
-While sparse models may reduce this computational burden, the convex hull approach should still provide significant performance improvements. 
+**Bounding Box Pre-filter**: A simple axis-aligned bounding box check can quickly eliminate hypotheses that are clearly outside the object's vicinity before expensive KDTree queries.
+
+**Evidence-Based Filtering**: Already implemented in `displace_hypotheses_and_compute_evidence()`, which only processes hypotheses above an evidence threshold.
+
+**Hypothesis Clustering**: For extreme cases, spatial clustering could reduce computations by processing cluster representatives rather than individual hypotheses.
+
+These are mentioned for completeness but may not be necessary for typical use cases where evidence-based filtering provides sufficient optimization.
+
+<img src="./0000_intelligent_resampling/hypothesis_oorf_01.png" alt="Hypothesis visualization at timestep 0" style="width:30%; height:auto; display:inline-block;"/> <img src="./0000_intelligent_resampling/hypothesis_oorf_02.png" alt="Hypothesis visualization at timestep 1" style="width:30%; height:auto; display:inline-block;"/> <img src="./0000_intelligent_resampling/hypothesis_oorf_03.png" alt="Hypothesis visualization at timestep 2" style="width:30%; height:auto; display:inline-block;"/>
+
+_Figure 3_. Visualization of hypothesis elimination over time. **Left (Timestep 0)**: Initial hypothesis distribution with 17,760 hypotheses - all shown in green as they are within the object's vicinity. **Middle & Right (Later timesteps)**: As evidence accumulates, hypotheses naturally get eliminated. Green points indicate hypotheses within `max_match_distance` of the object, while red points (if any) show hypotheses that have moved beyond this threshold and receive negative evidence.
 
 ### Implications for Unsupervised Learning and Incomplete Models
 
@@ -190,7 +205,7 @@ When dealing with unsupervised learning and incomplete models, the out-of-refere
 
 **Model familiarity bias**: For familiar objects (those with high observation counts), we could be more aggressive in eliminating hypotheses that move out of the reference frame. This is generally beneficial as it allows faster convergence for well-known objects.
 
-**Adaptive thresholds**: For objects still being learned (low observation counts), we might use larger tolerance thresholds before eliminating hypotheses, allowing for exploration of potentially larger or differently shaped variants of the object.
+**Adaptive thresholds**: For objects still being learned (low observation counts), we might use larger `max_match_distance` before eliminating hypotheses, allowing for exploration of potentially larger or differently shaped variants of the object.
 
 #### Compositionality 
 
