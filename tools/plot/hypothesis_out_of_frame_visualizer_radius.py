@@ -9,13 +9,6 @@
 
 """Interactive visualization tool for analyzing hypotheses using radius-based evidence.
 
-This tool visualizes hypotheses' locations across timesteps, showing which
-hypotheses fall inside or outside the max_match_distance radius from object points.
-
-The distance calculation uses the custom distance metric from Monty's evidence matching
-system, which considers both spatial distance and surface normal alignment. This 
-accurately reflects how Monty computes evidence during hypothesis matching.
-
 This visualizer requires that experiments have been run with detailed logging
 enabled to generate detailed_run_stats.json files. To enable detailed logging,
 use DetailedEvidenceLMLoggingConfig in your experiment configuration.
@@ -35,6 +28,7 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import torch
+from scipy.spatial import KDTree
 from scipy.spatial.transform import Rotation as R
 from vedo import (
     Plotter,
@@ -48,6 +42,10 @@ from tbp.monty.frameworks.run_env import setup_env
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_custom_distances,
     get_relevant_curvature,
+)
+from tbp.monty.frameworks.models.object_model import (
+    GraphObjectModel,
+    GridObjectModel,
 )
 
 if TYPE_CHECKING:
@@ -84,6 +82,7 @@ class ObjectModel:
         if features:
             for key, value in features.items():
                 setattr(self, key, np.asarray(value))
+        self.kd_tree = KDTree(self.pos, leafsize=40)
 
     @property
     def x(self) -> np.ndarray:
@@ -166,9 +165,6 @@ def load_object_model(
     Raises:
         ValueError: If the experiment name does not contain 'dist' or 'surf'.
     """
-    if features is None:
-        features = ["rgba"]
-
     monty_models_dir = Path(os.getenv("MONTY_MODELS"))
     pretrain_dir = monty_models_dir / "pretrained_ycb_v10"
 
@@ -183,12 +179,17 @@ def load_object_model(
         )
 
     model_path = pretrain_dir / "model.pt"
-
     data = torch.load(model_path, map_location=torch.device("cpu"))
-    data = data["lm_dict"][lm_id]["graph_memory"][object_name]["patch"]
+    data = data["lm_dict"][lm_id]["graph_memory"][object_name][
+        "patch"
+    ]  # GraphObjectModel
     points = np.array(data.pos, dtype=float)
 
     feature_dict = {}
+    # data.feature_mapping = {'node_ids': [0, 1], 'pose_vectors': [1, 10], 'pose_fully_defined': [10, 11],
+    # 'on_object': [11, 12], 'object_coverage': [12, 13], 'rgba': [13, 17], 'hsv': [17, 20],
+    # 'principal_curvatures': [20, 22], 'principal_curvatures_log': [22, 24], 'gaussian_curvature': [24, 25],
+    # 'mean_curvature': [25, 26], 'gaussian_curvature_sc': [26, 27], 'mean_curvature_sc': [27, 28]}
     if features:
         for feature in features:
             if feature not in data.feature_mapping:
@@ -205,67 +206,47 @@ def load_object_model(
 
 def compute_distances_to_object(
     hypothesis_locations: np.ndarray,
-    object_points: np.ndarray,
+    target_model: ObjectModel,
     hypothesis_rotations: np.ndarray,
-    object_features: Optional[dict] = None,
+    max_nneighbors: int = 3,
 ) -> np.ndarray:
-    """Compute minimum distance from each hypothesis to any object point.
-    
-    This function uses the custom distance calculation from get_custom_distances
-    which considers surface normal alignment and curvature modulation, matching
-    how Monty actually computes evidence.
-    
+    """Compute distance from each hypothesis to target object.
+
     Args:
         hypothesis_locations: Array of hypothesis locations (n_hypotheses, 3)
-        object_points: Array of object points (n_points, 3)
+        target_model: ObjectModel containing points and features
         hypothesis_rotations: Rotation matrices for each hypothesis (n_hypotheses, 3, 3)
-        object_features: Optional dict containing object features like curvatures
-    
+        max_nneighbors: Maximum number of nearest neighbors to consider (default: 3)
+
     Returns:
         Array of minimum distances for each hypothesis (n_hypotheses,)
     """
-    min_distances = np.zeros(len(hypothesis_locations))
-    
-    for i, (hypothesis, rotation) in enumerate(
-        zip(hypothesis_locations, hypothesis_rotations)
-    ):
-        # Extract surface normal from rotation matrix
-        # The third column (z-axis) of rotation matrix is the surface normal
-        surface_normal = rotation[:, 2]
-        
-        # Reshape for get_custom_distances format
-        # nearest_node_locs shape: (1, n_points, 3)
-        # search_locs shape: (1, 3)
-        # search_sns shape: (1, 3)
-        nearest_node_locs = object_points.reshape(1, -1, 3)
-        search_locs = hypothesis.reshape(1, 3)
-        search_sns = surface_normal.reshape(1, 3)
-        
-        # Try to get curvature from object features if available
-        if object_features is not None:
-            if hasattr(object_features, 'principal_curvatures_log'):
-                # Use average curvature magnitude from object
-                curvatures = np.abs(object_features.principal_curvatures_log)
-                curvature = np.mean(np.max(curvatures, axis=1))
-            elif hasattr(object_features, 'principal_curvatures'):
-                curvatures = np.abs(object_features.principal_curvatures)
-                curvature = np.mean(np.max(curvatures, axis=1))
-            else:
-                # Default curvature if not available
-                curvature = 1.0
-        else:
-            curvature = 1.0
-        
-        # Get custom distances to all object points
-        custom_dists = get_custom_distances(
-            nearest_node_locs,
-            search_locs,
-            search_sns,
-            curvature
-        )
-        min_distances[i] = np.min(custom_dists)
-    
-    return min_distances
+    distances, nearest_node_ids = target_model.kd_tree.query(
+        hypothesis_locations,
+        k=max_nneighbors,
+        p=2,
+        workers=1,
+    )
+
+    if max_nneighbors == 1:
+        nearest_node_ids = np.expand_dims(nearest_node_ids, axis=1)
+
+    nearest_node_locs = target_model.pos[nearest_node_ids]
+    surface_normals = hypothesis_rotations[:, :, 2]
+    object_features = target_model.__dict__
+    max_abs_curvature = get_relevant_curvature(object_features)
+
+    custom_nearest_node_dists = get_custom_distances(
+        nearest_node_locs,
+        hypothesis_locations,
+        surface_normals,
+        max_abs_curvature,
+    )
+
+    # Take minimum distance across neighbors for each hypothesis
+    min_distances = np.min(custom_nearest_node_dists, axis=1)
+
+    return min_distances  # shape: (n_hypotheses,)
 
 
 class HypothesesRadiusVisualizer:
@@ -290,11 +271,13 @@ class HypothesesRadiusVisualizer:
         json_path: str,
         model_name: str = "dist_agent_1lm",
         max_match_distance: float = 0.05,
+        max_nneighbors: int = 3,
     ):
         self.json_path = json_path
         self.model_name = model_name
         self.current_timestep = 0
         self.max_match_distance = max_match_distance
+        self.max_nneighbors = max_nneighbors
 
         # Data for all timesteps
         self.all_hypotheses_locations = []
@@ -320,7 +303,6 @@ class HypothesesRadiusVisualizer:
         self.current_target_evidences = None
         self.current_hypotheses_rotations = None
 
-
         # Filtering settings
         self.max_hypotheses_to_show = None  # None means show all
         self.total_hypotheses_count = 0
@@ -340,7 +322,6 @@ class HypothesesRadiusVisualizer:
             first_line = f.readline().strip()
             data = json.loads(first_line)
 
-        # Navigate to LM_0 data
         if "0" in data:
             self.lm_data = data["0"]["LM_0"]
             self.target_data = data["0"]["target"]
@@ -356,60 +337,28 @@ class HypothesesRadiusVisualizer:
         self.num_timesteps = len(self.lm_data["possible_locations"])
         logger.info(f"Episode has {self.num_timesteps} timesteps")
 
-        # Extract data for all timesteps
         for timestep in range(self.num_timesteps):
             timestep_data = self.lm_data["possible_locations"][timestep]
-            if self.target_object_name in timestep_data:
-                self.all_hypotheses_locations.append(
-                    np.array(timestep_data[self.target_object_name])
-                )
-                self.all_hypotheses_evidences.append(
-                    np.array(
-                        self.lm_data["evidences"][timestep][self.target_object_name]
-                    )
-                )
-                # Extract rotation data - it's always available according to user
-                rotation_data = self.lm_data["possible_rotations"][timestep]
-                self.all_hypotheses_rotations.append(
-                    np.array(rotation_data[self.target_object_name])
-                )
-            else:
-                self.all_hypotheses_locations.append(np.array([]))
-                self.all_hypotheses_evidences.append(np.array([]))
-                self.all_hypotheses_rotations.append(np.array([]))
-
-            # Extract MLH data if available
-            if "current_mlh" in self.lm_data and timestep < len(
-                self.lm_data["current_mlh"]
-            ):
-                mlh_data = self.lm_data["current_mlh"][timestep]
-                if "location" in mlh_data:
-                    self.all_mlh_locations.append(np.array(mlh_data["location"]))
-                else:
-                    self.all_mlh_locations.append(None)
-                if "rotation" in mlh_data:
-                    self.all_mlh_rotations.append(np.array(mlh_data["rotation"]))
-                else:
-                    self.all_mlh_rotations.append(None)
-                if "graph_id" in mlh_data:
-                    self.all_mlh_graph_ids.append(mlh_data["graph_id"])
-                else:
-                    self.all_mlh_graph_ids.append(None)
-            else:
-                self.all_mlh_locations.append(None)
-                self.all_mlh_rotations.append(None)
-                self.all_mlh_graph_ids.append(None)
-
-        self.target_position = np.array(
-            self.target_data.get(
-                "primary_target_position", self.target_data.get("position", [0, 0, 0])
+            self.all_hypotheses_locations.append(
+                np.array(timestep_data[self.target_object_name])
             )
-        )
+            self.all_hypotheses_evidences.append(
+                np.array(self.lm_data["evidences"][timestep][self.target_object_name])
+            )
+            # Rotation data is the same for all timesteps
+            rotation_data = self.lm_data["possible_rotations"][0]
+            self.all_hypotheses_rotations.append(
+                np.array(rotation_data[self.target_object_name])
+            )
+
+            mlh_data = self.lm_data["current_mlh"][timestep]
+            self.all_mlh_locations.append(np.array(mlh_data["location"]))
+            self.all_mlh_rotations.append(np.array(mlh_data["rotation"]))
+            self.all_mlh_graph_ids.append(mlh_data["graph_id"])
+
+        self.target_position = np.array(self.target_data.get("primary_target_position"))
         self.target_rotation = np.array(
-            self.target_data.get(
-                "primary_target_rotation_euler",
-                self.target_data.get("euler_rotation", [0, 0, 0]),
-            )
+            self.target_data.get("primary_target_rotation_euler")
         )
         logger.info(
             f"{self.target_object_name} is at position: {self.target_position} "
@@ -418,19 +367,15 @@ class HypothesesRadiusVisualizer:
 
     def load_target_model(self) -> None:
         """Load the target object model."""
-        # Load model with additional features for better distance calculation
         features_to_load = [
-            "rgba", 
+            "rgba",
             "pose_vectors",
             "pose_fully_defined",
             "principal_curvatures",
             "principal_curvatures_log",
-            "hsv"
         ]
         self.target_model = load_object_model(
-            self.model_name, 
-            self.target_object_name,
-            features=features_to_load
+            self.model_name, self.target_object_name, features=features_to_load
         )
         logger.info(
             f"Loaded {self.target_object_name} model with "
@@ -491,16 +436,22 @@ class HypothesesRadiusVisualizer:
         """Update visualization for given timestep."""
         self.current_timestep = timestep
 
-        hypotheses_locations, hypotheses_evidences, hypotheses_rotations, mlh_location, mlh_graph_id = (
-            self._get_timestep_data(timestep)
-        )
+        (
+            hypotheses_locations,
+            hypotheses_evidences,
+            hypotheses_rotations,
+            mlh_location,
+            mlh_graph_id,
+        ) = self._get_timestep_data(timestep)
 
         self._cleanup_previous_visualizations()
 
         if self.object_points is None and self.target_model is not None:
             self._initialize_object_visualization()
 
-        self._add_hypotheses(hypotheses_locations, hypotheses_evidences, hypotheses_rotations)
+        self._add_hypotheses(
+            hypotheses_locations, hypotheses_evidences, hypotheses_rotations
+        )
         self._add_mlh_sphere(mlh_location)
 
         stats_text = self._create_statistics_text(
@@ -545,7 +496,6 @@ class HypothesesRadiusVisualizer:
         self.update_visualization(self.current_timestep)
         self.plotter.render()
 
-
     def _get_timestep_data(self, timestep: int) -> tuple:
         """Get data for a specific timestep.
 
@@ -566,7 +516,13 @@ class HypothesesRadiusVisualizer:
         self.current_hypotheses_evidences = hypotheses_evidences
         self.current_hypotheses_rotations = hypotheses_rotations
 
-        return hypotheses_locations, hypotheses_evidences, hypotheses_rotations, mlh_location, mlh_graph_id
+        return (
+            hypotheses_locations,
+            hypotheses_evidences,
+            hypotheses_rotations,
+            mlh_location,
+            mlh_graph_id,
+        )
 
     def _cleanup_previous_visualizations(self) -> None:
         """Remove previous visualization objects from the plotter."""
@@ -615,12 +571,14 @@ class HypothesesRadiusVisualizer:
             distances[i] = np.min(euclidean_dists)
         num_within = np.sum(distances <= self.max_match_distance)
         num_outside = np.sum(distances > self.max_match_distance)
-        
+
         return num_within, num_outside
 
     def _add_hypotheses(
-        self, hypotheses_locations: np.ndarray, hypotheses_evidences: np.ndarray,
-        hypotheses_rotations: np.ndarray
+        self,
+        hypotheses_locations: np.ndarray,
+        hypotheses_evidences: np.ndarray,
+        hypotheses_rotations: np.ndarray,
     ) -> None:
         """Create hypothesis points colored by whether they're within radius.
 
@@ -647,15 +605,15 @@ class HypothesesRadiusVisualizer:
         else:
             filtered_locations = hypotheses_locations
             filtered_rotations = hypotheses_rotations
-            
+
         # Compute distances to object using rotation data and object features
         distances = compute_distances_to_object(
-            filtered_locations, 
-            self.target_model.pos,
+            filtered_locations,
+            self.target_model,
             filtered_rotations,
-            self.target_model
+            max_nneighbors=self.max_nneighbors,
         )
-        
+
         # Separate points based on distance threshold
         within_radius = distances <= self.max_match_distance
         within_points = filtered_locations[within_radius]
@@ -687,16 +645,18 @@ class HypothesesRadiusVisualizer:
         # Compute distance to object
         # For MLH, we use the MLH rotation if available
         if self.all_mlh_rotations[self.current_timestep] is not None:
-            mlh_rotation = self.all_mlh_rotations[self.current_timestep].reshape(1, 3, 3)
+            mlh_rotation = self.all_mlh_rotations[self.current_timestep].reshape(
+                1, 3, 3
+            )
         else:
             # Fallback: create identity rotation
             mlh_rotation = np.eye(3).reshape(1, 3, 3)
-            
+
         distance = compute_distances_to_object(
-            mlh_location.reshape(1, -1), 
-            self.target_model.pos,
+            mlh_location.reshape(1, -1),
+            self.target_model,
             mlh_rotation,
-            self.target_model
+            max_nneighbors=self.max_nneighbors,
         )[0]
         mlh_color = "green" if distance <= self.max_match_distance else "red"
 
@@ -716,7 +676,7 @@ class HypothesesRadiusVisualizer:
             sampled_points = points[indices]
         else:
             sampled_points = points
-            
+
         for point in sampled_points:
             sphere = Sphere(point, r=self.max_match_distance, c="cyan")
             sphere.alpha(0.1)
@@ -751,9 +711,13 @@ class HypothesesRadiusVisualizer:
             sorted_indices = np.argsort(hypotheses_evidences)[::-1]
             top_indices = sorted_indices[: self.max_hypotheses_to_show]
             filtered_locations = hypotheses_locations[top_indices]
-            num_within, num_outside = self._count_points_within_radius(filtered_locations)
+            num_within, num_outside = self._count_points_within_radius(
+                filtered_locations
+            )
         else:
-            num_within, num_outside = self._count_points_within_radius(hypotheses_locations)
+            num_within, num_outside = self._count_points_within_radius(
+                hypotheses_locations
+            )
 
         stats_text = (
             f"Target: {self.target_object_name}\n"
@@ -779,6 +743,7 @@ def plot_target_hypotheses(
     exp_path: str,
     model_name: str = "dist_agent_1lm",
     max_match_distance: float = 0.05,
+    max_nneighbors: int = 3,
 ) -> int:
     """Plot target object hypotheses with interactive timestep slider.
 
@@ -786,6 +751,7 @@ def plot_target_hypotheses(
         exp_path: Path to experiment directory containing detailed_run_stats.json
         model_name: Name of pretrained model to load object from
         max_match_distance: Maximum distance for matching (default: 0.05)
+        max_nneighbors: Maximum number of nearest neighbors to consider (default: 3)
 
     Returns:
         Exit code
@@ -796,7 +762,9 @@ def plot_target_hypotheses(
         logger.error(f"Could not find detailed_run_stats.json at {json_path}")
         return 1
 
-    visualizer = HypothesesRadiusVisualizer(str(json_path), model_name, max_match_distance)
+    visualizer = HypothesesRadiusVisualizer(
+        str(json_path), model_name, max_match_distance, max_nneighbors
+    )
     visualizer.create_interactive_visualization()
 
     return 0
@@ -832,12 +800,19 @@ def add_subparser(
         default=0.05,
         help="Maximum distance for matching (default: 0.05).",
     )
+    parser.add_argument(
+        "--max_nneighbors",
+        type=int,
+        default=3,
+        help="Maximum number of nearest neighbors to consider (default: 3).",
+    )
     parser.set_defaults(
         func=lambda args: sys.exit(
             plot_target_hypotheses(
                 args.experiment_log_dir,
                 args.model_name,
                 args.max_match_distance,
+                args.max_nneighbors,
             )
         )
     )
