@@ -9,6 +9,10 @@
 
 """Interactive visualization tool for analyzing hypotheses using radius-based evidence.
 
+This visualizer shows ellipsoidal acceptance regions that represent the anisotropic
+distance metric used by get_custom_distances, which takes into account surface
+normals and curvature.
+
 This visualizer requires that experiments have been run with detailed logging
 enabled to generate detailed_run_stats.json files. To enable detailed logging,
 use DetailedEvidenceLMLoggingConfig in your experiment configuration.
@@ -34,6 +38,7 @@ from vedo import (
     Plotter,
     Points,
     Sphere,
+    Ellipsoid,
     Text2D,
     settings,
 )
@@ -42,10 +47,6 @@ from tbp.monty.frameworks.run_env import setup_env
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_custom_distances,
     get_relevant_curvature,
-)
-from tbp.monty.frameworks.models.object_model import (
-    GraphObjectModel,
-    GridObjectModel,
 )
 
 if TYPE_CHECKING:
@@ -221,7 +222,7 @@ def compute_distances_to_object(
     Returns:
         Array of minimum distances for each hypothesis (n_hypotheses,)
     """
-    distances, nearest_node_ids = target_model.kd_tree.query(
+    _, nearest_node_ids = target_model.kd_tree.query(
         hypothesis_locations,
         k=max_nneighbors,
         p=2,
@@ -260,7 +261,7 @@ class HypothesesRadiusVisualizer:
     Attributes:
         hypothesis_points: Current vedo.Points representing sensor location hypotheses.
         object_points: Current vedo.Points representing the target object point cloud.
-        radius_spheres: List of spheres showing radius around object points.
+        hypothesis_ellipsoids: List of ellipsoids showing anisotropic reach of hypotheses.
         mlh_sphere: Current vedo.Sphere representing the most likely hypothesis location.
         stats_text: Text label showing statistics for current timestep.
         target_object_name: The current object name being visualized.
@@ -290,13 +291,13 @@ class HypothesesRadiusVisualizer:
         self.hypotheses = None
         self.object_points = None
         self.object_center = None
-        self.radius_spheres = []
-        self.radius_visible = True
+        self.hypothesis_ellipsoids = []
+        self.ellipsoids_visible = True
         self.mlh_sphere = None
         self.stats_text = None
         self.slider = None
         self.plotter = None
-        self.radius_button = None
+        self.ellipsoid_button = None
         self.hypotheses_filter_slider = None
 
         self.current_target_locations = None
@@ -346,7 +347,9 @@ class HypothesesRadiusVisualizer:
                 np.array(self.lm_data["evidences"][timestep][self.target_object_name])
             )
             # Rotation data is the same for all timesteps
-            rotation_data = self.lm_data["possible_rotations"][0]
+            rotation_data = self.lm_data["possible_rotations"][
+                0
+            ]  # shape: (n_rotations, 3, 3)
             self.all_hypotheses_rotations.append(
                 np.array(rotation_data[self.target_object_name])
             )
@@ -401,10 +404,10 @@ class HypothesesRadiusVisualizer:
             pos=[(0.2, 0.05), (0.8, 0.05)],
             title="Timestep",
         )
-        self.radius_button = self.plotter.add_button(
-            self.toggle_radius_callback,
+        self.ellipsoid_button = self.plotter.add_button(
+            self.toggle_ellipsoid_callback,
             pos=(0.9, 0.1),
-            states=["Hide Radius", "Show Radius"],
+            states=["Hide Ellipsoids", "Show Ellipsoids"],
             font="Calco",
             bold=True,
         )
@@ -471,18 +474,18 @@ class HypothesesRadiusVisualizer:
             self.update_visualization(timestep)
             self.plotter.render()
 
-    def toggle_radius_callback(self, _widget: Button, _event: str) -> None:
-        """Toggle the visibility of the radius spheres."""
-        self.radius_visible = not self.radius_visible
+    def toggle_ellipsoid_callback(self, _widget: Button, _event: str) -> None:
+        """Toggle the visibility of the hypothesis ellipsoids."""
+        self.ellipsoids_visible = not self.ellipsoids_visible
 
-        for sphere in self.radius_spheres:
-            if self.radius_visible:
-                sphere.on()
+        for ellipsoid in self.hypothesis_ellipsoids:
+            if self.ellipsoids_visible:
+                ellipsoid.on()
             else:
-                sphere.off()
+                ellipsoid.off()
 
-        if self.radius_button is not None:
-            self.radius_button.switch()
+        if self.ellipsoid_button is not None:
+            self.ellipsoid_button.switch()
 
         self.plotter.render()
 
@@ -536,6 +539,10 @@ class HypothesesRadiusVisualizer:
             self.plotter.remove(self.mlh_sphere)
         if self.stats_text is not None:
             self.plotter.remove(self.stats_text)
+        # Clean up hypothesis ellipsoids
+        for ellipsoid in self.hypothesis_ellipsoids:
+            self.plotter.remove(ellipsoid)
+        self.hypothesis_ellipsoids = []
 
     def _initialize_object_visualization(self) -> None:
         """Initialize object model and convex hull visualization."""
@@ -543,8 +550,6 @@ class HypothesesRadiusVisualizer:
         self.object_points = Points(model.pos, c="gray")
         self.object_points.point_size(10)
         self.plotter.add(self.object_points)
-
-        self._add_radius_spheres(model.pos)
 
         self.plotter.add(
             Text2D(
@@ -554,23 +559,21 @@ class HypothesesRadiusVisualizer:
             )
         )
 
-    def _count_points_within_radius(self, points: np.ndarray) -> tuple[int, int]:
-        """Count how many points are within max_match_distance of object.
+    def _count_points_within_ellipsoids(
+        self, points: np.ndarray, rotations: np.ndarray
+    ) -> tuple[int, int]:
+        """Count how many hypotheses have object points within their ellipsoids.
 
         Args:
-            points: Array of 3D points to check
+            points: Array of hypothesis locations
+            rotations: Array of hypothesis rotation matrices
 
         Returns:
-            Tuple of (num_within_radius, num_outside_radius)
+            Tuple of (num_with_object_points, num_without_object_points)
         """
-        # For counting, we need rotation data which we don't have for filtered points
-        # So we use a simplified calculation here
-        distances = np.zeros(len(points))
-        for i, point in enumerate(points):
-            euclidean_dists = np.linalg.norm(self.target_model.pos - point, axis=1)
-            distances[i] = np.min(euclidean_dists)
-        num_within = np.sum(distances <= self.max_match_distance)
-        num_outside = np.sum(distances > self.max_match_distance)
+        has_object_points = self._check_object_points_in_ellipsoids(points, rotations)
+        num_within = np.sum(has_object_points)
+        num_outside = len(points) - num_within
 
         return num_within, num_outside
 
@@ -587,10 +590,8 @@ class HypothesesRadiusVisualizer:
             hypotheses_evidences: Array of evidence values for each hypothesis
             hypotheses_rotations: Array of rotation matrices for each hypothesis
         """
-        # Store total count before filtering
         self.total_hypotheses_count = len(hypotheses_locations)
 
-        # Filter hypotheses based on max_hypotheses_to_show
         if (
             self.max_hypotheses_to_show is not None
             and len(hypotheses_locations) > self.max_hypotheses_to_show
@@ -599,27 +600,22 @@ class HypothesesRadiusVisualizer:
             sorted_indices = np.argsort(hypotheses_evidences)[::-1]
             top_indices = sorted_indices[: self.max_hypotheses_to_show]
 
-            # Filter locations and rotations
             filtered_locations = hypotheses_locations[top_indices]
             filtered_rotations = hypotheses_rotations[top_indices]
         else:
             filtered_locations = hypotheses_locations
             filtered_rotations = hypotheses_rotations
 
-        # Compute distances to object using rotation data and object features
-        distances = compute_distances_to_object(
+        # For each hypothesis, check if there are object points within its ellipsoid
+        # This determines the color (green if object points found, red if not)
+        hypothesis_has_object_points = self._check_object_points_in_ellipsoids(
             filtered_locations,
-            self.target_model,
             filtered_rotations,
-            max_nneighbors=self.max_nneighbors,
         )
 
-        # Separate points based on distance threshold
-        within_radius = distances <= self.max_match_distance
-        within_points = filtered_locations[within_radius]
-        outside_points = filtered_locations[~within_radius]
+        within_points = filtered_locations[hypothesis_has_object_points]
+        outside_points = filtered_locations[~hypothesis_has_object_points]
 
-        # Plot hypotheses separately for inside and outside radius with different colors
         point_clouds = []
 
         if len(within_points) > 0:
@@ -636,6 +632,10 @@ class HypothesesRadiusVisualizer:
 
         self.hypotheses = point_clouds
 
+        # Add ellipsoids for filtered hypotheses
+        # Show ellipsoids for a subset to avoid clutter
+        self._add_hypothesis_ellipsoids(filtered_locations, filtered_rotations)
+
     def _add_mlh_sphere(self, mlh_location: np.ndarray) -> None:
         """Add MLH sphere visualization.
 
@@ -644,10 +644,14 @@ class HypothesesRadiusVisualizer:
         """
         # Compute distance to object
         # For MLH, we use the MLH rotation if available
-        if self.all_mlh_rotations[self.current_timestep] is not None:
-            mlh_rotation = self.all_mlh_rotations[self.current_timestep].reshape(
-                1, 3, 3
-            )
+        mlh_rotation_data = self.all_mlh_rotations[self.current_timestep]
+        if mlh_rotation_data is not None:
+            # MLH rotation is stored as Euler angles, convert to rotation matrix
+            mlh_rotation_euler = np.array(mlh_rotation_data)
+            mlh_rotation_matrix = R.from_euler(
+                "xyz", mlh_rotation_euler, degrees=True
+            ).as_matrix()
+            mlh_rotation = mlh_rotation_matrix.reshape(1, 3, 3)
         else:
             # Fallback: create identity rotation
             mlh_rotation = np.eye(3).reshape(1, 3, 3)
@@ -663,26 +667,158 @@ class HypothesesRadiusVisualizer:
         self.mlh_sphere = Sphere(mlh_location, r=0.005, c=mlh_color)
         self.plotter.add(self.mlh_sphere)
 
-    def _add_radius_spheres(self, points: np.ndarray) -> None:
-        """Add radius spheres around object points for visualization.
+    def _add_hypothesis_ellipsoids(
+        self,
+        locations: np.ndarray,
+        rotations: np.ndarray,
+    ) -> None:
+        """Add ellipsoids around hypotheses showing their anisotropic reach.
+
+        The ellipsoids are stretched along each hypothesis's surface normal to
+        represent the anisotropic distance metric used by get_custom_distances.
 
         Args:
-            points: Array of 3D points to create radius spheres for
+            locations: Array of hypothesis locations (n_hypotheses, 3)
+            rotations: Array of rotation matrices for each hypothesis (n_hypotheses, 3, 3)
+            max_to_show: Maximum number of ellipsoids to show
         """
-        # Sample points to avoid too many spheres
-        max_spheres = 20
-        if len(points) > max_spheres:
-            indices = np.random.choice(len(points), max_spheres, replace=False)
-            sampled_points = points[indices]
-        else:
-            sampled_points = points
+        # Don't show ellipsoids if visibility is off
+        if not self.ellipsoids_visible:
+            return
 
-        for point in sampled_points:
-            sphere = Sphere(point, r=self.max_match_distance, c="cyan")
-            sphere.alpha(0.1)
-            sphere.wireframe(True)
-            self.radius_spheres.append(sphere)
-            self.plotter.add(sphere)
+        # Check which hypotheses have object points within their ellipsoids
+        has_object_points = self._check_object_points_in_ellipsoids(
+            locations, rotations
+        )
+
+        # Limit the number of ellipsoids shown
+        max_to_show = 30
+        if len(locations) > max_to_show:
+            # Sample a subset, preferring those with object points
+            with_indices = np.where(has_object_points)[0]
+            without_indices = np.where(~has_object_points)[0]
+            
+            if len(with_indices) >= max_to_show:
+                sampled_indices = np.random.choice(with_indices, max_to_show, replace=False)
+            elif len(with_indices) > 0:
+                # Include all with object points and sample from those without
+                remaining = max_to_show - len(with_indices)
+                sampled_without = np.random.choice(
+                    without_indices,
+                    min(remaining, len(without_indices)),
+                    replace=False
+                )
+                sampled_indices = np.concatenate([with_indices, sampled_without])
+            else:
+                sampled_indices = np.random.choice(len(locations), max_to_show, replace=False)
+            
+            show_locations = locations[sampled_indices]
+            show_rotations = rotations[sampled_indices]
+            show_has_objects = has_object_points[sampled_indices]
+        else:
+            show_locations = locations
+            show_rotations = rotations
+            show_has_objects = has_object_points
+
+        # Get the object's maximum curvature for stretch factor calculation
+        object_features = self.target_model.__dict__
+        max_abs_curvature = get_relevant_curvature(object_features)
+
+        for location, rotation, has_objects in zip(
+            show_locations, show_rotations, show_has_objects
+        ):
+            # Extract surface normal from rotation matrix (3rd column)
+            surface_normal = rotation[:, 2]
+
+            # Calculate ellipsoid axes based on the distance metric
+            # The distance metric adds |dot_product| * (1 / (|curvature| + 0.5)) to euclidean distance
+            stretch_factor = 1 / (np.abs(max_abs_curvature) + 0.5)
+
+            # For a max_match_distance threshold:
+            # - In tangent plane: can reach up to max_match_distance
+            # - Along normal: solving d + d*stretch_factor = max_match_distance gives
+            #   d = max_match_distance / (1 + stretch_factor)
+            semi_axis_tangent = self.max_match_distance
+            semi_axis_normal = self.max_match_distance / (1 + stretch_factor)
+
+            # Color based on whether hypothesis has object points in its ellipsoid
+            color = "lightgreen" if has_objects else "lightcoral"
+
+            # Create ellipsoid with default orientation
+            ellipsoid = Ellipsoid(
+                pos=location,
+                axis1=[semi_axis_tangent, 0, 0],
+                axis2=[0, semi_axis_tangent, 0],
+                axis3=[0, 0, semi_axis_normal],
+                c=color,
+            )
+
+            # Rotate ellipsoid to align with surface normal
+            # Create rotation that aligns [0,0,1] with the surface normal
+            z_axis = np.array([0, 0, 1])
+            if not np.allclose(surface_normal, z_axis):
+                rotation_axis = np.cross(z_axis, surface_normal)
+                rotation_axis = rotation_axis / np.linalg.norm(rotation_axis)
+                rotation_angle = np.arccos(
+                    np.clip(np.dot(z_axis, surface_normal), -1, 1)
+                )
+                rot = R.from_rotvec(rotation_angle * rotation_axis)
+                ellipsoid.apply_transform(rot.as_matrix())
+
+            ellipsoid.alpha(0.15)
+            ellipsoid.wireframe(True)
+            self.hypothesis_ellipsoids.append(ellipsoid)
+            self.plotter.add(ellipsoid)
+
+    def _check_object_points_in_ellipsoids(
+        self,
+        hypothesis_locations: np.ndarray,
+        hypothesis_rotations: np.ndarray,
+    ) -> np.ndarray:
+        """Check which hypotheses have object points within their ellipsoids.
+
+        This follows the logic from hypotheses_displacer.py: a hypothesis gets
+        positive evidence if at least one object point is within max_match_distance
+        using the custom distance metric.
+
+        Args:
+            hypothesis_locations: Array of hypothesis locations (n_hypotheses, 3)
+            hypothesis_rotations: Array of rotation matrices (n_hypotheses, 3, 3)
+
+        Returns:
+            Boolean array indicating which hypotheses have object points within
+            their ellipsoids (n_hypotheses,)
+        """
+        # For each hypothesis, find nearest neighbors
+        _, nearest_node_ids = self.target_model.kd_tree.query(
+            hypothesis_locations,
+            k=self.max_nneighbors,
+            p=2,
+            workers=1,
+        )
+
+        if self.max_nneighbors == 1:
+            nearest_node_ids = np.expand_dims(nearest_node_ids, axis=1)
+
+        # Get nearest node locations and compute custom distances
+        nearest_node_locs = self.target_model.pos[nearest_node_ids]
+        surface_normals = hypothesis_rotations[:, :, 2]
+        object_features = self.target_model.__dict__
+        max_abs_curvature = get_relevant_curvature(object_features)
+
+        custom_nearest_node_dists = get_custom_distances(
+            nearest_node_locs,
+            hypothesis_locations,
+            surface_normals,
+            max_abs_curvature,
+        )
+
+        # Check if any nearest neighbor is within max_match_distance
+        # If at least one is within distance, hypothesis has object points in ellipsoid
+        min_distances = np.min(custom_nearest_node_dists, axis=1)
+        has_object_points = min_distances <= self.max_match_distance
+
+        return has_object_points
 
     def _create_statistics_text(
         self,
@@ -711,12 +847,17 @@ class HypothesesRadiusVisualizer:
             sorted_indices = np.argsort(hypotheses_evidences)[::-1]
             top_indices = sorted_indices[: self.max_hypotheses_to_show]
             filtered_locations = hypotheses_locations[top_indices]
-            num_within, num_outside = self._count_points_within_radius(
-                filtered_locations
+            # Re-check which filtered locations have object points
+            filtered_has_objects = self._check_object_points_in_ellipsoids(
+                filtered_locations, self.current_hypotheses_rotations[top_indices]
             )
+            num_within = np.sum(filtered_has_objects)
+            num_outside = len(filtered_locations) - num_within
         else:
-            num_within, num_outside = self._count_points_within_radius(
-                hypotheses_locations
+            # Get all hypothesis rotations
+            all_rotations = self.current_hypotheses_rotations
+            num_within, num_outside = self._count_points_within_ellipsoids(
+                hypotheses_locations, all_rotations
             )
 
         stats_text = (
@@ -727,8 +868,8 @@ class HypothesesRadiusVisualizer:
             f"{self.target_rotation[1]:.3f}, {self.target_rotation[2]:.3f}]\n\n"
             f"Timestep: {timestep}\n"
             f"Total hypotheses: {len(hypotheses_locations)} (showing top {self.max_hypotheses_to_show})\n"
-            f"Within radius ({self.max_match_distance:.3f}): {num_within} (green)\n"
-            f"Outside radius: {num_outside} (red)\n"
+            f"With object points in ellipsoid: {num_within} (green)\n"
+            f"Without object points: {num_outside} (red)\n"
             f"Evidence range: [{hypotheses_evidences.min():.4f}, "
             f"{hypotheses_evidences.max():.4f}]\n"
             f"Current MLH object: {mlh_graph_id}\n"
@@ -742,7 +883,7 @@ class HypothesesRadiusVisualizer:
 def plot_target_hypotheses(
     exp_path: str,
     model_name: str = "dist_agent_1lm",
-    max_match_distance: float = 0.05,
+    max_match_distance: float = 0.001,
     max_nneighbors: int = 3,
 ) -> int:
     """Plot target object hypotheses with interactive timestep slider.
