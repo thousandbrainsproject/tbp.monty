@@ -159,6 +159,12 @@ Python’s type hinting library provides Protocols to allow defining the shared 
 
 Protocols allow for defining abstract interfaces that types can satisfy to allow functions and methods to accept the broadest possible types. The abstract collection types, e.g. `Collection`, `Iterable`, etc., in the standard library can be thought of like protocols that various concrete collection types implement. This can be seen in the first example above.
 
+### The `Any` type SHOULD NOT be used
+
+The `Any` type in Python causes the type checker to stop attempting to do type checking, since it has no information whatsoever to go on. This means we lose all the benefits of using a static type checker, and thus it SHOULD NOT be used.
+
+Another similar type is `object`. While it can be used with arbitrary typed values similar to `Any`, it is an ordinary static type so the type checker will reject most operations on it (i.e., those not defined for all objects), and so it MAY be used where appropriate (see the Mypy documentation on [Any vs. object](https://mypy.readthedocs.io/en/stable/dynamic_typing.html#any-vs-object) for more details). 
+
 ### Third-party libraries with poor type hinting SHOULD be isolated as much as possible.
 
 Some third-party libraries, especially ones that are extensions written in another language like C, provide poor type hinting, meaning the majority of the benefits that come from static type checking aren't available. To minimize this surface area, we should isolate code that uses these third-party libraries, wrapping them in functions or methods that provide the correct types that the rest of our code expects.
