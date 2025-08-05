@@ -41,6 +41,7 @@ from vedo import (
     Ellipsoid,
     Text2D,
     settings,
+    Image,
 )
 
 from tbp.monty.frameworks.run_env import setup_env
@@ -59,7 +60,7 @@ logger = logging.getLogger(__name__)
 # Vedo settings
 settings.immediate_rendering = False
 settings.default_font = "Theemim"
-settings.window_splitting_position = 0.5
+settings.window_splitting_position = 0.3
 
 setup_env()
 
@@ -245,7 +246,9 @@ def is_hypothesis_in_object_reference_frame(
         surface_normals,
         max_abs_curvature,
     )
-    node_distance_weights = (max_match_distance - custom_nearest_node_dists) / max_match_distance
+    node_distance_weights = (
+        max_match_distance - custom_nearest_node_dists
+    ) / max_match_distance
     # Check if all neighbors are outside the distance threshold
     # mask shape is (n_hypotheses, max_nneighbors)
     mask = node_distance_weights <= 0
@@ -280,45 +283,66 @@ class HypothesesRadiusVisualizer:
         max_match_distance: float = 0.001,
         max_nneighbors: int = 3,
     ):
+        # ============ CONFIGURATION PARAMETERS ============
         self.json_path = json_path
         self.model_name = model_name
-        self.current_timestep = 0
         self.max_match_distance = max_match_distance
         self.max_nneighbors = max_nneighbors
+        self.max_ellipsoids_to_show = 1
+        self.max_hypotheses_to_show = None  # None means show all
 
-        # Data for all timesteps
+        # ============ APPLICATION STATE ============
+        # Current state variables that track user interaction and display
+        self.current_timestep = 0
+        self.current_sampled_indices = None
+        self.ellipsoids_visible = True
+        self.total_hypotheses_count = 0
+
+        # ============ HISTORICAL DATA STORAGE ============
+        # Arrays storing data across all timesteps for replay and analysis
         self.all_hypotheses_locations = []
         self.all_hypotheses_evidences = []
         self.all_hypotheses_rotations = []
         self.all_mlh_locations = []
         self.all_mlh_rotations = []
         self.all_mlh_graph_ids = []
+        self.all_sm0_locations = []
+        self.all_sm1_locations = []
+        self.sensed_curvatures = []
 
-        self.hypotheses = None
-        self.object_points = None
-        self.object_center = None
-        self.hypothesis_ellipsoids = []
-        self.hypothesis_spheres = []  # Track spheres for cleanup
-        self.ellipsoids_visible = True
-        self.mlh_sphere = None
-        self.stats_text = None
-        self.slider = None
-        self.plotter = None
-        self.ellipsoid_button = None
-        self.hypotheses_filter_slider = None
-        self.resample_button = None
-        
-        # For random sampling
-        self.current_sampled_indices = None
-        self.max_ellipsoids_to_show = 10
-
+        # ============ CURRENT TIMESTEP DATA ============
+        # Working data for the currently displayed timestep
         self.current_target_locations = None
         self.current_target_evidences = None
         self.current_hypotheses_rotations = None
+        self.current_ellipsoid_info = None
 
-        # Filtering settings
-        self.max_hypotheses_to_show = None  # None means show all
-        self.total_hypotheses_count = 0
+        # ============ 3D SCENE OBJECTS ============
+        # Vedo objects for 3D visualization
+        self.hypotheses = None
+        self.object_points = None
+        self.hypothesis_ellipsoids = []
+        self.hypothesis_spheres = []
+        self.mlh_sphere = None
+        self.sm0_sphere = None
+        self.sm1_sphere = None
+
+        # ============ UI CONTROLS ============
+        self.plotter = None
+        self.slider = None  # LM step navigation slider
+        self.ellipsoid_button = None  # Toggle ellipsoid visibility
+        self.hypotheses_filter_slider = None  # Filter number of displayed hypotheses
+        self.resample_button = None  # Trigger hypothesis resampling
+        self.stats_text = None  # Status and statistics display
+        self.sm0_image = None  # Sensor module 0 image display
+        self.sm1_image = None  # Sensor module 1 image display
+        self.sm0_label = None  # Sensor module 0 label
+        self.sm1_label = None  # Sensor module 1 label
+
+        # ============ RENDERER INDICES ============
+        self.main_renderer_ix = 0
+        self.sm0_renderer_ix = 1
+        self.sm1_renderer_ix = 2
 
         self.load_episode_data()
         self.load_target_model()
@@ -338,6 +362,8 @@ class HypothesesRadiusVisualizer:
         if "0" in data:
             self.lm_data = data["0"]["LM_0"]
             self.target_data = data["0"]["target"]
+            self.sm0_data = data["0"]["SM_0"]
+            self.sm1_data = data["0"]["SM_1"]
         else:
             raise ValueError("Could not find episode 0 data")
 
@@ -347,16 +373,16 @@ class HypothesesRadiusVisualizer:
 
         logger.info(f"Target object for episode 0: {self.target_object_name}")
 
-        self.num_timesteps = len(self.lm_data["possible_locations"])
-        logger.info(f"Episode has {self.num_timesteps} timesteps")
+        self.num_lm_steps = len(self.lm_data["possible_locations"])
+        logger.info(f"Episode has {self.num_lm_steps} LM steps")
 
-        for timestep in range(self.num_timesteps):
-            timestep_data = self.lm_data["possible_locations"][timestep]
+        for lm_step in range(self.num_lm_steps):
+            lm_step_data = self.lm_data["possible_locations"][lm_step]
             self.all_hypotheses_locations.append(
-                np.array(timestep_data[self.target_object_name])
+                np.array(lm_step_data[self.target_object_name])
             )
             self.all_hypotheses_evidences.append(
-                np.array(self.lm_data["evidences"][timestep][self.target_object_name])
+                np.array(self.lm_data["evidences"][lm_step][self.target_object_name])
             )
             # Rotation data is the same for all timesteps
             rotation_data = self.lm_data["possible_rotations"][
@@ -366,7 +392,7 @@ class HypothesesRadiusVisualizer:
                 np.array(rotation_data[self.target_object_name])
             )
 
-            mlh_data = self.lm_data["current_mlh"][timestep]
+            mlh_data = self.lm_data["current_mlh"][lm_step]
             self.all_mlh_locations.append(np.array(mlh_data["location"]))
             self.all_mlh_rotations.append(np.array(mlh_data["rotation"]))
             self.all_mlh_graph_ids.append(mlh_data["graph_id"])
@@ -379,6 +405,115 @@ class HypothesesRadiusVisualizer:
             f"{self.target_object_name} is at position: {self.target_position} "
             f"and rotation: {self.target_rotation}"
         )
+
+        self._find_lm_to_sm_mapping()
+
+        self._extract_sensed_curvatures()
+
+        self._extract_sensor_locations()
+
+        self._extract_sensor_rgba_patches()
+
+    def _extract_sensed_curvatures(self) -> None:
+        """Extract sensed curvature values from sensor module data for each timestep."""
+        logger.info("Extracting sensed curvatures from sensor module data")
+
+        processed_obs = self.sm0_data["processed_observations"]
+
+        for lm_timestep in range(self.num_lm_steps):
+            # Map LM timestep to SM timestep
+            sm_timestep = self.lm_to_sm_mapping[lm_timestep]
+            obs = processed_obs[sm_timestep]
+
+            non_morphological_features = obs[
+                "non_morphological_features"
+            ]  # hsv and principal_cuirvatures_log
+            max_abs_curvature = get_relevant_curvature(non_morphological_features)
+            self.sensed_curvatures.append(max_abs_curvature)
+
+        logger.info(f"Extracted {len(self.sensed_curvatures)} curvature values")
+        logger.info(
+            f"Curvature range: {min(self.sensed_curvatures):.4f} to {max(self.sensed_curvatures):.4f}"
+        )
+
+    def _extract_sensor_locations(self) -> None:
+        """Extract sensor locations from SM properties for each timestep."""
+        logger.info("Extracting sensor locations from SM properties")
+
+        sm0_properties = self.sm0_data["sm_properties"]
+        all_sm0_locations = [property["sm_location"] for property in sm0_properties]
+        logger.info(f"Found {len(all_sm0_locations)} total SM_0 locations")
+
+        sm1_properties = self.sm1_data["sm_properties"]
+        all_sm1_locations = [property["sm_location"] for property in sm1_properties]
+        logger.info(f"Found {len(all_sm1_locations)} total SM_1 locations")
+
+        self.all_sm0_locations = []
+        self.all_sm1_locations = []
+
+        for lm_timestep in range(self.num_lm_steps):
+            sm_timestep = self.lm_to_sm_mapping[lm_timestep]
+            self.all_sm0_locations.append(all_sm0_locations[sm_timestep])
+            self.all_sm1_locations.append(all_sm1_locations[sm_timestep])
+
+        logger.info(
+            f"Mapped {len(self.all_sm0_locations)} SM_0 locations to LM timesteps"
+        )
+        logger.info(
+            f"Mapped {len(self.all_sm1_locations)} SM_1 locations to LM timesteps"
+        )
+
+    def _find_lm_to_sm_mapping(self) -> None:
+        """Find mapping between LM timesteps and SM timesteps using use_state.
+
+        Raises:
+            ValueError: If the number of SM timesteps with use_state=True does not match the number of LM timesteps.
+        """
+        logger.info("Finding LM to SM timestep mapping")
+
+        self.lm_to_sm_mapping = []
+        processed_obs = self.sm0_data["processed_observations"]
+
+        sm_timesteps_with_use_state_true = []
+        for sm_timestep, obs in enumerate(processed_obs):
+            if obs["use_state"]:
+                sm_timesteps_with_use_state_true.append(sm_timestep)
+
+        logger.info(
+            f"Found {len(sm_timesteps_with_use_state_true)} SM timesteps with use_state=True"
+        )
+        logger.info(f"LM has {self.num_lm_steps} LM steps")
+
+        if len(sm_timesteps_with_use_state_true) == self.num_lm_steps:
+            self.lm_to_sm_mapping = sm_timesteps_with_use_state_true
+            logger.info("Successfully mapped LM timesteps to SM timesteps")
+        else:
+            raise ValueError(
+                f"Mismatch: {len(sm_timesteps_with_use_state_true)} SM use_state=True vs {self.num_lm_steps} LM timesteps"
+            )
+
+    def _extract_sensor_rgba_patches(self) -> None:
+        """Extract RGBA patches from raw observations for each sensor."""
+        logger.info("Extracting sensor RGBA patches from raw observations")
+
+        self.all_sm0_rgba = []
+        self.all_sm1_rgba = []
+
+        raw_obs = self.sm0_data["raw_observations"]
+        logger.info(f"Found {len(raw_obs)} SM_0 raw observations")
+
+        for lm_timestep in range(self.num_lm_steps):
+            sm_timestep = self.lm_to_sm_mapping[lm_timestep]
+            rgba = np.array(raw_obs[sm_timestep]["rgba"])
+            self.all_sm0_rgba.append(rgba)
+
+        raw_obs = self.sm1_data["raw_observations"]
+        logger.info(f"Found {len(raw_obs)} SM_1 raw observations")
+
+        for lm_timestep in range(self.num_lm_steps):
+            sm_timestep = self.lm_to_sm_mapping[lm_timestep]
+            rgba = np.array(raw_obs[sm_timestep]["rgba"])
+            self.all_sm1_rgba.append(rgba)
 
     def load_target_model(self) -> None:
         """Load the target object model."""
@@ -400,62 +535,102 @@ class HypothesesRadiusVisualizer:
 
     def create_interactive_visualization(self) -> None:
         """Create interactive visualization with slider for timestep navigation."""
+        # Create plotter with multiple renderers: main view as background,
+        # 2 small overlays in top-left for sensor images
+        # Define custom layout with overlapping renderers
+        custom_shape = [
+            dict(bottomleft=(0.0, 0.0), topright=(1.0, 1.0)),  # Main view (full window)
+            dict(
+                bottomleft=(0.02, 0.72), topright=(0.17, 0.92), bg="white"
+            ),  # SM_0 (top-left, smaller)
+            dict(
+                bottomleft=(0.19, 0.72), topright=(0.34, 0.92), bg="white"
+            ),  # SM_1 (next to SM_0, smaller)
+        ]
+
         self.plotter = Plotter(
+            shape=custom_shape,
+            size=(1400, 1000),
+            sharecam=False,
             title=(
                 f"Sensor Location Hypotheses (Radius-based) for {self.target_object_name.title()} "
                 "- Episode 0"
-            )
+            ),
         )
+
         self.update_visualization(timestep=0)
 
-        self.slider = self.plotter.add_slider(
+        # Add slider to the main renderer
+        self.slider = self.plotter.at(self.main_renderer_ix).add_slider(
             self.slider_callback,
             xmin=0,
-            xmax=self.num_timesteps - 1,
+            xmax=self.num_lm_steps - 1,
             value=0,
-            pos=[(0.2, 0.05), (0.8, 0.05)],
-            title="Timestep",
+            pos=[(0.25, 0.05), (0.75, 0.05)],
+            title="LM step",
         )
-        self.ellipsoid_button = self.plotter.add_button(
+        self.ellipsoid_button = self.plotter.at(self.main_renderer_ix).add_button(
             self.toggle_ellipsoid_callback,
-            pos=(0.9, 0.1),
+            pos=(0.85, 0.15),
             states=["Hide Ellipsoids", "Show Ellipsoids"],
             font="Calco",
-            bold=True,
+            size=20,
         )
-        self.resample_button = self.plotter.add_button(
+        self.resample_button = self.plotter.at(self.main_renderer_ix).add_button(
             self.resample_ellipsoids_callback,
-            pos=(0.1, 0.1),
-            states=["Resample Ellipsoids"],
+            pos=(0.85, 0.1),
+            states=["Select Different Ellipsoids"],
             font="Calco",
-            bold=True,
+            size=20,
         )
-        self.hypotheses_filter_slider = self.plotter.add_slider(
+        self.hypotheses_filter_slider = self.plotter.at(
+            self.main_renderer_ix
+        ).add_slider(
             self.hypotheses_filter_slider_callback,
             xmin=0,
             xmax=100,
             value=1,
-            pos=[(0.2, 0.12), (0.8, 0.12)],
+            pos=[(0.25, 0.10), (0.65, 0.10)],
             title="Top N% Hypotheses",
             show_value=True,
         )
-        self.plotter.show(
-            axes={
-                "xtitle": "X",
-                "ytitle": "Y",
-                "ztitle": "Z",
-                "xrange": (-0.2, 0.2),
-                "yrange": (1.3, 1.7),
-                "zrange": (-0.2, 0.2),
-            },
-            viewup="z",
-            interactive=True,
+
+        # Configure each renderer
+        self.plotter.at(self.sm0_renderer_ix).axes = 0
+        self.plotter.at(self.sm0_renderer_ix).resetcam = True
+
+        self.plotter.at(self.sm1_renderer_ix).axes = 0
+        self.plotter.at(self.sm1_renderer_ix).resetcam = True
+
+        self.plotter.at(self.main_renderer_ix).axes = {
+            "xtitle": "X",
+            "ytitle": "Y",
+            "ztitle": "Z",
+            "xrange": (-0.2, 0.2),
+            "yrange": (1.3, 1.7),
+            "zrange": (-0.2, 0.2),
+        }
+
+        # Show the plotter with all renderers
+        self.plotter.at(self.main_renderer_ix).show(
+            axes=True,
+            viewup="y",
+            camera=dict(pos=(0.5, 1.5, 2.0), focal_point=(0, 1.5, 0)),
         )
+        self.plotter.show(interactive=True)
+
+        # Clean up sensor images when vedo window is closed
+        self._cleanup_sensor_images()
+
+    def _cleanup_sensor_images(self) -> None:
+        """Clean up sensor images when the visualization is closed."""
+        # Cleanup handled by vedo plotter
+        pass
+
     def update_visualization(self, timestep: int) -> None:
         """Update visualization for given timestep."""
         self.current_timestep = timestep
-        
-        # Reset sampled indices when timestep changes
+
         self.current_sampled_indices = None
 
         (
@@ -475,6 +650,8 @@ class HypothesesRadiusVisualizer:
             hypotheses_locations, hypotheses_evidences, hypotheses_rotations
         )
         self._add_mlh_sphere(mlh_location)
+        self._add_sensor_spheres(timestep)
+        self._add_sensor_images(timestep)
 
         stats_text = self._create_statistics_text(
             timestep,
@@ -484,7 +661,7 @@ class HypothesesRadiusVisualizer:
             mlh_graph_id,
         )
         self.stats_text = Text2D(stats_text, pos="top-right", s=0.7)
-        self.plotter.add(self.stats_text)
+        self.plotter.at(self.main_renderer_ix).add(self.stats_text)
 
     def slider_callback(self, widget: Slider2D, _event: str) -> None:
         """Respond to slider step by updating the visualization."""
@@ -514,36 +691,40 @@ class HypothesesRadiusVisualizer:
         self.max_hypotheses_to_show = int(
             len(self.current_hypotheses_locations) * percentage / 100
         )
-        
-        # Reset sampled indices when filter changes
+
         self.current_sampled_indices = None
 
         self.update_visualization(self.current_timestep)
         self.plotter.render()
-    
+
     def resample_ellipsoids_callback(self, _widget: Button, _event: str) -> None:
         """Resample the ellipsoids to show a different random selection."""
         # Force new random sampling
         self.current_sampled_indices = None
-        
+        self.current_ellipsoid_info = None
+
         # Re-render just the ellipsoids and spheres
         # First clean up existing ellipsoids and spheres
         for ellipsoid in self.hypothesis_ellipsoids:
             self.plotter.remove(ellipsoid)
         self.hypothesis_ellipsoids = []
-        
+
         for sphere in self.hypothesis_spheres:
             self.plotter.remove(sphere)
         self.hypothesis_spheres = []
-        
+
         # Re-add ellipsoids with new random selection
-        if hasattr(self, '_current_filtered_locations'):
+        if hasattr(self, "_current_filtered_locations"):
             self._add_hypothesis_ellipsoids(
-                self._current_filtered_locations,
-                self._current_filtered_rotations
+                self._current_filtered_locations, self._current_filtered_rotations
             )
-        
-        self.plotter.render()
+
+            # Update statistics text
+            self.update_visualization(self.current_timestep)
+
+        self.plotter.at(self.sm0_renderer_ix).render()
+        self.plotter.at(self.sm1_renderer_ix).render()
+        self.plotter.at(self.main_renderer_ix).render()
 
     def _get_timestep_data(self, timestep: int) -> tuple:
         """Get data for a specific timestep.
@@ -575,33 +756,52 @@ class HypothesesRadiusVisualizer:
 
     def _cleanup_previous_visualizations(self) -> None:
         """Remove previous visualization objects from the plotter."""
+        # Clean up main renderer objects
         if self.hypotheses is not None:
             if isinstance(self.hypotheses, list):
                 for pts in self.hypotheses:
-                    self.plotter.remove(pts)
+                    self.plotter.at(self.main_renderer_ix).remove(pts)
             else:
-                self.plotter.remove(self.hypotheses)
+                self.plotter.at(self.main_renderer_ix).remove(self.hypotheses)
         if self.mlh_sphere is not None:
-            self.plotter.remove(self.mlh_sphere)
+            self.plotter.at(self.main_renderer_ix).remove(self.mlh_sphere)
         if self.stats_text is not None:
-            self.plotter.remove(self.stats_text)
-        # Clean up hypothesis ellipsoids
+            self.plotter.at(self.main_renderer_ix).remove(self.stats_text)
         for ellipsoid in self.hypothesis_ellipsoids:
-            self.plotter.remove(ellipsoid)
+            self.plotter.at(self.main_renderer_ix).remove(ellipsoid)
         self.hypothesis_ellipsoids = []
-        # Clean up hypothesis spheres
         for sphere in self.hypothesis_spheres:
-            self.plotter.remove(sphere)
+            self.plotter.at(self.main_renderer_ix).remove(sphere)
         self.hypothesis_spheres = []
+        if self.sm0_sphere is not None:
+            self.plotter.at(self.main_renderer_ix).remove(self.sm0_sphere)
+            self.sm0_sphere = None
+        if self.sm1_sphere is not None:
+            self.plotter.at(self.main_renderer_ix).remove(self.sm1_sphere)
+            self.sm1_sphere = None
+
+        # Clean up sensor renderer objects
+        if self.sm0_image is not None:
+            self.plotter.at(self.sm0_renderer_ix).remove(self.sm0_image)
+            self.sm0_image = None
+        if self.sm0_label is not None:
+            self.plotter.at(self.sm0_renderer_ix).remove(self.sm0_label)
+            self.sm0_label = None
+        if self.sm1_image is not None:
+            self.plotter.at(self.sm1_renderer_ix).remove(self.sm1_image)
+            self.sm1_image = None
+        if self.sm1_label is not None:
+            self.plotter.at(self.sm1_renderer_ix).remove(self.sm1_label)
+            self.sm1_label = None
 
     def _initialize_object_visualization(self) -> None:
         """Initialize object model and convex hull visualization."""
         model = self.target_model.copy()
         self.object_points = Points(model.pos, c="gray")
         self.object_points.point_size(10)
-        self.plotter.add(self.object_points)
+        self.plotter.at(self.main_renderer_ix).add(self.object_points)
 
-        self.plotter.add(
+        self.plotter.at(self.main_renderer_ix).add(
             Text2D(
                 f"{self.target_object_name.title()} Object (Ground Truth)",
                 pos="top-left",
@@ -622,7 +822,11 @@ class HypothesesRadiusVisualizer:
             Tuple of (num_with_object_points, num_without_object_points)
         """
         has_object_points = ~is_hypothesis_in_object_reference_frame(
-            points, self.target_model, rotations, self.max_nneighbors, self.max_match_distance
+            points,
+            self.target_model,
+            rotations,
+            self.max_nneighbors,
+            self.max_match_distance,
         )
         num_within = np.sum(has_object_points)
         num_outside = len(points) - num_within
@@ -631,17 +835,19 @@ class HypothesesRadiusVisualizer:
 
     def _sample_ellipsoid_indices(self, num_hypotheses: int) -> np.ndarray:
         """Randomly sample indices for ellipsoid visualization.
-        
+
         Args:
             num_hypotheses: Total number of hypotheses available
-            
+
         Returns:
             Array of sampled indices
         """
         if num_hypotheses <= self.max_ellipsoids_to_show:
             return np.arange(num_hypotheses)
         else:
-            return np.random.choice(num_hypotheses, self.max_ellipsoids_to_show, replace=False)
+            return np.random.choice(
+                num_hypotheses, self.max_ellipsoids_to_show, replace=False
+            )
 
     def _add_hypotheses(
         self,
@@ -678,7 +884,7 @@ class HypothesesRadiusVisualizer:
 
         # Add points
         self.hypotheses = Points(filtered_locations, c="lightgreen")
-        self.plotter.add(self.hypotheses)
+        self.plotter.at(self.main_renderer_ix).add(self.hypotheses)
 
         self._add_hypothesis_ellipsoids(filtered_locations, filtered_rotations)
 
@@ -702,18 +908,65 @@ class HypothesesRadiusVisualizer:
             # Fallback: create identity rotation
             mlh_rotation = np.eye(3).reshape(1, 3, 3)
 
-        # Check if MLH is within object reference frame
-        is_outside = is_hypothesis_in_object_reference_frame(
-            mlh_location.reshape(1, -1),
-            self.target_model,
-            mlh_rotation,
-            self.max_nneighbors,
-            self.max_match_distance,
-        )[0]
-        # mlh_color = "green" if not is_outside else "red"
-
+        # MLH is always shown in green
         self.mlh_sphere = Sphere(mlh_location, r=0.005, c="green")
-        self.plotter.add(self.mlh_sphere)
+        self.plotter.at(self.main_renderer_ix).add(self.mlh_sphere)
+
+    def _add_sensor_spheres(self, timestep: int) -> None:
+        """Add spheres to visualize sensor locations."""
+        # Add SM_0 sphere if location exists
+        if (
+            timestep < len(self.all_sm0_locations)
+            and len(self.all_sm0_locations[timestep]) > 0
+        ):
+            self.sm0_sphere = Sphere(
+                self.all_sm0_locations[timestep], r=0.003, c="blue", alpha=0.8
+            )
+            self.plotter.at(self.main_renderer_ix).add(self.sm0_sphere)
+
+        # Add SM_1 sphere if location exists
+        if (
+            timestep < len(self.all_sm1_locations)
+            and len(self.all_sm1_locations[timestep]) > 0
+        ):
+            self.sm1_sphere = Sphere(
+                self.all_sm1_locations[timestep], r=0.005, c="cyan", alpha=0.6
+            )
+            self.plotter.at(self.main_renderer_ix).add(self.sm1_sphere)
+
+    def _add_sensor_images(self, timestep: int) -> None:
+        """Add sensor RGB patch visualizations to separate renderers."""
+        # Update SM_0 image if available
+        if timestep < len(self.all_sm0_rgba):
+            rgba_patch = self.all_sm0_rgba[timestep]  # (64, 64, 4), 0-255 range
+            rgb_patch = rgba_patch[:, :, :3]  # Extract RGB channels
+
+            # Create Image object that fills the renderer
+            self.sm0_image = Image(rgb_patch)
+            # No need to scale or position - it will fill the renderer
+            self.plotter.at(self.sm0_renderer_ix).add(self.sm0_image)
+
+            # Add label
+            self.sm0_label = Text2D(
+                f"SM_0 (LM step {timestep})", pos="top-center", s=0.8, c="black"
+            )
+            self.plotter.at(self.sm0_renderer_ix).add(self.sm0_label)
+
+        # Update SM_1 image if available
+        if timestep < len(self.all_sm1_rgba):
+            rgba_patch = self.all_sm1_rgba[timestep]
+            rgb_patch = rgba_patch[:, :, :3]  # Extract RGB channels
+
+            # Create Image object that fills the renderer
+            self.sm1_image = Image(rgb_patch)
+            # No need to scale or position - it will fill the renderer
+            self.plotter.at(self.sm1_renderer_ix).add(self.sm1_image)
+
+            # Add label
+            self.sm1_label = Text2D(
+                f"SM_1 (LM step {timestep})", pos="top-center", s=0.8, c="black"
+            )
+            self.plotter.at(self.sm1_renderer_ix).add(self.sm1_label)
 
     def _add_hypothesis_ellipsoids(
         self,
@@ -724,24 +977,30 @@ class HypothesesRadiusVisualizer:
         if not self.ellipsoids_visible:
             return
 
-        # Get the object's maximum curvature for stretch factor calculation
-        object_features = self.target_model.__dict__
-        max_abs_curvature = get_relevant_curvature(object_features)
+        # Note: We'll get curvature per hypothesis location below
 
         # Check which hypotheses have object points within their ellipsoids
         has_object_points = ~is_hypothesis_in_object_reference_frame(
-            locations, self.target_model, rotations, self.max_nneighbors, 
-            self.max_match_distance
+            locations,
+            self.target_model,
+            rotations,
+            self.max_nneighbors,
+            self.max_match_distance,
         )
-        
+
         # Sample indices if not already done
         if self.current_sampled_indices is None:
-            self.current_sampled_indices = self._sample_ellipsoid_indices(len(locations))
-        
+            self.current_sampled_indices = self._sample_ellipsoid_indices(
+                len(locations)
+            )
+
         # Use the sampled indices
         show_locations = locations[self.current_sampled_indices]
         show_rotations = rotations[self.current_sampled_indices]
         show_has_objects = has_object_points[self.current_sampled_indices]
+
+        # Clear ellipsoid info for new display
+        self.current_ellipsoid_info = []
 
         for location, rotation, has_object in zip(
             show_locations, show_rotations, show_has_objects
@@ -754,13 +1013,30 @@ class HypothesesRadiusVisualizer:
             tangent2 = rotation[:, 1]  # Second tangent direction
             surface_normal = rotation[:, 2]  # Normal direction
 
+            # Get sensed curvature for current timestep
+            sensed_curvature = self.sensed_curvatures[self.current_timestep]
+
             # Calculate ellipsoid axes based on the distance metric
-            stretch_factor = 1 / (np.abs(max_abs_curvature) + 0.5)
+            # Exaggerate the stretch factor to make the effect more visible
+            exaggeration = 3.0  # Amplify the curvature effect
+            stretch_factor = exaggeration / (np.abs(sensed_curvature) + 0.5)
             semi_axis_tangent = self.max_match_distance
             semi_axis_normal = self.max_match_distance / (1 + stretch_factor)
 
             # Color based on whether hypothesis has object points in its ellipsoid
             color = "lightgreen" if has_object else "lightcoral"
+
+            # Store ellipsoid info for display
+            ellipsoid_info = {
+                "location": location,
+                "curvature": sensed_curvature,
+                "stretch_factor": stretch_factor,
+                "semi_axis_tangent": semi_axis_tangent,
+                "semi_axis_normal": semi_axis_normal,
+                "has_object": has_object,
+                "index": self.current_sampled_indices[len(self.current_ellipsoid_info)],
+            }
+            self.current_ellipsoid_info.append(ellipsoid_info)
 
             # Create ellipsoid with axes aligned to the local surface frame
             # axis1 and axis2 lie in the tangent plane
@@ -772,16 +1048,16 @@ class HypothesesRadiusVisualizer:
                 axis3=surface_normal * semi_axis_normal,
                 c=color,
             )
-            
+
             # Add sphere at hypothesis location
             sphere = Sphere(location, r=0.005, c="blue")
             self.hypothesis_spheres.append(sphere)
-            self.plotter.add(sphere)
+            self.plotter.at(self.main_renderer_ix).add(sphere)
 
             ellipsoid.alpha(0.15)
             ellipsoid.wireframe(True)
             self.hypothesis_ellipsoids.append(ellipsoid)
-            self.plotter.add(ellipsoid)
+            self.plotter.at(self.main_renderer_ix).add(ellipsoid)
 
     def _create_statistics_text(
         self,
@@ -830,25 +1106,83 @@ class HypothesesRadiusVisualizer:
             f"Object rotation: [{self.target_rotation[0]:.3f}, "
             f"{self.target_rotation[1]:.3f}, {self.target_rotation[2]:.3f}]",
             "",
-            f"Timestep: {timestep}",
+            f"LM step: {timestep}",
             f"Total hypotheses: {self.total_hypotheses_count}",
         ]
-        
+
         # Add displayed count info if filtering
         if self.max_hypotheses_to_show is not None:
-            displayed_count = min(self.max_hypotheses_to_show, len(hypotheses_locations))
-            stats_lines.append(f"Displayed: {displayed_count} (top {int(self.max_hypotheses_to_show * 100 / self.total_hypotheses_count)}%)")
-        
-        stats_lines.extend([
-            f"Within object reach: {num_within}",
-            f"Outside object reach: {num_outside}",
-            f"Evidence range: [{hypotheses_evidences.min():.4f}, "
-            f"{hypotheses_evidences.max():.4f}]",
-            f"Current MLH object: {mlh_graph_id}",
-            f"MLH location: [{mlh_location[0]:.3f}, {mlh_location[1]:.3f}, "
-            f"{mlh_location[2]:.3f}]"
-        ])
-        
+            displayed_count = min(
+                self.max_hypotheses_to_show, len(hypotheses_locations)
+            )
+            stats_lines.append(
+                f"Displayed: {displayed_count} (top {int(self.max_hypotheses_to_show * 100 / self.total_hypotheses_count)}%)"
+            )
+
+        stats_lines.extend(
+            [
+                f"Within object reach: {num_within}",
+                f"Outside object reach: {num_outside}",
+                f"Evidence range: [{hypotheses_evidences.min():.4f}, "
+                f"{hypotheses_evidences.max():.4f}]",
+                f"Current MLH object: {mlh_graph_id}",
+                f"MLH location: [{mlh_location[0]:.3f}, {mlh_location[1]:.3f}, "
+                f"{mlh_location[2]:.3f}]",
+            ]
+        )
+
+        # Add ellipsoid information if available
+        if self.current_ellipsoid_info and len(self.current_ellipsoid_info) > 0:
+            stats_lines.append("")
+            stats_lines.append("=== Ellipsoid Details ===")
+            for i, info in enumerate(self.current_ellipsoid_info):
+                stats_lines.append(f"Ellipsoid {i + 1} (Hyp #{info['index']})")
+                stats_lines.append(f"  Curvature: {info['curvature']:.4f}")
+                stats_lines.append(f"  Stretch factor: {info['stretch_factor']:.4f}")
+                stats_lines.append(
+                    f"  Tangent semi-axis: {info['semi_axis_tangent']:.6f}"
+                )
+                stats_lines.append(
+                    f"  Normal semi-axis: {info['semi_axis_normal']:.6f}"
+                )
+                stats_lines.append(
+                    f"  Ratio (normal/tangent): {info['semi_axis_normal'] / info['semi_axis_tangent']:.3f}"
+                )
+                stats_lines.append(f"  Has object points: {info['has_object']}")
+                if i < len(self.current_ellipsoid_info) - 1:
+                    stats_lines.append("")
+
+        # Add sensor location info
+        stats_lines.append("")
+        stats_lines.append("=== Sensor Locations ===")
+        if (
+            timestep < len(self.all_sm0_locations)
+            and len(self.all_sm0_locations[timestep]) > 0
+        ):
+            sm0_loc = self.all_sm0_locations[timestep]
+            stats_lines.append(
+                f"SM_0 (blue): ({sm0_loc[0]:.4f}, {sm0_loc[1]:.4f}, {sm0_loc[2]:.4f})"
+            )
+        else:
+            stats_lines.append("SM_0: No data")
+
+        if (
+            timestep < len(self.all_sm1_locations)
+            and len(self.all_sm1_locations[timestep]) > 0
+        ):
+            sm1_loc = self.all_sm1_locations[timestep]
+            stats_lines.append(
+                f"SM_1 (cyan): ({sm1_loc[0]:.4f}, {sm1_loc[1]:.4f}, {sm1_loc[2]:.4f})"
+            )
+        else:
+            stats_lines.append("SM_1: No data")
+
+        # Add sensed curvature info
+        if timestep < len(self.sensed_curvatures):
+            stats_lines.append(
+                f"Sensed curvature: {self.sensed_curvatures[timestep]:.4f}"
+            )
+
         stats_text = "\n".join(stats_lines)
 
         return stats_text
