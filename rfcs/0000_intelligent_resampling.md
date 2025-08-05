@@ -177,31 +177,24 @@ The existing `_calculate_evidence_for_new_locations()` method in `hypotheses_dis
    - Spatial distance between hypothesis and stored points
    - Alignment of surface normals
    - Local curvature properties
-3. **Evidence assignment**: When all nearest neighbors are beyond `max_match_distance`, the hypothesis receives evidence of -1, effectively marking it as invalid
 
-This approach naturally creates a "soft boundary" around the object model, where hypotheses beyond this boundary can be eliminated. 
-
-The `max_match_distance` parameter effectively defines how far from the object surface a hypothesis can be before being considered invalid. 
+This creates an ellipsoidal region around each hypothesis that takes into account of the local curvature and the hypothesis' surface normal. Currently, if none of the nearest neighbors of the object models are in the ellipsoidal region, the hypothesis receives evidence of -1. We propose to simply extend this to remove these hypotheses. 
 
 ### Computational Considerations
 
-With thousands of hypotheses (e.g., 17,760 in some cases), distance calculations can become computationally expensive. While determining which subset of hypotheses to evaluate is out of scope for this RFC, we note potential optimizations:
-
-**Bounding Box Pre-filter**: A simple axis-aligned bounding box check can quickly eliminate hypotheses that are clearly outside the object's vicinity before expensive KDTree queries.
+With thousands of hypotheses (e.g., 17,760 in some cases), distance calculations can become computationally expensive. While determining which subset of hypotheses to evaluate is out of scope for this RFC, we note potential optimizations for completion:
 
 **Evidence-Based Filtering**: Already implemented in `displace_hypotheses_and_compute_evidence()`, which only processes hypotheses above an evidence threshold.
+
+**Bounding Box Pre-filter**: A simple axis-aligned bounding box check can quickly eliminate hypotheses that are clearly outside the object's vicinity before expensive KDTree queries.
 
 **Hypothesis Clustering**: For extreme cases, spatial clustering could reduce computations by processing cluster representatives rather than individual hypotheses.
 
 These are mentioned for completeness but may not be necessary for typical use cases where evidence-based filtering provides sufficient optimization.
 
-<img src="./0000_intelligent_resampling/hypothesis_oorf_01.png" alt="Hypothesis visualization at timestep 0" style="width:30%; height:auto; display:inline-block;"/> <img src="./0000_intelligent_resampling/hypothesis_oorf_02.png" alt="Hypothesis visualization at timestep 1" style="width:30%; height:auto; display:inline-block;"/> <img src="./0000_intelligent_resampling/hypothesis_oorf_03.png" alt="Hypothesis visualization at timestep 2" style="width:30%; height:auto; display:inline-block;"/>
-
-_Figure 3_. Visualization of hypothesis elimination over time. **Left (Timestep 0)**: Initial hypothesis distribution with 17,760 hypotheses - all shown in green as they are within the object's vicinity. **Middle & Right (Later timesteps)**: As evidence accumulates, hypotheses naturally get eliminated. Green points indicate hypotheses within `max_match_distance` of the object, while red points (if any) show hypotheses that have moved beyond this threshold and receive negative evidence.
-
 ### Implications for Unsupervised Learning and Incomplete Models
 
-When dealing with unsupervised learning and incomplete models, the out-of-reference-frame elimination strategy requires careful consideration:
+When dealing with unsupervised learning and incomplete models, the out-of-reference-frame elimination strategy may require more careful consideration:
 
 **Model familiarity bias**: For familiar objects (those with high observation counts), we could be more aggressive in eliminating hypotheses that move out of the reference frame. This is generally beneficial as it allows faster convergence for well-known objects.
 
