@@ -27,15 +27,15 @@ This especially applies to newtypes (see below for details). Newtypes do nothing
 
 ### Methods and functions SHOULD accept the broadest possible type
 
-The type assigned to arguments should be as abstract as possible when specifying the arguments to a method or function. For example, if a method needs some collection of items, instead of specifying the type as a `List`, use `Collection` instead.
+The type assigned to arguments should be as abstract as possible when specifying the arguments to a method or function. For example, if a method needs some collection of items, instead of specifying the type as a `List`, use `Iterable` instead.
 
 ```python
 # Don't restrict the argument to a List
 def double_list(l: List[int]) -> List[int]:
     return [x * 2 for x in l]
 
-# Instead, use a collection type
-def double_coll(c: Collection[int]) -> List[int]:
+# Instead, use an appropriate collection type
+def double_coll(c: Iterable[int]) -> List[int]:
     return [x * 2 for x in c]
 ```
 
