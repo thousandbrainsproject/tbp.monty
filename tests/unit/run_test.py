@@ -207,11 +207,11 @@ class MontyRunTest(unittest.TestCase):
     def test_importing_existing_configs(self):
         """Test that any changes do not cause errors in existing configs."""
         current_file_path = pathlib.Path(__file__).parent.resolve()
-        base_repo_idx = current_file_path.parts.index("tbp.monty")
-        while current_file_path.parts[base_repo_idx + 1 :].count("tbp.monty") > 0:
-            # We want the _last_ "tbp.monty" index
+        base_repo_idx = current_file_path.parts.index("tests")
+        while current_file_path.parts[base_repo_idx + 1 :].count("tests") > 0:
+            # We want the _last_ "tests" index
             base_repo_idx += 1
-        base_dir = pathlib.Path(*current_file_path.parts[: base_repo_idx + 1])
+        base_dir = pathlib.Path(*current_file_path.parts[:base_repo_idx])
         exp_dir = os.path.join(str(base_dir), "benchmarks")
         sys.path.append(exp_dir)
         import configs  # noqa: F401
