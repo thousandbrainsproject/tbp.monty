@@ -30,7 +30,7 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 
 # May, 2025 Robot Hackathon
 
-The team set out to test Monty in a real world setting.  We built robots for a week and then present them and the demos in the video below. You can also read about the hackathon here: https://thousandbrains.org/2025-05-robot-hackathon/
+The team set out to test Monty in a real world setting.  We built robots for a week and then presented them and the demos in the video below. You can also read about the hackathon here: https://thousandbrains.org/2025-05-robot-hackathon/
 
 
 [block:embed]
