@@ -8,6 +8,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import copy
 import json
 import logging
@@ -18,6 +20,7 @@ from pathlib import Path
 from sys import getsizeof
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import quaternion
 import torch
@@ -389,10 +392,10 @@ def get_time_stats(all_ds, all_conditions) -> pd.DataFrame:
     return time_stats
 
 
-def compute_pose_error(
+def compute_pose_errors(
     predicted_rotation: Rotation, target_rotation: Rotation
-) -> float:
-    """Computes the minimum angular pose error between predicted and target rotations.
+) -> npt.NDArray[np.float64] | float:
+    """Computes the angular pose errors between predicted and target rotations.
 
     Both inputs must be instances of `scipy.spatial.transform.Rotation`. The
     `predicted_rotation` may contain a single rotation or a list of rotations,
@@ -400,7 +403,7 @@ def compute_pose_error(
 
     The pose error is defined as the geodesic distance on SO(3) — the angle of the
     relative rotation between predicted and target. If `predicted_rotation` contains
-    multiple rotations, this function returns the minimum error among them.
+    multiple rotations, this function returns the errors among them.
 
     Note that the `.inv()` operation in this method is due to how geodesic distance
     between two rotations is calculated, not a side-effect of whether the target
@@ -414,9 +417,30 @@ def compute_pose_error(
         target_rotation: Target rotation. Must represent a single rotation.
 
     Returns:
+        The angular errors in radians.
+    """
+    errors: npt.NDArray[np.float64] | float = (
+        predicted_rotation * target_rotation.inv()
+    ).magnitude()
+    return errors
+
+
+def compute_pose_error(
+    predicted_rotation: Rotation, target_rotation: Rotation
+) -> float:
+    """Computes the minimum angular pose error between predicted and target rotations.
+
+    See `compute_pose_errors` for more details.
+
+    Args:
+        predicted_rotation: Predicted rotation(s). Can be a single or list of
+            rotation.
+        target_rotation: Target rotation. Must represent a single rotation.
+
+    Returns:
         The minimum angular error in radians.
     """
-    error = np.min((predicted_rotation * target_rotation.inv()).magnitude())
+    error = np.min(compute_pose_errors(predicted_rotation, target_rotation))
     return error
 
 
