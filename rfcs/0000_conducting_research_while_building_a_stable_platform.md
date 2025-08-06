@@ -57,6 +57,9 @@ The general approach going forward is to enable rapid research prototypes withou
 2. Once the prototypes demonstrate stable capability, researchers will pair with engineers on an implementation project.
 3. The implementation project results in merging of the capability to Monty `main`.
 
+> [!NOTE]
+> Please note that the decision as to when a prototype capability is stable, what constitutes a merge-worthy capability, and when to initiate the Implementation Project is at the discretion of the researcher.
+
 ```mermaid
 flowchart LR
     T(Theory) --> P(Prototype on a fork)
