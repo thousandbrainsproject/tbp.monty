@@ -22,12 +22,12 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
-from scipy.spatial import KDTree
 from scipy.spatial.transform import Rotation as R
 from vedo import (
+    Cube,
     Ellipsoid,
     Image,
     Plotter,
@@ -38,13 +38,16 @@ from vedo import (
 )
 
 from tbp.monty.frameworks.run_env import setup_env
+from tbp.monty.frameworks.utils.graph_matching_utils import (
+    get_custom_distances,
+    get_relevant_curvature,
+)
 
-from .hypothesis_out_of_frame_data_models import (
+from .data_utils import (
     EpisodeDataLoader,
     ObjectModel,
-    load_object_model,
+    get_pretrained_model_path,
 )
-from .hypothesis_out_of_frame_geometry import is_hypothesis_in_object_reference_frame
 
 if TYPE_CHECKING:
     import argparse
@@ -53,7 +56,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Vedo settings
 settings.immediate_rendering = False
 settings.default_font = "Theemim"
 
@@ -68,12 +70,13 @@ TBP_COLORS = {
     "yellow": "#FFBE31",
 }
 
+
 def is_hypothesis_in_object_reference_frame(
     hypothesis_locations: np.ndarray,
     target_model: ObjectModel,
     hypothesis_rotations: np.ndarray,
     max_nneighbors: int = 3,
-    max_match_distance: float = 0.001,
+    max_match_distance: float = 0.01,
 ) -> np.ndarray:
     """Check if hypotheses are in the object reference frame.
 
@@ -82,7 +85,7 @@ def is_hypothesis_in_object_reference_frame(
         target_model: ObjectModel containing points and features.
         hypothesis_rotations: Rotation matrices for each hypothesis (n_hypotheses, 3, 3).
         max_nneighbors: Maximum number of nearest neighbors to consider (default: 3).
-        max_match_distance: Maximum distance for matching (default: 0.001).
+        max_match_distance: Maximum distance for matching (default: 0.01).
 
     Returns:
         Array of booleans indicating if each hypothesis is in the object reference frame.
@@ -130,80 +133,58 @@ class HypothesesOORFVisualizer:
 
     def __init__(
         self,
-        json_path: str,
-        model_name: str = "dist_agent_1lm",
-        max_match_distance: float = 0.01,
-        max_nneighbors: int = 3,
+        json_path: Path,
+        model_path: Path,
     ):
         # ============ CONFIGURATION PARAMETERS ============
         self.json_path = json_path
-        self.model_name = model_name
-        self.max_match_distance = max_match_distance
-        self.max_nneighbors = max_nneighbors
+        self.model_path = model_path
+        self.max_match_distance = 0.01
+        self.max_nneighbors = 3
         self.max_ellipsoids_to_show = 1
-        self.max_hypotheses_to_show = None  # None means show all
-
-        # ============ APPLICATION STATE ============
         self.current_timestep = 0
-        self.current_sampled_indices = None
-        self.ellipsoids_visible = True
-        self.total_hypotheses_count = 0
 
-        # ============ DATA LOADER ============
-        self.data_loader = EpisodeDataLoader(json_path)
-
-        # ============ CURRENT TIMESTEP DATA ============
-        self.current_target_locations = None
-        self.current_target_evidences = None
+        # ============ DATA ============
+        self.data_loader = EpisodeDataLoader(self.json_path, self.model_path)
+        self.current_hypotheses_locations = None
         self.current_hypotheses_rotations = None
-        self.current_ellipsoid_info = None
+        self.current_mlh_locations = None
+        self.current_mlh_rotations = None
+        self.current_mlh_graph_ids = None
+        self.current_sm0_locations = None
+        self.current_sm1_locations = None
+        self.current_sm0_rgba = None
+        self.current_sm1_rgba = None
+        self.current_sensed_curvatures = None
 
-        # ============ 3D VEDO OBJECTS ============
+        # ============ 3D VEDO OBJECTS ============ 
+        self.target_pointcloud = None
         self.hypotheses = None
-        self.object_points = None
         self.hypothesis_ellipsoids = []
         self.hypothesis_spheres = []
         self.mlh_cube = None
         self.sm0_sphere = None
         self.sm1_sphere = None
-
-        # ============ UI ============
-        self.plotter = None
-        self.slider = None  # For timestep
-        self.ellipsoid_button = None  # Toggle ellipsoid visibility
-        self.resample_button = None  # Trigger hypothesis resampling
-        self.stats_text = None
         self.sm0_image = None
         self.sm1_image = None
         self.sm0_label = None
         self.sm1_label = None
+
+        # ============ UI ============
+        self.plotter = None
+        self.slider = None
+        self.stats_text = None
 
         # ============ RENDERER ============
         self.main_renderer_ix = 0
         self.sm0_renderer_ix = 1
         self.sm1_renderer_ix = 2
 
-        # Load data
         self.data_loader.load_episode_data()
-        self.load_target_model()
-
-
-    def load_target_model(self) -> None:
-        """Load the target object model."""
-        self.target_model = load_object_model(
-            self.model_name, self.data_loader.target_object_name
-        )
-        logger.info(
-            f"Loaded {self.data_loader.target_object_name} model with "
-            f"{len(self.target_model.pos)} points and features: "
-            f"{list(self.target_model.__dict__.keys())}"
-        )
 
     def create_interactive_visualization(self) -> None:
         """Create interactive visualization with slider for timestep navigation."""
-        # Create plotter with multiple renderers: main view as background,
-        # 2 small overlays in top-left for sensor images
-        # Define custom layout with overlapping renderers
+        # Create plotter main view and 2 small overlays for sensor images
         custom_shape = [
             dict(bottomleft=(0.0, 0.0), topright=(1.0, 1.0)),  # Main view (full window)
             dict(
@@ -218,15 +199,12 @@ class HypothesesOORFVisualizer:
             shape=custom_shape,
             size=(1400, 1000),
             sharecam=False,
-            title=(
-                f"Sensor Location Hypotheses (Radius-based) for "
-                f"{self.data_loader.target_object_name.title()} - Episode 0"
-            ),
+            title=f"Hypotheses Out of Reference Frame for {self.data_loader.target_object_name.title()}",
         )
 
         self.update_visualization(timestep=0)
 
-        # Add slider to the main renderer
+        # Timestep slider
         self.slider = self.plotter.at(self.main_renderer_ix).add_slider(
             self.slider_callback,
             xmin=0,
@@ -249,19 +227,7 @@ class HypothesesOORFVisualizer:
             font="Calco",
             size=20,
         )
-        self.hypotheses_filter_slider = self.plotter.at(
-            self.main_renderer_ix
-        ).add_slider(
-            self.hypotheses_filter_slider_callback,
-            xmin=0,
-            xmax=100,
-            value=1,
-            pos=[(0.25, 0.10), (0.65, 0.10)],
-            title="Top N% Hypotheses",
-            show_value=True,
-        )
 
-        # Configure each renderer
         self.plotter.at(self.sm0_renderer_ix).axes = 0
         self.plotter.at(self.sm0_renderer_ix).resetcam = True
 
@@ -277,7 +243,6 @@ class HypothesesOORFVisualizer:
             "zrange": (-0.2, 0.2),
         }
 
-        # Show the plotter with all renderers
         self.plotter.at(self.main_renderer_ix).show(
             axes=True,
             viewup="y",
@@ -285,46 +250,28 @@ class HypothesesOORFVisualizer:
         )
         self.plotter.show(interactive=True)
 
-        # Clean up sensor images when vedo window is closed
-        self._cleanup_sensor_images()
-
-    def _cleanup_sensor_images(self) -> None:
-        """Clean up sensor images when the visualization is closed."""
-        # Cleanup handled by vedo plotter
-        pass
-
     def update_visualization(self, timestep: int) -> None:
         """Update visualization for given timestep."""
-        self.current_timestep = timestep
-
-        self.current_sampled_indices = None
-
-        (
-            hypotheses_locations,
-            hypotheses_evidences,
-            hypotheses_rotations,
-            mlh_location,
-            mlh_graph_id,
-        ) = self._get_timestep_data(timestep)
-
         self._cleanup_previous_visualizations()
 
-        if self.object_points is None and self.target_model is not None:
-            self._initialize_object_visualization()
+        self.current_timestep = timestep
+        self._initialize_timestep_data(self.current_timestep)
+
+        if self.target_pointcloud is None:
+            self._initialize_target_visualization()
 
         self._add_hypotheses(
-            hypotheses_locations, hypotheses_evidences, hypotheses_rotations
+            self.current_hypotheses_locations,
+            self.current_hypotheses_rotations,
         )
-        self._add_mlh_sphere(mlh_location)
+        self._add_mlh_cube(self.current_mlh_locations)
         self._add_sensor_spheres(timestep)
         self._add_sensor_images(timestep)
 
         stats_text = self._create_statistics_text(
             timestep,
-            hypotheses_locations,
-            hypotheses_evidences,
-            mlh_location,
-            mlh_graph_id,
+            self.current_hypotheses_locations,
+            self.current_mlh_locations,
         )
         self.stats_text = Text2D(stats_text, pos="top-right", s=0.7)
         self.plotter.at(self.main_renderer_ix).add(self.stats_text)
@@ -336,36 +283,8 @@ class HypothesesOORFVisualizer:
             self.update_visualization(timestep)
             self.plotter.render()
 
-    def toggle_ellipsoid_callback(self, _widget: Button, _event: str) -> None:
-        """Toggle the visibility of the hypothesis ellipsoids."""
-        self.ellipsoids_visible = not self.ellipsoids_visible
-
-        for ellipsoid in self.hypothesis_ellipsoids:
-            if self.ellipsoids_visible:
-                ellipsoid.on()
-            else:
-                ellipsoid.off()
-
-        if self.ellipsoid_button is not None:
-            self.ellipsoid_button.switch()
-
-        self.plotter.render()
-
-    def hypotheses_filter_slider_callback(self, widget: Slider2D, _event: str) -> None:
-        """Handle filter slider changes."""
-        percentage = widget.GetRepresentation().GetValue()
-        self.max_hypotheses_to_show = int(
-            len(self.current_hypotheses_locations) * percentage / 100
-        )
-
-        self.current_sampled_indices = None
-
-        self.update_visualization(self.current_timestep)
-        self.plotter.render()
-
     def resample_ellipsoids_callback(self, _widget: Button, _event: str) -> None:
         """Resample the ellipsoids to show a different random selection."""
-        # Force new random sampling
         self.current_sampled_indices = None
         self.current_ellipsoid_info = None
 
@@ -385,40 +304,32 @@ class HypothesesOORFVisualizer:
                 self._current_filtered_locations, self._current_filtered_rotations
             )
 
-            # Update statistics text
             self.update_visualization(self.current_timestep)
 
         self.plotter.at(self.sm0_renderer_ix).render()
         self.plotter.at(self.sm1_renderer_ix).render()
         self.plotter.at(self.main_renderer_ix).render()
 
-    def _get_timestep_data(self, timestep: int) -> tuple:
+    def _initialize_timestep_data(self, timestep: int) -> tuple:
         """Get data for a specific timestep.
 
         Args:
             timestep: The timestep to retrieve data for
-
-        Returns:
-            Tuple of (hypotheses_locations, hypotheses_evidences, hypotheses_rotations,
-            mlh_location, mlh_graph_id)
         """
-        hypotheses_locations = self.data_loader.all_hypotheses_locations[timestep]
-        hypotheses_evidences = self.data_loader.all_hypotheses_evidences[timestep]
-        hypotheses_rotations = self.data_loader.all_hypotheses_rotations[timestep]
-        mlh_location = self.data_loader.all_mlh_locations[timestep]
-        mlh_graph_id = self.data_loader.all_mlh_graph_ids[timestep]
-
-        self.current_hypotheses_locations = hypotheses_locations
-        self.current_hypotheses_evidences = hypotheses_evidences
-        self.current_hypotheses_rotations = hypotheses_rotations
-
-        return (
-            hypotheses_locations,
-            hypotheses_evidences,
-            hypotheses_rotations,
-            mlh_location,
-            mlh_graph_id,
-        )
+        self.current_hypotheses_locations = self.data_loader.all_hypotheses_locations[
+            timestep
+        ]
+        self.current_hypotheses_rotations = self.data_loader.all_hypotheses_rotations[
+            timestep
+        ]
+        self.current_mlh_locations = self.data_loader.all_mlh_locations[timestep]
+        self.current_mlh_rotations = self.data_loader.all_mlh_rotations[timestep]
+        self.current_mlh_graph_ids = self.data_loader.all_mlh_graph_ids[timestep]
+        self.current_sm0_locations = self.data_loader.all_sm0_locations[timestep]
+        self.current_sm1_locations = self.data_loader.all_sm1_locations[timestep]
+        self.current_sm0_rgba = self.data_loader.all_sm0_rgba[timestep]
+        self.current_sm1_rgba = self.data_loader.all_sm1_rgba[timestep]
+        self.current_sensed_curvatures = self.data_loader.sensed_curvatures[timestep]
 
     def _cleanup_previous_visualizations(self) -> None:
         """Remove previous visualization objects from the plotter."""
@@ -446,7 +357,6 @@ class HypothesesOORFVisualizer:
             self.plotter.at(self.main_renderer_ix).remove(self.sm1_sphere)
             self.sm1_sphere = None
 
-        # Clean up sensor renderer objects
         if self.sm0_image is not None:
             self.plotter.at(self.sm0_renderer_ix).remove(self.sm0_image)
             self.sm0_image = None
@@ -460,32 +370,13 @@ class HypothesesOORFVisualizer:
             self.plotter.at(self.sm1_renderer_ix).remove(self.sm1_label)
             self.sm1_label = None
 
-    def _initialize_object_visualization(self) -> None:
+    def _initialize_target_visualization(self) -> None:
         """Initialize object model and convex hull visualization."""
-        model = self.target_model.copy()
+        self.target_model = self.data_loader.target_model
 
-        # The pretrained models are stored at learned position [0, 1.5, 0]
-        # We need to move them to origin before rotating
-        learned_position = np.array([0, 1.5, 0])
-
-        # Move object from learned position to origin
-        model = model - learned_position
-
-        # Apply ground truth rotation
-        model = model.rotated(self.data_loader.target_rotation, degrees=True)
-
-        # Translate to the ground truth world position
-        model = model + self.data_loader.target_position
-
-        # Rebuild KDTree with transformed positions for accurate distance queries
-        model.kd_tree = KDTree(model.pos, leafsize=40)
-
-        # Store the transformed model for distance calculations
-        self.transformed_target_model = model
-
-        self.object_points = Points(model.pos, c="gray")
-        self.object_points.point_size(10)
-        self.plotter.at(self.main_renderer_ix).add(self.object_points)
+        self.target_pointcloud = Points(self.target_model.pos, c="gray")
+        self.target_pointcloud.point_size(10)
+        self.plotter.at(self.main_renderer_ix).add(self.target_pointcloud)
 
         self.plotter.at(self.main_renderer_ix).add(
             Text2D(
@@ -507,12 +398,9 @@ class HypothesesOORFVisualizer:
         Returns:
             Tuple of (num_with_object_points, num_without_object_points)
         """
-        # Use transformed model if available, otherwise use original
-        target_model = getattr(self, "transformed_target_model", self.target_model)
-
         has_object_points = ~is_hypothesis_in_object_reference_frame(
             points,
-            target_model,
+            self.target_model,
             rotations,
             self.max_nneighbors,
             self.max_match_distance,
@@ -541,7 +429,6 @@ class HypothesesOORFVisualizer:
     def _add_hypotheses(
         self,
         hypotheses_locations: np.ndarray,
-        hypotheses_evidences: np.ndarray,
         hypotheses_rotations: np.ndarray,
     ) -> None:
         """Add hypotheses by their location and ellipsoid based on the custom
@@ -549,7 +436,6 @@ class HypothesesOORFVisualizer:
 
         Args:
             hypotheses_locations: Array of hypothesis locations
-            hypotheses_evidences: Array of evidence values for each hypothesis
             hypotheses_rotations: Array of rotation matrices for each hypothesis
         """
         # Transform hypotheses from learned object frame to world frame
@@ -581,8 +467,8 @@ class HypothesesOORFVisualizer:
 
         self.total_hypotheses_count = len(hypotheses_locations)
 
-        # Use transformed model if available, otherwise use original
-        target_model = getattr(self, "transformed_target_model", self.target_model)
+        # Use target_model which is already in world frame
+        target_model = self.target_model
 
         # Check which hypotheses are in/out of object reference frame
         # Returns True for hypotheses OUTSIDE the reference frame
@@ -640,7 +526,7 @@ class HypothesesOORFVisualizer:
 
         self._add_hypothesis_ellipsoids(filtered_locations, filtered_rotations)
 
-    def _add_mlh_sphere(self, mlh_location: np.ndarray) -> None:
+    def _add_mlh_cube(self, mlh_location: np.ndarray) -> None:
         """Add MLH sphere visualization.
 
         Args:
@@ -662,8 +548,8 @@ class HypothesesOORFVisualizer:
         transformed_mlh = transformed_mlh + self.data_loader.target_position
 
         # Check if MLH is within object reference frame
-        # Use transformed model if available, otherwise use original
-        target_model = getattr(self, "transformed_target_model", self.target_model)
+        # Use target_model which is already in world frame
+        target_model = self.target_model
 
         # Get MLH rotation from current timestep data (stored as Euler angles)
         mlh_rotation_euler = self.data_loader.all_mlh_rotations[self.current_timestep]
@@ -678,7 +564,6 @@ class HypothesesOORFVisualizer:
             ground_truth_rotation.as_matrix() @ mlh_rotation_matrix
         )
 
-        # Check if MLH is in object reference frame
         is_outside = is_hypothesis_in_object_reference_frame(
             transformed_mlh.reshape(1, 3),
             target_model,
@@ -687,74 +572,48 @@ class HypothesesOORFVisualizer:
             self.max_match_distance,
         )[0]
 
-        # Set color based on whether MLH is in/out of object frame
         mlh_color = TBP_COLORS["pink"] if is_outside else TBP_COLORS["blue"]
 
-        # MLH sphere is slightly smaller than regular hypothesis points
-        self.mlh_sphere = Sphere(transformed_mlh, r=0.003, c=mlh_color)
+        self.mlh_sphere = Cube(transformed_mlh, c=mlh_color)
         self.plotter.at(self.main_renderer_ix).add(self.mlh_sphere)
 
     def _add_sensor_spheres(self, timestep: int) -> None:
         """Add spheres to visualize sensor locations."""
-        # Add SM_0 sphere if location exists
-        if (
-            timestep < len(self.data_loader.all_sm0_locations)
-            and len(self.data_loader.all_sm0_locations[timestep]) > 0
-        ):
-            self.sm0_sphere = Sphere(
-                self.data_loader.all_sm0_locations[timestep],
-                r=0.003,
-                c=TBP_COLORS["green"],
-                alpha=0.8,
-            )
-            self.plotter.at(self.main_renderer_ix).add(self.sm0_sphere)
+        self.sm0_sphere = Sphere(
+            self.current_sm0_locations,
+            r=0.003,
+            c=TBP_COLORS["green"],
+            alpha=0.8,
+        )
+        self.plotter.at(self.main_renderer_ix).add(self.sm0_sphere)
 
-        # Add SM_1 sphere if location exists
-        if (
-            timestep < len(self.data_loader.all_sm1_locations)
-            and len(self.data_loader.all_sm1_locations[timestep]) > 0
-        ):
-            self.sm1_sphere = Sphere(
-                self.data_loader.all_sm1_locations[timestep],
+        self.sm1_sphere = Sphere(
+            self.current_sm1_locations,
                 r=0.005,
                 c=TBP_COLORS["yellow"],
                 alpha=0.6,
             )
-            self.plotter.at(self.main_renderer_ix).add(self.sm1_sphere)
+        self.plotter.at(self.main_renderer_ix).add(self.sm1_sphere)
 
     def _add_sensor_images(self, timestep: int) -> None:
         """Add sensor RGB patch visualizations to separate renderers."""
-        # Update SM_0 image if available
-        if timestep < len(self.data_loader.all_sm0_rgba):
-            rgba_patch = self.data_loader.all_sm0_rgba[timestep]  # (64, 64, 4), 0-255 range
-            rgb_patch = rgba_patch[:, :, :3]  # Extract RGB channels
+        rgba_patch = self.current_sm0_rgba
+        rgb_patch = rgba_patch[:, :, :3]
 
-            # Create Image object that fills the renderer
-            self.sm0_image = Image(rgb_patch)
-            # No need to scale or position - it will fill the renderer
-            self.plotter.at(self.sm0_renderer_ix).add(self.sm0_image)
+        self.sm0_image = Image(rgb_patch)
+        self.plotter.at(self.sm0_renderer_ix).add(self.sm0_image)
 
-            # Add label
-            self.sm0_label = Text2D(
-                f"SM_0 (LM step {timestep})", pos="top-center", s=0.8, c="black"
-            )
-            self.plotter.at(self.sm0_renderer_ix).add(self.sm0_label)
+        self.sm0_label = Text2D("SM_0", pos="top-center", s=0.8, c="black")
+        self.plotter.at(self.sm0_renderer_ix).add(self.sm0_label)
 
-        # Update SM_1 image if available
-        if timestep < len(self.data_loader.all_sm1_rgba):
-            rgba_patch = self.data_loader.all_sm1_rgba[timestep]
-            rgb_patch = rgba_patch[:, :, :3]  # Extract RGB channels
+        rgba_patch = self.current_sm1_rgba
+        rgb_patch = rgba_patch[:, :, :3]
 
-            # Create Image object that fills the renderer
-            self.sm1_image = Image(rgb_patch)
-            # No need to scale or position - it will fill the renderer
-            self.plotter.at(self.sm1_renderer_ix).add(self.sm1_image)
+        self.sm1_image = Image(rgb_patch)
+        self.plotter.at(self.sm1_renderer_ix).add(self.sm1_image)
 
-            # Add label
-            self.sm1_label = Text2D(
-                f"SM_1 (LM step {timestep})", pos="top-center", s=0.8, c="black"
-            )
-            self.plotter.at(self.sm1_renderer_ix).add(self.sm1_label)
+        self.sm1_label = Text2D("SM_1", pos="top-center", s=0.8, c="black")
+        self.plotter.at(self.sm1_renderer_ix).add(self.sm1_label)
 
     def _add_hypothesis_ellipsoids(
         self,
@@ -765,15 +624,9 @@ class HypothesesOORFVisualizer:
         if not self.ellipsoids_visible:
             return
 
-        # Note: We'll get curvature per hypothesis location below
-
-        # Use transformed model if available, otherwise use original
-        target_model = getattr(self, "transformed_target_model", self.target_model)
-
-        # Check which hypotheses have object points within their ellipsoids
         has_object_points = ~is_hypothesis_in_object_reference_frame(
             locations,
-            target_model,
+            self.target_model,
             rotations,
             self.max_nneighbors,
             self.max_match_distance,
@@ -1017,16 +870,14 @@ class HypothesesOORFVisualizer:
 
 
 def plot_target_hypotheses(
-    exp_path: str,
-    model_name: str = "dist_agent_1lm",
-    max_match_distance: float = 0.01,
-    max_nneighbors: int = 3,
+    exp_path: Path,
+    model_type: Literal["dist", "surf"] = "dist",
 ) -> int:
     """Plot target object hypotheses with interactive timestep slider.
 
     Args:
         exp_path: Path to experiment directory containing detailed_run_stats.json
-        model_name: Name of pretrained model to load object from
+        model_type: Type of pretrained model to load object from
         max_match_distance: Maximum distance for matching (default: 0.01)
         max_nneighbors: Maximum number of nearest neighbors to consider (default: 3)
 
@@ -1039,9 +890,9 @@ def plot_target_hypotheses(
         logger.error(f"Could not find detailed_run_stats.json at {json_path}")
         return 1
 
-    visualizer = HypothesesOORFVisualizer(
-        str(json_path), model_name, max_match_distance, max_nneighbors
-    )
+    model_path = get_pretrained_model_path(model_type)
+
+    visualizer = HypothesesOORFVisualizer(json_path, model_path)
     visualizer.create_interactive_visualization()
 
     return 0
@@ -1058,7 +909,7 @@ def add_subparser(
         parent_parser: Optional parent parser for shared arguments.
     """
     parser = subparsers.add_parser(
-        "hypothesis_out_of_frame_radius",
+        "hypothesis_out_of_reference_frame",
         help="Interactive visualization of target object hypothesis locations using radius-based evidence.",
         parents=[parent_parser] if parent_parser else [],
     )
@@ -1067,29 +918,16 @@ def add_subparser(
         help="The directory containing the detailed_run_stats.json file.",
     )
     parser.add_argument(
-        "--model_name",
-        default="dist_agent_1lm",
-        help="Name of pretrained model to load target object from.",
-    )
-    parser.add_argument(
-        "--max_match_distance",
-        type=float,
-        default=0.01,
-        help="Maximum distance for matching (default: 0.01).",
-    )
-    parser.add_argument(
-        "--max_nneighbors",
-        type=int,
-        default=3,
-        help="Maximum number of nearest neighbors to consider (default: 3).",
+        "--model_type",
+        type=Literal["dist", "surf"],
+        default="dist",
+        help="Type of pretrained model to load target object from.",
     )
     parser.set_defaults(
         func=lambda args: sys.exit(
             plot_target_hypotheses(
                 args.experiment_log_dir,
-                args.model_name,
-                args.max_match_distance,
-                args.max_nneighbors,
+                args.model_type,
             )
         )
     )
