@@ -68,7 +68,54 @@ TBP_COLORS = {
     "yellow": "#FFBE31",
 }
 
+def is_hypothesis_in_object_reference_frame(
+    hypothesis_locations: np.ndarray,
+    target_model: ObjectModel,
+    hypothesis_rotations: np.ndarray,
+    max_nneighbors: int = 3,
+    max_match_distance: float = 0.001,
+) -> np.ndarray:
+    """Check if hypotheses are in the object reference frame.
 
+    Args:
+        hypothesis_locations: Array of hypothesis locations (n_hypotheses, 3).
+        target_model: ObjectModel containing points and features.
+        hypothesis_rotations: Rotation matrices for each hypothesis (n_hypotheses, 3, 3).
+        max_nneighbors: Maximum number of nearest neighbors to consider (default: 3).
+        max_match_distance: Maximum distance for matching (default: 0.001).
+
+    Returns:
+        Array of booleans indicating if each hypothesis is in the object reference frame.
+    """
+    _, nearest_node_ids = target_model.kd_tree.query(
+        hypothesis_locations,
+        k=max_nneighbors,
+        p=2,
+        workers=1,
+    )
+
+    if max_nneighbors == 1:
+        nearest_node_ids = np.expand_dims(nearest_node_ids, axis=1)
+
+    nearest_node_locs = target_model.pos[nearest_node_ids]
+    surface_normals = hypothesis_rotations[:, :, 2]
+    object_features = target_model.__dict__
+    max_abs_curvature = get_relevant_curvature(object_features)
+
+    custom_nearest_node_dists = get_custom_distances(
+        nearest_node_locs,
+        hypothesis_locations,
+        surface_normals,
+        max_abs_curvature,
+    )
+    node_distance_weights = (
+        max_match_distance - custom_nearest_node_dists
+    ) / max_match_distance
+    mask = node_distance_weights <= 0
+
+    # A hypothesis is outside if ALL its nearest neighbors are outside.
+    is_outside = np.all(mask, axis=1)
+    return is_outside
 
 
 class HypothesesOORFVisualizer:
