@@ -41,11 +41,65 @@ class ObjectModel:
         self,
         pos: np.ndarray,
         features: Optional[dict[str, np.ndarray]] = None,
+        learned_position: Optional[np.ndarray] = None,
+        target_position: Optional[np.ndarray] = None,
+        target_rotation: Optional[np.ndarray | R] = None,
     ):
+        """Initialize ObjectModel, optionally transforming from learned to world frame.
+
+        Args:
+            pos: The points of the object model (n_points, 3).
+            features: Optional features of the object model.
+            learned_position: If provided along with target_position and target_rotation,
+                transform the model from this learned position to world frame.
+            target_position: Target position in world frame for transformation.
+            target_rotation: Target rotation (Euler angles in degrees or Rotation object).
+        """
         self.pos = np.asarray(pos, dtype=float)
         if features:
             for key, value in features.items():
                 setattr(self, key, np.asarray(value))
+
+        # If transformation parameters are provided, transform to world frame
+        if (
+            learned_position is not None
+            and target_position is not None
+            and target_rotation is not None
+        ):
+            self._apply_world_transform(
+                learned_position, target_position, target_rotation
+            )
+
+    def _apply_world_transform(
+        self,
+        learned_position: np.ndarray,
+        target_position: np.ndarray,
+        target_rotation: np.ndarray | R,
+    ) -> None:
+        """Apply world frame transformation in-place during initialization.
+
+        Args:
+            learned_position: The position where the model was learned.
+            target_position: The target position in world frame.
+            target_rotation: The target rotation (Euler angles in degrees or Rotation object).
+        """
+        if isinstance(target_rotation, R):
+            rot = target_rotation
+        else:
+            rot = R.from_euler("xyz", target_rotation, degrees=True)
+
+        self.pos = self.pos - learned_position
+        self.pos = rot.apply(self.pos)
+        self.pos = self.pos + target_position
+
+        if hasattr(self, "pose_vectors"):
+            rot_matrix = rot.as_matrix()
+            new_pose_vectors = np.zeros_like(self.pose_vectors)
+            for i in range(len(self.pose_vectors)):
+                pose_mat = self.pose_vectors[i].reshape(3, 3)
+                rotated_pose = rot_matrix @ pose_mat
+                new_pose_vectors[i] = rotated_pose.flatten()
+            self.pose_vectors = new_pose_vectors
 
     @property
     def x(self) -> np.ndarray:
@@ -63,64 +117,6 @@ class ObjectModel:
     def kd_tree(self) -> KDTree:
         self._kd_tree = KDTree(self.pos, leafsize=40)
         return self._kd_tree
-
-    def copy(self, deep: bool = True) -> ObjectModel:
-        from copy import deepcopy
-
-        return deepcopy(self) if deep else self
-
-    def rotated(
-        self,
-        rotation: R | np.ndarray,
-        degrees: bool = False,
-    ) -> ObjectModel:
-        """Rotate the object model.
-
-        Args:
-            rotation: The rotation to apply to the object model.
-            degrees: Whether the rotation is in degrees or radians.
-
-        Returns:
-            The rotated object model.
-
-        Raises:
-            ValueError: If the rotation argument is invalid.
-        """
-        if isinstance(rotation, R):
-            rot = rotation
-        else:
-            arr = np.asarray(rotation)
-            if arr.shape == (3,):
-                rot = R.from_euler("xyz", arr, degrees=degrees)
-            elif arr.shape == (3, 3):
-                rot = R.from_matrix(arr)
-            else:
-                raise ValueError(f"Invalid rotation argument: {rotation}")
-
-        pos = rot.apply(self.pos)
-        out = self.copy()
-        out.pos = pos
-
-        if hasattr(out, "pose_vectors"):
-            rot_matrix = rot.as_matrix()
-            new_pose_vectors = np.zeros_like(out.pose_vectors)
-            for i in range(len(out.pose_vectors)):
-                pose_mat = out.pose_vectors[i].reshape(3, 3)
-                rotated_pose = rot_matrix @ pose_mat
-                new_pose_vectors[i] = rotated_pose.flatten()
-            out.pose_vectors = new_pose_vectors
-
-        return out
-
-    def __add__(self, translation: np.ndarray) -> ObjectModel:
-        translation = np.asarray(translation)
-        out = self.copy(deep=True)
-        out.pos += translation
-        return out
-
-    def __sub__(self, translation: np.ndarray) -> ObjectModel:
-        translation = np.asarray(translation)
-        return self + (-translation)
 
 
 def get_pretrained_model_path(model_type: str) -> Path:
@@ -148,21 +144,24 @@ def get_pretrained_model_path(model_type: str) -> Path:
 
 
 def load_object_model(
-    model_type: str,
+    model_path: Path,
     object_name: str,
     lm_id: int = 0,
+    target_position: Optional[np.ndarray] = None,
+    target_rotation: Optional[np.ndarray] = None,
 ) -> ObjectModel:
     """Load an object model from a pretraining experiment.
 
     Args:
-        model_type: The type of model to load ("dist" or "surf").
+        model_path: The path to the model.
         object_name: The name of the object.
         lm_id: The ID of the LM to load the object model from.
+        target_position: Optional target position for world frame transformation.
+        target_rotation: Optional target rotation (Euler angles in degrees) for transformation.
 
     Returns:
-        The object model.
+        The object model, optionally transformed to world frame.
     """
-    model_path = get_pretrained_model_path(model_type)
     data = torch.load(model_path, map_location=torch.device("cpu"))
     data = data["lm_dict"][lm_id]["graph_memory"][object_name][
         "patch"
@@ -177,20 +176,29 @@ def load_object_model(
     # 'gaussian_curvature_sc', 'mean_curvature_sc'.
     # Each feature maps to [start_index, end_index] for slicing the feature tensor.
 
-    # Load all available features
     for feature in data.feature_mapping.keys():
         idx = data.feature_mapping[feature]
         feature_data = np.array(data.x[:, idx[0] : idx[1]])
         feature_dict[feature] = feature_data
 
-    return ObjectModel(points, features=feature_dict)
+    # The pretrained models are stored at learned position [0, 1.5, 0]
+    learned_position = np.array([0, 1.5, 0]) if target_position is not None else None
+
+    return ObjectModel(
+        points,
+        features=feature_dict,
+        learned_position=learned_position,
+        target_position=target_position,
+        target_rotation=target_rotation,
+    )
 
 
 class EpisodeDataLoader:
     """Loads and processes episode data from detailed_run_stats.json."""
 
-    def __init__(self, json_path: str):
+    def __init__(self, json_path: Path, model_path: Path):
         self.json_path = json_path
+        self.model_path = model_path
 
         self.lm_data = {}
         self.target_data = {}
@@ -203,7 +211,6 @@ class EpisodeDataLoader:
         self.lm_to_sm_mapping = []
 
         self.all_hypotheses_locations = []
-        self.all_hypotheses_evidences = []
         self.all_hypotheses_rotations = []
         self.all_mlh_locations = []
         self.all_mlh_rotations = []
@@ -248,6 +255,14 @@ class EpisodeDataLoader:
         self.target_position = np.array(self.target_data.get("primary_target_position"))
         self.target_rotation = np.array(
             self.target_data.get("primary_target_rotation_euler")
+        )
+
+        # Load the model directly in world frame
+        self.target_model = load_object_model(
+            model_path=self.model_path,
+            object_name=self.target_object_name,
+            target_position=self.target_position,
+            target_rotation=self.target_rotation,
         )
 
         logger.info(f"Target object for episode 0: {self.target_object_name}")
