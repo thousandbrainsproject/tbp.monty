@@ -19,7 +19,7 @@ CMP is a connectionless protocol that maintains message boundaries with no conne
 
 ### 1.1 Constraints
 
-The Thousand Brains System imposes a number of constraints on the CMP that CMP MUST maintain.
+The Thousand Brains System imposes a number of constraints that a CMP implementation MUST maintain.
 
 #### 1.1.1 Message Propagation Delay
 
