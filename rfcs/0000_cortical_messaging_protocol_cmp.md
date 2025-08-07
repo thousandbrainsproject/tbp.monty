@@ -35,7 +35,7 @@ Learning Modules MUST send out Vote Cortical Messages (if any) and MUST process 
 
 #### 1.1.4 Goal State Selectors Select From All Goals
 
-Goal State Selectors MUST receive every Goal Cortical Message addressed to them before generating any Cortical Messages for the Motor Module.
+Goal State Selectors MUST receive every Goal Cortical Message addressed to them before generating any Cortical Messages for the Motor Modules.
 
 ## 2 Functional Specification
 
