@@ -15,7 +15,7 @@ CMP supports unicast and multicast delivery of data.
 
 The data flow in CMP is unidirectional, from the sender to one or more receivers.
 
-CMP is a connectionless protocol that maintains message boundaries with no connection setup or feature negotiation. It does not provide reliability nor retransmission.
+CMP is a connectionless protocol that maintains message boundaries with no connection setup or feature negotiation.
 
 ## 2 Functional Specification
 
@@ -34,6 +34,9 @@ A CMP step is a sequence of the following, ordered, atomic phases:
 5. Learning Modules Output
 6. Goal State Selectors
 7. Motor Modules
+
+![Figure 1](0000_cortical_messaging_protocol_cmp/figure_1_cmp_step_overview.png)
+_**Figure 1.** Overview of message flow within a single CMP Step. Message lifetimes are annotated with corresponding phase numbers._
 
 #### 2.1.1 Sensor Modules
 
