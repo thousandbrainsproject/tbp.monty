@@ -17,6 +17,26 @@ The data flow in CMP is unidirectional, from the sender to one or more receivers
 
 CMP is a connectionless protocol that maintains message boundaries with no connection setup or feature negotiation.
 
+### 1.1 Constraints
+
+The Thousand Brains System imposes a number of constraints on the CMP that CMP MUST maintain.
+
+#### 1.1.1 Message Propagation Delay
+
+The Cortical Message propagation delay between the same sender and the same receiver MUST be constant for all steps.
+
+#### 1.1.2 Learning Modules Receive Before Vote
+
+Learning Modules MUST receive all Cortical Messages addressed to them before generating any Vote Cortical Messages for other Learning Modules.
+
+#### 1.1.3 Learning Modules Vote Before Output
+
+Learning Modules MUST send out Vote Cortical Messages (if any) and MUST process all incoming Vote Cortical Messages (if any) before sending out other Cortical Message types.
+
+#### 1.1.4 Goal State Selectors Select From All Goals
+
+Goal State Selectors MUST receive every Goal Cortical Message addressed to them before generating any Cortical Messages for the Motor Module.
+
 ## 2 Functional Specification
 
 CMP proceeds in non-overlapping steps made up of atomic phases. In each phase, Cortical Messages can be created, in-transit, or delivered. Creation and delivery happen transactionally, all-at-once, in a single, indivisible operation.
