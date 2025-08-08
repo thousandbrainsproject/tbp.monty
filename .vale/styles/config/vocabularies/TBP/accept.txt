@@ -139,7 +139,7 @@
 \brdme\b
 \breimplements?\b
 \brepo\b
-\bresampled*\b
+\bresampled?\b
 \bresampling\b
 \b[Ss]accades?\b
 \bsaccading\b
