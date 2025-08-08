@@ -116,7 +116,7 @@ class EvidenceGraphLM(GraphLM):
             learned, and thereby whether to include a new point or not. By default,
             we only consider the distance between points, using a threshold
             of 0.001 (determined in remove_close_points). Can also specify
-            thresholds based on e.g. point-normal angle difference, or principal
+            thresholds based on e.g. surface normal angle difference, or principal
             curvature magnitude difference.
         max_graph_size: Maximum size of a graph in meters. Any observations that fall
             out of this range will be discarded/used for building a new model. This
@@ -332,7 +332,7 @@ class EvidenceGraphLM(GraphLM):
                     one with the smallest evidence. When thresholded, pose_evidence
                     will be in range [self.vote_evidence_threshold, 1]
             sensed_pose_rel_body: sensed location and rotation of the input to this
-                    LM. Rotation is represented by the pose vectors (point normal and
+                    LM. Rotation is represented by the pose vectors (surface normal and
                     curvature directions) for the SMs. For input from LMs it is also
                     represented as 3 unit vectors, these are calculated from the
                     estimated rotation of the most likely object. This pose is used

@@ -1531,12 +1531,12 @@ class SurfacePolicy(InformedPolicy):
     def get_inverse_agent_rot(self, state: MotorSystemState):
         """Get the inverse rotation of the agent's current orientation.
 
-        Used to transform poses of e.g. point normals or principle curvature from
+        Used to transform poses of e.g. surface normals or principle curvature from
         global coordinates into the coordinate frame of the agent.
 
-        To intuit why we apply the inverse, imagine an e.g. point normal with the same
+        To intuit why we apply the inverse, imagine an e.g. surface normal with the same
         pose as the agent; in the agent's reference frame, this should have the
-        identity pose, which will be aquired by transforming the original pose by the
+        identity pose, which will be acquired by transforming the original pose by the
         inverse
 
         Args:
@@ -1556,7 +1556,7 @@ class SurfacePolicy(InformedPolicy):
     ) -> float:
         """Compute turn angle to face the object.
 
-        Based on the point normal, compute the angle that the agent needs
+        Based on the surface normal, compute the angle that the agent needs
         to turn in order to be oriented directly toward the object
 
         Args:
@@ -1566,14 +1566,14 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             degrees that the agent needs to turn
         """
-        original_point_normal = self.processed_observations.get_point_normal()
+        original_surface_normal = self.processed_observations.get_surface_normal()
 
         inverse_quaternion_rotation = self.get_inverse_agent_rot(state)
 
-        rotated_point_normal = qt.rotate_vectors(
-            inverse_quaternion_rotation, original_point_normal
+        rotated_surface_normal = qt.rotate_vectors(
+            inverse_quaternion_rotation, original_surface_normal
         )
-        x, y, z = rotated_point_normal
+        x, y, z = rotated_surface_normal
 
         if orienting == "horizontal":
             return -np.degrees(np.arctan(x / z)) if z != 0 else -np.sign(x) * 90.0
@@ -1780,7 +1780,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                 avoidance_heading=[],  # True or False, whether the agent is taking a
                 # new heading to avoid previously visited points
                 z_defined_pc=[],  # None, and otherwise the principle curvature and
-                # point normal directions when the PC direction is predominantly in
+                # surface normal directions when the PC direction is predominantly in
                 # z-axis of the agent (i.e. pointing towards/away from the agent rather
                 # than being orthogonal)
             )
@@ -1820,7 +1820,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # TODO: This value doesn't seem to be used anywhere
             self.action_details["z_defined_pc"].append(
                 [
-                    self.processed_observations.get_point_normal(),
+                    self.processed_observations.get_surface_normal(),
                     self.processed_observations.get_curvature_directions(),
                 ]
             )
@@ -1918,7 +1918,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # TODO decide if in cases where the PC is defined in the z-direction
             # relative to the agent, it might actually make sense to still follow it,
             # i.e. as it should representa a movement tangential to the surface, and
-            # suggests we're not oriented with the point-normal as expected; NB this
+            # suggests we're not oriented with the surface normal as expected; NB this
             # would need to be tested with the action-space of the surface-agent
 
             self.pc_is_z_defined = True
@@ -2278,10 +2278,10 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
     def conflict_check(self, rotated_locs, ii):
         """Check for conflict in the current heading.
 
-        Target location needs to be similar *and* we need to have a similar point normal
-        to discount the current proposed heading; if point normals are significantly
-        different, then we are likely on a different surface, in which case passing by
-        nearby previous points is no longer problematic.
+        Target location needs to be similar *and* we need to have a similar surface
+        normal to discount the current proposed heading; if surface normals are
+        significantly different, then we are likely on a different surface, in which
+        case passing by nearby previous points is no longer problematic.
 
         Note that when executing failed hypothesis-testing jumps, we can have multiple
         instances of the same location in our history; this will result in
@@ -2299,7 +2299,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                 <= np.pi / self.conflict_divisor
             )
             and (
-                # Heuristic of np.pi / 4 for point-normals is that sides of
+                # Heuristic of np.pi / 4 for surface normals is that sides of
                 # a cube will therefore be different surfaces, but not necessarily
                 # points along e.g. a bowl's curved underside
                 get_angle_beefed_up(self.tangent_norms[-1], self.tangent_norms[ii])
@@ -2371,7 +2371,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         The moving average should be consistent even on curved surfaces as the
         directions will be in the reference frame of the agent (which has rotated itself
-        to align with the point normal)
+        to align with the surface normal)
         """
         logger.debug("Applying momentum to PC direction estimate")
 
