@@ -19,23 +19,19 @@ CMP is a connectionless protocol that maintains message boundaries with no conne
 
 ### 1.1 Constraints
 
-The Thousand Brains System imposes a number of constraints that a CMP implementation MUST maintain.
+The Thousand Brains Theory imposes a number of constraints that a CMP implementation MUST maintain.
 
 #### 1.1.1 Message Propagation Delay
 
 The Cortical Message propagation delay between the same sender and the same receiver MUST be constant for all steps.
 
-#### 1.1.2 Learning Modules Receive Before Vote
+#### 1.1.2 Module Processing Duration
 
-Learning Modules MUST process all received Observation Cortical Messages addressed to them before generating any Vote Cortical Messages for other Learning Modules.
+Each Module MUST take constant time to receive, process, and emit Cortical Messages.
 
-#### 1.1.3 Learning Modules Vote Before Output
+#### 1.1.3 Module Processing Completeness
 
-Learning Modules MUST send out Vote Cortical Messages (if any) before processing all received Vote Cortical Messages (if any). Learning Modules MUST process all received Vote Cortical Messages addressed to them (if any) before sending out other Cortical Message types.
-
-#### 1.1.4 Goal State Selectors Select From All Goals
-
-Goal State Selectors MUST receive every Goal Cortical Message addressed to them before generating any Cortical Messages for the Motor Modules.
+Each Module MUST process all received Cortical Messages.
 
 ## 2 Functional Specification
 
