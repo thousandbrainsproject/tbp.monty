@@ -281,7 +281,7 @@ class GoalStateGenerator(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def step(self):
-        """Called on each step of the LM to which the GSG belongs."""
+        """Called on each step of the LM/SM to which the GSG belongs."""
         pass
 
 
