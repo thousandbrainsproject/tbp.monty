@@ -11,10 +11,11 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from pathlib import Path
-from typing import Optional
+
 
 import numpy as np
 import torch
@@ -22,9 +23,103 @@ from scipy.spatial import KDTree
 from scipy.spatial.transform import Rotation as R
 
 from tbp.monty.frameworks.utils.graph_matching_utils import get_relevant_curvature
-from tbp.monty.frameworks.utils.logging_utils import deserialize_json_chunks
 
 logger = logging.getLogger(__name__)
+
+
+def apply_world_transform(
+    locations: np.ndarray,
+    rotation_matrices: np.ndarray,
+    learned_position: np.ndarray,
+    target_position: np.ndarray,
+    target_rotation: np.ndarray | R,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Apply world frame transformation to locations and rotation matrices.
+
+    Args:
+        locations: Locations to transform (n_points, 3).
+        rotation_matrices: Rotation matrices to transform (n_points, 3, 3).
+        learned_position: The position where locations were learned.
+        target_position: Target position in world frame.
+        target_rotation: Target rotation (Euler angles in degrees or Rotation object).
+
+    Returns:
+        Tuple of (transformed_locations, transformed_rotations).
+    """
+    if isinstance(target_rotation, R):
+        rot = target_rotation
+    else:
+        rot = R.from_euler("xyz", target_rotation, degrees=True)
+
+    # Transform locations
+    transformed_locations = locations - learned_position
+    transformed_locations = rot.apply(transformed_locations)
+    transformed_locations = transformed_locations + target_position
+
+    # Transform rotation matrices
+    rot_matrix = rot.as_matrix()
+    transformed_rotations = np.zeros_like(rotation_matrices)
+    for i in range(len(rotation_matrices)):
+        transformed_rotations[i] = rot_matrix @ rotation_matrices[i]
+
+    return transformed_locations, transformed_rotations
+
+
+def deserialize_json_chunks_fast(json_file, start=0, stop=None, episodes=None):
+    """Optimized version of deserialize_json_chunks.
+
+    Performance improvements:
+    - Uses set for O(1) episode lookups instead of O(n) list checks
+    - Avoids redundant string conversions by pre-computing keys
+    - Uses float('inf') instead of np.inf to avoid numpy import overhead
+    - Direct value extraction without intermediate list creation
+    - More efficient line filtering logic
+
+    Args:
+        json_file: full path to the json file to load
+        start: int, get data starting at this episode
+        stop: int, get data ending at this episode, not inclusive
+        episodes: iterable of ints with episodes to pull
+
+    Returns:
+        detailed_json: dict containing contents of file
+    """
+    # Pre-process episodes for faster lookup
+    if episodes is not None:
+        episodes_set = set(episodes)
+        str_episodes = [str(i) for i in episodes]
+    else:
+        episodes_set = None
+        str_episodes = None
+
+    detailed_json = {}
+    stop = float("inf") if stop is None else stop
+
+    with open(json_file, "r") as f:
+        for line_counter, line in enumerate(f):
+            # Fast filtering based on episode criteria
+            if episodes_set is not None:
+                if line_counter not in episodes_set:
+                    continue
+            elif not (start <= line_counter < stop):
+                continue
+
+            # Parse JSON and extract value directly
+            tmp_json = json.loads(line)
+            # Use next(iter()) to get the first value without creating a list
+            detailed_json[str(line_counter)] = next(iter(tmp_json.values()))
+
+    # Validation check if episodes were specified
+    if str_episodes is not None:
+        if list(detailed_json.keys()) != str_episodes:
+            logger.warning(
+                "Episode keys did not equal json keys. This can happen if "
+                "json file was not appended to in episode order. To manually load the "
+                "whole file for debugging, run `deserialize_json_chunks_fast(my_file)` with "
+                "no further arguments"
+            )
+
+    return detailed_json
 
 
 class ObjectModel:
@@ -39,67 +134,38 @@ class ObjectModel:
 
     def __init__(
         self,
-        pos: np.ndarray,
-        features: Optional[dict[str, np.ndarray]] = None,
-        learned_position: Optional[np.ndarray] = None,
-        target_position: Optional[np.ndarray] = None,
-        target_rotation: Optional[np.ndarray | R] = None,
-    ):
-        """Initialize ObjectModel, optionally transforming from learned to world frame.
-
-        Args:
-            pos: The points of the object model (n_points, 3).
-            features: Optional features of the object model.
-            learned_position: If provided along with target_position and target_rotation,
-                transform the model from this learned position to world frame.
-            target_position: Target position in world frame for transformation.
-            target_rotation: Target rotation (Euler angles in degrees or Rotation object).
-        """
-        self.pos = np.asarray(pos, dtype=float)
-        if features:
-            for key, value in features.items():
-                setattr(self, key, np.asarray(value))
-
-        # If transformation parameters are provided, transform to world frame
-        if (
-            learned_position is not None
-            and target_position is not None
-            and target_rotation is not None
-        ):
-            self._apply_world_transform(
-                learned_position, target_position, target_rotation
-            )
-
-    def _apply_world_transform(
-        self,
+        locations: np.ndarray,
+        features: dict[str, np.ndarray],
         learned_position: np.ndarray,
         target_position: np.ndarray,
         target_rotation: np.ndarray | R,
-    ) -> None:
-        """Apply world frame transformation in-place during initialization.
+    ):
+        """Initialize ObjectModel, transforming from learned to world frame.
 
         Args:
-            learned_position: The position where the model was learned.
-            target_position: The target position in world frame.
-            target_rotation: The target rotation (Euler angles in degrees or Rotation object).
+            locations: The points of the object model (n_points, 3).
+            features: Features of the object model.
+            learned_position: The learned position to transform from to world frame.
+            target_position: Target position in world frame for transformation.
+            target_rotation: Target rotation (Euler angles in degrees or Rotation object).
         """
-        if isinstance(target_rotation, R):
-            rot = target_rotation
-        else:
-            rot = R.from_euler("xyz", target_rotation, degrees=True)
+        orientation_vectors = features["pose_vectors"] # (n_points, 9)
+        n_points = len(orientation_vectors)
+        orientation_matrices = orientation_vectors.reshape(n_points, 3, 3)
 
-        self.pos = self.pos - learned_position
-        self.pos = rot.apply(self.pos)
-        self.pos = self.pos + target_position
+        transformed_locations, transformed_pose_matrices = apply_world_transform(
+            locations,
+            orientation_matrices,
+            learned_position,
+            target_position,
+            target_rotation,
+        )
 
-        if hasattr(self, "pose_vectors"):
-            rot_matrix = rot.as_matrix()
-            new_pose_vectors = np.zeros_like(self.pose_vectors)
-            for i in range(len(self.pose_vectors)):
-                pose_mat = self.pose_vectors[i].reshape(3, 3)
-                rotated_pose = rot_matrix @ pose_mat
-                new_pose_vectors[i] = rotated_pose.flatten()
-            self.pose_vectors = new_pose_vectors
+        self.locations = np.asarray(transformed_locations, dtype=float)
+        features["pose_vectors"] = transformed_pose_matrices.reshape(n_points, 9)
+
+        for key, value in features.items():
+            setattr(self, key, np.asarray(value))
 
     @property
     def x(self) -> np.ndarray:
@@ -115,8 +181,7 @@ class ObjectModel:
 
     @property
     def kd_tree(self) -> KDTree:
-        self._kd_tree = KDTree(self.pos, leafsize=40)
-        return self._kd_tree
+        return KDTree(self.locations, leafsize=40)
 
 
 def get_pretrained_model_path(model_type: str) -> Path:
@@ -146,21 +211,21 @@ def get_pretrained_model_path(model_type: str) -> Path:
 def load_object_model(
     model_path: Path,
     object_name: str,
+    target_position: np.ndarray,
+    target_rotation: np.ndarray,
     lm_id: int = 0,
-    target_position: Optional[np.ndarray] = None,
-    target_rotation: Optional[np.ndarray] = None,
 ) -> ObjectModel:
     """Load an object model from a pretraining experiment.
 
     Args:
         model_path: The path to the model.
         object_name: The name of the object.
+        target_position: Target position for world frame transformation.
+        target_rotation: Target rotation (Euler angles in degrees) for transformation.
         lm_id: The ID of the LM to load the object model from.
-        target_position: Optional target position for world frame transformation.
-        target_rotation: Optional target rotation (Euler angles in degrees) for transformation.
 
     Returns:
-        The object model, optionally transformed to world frame.
+        The object model transformed to world frame.
     """
     data = torch.load(model_path, map_location=torch.device("cpu"))
     data = data["lm_dict"][lm_id]["graph_memory"][object_name][
@@ -182,7 +247,7 @@ def load_object_model(
         feature_dict[feature] = feature_data
 
     # The pretrained models are stored at learned position [0, 1.5, 0]
-    learned_position = np.array([0, 1.5, 0]) if target_position is not None else None
+    learned_position = np.array([0, 1.5, 0])
 
     return ObjectModel(
         points,
@@ -225,13 +290,19 @@ class EpisodeDataLoader:
         """Load episode data from JSON file."""
         logger.info(f"Loading episode {episode_id} data from: {self.json_path}")
 
-        episode_data = deserialize_json_chunks(self.json_path, episodes=[episode_id])
+        episode_data = deserialize_json_chunks_fast(
+            self.json_path, episodes=[episode_id]
+        )["0"]
         self.lm_data = episode_data["LM_0"]
         self.num_lm_steps = len(self.lm_data["possible_locations"])
         self.sm0_data = episode_data["SM_0"]
         self.sm1_data = episode_data["SM_1"]
 
-        self._initialize_target_data(episode_data)
+        self.target_name = episode_data["target"]["primary_target_object"]
+        self.ground_truth_position = episode_data["target"]["primary_target_position"]
+        self.ground_truth_rotation = episode_data["target"]["primary_target_rotation_euler"]
+
+        self._initialize_object_model()
         self._initialize_hypotheses_data()
         self._initialize_mlh_data()
 
@@ -240,59 +311,67 @@ class EpisodeDataLoader:
         self._extract_sensor_locations()
         self._extract_sensor_rgba_patches()
 
-    def _initialize_target_data(self, episode_data: dict) -> None:
-        """Initialize all target-related data from parsed episode data.
-
-        This includes target object name, position, and rotation.
-
-        Args:
-            episode_data: The parsed episode data dictionary.
-        """
-        self.target_data = episode_data["target"]
-
-        self.target_object_name = self.target_data["primary_target_object"]
-
-        self.target_position = np.array(self.target_data.get("primary_target_position"))
-        self.target_rotation = np.array(
-            self.target_data.get("primary_target_rotation_euler")
-        )
-
-        # Load the model directly in world frame
-        self.target_model = load_object_model(
+    def _initialize_object_model(self) -> None:
+        """Initialize target model in world coordinates."""
+        # Load object model from pretrained model in world coordinate
+        self.object_model = load_object_model(
             model_path=self.model_path,
-            object_name=self.target_object_name,
-            target_position=self.target_position,
-            target_rotation=self.target_rotation,
+            object_name=self.target_name,
+            target_position=self.ground_truth_position,
+            target_rotation=self.ground_truth_rotation,
         )
 
-        logger.info(f"Target object for episode 0: {self.target_object_name}")
+        logger.info(f"Target object for episode 0: {self.target_name}")
         logger.info(
-            f"{self.target_object_name} is at position: {self.target_position} "
-            f"and rotation: {self.target_rotation}"
+            f"{self.target_name} is at position: {self.ground_truth_position} "
+            f"and rotation: {self.ground_truth_rotation}"
         )
 
     def _initialize_hypotheses_data(self) -> None:
-        """Extract hypotheses' locations and rotations for all timesteps."""
+        """Extract and transform hypotheses' locations and rotations to world frame."""
+        learned_position = np.array([0, 1.5, 0])
+
         for lm_step in range(self.num_lm_steps):
-            lm_step_data = self.lm_data["possible_locations"][lm_step]
-            self.all_hypotheses_locations.append(
-                np.array(lm_step_data[self.target_object_name])
-            )
-            # Rotation data is not timestep dependent
-            rotation_data = self.lm_data["possible_rotations"][0]
-            self.all_hypotheses_rotations.append(
-                np.array(rotation_data[self.target_object_name])
+            possible_locations = self.lm_data["possible_locations"][lm_step]
+            hypotheses_locations = np.array(possible_locations[self.target_name])
+            possible_rotations = self.lm_data["possible_rotations"][0] # not timestep dependent
+            hypotheses_rotations = np.array(possible_rotations[self.target_name])
+
+            transformed_locations, transformed_rotations = apply_world_transform(
+                hypotheses_locations,
+                hypotheses_rotations,
+                learned_position,
+                self.ground_truth_position,
+                self.ground_truth_rotation,
             )
 
+            self.all_hypotheses_locations.append(transformed_locations)
+            self.all_hypotheses_rotations.append(transformed_rotations)
+
     def _initialize_mlh_data(self) -> None:
-        """Extract most likely hypothesis (MLH) data for all timesteps."""
+        """Extract and transform most likely hypothesis (MLH) data to world frame."""
+        learned_position = np.array([0, 1.5, 0])
+
         for lm_step in range(self.num_lm_steps):
-            mlh_data = self.lm_data["current_mlh"][lm_step]
-            self.all_mlh_locations.append(np.array(mlh_data["location"]))
+            current_mlh = self.lm_data["current_mlh"][lm_step]
+            location = np.array(current_mlh["location"])
+            rotation_euler = np.array(current_mlh["rotation"])  # Euler angles
+
+            rotation_matrix = R.from_euler("xyz", rotation_euler, degrees=True).as_matrix()
+
+            transformed_location, transformed_rotation = apply_world_transform(
+                location.reshape(1, 3),
+                rotation_matrix.reshape(1, 3, 3),
+                learned_position,
+                self.ground_truth_position,
+                self.ground_truth_rotation,
+            )
+
+            self.all_mlh_locations.append(transformed_location[0])
             self.all_mlh_rotations.append(
-                np.array(mlh_data["rotation"])
-            )  # Euler angles
-            self.all_mlh_graph_ids.append(mlh_data["graph_id"])
+                transformed_rotation[0]
+            )
+            self.all_mlh_graph_ids.append(current_mlh["graph_id"])
 
     def _find_lm_to_sm_mapping(self) -> None:
         """Find mapping between LM timesteps and SM timesteps using use_state.

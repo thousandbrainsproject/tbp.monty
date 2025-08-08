@@ -142,6 +142,9 @@ class HypothesesOORFVisualizer:
         self.max_match_distance = 0.01
         self.max_nneighbors = 3
         self.max_ellipsoids_to_show = 1
+        self.ellipsoids_visible = True
+        self.current_sampled_indices = None
+        self.current_ellipsoid_info = None
         self.current_timestep = 0
 
         # ============ DATA ============
@@ -157,7 +160,7 @@ class HypothesesOORFVisualizer:
         self.current_sm1_rgba = None
         self.current_sensed_curvatures = None
 
-        # ============ 3D VEDO OBJECTS ============ 
+        # ============ 3D VEDO OBJECTS ============
         self.target_pointcloud = None
         self.hypotheses = None
         self.hypothesis_ellipsoids = []
@@ -187,12 +190,8 @@ class HypothesesOORFVisualizer:
         # Create plotter main view and 2 small overlays for sensor images
         custom_shape = [
             dict(bottomleft=(0.0, 0.0), topright=(1.0, 1.0)),  # Main view (full window)
-            dict(
-                bottomleft=(0.02, 0.72), topright=(0.17, 0.92), bg="white"
-            ),  # SM_0 (top-left, smaller)
-            dict(
-                bottomleft=(0.19, 0.72), topright=(0.34, 0.92), bg="white"
-            ),  # SM_1 (next to SM_0, smaller)
+            dict(bottomleft=(0.02, 0.72), topright=(0.17, 0.92), bg="white"),  # SM_0
+            dict(bottomleft=(0.19, 0.72), topright=(0.34, 0.92), bg="white"),  # SM_1
         ]
 
         self.plotter = Plotter(
@@ -213,16 +212,9 @@ class HypothesesOORFVisualizer:
             pos=[(0.25, 0.05), (0.75, 0.05)],
             title="LM step",
         )
-        self.ellipsoid_button = self.plotter.at(self.main_renderer_ix).add_button(
-            self.toggle_ellipsoid_callback,
-            pos=(0.85, 0.15),
-            states=["Hide Ellipsoids", "Show Ellipsoids"],
-            font="Calco",
-            size=20,
-        )
         self.resample_button = self.plotter.at(self.main_renderer_ix).add_button(
             self.resample_ellipsoids_callback,
-            pos=(0.85, 0.1),
+            pos=(0.85, 0.15),
             states=["Select Different Ellipsoids"],
             font="Calco",
             size=20,
@@ -340,8 +332,9 @@ class HypothesesOORFVisualizer:
                     self.plotter.at(self.main_renderer_ix).remove(pts)
             else:
                 self.plotter.at(self.main_renderer_ix).remove(self.hypotheses)
-        if self.mlh_sphere is not None:
-            self.plotter.at(self.main_renderer_ix).remove(self.mlh_sphere)
+        if self.mlh_cube is not None:
+            self.plotter.at(self.main_renderer_ix).remove(self.mlh_cube)
+            self.mlh_cube = None
         if self.stats_text is not None:
             self.plotter.at(self.main_renderer_ix).remove(self.stats_text)
         for ellipsoid in self.hypothesis_ellipsoids:
@@ -372,9 +365,9 @@ class HypothesesOORFVisualizer:
 
     def _initialize_target_visualization(self) -> None:
         """Initialize object model and convex hull visualization."""
-        self.target_model = self.data_loader.target_model
+        self.object_model = self.data_loader.object_model
 
-        self.target_pointcloud = Points(self.target_model.pos, c="gray")
+        self.target_pointcloud = Points(self.object_model.pos, c="gray")
         self.target_pointcloud.point_size(10)
         self.plotter.at(self.main_renderer_ix).add(self.target_pointcloud)
 
@@ -400,7 +393,7 @@ class HypothesesOORFVisualizer:
         """
         has_object_points = ~is_hypothesis_in_object_reference_frame(
             points,
-            self.target_model,
+            self.object_model,
             rotations,
             self.max_nneighbors,
             self.max_match_distance,
@@ -435,40 +428,15 @@ class HypothesesOORFVisualizer:
         distance metric.
 
         Args:
-            hypotheses_locations: Array of hypothesis locations
-            hypotheses_rotations: Array of rotation matrices for each hypothesis
+            hypotheses_locations: Array of hypothesis locations (already in world frame)
+            hypotheses_rotations: Array of rotation matrices for each hypothesis (already in world frame)
         """
-        # Transform hypotheses from learned object frame to world frame
-        # The hypotheses are relative to the learned object at [0, 1.5, 0]
-        learned_position = np.array([0, 1.5, 0])
-
-        # Move hypotheses to origin
-        transformed_locations = hypotheses_locations - learned_position
-
-        # Apply ground truth rotation to both locations and rotation matrices
-        ground_truth_rotation = R.from_euler(
-            "xyz", self.data_loader.target_rotation, degrees=True
-        )
-        transformed_locations = ground_truth_rotation.apply(transformed_locations)
-
-        # For rotation matrices, we need to apply the rotation transformation
-        # R_world = R_ground_truth @ R_hypothesis
-        transformed_rotations = np.zeros_like(hypotheses_rotations)
-        ground_truth_matrix = ground_truth_rotation.as_matrix()
-        for i in range(len(hypotheses_rotations)):
-            transformed_rotations[i] = ground_truth_matrix @ hypotheses_rotations[i]
-
-        # Translate to ground truth position
-        transformed_locations = transformed_locations + self.data_loader.target_position
-
-        # Use transformed values for the rest of the method
-        hypotheses_locations = transformed_locations
-        hypotheses_rotations = transformed_rotations
+        # Data is already transformed to world frame during loading
 
         self.total_hypotheses_count = len(hypotheses_locations)
 
         # Use target_model which is already in world frame
-        target_model = self.target_model
+        target_model = self.object_model
 
         # Check which hypotheses are in/out of object reference frame
         # Returns True for hypotheses OUTSIDE the reference frame
@@ -480,21 +448,10 @@ class HypothesesOORFVisualizer:
             self.max_match_distance,
         )
 
-        if (
-            self.max_hypotheses_to_show is not None
-            and len(hypotheses_locations) > self.max_hypotheses_to_show
-        ):
-            # Sort by evidence values (descending) and take top N
-            sorted_indices = np.argsort(hypotheses_evidences)[::-1]
-            top_indices = sorted_indices[: self.max_hypotheses_to_show]
-
-            filtered_locations = hypotheses_locations[top_indices]
-            filtered_rotations = hypotheses_rotations[top_indices]
-            filtered_is_outside = is_outside[top_indices]
-        else:
-            filtered_locations = hypotheses_locations
-            filtered_rotations = hypotheses_rotations
-            filtered_is_outside = is_outside
+        # No filtering for now - use all hypotheses
+        filtered_locations = hypotheses_locations
+        filtered_rotations = hypotheses_rotations
+        filtered_is_outside = is_outside
 
         # Store filtered data for resampling
         self._current_filtered_locations = filtered_locations
@@ -530,52 +487,29 @@ class HypothesesOORFVisualizer:
         """Add MLH sphere visualization.
 
         Args:
-            mlh_location: 3D location of the most likely hypothesis
+            mlh_location: 3D location of the most likely hypothesis (already in world frame)
         """
-        # Transform MLH location from learned object frame to world frame
-        learned_position = np.array([0, 1.5, 0])
-
-        # Move MLH to origin
-        transformed_mlh = mlh_location - learned_position
-
-        # Apply ground truth rotation
-        ground_truth_rotation = R.from_euler(
-            "xyz", self.data_loader.target_rotation, degrees=True
-        )
-        transformed_mlh = ground_truth_rotation.apply(transformed_mlh)
-
-        # Translate to ground truth position
-        transformed_mlh = transformed_mlh + self.data_loader.target_position
+        # Data is already transformed to world frame during loading
 
         # Check if MLH is within object reference frame
         # Use target_model which is already in world frame
-        target_model = self.target_model
+        target_model = self.object_model
 
-        # Get MLH rotation from current timestep data (stored as Euler angles)
-        mlh_rotation_euler = self.data_loader.all_mlh_rotations[self.current_timestep]
-
-        # Convert Euler angles to rotation matrix
-        mlh_rotation_matrix = R.from_euler(
-            "xyz", mlh_rotation_euler, degrees=True
-        ).as_matrix()
-
-        # Transform MLH rotation to world frame
-        mlh_rotation_transformed = (
-            ground_truth_rotation.as_matrix() @ mlh_rotation_matrix
-        )
+        # Get MLH rotation from current timestep data (now stored as rotation matrix in world frame)
+        mlh_rotation_matrix = self.data_loader.all_mlh_rotations[self.current_timestep]
 
         is_outside = is_hypothesis_in_object_reference_frame(
-            transformed_mlh.reshape(1, 3),
+            mlh_location.reshape(1, 3),
             target_model,
-            mlh_rotation_transformed.reshape(1, 3, 3),
+            mlh_rotation_matrix.reshape(1, 3, 3),
             self.max_nneighbors,
             self.max_match_distance,
         )[0]
 
         mlh_color = TBP_COLORS["pink"] if is_outside else TBP_COLORS["blue"]
 
-        self.mlh_sphere = Cube(transformed_mlh, c=mlh_color)
-        self.plotter.at(self.main_renderer_ix).add(self.mlh_sphere)
+        self.mlh_cube = Cube(mlh_location, c=mlh_color)
+        self.plotter.at(self.main_renderer_ix).add(self.mlh_cube)
 
     def _add_sensor_spheres(self, timestep: int) -> None:
         """Add spheres to visualize sensor locations."""
@@ -589,10 +523,10 @@ class HypothesesOORFVisualizer:
 
         self.sm1_sphere = Sphere(
             self.current_sm1_locations,
-                r=0.005,
-                c=TBP_COLORS["yellow"],
-                alpha=0.6,
-            )
+            r=0.005,
+            c=TBP_COLORS["yellow"],
+            alpha=0.6,
+        )
         self.plotter.at(self.main_renderer_ix).add(self.sm1_sphere)
 
     def _add_sensor_images(self, timestep: int) -> None:
@@ -626,7 +560,7 @@ class HypothesesOORFVisualizer:
 
         has_object_points = ~is_hypothesis_in_object_reference_frame(
             locations,
-            self.target_model,
+            self.object_model,
             rotations,
             self.max_nneighbors,
             self.max_match_distance,
@@ -744,40 +678,23 @@ class HypothesesOORFVisualizer:
         self,
         timestep: int,
         hypotheses_locations: np.ndarray,
-        hypotheses_evidences: np.ndarray,
         mlh_location: np.ndarray,
-        mlh_graph_id: str,
     ) -> str:
         """Create statistics text for display.
 
         Args:
             timestep: Current timestep
             hypotheses_locations: Array of hypothesis locations
-            hypotheses_evidences: Array of evidence values
             mlh_location: Location of most likely hypothesis
-            mlh_graph_id: Graph ID of most likely hypothesis
 
         Returns:
             Formatted statistics text
         """
-        if (
-            self.max_hypotheses_to_show is not None
-            and len(hypotheses_locations) > self.max_hypotheses_to_show
-        ):
-            sorted_indices = np.argsort(hypotheses_evidences)[::-1]
-            top_indices = sorted_indices[: self.max_hypotheses_to_show]
-            filtered_locations = hypotheses_locations[top_indices]
-            # Re-check which filtered locations have object points
-            filtered_rotations = self.current_hypotheses_rotations[top_indices]
-            num_within, num_outside = self._count_points_within_ellipsoids(
-                filtered_locations, filtered_rotations
-            )
-        else:
-            # Get all hypothesis rotations
-            all_rotations = self.current_hypotheses_rotations
-            num_within, num_outside = self._count_points_within_ellipsoids(
-                hypotheses_locations, all_rotations
-            )
+        # Get all hypothesis rotations
+        all_rotations = self.current_hypotheses_rotations
+        num_within, num_outside = self._count_points_within_ellipsoids(
+            hypotheses_locations, all_rotations
+        )
 
         # Build statistics text
         stats_lines = [
@@ -791,22 +708,11 @@ class HypothesesOORFVisualizer:
             f"Total hypotheses: {self.total_hypotheses_count}",
         ]
 
-        # Add displayed count info if filtering
-        if self.max_hypotheses_to_show is not None:
-            displayed_count = min(
-                self.max_hypotheses_to_show, len(hypotheses_locations)
-            )
-            stats_lines.append(
-                f"Displayed: {displayed_count} (top {int(self.max_hypotheses_to_show * 100 / self.total_hypotheses_count)}%)"
-            )
-
         stats_lines.extend(
             [
                 f"Within object reach: {num_within}",
                 f"Outside object reach: {num_outside}",
-                f"Evidence range: [{hypotheses_evidences.min():.4f}, "
-                f"{hypotheses_evidences.max():.4f}]",
-                f"Current MLH object: {mlh_graph_id}",
+                f"Current MLH object: {self.current_mlh_graph_ids}",
                 f"MLH location: [{mlh_location[0]:.3f}, {mlh_location[1]:.3f}, "
                 f"{mlh_location[2]:.3f}]",
             ]
@@ -902,15 +808,15 @@ def add_subparser(
     subparsers: argparse._SubParsersAction,
     parent_parser: argparse.ArgumentParser | None = None,
 ) -> None:
-    """Add the hypothesis_out_of_frame subparser to the main parser.
+    """Add the hypothesis_oorf subparser to the main parser.
 
     Args:
         subparsers: The subparsers object from the main parser.
         parent_parser: Optional parent parser for shared arguments.
     """
     parser = subparsers.add_parser(
-        "hypothesis_out_of_reference_frame",
-        help="Interactive visualization of target object hypothesis locations using radius-based evidence.",
+        "hypothesis_oorf",
+        help="Interactive tool to visualize which hypotheses are out of object reference frame.",
         parents=[parent_parser] if parent_parser else [],
     )
     parser.add_argument(
@@ -919,9 +825,10 @@ def add_subparser(
     )
     parser.add_argument(
         "--model_type",
-        type=Literal["dist", "surf"],
+        type=str,
         default="dist",
         help="Type of pretrained model to load target object from.",
+        choices=["dist", "surf"],
     )
     parser.set_defaults(
         func=lambda args: sys.exit(
