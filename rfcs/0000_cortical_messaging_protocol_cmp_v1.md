@@ -1,7 +1,7 @@
 - Start Date: 2025-08-06
 - RFC PR: (leave this empty, it will be filled in after RFC is merged)
 
-# Cortical Messaging Protocol (CMP)
+# Cortical Messaging Protocol (CMP) v1
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and "OPTIONAL" in this document are to be interpreted as described in [BCP 14](https://www.rfc-editor.org/info/bcp14), [IETF RFC 2119](https://www.rfc-editor.org/rfc/rfc2119), [IETF RFC 8174](https://www.rfc-editor.org/rfc/rfc8174) when, and only when, they appear in all capitals, as shown here.
 
@@ -27,11 +27,11 @@ The Cortical Message propagation delay between the same sender and the same rece
 
 #### 1.1.2 Learning Modules Receive Before Vote
 
-Learning Modules MUST receive all Cortical Messages addressed to them before generating any Vote Cortical Messages for other Learning Modules.
+Learning Modules MUST process all received Observation Cortical Messages addressed to them before generating any Vote Cortical Messages for other Learning Modules.
 
 #### 1.1.3 Learning Modules Vote Before Output
 
-Learning Modules MUST send out Vote Cortical Messages (if any) and MUST process all incoming Vote Cortical Messages (if any) before sending out other Cortical Message types.
+Learning Modules MUST send out Vote Cortical Messages (if any) before processing all received Vote Cortical Messages (if any). Learning Modules MUST process all received Vote Cortical Messages addressed to them (if any) before sending out other Cortical Message types.
 
 #### 1.1.4 Goal State Selectors Select From All Goals
 
@@ -55,7 +55,7 @@ A CMP step is a sequence of the following, ordered, atomic phases:
 6. Goal State Selectors
 7. Motor Modules
 
-![Figure 1](0000_cortical_messaging_protocol_cmp/figure_1_cmp_step_overview.png)
+![Figure 1](0000_cortical_messaging_protocol_cmp_v1/figure_1_cmp_step_overview.png)
 _**Figure 1.** Overview of message flow within a single CMP Step. Message lifetimes are annotated with corresponding phase numbers._
 
 #### 2.1.1 Sensor Modules
@@ -124,7 +124,7 @@ All Cortical Messages generated in this phase are from Learning Modules and are 
 
 #### 2.1.6 Goal State Selectors
 
-During the Goal State Selectors phase the Cortical Messages from Sensor Modules and Learning Modules inteded for Goal State Selectors are aggregated. These aggregated Cortical Messages are then delivered to the Goal State Selectors. Each Goal State Selector then generates exactly one in-transit Cortical Message intended for the Motor Modules. The phase ends when all new in-transit Cortical Messages are created.
+During the Goal State Selectors phase the Cortical Messages from Sensor Modules and Learning Modules intended for Goal State Selectors are aggregated. These aggregated Cortical Messages are then delivered to the Goal State Selectors. Each Goal State Selector then generates exactly one in-transit Cortical Message intended for the Motor Modules. The phase ends when all new in-transit Cortical Messages are created.
 
 All in-transit Cortical Messages to be received by Goal State Selectors are delivered to the Goal State Selectors. All Cortical Messages generated in this phase are from Goal State Selectors and are in-transit to Motor Modules.
 
