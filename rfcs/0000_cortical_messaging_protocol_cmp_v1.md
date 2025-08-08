@@ -23,7 +23,7 @@ The Thousand Brains Theory imposes a number of constraints that a CMP implementa
 
 #### 1.1.1 Message Propagation Delay
 
-The Cortical Message propagation delay between the same sender and the same receiver MUST be constant for all steps.
+The Cortical Message propagation delay between the same sender and the same receiver MUST be constant.
 
 #### 1.1.2 Module Processing Duration
 
