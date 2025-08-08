@@ -189,8 +189,8 @@ class LearningModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def propose_goal_state(self):
-        """Return the goal-state proposed by this LM's GSG."""
+    def propose_goal_states(self):
+        """Return the goal-states proposed by this LM's or SM's GSG."""
         pass
 
     @abc.abstractmethod
@@ -275,7 +275,7 @@ class GoalStateGenerator(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def get_output_goal_state(self):
+    def get_output_goal_states(self):
         """Return current output goal-state."""
         pass
 

@@ -718,13 +718,13 @@ class GraphLM(LearningModule):
         """
         pass
 
-    def propose_goal_state(self):
+    def propose_goal_states(self):
         """Return the goal-state proposed by this LM's GSG.
 
         Only returned if the LM/GSG was stepped, otherwise returns None goal-state.
         """
         if self.buffer.get_last_obs_processed():
-            return self.gsg.get_output_goal_state()
+            return self.gsg.get_output_goal_states()
         else:
             return None
 

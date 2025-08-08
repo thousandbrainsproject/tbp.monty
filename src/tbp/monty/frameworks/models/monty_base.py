@@ -285,7 +285,10 @@ class MontyBase(Monty):
         # Currently only use GSG outputs at inference
         if self.step_type == "matching_step":
             for lm in self.learning_modules:
-                self.gsg_outputs.append(lm.propose_goal_state())
+                self.gsg_outputs.append(lm.propose_goal_states())
+
+        for sm in self.sensor_modules:
+            self.gsg_outputs.append(sm.propose_goal_states())
 
     def _pass_infos_to_motor_system(self):
         """Pass input observations and goal states to the motor system."""
