@@ -66,60 +66,12 @@ def apply_world_transform(
 
 
 def deserialize_json_chunks_fast(json_file, start=0, stop=None, episodes=None):
-    """Optimized version of deserialize_json_chunks.
-
-    Performance improvements:
-    - Uses set for O(1) episode lookups instead of O(n) list checks
-    - Avoids redundant string conversions by pre-computing keys
-    - Uses float('inf') instead of np.inf to avoid numpy import overhead
-    - Direct value extraction without intermediate list creation
-    - More efficient line filtering logic
-
-    Args:
-        json_file: full path to the json file to load
-        start: int, get data starting at this episode
-        stop: int, get data ending at this episode, not inclusive
-        episodes: iterable of ints with episodes to pull
-
-    Returns:
-        detailed_json: dict containing contents of file
-    """
-    # Pre-process episodes for faster lookup
-    if episodes is not None:
-        episodes_set = set(episodes)
-        str_episodes = [str(i) for i in episodes]
-    else:
-        episodes_set = None
-        str_episodes = None
-
-    detailed_json = {}
-    stop = float("inf") if stop is None else stop
-
+    # Just load first episode for debugging
     with open(json_file, "r") as f:
-        for line_counter, line in enumerate(f):
-            # Fast filtering based on episode criteria
-            if episodes_set is not None:
-                if line_counter not in episodes_set:
-                    continue
-            elif not (start <= line_counter < stop):
-                continue
+        first_line = f.readline().strip()
+        data = json.loads(first_line)
 
-            # Parse JSON and extract value directly
-            tmp_json = json.loads(line)
-            # Use next(iter()) to get the first value without creating a list
-            detailed_json[str(line_counter)] = next(iter(tmp_json.values()))
-
-    # Validation check if episodes were specified
-    if str_episodes is not None:
-        if list(detailed_json.keys()) != str_episodes:
-            logger.warning(
-                "Episode keys did not equal json keys. This can happen if "
-                "json file was not appended to in episode order. To manually load the "
-                "whole file for debugging, run `deserialize_json_chunks_fast(my_file)` with "
-                "no further arguments"
-            )
-
-    return detailed_json
+    return data
 
 
 class ObjectModel:
@@ -149,7 +101,7 @@ class ObjectModel:
             target_position: Target position in world frame for transformation.
             target_rotation: Target rotation (Euler angles in degrees or Rotation object).
         """
-        orientation_vectors = features["pose_vectors"] # (n_points, 9)
+        orientation_vectors = features["pose_vectors"]  # (n_points, 9)
         n_points = len(orientation_vectors)
         orientation_matrices = orientation_vectors.reshape(n_points, 3, 3)
 
@@ -169,19 +121,46 @@ class ObjectModel:
 
     @property
     def x(self) -> np.ndarray:
-        return self.pos[:, 0]
+        return self.locations[:, 0]
 
     @property
     def y(self) -> np.ndarray:
-        return self.pos[:, 1]
+        return self.locations[:, 1]
 
     @property
     def z(self) -> np.ndarray:
-        return self.pos[:, 2]
+        return self.locations[:, 2]
 
     @property
     def kd_tree(self) -> KDTree:
         return KDTree(self.locations, leafsize=40)
+
+    def __repr__(self) -> str:
+        """Return a detailed string representation of the ObjectModel."""
+        n_points = len(self.locations)
+
+        # Get bounding box information
+        min_coords = np.min(self.locations, axis=0)
+        max_coords = np.max(self.locations, axis=0)
+        bbox_size = max_coords - min_coords
+
+        # Get available features (excluding "locations" which is already shown)
+        feature_names = [
+            attr
+            for attr in dir(self)
+            if not attr.startswith("_")
+            and attr not in ["locations", "x", "y", "z", "kd_tree"]
+            and not callable(getattr(self, attr))
+        ]
+
+        return (
+            f"ObjectModel(n_points={n_points}, "
+            f"bbox_size=[{bbox_size[0]:.3f}, {bbox_size[1]:.3f}, {bbox_size[2]:.3f}], "
+            f"center=[{np.mean(self.locations, axis=0)[0]:.3f}, "
+            f"{np.mean(self.locations, axis=0)[1]:.3f}, "
+            f"{np.mean(self.locations, axis=0)[2]:.3f}], "
+            f"features={feature_names})"
+        )
 
 
 def get_pretrained_model_path(model_type: str) -> Path:
@@ -300,7 +279,9 @@ class EpisodeDataLoader:
 
         self.target_name = episode_data["target"]["primary_target_object"]
         self.ground_truth_position = episode_data["target"]["primary_target_position"]
-        self.ground_truth_rotation = episode_data["target"]["primary_target_rotation_euler"]
+        self.ground_truth_rotation = episode_data["target"][
+            "primary_target_rotation_euler"
+        ]
 
         self._initialize_object_model()
         self._initialize_hypotheses_data()
@@ -334,7 +315,9 @@ class EpisodeDataLoader:
         for lm_step in range(self.num_lm_steps):
             possible_locations = self.lm_data["possible_locations"][lm_step]
             hypotheses_locations = np.array(possible_locations[self.target_name])
-            possible_rotations = self.lm_data["possible_rotations"][0] # not timestep dependent
+            possible_rotations = self.lm_data["possible_rotations"][
+                0
+            ]  # not timestep dependent
             hypotheses_rotations = np.array(possible_rotations[self.target_name])
 
             transformed_locations, transformed_rotations = apply_world_transform(
@@ -357,7 +340,9 @@ class EpisodeDataLoader:
             location = np.array(current_mlh["location"])
             rotation_euler = np.array(current_mlh["rotation"])  # Euler angles
 
-            rotation_matrix = R.from_euler("xyz", rotation_euler, degrees=True).as_matrix()
+            rotation_matrix = R.from_euler(
+                "xyz", rotation_euler, degrees=True
+            ).as_matrix()
 
             transformed_location, transformed_rotation = apply_world_transform(
                 location.reshape(1, 3),
@@ -368,9 +353,7 @@ class EpisodeDataLoader:
             )
 
             self.all_mlh_locations.append(transformed_location[0])
-            self.all_mlh_rotations.append(
-                transformed_rotation[0]
-            )
+            self.all_mlh_rotations.append(transformed_rotation[0])
             self.all_mlh_graph_ids.append(current_mlh["graph_id"])
 
     def _find_lm_to_sm_mapping(self) -> None:
