@@ -329,6 +329,61 @@ class GoalState(State):
         # info is optional, but it must be a dictionary.
         assert isinstance(self.info, dict), "info must be a dictionary"
 
+    def __repr__(self):
+        """Return a string representation of the object."""
+
+        def maybe_render_array(obj):
+            if isinstance(obj, np.ndarray):
+                return np.array2string(obj, precision=3)
+            else:
+                return obj
+
+        lines = []
+        spaces = "   "
+
+        lines.append(f"State from sender {self.sender_id}:")
+        lines.append(f"{spaces}Location: {maybe_render_array(self.location)}")
+
+        # Morphological features
+        if self.morphological_features is None:
+            lines.append(f"{spaces}Morphological Features: None")
+        elif len(self.morphological_features) == 0:
+            lines.append(
+                f"{spaces}Morphological Features: {self.morphological_features}"
+            )
+        else:
+            lines.append(f"{spaces}Morphological Features:")
+            for feature in self.morphological_features:
+                feat_val = self.morphological_features[feature]
+                lines.append(f"{spaces * 2}{feature}: {maybe_render_array(feat_val)}")
+
+        # Non-morphological features
+        if self.non_morphological_features is None:
+            lines.append(f"{spaces}Non-Morphological Features: None")
+        elif len(self.non_morphological_features) == 0:
+            lines.append(
+                f"{spaces}Non-Morphological Features: {self.non_morphological_features}"
+            )
+        else:
+            lines.append(f"{spaces}Non-Morphological Features:")
+            for feature in self.non_morphological_features:
+                feat_val = self.non_morphological_features[feature]
+            lines.append(f"{spaces * 2}{feature}: {maybe_render_array(feat_val)}")
+
+        lines.append(f"{spaces}Confidence: {self.confidence}.")
+        lines.append(f"{spaces}Use State: {self.use_state}.")
+        lines.append(f"{spaces}Sender Type: {self.sender_type}.")
+        if self.info is None:
+            lines.append(f"{spaces}Info: None")
+        elif len(self.info) == 0:
+            lines.append(f"{spaces}Info: {self.info}")
+        else:
+            lines.append(f"{spaces}Info:")
+            for key, value in self.info.items():
+                lines.append(f"{spaces * 2}{key}: {value}")
+
+        return "\n".join(lines)
+
 
 def encode_goal_state(goal_state: GoalState) -> Dict[str, Any]:
     """Encode a goal state into a dictionary.
