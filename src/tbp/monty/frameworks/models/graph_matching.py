@@ -435,6 +435,7 @@ class MontyForGraphMatching(MontyBase):
         Omit goal states in this case.
         """
         # TODO M: generalize to multiple sensor modules
+        super()._pass_infos_to_motor_system()
 
         if (
             self.step_type == "matching_step"

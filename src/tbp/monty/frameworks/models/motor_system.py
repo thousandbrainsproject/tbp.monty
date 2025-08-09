@@ -6,17 +6,24 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-
+from __future__ import annotations
 
 from typing import Literal, Optional
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
+from tbp.monty.frameworks.models.states import GoalState
 
 
 class MotorSystem:
-    """The basic motor system implementation."""
+    """The basic motor system implementation.
+
+    Attributes:
+        _policy: The motor policy to use.
+        _state: The current state of the motor system.
+        _driving_goal_state: The goal state to drive the motor system.
+    """
 
     def __init__(
         self, policy: MotorPolicy, state: Optional[MotorSystemState] = None
@@ -30,6 +37,9 @@ class MotorSystem:
         """
         self._policy = policy
         self._state = state
+        self._driving_goal_state = None
+        self._experiment_mode = None
+        self._last_action = None
 
     @property
     def last_action(self) -> Action:
@@ -44,12 +54,21 @@ class MotorSystem:
         """Pre episode hook."""
         self._policy.pre_episode()
 
+    def set_driving_goal_state(self, goal_state: GoalState | None) -> None:
+        """Sets the driving goal state.
+
+        Args:
+            goal_state: The goal state to drive the motor system.
+        """
+        self._driving_goal_state = goal_state
+
     def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
         """Sets the experiment mode.
 
         Args:
             mode: The experiment mode.
         """
+        self._experiment_mode = mode
         self._policy.set_experiment_mode(mode)
 
     def __call__(self) -> Action:
@@ -60,5 +79,6 @@ class MotorSystem:
         Returns:
             The action to take.
         """
-        action = self._policy(self._state)
+        action = self._policy(self._state, self._driving_goal_state)
+        self._last_action = action
         return action
