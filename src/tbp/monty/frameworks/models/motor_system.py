@@ -42,7 +42,7 @@ class MotorSystem:
         return self._policy.agent_id
 
     @property
-    def last_action(self) -> Action:
+    def last_action(self) -> Action | None:
         """Returns the last action taken by the motor system."""
         return self._last_action
 
@@ -83,8 +83,6 @@ class MotorSystem:
             goal_state: The goal state to drive the motor system.
         """
         self._driving_goal_state = goal_state
-        with contextlib.suppress(AttributeError):
-            self._policy.set_driving_goal_state(goal_state)
 
     def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
         """Sets the experiment mode.
@@ -93,7 +91,14 @@ class MotorSystem:
             mode: The experiment mode.
         """
         self._experiment_mode = mode
-        self._policy.set_experiment_mode(mode)
+
+    def select_policy(self) -> MotorPolicy:
+        """Selects a policy for the motor system.
+
+        Returns:
+            The policy to use.
+        """
+        return self._policy
 
     def __call__(self) -> Action:
         """Defines the structure for __call__.
@@ -103,5 +108,17 @@ class MotorSystem:
         Returns:
             The action to take.
         """
-        self._last_action = self._policy(self.state)
-        return self._last_action
+        policy = self.select_policy()
+        self._policy = policy
+        self._policy.set_experiment_mode(self._experiment_mode)
+        with contextlib.suppress(AttributeError):
+            self._policy.set_driving_goal_state(self._driving_goal_state)
+
+        action = self._policy(self._state)
+        self._last_action = action
+
+        # Need to keep this in sync with the policy's driving goal state since
+        # derive_habitat_goal_state() consumes the goal state.
+        self._driving_goal_state = getattr(self._policy, "driving_goal_state", None)
+
+        return action
