@@ -41,6 +41,16 @@ class MotorSystem:
         """Returns the last action taken by the motor system."""
         return self._last_action
 
+    @property
+    def state(self) -> MotorSystemState | None:
+        """Returns the state of the motor system."""
+        return self._state
+
+    @state.setter
+    def state(self, state: MotorSystemState | None) -> None:
+        """Sets the state of the motor system."""
+        self._state = state
+
     def reset(self) -> None:
         """Reset the motor system."""
         self._driving_goal_state = None

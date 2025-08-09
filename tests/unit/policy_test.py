@@ -1051,7 +1051,7 @@ class PolicyTest(unittest.TestCase):
             # current orientation
             agent_direction = np.array(
                 hab_utils.quat_rotate_vector(
-                    exp.model.motor_system._state["agent_id_0"]["rotation"],
+                    exp.model.motor_system.state["agent_id_0"]["rotation"],
                     [
                         0,
                         0,
@@ -1098,8 +1098,8 @@ class PolicyTest(unittest.TestCase):
         )
 
         # Initialize motor-system state
-        motor_system._state = dict(agent_id_0={})
-        motor_system._state["agent_id_0"]["rotation"] = qt.quaternion(1, 0, 0, 0)
+        motor_system.state = dict(agent_id_0={})
+        motor_system.state["agent_id_0"]["rotation"] = qt.quaternion(1, 0, 0, 0)
 
         # Step 1
         # fake_obs_pc contains observations including the surface normal and principal
@@ -1109,7 +1109,7 @@ class PolicyTest(unittest.TestCase):
         # Note that the movement is a unit vector because it is a direction, the amount
         # (i.e. size) of the translation is represented separately.
         motor_system._policy.processed_observations = self.fake_obs_pc[0]
-        direction = motor_system._policy.tangential_direction(motor_system._state)
+        direction = motor_system._policy.tangential_direction(motor_system.state)
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -1122,7 +1122,7 @@ class PolicyTest(unittest.TestCase):
 
         # Step 2
         motor_system._policy.processed_observations = self.fake_obs_pc[1]
-        direction = motor_system._policy.tangential_direction(motor_system._state)
+        direction = motor_system._policy.tangential_direction(motor_system.state)
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -1136,7 +1136,7 @@ class PolicyTest(unittest.TestCase):
         # Step 3: Our bias should change from following minimal to maximal
         # PC
         motor_system._policy.processed_observations = self.fake_obs_pc[2]
-        direction = motor_system._policy.tangential_direction(motor_system._state)
+        direction = motor_system._policy.tangential_direction(motor_system.state)
         assert np.all(np.isclose(direction, [0, 1, 0])), (
             "Not following correct PC direction"
         )
@@ -1149,7 +1149,7 @@ class PolicyTest(unittest.TestCase):
 
         # Step 4
         motor_system._policy.processed_observations = self.fake_obs_pc[3]
-        direction = motor_system._policy.tangential_direction(motor_system._state)
+        direction = motor_system._policy.tangential_direction(motor_system.state)
         assert np.all(np.isclose(direction, [0, 1, 0])), (
             "Not following correct PC direction"
         )
@@ -1162,7 +1162,7 @@ class PolicyTest(unittest.TestCase):
 
         # Step 5: Pass observation *without* a well defined PC direction
         motor_system._policy.processed_observations = self.fake_obs_pc[4]
-        direction = motor_system._policy.tangential_direction(motor_system._state)
+        direction = motor_system._policy.tangential_direction(motor_system.state)
         # Note the following movement is a random direction deterministcally set by the
         # random seed
         assert np.all(np.isclose(direction, [-0.13745981, 0.99050735, 0])), (
@@ -1191,10 +1191,10 @@ class PolicyTest(unittest.TestCase):
         motor_system._policy.ignoring_pc_counter = motor_system_args["policy_args"][
             "min_general_steps"
         ]
-        motor_system._state["agent_id_0"]["rotation"] = qt.quaternion(0, 0, 1, 0)
+        motor_system.state["agent_id_0"]["rotation"] = qt.quaternion(0, 0, 1, 0)
 
         motor_system._policy.processed_observations = self.fake_obs_pc[5]
-        direction = motor_system._policy.tangential_direction(motor_system._state)
+        direction = motor_system._policy.tangential_direction(motor_system.state)
         assert np.all(np.isclose(direction, [1.0, 0.0, 0])), (
             "Not following correct PC direction"
         )
@@ -1225,8 +1225,8 @@ class PolicyTest(unittest.TestCase):
         )
 
         # Initialize motor system state
-        motor_system._state = dict(agent_id_0={})
-        motor_system._state["agent_id_0"]["rotation"] = qt.quaternion(1, 0, 0, 0)
+        motor_system.state = dict(agent_id_0={})
+        motor_system.state["agent_id_0"]["rotation"] = qt.quaternion(1, 0, 0, 0)
 
         # Step 1 : PC-guided information, but we haven't taken the minimum number of
         # non-PC steps, so take random step
@@ -1236,7 +1236,7 @@ class PolicyTest(unittest.TestCase):
         # done in graph_matching.py normally
         motor_system._policy.tangent_locs.append(self.fake_obs_pc[0].location)
         motor_system._policy.tangent_norms.append([0, 0, 1])
-        direction = motor_system._policy.tangential_direction(motor_system._state)
+        direction = motor_system._policy.tangential_direction(motor_system.state)
         # Note the following movement is a random direction deterministcally set by the
         # random seed
         assert np.all(np.isclose(direction, [0.98165657, 0.19065773, 0])), (
@@ -1256,7 +1256,7 @@ class PolicyTest(unittest.TestCase):
         # done in graph_matching.py normally
         motor_system._policy.tangent_locs.append(self.fake_obs_pc[0].location)
         motor_system._policy.tangent_norms.append([0, 0, 1])
-        direction = motor_system._policy.tangential_direction(motor_system._state)
+        direction = motor_system._policy.tangential_direction(motor_system.state)
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -1272,7 +1272,7 @@ class PolicyTest(unittest.TestCase):
         motor_system._policy.processed_observations = self.fake_obs_advanced_pc[1]
         motor_system._policy.tangent_locs.append(self.fake_obs_advanced_pc[1].location)
         motor_system._policy.tangent_norms.append([0, 0, 1])
-        direction = motor_system._policy.tangential_direction(motor_system._state)
+        direction = motor_system._policy.tangential_direction(motor_system.state)
         assert np.all(np.isclose(direction, [1, 0, 0])), (
             "Not following correct PC direction"
         )
@@ -1287,7 +1287,7 @@ class PolicyTest(unittest.TestCase):
         motor_system._policy.processed_observations = self.fake_obs_advanced_pc[2]
         motor_system._policy.tangent_locs.append(self.fake_obs_pc[2].location)
         motor_system._policy.tangent_norms.append([0, 0, 1])
-        direction = motor_system._policy.tangential_direction(motor_system._state)
+        direction = motor_system._policy.tangential_direction(motor_system.state)
         # Note the following movement is a random direction deterministcally set by the
         # random seed
         assert np.all(
@@ -1314,7 +1314,7 @@ class PolicyTest(unittest.TestCase):
         # following PC would cause it to visit the observation 1 again (which it is
         # designed to avoid)
         motor_system._policy.tangent_norms.append([0, 0, 1])
-        direction = motor_system._policy.tangential_direction(motor_system._state)
+        direction = motor_system._policy.tangential_direction(motor_system.state)
         # Note the following movement is a random direction deterministcally set by the
         # random seed
         assert np.all(np.isclose(direction, [0.60958557, 0.79272027, 0])), (
