@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import contextlib
 from typing import Literal, Optional
 
 from tbp.monty.frameworks.actions.actions import Action
@@ -26,7 +27,9 @@ class MotorSystem:
     """
 
     def __init__(
-        self, policy: MotorPolicy, state: Optional[MotorSystemState] = None
+        self,
+        policy: MotorPolicy,
+        state: MotorSystemState | None = None,
     ) -> None:
         """Initialize the motor system with a motor policy.
 
@@ -37,14 +40,18 @@ class MotorSystem:
         """
         self._policy = policy
         self._state = state
-        self._driving_goal_state = None
-        self._experiment_mode = None
-        self._last_action = None
+        self.reset()
 
     @property
     def last_action(self) -> Action:
         """Returns the last action taken by the motor system."""
-        return self._policy.last_action
+        return self._last_action
+
+    def reset(self) -> None:
+        """Reset the motor system."""
+        self._driving_goal_state = None
+        self._experiment_mode = None
+        self._last_action = None
 
     def post_episode(self) -> None:
         """Post episode hook."""
@@ -52,6 +59,7 @@ class MotorSystem:
 
     def pre_episode(self) -> None:
         """Pre episode hook."""
+        self.reset()
         self._policy.pre_episode()
 
     def set_driving_goal_state(self, goal_state: GoalState | None) -> None:
@@ -61,6 +69,8 @@ class MotorSystem:
             goal_state: The goal state to drive the motor system.
         """
         self._driving_goal_state = goal_state
+        with contextlib.suppress(AttributeError):
+            self._policy.set_driving_goal_state(goal_state)
 
     def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
         """Sets the experiment mode.
@@ -79,6 +89,5 @@ class MotorSystem:
         Returns:
             The action to take.
         """
-        action = self._policy(self._state, self._driving_goal_state)
-        self._last_action = action
-        return action
+        self._last_action = self._policy(self._state)
+        return self._last_action

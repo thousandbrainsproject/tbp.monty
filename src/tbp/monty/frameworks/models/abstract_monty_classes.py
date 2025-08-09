@@ -190,7 +190,7 @@ class LearningModule(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def propose_goal_states(self):
-        """Return the goal-states proposed by this LM's or SM's GSG."""
+        """Return the goal-states proposed by the GSG."""
         pass
 
     @abc.abstractmethod
@@ -319,4 +319,9 @@ class SensorModule(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def set_experiment_mode(self, mode: str):
+        pass
+
+    @abc.abstractmethod
+    def propose_goal_states(self):
+        """Return the goal-states proposed by this LM's or SM's GSG."""
         pass

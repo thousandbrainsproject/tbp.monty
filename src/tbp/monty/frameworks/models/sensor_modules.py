@@ -33,6 +33,8 @@ logger = logging.getLogger(__name__)
 class DetailedLoggingSM(SensorModule):
     """Sensor module that keeps track of raw observations for logging."""
 
+    _gsg = None
+
     def __init__(
         self,
         sensor_module_id,
@@ -114,6 +116,14 @@ class DetailedLoggingSM(SensorModule):
                             sm_location=np.array(self.state["location"]),
                         )
                     )
+        if self._gsg is not None:
+            self._gsg.step()
+
+    def propose_goal_states(self):
+        """Return the goal-states proposed by the GSG."""
+        if self._gsg is not None:
+            return self._gsg.get_output_goal_states()
+        return None
 
     def pre_episode(self):
         """Reset buffer and is_exploring flag."""
