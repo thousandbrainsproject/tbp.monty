@@ -18,13 +18,7 @@ from tbp.monty.frameworks.models.states import GoalState
 
 
 class MotorSystem:
-    """The basic motor system implementation.
-
-    Attributes:
-        _policy: The motor policy to use.
-        _state: The current state of the motor system.
-        _driving_goal_state: The goal state to drive the motor system.
-    """
+    """The basic motor system implementation."""
 
     def __init__(
         self,
