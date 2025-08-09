@@ -1,0 +1,239 @@
+# Copyright 2025 Thousand Brains Project
+#
+# Copyright may exist in Contributors' modifications
+# and/or contributions to the work.
+#
+# Use of this source code is governed by the MIT
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+
+
+import unittest
+
+import numpy as np
+
+from tbp.monty.frameworks.models.goal_state_selector import (
+    GoalStateSelector,
+    clean_states,
+    flatten,
+    sort_states_by_confidence,
+)
+from tbp.monty.frameworks.models.states import GoalState, State
+
+
+class FlattenTest(unittest.TestCase):
+
+    def test_empty(self) -> None:
+        """Test that empty iterables are flattened to an empty list."""
+        self.assertEqual(flatten([]), [])
+
+    def test_strings_not_treated_as_iterable(self) -> None:
+        """Test that strings are not treated as iterables."""
+        self.assertEqual(flatten("hello"), ["hello"])
+        self.assertEqual(flatten(["hello"]), ["hello"])
+
+    def test_nested_basic(self) -> None:
+        """Test that nested iterables are flattened."""
+        items = [1, 1.5, "hello", None]
+        self.assertEqual(flatten(items), items)
+        self.assertEqual(flatten([items]), items)
+        self.assertEqual(flatten([[items]]), items)
+        self.assertEqual(flatten([[[items]]]), items)
+
+    def test_nested_complex(self) -> None:
+        """Test more complex, heterogeneous nested iterables are flattened."""
+        nested = [
+            1,
+            2,
+            ["three", 4],
+            (5, [6.0, 7.0]),
+            np.array([8, (9, [10, 11])], dtype=object),
+        ]
+        flat = [
+            1,
+            2,
+            "three",
+            4,
+            5,
+            6.0,
+            7.0,
+            8,
+            9,
+            10,
+            11,
+
+        ]
+        self.assertEqual(flatten(nested), flat)
+
+    def test_iterability_judgement(self) -> None:
+        """Test that iterables other than lists are flattened."""
+        expected = [1, 1.5, "hello", None]
+        item_tuple = tuple(expected)
+        item_array = np.array(expected, dtype=object)
+        for items in [item_tuple, item_array]:
+            self.assertEqual(flatten(items), expected)  # outermost is non-list
+            self.assertEqual(flatten([items]), expected)  # inner sequence is non-list
+
+
+class CleanStatesTest(unittest.TestCase):
+
+    def test_empty(self) -> None:
+        """Test that empty iterables are flattened to an empty list."""
+        self.assertEqual(clean_states([]), [])
+
+    def test_nones_removed(self) -> None:
+        """Test that None values are removed."""
+        a = make_dummy_state()
+        b = make_dummy_state()
+        states = [a, None, b, None]
+        expected = [a, b]
+        self.assertEqual(clean_states(states), expected)
+
+    def test_unusable_ok(self) -> None:
+        """Test that unusable states are not included by default."""
+        a = make_dummy_state()
+        b = make_dummy_state(use_state=False)
+        states = [a, b]
+
+        # Check that states with use_state=False are removed by default.
+        self.assertEqual(clean_states(states), [a])
+
+        # Check explicitly providing unusable_ok=False works the same.
+        self.assertEqual(clean_states(states, unusable_ok=False), [a])
+
+        # Check we unusable_ok=True doesn't filter out unusable states.
+        self.assertEqual(clean_states(states, unusable_ok=True), [a, b])
+
+    def test_nested(self) -> None:
+        """Test more nested state lists are cleaned properly. More realistic."""
+        a = make_dummy_state()
+        b = make_dummy_state()
+        c = make_dummy_state()
+        d = make_dummy_state()
+        e = make_dummy_state()
+        f = make_dummy_state()
+
+        states = [a, b, None, [c, None, d], [e, f], [None]]
+        expected = [a, b, c, d, e, f]
+        result = clean_states(states)
+        self.assertEqual(result, expected)
+
+
+class SortStatesByConfidenceTest(unittest.TestCase):
+
+    def test_empty(self) -> None:
+        """Test that empty iterables are sorted to an empty list."""
+        self.assertEqual(sort_states_by_confidence([]), [])
+
+    def test_basic(self) -> None:
+        """Test that states are sorted by confidence."""
+        a = make_dummy_state(confidence=0.0)
+        b = make_dummy_state(confidence=1.0)
+        self.assertEqual(sort_states_by_confidence([a, b]), [a, b])
+
+    def test_reverse(self) -> None:
+        """Test that reverse=True puts higher-confidence states first."""
+        a = make_dummy_state(confidence=0.0)
+        b = make_dummy_state(confidence=1.0)
+        self.assertEqual(sort_states_by_confidence([a, b], reverse=True), [b, a])
+
+    def test_none_and_nan(self) -> None:
+        """Test that None and np.nan values are sorted w/ lowest possible confidence."""
+        a = make_dummy_state(confidence=None, use_state=False)
+        b = make_dummy_state(confidence=0.0)
+        self.assertEqual(sort_states_by_confidence([a, b]), [a, b])
+        self.assertEqual(sort_states_by_confidence([a, b], reverse=True), [b, a])
+
+        a = make_dummy_state(confidence=np.nan, use_state=False)
+        b = make_dummy_state(confidence=0.0)
+        self.assertEqual(sort_states_by_confidence([a, b]), [a, b])
+        self.assertEqual(sort_states_by_confidence([a, b], reverse=True), [b, a])
+
+
+class GoalStateSelectorTest(unittest.TestCase):
+
+    def test_select_empty_list(self) -> None:
+        """Test that empty iterables are sorted to an empty list."""
+        gss = GoalStateSelector()
+        self.assertEqual(gss.select([]), None)
+
+    def test_select_no_valid_goal_states_returns_none(self) -> None:
+        """Test that empty iterables are sorted to an empty list."""
+        goal_states = [
+            None,
+            make_dummy_goal_state(use_state=False),
+        ]
+        gss = GoalStateSelector()
+        self.assertEqual(gss.select(goal_states), None)
+
+    def test_select_returns_goal_state_with_highest_confidence(self) -> None:
+        """Test that the goal state with the highest confidence is returned."""
+        a = make_dummy_goal_state(confidence=0.0)
+        b = make_dummy_goal_state(confidence=1.0)
+        gss = GoalStateSelector()
+        self.assertEqual(gss.select([a, b]), b)
+
+    def test_select_nested_heterogeneous_input(self) -> None:
+        """Test that the goal state with the highest confidence is returned.
+
+        This test is more realistic than the basic test, and tests that the
+        selector can handle nested, heterogeneous input.
+        """
+        gs_low = make_dummy_goal_state(confidence=0.0)
+        gs_medium = make_dummy_goal_state(confidence=0.5)
+        gs_high = make_dummy_goal_state(confidence=1.0)
+        gs_none = make_dummy_goal_state(confidence=None, use_state=False)
+        gs_nan = make_dummy_goal_state(confidence=np.nan, use_state=False)
+
+        goal_states = [
+            None,
+            gs_low,
+            [
+                gs_none,
+                gs_medium,
+                [
+                    gs_nan,
+                    gs_high,
+                ]
+            ]
+        ]
+        gss = GoalStateSelector()
+        self.assertEqual(gss.select(goal_states), gs_high)
+
+
+def make_dummy_state(**kwargs) -> State:
+    defaults = {
+        "location": np.zeros(3),
+        "morphological_features": {
+            "pose_vectors": np.eye(3),
+            "pose_fully_defined": True,
+        },
+        "non_morphological_features": None,
+        "confidence": 1.0,
+        "use_state": True,
+        "sender_id": "sender_id",
+        "sender_type": "SM",
+    }
+    init_args = {**defaults, **kwargs}
+    return State(**init_args)
+
+
+def make_dummy_goal_state(**kwargs) -> GoalState:
+    defaults = {
+        "location": np.zeros(3),
+        "morphological_features": None,
+        "non_morphological_features": None,
+        "confidence": 1.0,
+        "use_state": True,
+        "sender_id": "sender_id",
+        "sender_type": "GSG",
+        "goal_tolerances": None,
+        "info": None,
+    }
+    init_args = {**defaults, **kwargs}
+    return GoalState(**init_args)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
