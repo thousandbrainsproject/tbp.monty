@@ -13,6 +13,7 @@ import logging
 
 from tbp.monty.frameworks.loggers.exp_logger import TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import Monty
+from tbp.monty.frameworks.models.goal_state_selector import GoalStateSelector
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
 
@@ -125,6 +126,9 @@ class MontyBase(Monty):
                 "sm_to_agent_dict must contain exactly one key for each "
                 "sensor_module id; no more, no less!"
             )
+
+        # Create goal state selector
+        self.goal_state_selector = GoalStateSelector()
 
     ###
     # Basic methods that specify the algorithm
@@ -282,7 +286,7 @@ class MontyBase(Monty):
         # to revisit this with heterarchy if we have some LMs that are being stepped
         # at higher frequencies than others.
 
-        # Currently only use GSG outputs at inference
+        # Currently only use LM GSG outputs at inference
         if self.step_type == "matching_step":
             for lm in self.learning_modules:
                 self.gsg_outputs.append(lm.propose_goal_states())
