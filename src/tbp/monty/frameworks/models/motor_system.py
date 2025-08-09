@@ -37,9 +37,19 @@ class MotorSystem:
         self.reset()
 
     @property
+    def agent_id(self) -> str:
+        """Returns the agent ID of the motor system."""
+        return self._policy.agent_id
+
+    @property
     def last_action(self) -> Action:
         """Returns the last action taken by the motor system."""
         return self._last_action
+
+    @property
+    def policy(self) -> MotorPolicy:
+        """Returns the motor policy."""
+        return self._policy
 
     @property
     def state(self) -> MotorSystemState | None:
@@ -93,5 +103,5 @@ class MotorSystem:
         Returns:
             The action to take.
         """
-        self._last_action = self._policy(self._state)
+        self._last_action = self._policy(self.state)
         return self._last_action
