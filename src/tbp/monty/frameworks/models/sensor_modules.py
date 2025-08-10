@@ -7,15 +7,20 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
+from typing import Callable
 
 import numpy as np
 import quaternion
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    GoalStateGenerator,
+    SensorModule,
+)
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.sensor_processing import (
     log_sign,
@@ -33,7 +38,6 @@ logger = logging.getLogger(__name__)
 class DetailedLoggingSM(SensorModule):
     """Sensor module that keeps track of raw observations for logging."""
 
-    _gsg = None
 
     def __init__(
         self,
@@ -42,6 +46,8 @@ class DetailedLoggingSM(SensorModule):
         pc1_is_pc2_threshold=10,
         surface_normal_method="TLS",
         weight_curvature=True,
+        gsg_class: type[GoalStateGenerator] | None = None,
+        gsg_args: dict | None = None,
         **kwargs,
     ):
         """Initialize Sensor Module.
@@ -58,6 +64,9 @@ class DetailedLoggingSM(SensorModule):
                 Any other value will raise an error.
             weight_curvature: determines whether to use the "weighted" (True) or
                 "unweighted" (False) implementation for principal curvature extraction.
+            gsg_class: The goal state generator class to instantiate. If None, no
+                goal state generator will be used.
+            gsg_args: The GSG's init arguments.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -70,6 +79,12 @@ class DetailedLoggingSM(SensorModule):
         self.pc1_is_pc2_threshold = pc1_is_pc2_threshold
         self.surface_normal_method = surface_normal_method
         self.weight_curvature = weight_curvature
+
+        if gsg_class is not None:
+            gsg_args = gsg_args or {}
+            self.gsg = gsg_class(**gsg_args)
+        else:
+            self.gsg = None
 
     def state_dict(self):
         """Return state_dict."""
