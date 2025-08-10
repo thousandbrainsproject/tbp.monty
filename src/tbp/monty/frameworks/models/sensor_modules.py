@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable
 
 import numpy as np
 import quaternion
@@ -102,7 +101,7 @@ class DetailedLoggingSM(SensorModule):
         # TODO: This stores the entire AgentState. Extract sensor-specific state.
         self.state = state
 
-    def step(self, data):
+    def step(self, data, step_gsg: bool = True):
         """Add raw observations to SM buffer."""
         if self.save_raw_obs and not self.is_exploring:
             self.raw_observations.append(data)
@@ -131,8 +130,7 @@ class DetailedLoggingSM(SensorModule):
                             sm_location=np.array(self.state["location"]),
                         )
                     )
-        if self.gsg is not None:
-            self.gsg.step()
+
 
     def propose_goal_states(self):
         """Return the goal-states proposed by the GSG."""
@@ -565,17 +563,18 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             # sensor_states=self.states, # pickle problem with magnum
         )
 
-    def step(self, data):
+    def step(self, data, step_gsg: bool = True):
         """Turn raw observations into dict of features at location.
 
         Args:
             data: Raw observations.
+            step_gsg: Whether to step the goal state generator.
 
         Returns:
             State with features and morphological features. Noise may be added.
             use_state flag may be set.
         """
-        super().step(data)  # for logging
+        super().step(data, step_gsg=False)  # for logging
         observed_state = self.observations_to_comunication_protocol(
             data, on_object_only=self.on_object_obs_only
         )
@@ -589,6 +588,9 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             # Set interesting-features flag to False, as should not be passed to
             # LM, even in e.g. pre-training experiments that might otherwise do so
             observed_state.use_state = False
+
+        if self.gsg is not None and observed_state.use_state and step_gsg:
+            self.gsg.step(data, observed_state)
 
         return observed_state
 
@@ -660,9 +662,9 @@ class FeatureChangeSM(HabitatDistantPatchSM):
         super().pre_episode()
         self.last_features = None
 
-    def step(self, data):
+    def step(self, data, step_gsg: bool = True):
         """Return Features if they changed significantly."""
-        patch_observation = super().step(data)  # get extracted features
+        patch_observation = super().step(data, step_gsg=False)  # get extracted features
 
         if not patch_observation.use_state:
             # If we already know the features are uninteresting (e.g. invalid point
@@ -674,7 +676,6 @@ class FeatureChangeSM(HabitatDistantPatchSM):
         if self.last_features is None:  # first step
             logger.debug("Performing first sensation step of FeatureChangeSM")
             self.last_features = patch_observation
-            return patch_observation
 
         else:
             logger.debug("Performing FeatureChangeSM step")
@@ -691,7 +692,10 @@ class FeatureChangeSM(HabitatDistantPatchSM):
             else:
                 self.last_sent_n_steps_ago += 1
 
-            return patch_observation
+        if self.gsg is not None and patch_observation.use_state and step_gsg:
+            self.gsg.step(data, patch_observation)
+
+        return patch_observation
 
     def check_feature_change(self, observed_features):
         """Check feature change between last transmitted observation.

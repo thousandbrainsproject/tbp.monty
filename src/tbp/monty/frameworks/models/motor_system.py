@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import contextlib
-from typing import Literal, Optional
+from typing import Literal
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
