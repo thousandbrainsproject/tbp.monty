@@ -8,6 +8,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import logging
 
 import numpy as np
@@ -1039,3 +1041,74 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             an output goal-state was generated.
         """
         return self.parent_lm.buffer.get_num_steps_post_output_goal_generated()
+
+
+class SmGoalStateGenerator(GoalStateGenerator):
+    """Generate sub-goal states until the received goal state is achieved.
+
+    A component associated with each learning module that receives a high level goal
+    state, and generates sub-goal states until the received goal state is achieved.
+
+    Generated goal-states are received by either:
+        i) other learning modules, which may model world-objects (e.g. a mug), or may
+        model internal systems (e.g. the agent's robotic limb)
+        ii) motor actuators, in which case they represent simpler, primitive goal-states
+        for the actuator to achieve (e.g. location and orientation of an actuator-sensor
+        pair)
+
+    As well as the high-level, "driving" goal-state, generated goal-states can also be
+    conditioned on other information, such as the LMs current most-likely hypothesis,
+    and the structure of known object models (i.e. information local to the LM).
+
+    Note all goal-states conform to the State-class cortical messaging protocol (CMP).
+    """
+
+    def __init__(self, parent_sm, goal_tolerances=None, **kwargs) -> None:
+        """Initialize the GSG.
+
+        Args:
+            parent_sm: The sensor module class instance that the GSG is embedded
+                within.
+            goal_tolerances: The tolerances for each attribute of the goal-state
+                that can be used by the GSG when determining whether a goal-state is
+                achieved.
+            **kwargs: Additional keyword arguments. Unused.
+        """
+        self.parent_sm = parent_sm
+        if goal_tolerances is None:
+            self.goal_tolerances = {
+                "location": 0.015,  # distance in meters
+            }
+        else:
+            self.goal_tolerances = dict(goal_tolerances)
+
+        self.reset()
+
+    def reset(self):
+        """Reset any stored attributes of the GSG."""
+        self.set_driving_goal_state(None)
+        self.output_goal_states = []
+
+    def get_output_goal_states(self) -> list[GoalState]:
+        """Retrieve the output goal-states of the GSG.
+
+        This is the goal-states projected to the GSS.
+
+        Returns:
+            Output goal-states of the GSG.
+        """
+        return self.output_goal_states
+
+    def set_driving_goal_state(self, goal_state: GoalState | None) -> None:
+        """Receive a new high-level goal to drive this goal-state-generator (GSG)."""
+        self.driving_goal_state = goal_state
+
+    def step(self, observations):
+        """Step the GSG.
+
+                Note: we want access to raw and processed observations.
+
+        Args:
+            observations: The parent sensor module's observations.
+        """
+        output_goal_achieved = self._check_output_goal_state_achieved(observations)
