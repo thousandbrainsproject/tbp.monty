@@ -34,7 +34,7 @@ class FakeSensorModule(SensorModule):
     def post_episode(self):
         pass
 
-    def propose_goal_states(self):
+    def propose_goal_state(self):
         return None
 
     def set_experiment_mode(self, mode: str):
