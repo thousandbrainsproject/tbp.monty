@@ -125,13 +125,13 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
         self.driving_goal_state = received_goal_state
 
-    def get_output_goal_states(self):
-        """Retrieve the output goal-state of the GSG.
+    def get_output_goal_state(self):
+        """Retrieve the output goal-state(s) of the GSG.
 
-        This is the goal-state projected to other LM's GSGs +/- motor-actuators.
+        This is the goal-state projected to other LM's GSGs and goal-state-selectors.
 
         Returns:
-            Output goal-state of the GSG.
+            Output goal-state(s) of the GSG.
         """
         return self.output_goal_state
 
