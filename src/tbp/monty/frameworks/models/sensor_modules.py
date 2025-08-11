@@ -131,11 +131,10 @@ class DetailedLoggingSM(SensorModule):
                         )
                     )
 
-
-    def propose_goal_states(self):
-        """Return the goal-states proposed by the GSG."""
+    def propose_goal_state(self):
+        """Return goal-state(s) proposed by this SM's GSG."""
         if self.gsg is not None:
-            return self.gsg.get_output_goal_states()
+            return self.gsg.get_output_goal_state()
         return None
 
     def pre_episode(self):
