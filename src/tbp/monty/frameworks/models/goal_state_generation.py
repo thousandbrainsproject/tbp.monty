@@ -1087,17 +1087,15 @@ class SmGoalStateGenerator(GoalStateGenerator):
     def reset(self):
         """Reset any stored attributes of the GSG."""
         self.set_driving_goal_state(None)
-        self.output_goal_states = []
+        self.output_goal_state = None
 
-    def get_output_goal_states(self) -> list[GoalState]:
-        """Retrieve the output goal-states of the GSG.
-
-        This is the goal-states projected to the GSS.
+    def get_output_goal_state(self) -> GoalState | list[GoalState] | None:
+        """Retrieve the output goal state(s) of the GSG.
 
         Returns:
-            Output goal-states of the GSG.
+            Output goal state(s) of the GSG.
         """
-        return self.output_goal_states
+        return self.output_goal_state
 
     def set_driving_goal_state(self, goal_state: GoalState | None) -> None:
         """Receive a new high-level goal to drive this goal-state-generator (GSG)."""
