@@ -70,15 +70,17 @@ class Monty(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def _pass_goal_states(self):
-        """Pass goal states in the network between learning-modules.
+        """Pass goal states from GSGs to LMs and the goal-state selector.
 
-        Aggregate any goal states for sending to the motor-system.
+        Aggregate any goal states from SMs and LMs, and use the goal state selector
+        to determine which (if any) to attempt, and set the motor-system's driving goal
+        state.
         """
         pass
 
     @abc.abstractmethod
     def _pass_infos_to_motor_system(self):
-        """Pass input observations and goal states to the motor system."""
+        """Pass input observations to the motor system."""
         pass
 
     @abc.abstractmethod
@@ -189,8 +191,8 @@ class LearningModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def propose_goal_states(self):
-        """Return the goal-states proposed by the GSG."""
+    def propose_goal_state(self):
+        """Return the goal-state(s) proposed by the GSG."""
         pass
 
     @abc.abstractmethod
@@ -322,6 +324,6 @@ class SensorModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def propose_goal_states(self):
-        """Return the goal-states proposed by this LM's or SM's GSG."""
+    def propose_goal_state(self):
+        """Return the goal-state(s) proposed by this SM's GSG (if it has one)."""
         pass
