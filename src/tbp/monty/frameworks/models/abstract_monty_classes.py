@@ -190,7 +190,10 @@ class LearningModule(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def propose_goal_state(self):
-        """Return the goal-state(s) proposed by the GSG."""
+        """Return the goal-state(s) proposed by the LM's GSG.
+
+        If the LM has no GSG, return None.
+        """
         pass
 
     @abc.abstractmethod
@@ -323,5 +326,8 @@ class SensorModule(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def propose_goal_state(self):
-        """Return the goal-state(s) proposed by this SM's GSG (if it has one)."""
+        """Return the goal-state(s) proposed by this SM's GSG.
+
+        If the SM has no GSG, return None.
+        """
         pass
