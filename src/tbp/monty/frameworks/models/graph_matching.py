@@ -725,7 +725,7 @@ class GraphLM(LearningModule):
         Only returned if the LM/GSG was stepped, otherwise returns None goal-state.
         """
         if self.buffer.get_last_obs_processed():
-            return self.gsg.get_output_goal_states()
+            return self.gsg.get_output_goal_state()
         else:
             return None
 
