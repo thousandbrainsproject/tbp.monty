@@ -289,10 +289,10 @@ class MontyBase(Monty):
         # Currently only use LM GSG outputs at inference
         if self.step_type == "matching_step":
             for lm in self.learning_modules:
-                gsg_outputs.append(lm.propose_goal_states())
+                gsg_outputs.append(lm.propose_goal_state())
 
         for sm in self.sensor_modules:
-            gsg_outputs.append(sm.propose_goal_states())
+            gsg_outputs.append(sm.propose_goal_state())
 
         gs = self.goal_state_selector.select(gsg_outputs)
         self.motor_system.set_driving_goal_state(gs)
