@@ -76,9 +76,7 @@ class MontyBase(Monty):
         """
         # Basic instance attributes
         self.sensor_modules = sensor_modules
-        self.sm_ids = [s.sensor_module_id for s in self.sensor_modules]
         self.learning_modules = learning_modules
-        self.n_lms = len(self.learning_modules)
         self.motor_system = motor_system
         self.sm_to_agent_dict = sm_to_agent_dict
         self.sm_to_lm_matrix = sm_to_lm_matrix
@@ -119,8 +117,9 @@ class MontyBase(Monty):
                 "The lengths of learning_modules and lm_to_lm_vote_matrix must match"
             )
 
-        # Validate number of sensor modules and mapping
-        if set(self.sm_ids) != set(sm_to_agent_dict.keys()):
+        # Check that every sensor module is assigned to an agent.
+        sm_ids = [sm.sensor_module_id for sm in self.sensor_modules]
+        if set(sm_ids) != set(self.sm_to_agent_dict.keys()):
             raise ValueError(
                 "sm_to_agent_dict must contain exactly one key for each "
                 "sensor_module id; no more, no less!"
