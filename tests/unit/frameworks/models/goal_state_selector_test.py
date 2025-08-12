@@ -14,7 +14,6 @@ import numpy as np
 
 from tbp.monty.frameworks.models.goal_state_selector import (
     GoalStateSelector,
-    clean_states,
     flatten,
     sort_states_by_confidence,
 )
@@ -66,57 +65,15 @@ class FlattenTest(unittest.TestCase):
         self.assertEqual(flatten(nested), flat)
 
     def test_iterability_judgement(self) -> None:
-        """Test that iterables other than lists are flattened."""
+        """Test that non-list iterables are flattened."""
         expected = [1, 1.5, "hello", None]
         item_tuple = tuple(expected)
         item_array = np.array(expected, dtype=object)
         for items in [item_tuple, item_array]:
-            self.assertEqual(flatten(items), expected)  # outermost is non-list
+            self.assertEqual(flatten(items), expected)  # outer sequence is non-list
             self.assertEqual(flatten([items]), expected)  # inner sequence is non-list
 
 
-class CleanStatesTest(unittest.TestCase):
-
-    def test_empty(self) -> None:
-        """Test that empty iterables are flattened to an empty list."""
-        self.assertEqual(clean_states([]), [])
-
-    def test_nones_removed(self) -> None:
-        """Test that None values are removed."""
-        a = make_dummy_state()
-        b = make_dummy_state()
-        states = [a, None, b, None]
-        expected = [a, b]
-        self.assertEqual(clean_states(states), expected)
-
-    def test_unusable_ok(self) -> None:
-        """Test that unusable states are not included by default."""
-        a = make_dummy_state()
-        b = make_dummy_state(use_state=False)
-        states = [a, b]
-
-        # Check that states with use_state=False are removed by default.
-        self.assertEqual(clean_states(states), [a])
-
-        # Check explicitly providing unusable_ok=False works the same.
-        self.assertEqual(clean_states(states, unusable_ok=False), [a])
-
-        # Check we unusable_ok=True doesn't filter out unusable states.
-        self.assertEqual(clean_states(states, unusable_ok=True), [a, b])
-
-    def test_nested(self) -> None:
-        """Test more nested state lists are cleaned properly. More realistic."""
-        a = make_dummy_state()
-        b = make_dummy_state()
-        c = make_dummy_state()
-        d = make_dummy_state()
-        e = make_dummy_state()
-        f = make_dummy_state()
-
-        states = [a, b, None, [c, None, d], [e, f], [None]]
-        expected = [a, b, c, d, e, f]
-        result = clean_states(states)
-        self.assertEqual(result, expected)
 
 
 class SortStatesByConfidenceTest(unittest.TestCase):
