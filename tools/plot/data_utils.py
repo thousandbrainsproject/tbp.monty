@@ -65,11 +65,14 @@ def apply_world_transform(
     return transformed_locations, transformed_rotations
 
 
-def deserialize_json_chunks_fast(json_file, start=0, stop=None, episodes=None):
-    # Just load first episode for debugging
+def deserialize_json_chunks_fast(
+    json_file, start=0, stop=None, episodes=None, episode_line=1
+):
+    # Load specific episode by line number (0-indexed)
     with open(json_file, "r") as f:
-        first_line = f.readline().strip()
-        data = json.loads(first_line)
+        for i in range(episode_line + 1):
+            line = f.readline().strip()
+        data = json.loads(line)
 
     return data
 
@@ -163,28 +166,24 @@ class ObjectModel:
         )
 
 
-def get_pretrained_model_path(model_type: str) -> Path:
-    """Get the path to the pretrained model for an experiment.
+def get_model_path(experiment_log_dir: Path) -> Path:
+    """Get the path to the model for an experiment from the experiment log directory.
 
     Args:
-        model_type: The type of model to load ("dist" or "surf").
+        experiment_log_dir: The experiment log directory containing the model.
 
     Returns:
-        The path to the pretrained model.
+        The path to the model.pt file.
 
     Raises:
-        ValueError: If the experiment name does not contain 'dist' or 'surf'.
+        FileNotFoundError: If the model.pt file is not found in the expected location.
     """
-    monty_models_dir = Path(os.getenv("MONTY_MODELS"))
-    pretrain_dir = monty_models_dir / "pretrained_ycb_v10"
+    model_path = experiment_log_dir / "0" / "model.pt"
 
-    if model_type == "dist":
-        pretrain_dir = pretrain_dir / "supervised_pre_training_base" / "pretrained"
-    elif model_type == "surf":
-        pretrain_dir = pretrain_dir / "surf_agent_1lm_77obj" / "pretrained"
-    else:
-        raise ValueError(f"Invalid model type: {model_type}. Must be 'dist' or 'surf'.")
-    return pretrain_dir / "model.pt"
+    if not model_path.exists():
+        raise FileNotFoundError(f"Model file not found at {model_path}")
+
+    return model_path
 
 
 def load_object_model(
@@ -240,9 +239,10 @@ def load_object_model(
 class EpisodeDataLoader:
     """Loads and processes episode data from detailed_run_stats.json."""
 
-    def __init__(self, json_path: Path, model_path: Path):
+    def __init__(self, json_path: Path, model_path: Path, episode_id: int = 0):
         self.json_path = json_path
         self.model_path = model_path
+        self.episode_id = episode_id
 
         self.lm_data = {}
         self.target_data = {}
@@ -265,13 +265,15 @@ class EpisodeDataLoader:
         self.all_sm1_rgba = []
         self.sensed_curvatures = []
 
-    def load_episode_data(self, episode_id: int = 0) -> None:
+    def load_episode_data(self, episode_id: int = None) -> None:
         """Load episode data from JSON file."""
+        if episode_id is None:
+            episode_id = self.episode_id
         logger.info(f"Loading episode {episode_id} data from: {self.json_path}")
 
         episode_data = deserialize_json_chunks_fast(
-            self.json_path, episodes=[episode_id]
-        )["0"]
+            self.json_path, episodes=[episode_id], episode_line=episode_id
+        )[str(episode_id)]
         self.lm_data = episode_data["LM_0"]
         self.num_lm_steps = len(self.lm_data["possible_locations"])
         self.sm0_data = episode_data["SM_0"]
