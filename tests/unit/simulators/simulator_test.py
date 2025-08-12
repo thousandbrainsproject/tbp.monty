@@ -16,6 +16,11 @@ class FakeSimulator(Simulator):
     def observations(self):
         return []
 
+    @property
+    def states(self):
+        return {}
+
+
 class SimulatorTest(unittest.TestCase):
     def test_fails_when_properties_called_as_functions(self):
         fake_sim = FakeSimulator()
@@ -28,8 +33,12 @@ class SimulatorTest(unittest.TestCase):
         with pytest.raises(TypeError):
             fake_sim.observations()
 
+        with pytest.raises(TypeError):
+            fake_sim.states()
+
     def test_properties(self):
         fake_sim = FakeSimulator()
         self.assertEqual(42, fake_sim.num_objects)
         self.assertEqual({}, fake_sim.action_space)
         self.assertEqual([], fake_sim.observations)
+        self.assertEqual({}, fake_sim.states)
