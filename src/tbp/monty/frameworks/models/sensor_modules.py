@@ -588,7 +588,7 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             # LM, even in e.g. pre-training experiments that might otherwise do so
             observed_state.use_state = False
 
-        if self.gsg is not None and observed_state.use_state and step_gsg:
+        if self.gsg is not None and step_gsg:
             self.gsg.step(data, observed_state)
 
         return observed_state

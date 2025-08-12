@@ -499,6 +499,8 @@ class MontyForGraphMatching(MontyBase):
         provides locations associated with tangential movements; this can help ensure we
         e.g. avoid revisiting old locations.
         """
+        self.motor_system.set_processed_observations(infos)
+        # TODO: Delete the following line eventually.
         self.motor_system._policy.processed_observations = infos
 
         # TODO M clean up the below when refactoring the surface-agent policy
