@@ -88,6 +88,7 @@ class MotorSystem:
     def set_processed_observations(self, processed_observations: State | None) -> None:
         """Sets the processed observations."""
         self._processed_observations = processed_observations
+        self._policy.processed_observations = processed_observations
 
     def reset(self) -> None:
         """Reset the motor system."""
