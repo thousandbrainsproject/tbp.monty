@@ -122,7 +122,7 @@ class MuJoCoSimulator(Simulator):
             quat=rotation,
         )
 
-    def get_num_objects(self) -> int:
+    def num_objects(self) -> int:
         return self._object_count
 
     def get_action_space(self) -> None:
