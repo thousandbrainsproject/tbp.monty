@@ -82,7 +82,8 @@ class Simulator(Protocol):
         """Get sensor observations."""
         ...
 
-    def get_states(self):
+    @property
+    def states(self):
         """Get agent and sensor states."""
         ...
 
