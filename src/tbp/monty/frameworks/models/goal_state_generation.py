@@ -20,6 +20,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     GoalStateGenerator,
     SensorModule,
 )
+from tbp.monty.frameworks.models.buffer import BufferEncoder
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.utils.communication_utils import get_state_from_channel
 
@@ -1052,6 +1053,18 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 class SmGoalStateGeneratorTelemetry:
     driving_goal_state: GoalState | None = None
     output_goal_state: list[GoalState] | None = None
+
+
+def encode_sm_gsg_telemetry(
+    data: SmGoalStateGeneratorTelemetry,
+) -> dict[str, Any]:
+    return {
+        "driving_goal_state": data.driving_goal_state,
+        "output_goal_state": data.output_goal_state,
+    }
+
+
+BufferEncoder.register(SmGoalStateGeneratorTelemetry, encode_sm_gsg_telemetry)
 
 
 class SmGoalStateGenerator(GoalStateGenerator):
