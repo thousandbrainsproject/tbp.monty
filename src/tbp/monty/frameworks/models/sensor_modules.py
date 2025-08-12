@@ -93,9 +93,12 @@ class DetailedLoggingSM(SensorModule):
             "Should have a SM value for every set of observations."
         )
 
-        return dict(
+        state_dict = dict(
             raw_observations=self.raw_observations, sm_properties=self.sm_properties
         )
+        if self.gsg is not None and self.gsg.save_telemetry:
+            state_dict["gsg_telemetry"] = self.gsg.telemetry
+        return state_dict
 
     def update_state(self, state):
         """Update information about the sensors location and rotation."""
