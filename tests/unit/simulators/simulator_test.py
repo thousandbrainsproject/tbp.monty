@@ -12,6 +12,10 @@ class FakeSimulator(Simulator):
     def action_space(self):
         return {}
 
+    @property
+    def observations(self):
+        return []
+
 class SimulatorTest(unittest.TestCase):
     def test_fails_when_properties_called_as_functions(self):
         fake_sim = FakeSimulator()
@@ -21,7 +25,11 @@ class SimulatorTest(unittest.TestCase):
         with pytest.raises(TypeError):
             fake_sim.action_space()
 
+        with pytest.raises(TypeError):
+            fake_sim.observations()
+
     def test_properties(self):
         fake_sim = FakeSimulator()
         self.assertEqual(42, fake_sim.num_objects)
         self.assertEqual({}, fake_sim.action_space)
+        self.assertEqual([], fake_sim.observations)
