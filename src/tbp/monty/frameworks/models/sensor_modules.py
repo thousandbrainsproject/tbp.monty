@@ -81,7 +81,7 @@ class DetailedLoggingSM(SensorModule):
 
         if gsg_class is not None:
             gsg_args = gsg_args or {}
-            self.gsg = gsg_class(**gsg_args)
+            self.gsg = gsg_class(self, **gsg_args)
         else:
             self.gsg = None
 
@@ -130,6 +130,9 @@ class DetailedLoggingSM(SensorModule):
                             sm_location=np.array(self.state["location"]),
                         )
                     )
+
+        if step_gsg and self.gsg is not None:
+            self.gsg.step(data, None)
 
     def propose_goal_state(self):
         """Return goal-state(s) proposed by this SM's GSG."""
