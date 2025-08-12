@@ -500,8 +500,6 @@ class MontyForGraphMatching(MontyBase):
         e.g. avoid revisiting old locations.
         """
         self.motor_system.set_processed_observations(infos)
-        # TODO: Delete the following line eventually.
-        self.motor_system._policy.processed_observations = infos
 
         # TODO M clean up the below when refactoring the surface-agent policy
         if hasattr(self.motor_system._policy, "tangent_locs"):

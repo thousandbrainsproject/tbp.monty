@@ -300,6 +300,9 @@ class MontyBase(Monty):
         """Pass input observations and goal states to the motor system."""
         pass
 
+    def _step_motor_system(self):
+        self.motor_system.step()
+
     def _set_step_type_and_check_if_done(self):
         """Check terminal conditions and decide if we change the step type.
 

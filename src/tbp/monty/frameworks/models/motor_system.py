@@ -107,14 +107,14 @@ class MotorSystem:
         self._processed_observations = None
         self._last_action = None
 
-    def post_episode(self) -> None:
-        """Post episode hook."""
-        self._policy.post_episode()
-
     def pre_episode(self) -> None:
         """Pre episode hook."""
         self.reset()
         self._policy.pre_episode()
+
+    def post_episode(self) -> None:
+        """Post episode hook."""
+        self._policy.post_episode()
 
     def step(self) -> None:
         """Select a policy, etc.
@@ -150,8 +150,9 @@ class MotorSystem:
 
     def _post_call(self) -> None:
         """Post call hook."""
-        # ?Need to keep this in sync with the policy's driving goal state since
-        # derive_habitat_goal_state() consumes the goal state.?
+        self._last_action = self._policy.last_action
+        # Need to keep this in sync with the policy's driving goal state since
+        # derive_habitat_goal_state() consumes the goal state.
         self._driving_goal_state = getattr(self._policy, "driving_goal_state", None)
 
     def __call__(self) -> Action:
@@ -165,8 +166,5 @@ class MotorSystem:
         # TODO: ?Mark a goal state being attempted as the one being attempted so
         # it can be checked by a GSG.?
         action = self._policy(self._state)
-        self._last_action = action
-
         self._post_call()
-
         return action
