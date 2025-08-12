@@ -1,5 +1,5 @@
 - Start Date: 2025-07-28
-- RFC PR: (leave this empty, it will be filled in after RFC is merged)
+- RFC PR: https://github.com/thousandbrainsproject/tbp.monty/pull/405
 
 # Conducting Research While Building a Stable Platform
 
