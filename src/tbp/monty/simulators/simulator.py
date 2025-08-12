@@ -68,7 +68,8 @@ class Simulator(Protocol):
         """Return the number of instantiated objects in the environment."""
         ...
 
-    def get_action_space(self):
+    @property
+    def action_space(self):
         """Returns the set of all available actions."""
         ...
 
