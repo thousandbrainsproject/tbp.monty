@@ -28,13 +28,6 @@ class GoalStateSelector:
     ) -> GoalState | None:
         """Select the best goal state from zero or more goal states.
 
-        Since goal-state-generators can return `None`, a single goal-state, or an
-        iterable of goal states, pooling the output of several GSGs can result in
-        messy combinations of allowed returned values.
-
-        This function first sanitizes the input goal states by putting all valid
-        goal states into a single flat list.
-
         Args:
             goal_states: A possibly nested iterable of `GoalState` (or `None`) objects.
 
