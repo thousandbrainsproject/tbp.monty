@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 class DetailedLoggingSM(SensorModule):
     """Sensor module that keeps track of raw observations for logging."""
 
+    has_detailed_logger: bool = False
 
     def __init__(
         self,
@@ -591,7 +592,7 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             # LM, even in e.g. pre-training experiments that might otherwise do so
             observed_state.use_state = False
 
-        if self.gsg is not None and step_gsg:
+        if step_gsg and self.gsg is not None:
             self.gsg.step(data, observed_state)
 
         return observed_state
@@ -694,7 +695,7 @@ class FeatureChangeSM(HabitatDistantPatchSM):
             else:
                 self.last_sent_n_steps_ago += 1
 
-        if self.gsg is not None and patch_observation.use_state and step_gsg:
+        if step_gsg and self.gsg is not None:
             self.gsg.step(data, patch_observation)
 
         return patch_observation
