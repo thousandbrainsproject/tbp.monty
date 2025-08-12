@@ -140,7 +140,8 @@ class MuJoCoSimulator(Simulator):
     def observations(self) -> None:
         pass
 
-    def get_states(self) -> None:
+    @property
+    def states(self) -> None:
         pass
 
     def apply_action(self, action: Action) -> Dict[str, Dict]:
