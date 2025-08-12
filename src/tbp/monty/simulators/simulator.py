@@ -63,8 +63,8 @@ class Simulator(Protocol):
         """
         ...
 
-    # TODO - change getters to properties using @property
-    def get_num_objects(self) -> int:
+    @property
+    def num_objects(self) -> int:
         """Return the number of instantiated objects in the environment."""
         ...
 
