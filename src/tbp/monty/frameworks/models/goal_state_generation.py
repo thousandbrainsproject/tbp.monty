@@ -11,10 +11,15 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass, field
+from typing import Any, Collection
 
 import numpy as np
 
-from tbp.monty.frameworks.models.abstract_monty_classes import GoalStateGenerator
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    GoalStateGenerator,
+    SensorModule,
+)
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.utils.communication_utils import get_state_from_channel
 
@@ -1043,27 +1048,37 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         return self.parent_lm.buffer.get_num_steps_post_output_goal_generated()
 
 
+@dataclass
+class SmGoalStateGeneratorTelemetry:
+    driving_goal_state: GoalState | None = None
+    output_goal_state: list[GoalState] | None = None
+
+
 class SmGoalStateGenerator(GoalStateGenerator):
-    """Generate sub-goal states until the received goal state is achieved.
+    """Sensor module goal-state generator.
 
-    A component associated with each learning module that receives a high level goal
-    state, and generates sub-goal states until the received goal state is achieved.
-
-    Generated goal-states are received by either:
-        i) other learning modules, which may model world-objects (e.g. a mug), or may
-        model internal systems (e.g. the agent's robotic limb)
-        ii) motor actuators, in which case they represent simpler, primitive goal-states
-        for the actuator to achieve (e.g. location and orientation of an actuator-sensor
-        pair)
-
-    As well as the high-level, "driving" goal-state, generated goal-states can also be
-    conditioned on other information, such as the LMs current most-likely hypothesis,
-    and the structure of known object models (i.e. information local to the LM).
-
-    Note all goal-states conform to the State-class cortical messaging protocol (CMP).
+    Attributes:
+        parent_sm: The sensor module class instance that the GSG is embedded within.
+        goal_tolerances: The tolerances for each attribute of the goal-state that can be
+            used by the GSG when determining whether a goal-state is achieved.
+        output_goal_state: The output goal state of the GSG.
+        driving_goal_state: The driving goal state of the GSG.
     """
 
-    def __init__(self, parent_sm, goal_tolerances=None, **kwargs) -> None:
+    parent_sm: SensorModule
+    goal_tolerances: dict
+    save_telemetry: bool
+    telemetry: list[SmGoalStateGeneratorTelemetry] | None
+    driving_goal_state: GoalState | None
+    output_goal_state: GoalState | list[GoalState] | None
+
+    def __init__(
+        self,
+        parent_sm: SensorModule,
+        goal_tolerances: dict | None = None,
+        save_telemetry: bool = False,
+        **kwargs,
+    ) -> None:
         """Initialize the GSG.
 
         Args:
@@ -1072,6 +1087,7 @@ class SmGoalStateGenerator(GoalStateGenerator):
             goal_tolerances: The tolerances for each attribute of the goal-state
                 that can be used by the GSG when determining whether a goal-state is
                 achieved.
+            save_telemetry: Whether to save telemetry data.
             **kwargs: Additional keyword arguments. Unused.
         """
         self.parent_sm = parent_sm
@@ -1082,12 +1098,14 @@ class SmGoalStateGenerator(GoalStateGenerator):
         else:
             self.goal_tolerances = dict(goal_tolerances)
 
+        self.save_telemetry = save_telemetry
         self.reset()
 
     def reset(self):
         """Reset any stored attributes of the GSG."""
+        self.telemetry = [] if self.save_telemetry else None
         self.set_driving_goal_state(None)
-        self.output_goal_state = None
+        self.output_goal_state = []
 
     def get_output_goal_state(self) -> GoalState | list[GoalState] | None:
         """Retrieve the output goal state(s) of the GSG.
@@ -1101,12 +1119,83 @@ class SmGoalStateGenerator(GoalStateGenerator):
         """Receive a new high-level goal to drive this goal-state-generator (GSG)."""
         self.driving_goal_state = goal_state
 
-    def step(self, observations):
+    def step(
+        self,
+        raw_observation: dict | None = None,
+        processed_observation: dict | None = None,
+    ):
         """Step the GSG.
 
-                Note: we want access to raw and processed observations.
+        Args:
+            raw_observation: The parent sensor module's raw observations.
+            processed_observation: The parent sensor module's processed observations.
+        """
+        self._set_achievement_status(raw_observation, processed_observation)
+
+        # TODO: Logging.
+        self.output_goal_state = self._generate_output_goal_state(
+            raw_observation, processed_observation
+        )
+        if self.save_telemetry:
+            self.telemetry.append(
+                SmGoalStateGeneratorTelemetry(
+                    driving_goal_state=self.driving_goal_state,
+                    output_goal_state=self.output_goal_state,
+                )
+            )
+
+    def _generate_output_goal_state(
+        self,
+        raw_observation: dict | None = None,
+        processed_observation: dict | None = None,
+    ) -> list[GoalState]:
+        """Generate the output goal state(s).
+
+        Generates the output goal state(s) based on the driving goal state and the
+        achieved goal state(s).
 
         Args:
-            observations: The parent sensor module's observations.
+            raw_observation: The parent sensor module's raw observations.
+            processed_observation: The parent sensor module's processed observations.
+
+        Returns:
+            The output goal state(s).
         """
-        output_goal_achieved = self._check_output_goal_state_achieved(observations)
+        return []
+
+    def _set_achievement_status(
+        self,
+        raw_observation: dict | None = None,
+        processed_observation: dict | None = None,
+    ) -> None:
+        """Set the achievement status of the output goal state(s).
+
+        Sets the `achieved` attribute of the output goal state(s) to True if the goal
+        state has been achieved, and False otherwise.
+        """
+        if self.output_goal_state:
+            generated = self.output_goal_state
+            if isinstance(generated, GoalState):
+                generated = [generated]
+            for gs in generated:
+                # TODO: only check achieved when attempted.
+                gs.info["achieved"] = self._goal_state_achieved(
+                    gs, raw_observation, processed_observation
+                )
+
+            # update telemetry for previous step.
+            if self.save_telemetry and len(self.telemetry) > 0:
+                self.telemetry[-1].output_goal_state = generated
+
+    def _goal_state_achieved(
+        self,
+        goal_state: GoalState,
+        raw_observation: dict | None = None,
+        processed_observation: dict | None = None,
+    ) -> bool:
+        """Check if a goal state is within the goal tolerances.
+
+        Returns:
+            Whether the goal state is within the goal tolerances.
+        """
+        return False
