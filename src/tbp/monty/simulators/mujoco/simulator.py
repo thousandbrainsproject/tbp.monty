@@ -136,7 +136,8 @@ class MuJoCoSimulator(Simulator):
     ) -> None:
         pass
 
-    def get_observations(self) -> None:
+    @property
+    def observations(self) -> None:
         pass
 
     def get_states(self) -> None:
