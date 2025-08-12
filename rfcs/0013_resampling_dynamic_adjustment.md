@@ -1,5 +1,5 @@
 - Start Date: 2025-07-22
-- RFC PR:
+- RFC PR: [#390](https://github.com/thousandbrainsproject/tbp.monty/pull/390)
 
 # Summary
 
