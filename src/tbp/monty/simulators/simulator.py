@@ -77,7 +77,8 @@ class Simulator(Protocol):
         """Return agent instance."""
         ...
 
-    def get_observations(self):
+    @property
+    def observations(self):
         """Get sensor observations."""
         ...
 
