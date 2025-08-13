@@ -9,13 +9,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any, Dict, cast
 
 import numpy as np
 import numpy.typing as npt
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.models.buffer import BufferEncoder
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
@@ -40,6 +41,25 @@ class HypothesesUpdaterChannelTelemetry:
     """
     pose_errors: npt.NDArray[np.float64]
     """Rotation errors relative to the target pose."""
+
+
+def encode_hypotheses_updater_channel_telemetry(
+    telemetry: HypothesesUpdaterChannelTelemetry,
+) -> Dict[str, Any]:
+    """Encode HypothesesUpdaterChannelTelemetry as a dictionary.
+
+    Args:
+        telemetry: The telemetry to encode.
+
+    Returns:
+        A dictionary containing the telemetry.
+    """
+    return asdict(telemetry)
+
+
+BufferEncoder.register(
+    HypothesesUpdaterChannelTelemetry, encode_hypotheses_updater_channel_telemetry
+)
 
 
 HypothesesUpdaterGraphTelemetry = Dict[str, HypothesesUpdaterChannelTelemetry]
