@@ -28,7 +28,7 @@ This part of the RFC focuses on how we can benefit from realignment of hypothese
 <img src="./0000_intelligent_resampling/realignment.png" alt="Realignment" style="width:80%; height:auto; display: block; margin: 0 auto;"/> 
 <img src="./0000_intelligent_resampling/remapping.png" alt="Remapping" style="width:80%; height:auto; display: block; margin: 0 auto;"/>
 
-_Figure 1_. **Left (Realignment)**: Correcting hypothesis location and orientation within the same object's reference frame. The hypothesis location adjusts on the coffee mug to align with the actual sensor position. **Right (Remapping)**: Switching hypothesis to a completely different object's reference frame. The hypothesis jumps from a fork to a spoon, representing a change in object identity.
+_Figure 1_. **Left (Realignment)**: Correcting hypothesis location and orientation within the same object's reference frame. The hypothesis location adjusts on the coffee mug to align with the actual sensor position. **Right (Remapping)**: Switching hypothesis to a completely different object's reference frame. The hypothesis jumps from a fork to a spoon, representing a change in object identity. Note that when remapping, we will not update the object_id but either reset the evidence to zero or eliminate the hypothesis entirely.
 
 ### Problem Statement and Proposed Solution
 
@@ -88,14 +88,13 @@ Case 2 is more concerning until we develop sparser models. We should benchmark c
 For Case 3, we can apply:
 - **Selective re-anchoring**: Apply re-anchoring only to hypotheses exhibiting both high confidence and large prediction error, as described by the "surprise" metric in [Ramy's RFC](https://github.com/thousandbrainsproject/tbp.monty/pull/390). This approach reduces computational overhead by avoiding unnecessary comparisons for low-confidence hypotheses or cases with low prediction error.
 
-Of the above three options, I think **selective re-anchoring** should be prioritized first, then **landmark prioritization**. Note that **landmark prioritization** will require us to update our object model's nodes to store "important" attributes first. 
+Of the above three options, we will prioritize **local search** first.
 
 #### How can sparse models affect location accuracy?
 
 The impact of sparse models on location accuracy depends on both **sparsity** and **distinctiveness**. Here, sparsity refers to the density of stored points in the object model, while distinctiveness refers to how unique or identifying the features at those points are. 
 
 1. Sparse models with distinctive features represent the ideal case for realignment. When distinctive features are sparsely distributed throughout an object model, each stored point acts as a reliable landmark. Successful feature matching at these locations provides strong evidence for accurate realignment because distinctive features, by definition, are unlikely to be confused with features from other locations. In this scenario, realigning to the exact stored location is typically appropriate and beneficial.
-2. Sparse models with non-distinctive features present significant challenges. For example, consider a large, uniformly colored ball where we have sparsely sampled points across its surface. The features at any stored point (e.g., similar curvature, identical color) could match observations from many other locations on the sphere. Even if we achieve a "successful" feature match, realigning to that specific stored point may introduce substantial location error if the true location is far from the stored point. 
 
 Several additional techniques to consider when re-anchoring in sparse models: 
 
@@ -155,7 +154,7 @@ In lifelong SLAM and multi-session SLAM, robots continuously operate in varied a
 There are several techniques to mitigate false positives: 
 
 1. Extract more and distinctive features.
-2. Temporal consistency across multiple timesteps. To increase confidence in re-anchoring decisions, we could **delay** re-anchoring until multiple consistent feature matches are observed across several steps. This approach may also better reflect real-world experiences, where we may accumulate/experience features at several locations (or across time in case of looking at objects through straws) - the relative positions of multiple features and experiential history provide stronger localization cues than a single distinctive feature match. 
+2. Temporal consistency across multiple timesteps. This approach should only be considered when the original approach proves too noisy, and the multiple observations should be within a local radius. To increase confidence in re-anchoring decisions, we could **delay** re-anchoring until multiple consistent feature matches are observed across several steps. This approach may also better reflect real-world experiences, where we may accumulate/experience features at several locations (or across time in case of looking at objects through straws) - the relative positions of multiple features and experiential history provide stronger localization cues than a single distinctive feature match. 
 3. Frequency control: The re-anchoring frequency should be a configurable parameter. We may need to disable re-anchoring during early exploration phases until sufficient steps have been taken, or adjust frequency of re-anchoring inversely proportional to number of steps.
 
 ## 2. How can we use out-of-reference-frame movement to efficiently eliminate hypotheses?
@@ -351,14 +350,3 @@ To deal with continuous learning and refinement of potentially incomplete models
 - **Error magnitude thresholds**: Very large prediction errors across all features may suggest a novel object requiring a new model. Moderate errors might indicate the need for model updates or hypothesis refinement.
 
 - **Feature-specific patterns**: If morphological features match but non-morphological features (like color) differ significantly, this might indicate object variations / keyframe / need to separate morphological and feature models.
-
-#### Example of Chipped Coffee Mug 
-
-Consider the TBP mug that we are very familiar that is now slightly chipped. Below are how the above heuristics may apply:
-
-1. **Initial detection**: When sensing the chipped area, we would get prediction errors since the surface geometry differs from our stored model.
-2. **Hypothesis coverage**: The hypothesis for where we are on the mug would remain valid across many locations during movement (handle, sides, rim); it would only result in a prediction error / risk elimination when we move to the chip, the point at which we would want to signal learning in a model.
-3. **Observation frequency**: The mug model has high observation counts from frequent use, suggesting we shouldn't discard the entire model.
-4. **Feature patterns**: Morphological features (surface curvature) would differ at the chip location, but non-morphological features (color, texture) might remain consistent.
-5. **Compositionality**: Since the chip is a localized modification at specific coordinates on an otherwise familiar object, the system could learn it compositionally - preserving the original mug model while learning the chip as a local variation.
-6. **Decision**: The heuristics would guide the system to learn the chipped area as a compositional modification rather than corrupting the well-learned base mug model. This allows us to maintain our knowledge about the standard mug shape while capturing this specific instance's variation. The lower-level mug model remains intact and reusable, while the chip information is stored as a localized modification.
