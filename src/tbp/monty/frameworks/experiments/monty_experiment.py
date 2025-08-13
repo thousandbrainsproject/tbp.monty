@@ -407,10 +407,15 @@ class MontyExperiment:
         for lm in self.model.learning_modules:
             lm.has_detailed_logger = has_detailed_logger
 
-        if has_detailed_logger or self.show_sensor_output:
-            # If we log detailed stats we want to save sm raw obs by default.
+        if has_detailed_logger:
             for sm in self.model.sensor_modules:
-                sm.save_raw_obs = True
+                if hasattr(sm, "save_raw_obs") and not sm.save_raw_obs:
+                    logger.warning(
+                        "You are using a DETAILED logger with sensor module "
+                        f"{sm.sensor_module_id} but 'save_raw_obs' is False. "
+                        "Consider setting 'save_raw_obs' to True to log and visualize "
+                        "the SM RGB raw values."
+                    )
 
         # monty_log_level determines if we used Basic or Detailed logger
         # TODO: only defined for MontyForGraphMatching right now, need to add TM later
