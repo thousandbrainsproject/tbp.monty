@@ -136,7 +136,7 @@ All in-transit Cortical Messages to be received by Goal State Selectors are deli
 
 #### 2.1.7 Motor Modules
 
-During the Motor Modules phase the Cortical Messages from Goal State Selectors are delivered to the Motor Modules. The Motor Modules process the Cortical Messages and output actions. The phase ends when all actions are created.
+During the Motor Modules phase the Cortical Messages from Goal State Selectors are delivered to the Motor Modules. The Motor Modules process the Cortical Messages, observations, and proprioceptive state and generate zero, one, or more actions. The phase ends when all actions are created.
 
 No Cortical Messages are generated in this phase. All in-transit Cortical Messages to be received by Motor Modules are delivered to the Motor Modules.
 
