@@ -66,7 +66,7 @@ Below we work through some key questions and implications:
 
 A match involves comparisons between features. The `_calculate_evidence_for_new_locations()` in `hypotheses_displacer.py` already computes the error between stored pose features and observed pose features, as well as non-morphological features (also see `class DefaultFeatureEvidenceCalculator` in `calculator.py`), weighted by distance to nearest nodes. This RFC and initial implementation will not be concerned with changing how we compute feature similarity/error.
 
-For a valid "match", all $N$ features must be similar within specified thresholds, but weighted by their discriminative value. _Why all?_ This requirement is necessary because partial matches can be uninformative, e.g., if `rgba` matches but `pose_vectors` do not, this provides little information for objects with uniform color (e.g., a red mug). Morphological features should receive high priority to main shape bias. Non-morphological features (e.g. color) may be weighted by their spatial variance, e.g. if an object has uniform color, then it has very low variance, which means it should have near-zero weight, while a distinctive red patch gets high weight. This ensures we don't reject good shape matches due to uninformative color mismatches while still leveraging truly distinctive features. 
+For a valid "match", all $N$ features must be similar within specified thresholds, but weighted by their discriminative value. _Why all?_ This requirement is necessary because partial matches can be uninformative, e.g., if `rgba` matches but `pose_vectors` do not, this provides little information for objects with uniform color (e.g., a red mug). Morphological features should receive high priority to maintain shape bias. Non-morphological features (e.g. color) may be weighted by their spatial variance, e.g. if an object has uniform color, then it has very low variance, which means it should have near-zero weight, while a distinctive red patch gets high weight. This ensures we don't reject good shape matches due to uninformative color mismatches while still leveraging truly distinctive features. 
 
 #### What if there are multiple matches?
 
@@ -111,7 +111,7 @@ Recall that in an object model, at each node in the graph, we store:
 
 In a hypothesis:
 - `locations`: numpy array of 3D positions in the object's reference frame  
-- `poses`: numpy array of 3x3 rotation matrices representing the object's orientation in the world
+- `poses`: numpy array of 3x3 rotation matrices representing the object's orientation in the world relative to the model
 
 **Proposed implementation**:
 
@@ -332,7 +332,7 @@ A `False` value currently prevents null observations from being processed by LM.
 
 During object learning, prediction errors present a complex decision point: they may indicate (1) incorrect hypotheses that should be eliminated, (2) an incomplete model that needs updating, or (3) both. These interpretations are not mutually exclusive - a large prediction error might mean we should eliminate current hypotheses AND learn or update our models.
 
-This challenge becomes particularly complex when learning and inference are interleaved, or when the distinction between "pure learning" and "pure inference" modes is not clearly defined. In pure inference mode, we may use prediction errors to eliminate hypotheses assuming the object model is considered complete. In pure learning mode, prediction errors may indicate model needs updating since the model is incomplete.
+This challenge becomes particularly complex when learning and inference are interleaved. In evaluation mode (no model updates), we may use prediction errors to eliminate hypotheses assuming the object model is considered complete. In learning mode, prediction errors may indicate model needs updating since the model is incomplete.
 
 The key challenge is deciding whether to:
 - Learn an entirely new object model (when encountering a truly novel object)
