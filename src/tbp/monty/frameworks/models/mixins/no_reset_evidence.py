@@ -43,22 +43,9 @@ class HypothesesUpdaterChannelTelemetry:
     """Rotation errors relative to the target pose."""
 
 
-def encode_hypotheses_updater_channel_telemetry(
-    telemetry: HypothesesUpdaterChannelTelemetry,
-) -> Dict[str, Any]:
-    """Encode HypothesesUpdaterChannelTelemetry as a dictionary.
-
-    Args:
-        telemetry: The telemetry to encode.
-
-    Returns:
-        A dictionary containing the telemetry.
-    """
-    return asdict(telemetry)
-
-
 BufferEncoder.register(
-    HypothesesUpdaterChannelTelemetry, encode_hypotheses_updater_channel_telemetry
+    HypothesesUpdaterChannelTelemetry,
+    lambda telemetry: asdict(telemetry),
 )
 
 
