@@ -333,7 +333,7 @@ A `False` value currently prevents null observations from being processed by LM.
 
 During object learning, prediction errors present a complex decision point: they may indicate (1) incorrect hypotheses that should be eliminated, (2) an incomplete model that needs updating, or (3) both. These interpretations are not mutually exclusive - a large prediction error might mean we should eliminate current hypotheses AND learn or update our models.
 
-This challenge becomes particularly complex when learning and inference are interleaved, or when the distinction between "pure learning" and "pure inference" modes is not clearly defined. In pure inference mode, we may use prediction errors to eliminate hypotheses assuming the object model is considered complete. In pure learning mode, prediction errors may indicate model needs updating since the model is incomplete.
+This challenge becomes particularly complex when learning and inference are interleaved. In evaluation mode (no model updates), we may use prediction errors to eliminate hypotheses assuming the object model is considered complete. In learning mode, prediction errors may indicate model needs updating since the model is incomplete.
 
 The key challenge is deciding whether to:
 - Learn an entirely new object model (when encountering a truly novel object)
