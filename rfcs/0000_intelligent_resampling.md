@@ -112,7 +112,7 @@ Recall that in an object model, at each node in the graph, we store:
 
 In a hypothesis:
 - `locations`: numpy array of 3D positions in the object's reference frame  
-- `poses`: numpy array of 3x3 rotation matrices representing the object's orientation in the world
+- `poses`: numpy array of 3x3 rotation matrices representing the object's orientation in the world relative to the model
 
 **Proposed implementation**:
 
