@@ -273,7 +273,7 @@ class MontyBase(Monty):
                 self.learning_modules[i].receive_votes(voting_data)
 
     def _pass_goal_states(self):
-        """Collect goal states, select one, and pass it to the motor system.
+        """Collect goal states, use goal-state-selector to choose one, then pass it to the motor system.
 
         Currently we just aggregate these for later passing to the (single) motor
         system.
