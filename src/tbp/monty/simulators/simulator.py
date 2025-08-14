@@ -63,12 +63,13 @@ class Simulator(Protocol):
         """
         ...
 
-    # TODO - change getters to properties using @property
-    def get_num_objects(self) -> int:
+    @property
+    def num_objects(self) -> int:
         """Return the number of instantiated objects in the environment."""
         ...
 
-    def get_action_space(self):
+    @property
+    def action_space(self):
         """Returns the set of all available actions."""
         ...
 
@@ -76,11 +77,13 @@ class Simulator(Protocol):
         """Return agent instance."""
         ...
 
-    def get_observations(self):
+    @property
+    def observations(self):
         """Get sensor observations."""
         ...
 
-    def get_states(self):
+    @property
+    def states(self):
         """Get agent and sensor states."""
         ...
 
