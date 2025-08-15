@@ -9,31 +9,30 @@ This RFC proposes to create a centralized process to update the future work arti
 # Motivation
 
 Currently, there are three places to update the future work. 
-- The markdown files in `docs/future-work` which holds the detail description of the work being suggested.
-- The google sheet where tasks are broken up by tag and type, as well as indicating who is currently working on a task.
-- Our internal task tracking system Shortcut.
+- The markdown files in `docs/future-work` which holds the detailed descriptions of the work being suggested.
+- The Google sheet where tasks are broken up by tag and type, as well as indicating who is currently working on a task.
+- Our internal task tracking system, Shortcut.
 
 There are some downsides to this:
-- Updating 3 places when work is started, and maintaining that as the work progresses.
+- Updating 3 places when work is started, and maintaining those places as the work progresses.
 - There is currently no way to move from viewing the spreadsheet back to the detailed descriptions of that work.
 - It's cumbersome to add new structured data and have it be useful to the community.
 
 There are some upsides to the proposed approach:
 
-- We wish to allow the community to more easily find work to contribute to based on their skills, desire and available time. The skills and scope data doesn't currently exist and adding it to one place would be preferable.
+- We would like the community to more easily find work to contribute to based on their skills, desire and available time. The skills and scope data doesn't currently exist and adding it to a single place would be preferable.
 
 - Having a central place to create and manage the future work should reduce the friction of adding new types of work or enriching existing documents.
 
-Please note: there is manual maintenance work to keep these three places in sync, and there is also work to keep track of who is working on what and which work is complete - this RFC will not remove all of that manual work but does intend to reduce and centralize it.
+Please note: there is manual maintenance work to keep these three places in sync, and there is also work to keep track of who is working on what and which work is complete - this RFC will not remove all of that manual work but does intend to reduce and centralize two of those places.
 
 # Guide-level explanation
 
 New types of front-matter are suggested along side the existing `title` key.
-Specifically targeted for the future work section, but this can be added anywhere in the docs for unanticipated use-cases.
+Specifically targeted for the future work section.
 
 ## New Front-Matter Values
 
-Front-matter values before a future work item has been started:
 
 |        key|values|
 |----------:|:-----|
@@ -117,14 +116,25 @@ Not requirements (but feel free to tell me if you think these are required)
 - the full text of the future work document will not be included, and therefore not available for search or display.
 
 
-General overview of the architecture.
+General overview:
 
 ![](0000_future_work/architecture.png)
 
+
+
+## Chaos Mitigation
+
+Some strategies to mitigate the chaos of unstructured text fields
+- Create documentation that describes the allowed values and what they're used for.
+- Automatically generate part of that documentation page from the values found in the future work front matter sections.
+- Have the tool that generates the central data file, also do sanity checking on the data and fail the build for invalid values.
+- Cap the number of tags / skills a document can contain and fail the build if it goes over that max. Ten skill and ten tags should be enough.
+
 # Drawbacks
 
-Having free form text powering downstream applications that require structured information is has some downsides. It requires human oversight to make sure the values are uniform and don't become chaotic.
-Getting humans to adopt a structured process requires training and cognitive load.
+Having free form text powering downstream applications that require structured information is has some downsides.
+- It requires human oversight to make sure the values are uniform and don't become chaotic.
+- Getting humans to adopt a structured process requires training and cognitive load.
 
 # Rationale and alternatives
 
@@ -136,6 +146,8 @@ We could tie into a structured SaaS platform.  Our internal Shortcut tool might 
 Where should we host the widget?  Its a simple HTML page that makes a fetch to the raw data file on GitHub. It could be added to our website, thousandbrains.org as a custom HTML page. It could be stored and served from a S3 bucket.
 
 We could cerate a GitHub action to deploy the tabular visualization tool to its destination. However, it will be pretty rare to deploy this once the initial development is complete. Should we automate this manual step away or just have a deployment script that we can run manually?
+
+
 
 
 
