@@ -64,7 +64,7 @@ A mockup of what that table may look like:
 
 As mentioned above, the front-matter of all the docs in the in the `/docs` folder will be extracted and put into a `/docs/index.json`.
 
-```json
+```js
 [
   {
     "title": "Extract Sensor Modules",
