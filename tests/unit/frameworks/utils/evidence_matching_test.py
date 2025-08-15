@@ -278,27 +278,34 @@ class EvidenceSlopeTrackerTest(unittest.TestCase):
         mask = self.tracker.removable_indices_mask(self.channel)
         np.testing.assert_array_equal(mask, [False, True, True])
 
-    def test_calculate_keep_and_remove_ids_returns_expected(self) -> None:
-        """Test that hypotheses with the lowest slopes are selected for removal."""
-        self.tracker.add_hyp(3, self.channel)
-        self.tracker.update(np.array([1.0, 3.0, 1.0]), self.channel)
-        self.tracker.update(np.array([2.0, 2.0, 1.0]), self.channel)
-        self.tracker.update(np.array([3.0, 1.0, 1.0]), self.channel)
+    def test_select_hypotheses_threshold_and_age(self) -> None:
+        """Test that select_hypotheses respects slope threshold and min_age."""
+        self.tracker.add_hyp(4, self.channel)
 
-        # Slopes = [1.0, -1.0, 0.0]
-        to_keep, to_remove = self.tracker.calculate_keep_and_remove_ids(
-            num_keep=2, channel=self.channel
+        # slopes are [1, 0, -1, -1]
+        self.tracker.update(np.array([1.0, 2.0, 3.0, 3.0]), self.channel)
+        self.tracker.update(np.array([2.0, 2.0, 2.0, 2.0]), self.channel)
+        self.tracker.update(np.array([3.0, 2.0, 1.0, 1.0]), self.channel)
+
+        # Force ages so only last hyp is too young to remove.
+        self.tracker.hyp_age[self.channel] = np.array([3, 3, 3, 1], dtype=int)
+
+        selection = self.tracker.select_hypotheses(
+            slope_threshold=-0.5, channel=self.channel
         )
 
-        np.testing.assert_array_equal(np.sort(to_keep), [0, 2])
-        np.testing.assert_array_equal(to_remove, [1])
+        # 0,1 have higher slopes, 3 is too young
+        expected_keep = np.array([0, 1, 3], dtype=int)
+        expected_keep_mask = np.array([True, True, False, True], dtype=bool)
 
-    def test_keep_more_than_total_raises(self) -> None:
-        """Test that asking to keep more hypotheses than exist raises an error."""
-        self.tracker.add_hyp(2, self.channel)
-        self.tracker.hyp_age[self.channel][:] = [2, 2]
-        with self.assertRaises(ValueError):
-            self.tracker.calculate_keep_and_remove_ids(3, self.channel)
+        # lower slope than threshold (-1 < -0.5)
+        expected_remove = np.array([2], dtype=int)
+        expected_remove_mask = np.array([False, False, True, False], dtype=bool)
+
+        np.testing.assert_array_equal(selection.maintain_ids, expected_keep)
+        np.testing.assert_array_equal(selection.remove_ids, expected_remove)
+        np.testing.assert_array_equal(selection.maintain_mask, expected_keep_mask)
+        np.testing.assert_array_equal(selection.remove_mask, expected_remove_mask)
 
 
 if __name__ == "__main__":

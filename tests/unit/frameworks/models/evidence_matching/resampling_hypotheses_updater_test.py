@@ -132,13 +132,13 @@ class ResamplingHypothesesUpdaterTest(TestCase):
     def run_sample_count(
         self,
         rlm,
-        count_multiplier,
-        existing_to_new_ratio,
+        resampling_multiplier,
+        evidence_slope_threshold,
         pose_defined,
         graph_id,
     ):
-        rlm.hypotheses_updater.hypotheses_count_multiplier = count_multiplier
-        rlm.hypotheses_updater.hypotheses_existing_to_new_ratio = existing_to_new_ratio
+        rlm.hypotheses_updater.resampling_multiplier = resampling_multiplier
+        rlm.hypotheses_updater.evidence_slope_threshold = evidence_slope_threshold
         test_features = {"patch": {"pose_fully_defined": pose_defined}}
         return rlm.hypotheses_updater._sample_count(
             input_channel="patch",
@@ -156,26 +156,26 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         sampling with defined and undefined poses.
         """
         graph_id = "capsule3DSolid"
-        existing_count, informed_count = self.run_sample_count(
+        hypotheses_selection, informed_count = self.run_sample_count(
             rlm=rlm,
-            count_multiplier=1,
-            existing_to_new_ratio=0.1,
+            resampling_multiplier=0.1,
+            evidence_slope_threshold=0.0,
             pose_defined=pose_defined,
             graph_id=graph_id,
         )
-        self.assertEqual(existing_count, 0)
+        self.assertEqual(len(hypotheses_selection.maintain_ids), 0)
         self.assertEqual(
             informed_count,
             self._graph_node_count(rlm, graph_id)
             * self._num_hyps_multiplier(rlm, pose_defined),
         )
 
-    def _count_multiplier(self, rlm):
-        """This tests that the count multiplier correctly scales the hypothesis space.
+    def _resampling_multiplier(self, rlm):
+        """Tests that the resampling multiplier correctly scales the hypothesis space.
 
-        The count multiplier parameter is used to scale the hypothesis space between
-        steps. For example, a multiplier of 2, will request to double the number of
-        hypotheses.
+        The resampling multiplier parameter is used to scale the hypothesis space
+        between steps. For example, a multiplier of 2, will request to increase the
+        number of hypotheses by 2x the number of graph nodes.
         """
         graph_id = "capsule3DSolid"
         pose_defined = True
@@ -185,124 +185,52 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         rlm.hypotheses_updater.evidence_slope_trackers[graph_id].add_hyp(
             before_count, "patch"
         )
-        count_multipliers = [0.5, 1, 2]
+        resampling_multipliers = [0.5, 1, 2]
 
-        for count_multiplier in count_multipliers:
-            existing_count, informed_count = self.run_sample_count(
+        for resampling_multiplier in resampling_multipliers:
+            hypotheses_selection, informed_count = self.run_sample_count(
                 rlm=rlm,
-                count_multiplier=count_multiplier,
-                existing_to_new_ratio=0.5,
+                resampling_multiplier=resampling_multiplier,
+                evidence_slope_threshold=0.0,
                 pose_defined=pose_defined,
                 graph_id=graph_id,
             )
-            self.assertEqual(
-                before_count * count_multiplier, (existing_count + informed_count)
-            )
+            self.assertEqual(graph_num_nodes * resampling_multiplier, informed_count)
 
         # Reset mapper
         rlm.channel_hypothesis_mapping[graph_id] = ChannelMapper()
 
-    def _count_multiplier_maximum(self, rlm, pose_defined):
-        """This tests that the count multiplier respects the maximum scaling boundary.
+    def _resampling_multiplier_maximum(self, rlm, pose_defined):
+        """Tests that the resampling multiplier respects the maximum scaling boundary.
 
-        The count multiplier parameter is used to scale the hypothesis space between
-        steps. For example, a multiplier of 2, will request to double the number of
-        hypotheses. However, there is a limit to how many hypotheses we can resample.
-        For existing hypotheses, the limit is to resample all of them. For newly
-        resampled informed hypotheses, the limit depends on whether the pose is defined
-        or not. This test ensures that `_sample_count` respects the maximum sampling
-        limit.
+        The resampling multiplier is used to scale the hypothesis space between
+        steps. For example, a multiplier of 2, will request to add hypotheses of
+        count that is twice the number of nodes in the object graph. However, there
+        is a limit to how many hypotheses we can resample. For existing hypotheses,
+        the limit is to resample all of them. For newly resampled informed hypotheses,
+        the limit depends on whether the pose is defined or not. This test ensures
+        that `_sample_count` respects the maximum sampling limit.
 
-        In the case of `pose_defined = True`
-        Existing is 72 and informed is 2*36=72 (total is 144)
-        Maximum multiplier can be 2 if the pose is defined
-
-        In the case of `pose_defined = False`
-        Existing is 72 and informed is 8*36=288 (total is 360)
-        Maximum multiplier can be umbilical_num_poses if the pose is undefined
+        Maximum multiplier cannot exceed the num_hyps_per_node (2 if
+        `pose_defined=True` or umbilical_num_poses if `pose_defined=False`).
         """
         graph_id = "capsule3DSolid"
         graph_num_nodes = self._graph_node_count(rlm, graph_id)
         before_count = graph_num_nodes * self._num_hyps_multiplier(rlm, pose_defined)
         rlm.channel_hypothesis_mapping[graph_id].add_channel("patch", before_count)
 
-        requested_count_multiplier = 100
+        resampling_multiplier = 100
         expected_count = before_count + (
             graph_num_nodes * self._num_hyps_multiplier(rlm, pose_defined)
         )
-        existing_count, informed_count = self.run_sample_count(
+        hypotheses_selection, informed_count = self.run_sample_count(
             rlm=rlm,
-            count_multiplier=requested_count_multiplier,
-            existing_to_new_ratio=0.5,
+            resampling_multiplier=resampling_multiplier,
+            evidence_slope_threshold=0.0,
             pose_defined=pose_defined,
             graph_id=graph_id,
         )
-        self.assertEqual(expected_count, existing_count + informed_count)
-
-        # Reset mapper
-        rlm.channel_hypothesis_mapping[graph_id] = ChannelMapper()
-
-    def _count_ratio(self, rlm, pose_defined):
-        """This tests that the resampling ratio of new hypotheses is correct.
-
-        The existing_to_new_ratio parameter is used to control the ratio of how many
-        existing vs. informed hypotheses to resample. This test ensures that the
-        `_sample_count` function follows the expected behavior of this ratio parameter.
-
-        Note that the `_sample_count` function will prioritize the multiplier count
-        parameter over this ratio parameter. In other words, if not enough existing
-        hypotheses are available, the function will attempt to fill the missing
-        existing hypotheses with informed hypotheses.
-
-        """
-        graph_id = "capsule3DSolid"
-        graph_num_nodes = self._graph_node_count(rlm, graph_id)
-        available_existing_count = graph_num_nodes * self._num_hyps_multiplier(
-            rlm, pose_defined
-        )
-        rlm.channel_hypothesis_mapping[graph_id].add_channel(
-            "patch", available_existing_count
-        )
-        rlm.hypotheses_updater.evidence_slope_trackers[graph_id].add_hyp(
-            available_existing_count, "patch"
-        )
-        count_multiplier = 2
-
-        for ratio in [0.0, 0.1, 0.5, 0.9, 1.0]:
-            requested_existing_count = (
-                available_existing_count * count_multiplier * (1.0 - ratio)
-            )
-            requested_informed_count = (
-                available_existing_count * count_multiplier * ratio
-            )
-            maximum_available_existing_count = available_existing_count
-            maximum_available_informed_count = (
-                graph_num_nodes * self._num_hyps_multiplier(rlm, pose_defined)
-            )
-
-            existing_count, informed_count = self.run_sample_count(
-                rlm=rlm,
-                count_multiplier=count_multiplier,
-                existing_to_new_ratio=ratio,
-                pose_defined=pose_defined,
-                graph_id=graph_id,
-            )
-            expected_existing_count = min(
-                maximum_available_existing_count,
-                requested_existing_count,
-            )
-            self.assertEqual(existing_count, int(expected_existing_count))
-
-            # `missing_existing_hypotheses` will be zero, or otherwise the count that
-            # informed hypotheses need to fill in
-            missing_existing_hypotheses = (
-                requested_existing_count - expected_existing_count
-            )
-            expected_informed_count = min(
-                maximum_available_informed_count,
-                (requested_informed_count + missing_existing_hypotheses),
-            )
-            self.assertEqual(informed_count, int(expected_informed_count))
+        self.assertEqual(expected_count, before_count + informed_count)
 
         # Reset mapper
         rlm.channel_hypothesis_mapping[graph_id] = ChannelMapper()
@@ -312,8 +240,8 @@ class ResamplingHypothesesUpdaterTest(TestCase):
 
         We define three different tests of `_sample_count`:
             - Testing the requested count for initialization of hypotheses space
-            - Testing the count multiplier parameter
-            - Testing the count ratio of resampled hypotheses
+            - Testing the resampling multiplier parameter
+            - Testing the resampling multiplier parameter maximum limit
         """
         rlm = self.get_pretrained_resampling_lm()
 
@@ -322,10 +250,6 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         self._initial_count(rlm, pose_defined=False)
 
         # test count multiplier
-        self._count_multiplier(rlm)
-        self._count_multiplier_maximum(rlm, pose_defined=True)
-        self._count_multiplier_maximum(rlm, pose_defined=False)
-
-        # test existing to informed ratio
-        self._count_ratio(rlm, pose_defined=True)
-        self._count_ratio(rlm, pose_defined=False)
+        self._resampling_multiplier(rlm)
+        self._resampling_multiplier_maximum(rlm, pose_defined=True)
+        self._resampling_multiplier_maximum(rlm, pose_defined=False)
