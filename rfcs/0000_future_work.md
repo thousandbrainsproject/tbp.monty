@@ -8,21 +8,30 @@ This RFC proposes to create a centralized process to update the future work arti
 
 # Motivation
 
-Currently, there are two places to update the future work.
+Currently, there are three places to update the future work. 
+- The markdown files in `docs/future-work` which holds the detail description of the work being suggested.
+- The google sheet where tasks are broken up by tag and type, as well as indicating who is currently working on a task.
+- Our internal task tracking system Shortcut.
 
-There is no way to move from viewing the spreadsheet back to the detailed descriptions of that work.
+There are some downsides to this:
+- Updating 3 places when work is started, and maintaining that as the work progresses.
+- There is currently no way to move from viewing the spreadsheet back to the detailed descriptions of that work.
+- It's cumbersome to add new structured data and have it be useful to the community.
 
-We wish to allow the community to more easily find work to contribute to based on their skills and desire and available time. The skills and time data doesn't currently exist and adding it to two places will be cumbersome.
+There are some upsides to the proposed approach:
 
-Having a central place to update the future work should reduce the friction of adding new types of work.
+- We wish to allow the community to more easily find work to contribute to based on their skills, desire and available time. The skills and scope data doesn't currently exist and adding it to one place would be preferable.
 
-There is manual maintenance work to keep these two places in sync, and there is also work to keep track of who is working on what and which work is complete.  This RFC will not remove all of that manual work but does intend to reduce and centralize it.
+- Having a central place to create and manage the future work should reduce the friction of adding new types of work or enriching existing documents.
+
+Please note: there is manual maintenance work to keep these three places in sync, and there is also work to keep track of who is working on what and which work is complete - this RFC will not remove all of that manual work but does intend to reduce and centralize it.
 
 # Guide-level explanation
 
-Specifically targeted for the future work section, new types of front-matter are suggested along side the existing `title` key
+New types of front-matter are suggested along side the existing `title` key.
+Specifically targeted for the future work section, but this can be added anywhere in the docs for unanticipated use-cases.
 
-## New Front-Matter Values 
+## New Front-Matter Values
 
 Front-matter values before a future work item has been started:
 
