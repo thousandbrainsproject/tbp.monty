@@ -8,15 +8,15 @@ This RFC proposes to create a centralized process to update the future work arti
 
 # Motivation
 
-Currently there are two places to update the future work.
+Currently, there are two places to update the future work.
 There is no way to move from viewing the spreadsheet back to the detailed descriptions of that work.
 We wish to allow the community to more easily find work to contribute to based on their skills and desire and available time.  Currently that data exists no where and adding it to two places will be cumbersome.
 Having a central place to update the future work should reduce the friction of adding new types of work.
-Currently there is manual maintenance work to keep the two places in sync, and there is also work to keep track of who is working on what and what is complete.  This RFC will not remove all of that manual work but does intend to reduce it.
+There is manual maintenance work to keep these two places in sync, and there is also work to keep track of who is working on what and which work is complete.  This RFC will not remove all of that manual work but does intend to reduce and centralize it.
 
 # Guide-level explanation
 
-Specifically for the future work section, new types of front-matter are available along side the existing `title` key
+Specifically targeted for the future work section, new types of front-matter are suggested along side the existing `title` key
 
 These front-matter values before a future work item has been started:
 
@@ -36,11 +36,11 @@ And these values after that work has begun:
 | implementation  | codeallthethingz, vkakerbeck|
 
 
-These structured pieces of data can then be extracted to a central file for other visualizations and consumers to use for their needs at a later date.
+These structured pieces of data are extracted to a central file for downstream visualizations and consumers.
 
-In the scope of this RFC is a tabular representation of this data so that the community can interact with the data and find work that might be suitable for their skills / desires / time appetite.
+Of note, a tabular representation of this data so that the community can interact with the future work data and find items that might be suitable for their skills / desires / time appetite.
 
-The widget will read in the structured, central, file mentioned above, and give the user an interface to allow them to sort and filter the work, and also be able to get to the detailed description of the work.
+The widget will read in the structured file mentioned above, and give the user an interface to allow them to sort and filter the future work.
 
 A mockup of what that table may look like:
 
@@ -68,6 +68,8 @@ As mentioned above, the front-matter of all the docs in the in the `/docs` folde
   }
 ]
 ```
+
+A GitHub action will process the documentation markdown files to build the central data file.  A good potential fit is the current documentation parser `github-readme-sync` tool.
 
 Some of the fields will be checked for validity and fail the build if they are incorrect.  Notably, `status`, `size` and `rfc` must have the correct values.
 All values are optional and the downstream consumers should be able to function even if data is missing.
@@ -117,5 +119,8 @@ We could tie into a structured SaaS platform.  Our internal Shortcut tool might 
 # Unresolved questions
 
 Where should we host the widget?  Its a simple HTML page that makes a fetch to the raw data file on GitHub. It could be added to our website, thousandbrains.org as a custom HTML page. It could be stored and served from a S3 bucket.
+
+We could cerate a GitHub action to deploy the tabular visualization tool to its destination. However, it will be pretty rare to deploy this once the initial development is complete. Should we automate this manual step away or just have a deployment script that we can run manually?
+
 
 
