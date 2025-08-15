@@ -9,16 +9,22 @@ This RFC proposes to create a centralized process to update the future work arti
 # Motivation
 
 Currently, there are two places to update the future work.
+
 There is no way to move from viewing the spreadsheet back to the detailed descriptions of that work.
-We wish to allow the community to more easily find work to contribute to based on their skills and desire and available time.  Currently that data exists no where and adding it to two places will be cumbersome.
+
+We wish to allow the community to more easily find work to contribute to based on their skills and desire and available time. The skills and time data doesn't currently exist and adding it to two places will be cumbersome.
+
 Having a central place to update the future work should reduce the friction of adding new types of work.
+
 There is manual maintenance work to keep these two places in sync, and there is also work to keep track of who is working on what and which work is complete.  This RFC will not remove all of that manual work but does intend to reduce and centralize it.
 
 # Guide-level explanation
 
 Specifically targeted for the future work section, new types of front-matter are suggested along side the existing `title` key
 
-These front-matter values before a future work item has been started:
+## New Front-Matter Values 
+
+Front-matter values before a future work item has been started:
 
 |        key|values|
 |----------:|:-----|
@@ -55,11 +61,11 @@ As mentioned above, the front-matter of all the docs in the in the `/docs` folde
   {
     "title": "Extract Sensor Modules",
     "group": "Sensor Module",
-    "tags": "infrastructure, build",
-    "skills": "python,gpu architecture",
+    "tags": ["infrastructure", "build"],
+    "skills": ["python","gpu architecture"],
     "size": "small",
     "status": "in-progress",
-    "implementation": "codeallthethingz,vkakerbeck",
+    "implementation": ["codeallthethingz","vkakerbeck"],
     // Generated values
     "slug": "extract-sensor-modules", // for linking back to the docs
     "path1": "future-work", // will be used for filtering to a subset of the docs
