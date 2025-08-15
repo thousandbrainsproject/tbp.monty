@@ -29,6 +29,9 @@ randrot_noise_10distinctobj_dist_agent_detailed["logging_config"] = (
         wandb_handlers=[],
     )
 )
+randrot_noise_10distinctobj_dist_agent_detailed["monty_config"].learning_module_configs[
+    "learning_module_0"
+]["learning_module_args"]["use_multithreading"] = False
 
 base_config_10distinctobj_dist_agent_detailed = copy.deepcopy(
     base_config_10distinctobj_dist_agent

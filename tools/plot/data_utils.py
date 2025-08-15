@@ -30,9 +30,9 @@ logger = logging.getLogger(__name__)
 def apply_world_transform(
     locations: np.ndarray,
     rotation_matrices: np.ndarray,
-    learned_position: np.ndarray,
-    target_position: np.ndarray,
-    target_rotation: np.ndarray | R,
+    learned_position: np.ndarray,  # [0, 1.5, 0]
+    target_position: np.ndarray,  # [0, 1.5, 0]
+    target_rotation: np.ndarray | R,  # gt object [280, 260, 160] in Euler degrees
 ) -> tuple[np.ndarray, np.ndarray]:
     """Apply world frame transformation to locations and rotation matrices.
 
@@ -59,7 +59,7 @@ def apply_world_transform(
     # Transform rotation matrices
     rot_matrix = rot.as_matrix()
     transformed_rotations = np.zeros_like(rotation_matrices)
-    for i in range(len(rotation_matrices)):
+    for i in range(len(rotation_matrices)):  # 17,760 hypotheses.poses
         transformed_rotations[i] = rot_matrix @ rotation_matrices[i]
 
     return transformed_locations, transformed_rotations
@@ -264,6 +264,7 @@ class EpisodeDataLoader:
         self.all_sm0_rgba = []
         self.all_sm1_rgba = []
         self.sensed_curvatures = []
+        self.sensed_rotations = []
 
     def load_episode_data(self, episode_id: int = None) -> None:
         """Load episode data from JSON file."""
@@ -291,6 +292,7 @@ class EpisodeDataLoader:
 
         self._find_lm_to_sm_mapping()
         self._extract_max_abs_curvature()
+        self._extract_sensed_rotations()
         self._extract_sensor_locations()
         self._extract_sensor_rgba_patches()
 
@@ -405,6 +407,23 @@ class EpisodeDataLoader:
             f"Curvature range: {min(self.sensed_curvatures):.4f} to "
             f"{max(self.sensed_curvatures):.4f}"
         )
+
+    def _extract_sensed_rotations(self) -> None:
+        """Extract sensed pose vectors (rotations) from sensor module data for each timestep."""
+        logger.info("Extracting sensed pose vectors from sensor module data")
+
+        processed_obs = self.sm0_data["processed_observations"]
+
+        for lm_timestep in range(self.num_lm_steps):
+            sm_timestep = self.lm_to_sm_mapping[lm_timestep]
+            obs = processed_obs[sm_timestep]
+
+            morphological_features = obs["morphological_features"]
+            pose_vectors = np.array(morphological_features["pose_vectors"])
+            self.sensed_rotations.append(pose_vectors)
+
+        logger.info(f"Extracted {len(self.sensed_rotations)} pose vector sets")
+        logger.info(f"Pose vectors shape: {self.sensed_rotations[0].shape}")
 
     def _extract_sensor_locations(self) -> None:
         """Extract sensor locations from SM properties for each timestep."""
