@@ -36,7 +36,7 @@ Specifically targeted for the future work section.
 
 |        key|values|
 |----------:|:-----|
-| group     | Sensor Module &#124; Learning Module &#124; etc...|
+| group     | Sensor Module &#124; Learning Module &#124; etc...| 
 | tags      | infrastructure, refactoring|
 | size      | small &#124; medium &#124; large &#124; unknown|
 | rfc       | required &#124; optional &#124; not-required|
@@ -86,7 +86,8 @@ As mentioned above, the front-matter of all the docs in the in the `/docs` folde
 A GitHub action will process the documentation markdown files to build the central data file.  A good potential fit is the current documentation parser `github-readme-sync` tool.
 
 Some of the fields will be checked for validity and fail the build if they are incorrect.  Notably, `status`, `size` and `rfc` must have the correct values.
-All values are optional and the downstream consumers should be able to function even if data is missing.
+
+All values apart from `group` are optional and the downstream consumers should be able to function even if data is missing.
 
 It is possible that we should have a list of allowed tags and groups as well.
 
@@ -94,9 +95,7 @@ We could also check the implementation GitHub username but this could slow the p
 
 This generated index file can then be loaded by the various downstream consumers.
 
-
 The file will need to be commit to the repo as part of a running GitHub action and that commit flagged with commit message that prevents further build triggers - `[skip ci]`
-
 
 In the scope of this RFC is the future work filterable widget, that will allow community members to find work that matches their skills and time.
 
@@ -121,7 +120,6 @@ General overview:
 ![](0000_future_work/architecture.png)
 
 
-
 ## Chaos Mitigation
 
 Some strategies to mitigate the chaos of unstructured text fields
@@ -129,6 +127,11 @@ Some strategies to mitigate the chaos of unstructured text fields
 - Automatically generate part of that documentation page from the values found in the future work front matter sections.
 - Have the tool that generates the central data file, also do sanity checking on the data and fail the build for invalid values.
 - Cap the number of tags / skills a document can contain and fail the build if it goes over that max. Ten skill and ten tags should be enough.
+
+## Optional Nice to Have Tasks
+
+- Put the structured front-matter into the future-work/subpage documents so you can see who's working on them, the size, without having to go to the table widget.
+- Link to the table widget from each future work sub-page.
 
 # Drawbacks
 
@@ -140,14 +143,8 @@ Having free form text powering downstream applications that require structured i
 
 We could tie into a structured SaaS platform.  Our internal Shortcut tool might be a good possibility here as it could potentially give the more structured tags that we require, and centralize all work into a single place.  However, we would then have to push the details into our docs, and have GitHub action integration with a new tool.  I have not looked into this in earnest.
 
-
 # Unresolved questions
 
 Where should we host the widget?  Its a simple HTML page that makes a fetch to the raw data file on GitHub. It could be added to our website, thousandbrains.org as a custom HTML page. It could be stored and served from a S3 bucket.
 
 We could cerate a GitHub action to deploy the tabular visualization tool to its destination. However, it will be pretty rare to deploy this once the initial development is complete. Should we automate this manual step away or just have a deployment script that we can run manually?
-
-
-
-
-
