@@ -73,6 +73,7 @@ def is_hypothesis_inside_object_reference_frame(
     target_model: ObjectModel,
     hypothesis_locations: np.ndarray,
     hypothesis_rotations: np.ndarray,
+    sensed_rotation: np.ndarray,
     max_abs_curvature: float,
     max_nneighbors: int = 3,
     max_match_distance: float = 0.01,
@@ -83,6 +84,7 @@ def is_hypothesis_inside_object_reference_frame(
         target_model: ObjectModel containing points and features.
         hypothesis_locations: Array of hypothesis locations (n_hypotheses, 3).
         hypothesis_rotations: Rotation matrices for each hypothesis (n_hypotheses, 3, 3).
+        sensed_rotation: Current sensed pose vectors (3, 3) to be transformed by hypotheses.
         max_abs_curvature: Sensed curvature of the object (max absolute value of principal_curvature_log)
         max_nneighbors: Maximum number of nearest neighbors to consider (default: 3).
         max_match_distance: Maximum distance for matching (default: 0.01).
@@ -101,7 +103,17 @@ def is_hypothesis_inside_object_reference_frame(
         nearest_node_ids = np.expand_dims(nearest_node_ids, axis=1)
 
     nearest_node_locs = target_model.locations[nearest_node_ids]
-    surface_normals = hypothesis_rotations[:, :, 2]
+
+    # Transform sensed rotation by each hypothesis rotation to get surface normals
+    # hyp_rotation: R^W_B (body frame → world frame, after world transform)
+    # sensed_rotation: R_sensed^B (pose vectors in body/sensor frame)
+    # Result: R^W_B * R_sensed^B = pose vectors transformed to world frame
+    surface_normals = np.zeros((len(hypothesis_rotations), 3))
+    for i, hyp_rotation in enumerate(hypothesis_rotations):
+        transformed_pose_vectors = hyp_rotation @ sensed_rotation
+        surface_normals[i] = transformed_pose_vectors[
+            :, 0
+        ]  # Extract transformed surface normal
 
     custom_nearest_node_dists = get_custom_distances(
         nearest_node_locs,
@@ -162,7 +174,6 @@ class HypothesesOORFVisualizer:
         self.current_sm0_rgba = None
         self.current_sm1_rgba = None
         self.current_sensed_curvature = None
-        self.current_ellipsoid_info = None
 
         # ============ 3D VEDO OBJECTS ============
         self.target_pointcloud = None
@@ -269,6 +280,7 @@ class HypothesesOORFVisualizer:
             self.object_model,
             self.current_hypotheses_locations,
             self.current_hypotheses_rotations,
+            self.current_sensed_rotation,
             self.current_sensed_curvature,
             self.max_nneighbors,
             self.max_match_distance,
@@ -283,21 +295,26 @@ class HypothesesOORFVisualizer:
 
         self._add_hypotheses_points()
 
-        # Select a random hypothesis and add ellipsoid, nearest neighbors, and axes arrows
+        # Select a random hypothesis and add ellipsoid, center point, nearest neighbors, and axes arrows
         idx = np.random.choice(len(self.current_hypotheses_locations), 1)[0]
-        self._add_ellipsoid_nneighbors_arrows(
+        self._add_ellipsoid(
             self.current_hypotheses_locations[idx],
             self.current_hypotheses_rotations[idx],
             self.hypotheses_inside_reference_frame[idx],
-            self.hypotheses_nearest_node_locs[idx],
-            self.hypotheses_custom_nearest_node_dists[idx],
             is_mlh=False,
+        )
+        self._add_hypothesis_center_point(self.current_hypotheses_locations[idx])
+        self._add_nearest_neighbor_points(self.hypotheses_nearest_node_locs[idx])
+        self._add_axes_arrows(
+            self.current_hypotheses_locations[idx],
+            self.current_hypotheses_rotations[idx],
         )
 
         mlh_oorf_info = is_hypothesis_inside_object_reference_frame(
             self.object_model,
             self.current_mlh_location.reshape(1, 3),
             self.current_mlh_rotation.reshape(1, 3, 3),
+            self.current_sensed_rotation,
             self.current_sensed_curvature,
             self.max_nneighbors,
             self.max_match_distance,
@@ -306,14 +323,16 @@ class HypothesesOORFVisualizer:
         self.mlh_nearest_node_locs = mlh_oorf_info["nearest_node_locs"]
         self.mlh_custom_nearest_node_dists = mlh_oorf_info["custom_nearest_node_dists"]
 
-        self._add_ellipsoid_nneighbors_arrows(
+        self._add_ellipsoid(
             self.current_mlh_location,
             self.current_mlh_rotation,
             self.is_mlh_inside_reference_frame,
-            self.mlh_nearest_node_locs,
-            self.mlh_custom_nearest_node_dists,
             is_mlh=True,
         )
+        self._add_mlh_cube(
+            self.current_mlh_location, self.is_mlh_inside_reference_frame
+        )
+        self._add_nearest_neighbor_points(self.mlh_nearest_node_locs)
         self._add_axes_arrows(
             self.current_mlh_location,
             self.current_mlh_rotation,
@@ -346,8 +365,6 @@ class HypothesesOORFVisualizer:
 
     def resample_ellipsoids_callback(self, _widget: Button, _event: str) -> None:
         """Resample the ellipsoids to show a different random selection."""
-        self.current_ellipsoid_info = None
-
         for ellipsoid in self.hypothesis_ellipsoids:
             self.plotter.remove(ellipsoid)
         self.hypothesis_ellipsoids = []
@@ -376,25 +393,35 @@ class HypothesesOORFVisualizer:
             self.plotter.remove(self.mlh_cube)
             self.mlh_cube = None
 
-        # Select a new random hypothesis and add ellipsoid, nearest neighbors, and axes arrows
+        # Select a new random hypothesis and add ellipsoid, center point, nearest neighbors, and axes arrows
         idx = np.random.choice(len(self.current_hypotheses_locations), 1)[0]
-        self._add_ellipsoid_nneighbors_arrows(
+        self._add_ellipsoid(
             self.current_hypotheses_locations[idx],
             self.current_hypotheses_rotations[idx],
             self.hypotheses_inside_reference_frame[idx],
-            self.hypotheses_nearest_node_locs[idx],
-            self.hypotheses_custom_nearest_node_dists[idx],
             is_mlh=False,
         )
+        self._add_hypothesis_center_point(self.current_hypotheses_locations[idx])
+        self._add_nearest_neighbor_points(self.hypotheses_nearest_node_locs[idx])
+        self._add_axes_arrows(
+            self.current_hypotheses_locations[idx],
+            self.current_hypotheses_rotations[idx],
+        )
 
-        # Also re-add MLH ellipsoid
-        self._add_ellipsoid_nneighbors_arrows(
+        # Also re-add MLH ellipsoid, cube, nearest neighbors, and axes
+        self._add_ellipsoid(
             self.current_mlh_location,
             self.current_mlh_rotation,
             self.is_mlh_inside_reference_frame,
-            self.mlh_nearest_node_locs,
-            self.mlh_custom_nearest_node_dists,
             is_mlh=True,
+        )
+        self._add_mlh_cube(
+            self.current_mlh_location, self.is_mlh_inside_reference_frame
+        )
+        self._add_nearest_neighbor_points(self.mlh_nearest_node_locs)
+        self._add_axes_arrows(
+            self.current_mlh_location,
+            self.current_mlh_rotation,
         )
 
         # Update statistics text with new ellipsoid and NN info
@@ -437,6 +464,7 @@ class HypothesesOORFVisualizer:
         self.current_sm0_rgba = self.data_loader.all_sm0_rgba[timestep]
         self.current_sm1_rgba = self.data_loader.all_sm1_rgba[timestep]
         self.current_sensed_curvature = self.data_loader.sensed_curvatures[timestep]
+        self.current_sensed_rotation = self.data_loader.sensed_rotations[timestep]
 
     def _cleanup_previous_visualizations(self) -> None:
         """Remove previous visualization objects from the plotter."""
@@ -569,19 +597,23 @@ class HypothesesOORFVisualizer:
         self.sm1_label = Text2D("SM_1", pos="top-center", c="black", font="Calco")
         self.plotter.at(self.sm1_renderer_ix).add(self.sm1_label)
 
-    def _add_ellipsoid_nneighbors_arrows(
+    def _add_ellipsoid(
         self,
         location: np.ndarray,
-        rotation: np.ndarray,
+        hypothesis_rotation: np.ndarray,
         is_inside_reference_frame: bool,
-        nearest_node_locs: np.ndarray,
-        custom_nearest_node_dists: np.ndarray,
         is_mlh: bool = False,
     ) -> None:
-        """Add ellipsoids around a randomly selected hypothesis or MLH."""
-        tangent1 = rotation[:, 0]  # First tangent direction, PC1
-        tangent2 = rotation[:, 1]  # Second tangent direction, PC2
-        surface_normal = rotation[:, 2]  # Surface normal
+        """Add ellipsoid at given location with orientation from transformed sensed rotation."""
+        # Transform sensed pose vectors by hypothesis rotation
+        # hypothesis_rotation: R^W_B (world frame)
+        # current_sensed_rotation: R_sensed^B (pose vectors in body/sensor frame)
+        # Result: R^W_B * R_sensed^B = pose vectors transformed to world frame
+        transformed_pose_vectors = hypothesis_rotation @ self.current_sensed_rotation
+
+        surface_normal = transformed_pose_vectors[:, 0]  # Transformed surface normal
+        tangent1 = transformed_pose_vectors[:, 1]  # Transformed PC1 (dir1)
+        tangent2 = transformed_pose_vectors[:, 2]  # Transformed PC2 (dir2)
 
         stretch_factor = 1.0 / (np.abs(self.current_sensed_curvature) + 0.5)
         semi_axis_tangent = self.max_match_distance
@@ -596,46 +628,32 @@ class HypothesesOORFVisualizer:
             axis3=surface_normal * semi_axis_normal,
             c=color,
         )
-
-        if is_mlh:
-            self.current_mlh_ellipsoid_info = {
-                "location": location,
-                "rotation": rotation,
-                "curvature": self.current_sensed_curvature,
-                "stretch_factor": stretch_factor,
-                "semi_axis_tangent": semi_axis_tangent,
-                "semi_axis_normal": semi_axis_normal,
-                "is_inside_reference_frame": is_inside_reference_frame,
-            }
-        else:
-            self.current_ellipsoid_info = {
-                "location": location,
-                "rotation": rotation,
-                "curvature": self.current_sensed_curvature,
-                "stretch_factor": stretch_factor,
-                "semi_axis_tangent": semi_axis_tangent,
-                "semi_axis_normal": semi_axis_normal,
-                "is_inside_reference_frame": is_inside_reference_frame,
-            }
-
-        # Add point at the center of the ellipsoid
-        if not is_mlh:
-            hyp_point = Point(location, c="black")
-            hyp_point.point_size(25)
-            self.ellipsoid_centers.append(hyp_point)
-            self.plotter.at(self.main_renderer_ix).add(hyp_point)
-        # Add cube for MLH
-        if is_mlh:
-            self.mlh_cube = Cube(location, side=0.005, c=color, alpha=0.6)
-            self.plotter.at(self.main_renderer_ix).add(self.mlh_cube)
-
         ellipsoid.alpha(0.15)
+
         if is_mlh:
             self.mlh_ellipsoid = ellipsoid
         else:
             self.hypothesis_ellipsoids.append(ellipsoid)
+
         self.plotter.at(self.main_renderer_ix).add(ellipsoid)
 
+    def _add_hypothesis_center_point(self, location: np.ndarray) -> None:
+        """Add a black point at the hypothesis center."""
+        hyp_point = Point(location, c="black")
+        hyp_point.point_size(25)
+        self.ellipsoid_centers.append(hyp_point)
+        self.plotter.at(self.main_renderer_ix).add(hyp_point)
+
+    def _add_mlh_cube(
+        self, location: np.ndarray, is_inside_reference_frame: bool
+    ) -> None:
+        """Add a cube at the MLH location."""
+        color = TBP_COLORS["blue"] if is_inside_reference_frame else TBP_COLORS["pink"]
+        self.mlh_cube = Cube(location, side=0.005, c=color, alpha=0.6)
+        self.plotter.at(self.main_renderer_ix).add(self.mlh_cube)
+
+    def _add_nearest_neighbor_points(self, nearest_node_locs: np.ndarray) -> None:
+        """Add yellow points for nearest neighbors."""
         nearest_node_points = Points(
             nearest_node_locs.squeeze(), c=TBP_COLORS["yellow"]
         )
@@ -643,32 +661,23 @@ class HypothesesOORFVisualizer:
         self.hypothesis_neighbor_points.append(nearest_node_points)
         self.plotter.at(self.main_renderer_ix).add(nearest_node_points)
 
-        if is_mlh:
-            self.mlh_nearest_neighbors_info = {
-                "locations": nearest_node_locs,
-                "euclidean_distances": custom_nearest_node_dists,
-                "custom_distances": custom_nearest_node_dists,
-            }
-        else:
-            self.hypothesis_nn_info = {
-                "locations": nearest_node_locs,
-                "euclidean_distances": custom_nearest_node_dists,
-                "custom_distances": custom_nearest_node_dists,
-            }
-
-        self._add_axes_arrows(location, rotation)
-
     def _add_axes_arrows(
         self,
         location: np.ndarray,
-        rotation: np.ndarray,
+        hypothesis_rotation: np.ndarray,
     ) -> None:
-        """Add arrows showing tangent and normal directions for a hypothesis."""
+        """Add arrows showing transformed sensed tangent and normal directions."""
         arrow_length = 0.02
 
-        tangent1 = rotation[:, 0]
-        tangent2 = rotation[:, 1]
-        surface_normal = rotation[:, 2]
+        # Transform sensed pose vectors by hypothesis rotation
+        # hypothesis_rotation: R^W_B (body frame → world frame, after world transform)
+        # current_sensed_rotation: R_sensed^B (pose vectors in body/sensor frame)
+        # Result: R^W_B * R_sensed^B = pose vectors transformed to world frame
+        transformed_pose_vectors = hypothesis_rotation @ self.current_sensed_rotation
+
+        surface_normal = transformed_pose_vectors[:, 0]  # Transformed surface normal
+        tangent1 = transformed_pose_vectors[:, 1]  # Transformed PC1 (dir1)
+        tangent2 = transformed_pose_vectors[:, 2]  # Transformed PC2 (dir2)
 
         arrow1 = Arrow(
             location,
