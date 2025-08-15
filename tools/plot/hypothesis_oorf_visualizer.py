@@ -413,8 +413,6 @@ class HypothesesOORFVisualizer:
         )
         self.plotter.at(self.main_renderer_ix).add(self.stats_text)
 
-
-
         self.plotter.at(self.sm0_renderer_ix).render()
         self.plotter.at(self.sm1_renderer_ix).render()
         self.plotter.at(self.main_renderer_ix).render()
@@ -736,11 +734,14 @@ class HypothesesOORFVisualizer:
         formatted_rotation = self._format_array(self.data_loader.ground_truth_rotation)
         formatted_mlh_location = self._format_array(self.current_mlh_location)
 
+        # Get corresponding SM step for this LM timestep
+        sm_step = self.data_loader.lm_to_sm_mapping[timestep]
         target_stats = [
             f"Object: {self.data_loader.target_name}",
             f"Object position: {formatted_position}",
             f"Object rotation: {formatted_rotation}",
             f"LM Step: {timestep}",
+            f"SM Step: {sm_step}",
         ]
 
         hypotheses_stats = [
