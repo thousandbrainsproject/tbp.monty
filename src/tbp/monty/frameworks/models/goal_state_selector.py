@@ -63,30 +63,16 @@ class GoalStateSelector:
 def flatten(items: Iterable) -> list:
     """Recursively flatten a possibly nested iterable.
 
-    Note that strings, while iterable, are not treated as such by this function. A
-    string will be appended to the output list as-is rather than havings its
-    individual characters appended.
-
     Args:
         items: A possibly nested iterable.
 
     Returns:
-        list: A flat list containing all items from the input iterable.
-
-    Example:
-        >>> flatten([1, 2, [3, "four"], [5, (6, 7)]])
-        [1, 2, 3, "four", 5, 6, 7]
-
-    TODO: Figure out where to put this function. It's used by `GoalStateSelector`, but
-    it's functionality isn't specific to `State` or `GoalState` objects.
+        list: A flat list containing the items in the input iterable.
 
     """
-    if isinstance(items, str):
-        return [items]
-
     flat = []
     for elt in items:
-        if isinstance(elt, Iterable) and not isinstance(elt, str):
+        if isinstance(elt, Iterable):
             flat.extend(flatten(elt))
         else:
             flat.append(elt)

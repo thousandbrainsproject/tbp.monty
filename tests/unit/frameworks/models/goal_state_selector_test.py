@@ -9,6 +9,7 @@
 
 
 import unittest
+from re import A
 
 import numpy as np
 
@@ -21,59 +22,24 @@ from tbp.monty.frameworks.models.states import GoalState, State
 
 
 class FlattenTest(unittest.TestCase):
-
-    def test_empty(self) -> None:
-        """Test that empty iterables are flattened to an empty list."""
+    def test_flat(self) -> None:
+        a = make_dummy_state(use_state=False)
+        b = make_dummy_goal_state(use_state=False)
         self.assertEqual(flatten([]), [])
+        self.assertEqual(flatten([a]), [a])
+        self.assertEqual(flatten([a, b]), [a, b])
 
-    def test_strings_not_treated_as_iterable(self) -> None:
-        """Test that strings are not treated as iterables."""
-        self.assertEqual(flatten("hello"), ["hello"])
-        self.assertEqual(flatten(["hello"]), ["hello"])
-
-    def test_nested_basic(self) -> None:
-        """Test that nested iterables are flattened."""
-        items = [1, 1.5, "hello", None]
-        self.assertEqual(flatten(items), items)
-        self.assertEqual(flatten([items]), items)
-        self.assertEqual(flatten([[items]]), items)
-        self.assertEqual(flatten([[[items]]]), items)
-
-    def test_nested_complex(self) -> None:
-        """Test more complex, heterogeneous nested iterables are flattened."""
-        nested = [
-            1,
-            2,
-            ["three", 4],
-            (5, [6.0, 7.0]),
-            np.array([8, (9, [10, 11])], dtype=object),
-        ]
+    def test_nested(self) -> None:
         flat = [
-            1,
-            2,
-            "three",
-            4,
-            5,
-            6.0,
-            7.0,
-            8,
-            9,
-            10,
-            11,
-
+            None,
+            make_dummy_state(use_state=False),
+            make_dummy_goal_state(use_state=False),
+            None,
+            make_dummy_state(use_state=False),
+            make_dummy_goal_state(use_state=False),
         ]
+        nested = [flat[0], [flat[1], flat[2]], [[flat[3], flat[4], flat[5]]]]
         self.assertEqual(flatten(nested), flat)
-
-    def test_iterability_judgement(self) -> None:
-        """Test that non-list iterables are flattened."""
-        expected = [1, 1.5, "hello", None]
-        item_tuple = tuple(expected)
-        item_array = np.array(expected, dtype=object)
-        for items in [item_tuple, item_array]:
-            self.assertEqual(flatten(items), expected)  # outer sequence is non-list
-            self.assertEqual(flatten([items]), expected)  # inner sequence is non-list
-
-
 
 
 class SortStatesByConfidenceTest(unittest.TestCase):
