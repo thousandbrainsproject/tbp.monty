@@ -39,14 +39,12 @@ class FrontMatterValidator:
         """
         errors = []
 
-        # Validate status field
         if "status" in frontmatter:
             if frontmatter["status"] not in cls.VALID_STATUS:
                 errors.append(
                     f"Invalid status '{frontmatter['status']}'. "
                     f"Must be one of: {', '.join(cls.VALID_STATUS)}"
                 )
-        # Validate size field
         if "size" in frontmatter:
             if frontmatter["size"] not in cls.VALID_SIZE:
                 errors.append(
@@ -54,7 +52,6 @@ class FrontMatterValidator:
                     f"Must be one of: {', '.join(cls.VALID_SIZE)}"
                 )
 
-        # Validate rfc field
         if "rfc" in frontmatter:
             if frontmatter["rfc"] not in cls.VALID_RFC:
                 errors.append(
@@ -62,25 +59,43 @@ class FrontMatterValidator:
                     f"Must be one of: {', '.join(cls.VALID_RFC)}"
                 )
 
-        # Validate tags limit
         if "tags" in frontmatter:
-            tags = frontmatter["tags"]
-            if isinstance(tags, list) and len(tags) > cls.MAX_TAGS:
+            tags = parse_comma_separated_field(frontmatter["tags"])
+            if len(tags) > cls.MAX_TAGS:
                 errors.append(
-                    f"Too many tags ({len(tags)}). "
-                    f"Maximum allowed: {cls.MAX_TAGS}"
+                    f"Too many tags ({len(tags)}). Maximum allowed: {cls.MAX_TAGS}"
                 )
 
-        # Validate skills limit
         if "skills" in frontmatter:
-            skills = frontmatter["skills"]
-            if isinstance(skills, list) and len(skills) > cls.MAX_SKILLS:
+            skills = parse_comma_separated_field(frontmatter["skills"])
+            if len(skills) > cls.MAX_SKILLS:
                 errors.append(
                     f"Too many skills ({len(skills)}). "
                     f"Maximum allowed: {cls.MAX_SKILLS}"
                 )
 
         return errors
+
+
+def parse_comma_separated_field(value) -> List[str]:
+    """Parse a field that might be comma-separated or already a list.
+
+    Args:
+        value: Field value (string, list, or other)
+
+    Returns:
+        List of cleaned string values
+    """
+    if value is None or value == "":
+        return []
+    elif isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    elif isinstance(value, str):
+        items = [item.strip() for item in value.split(",")]
+        return [item for item in items if item]
+    else:
+        str_value = str(value).strip()
+        return [str_value] if str_value else []
 
 
 def extract_frontmatter_from_file(file_path: str) -> Optional[Dict]:
@@ -104,7 +119,7 @@ def generate_path_components(file_path: Path, docs_root: Path) -> Dict[str, str]
         Dictionary with path1, path2, etc. keys for directory components.
     """
     relative_path = file_path.relative_to(docs_root)
-    parts = relative_path.parts[:-1]  # Exclude the file name itself
+    parts = relative_path.parts[:-1]
 
     path_components = {}
     for i, part in enumerate(parts):
@@ -128,7 +143,6 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
     entries = []
     errors_found = False
 
-    # Find all markdown files using shared utility
     md_files = find_markdown_files(docs_dir)
 
     for md_file_path in md_files:
@@ -137,50 +151,47 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
 
         logging.info(f"Processing: {CYAN}{md_file.relative_to(docs_path)}{RESET}")
 
-        # Extract front-matter
         frontmatter = extract_frontmatter_from_file(md_file_path)
         if frontmatter is None:
             logging.warning(f"{YELLOW}No front-matter found in {md_file}{RESET}")
             continue
 
-        # Validate front-matter
         validation_errors = FrontMatterValidator.validate(frontmatter)
 
         if validation_errors:
             errors_found = True
             logging.error(
-                f"{RED}Validation errors in "
-                f"{md_file.relative_to(docs_path)}:{RESET}"
+                f"{RED}Validation errors in {md_file.relative_to(docs_path)}:{RESET}"
             )
             for error in validation_errors:
                 logging.error(f"  - {error}")
             continue
 
-        # Generate entry
         entry = {
             "title": frontmatter.get("title", ""),
             "slug": slugify(md_file.stem),
         }
 
-        # Add optional fields if present
-        optional_fields = [
-            "group", "tags", "size", "rfc", "status",
-            "rfc-link", "implementation", "skills"
-        ]
-        for field in optional_fields:
-            if field in frontmatter:
+        simple_fields = ["group", "size", "rfc", "status", "rfc-link"]
+        array_fields = ["tags", "skills", "implementation"]
+
+        for field in simple_fields:
+            if field in frontmatter and frontmatter[field] is not None:
                 entry[field] = frontmatter[field]
 
-        # Generate path components
+        for field in array_fields:
+            if field in frontmatter:
+                parsed_array = parse_comma_separated_field(frontmatter[field])
+                if parsed_array:
+                    entry[field] = parsed_array
+
         path_components = generate_path_components(md_file, docs_path)
         entry.update(path_components)
 
         entries.append(entry)
 
     if errors_found:
-        raise ValueError(
-            "Validation errors found. Please fix the front-matter issues."
-        )
+        raise ValueError("Validation errors found. Please fix the front-matter issues.")
 
     return entries
 
@@ -195,17 +206,12 @@ def generate_index(docs_dir: str) -> str:
 
     logging.info(f"Scanning docs directory: {CYAN}{docs_dir}{RESET}")
 
-    # Process all markdown files
     entries = process_markdown_files(docs_dir)
 
-    # Sort entries by path1, then path2, then title
-    entries.sort(key=lambda x: (
-        x.get("path1", ""),
-        x.get("path2", ""),
-        x.get("title", "")
-    ))
+    entries.sort(
+        key=lambda x: (x.get("path1", ""), x.get("path2", ""), x.get("title", ""))
+    )
 
-    # Write to JSON file
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(entries, f, indent=2, ensure_ascii=False)

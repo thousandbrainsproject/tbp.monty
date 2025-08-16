@@ -422,16 +422,39 @@
   {
     "title": "Make More Condensed Videos About the Project & Monty",
     "slug": "make-more-condensed-videos-about-the-project-monty",
+    "group": null,
+    "size": "large",
+    "rfc": "required",
+    "tags": [
+      "video",
+      "outreach"
+    ],
+    "skills": [
+      "descript",
+      "interviewing",
+      "guest research",
+      "topic research",
+      "scripting"
+    ],
     "path1": "future-work",
     "path2": "oss-communication-improvements"
   },
   {
     "title": "Organize & Start Podcast Series",
     "slug": "organize-start-podcast-series",
-    "tags": "video, outreach",
     "size": "large",
     "rfc": "required",
-    "skills": "descript, interviewing, guest research, topic research, scripting",
+    "tags": [
+      "video",
+      "outreach"
+    ],
+    "skills": [
+      "descript",
+      "interviewing",
+      "guest research",
+      "topic research",
+      "scripting"
+    ],
     "path1": "future-work",
     "path2": "oss-communication-improvements"
   },
