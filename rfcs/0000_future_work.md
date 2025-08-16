@@ -36,7 +36,6 @@ Specifically targeted for the future work section.
 
 |        key|values|
 |----------:|:-----|
-| group     | Sensor Module &#124; Learning Module &#124; etc...| 
 | tags      | infrastructure, refactoring|
 | size      | small &#124; medium &#124; large &#124; unknown|
 | rfc       | required &#124; optional &#124; not-required|
@@ -68,7 +67,6 @@ As mentioned above, the front-matter of all the docs in the in the `/docs` folde
 [
   {
     "title": "Extract Sensor Modules",
-    "group": "Sensor Module",
     "tags": ["infrastructure", "build"],
     "skills": ["python","gpu architecture"],
     "size": "small",
@@ -77,7 +75,7 @@ As mentioned above, the front-matter of all the docs in the in the `/docs` folde
     // Generated values
     "slug": "extract-sensor-modules", // for linking back to the docs
     "path1": "future-work", // will be used for filtering to a subset of the docs
-    "path2": "motor-system-improvements" 
+    "path2": "motor-system-improvements" // will be used to group the table rows
     // "pathN"...
   }
 ]
@@ -87,9 +85,7 @@ A GitHub action will process the documentation markdown files to build the centr
 
 Some of the fields will be checked for validity and fail the build if they are incorrect.  Notably, `status`, `size` and `rfc` must have the correct values.
 
-All values apart from `group` are optional and the downstream consumers should be able to function even if data is missing.
-
-It is possible that we should have a list of allowed tags and groups as well.
+All values are optional and the downstream consumers should be able to function even if data is missing.
 
 This generated index file can then be used by the various downstream consumers.
 
@@ -106,7 +102,7 @@ A quick review of the open-source table solutions led us to Tabulator (https://t
 
 Requirements
 - Global filter by the text of any cell in the table.
-- Group by the large sections of work.
+- Grouped by the large sections of work.
 - Sort by any column
 - Initially order the table by `group` and then within the group, by `title`
 - Show who is working on this current work item using their GitHub avatar.
