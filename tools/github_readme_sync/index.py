@@ -167,9 +167,14 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
                 logging.error(f"  - {error}")
             continue
 
+        relative_path = md_file.relative_to(docs_path)
+        folder_name = os.path.basename(docs_dir)
+        doc_path = f"{folder_name}/{relative_path}"
+
         entry = {
             "title": frontmatter.get("title", ""),
             "slug": slugify(md_file.stem),
+            "path": doc_path,
         }
 
         simple_fields = ["group", "size", "rfc", "status", "rfc-link"]

@@ -2,427 +2,501 @@
   {
     "title": "Code of Conduct",
     "slug": "code-of-conduct",
+    "path": "docs/community/code-of-conduct.md",
     "path1": "community"
   },
   {
     "title": "Governance",
     "slug": "governance",
+    "path": "docs/community/governance.md",
     "path1": "community"
   },
   {
     "title": "Our Licence and Patent Pledge Explained",
     "slug": "our-licence-and-patent-pledge-explained",
+    "path": "docs/community/our-licence-and-patent-pledge-explained.md",
     "path1": "community"
   },
   {
     "title": "Project Showcase",
     "slug": "project-showcase",
+    "path": "docs/community/project-showcase.md",
     "path1": "community"
   },
   {
     "title": "TBP Based Papers",
     "slug": "tbp-based-papers",
+    "path": "docs/community/tbp-based-papers.md",
     "path1": "community"
   },
   {
     "title": "Comment on Issues",
     "slug": "comment-on-issues",
+    "path": "docs/contributing/comment-on-issues.md",
     "path1": "contributing"
   },
   {
     "title": "Contributing Tutorials",
     "slug": "contributing-tutorials",
+    "path": "docs/contributing/contributing-tutorials.md",
     "path1": "contributing"
   },
   {
     "title": "Documentation",
     "slug": "documentation",
+    "path": "docs/contributing/documentation.md",
     "path1": "contributing"
   },
   {
     "title": "Guides for Maintainers",
     "slug": "guides-for-maintainers",
+    "path": "docs/contributing/guides-for-maintainers.md",
     "path1": "contributing"
   },
   {
     "title": "Pull Requests",
     "slug": "pull-requests",
+    "path": "docs/contributing/pull-requests.md",
     "path1": "contributing"
   },
   {
     "title": "Request For Comments (RFC)",
     "slug": "request-for-comments-rfc",
+    "path": "docs/contributing/request-for-comments-rfc.md",
     "path1": "contributing"
   },
   {
     "title": "Style Guide",
     "slug": "style-guide",
+    "path": "docs/contributing/style-guide.md",
     "path1": "contributing"
   },
   {
     "title": "Ways to Contribute",
     "slug": "contributing",
+    "path": "docs/contributing/contributing.md",
     "path1": "contributing"
   },
   {
     "title": "Ways to Contribute to Code",
     "slug": "ways-to-contribute-to-code",
+    "path": "docs/contributing/ways-to-contribute-to-code.md",
     "path1": "contributing"
   },
   {
     "title": "Why Contribute?",
     "slug": "why-contribute",
+    "path": "docs/contributing/why-contribute.md",
     "path1": "contributing"
   },
   {
     "title": "Triage",
     "slug": "triage",
+    "path": "docs/contributing/guides-for-maintainers/triage.md",
     "path1": "contributing",
     "path2": "guides-for-maintainers"
   },
   {
     "title": "Contributor License Agreement",
     "slug": "contributor-license-agreement",
+    "path": "docs/contributing/pull-requests/contributor-license-agreement.md",
     "path1": "contributing",
     "path2": "pull-requests"
   },
   {
     "title": "Pull Request Flow",
     "slug": "pull-request-flow",
+    "path": "docs/contributing/pull-requests/pull-request-flow.md",
     "path1": "contributing",
     "path2": "pull-requests"
   },
   {
     "title": "Reviewing a Pull Request",
     "slug": "reviewing-a-pull-request",
+    "path": "docs/contributing/pull-requests/reviewing-a-pull-request.md",
     "path1": "contributing",
     "path2": "pull-requests"
   },
   {
     "title": "Code Style Guide",
     "slug": "code-style-guide",
+    "path": "docs/contributing/style-guide/code-style-guide.md",
     "path1": "contributing",
     "path2": "style-guide"
   },
   {
     "title": "Identify an issue to work on",
     "slug": "identify-an-issue-to-work-on",
+    "path": "docs/contributing/ways-to-contribute-to-code/identify-an-issue-to-work-on.md",
     "path1": "contributing",
     "path2": "ways-to-contribute-to-code"
   },
   {
     "title": "CMP & Hierarchy Improvements",
     "slug": "cmp-hierarchy-improvements",
+    "path": "docs/future-work/cmp-hierarchy-improvements.md",
     "path1": "future-work"
   },
   {
     "title": "Environment Improvements",
     "slug": "environment-improvements",
+    "path": "docs/future-work/environment-improvements.md",
     "path1": "future-work"
   },
   {
     "title": "Framework Improvements",
     "slug": "framework-improvements",
+    "path": "docs/future-work/framework-improvements.md",
     "path1": "future-work"
   },
   {
     "title": "Learning Module Improvements",
     "slug": "learning-module-improvements",
+    "path": "docs/future-work/learning-module-improvements.md",
     "path1": "future-work"
   },
   {
     "title": "Motor System Improvements",
     "slug": "motor-system-improvements",
+    "path": "docs/future-work/motor-system-improvements.md",
     "path1": "future-work"
   },
   {
     "title": "OSS/Communication Improvements",
     "slug": "oss-communication-improvements",
+    "path": "docs/future-work/oss-communication-improvements.md",
     "path1": "future-work"
   },
   {
     "title": "Project Roadmap",
     "slug": "project-roadmap",
+    "path": "docs/future-work/project-roadmap.md",
     "path1": "future-work"
   },
   {
     "title": "Sensor Module Improvements",
     "slug": "sensor-module-improvements",
+    "path": "docs/future-work/sensor-module-improvements.md",
     "path1": "future-work"
   },
   {
     "title": "Voting Improvements",
     "slug": "voting-improvements",
+    "path": "docs/future-work/voting-improvements.md",
     "path1": "future-work"
   },
   {
     "title": "Add Top-Down Connections",
     "slug": "add-top-down-connections",
+    "path": "docs/future-work/cmp-hierarchy-improvements/add-top-down-connections.md",
     "path1": "future-work",
     "path2": "cmp-hierarchy-improvements"
   },
   {
     "title": "Figure out Performance Measures and Supervision in Heterarchy",
     "slug": "figure-out-performance-measure-and-supervision-in-heterarchy",
+    "path": "docs/future-work/cmp-hierarchy-improvements/figure-out-performance-measure-and-supervision-in-heterarchy.md",
     "path1": "future-work",
     "path2": "cmp-hierarchy-improvements"
   },
   {
     "title": "Run & Analyze Experiments in Multi-object Environment Looking at Scene Graphs",
     "slug": "run-analyze-experiments-in-multiobject-environment-looking-at-scene-graphs",
+    "path": "docs/future-work/cmp-hierarchy-improvements/run-analyze-experiments-in-multiobject-environment-looking-at-scene-graphs.md",
     "path1": "future-work",
     "path2": "cmp-hierarchy-improvements"
   },
   {
     "title": "Run & Analyze Experiments with >2LMs in Heterarchy Testbed",
     "slug": "run-analyze-experiments-with-2lms-in-heterarchy-testbed",
+    "path": "docs/future-work/cmp-hierarchy-improvements/run-analyze-experiments-with-2lms-in-heterarchy-testbed.md",
     "path1": "future-work",
     "path2": "cmp-hierarchy-improvements"
   },
   {
     "title": "Send Similarity Encoding Object ID to Next Level & Test",
     "slug": "send-similarity-encoding-object-id-to-next-level-test",
+    "path": "docs/future-work/cmp-hierarchy-improvements/send-similarity-encoding-object-id-to-next-level-test.md",
     "path1": "future-work",
     "path2": "cmp-hierarchy-improvements"
   },
   {
     "title": "Test Learning at Different Speeds Depending on Level in Hierarchy",
     "slug": "test-learning-at-different-speeds-depending-on-level-in-hierarchy",
+    "path": "docs/future-work/cmp-hierarchy-improvements/test-learning-at-different-speeds-depending-on-level-in-hierarchy.md",
     "path1": "future-work",
     "path2": "cmp-hierarchy-improvements"
   },
   {
     "title": "Create Dataset and Metrics to Evaluate Categories and Generalization",
     "slug": "create-dataset-and-metrics-to-evaluate-categories-and-generalization",
+    "path": "docs/future-work/environment-improvements/create-dataset-and-metrics-to-evaluate-categories-and-generalization.md",
     "path1": "future-work",
     "path2": "environment-improvements"
   },
   {
     "title": "Create Dataset and Metrics to Test new Feature-Morphology Pairs",
     "slug": "create-dataset-and-metrics-to-test-new-feature-morphology-pairs",
+    "path": "docs/future-work/environment-improvements/create-dataset-and-metrics-to-test-new-feature-morphology-pairs.md",
     "path1": "future-work",
     "path2": "environment-improvements"
   },
   {
     "title": "Make Dataset to Test Compositional Objects",
     "slug": "make-dataset-to-test-compositional-objects",
+    "path": "docs/future-work/environment-improvements/make-dataset-to-test-compositional-objects.md",
     "path1": "future-work",
     "path2": "environment-improvements"
   },
   {
     "title": "Set Up Object Manipulation Benchmark Tasks and Evaluation Measures",
     "slug": "set-up-object-manipulation-benchmark-tasks-and-evaluation-measures",
+    "path": "docs/future-work/environment-improvements/set-up-object-manipulation-benchmark-tasks-and-evaluation-measures.md",
     "path1": "future-work",
     "path2": "environment-improvements"
   },
   {
     "title": "Set up Environment that Allows for Object Manipulation",
     "slug": "set-up-environment-that-allows-for-object-manipulation",
+    "path": "docs/future-work/environment-improvements/set-up-environment-that-allows-for-object-manipulation.md",
     "path1": "future-work",
     "path2": "environment-improvements"
   },
   {
     "title": "Add GPU Support for Monty",
     "slug": "add-gpu-support-for-monty",
+    "path": "docs/future-work/framework-improvements/add-gpu-support-for-monty.md",
     "path1": "future-work",
     "path2": "framework-improvements"
   },
   {
     "title": "Add Infrastructure for Multiple Agents that Move Independently",
     "slug": "add-infrastructure-for-multiple-agents-that-move-independently",
+    "path": "docs/future-work/framework-improvements/add-infrastructure-for-multiple-agents-that-move-independently.md",
     "path1": "future-work",
     "path2": "framework-improvements"
   },
   {
     "title": "Add More Wandb Logging for Learning Unsupervised",
     "slug": "add-more-wandb-logging-for-learning-unsupervised",
+    "path": "docs/future-work/framework-improvements/add-more-wandb-logging-for-learning-unsupervised.md",
     "path1": "future-work",
     "path2": "framework-improvements"
   },
   {
     "title": "Automate Benchmark Experiments & Analysis",
     "slug": "automate-benchmark-experiments-analysis",
+    "path": "docs/future-work/framework-improvements/automate-benchmark-experiments-analysis.md",
     "path1": "future-work",
     "path2": "framework-improvements"
   },
   {
     "title": "Find Faster Alternative to KDTree Search",
     "slug": "find-faster-alternative-to-kdtree-search",
+    "path": "docs/future-work/framework-improvements/find-faster-alternative-to-kdtree-search.md",
     "path1": "future-work",
     "path2": "framework-improvements"
   },
   {
     "title": "Make Configs Easier to Use",
     "slug": "make-configs-easier-to-use",
+    "path": "docs/future-work/framework-improvements/make-configs-easier-to-use.md",
     "path1": "future-work",
     "path2": "framework-improvements"
   },
   {
     "title": "Use State Class Inside of LMs",
     "slug": "use-state-class-inside-of-lms",
+    "path": "docs/future-work/framework-improvements/use-state-class-inside-of-lms.md",
     "path1": "future-work",
     "path2": "framework-improvements"
   },
   {
     "title": "Contributing Learning Modules",
     "slug": "contributing-learning-modules",
+    "path": "docs/future-work/learning-module-improvements/contributing-learning-modules.md",
     "path1": "future-work",
     "path2": "learning-module-improvements"
   },
   {
     "title": "Deal with Incomplete Models",
     "slug": "deal-with-incomplete-models",
+    "path": "docs/future-work/learning-module-improvements/deal-with-incomplete-models.md",
     "path1": "future-work",
     "path2": "learning-module-improvements"
   },
   {
     "title": "Deal with Moving Objects",
     "slug": "deal-with-moving-objects",
+    "path": "docs/future-work/learning-module-improvements/deal-with-moving-objects.md",
     "path1": "future-work",
     "path2": "learning-module-improvements"
   },
   {
     "title": "Implement & Test GNNs to Model Object Behaviors & States",
     "slug": "implement-test-gnns-to-model-object-behaviors-states",
+    "path": "docs/future-work/learning-module-improvements/implement-test-gnns-to-model-object-behaviors-states.md",
     "path1": "future-work",
     "path2": "learning-module-improvements"
   },
   {
     "title": "Implement and Test Rapid Evidence Decay as Form of Unsupervised Memory Resetting",
     "slug": "implement-and-test-rapid-evidence-decay-as-form-of-unsupervised-memory-resetting",
+    "path": "docs/future-work/learning-module-improvements/implement-and-test-rapid-evidence-decay-as-form-of-unsupervised-memory-resetting.md",
     "path1": "future-work",
     "path2": "learning-module-improvements"
   },
   {
     "title": "Improve Bounded Evidence Performance",
     "slug": "improve-bounded-evidence-performance",
+    "path": "docs/future-work/learning-module-improvements/improve-bounded-evidence-performance.md",
     "path1": "future-work",
     "path2": "learning-module-improvements"
   },
   {
     "title": "Improve Handling of Symmetry",
     "slug": "improve-handling-of-symmetry",
+    "path": "docs/future-work/learning-module-improvements/improve-handling-of-symmetry.md",
     "path1": "future-work",
     "path2": "learning-module-improvements"
   },
   {
     "title": "Less Dependency on First Observation",
     "slug": "less-dependency-on-first-observation",
+    "path": "docs/future-work/learning-module-improvements/less-dependency-on-first-observation.md",
     "path1": "future-work",
     "path2": "learning-module-improvements"
   },
   {
     "title": "Make it Possible to Store Multiple Feature Maps on one Graph",
     "slug": "make-it-possible-to-store-multiple-feature-maps-on-one-graph",
+    "path": "docs/future-work/learning-module-improvements/make-it-possible-to-store-multiple-feature-maps-on-one-graph.md",
     "path1": "future-work",
     "path2": "learning-module-improvements"
   },
   {
     "title": "Re-Anchor Hypotheses for Robustness to Noise and Distortions",
     "slug": "re-anchor-hypotheses",
+    "path": "docs/future-work/learning-module-improvements/re-anchor-hypotheses.md",
     "path1": "future-work",
     "path2": "learning-module-improvements"
   },
   {
     "title": "Support Scale Invariance",
     "slug": "support-scale-invariance",
+    "path": "docs/future-work/learning-module-improvements/support-scale-invariance.md",
     "path1": "future-work",
     "path2": "learning-module-improvements"
   },
   {
     "title": "Test Particle-Filter-Like Resampling of Hypothesis Space",
     "slug": "test-particle-filter-like-resampling-of-hypothesis-space",
+    "path": "docs/future-work/learning-module-improvements/test-particle-filter-like-resampling-of-hypothesis-space.md",
     "path1": "future-work",
     "path2": "learning-module-improvements"
   },
   {
     "title": "Use Better Priors for Hypothesis Initialization",
     "slug": "use-better-priors-for-hypothesis-initialization",
+    "path": "docs/future-work/learning-module-improvements/use-better-priors-for-hypothesis-initialization.md",
     "path1": "future-work",
     "path2": "learning-module-improvements"
   },
   {
     "title": "Use Models with Fewer Points",
     "slug": "use-models-with-fewer-points",
+    "path": "docs/future-work/learning-module-improvements/use-models-with-fewer-points.md",
     "path1": "future-work",
     "path2": "learning-module-improvements"
   },
   {
     "title": "Use Off-Object Observations",
     "slug": "use-off-object-observations",
+    "path": "docs/future-work/learning-module-improvements/use-off-object-observations.md",
     "path1": "future-work",
     "path2": "learning-module-improvements"
   },
   {
     "title": "Bottom-Up Exploration Policy for Surface Agent",
     "slug": "bottom-up-exploration-policy-for-surface-agent",
+    "path": "docs/future-work/motor-system-improvements/bottom-up-exploration-policy-for-surface-agent.md",
     "path1": "future-work",
     "path2": "motor-system-improvements"
   },
   {
     "title": "Decompose Goals into Subgoals & Communicate",
     "slug": "decompose-goals-into-subgoals-communicate",
+    "path": "docs/future-work/motor-system-improvements/decompose-goals-into-subgoals-communicate.md",
     "path1": "future-work",
     "path2": "motor-system-improvements"
   },
   {
     "title": "Implement Efficient Saccades Driven by Model-Free and Model-Based Signals",
     "slug": "implement-efficient-saccades-driven-by-model-free-and-model-based-signals",
+    "path": "docs/future-work/motor-system-improvements/implement-efficient-saccades-driven-by-model-free-and-model-based-signals.md",
     "path1": "future-work",
     "path2": "motor-system-improvements"
   },
   {
     "title": "Implement Switching Between Learning and Inference-Focused Policies",
     "slug": "implement-switching-between-learning-and-inference-focused-policies",
+    "path": "docs/future-work/motor-system-improvements/implement-switching-between-learning-and-inference-focused-policies.md",
     "path1": "future-work",
     "path2": "motor-system-improvements"
   },
   {
     "title": "Implement a Simple Cross-Modal Policy for Sensory Guidance",
     "slug": "implement-a-simple-cross-modal-policy-for-sensory-guidance",
+    "path": "docs/future-work/motor-system-improvements/implement-a-simple-cross-modal-policy-for-sensory-guidance.md",
     "path1": "future-work",
     "path2": "motor-system-improvements"
   },
   {
     "title": "Interpret Goal States in Motor System & Switch Policies",
     "slug": "interpret-goal-states-in-motor-system-switch-policies",
+    "path": "docs/future-work/motor-system-improvements/interpret-goal-states-in-motor-system-switch-policies.md",
     "path1": "future-work",
     "path2": "motor-system-improvements"
   },
   {
     "title": "Learn Policy using RL and Simplified Action Space",
     "slug": "learn-policy-using-rl",
+    "path": "docs/future-work/motor-system-improvements/learn-policy-using-rl.md",
     "path1": "future-work",
     "path2": "motor-system-improvements"
   },
   {
     "title": "Model-Based Exploration Policy",
     "slug": "model-based-exploration-policy",
+    "path": "docs/future-work/motor-system-improvements/model-based-exploration-policy.md",
     "path1": "future-work",
     "path2": "motor-system-improvements"
   },
   {
     "title": "Model-Based Policy to Recognize an Object Before Moving onto a New Object",
     "slug": "model-based-policy-to-recognize-an-object-before-moving-on-to-a-new-object",
+    "path": "docs/future-work/motor-system-improvements/model-based-policy-to-recognize-an-object-before-moving-on-to-a-new-object.md",
     "path1": "future-work",
     "path2": "motor-system-improvements"
   },
   {
     "title": "Policy to quickly move to a new object",
     "slug": "policy-to-quickly-move-to-a-new-object",
+    "path": "docs/future-work/motor-system-improvements/policy-to-quickly-move-to-a-new-object.md",
     "path1": "future-work",
     "path2": "motor-system-improvements"
   },
   {
     "title": "Reuse Hypothesis-Testing Policy Target Points",
     "slug": "reuse-hypothesis-testing-policy-target-points",
+    "path": "docs/future-work/motor-system-improvements/reuse-hypothesis-testing-policy-target-points.md",
     "path1": "future-work",
     "path2": "motor-system-improvements"
   },
   {
     "title": "Make More Condensed Videos About the Project & Monty",
     "slug": "make-more-condensed-videos-about-the-project-monty",
-    "group": null,
+    "path": "docs/future-work/oss-communication-improvements/make-more-condensed-videos-about-the-project-monty.md",
     "size": "large",
     "rfc": "required",
     "tags": [
@@ -442,6 +516,7 @@
   {
     "title": "Organize & Start Podcast Series",
     "slug": "organize-start-podcast-series",
+    "path": "docs/future-work/oss-communication-improvements/organize-start-podcast-series.md",
     "size": "large",
     "rfc": "required",
     "tags": [
@@ -461,310 +536,367 @@
   {
     "title": "Detect Local and Global Flow",
     "slug": "detect-local-and-global-flow",
+    "path": "docs/future-work/sensor-module-improvements/detect-local-and-global-flow.md",
     "path1": "future-work",
     "path2": "sensor-module-improvements"
   },
   {
     "title": "Extract Better Features",
     "slug": "extract-better-features",
+    "path": "docs/future-work/sensor-module-improvements/extract-better-features.md",
     "path1": "future-work",
     "path2": "sensor-module-improvements"
   },
   {
     "title": "Can we change the CMP to use displacements instead of locations?",
     "slug": "can-we-change-the-cmp-to-use-displacements-instead-of-locations",
+    "path": "docs/future-work/voting-improvements/can-we-change-the-cmp-to-use-displacements-instead-of-locations.md",
     "path1": "future-work",
     "path2": "voting-improvements"
   },
   {
     "title": "Generalize Voting to Associative Connections",
     "slug": "generalize-voting-to-associative-connections",
+    "path": "docs/future-work/voting-improvements/generalize-voting-to-associative-connections.md",
     "path1": "future-work",
     "path2": "voting-improvements"
   },
   {
     "title": "Outline Routing Protocol Attention",
     "slug": "outline-routing-protocol-attention",
+    "path": "docs/future-work/voting-improvements/outline-routing-protocol-attention.md",
     "path1": "future-work",
     "path2": "voting-improvements"
   },
   {
     "title": "Use Pose for Voting",
     "slug": "use-pose-for-voting",
+    "path": "docs/future-work/voting-improvements/use-pose-for-voting.md",
     "path1": "future-work",
     "path2": "voting-improvements"
   },
   {
     "title": "Connecting LMs into a Heterarchy",
     "slug": "connecting-lms-into-a-heterarchy",
+    "path": "docs/how-monty-works/connecting-lms-into-a-heterarchy.md",
     "path1": "how-monty-works"
   },
   {
     "title": "Environment & Agent",
     "slug": "environment-agent",
+    "path": "docs/how-monty-works/environment-agent.md",
     "path1": "how-monty-works"
   },
   {
     "title": "Evidence Based Learning Module",
     "slug": "evidence-based-learning-module",
+    "path": "docs/how-monty-works/evidence-based-learning-module.md",
     "path1": "how-monty-works"
   },
   {
     "title": "Experiment",
     "slug": "experiment",
+    "path": "docs/how-monty-works/experiment.md",
     "path1": "how-monty-works"
   },
   {
     "title": "FAQ - Monty",
     "slug": "faq-monty",
+    "path": "docs/how-monty-works/faq-monty.md",
     "path1": "how-monty-works"
   },
   {
     "title": "How Learning Modules Work",
     "slug": "how-learning-modules-work",
+    "path": "docs/how-monty-works/how-learning-modules-work.md",
     "path1": "how-monty-works"
   },
   {
     "title": "Implementation Overview",
     "slug": "implementation-overview",
+    "path": "docs/how-monty-works/implementation-overview.md",
     "path1": "how-monty-works"
   },
   {
     "title": "Learning Module Outputs",
     "slug": "learning-module-outputs",
+    "path": "docs/how-monty-works/learning-module-outputs.md",
     "path1": "how-monty-works"
   },
   {
     "title": "Model",
     "slug": "model",
+    "path": "docs/how-monty-works/model.md",
     "path1": "how-monty-works"
   },
   {
     "title": "Observations, Transforms & Sensor Modules",
     "slug": "observations-transforms-sensor-modules",
+    "path": "docs/how-monty-works/observations-transforms-sensor-modules.md",
     "path1": "how-monty-works"
   },
   {
     "title": "Open Questions",
     "slug": "open-questions",
+    "path": "docs/how-monty-works/open-questions.md",
     "path1": "how-monty-works"
   },
   {
     "title": "Policy",
     "slug": "policy",
+    "path": "docs/how-monty-works/policy.md",
     "path1": "how-monty-works"
   },
   {
     "title": "Evidence as a Similarity Measure",
     "slug": "evidence-as-a-similarity-measure",
+    "path": "docs/how-monty-works/evidence-based-learning-module/evidence-as-a-similarity-measure.md",
     "path1": "how-monty-works",
     "path2": "evidence-based-learning-module"
   },
   {
     "title": "Code Base Structure",
     "slug": "code-base-structure",
+    "path": "docs/how-to-use-monty/code-base-structure.md",
     "path1": "how-to-use-monty"
   },
   {
     "title": "Common Issues (And how to Fix Them)",
     "slug": "common-issues-and-how-to-fix-them",
+    "path": "docs/how-to-use-monty/common-issues-and-how-to-fix-them.md",
     "path1": "how-to-use-monty"
   },
   {
     "title": "Customizing Monty",
     "slug": "customizing-monty",
+    "path": "docs/how-to-use-monty/customizing-monty.md",
     "path1": "how-to-use-monty"
   },
   {
     "title": "Getting Started",
     "slug": "getting-started",
+    "path": "docs/how-to-use-monty/getting-started.md",
     "path1": "how-to-use-monty"
   },
   {
     "title": "Implementing Actions",
     "slug": "implementing-actions",
+    "path": "docs/how-to-use-monty/implementing-actions.md",
     "path1": "how-to-use-monty"
   },
   {
     "title": "Logging and Analysis",
     "slug": "logging-and-analysis",
+    "path": "docs/how-to-use-monty/logging-and-analysis.md",
     "path1": "how-to-use-monty"
   },
   {
     "title": "Running Benchmarks",
     "slug": "running-benchmarks",
+    "path": "docs/how-to-use-monty/running-benchmarks.md",
     "path1": "how-to-use-monty"
   },
   {
     "title": "Tutorials",
     "slug": "tutorials",
+    "path": "docs/how-to-use-monty/tutorials.md",
     "path1": "how-to-use-monty"
   },
   {
     "title": "Multiple Learning Modules",
     "slug": "multiple-learning-modules",
+    "path": "docs/how-to-use-monty/tutorials/multiple-learning-modules.md",
     "path1": "how-to-use-monty",
     "path2": "tutorials"
   },
   {
     "title": "Pretraining a Model",
     "slug": "pretraining-a-model",
+    "path": "docs/how-to-use-monty/tutorials/pretraining-a-model.md",
     "path1": "how-to-use-monty",
     "path2": "tutorials"
   },
   {
     "title": "Running Inference with a Pretrained Model",
     "slug": "running-inference-with-a-pretrained-model",
+    "path": "docs/how-to-use-monty/tutorials/running-inference-with-a-pretrained-model.md",
     "path1": "how-to-use-monty",
     "path2": "tutorials"
   },
   {
     "title": "Running Your First Experiment",
     "slug": "running-your-first-experiment",
+    "path": "docs/how-to-use-monty/tutorials/running-your-first-experiment.md",
     "path1": "how-to-use-monty",
     "path2": "tutorials"
   },
   {
     "title": "Unsupervised Continual Learning",
     "slug": "unsupervised-continual-learning",
+    "path": "docs/how-to-use-monty/tutorials/unsupervised-continual-learning.md",
     "path1": "how-to-use-monty",
     "path2": "tutorials"
   },
   {
     "title": "Using Monty for Robotics",
     "slug": "using-monty-for-robotics",
+    "path": "docs/how-to-use-monty/tutorials/using-monty-for-robotics.md",
     "path1": "how-to-use-monty",
     "path2": "tutorials"
   },
   {
     "title": "Using Monty in a Custom Application",
     "slug": "using-monty-in-a-custom-application",
+    "path": "docs/how-to-use-monty/tutorials/using-monty-in-a-custom-application.md",
     "path1": "how-to-use-monty",
     "path2": "tutorials"
   },
   {
     "title": "Application Criteria",
     "slug": "application-criteria",
+    "path": "docs/overview/application-criteria.md",
     "path1": "overview"
   },
   {
     "title": "Architecture Overview",
     "slug": "architecture-overview",
+    "path": "docs/overview/architecture-overview.md",
     "path1": "overview"
   },
   {
     "title": "Benchmark Experiments",
     "slug": "benchmark-experiments",
+    "path": "docs/overview/benchmark-experiments.md",
     "path1": "overview"
   },
   {
     "title": "FAQ - Thousand Brains Project",
     "slug": "faq-thousand-brains-project",
+    "path": "docs/overview/faq-thousand-brains-project.md",
     "path1": "overview"
   },
   {
     "title": "Further Reading",
     "slug": "further-reading",
+    "path": "docs/overview/further-reading.md",
     "path1": "overview"
   },
   {
     "title": "Glossary",
     "slug": "glossary",
+    "path": "docs/overview/glossary.md",
     "path1": "overview"
   },
   {
     "title": "Vision of the Thousand Brains Project",
     "slug": "vision-of-the-thousand-brains-project",
+    "path": "docs/overview/vision-of-the-thousand-brains-project.md",
     "path1": "overview"
   },
   {
     "title": "Welcome to the Thousand Brains Project Documentation!",
     "slug": "welcome-to-the-thousand-brains-project-documentation",
+    "path": "docs/overview/welcome-to-the-thousand-brains-project-documentation.md",
     "path1": "overview"
   },
   {
     "title": "Bringing it Together",
     "slug": "bringing-it-together",
+    "path": "docs/overview/architecture-overview/bringing-it-together.md",
     "path1": "overview",
     "path2": "architecture-overview"
   },
   {
     "title": "Cortical Messaging Protocol",
     "slug": "cortical-messaging-protocol",
+    "path": "docs/overview/architecture-overview/cortical-messaging-protocol.md",
     "path1": "overview",
     "path2": "architecture-overview"
   },
   {
     "title": "Learning Modules",
     "slug": "learning-modules",
+    "path": "docs/overview/architecture-overview/learning-modules.md",
     "path1": "overview",
     "path2": "architecture-overview"
   },
   {
     "title": "Other Aspects",
     "slug": "other-aspects",
+    "path": "docs/overview/architecture-overview/other-aspects.md",
     "path1": "overview",
     "path2": "architecture-overview"
   },
   {
     "title": "Sensor Modules",
     "slug": "sensor-modules",
+    "path": "docs/overview/architecture-overview/sensor-modules.md",
     "path1": "overview",
     "path2": "architecture-overview"
   },
   {
     "title": "Results from Alternative Implementations",
     "slug": "results-from-alternative-implementations",
+    "path": "docs/overview/benchmark-experiments/results-from-alternative-implementations.md",
     "path1": "overview",
     "path2": "benchmark-experiments"
   },
   {
     "title": "Capabilities of the System",
     "slug": "capabilities-of-the-system",
+    "path": "docs/overview/vision-of-the-thousand-brains-project/capabilities-of-the-system.md",
     "path1": "overview",
     "path2": "vision-of-the-thousand-brains-project"
   },
   {
     "title": "Challenging Preconceptions",
     "slug": "challenging-preconceptions",
+    "path": "docs/overview/vision-of-the-thousand-brains-project/challenging-preconceptions.md",
     "path1": "overview",
     "path2": "vision-of-the-thousand-brains-project"
   },
   {
     "title": "Long-Term Goals and Principles",
     "slug": "long-term-goals-and-principles",
+    "path": "docs/overview/vision-of-the-thousand-brains-project/long-term-goals-and-principles.md",
     "path1": "overview",
     "path2": "vision-of-the-thousand-brains-project"
   },
   {
     "title": "Short-Term Goals",
     "slug": "short-term-goals",
+    "path": "docs/overview/vision-of-the-thousand-brains-project/short-term-goals.md",
     "path1": "overview",
     "path2": "vision-of-the-thousand-brains-project"
   },
   {
     "title": "",
     "slug": "contributing-tasks",
+    "path": "docs/snippets/contributing-tasks.md",
     "path1": "snippets"
   },
   {
     "title": "",
     "slug": "edit-this-page",
+    "path": "docs/snippets/edit-this-page.md",
     "path1": "snippets"
   },
   {
     "title": "Neuroscience Theory - Overview",
     "slug": "theory-overview",
+    "path": "docs/theory/theory-overview.md",
     "path1": "theory"
   },
   {
     "title": "Recent Progress",
     "slug": "recent-progress",
+    "path": "docs/theory/recent-progress.md",
     "path1": "theory"
   },
   {
     "title": "Object Behaviors",
     "slug": "object-behaviors",
+    "path": "docs/theory/recent-progress/object-behaviors.md",
     "path1": "theory",
     "path2": "recent-progress"
   }
