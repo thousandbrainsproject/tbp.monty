@@ -25,6 +25,7 @@ from tools.github_readme_sync.constants import (
     IGNORE_TABLES,
     REGEX_CSV_TABLE,
 )
+from tools.github_readme_sync.file_utils import find_markdown_files, read_file_content
 
 HIERARCHY_FILE = "hierarchy.md"
 CATEGORY_PREFIX = "# "
@@ -203,17 +204,14 @@ def check_links(path):
 
 def check_external(folder, ignore_dirs, rdme):
     errors = {}
-    ignore_dirs.extend([".pytest_cache", ".github", ".git"])
+    # Extend ignore_dirs with defaults, including figures
+    all_ignore_dirs = [".pytest_cache", ".github", ".git", "figures"]
+    all_ignore_dirs.extend(ignore_dirs)
     total_links_checked = 0
     url_cache = {}  # Cache to store URL check results
 
-    md_files = []
-    for root, _, files in os.walk(folder):
-        if any(ignore_dir in root for ignore_dir in ignore_dirs):
-            continue
-        md_files.extend(
-            [os.path.join(root, file) for file in files if file.endswith(".md")]
-        )
+    # Use shared utility to find markdown files
+    md_files = find_markdown_files(folder, ignore_dirs=all_ignore_dirs)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         future_to_file = {
@@ -263,9 +261,7 @@ def process_file(file_path, rdme, url_cache):
     return file_errors, links_checked
 
 
-def read_file_content(file_path):
-    with open(file_path, "r", encoding="utf-8") as f:
-        return f.read()
+
 
 
 def extract_external_links(content):
