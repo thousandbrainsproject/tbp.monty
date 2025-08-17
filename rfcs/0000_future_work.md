@@ -134,7 +134,7 @@ Some strategies to mitigate the chaos of unstructured text fields
 
 # Drawbacks
 
-Having free form text powering downstream applications that require structured information is has some downsides.
+Having free form text powering downstream applications that require structured information has some downsides:
 - It requires human oversight to make sure the values are uniform and don't become chaotic.
 - Getting humans to adopt a structured process requires training and increases cognitive load.
 
