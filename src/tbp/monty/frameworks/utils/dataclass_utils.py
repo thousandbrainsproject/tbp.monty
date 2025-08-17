@@ -9,6 +9,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import copy
 import dataclasses
 import importlib
 from inspect import Parameter, signature
@@ -169,12 +170,16 @@ def config_to_dict(config: DataclassInstance | Dict[str, Any]) -> Dict[str, Any]
 
     Returns:
         Pure dict version of config.
+
+    Raises:
+        TypeError: If the object is not a dataclass instance
     """
-    return (
-        {k: config_to_dict(v) if is_config_like(v) else v for k, v in config.items()}
-        if isinstance(config, dict)
-        else dataclasses.asdict(config)
-    )
+    if isinstance(config, dict):
+        return dataclasses._asdict_inner(config, dict)
+    elif dataclasses._is_dataclass_instance(config):
+        return dataclasses.asdict(config)
+    else:
+        raise TypeError(f"Cannot convert {type(config)} to dict")
 
 
 def is_config_like(obj: Any) -> TypeIs[DataclassInstance | Dict[str, Any]]:
