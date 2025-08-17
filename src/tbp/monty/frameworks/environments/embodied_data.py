@@ -10,12 +10,10 @@
 
 import copy
 import logging
-import math
 from pprint import pformat
 
 import numpy as np
 import quaternion
-from torch.utils.data import Dataset
 from typing_extensions import Self
 
 from tbp.monty.frameworks.actions.action_samplers import UniformlyDistributedSampler
@@ -43,7 +41,6 @@ from tbp.monty.frameworks.models.motor_system_state import (
 from .embodied_environment import EmbodiedEnvironment
 
 __all__ = [
-    "EnvironmentDataset",
     "EnvironmentDataLoader",
     "EnvironmentDataLoaderPerObject",
     "InformedEnvironmentDataLoader",
@@ -55,76 +52,75 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 
-class EnvironmentDataset(Dataset):
-    """Wraps an embodied environment with a :class:`torch.utils.data.Dataset`.
+# class EnvironmentDataset(Dataset):
+    # """Wraps an embodied environment with a :class:`torch.utils.data.Dataset`.
 
-    TODO: Change the name of this class to reflect the interactiveness. Monty doesn't
-    work with static datasets, it interacts with the environment.
+    # Attributes:
+    #     env_init_func: Callable function used to create the embodied environment. This
+    #         function should return a class implementing :class:`.EmbodiedEnvironment`
+    #     env_init_args: Arguments to `env_init_func`
+    #     n_actions_per_epoch: Number of actions per epoch. Used to determine
+    #         the number of observations this dataset will return per epoch. It can be
+    #         viewed as the dataset size.
+    #     transform: Callable used to tranform the observations returned by the dataset
 
-    Attributes:
-        env_init_func: Callable function used to create the embodied environment. This
-            function should return a class implementing :class:`.EmbodiedEnvironment`
-        env_init_args: Arguments to `env_init_func`
-        n_actions_per_epoch: Number of actions per epoch. Used to determine
-            the number of observations this dataset will return per epoch. It can be
-            viewed as the dataset size.
-        transform: Callable used to tranform the observations returned by the dataset
+    # Note:
+    #     Main idea is to separate concerns:
+    #     - dataset owns the environment and creates it at initialization
+    #     - dataset just handles the :meth:`__getitem__` method
+    #     - dataset does not handle motor activity, it just accepts action from
+    #         policy and uses it to look up the next observation
+    # """
 
-    Note:
-        Main idea is to separate concerns:
-        - dataset owns the environment and creates it at initialization
-        - dataset just handles the :meth:`__getitem__` method
-        - dataset does not handle motor activity, it just accepts action from
-            policy and uses it to look up the next observation
-    """
+    # def __init__(self, env_init_func, env_init_args, rng, transform=None):
+    #     self.rng = rng
+    #     self.transform = transform
+    #     if self.transform is not None:
+    #         for t in self.transform:
+    #             if t.needs_rng:
+    #                 t.rng = self.rng
+    #     env = env_init_func(**env_init_args)
+    #     assert isinstance(env, EmbodiedEnvironment)
+    #     self.env = env
+# TODO(anna): look for any calls of this method
+    # @property
+    # def action_space(self):
+    #     return self.env.action_space
 
-    def __init__(self, env_init_func, env_init_args, rng, transform=None):
-        self.rng = rng
-        self.transform = transform
-        if self.transform is not None:
-            for t in self.transform:
-                if t.needs_rng:
-                    t.rng = self.rng
-        env = env_init_func(**env_init_args)
-        assert isinstance(env, EmbodiedEnvironment)
-        self.env = env
+    # def reset(self):
+    #     observation = self.env.reset()
+    #     state = self.env.get_state()
 
-    @property
-    def action_space(self):
-        return self.env.action_space
+    #     if self.transform is not None:
+    #         observation = self.apply_transform(self.transform, observation, state)
+    #     return observation, ProprioceptiveState(state) if state else None
 
-    def reset(self):
-        observation = self.env.reset()
-        state = self.env.get_state()
+    # def close(self):
+    #     self.env.close()
 
-        if self.transform is not None:
-            observation = self.apply_transform(self.transform, observation, state)
-        return observation, ProprioceptiveState(state) if state else None
+    # def apply_transform(self, transform, observation, state):
+    #     if isinstance(transform, list):
+    #         for t in transform:
+    #             observation = t(observation, state)
+    #     else:
+    #         observation = transform(observation, state)
+    #     return observation
 
-    def close(self):
-        self.env.close()
+    # def __getitem__(self, action: Action):
+    #     observation = self.env.step(action)
+    #     state = self.env.get_state()
+    #     if self.transform is not None:
+    #         observation = self.apply_transform(self.transform, observation, state)
+    #     return observation, ProprioceptiveState(state) if state else None
 
-    def apply_transform(self, transform, observation, state):
-        if isinstance(transform, list):
-            for t in transform:
-                observation = t(observation, state)
-        else:
-            observation = transform(observation, state)
-        return observation
-
-    def __getitem__(self, action: Action):
-        observation = self.env.step(action)
-        state = self.env.get_state()
-        if self.transform is not None:
-            observation = self.apply_transform(self.transform, observation, state)
-        return observation, ProprioceptiveState(state) if state else None
-
-    def __len__(self):
-        return math.inf
+    # def __len__(self):
+    #     return math.inf
 
 
 class EnvironmentDataLoader:
-    """Wraps the environment dataset with an iterator.
+    """Wraps an embodied environment with an iterator.
+
+    todo(anna) update this desc
 
     The observations are based on the actions returned by the `motor_system`.
 
@@ -133,8 +129,20 @@ class EnvironmentDataLoader:
     returned by `motor_system` is applied.
 
     Attributes:
-        dataset: :class:`EnvironmentDataset`
+        dataset: :class:`EnvironmentDataset` # todo(anna) update
         motor_system: :class:`MotorSystem`
+
+
+    todo(anna): make sure these attributes that i brought over from EnvironmentDataset
+    are correct.
+        env_init_func: Callable function used to create the embodied environment. This
+            function should return a class implementing :class:`.EmbodiedEnvironment`
+        env_init_args: Arguments to `env_init_func`
+        n_actions_per_epoch: Number of actions per epoch. Used to determine
+            the number of observations this dataset will return per epoch. It can be
+            viewed as the dataset size. todo(anna)
+        transform: Callable used to tranform the observations returned by the dataset todo(anna)
+
 
     Note:
         If the amount variable returned by motor_system is None, the amount used by
@@ -145,14 +153,26 @@ class EnvironmentDataLoader:
         This one on its own won't work.
     """
 
-    def __init__(self, dataset: EnvironmentDataset, motor_system: MotorSystem, rng):
-        assert isinstance(dataset, EnvironmentDataset)
+    # TODO(anna) update all instances of EnvironmentDataLoader creation; no longer needs dataset, instead needs
+    # TODO: fix this long list of init params
+    # env_init_func, env_init_args and optional transform
+    # def __init__(self, dataset: EnvironmentDataset, motor_system: MotorSystem, rng):
+    def __init__(self, env_init_func, env_init_args, rng, motor_system: MotorSystem, transform=None):
+        self.rng = rng
+        self.transform = transform
+        if self.transform is not None:
+            for t in self.transform:  # TODO: other ref of transform checks if isinstance(transform, list) - will this work if not a list? a transform on its own is a callable function. can it be iterated upon??
+                if t.needs_rng:
+                    t.rng = self.rng
+
+        env = env_init_func(**env_init_args)
+        assert isinstance(env, EmbodiedEnvironment)
+        self.env = env
+
         if not isinstance(motor_system, MotorSystem):
             f"motor_system must be an instance of MotorSystem, got {motor_system}"
-        self.dataset = dataset
         self.motor_system = motor_system
-        self.rng = rng
-        self._observation, proprioceptive_state = self.dataset.reset()
+        self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
@@ -175,18 +195,44 @@ class EnvironmentDataLoader:
         else:
             action = self.motor_system()
             self._action = action
-            self._observation, proprioceptive_state = self.dataset[action]
+            self._observation, proprioceptive_state = self.__getitem__(action)
             self.motor_system._state = (
                 MotorSystemState(proprioceptive_state) if proprioceptive_state else None
             )
             self._counter += 1
             return self._observation
+# start anna added
+    def reset(self):
+        observation = self.env.reset()
+        state = self.env.get_state()
 
+        if self.transform is not None:
+            observation = self.apply_transform(self.transform, observation, state)
+        return observation, ProprioceptiveState(state) if state else None
+
+    def close(self):
+        self.env.close()
+
+    def apply_transform(self, transform, observation, state):
+        if isinstance(transform, list):
+            for t in transform:
+                observation = t(observation, state)  # what happens if there are multiple transforms? observation is overwritten each time?
+        else:
+            observation = transform(observation, state)
+        return observation
+
+    def __getitem__(self, action: Action):
+        observation = self.env.step(action)
+        state = self.env.get_state()
+        if self.transform is not None:
+            observation = self.apply_transform(self.transform, observation, state)
+        return observation, ProprioceptiveState(state) if state else None
+# ******* end anna added
     def pre_episode(self):
         self.motor_system.pre_episode()
 
-        # Reset the dataset and the data loader state.
-        self._observation, proprioceptive_state = self.dataset.reset()
+        # Reset the data loader state.
+        self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
@@ -203,7 +249,7 @@ class EnvironmentDataLoader:
         pass
 
     def finish(self):
-        self.dataset.close()
+        self.close()
 
 
 class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
@@ -344,7 +390,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             idx: Index of the new object and ints parameters in object_params
         """
         assert idx <= self.n_objects, "idx must be <= self.n_objects"
-        self.dataset.env.remove_all_objects()
+        self.env.remove_all_objects()
 
         # Specify config for the primary target object and then add it
         init_params = self.object_params.copy()
@@ -354,7 +400,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         init_params["semantic_id"] = self.semantic_label_to_id[self.object_names[idx]]
 
         # TODO clean this up with its own specific call i.e. Law of Demeter
-        primary_target_obj = self.dataset.env.add_object(
+        primary_target_obj = self.env.add_object(
             name=self.object_names[idx], **init_params
         )
 
@@ -400,7 +446,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             new_obj_label = self.rng.choice(sampling_list)
             new_init_params["semantic_id"] = self.semantic_label_to_id[new_obj_label]
             # TODO clean up the **unpacking used
-            self.dataset.env.add_object(
+            self.env.add_object(
                 name=new_obj_label,
                 **new_init_params,
                 object_to_avoid=True,
@@ -467,7 +513,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 #       the object using its full repertoire of actions.
                 self.motor_system._policy.touch_search_amount = 0
 
-            self._observation, proprioceptive_state = self.dataset[self._action]
+            self._observation, proprioceptive_state = self.__getitem__(self._action)
             motor_system_state = MotorSystemState(proprioceptive_state)
 
             # TODO: Refactor this so that all of this is contained within the
@@ -504,7 +550,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
     def pre_episode(self):
         super().pre_episode()
-        if self.dataset.env._agents[0].action_space_type != "surface_agent":
+        if self.env._agents[0].action_space_type != "surface_agent":
             on_target_object = self.get_good_view_with_patch_refinement()
             if self.num_distractors == 0:
                 # Only perform this check if we aren't doing multi-object experiments.
@@ -585,7 +631,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         )
         while not result.terminated and not result.truncated:
             for action in result.actions:
-                self._observation, proprio_state = self.dataset[action]
+                self._observation, proprio_state = self.__getitem__(action)
                 self.motor_system._state = (
                     MotorSystemState(proprio_state) if proprio_state else None
                 )
@@ -677,8 +723,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             agent_id=self.motor_system._policy.agent_id,
             rotation_quat=quaternion.one,
         )
-        _, _ = self.dataset[set_agent_pose]
-        self._observation, proprioceptive_state = self.dataset[set_sensor_rotation]
+        _, _ = self.__getitem__(set_agent_pose)
+        self._observation, proprioceptive_state = self.__getitem__(set_sensor_rotation)
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
@@ -770,8 +816,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             agent_id=self.motor_system._policy.agent_id,
             rotation_quat=pre_jump_state["sensors"][first_sensor]["rotation"],
         )
-        _, _ = self.dataset[set_agent_pose]
-        self._observation, proprioceptive_state = self.dataset[set_sensor_rotation]
+        _, _ = self.__getitem__(set_agent_pose)
+        self._observation, proprioceptive_state = self.__getitem__(set_sensor_rotation)
 
         assert np.all(
             proprioceptive_state[self.motor_system._policy.agent_id]["position"]
@@ -808,7 +854,7 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         alphabets,
         characters,
         versions,
-        dataset,
+        dataset,  # TODO(anna). will this work if dataset is passed to env dataloader
         motor_system: MotorSystem,
         *args,
         **kwargs,
@@ -819,7 +865,7 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
             alphabets: List of alphabets.
             characters: List of characters.
             versions: List of versions.
-            dataset: The environment dataset.
+            dataset: The environment dataset. todo(anna)
             motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
@@ -827,14 +873,12 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         Raises:
             TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
-        assert isinstance(dataset, EnvironmentDataset)
         if not isinstance(motor_system, MotorSystem):
             raise TypeError(
                 f"motor_system must be an instance of MotorSystem, got {motor_system}"
             )
-        self.dataset = dataset
         self.motor_system = motor_system
-        self._observation, proprioceptive_state = self.dataset.reset()
+        self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
@@ -850,7 +894,7 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         self.epochs = 0
         self.primary_target = None
         self.object_names = [
-            str(self.dataset.env.alphabet_names[alphabets[i]])
+            str(self.env.alphabet_names[alphabets[i]])
             + "_"
             + str(self.characters[i])
             for i in range(self.n_objects)
@@ -879,7 +923,7 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
             idx: Index of the new object and ints parameters in object params
         """
         assert idx <= self.n_objects, "idx must be <= self.n_objects"
-        self.dataset.env.switch_to_object(
+        self.env.switch_to_object(
             self.alphabets[idx], self.characters[idx], self.versions[idx]
         )
         self.current_object = idx
@@ -900,7 +944,7 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         self,
         scenes,
         versions,
-        dataset: EnvironmentDataset,
+        # dataset: EnvironmentDataset, todo(anna)
         motor_system: MotorSystem,
         *args,
         **kwargs,
@@ -910,7 +954,7 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         Args:
             scenes: List of scenes
             versions: List of versions
-            dataset: The environment dataset.
+            dataset: The environment dataset. todo(anna)
             motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
@@ -918,14 +962,12 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         Raises:
             TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
-        assert isinstance(dataset, EnvironmentDataset)
         if not isinstance(motor_system, MotorSystem):
             raise TypeError(
                 f"motor_system must be an instance of MotorSystem, got {motor_system}"
             )
-        self.dataset = dataset
         self.motor_system = motor_system
-        self._observation, proprioceptive_state = self.dataset.reset()
+        self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
@@ -934,7 +976,7 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
 
         self.scenes = scenes
         self.versions = versions
-        self.object_names = self.dataset.env.scene_names
+        self.object_names = self.env.scene_names
         self.current_scene_version = 0
         self.n_versions = len(versions)
         self.episodes = 0
@@ -969,7 +1011,7 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
             f"changing to obj {idx} -> scene {self.scenes[idx]}, version "
             f"{self.versions[idx]}"
         )
-        self.dataset.env.switch_to_object(self.scenes[idx], self.versions[idx])
+        self.env.switch_to_object(self.scenes[idx], self.versions[idx])
         self.current_scene_version = idx
         # TODO: Currently not differentiating between different poses/views
         target_object = self.object_names[self.scenes[idx]]
@@ -990,7 +1032,7 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
 
     def __init__(
         self,
-        dataset: EnvironmentDataset,
+        # dataset: EnvironmentDataset, todo(anna)
         motor_system: MotorSystem,
         *args,
         **kwargs,
@@ -998,7 +1040,7 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         """Initialize dataloader.
 
         Args:
-            dataset: The environment dataset.
+            dataset: The environment dataset. todo(anna)
             motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
@@ -1006,15 +1048,13 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         Raises:
             TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
-        assert isinstance(dataset, EnvironmentDataset)
         if not isinstance(motor_system, MotorSystem):
             raise TypeError(
                 f"motor_system must be an instance of MotorSystem, got {motor_system}"
             )
         # TODO: call super init instead of duplication code & generally clean up more
-        self.dataset = dataset
         self.motor_system = motor_system
-        self._observation, proprioceptive_state = self.dataset.reset()
+        self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
@@ -1051,7 +1091,7 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
             idx: Index of the new object and ints parameters in object params
         """
         logger.info(f"changing to scene {idx}")
-        self.dataset.env.switch_to_scene(idx)
+        self.env.switch_to_scene(idx)
         self.current_scene = idx
         # TODO: Currently not differentiating between different poses/views
         # TODO: Are the targets important here ? How can we provide the proper
