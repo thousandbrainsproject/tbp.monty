@@ -7,10 +7,10 @@ concurrency:
 on:
   push:
     branches:
-      - main
+      - main2
   pull_request:
     branches:
-      - main
+      - main2
 
 jobs:
   check_docs:
