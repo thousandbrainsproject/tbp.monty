@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Literal, Protocol
+from typing import Any, Dict, Literal, Optional, Protocol
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -44,6 +44,9 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 
 logger = logging.getLogger(__name__)
 
+HypothesesUpdateTelemetry = Optional[Dict[str, Any]]
+HypothesesUpdaterTelemetry = Dict[str, Any]
+
 
 class HypothesesUpdater(Protocol):
     def update_hypotheses(
@@ -54,7 +57,7 @@ class HypothesesUpdater(Protocol):
         graph_id: str,
         mapper: ChannelMapper,
         evidence_update_threshold: float,
-    ) -> list[ChannelHypotheses]:
+    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
         """Update hypotheses based on sensor displacement and sensed features.
 
         Args:
@@ -169,7 +172,7 @@ class DefaultHypothesesUpdater:
         graph_id: str,
         mapper: ChannelMapper,
         evidence_update_threshold: float,
-    ) -> list[ChannelHypotheses]:
+    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
         """Update hypotheses based on sensor displacement and sensed features.
 
         Updates existing hypothesis space or initializes a new hypothesis space
@@ -243,7 +246,7 @@ class DefaultHypothesesUpdater:
 
             hypotheses_updates.append(channel_possible_hypotheses)
 
-        return hypotheses_updates
+        return hypotheses_updates, None
 
     def _get_all_informed_possible_poses(
         self, graph_id: str, sensed_channel_features: dict, input_channel: str

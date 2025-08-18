@@ -9,9 +9,11 @@
 
 from __future__ import annotations
 
-from typing import Literal, Tuple, Type
+from dataclasses import asdict, dataclass
+from typing import Any, Literal, Tuple, Type
 
 import numpy as np
+import numpy.typing as npt
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.models.evidence_matching.feature_evidence.calculator import (
@@ -33,6 +35,7 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
     DefaultHypothesesDisplacer,
 )
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_updater import (
+    HypothesesUpdateTelemetry,
     all_usable_input_channels,
 )
 from tbp.monty.frameworks.utils.evidence_matching import (
@@ -46,6 +49,24 @@ from tbp.monty.frameworks.utils.graph_matching_utils import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     align_multiple_orthonormal_vectors,
 )
+
+
+@dataclass
+class ChannelHypothesesResamplingTelemetry:
+    """Hypotheses resampling telemetry for a channel.
+
+    For a given input channel, this class stores which hypotheses were removed or
+    added at the current step.
+
+    Note:
+        TODO: Additional description here regarding availability of hypotheses
+        identified by `removed_ids`.
+    """
+
+    added_ids: npt.NDArray[np.int_]
+    ages: npt.NDArray[np.int_]
+    evidence_slopes: npt.NDArray[np.float64]
+    removed_ids: npt.NDArray[np.int_]
 
 
 class ResamplingHypothesesUpdater:
@@ -89,6 +110,7 @@ class ResamplingHypothesesUpdater:
         ),
         hypotheses_count_multiplier: float = 1.0,
         hypotheses_existing_to_new_ratio: float = 0.1,
+        include_telemetry: bool = False,
         initial_possible_poses: Literal["uniform", "informed"]
         | list[Rotation] = "informed",
         max_nneighbors: int = 3,
@@ -122,6 +144,9 @@ class ResamplingHypothesesUpdater:
             hypotheses_existing_to_new_ratio: Controls the proportion of the
                 existing vs. newly sampled hypotheses during resampling. Defaults to
                 0.0.
+            include_telemetry: Flag to control if we want to calculate and return the
+                resampling telemetry in the `update_hypotheses` method. Defaults to
+                False.
             initial_possible_poses: Initial
                 possible poses that should be tested for. Defaults to "informed".
             max_nneighbors: Maximum number of nearest neighbors to consider in the
@@ -147,6 +172,7 @@ class ResamplingHypothesesUpdater:
         self.feature_weights = feature_weights
         self.features_for_matching_selector = features_for_matching_selector
         self.graph_memory = graph_memory
+        self.include_telemetry = include_telemetry
         self.initial_possible_poses = get_initial_possible_poses(initial_possible_poses)
         self.tolerances = tolerances
         self.umbilical_num_poses = umbilical_num_poses
@@ -189,7 +215,7 @@ class ResamplingHypothesesUpdater:
         graph_id: str,
         mapper: ChannelMapper,
         evidence_update_threshold: float,
-    ) -> list[ChannelHypotheses]:
+    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
         """Update hypotheses based on sensor displacement and sensed features.
 
         Updates existing hypothesis space or initializes a new hypothesis space
@@ -208,7 +234,17 @@ class ResamplingHypothesesUpdater:
             evidence_update_threshold: Evidence update threshold.
 
         Returns:
-            The list of hypotheses updates to be applied to each input channel.
+            A tuple containing the list of hypotheses updates to be applied to each
+            input channel and hypotheses update telemetry for analysis. The hypotheses
+            update telemetry is a dictionary containing:
+                - added_ids: IDs of hypotheses added during resampling at the current
+                    timestep.
+                - ages: The ages of the hypotheses as tracked by the
+                    `EvidenceSlopeTracker`.
+                - evidence_slopes: The slopes extracted from the `EvidenceSlopeTracker`.
+                - removed_ids: IDs of hypotheses removed during resampling. Note that
+                    these IDs can only be used to index hypotheses from the previous
+                    timestep.
         """
         # Initialize a `EvidenceSlopeTracker` to keep track of evidence slopes
         # for hypotheses of a specific graph_id
@@ -221,6 +257,7 @@ class ResamplingHypothesesUpdater:
         )
 
         hypotheses_updates = []
+        resampling_telemetry: dict[str, Any] = {}
 
         for input_channel in input_channels_to_use:
             # Calculate sample count for each type
@@ -233,7 +270,7 @@ class ResamplingHypothesesUpdater:
             )
 
             # Sample hypotheses based on their type
-            existing_hypotheses = self._sample_existing(
+            existing_hypotheses, remove_ids = self._sample_existing(
                 existing_count=existing_count,
                 hypotheses=hypotheses,
                 input_channel=input_channel,
@@ -275,10 +312,29 @@ class ResamplingHypothesesUpdater:
             )
             hypotheses_updates.append(channel_hypotheses)
 
+            if self.include_telemetry:
+                resampling_telemetry[input_channel] = asdict(
+                    ChannelHypothesesResamplingTelemetry(
+                        added_ids=(
+                            np.arange(len(channel_hypotheses.evidence))[
+                                -len(informed_hypotheses.evidence) :
+                            ]
+                            if len(informed_hypotheses.evidence) > 0
+                            else np.array([], dtype=np.int_)
+                        ),
+                        ages=tracker.hyp_ages(input_channel),
+                        evidence_slopes=tracker.calculate_slopes(input_channel),
+                        removed_ids=remove_ids,
+                    )
+                )
+
             # Update tracker evidence
             tracker.update(channel_hypotheses.evidence, input_channel)
 
-        return hypotheses_updates
+        return (
+            hypotheses_updates,
+            resampling_telemetry if self.include_telemetry else None,
+        )
 
     def _num_hyps_per_node(self, channel_features: dict) -> int:
         """Calculate the number of hypotheses per node.
@@ -383,7 +439,7 @@ class ResamplingHypothesesUpdater:
         input_channel: str,
         mapper: ChannelMapper,
         tracker: EvidenceSlopeTracker,
-    ) -> ChannelHypotheses:
+    ) -> tuple[ChannelHypotheses, npt.NDArray[np.int_]]:
         """Samples the specified number of existing hypotheses to retain.
 
         Args:
@@ -396,19 +452,22 @@ class ResamplingHypothesesUpdater:
                 graph_id
 
         Returns:
-            The sampled existing hypotheses.
+            A tuple of sampled existing hypotheses and the IDs of the hypotheses to
+            remove.
         """
         # Return empty arrays for no hypotheses to sample
         if existing_count == 0:
             # Clear all channel hypotheses from the tracker
+            remove_ids = np.arange(tracker.total_size(input_channel))
             tracker.clear_hyp(input_channel)
 
-            return ChannelHypotheses(
+            channel_hypotheses = ChannelHypotheses(
                 input_channel=input_channel,
                 locations=np.zeros((0, 3)),
                 poses=np.zeros((0, 3, 3)),
                 evidence=np.zeros(0),
             )
+            return channel_hypotheses, remove_ids
 
         keep_ids, remove_ids = tracker.calculate_keep_and_remove_ids(
             num_keep=existing_count,
@@ -419,12 +478,13 @@ class ResamplingHypothesesUpdater:
         tracker.remove_hyp(remove_ids, input_channel)
 
         channel_hypotheses = mapper.extract_hypotheses(hypotheses, input_channel)
-        return ChannelHypotheses(
+        maintained_channel_hypotheses = ChannelHypotheses(
             input_channel=channel_hypotheses.input_channel,
             locations=channel_hypotheses.locations[keep_ids],
             poses=channel_hypotheses.poses[keep_ids],
             evidence=channel_hypotheses.evidence[keep_ids],
         )
+        return maintained_channel_hypotheses, remove_ids
 
     def _sample_informed(
         self,
