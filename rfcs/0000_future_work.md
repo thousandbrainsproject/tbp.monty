@@ -17,6 +17,7 @@ There are some downsides to this:
 - Updating 3 places when work is started, and maintaining those places as the work progresses.
 - There is currently no way to move from viewing the spreadsheet back to the detailed descriptions of that work.
 - It's cumbersome to add new structured data and have it be useful to the community.
+- It is not possible to filter the tasks by different aspects. The only grouping we currently have is which Monty component a task relates to (columns in the sheet + sections in the docs). But it would be useful to also be able to filter by skills required, scope, output type, etc...
 
 There are some upsides to the proposed approach:
 
@@ -34,19 +35,18 @@ Specifically targeted for the future work section.
 ## New Front-Matter Values
 
 
-|        key|values|
-|----------:|:-----|
-| tags      | infrastructure, refactoring|
-| size      | small &#124; medium &#124; large &#124; unknown|
-| rfc       | required &#124; optional &#124; not-required|
+|              key|values|
+|----------------:|:-----|
+| tags            | infrastructure, refactoring|
+| estimated-scope | small &#124; medium &#124; large &#124; unknown|
+| rfc             | required &#124; optional &#124; not-required  &#124; URL to RFC|
 
 And these values after that work has begun:
 
 |              key|values|
 |----------------:|:-----|
 | status          | completed &#124; in-progress &#124; none|
-| rfc-link        | http://github.com/thousandbrainsproject/tbp.monty/pull/123|
-| implementation  | codeallthethingz, vkakerbeck|
+| owner  | codeallthethingz, vkakerbeck|
 
 
 These structured pieces of data are extracted to a central file for downstream visualizations and consumers.
@@ -69,9 +69,9 @@ As mentioned above, the front-matter of all the docs in the in the `/docs` folde
     "title": "Extract Sensor Modules",
     "tags": ["infrastructure", "build"],
     "skills": ["python","gpu architecture"],
-    "size": "small",
+    "estimated-scope": "small",
     "status": "in-progress",
-    "implementation": ["codeallthethingz","vkakerbeck"],
+    "owner": ["codeallthethingz","vkakerbeck"],
     // Generated values
     "slug": "extract-sensor-modules", // for linking back to the docs
     "path1": "future-work", // will be used for filtering to a subset of the docs
@@ -83,7 +83,9 @@ As mentioned above, the front-matter of all the docs in the in the `/docs` folde
 
 A GitHub action will process the documentation markdown files to build the central data file.  A good potential fit is the current documentation parser `github-readme-sync` tool.
 
-Some of the fields will be checked for validity and fail the build if they are incorrect.  Notably, `status`, `size` and `rfc` must have the correct values.
+Some of the fields will be checked for validity and fail the build if they are incorrect.  Notably, `status`, `estimated-scope` and `rfc` must have the correct values.
+
+A page in the future work section of the docs will list all the allowable fields for tags / skils / etc...
 
 All values are optional and the downstream consumers should be able to function even if data is missing.
 
@@ -107,16 +109,25 @@ Requirements
 - Initially order the table by `group` and then within the group, by `title`
 - Show who is working on this current work item using their GitHub avatar.
 - clickable tags that add / remove the value from search.
+- ability to show columns based on URL query parameters.
+- Click through to the detail page in the docs.
+- A way to go to the edit page for that doc on GitHub.
+
+Nice To Haves (will implement if there is time after the requirements are met)
+- Structured filtering. Filtering will work with simple text matches, so a search for 'large' will find both the rows with the estimated-scope tag 'large' and titles with 'large' in them as well as matches like largest and larger.
 
 Not requirements (but feel free to tell me if you think these are required)
 - Persisting the state of the table.  For example, collapsing a group won't be remembered through page reloads.
-- Structured filtering. Filtering will work with simple text matches, so a search for 'large' will find both the rows with the size tag 'large' and titles with 'large' in them as well as matches like largest and larger.
 - The full text of the future work document will not be included, and therefore not available for search or display within the widget.
 
 
 General overview:
 
 ![](0000_future_work/architecture.png)
+
+This widget can then be displayed using an iFrame within our docs / main website.
+
+![](0000_future_work/iframed.png)
 
 
 ## Chaos Mitigation
@@ -129,7 +140,7 @@ Some strategies to mitigate the chaos of unstructured text fields
 
 ## Optional Nice to Have Tasks
 
-- Put the structured front-matter into the future-work/subpage documents so you can see who's working on them, the size, without having to go to the table widget.
+- Put the structured front-matter into the future-work/subpage documents so you can see who's working on them, the estimated scope, without having to go to the table widget.
 - Link to the table widget from each future work sub-page.
 
 # Drawbacks
