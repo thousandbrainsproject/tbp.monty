@@ -9,9 +9,9 @@ This RFC proposes some high-level guidance for how researchers and community mem
 
 We have recently identified several areas where additional guidance would be useful for researchers and community members when contributing to Monty's code-base. This includes an updated workflow for developing new research ideas in code, as well as guidance on the use of AI/large-language model (LLM) tools in research contributions.
 
-Workflows: Research benefits from rapidly exploring new ideas and features. At the same time, we want to ensure that Monty is a stable platform built on high-quality code. In [RFC 14](https://github.com/thousandbrainsproject/tbp.monty/pull/405/files), we established a workflow for integrating code into Monty that balances these two objectives. The intent of this RFC is to provide additional, concrete guidelines to realize this new workflow and ensure it is successful. It also adds some underspecified guidance on when benchmarks should be run.
+Workflows: Research benefits from rapidly exploring new ideas and features. At the same time, we want to ensure that Monty is a stable platform built on high-quality code. In [RFC 14](https://github.com/thousandbrainsproject/tbp.monty/pull/405/files), we established a workflow for integrating code into Monty that balances these two objectives. The intent of this RFC is to provide additional, concrete guidelines to realize this new workflow and ensure it is successful.
 
-Use of AI/LLMs: LLM code-assistants have the potential to improve the productivity of coders. At the same time, they can introduce several, sometimes non-intuitive drawbacks. The aim here is to describe these in more detail, and agree on what guidance we should ask of both ourselves and the community.
+Use of AI/LLMs: LLM code-assistants have the potential to improve the productivity of coders. At the same time, they can introduce non-intuitive drawbacks. The aim here is to describe these in more detail, and agree on what guidance we should ask of both ourselves and the community.
 
 When this RFC is merged, the intent is to transfer most of its contents into an updated page in our documentation.
 
