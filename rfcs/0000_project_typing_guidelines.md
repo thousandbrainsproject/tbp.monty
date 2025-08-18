@@ -63,18 +63,17 @@ Structural types SHOULD NOT be used when possible because they don't define the 
 # Type alias for a quaternion
 # This doesn't define a new type, it just allows the function
 # definition below to be shorter.
-Quaternion = Tuple[float, float, float, float]
+QuaternionWXYZ = Tuple[float, float, float, float]
+# Define another one for a different order
+QuaternionXYZW = Tuple[float, float, float, float]
 
-def normalize_quaternion(quat: Quaternion):
-    # Is it this?
+def normalize_quaternion(quat: QuaternionWXYZ):
+    # Based on the type alias, the function expects this
     w, x, y, z = quat
-    # Or is it this?
-    x, y, z, w = quat
-    # do some normalization
     return normalized_quaterion
 
-quat: Quaternion = (1.0, 0.0, 0.0, 0.0) # this is just of type `tuple`
-norm = normalize_quaternion(quat) # is this giving valid results?
+quat: QuaternionXYZW = (0.0, 0.0, 0.0, 1.0) 
+norm = normalize_quaternion(quat) # This type checks, but gives invalid results
 ```
 
 Alternative ways to model a quaternion are using newtypes or dataclasses, both forms of _nominal types_ (see [the section on nominal typing](#nominal-typing-should-be-used-to-name-concepts-using-types) for details on the benefits of nominal types). Which to choose would depend on whether additional functionality is needed, or for easier compatibility with third-party libraries.
@@ -163,7 +162,7 @@ Protocols allow for defining abstract interfaces that types can satisfy to allow
 
 The `Any` type in Python causes the type checker to stop attempting to do type checking, since it has no information whatsoever to go on. This means we lose all the benefits of using a static type checker, and thus it SHOULD NOT be used.
 
-Another similar type is `object`. While it can be used with arbitrary typed values similar to `Any`, it is an ordinary static type so the type checker will reject most operations on it (i.e., those not defined for all objects), and so it MAY be used where appropriate (see the Mypy documentation on [Any vs. object](https://mypy.readthedocs.io/en/stable/dynamic_typing.html#any-vs-object) for more details). 
+Another similar type is `object`. While it can be used with arbitrary typed values similar to `Any`, it is an ordinary static type so the type checker will reject most operations on it (i.e., those not defined for all objects), and so it MAY be used where appropriate (see the Mypy documentation on [Any vs. object](https://mypy.readthedocs.io/en/stable/dynamic_typing.html#any-vs-object) for more details).
 
 ### Third-party libraries with poor type hinting SHOULD be isolated as much as possible.
 
@@ -177,8 +176,26 @@ def do_maths(input: ...) -> npt.NDArray[np.float64]:
     return result
 ```
 
-This might require the use of [`typing.cast()`](https://docs.python.org/3/library/typing.html#typing.cast) to satisfy the type checker.
+This might require the use of [`typing.cast()`](https://docs.python.org/3/library/typing.html#typing.cast) or explicit type hints on variable declarations to satisfy the type checker.
 
 The granularity SHOULD NOT be individual NumPy functions, but rather whole operations in our code where we are using multiple NumPy functions in a row. We're not trying to make a wrapper for poorly typed libraries, but making sure when we return things into our code, store values on objects, etc. that we're giving them useful types.
 
-This would be also good place to use nominal types to define _input_ argument types like quaternion tuples that have a particular order so that callers don't pass the wrong values into these external library functions. See the nominal type guidance above.
+```python
+# Don't do something this granular
+def get_worldbody(spec: MjSpec) -> MjsBody:
+    return spec.worldbody  # this might require `cast(MjsBody, spec.worldbody)`
+
+def some_other_method(...) -> None:
+    ...
+    worldbody = get_worldbody(spec)
+    ...
+
+# Instead, just declare the types in the other method where needed
+def some_other_method(...) -> MjsBody:
+   ...
+   worldbody: MjsBody = spec.worldbody
+   # More MuJoCo calls on worldbody that may need type hints
+   ...
+```
+
+This would be also good place to use newtypes to define _input_ argument types like quaternion tuples that have a particular order so that callers don't pass the wrong values into these external library functions. See [the nominal type guidance](#nominal-typing-should-be-used-to-name-concepts-using-types) above.
