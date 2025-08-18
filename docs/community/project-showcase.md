@@ -28,31 +28,30 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 
 
 
-# May, 2025 Robot Hackathon
-
-The team set out to test Monty in a real world setting.  We built robots for a week and then presented them and the demos in the video below. You can also read about the hackathon here: https://thousandbrains.org/2025-05-robot-hackathon/
+# LEGO Robot
 
 
-[block:embed]
-{
-  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2F5UcoyF_ws9s%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D5UcoyF_ws9s&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2F5UcoyF_ws9s%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"640\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
-  "url": "https://www.youtube.com/watch?v=5UcoyF_ws9s",
-  "title": "2025/05 - Robot Hackathon Presentations",
-  "favicon": "https://www.youtube.com/favicon.ico",
-  "image": "https://i.ytimg.com/vi/5UcoyF_ws9s/hqdefault.jpg",
-  "provider": "https://www.youtube.com/",
-  "href": "https://www.youtube.com/watch?v=5UcoyF_ws9s",
-  "typeOfEmbed": "youtube"
-}
-[/block]
-
-## LEGO Robot
 
 ![](../figures/community/lego_robot.png)
 
 The first example of Monty moving its sensors in the real-world.
 
 See the [everything_is_awesome repository](https://github.com/thousandbrainsproject/everything_is_awesome) for more information.
+
+Watch the video:
+
+[block:embed]
+{
+  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2F_u7STtACQ50%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D_u7STtACQ50&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2F_u7STtACQ50%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"640\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
+  "url": "https://www.youtube.com/watch?v=_u7STtACQ50",
+  "title": "2025/05 - Robot Hackathon Presentations",
+  "favicon": "https://www.youtube.com/favicon.ico",
+  "image": "https://i.ytimg.com/vi/_u7STtACQ50/hqdefault.jpg",
+  "provider": "https://www.youtube.com/",
+  "href": "https://www.youtube.com/watch?v=_u7STtACQ50",
+  "typeOfEmbed": "youtube"
+}
+[/block]
 
 ## Ultrasound Perception
 
@@ -62,3 +61,17 @@ Using sensorimotor AI to guide ultrasound.
 
 See the [ultrasound_perception repository](https://github.com/thousandbrainsproject/ultrasound_perception) for more information.
 
+Watch the video:
+
+[block:embed]
+{
+  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2F-zrq0oTJudo0%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D-zrq0oTJudo0&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2F-zrq0oTJudo0%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"640\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
+  "url": "https://www.youtube.com/watch?v=-zrq0oTJudo0",
+  "title": "2025/05 - Robot Hackathon Presentations",
+  "favicon": "https://www.youtube.com/favicon.ico",
+  "image": "https://i.ytimg.com/vi/-zrq0oTJudo0/hqdefault.jpg",
+  "provider": "https://www.youtube.com/",
+  "href": "https://www.youtube.com/watch?v=-zrq0oTJudo0",
+  "typeOfEmbed": "youtube"
+}
+[/block]
