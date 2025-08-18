@@ -88,7 +88,7 @@ class UnsupervisedInferenceExperiments:
 @dataclass
 class MyExperiments:
     # Add your experiment names here
-    pass
+    randrot_noise_10distinctobj_dist_agent_detailed: dict
 
 
 current_module = sys.modules[__name__]
