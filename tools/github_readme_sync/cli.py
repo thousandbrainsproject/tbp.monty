@@ -7,7 +7,6 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-
 import argparse
 import logging
 import os
@@ -16,19 +15,19 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-monty_root = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(monty_root))
-
-from tools.github_readme_sync.colors import RED, RESET  # noqa: E402
-from tools.github_readme_sync.export import export  # noqa: E402
-from tools.github_readme_sync.hierarchy import (  # noqa: E402
+from tools.github_readme_sync.colors import RED, RESET
+from tools.github_readme_sync.export import export
+from tools.github_readme_sync.hierarchy import (
     check_external,
     check_hierarchy_file,
     create_hierarchy_file,
 )
-from tools.github_readme_sync.index import generate_index  # noqa: E402
-from tools.github_readme_sync.readme import ReadMe  # noqa: E402
-from tools.github_readme_sync.upload import upload  # noqa: E402
+from tools.github_readme_sync.index import generate_index
+from tools.github_readme_sync.readme import ReadMe
+from tools.github_readme_sync.upload import upload
+
+monty_root = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(monty_root))
 
 
 def main():
