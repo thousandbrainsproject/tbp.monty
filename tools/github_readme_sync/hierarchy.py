@@ -25,7 +25,7 @@ from tools.github_readme_sync.constants import (
     IGNORE_TABLES,
     REGEX_CSV_TABLE,
 )
-from tools.github_readme_sync.file_utils import find_markdown_files, read_file_content
+from tools.github_readme_sync.file import find_markdown_files, read_file_content
 
 HIERARCHY_FILE = "hierarchy.md"
 CATEGORY_PREFIX = "# "

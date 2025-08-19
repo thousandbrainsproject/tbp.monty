@@ -18,7 +18,7 @@ from typing import Dict, List
 from slugify import slugify
 
 from tools.github_readme_sync.colors import CYAN, GREEN, RED, RESET, YELLOW
-from tools.github_readme_sync.file_utils import find_markdown_files, read_file_content
+from tools.github_readme_sync.file import find_markdown_files, read_file_content
 from tools.github_readme_sync.md import parse_frontmatter
 
 
