@@ -870,18 +870,6 @@
     "path2": "vision-of-the-thousand-brains-project"
   },
   {
-    "title": "",
-    "slug": "contributing-tasks",
-    "path": "docs/snippets/contributing-tasks.md",
-    "path1": "snippets"
-  },
-  {
-    "title": "",
-    "slug": "edit-this-page",
-    "path": "docs/snippets/edit-this-page.md",
-    "path1": "snippets"
-  },
-  {
     "title": "Neuroscience Theory - Overview",
     "slug": "theory-overview",
     "path": "docs/theory/theory-overview.md",

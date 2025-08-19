@@ -11,7 +11,7 @@
 import os
 from typing import List, Optional
 
-DEFAULT_IGNORE_DIRS = [".pytest_cache", ".github", ".git", "figures"]
+DEFAULT_IGNORE_DIRS = [".pytest_cache", ".github", ".git", "figures", "snippets"]
 DEFAULT_IGNORE_FILES = ["hierarchy.md"]
 
 

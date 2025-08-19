@@ -25,31 +25,16 @@ from tools.github_readme_sync.md import parse_frontmatter
 class FrontMatterValidator:
     """Validates front-matter fields according to RFC requirements."""
 
-    VALID_STATUS = [r"^completed$", r"^in-progress$", r"^none$"]
-    VALID_SIZE = [r"^small$", r"^medium$", r"^large$", r"^unknown$"]
-    VALID_RFC = [
-        r"^required$",
-        r"^optional$",
-        r"^not-required$",
-        r"^(?:https://)?github\.com/thousandbrainsproject/tbp\.monty/pull/\d+$",
-    ]
-    MAX_TAGS = 10
-    MAX_SKILLS = 10
-
     @classmethod
-    def _matches_valid_values(cls, value: str, valid_list: List[str]) -> bool:
-        """Check if value matches any item in valid_list (strings or regex patterns).
+    def _matches_pattern(cls, value: str, patterns: List[str]) -> bool:
+        """Check if value matches any regex pattern or exact string.
 
         Returns:
-            True if value matches any item in valid_list, False otherwise.
+            True if value matches any pattern, False otherwise.
         """
-        for valid_item in valid_list:
-            if valid_item.startswith("^") and valid_item.endswith("$"):
-                if re.match(valid_item, value):
-                    return True
-            elif value == valid_item:
-                return True
-        return False
+        return any(
+            re.match(p, value) if p.startswith("^") else value == p for p in patterns
+        )
 
     @classmethod
     def validate(cls, frontmatter: Dict) -> List[str]:
@@ -60,46 +45,41 @@ class FrontMatterValidator:
         """
         errors = []
 
-        if "status" in frontmatter:
-            if not cls._matches_valid_values(frontmatter["status"], cls.VALID_STATUS):
-                valid_options = ["completed", "in-progress", "none"]
+        validations = {
+            "status": (
+                [r"^completed$", r"^in-progress$", r"^none$"],
+                "completed, in-progress, none",
+            ),
+            "size": (
+                [r"^small$", r"^medium$", r"^large$", r"^unknown$"],
+                "small, medium, large, unknown",
+            ),
+            "rfc": (
+                [
+                    r"^required$",
+                    r"^optional$",
+                    r"^not-required$",
+                    r"^(?:https://)?github\.com/thousandbrainsproject/tbp\.monty/pull/\d+$",
+                ],
+                "required, optional, not-required or a GitHub pull request link",
+            ),
+        }
+
+        for field, (patterns, options) in validations.items():
+            if field in frontmatter and not cls._matches_pattern(
+                frontmatter[field], patterns
+            ):
                 errors.append(
-                    f"Invalid status '{frontmatter['status']}'. "
-                    f"Must be one of: {', '.join(valid_options)}"
-                )
-        if "size" in frontmatter:
-            if not cls._matches_valid_values(frontmatter["size"], cls.VALID_SIZE):
-                valid_options = ["small", "medium", "large", "unknown"]
-                errors.append(
-                    f"Invalid size '{frontmatter['size']}'. "
-                    f"Must be one of: {', '.join(valid_options)}"
+                    f"Invalid {field} '{frontmatter[field]}'. Must be one of: {options}"
                 )
 
-        if "rfc" in frontmatter:
-            rfc_value = frontmatter["rfc"]
-            if not cls._matches_valid_values(rfc_value, cls.VALID_RFC):
-                valid_options = ["required", "optional", "not-required"]
-                errors.append(
-                    f"Invalid rfc '{rfc_value}'. "
-                    f"Must be one of: {', '.join(valid_options)} or a GitHub "
-                    f"pull request link "
-                    f"([https://]github.com/thousandbrainsproject/tbp.monty/pull/X)"
-                )
-
-        if "tags" in frontmatter:
-            tags = parse_comma_separated_field(frontmatter["tags"])
-            if len(tags) > cls.MAX_TAGS:
-                errors.append(
-                    f"Too many tags ({len(tags)}). Maximum allowed: {cls.MAX_TAGS}"
-                )
-
-        if "skills" in frontmatter:
-            skills = parse_comma_separated_field(frontmatter["skills"])
-            if len(skills) > cls.MAX_SKILLS:
-                errors.append(
-                    f"Too many skills ({len(skills)}). "
-                    f"Maximum allowed: {cls.MAX_SKILLS}"
-                )
+        for field, max_count in [("tags", 10), ("skills", 10)]:
+            if field in frontmatter:
+                items = parse_comma_separated_field(frontmatter[field])
+                if len(items) > max_count:
+                    errors.append(
+                        f"Too many {field} ({len(items)}). Maximum allowed: {max_count}"
+                    )
 
         return errors
 
@@ -113,16 +93,12 @@ def parse_comma_separated_field(value) -> List[str]:
     Returns:
         List of cleaned string values
     """
-    if value is None or value == "":
+    if not value:
         return []
-    elif isinstance(value, list):
+    if isinstance(value, list):
         return [str(item).strip() for item in value if str(item).strip()]
-    elif isinstance(value, str):
-        items = [item.strip() for item in value.split(",")]
-        return [item for item in items if item]
-    else:
-        str_value = str(value).strip()
-        return [str_value] if str_value else []
+    items = str(value).split(",") if isinstance(value, str) else [str(value)]
+    return [item.strip() for item in items if item.strip()]
 
 
 def extract_frontmatter_from_file(file_path: str) -> Optional[Dict]:
@@ -169,13 +145,11 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
 
     entries = []
     errors_found = False
+    docs_path = Path(docs_dir)
+    folder_name = os.path.basename(docs_dir)
 
-    md_files = find_markdown_files(docs_dir)
-
-    for md_file_path in md_files:
+    for md_file_path in find_markdown_files(docs_dir):
         md_file = Path(md_file_path)
-        docs_path = Path(docs_dir)
-
         logging.info(f"Processing: {CYAN}{md_file.relative_to(docs_path)}{RESET}")
 
         frontmatter = extract_frontmatter_from_file(md_file_path)
@@ -184,42 +158,33 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
             continue
 
         validation_errors = FrontMatterValidator.validate(frontmatter)
-
         if validation_errors:
             errors_found = True
-            logging.error(
-                f"{RED}Validation errors in {md_file.relative_to(docs_path)}:{RESET}"
-            )
+            rel_path = md_file.relative_to(docs_path)
+            logging.error(f"{RED}Validation errors in {rel_path}:{RESET}")
             for error in validation_errors:
                 logging.error(f"  - {error}")
             continue
 
         relative_path = md_file.relative_to(docs_path)
-        folder_name = os.path.basename(docs_dir)
-        doc_path = f"{folder_name}/{relative_path}"
-
         entry = {
             "title": frontmatter.get("title", ""),
             "slug": slugify(md_file.stem),
-            "path": doc_path,
+            "path": f"{folder_name}/{relative_path}",
         }
 
         simple_fields = ["group", "size", "rfc", "status", "rfc-link"]
-        array_fields = ["tags", "skills", "implementation"]
-
         for field in simple_fields:
             if field in frontmatter and frontmatter[field] is not None:
                 entry[field] = frontmatter[field]
 
-        for field in array_fields:
+        for field in ["tags", "skills", "implementation"]:
             if field in frontmatter:
-                parsed_array = parse_comma_separated_field(frontmatter[field])
-                if parsed_array:
-                    entry[field] = parsed_array
+                parsed = parse_comma_separated_field(frontmatter[field])
+                if parsed:
+                    entry[field] = parsed
 
-        path_components = generate_path_components(md_file, docs_path)
-        entry.update(path_components)
-
+        entry.update(generate_path_components(md_file, docs_path))
         entries.append(entry)
 
     if errors_found:
@@ -235,11 +200,9 @@ def generate_index(docs_dir: str) -> str:
         Path to the generated index.json file.
     """
     output_file = os.path.join(docs_dir, "index.json")
-
     logging.info(f"Scanning docs directory: {CYAN}{docs_dir}{RESET}")
 
     entries = process_markdown_files(docs_dir)
-
     entries.sort(
         key=lambda x: (x.get("path1", ""), x.get("path2", ""), x.get("title", ""))
     )
@@ -249,7 +212,6 @@ def generate_index(docs_dir: str) -> str:
         json.dump(entries, f, indent=2, ensure_ascii=False)
 
     logging.info(
-        f"{GREEN}Generated index with {len(entries)} entries: "
-        f"{output_file}{RESET}"
+        f"{GREEN}Generated index with {len(entries)} entries: {output_file}{RESET}"
     )
     return output_file
