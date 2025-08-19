@@ -85,7 +85,7 @@ A GitHub action will process the documentation markdown files to build the centr
 
 Some of the fields will be checked for validity and fail the build if they are incorrect.  Notably, `status`, `estimated-scope` and `rfc` must have the correct values.
 
-A page in the future work section of the docs will list all the allowable fields for tags / skills / etc...
+A page in the documentation will describe all the allowable fields for tags / skills / etc...
 
 All values are optional and the downstream consumers should be able to function even if data is missing.
 
