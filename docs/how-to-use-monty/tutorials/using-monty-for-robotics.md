@@ -46,7 +46,7 @@ Both the location information and the ultrasound recordings are streamed to a la
 
 A custom sensor module can then extract features and poses from the ultrasound image. The pose could be extracted from the surface normal detected at borders in the patch. Features could summarize information about measured density and texture.
 
-For the first test, we plan to recognize 3D objects inside a phantom (a clear bag filled with fluid). For simplicity, the objects can be learned beforehand in simulation, similar to the Monty Meets World application. However, since we have 6DOF pose tracking of the sensor, we could also learn the objects directly from the ultrasound data in the real world.
+For the first test, we recognize 3D objects inside a phantom (a clear bag filled with fluid). For simplicity, the objects can be learned beforehand in simulation, similar to the Monty Meets World application. However, since we have 6DOF pose tracking of the sensor, we can also learn the objects directly from the ultrasound data in the real world.
 
 Monty can use three types of action output to recognize the sensed objects efficiently.
 1) It can move the patch over the full ultrasound image, akin to moving it over the full camera image from the iPad.
