@@ -34,7 +34,6 @@
 \b[Ww]andb\b
 \bactuations\b
 \baffordances\b
-\bagentic\b
 \bANNs?\b
 \bAPIs\b
 \bArcimboldo\b
