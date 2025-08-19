@@ -11,6 +11,7 @@
 import json
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -24,11 +25,31 @@ from tools.github_readme_sync.md import parse_frontmatter
 class FrontMatterValidator:
     """Validates front-matter fields according to RFC requirements."""
 
-    VALID_STATUS = ["completed", "in-progress", "none"]
-    VALID_SIZE = ["small", "medium", "large", "unknown"]
-    VALID_RFC = ["required", "optional", "not-required"]
+    VALID_STATUS = [r"^completed$", r"^in-progress$", r"^none$"]
+    VALID_SIZE = [r"^small$", r"^medium$", r"^large$", r"^unknown$"]
+    VALID_RFC = [
+        r"^required$",
+        r"^optional$",
+        r"^not-required$",
+        r"^(?:https://)?github\.com/thousandbrainsproject/tbp\.monty/pull/\d+$",
+    ]
     MAX_TAGS = 10
     MAX_SKILLS = 10
+
+    @classmethod
+    def _matches_valid_values(cls, value: str, valid_list: List[str]) -> bool:
+        """Check if value matches any item in valid_list (strings or regex patterns).
+
+        Returns:
+            True if value matches any item in valid_list, False otherwise.
+        """
+        for valid_item in valid_list:
+            if valid_item.startswith("^") and valid_item.endswith("$"):
+                if re.match(valid_item, value):
+                    return True
+            elif value == valid_item:
+                return True
+        return False
 
     @classmethod
     def validate(cls, frontmatter: Dict) -> List[str]:
@@ -40,23 +61,29 @@ class FrontMatterValidator:
         errors = []
 
         if "status" in frontmatter:
-            if frontmatter["status"] not in cls.VALID_STATUS:
+            if not cls._matches_valid_values(frontmatter["status"], cls.VALID_STATUS):
+                valid_options = ["completed", "in-progress", "none"]
                 errors.append(
                     f"Invalid status '{frontmatter['status']}'. "
-                    f"Must be one of: {', '.join(cls.VALID_STATUS)}"
+                    f"Must be one of: {', '.join(valid_options)}"
                 )
         if "size" in frontmatter:
-            if frontmatter["size"] not in cls.VALID_SIZE:
+            if not cls._matches_valid_values(frontmatter["size"], cls.VALID_SIZE):
+                valid_options = ["small", "medium", "large", "unknown"]
                 errors.append(
                     f"Invalid size '{frontmatter['size']}'. "
-                    f"Must be one of: {', '.join(cls.VALID_SIZE)}"
+                    f"Must be one of: {', '.join(valid_options)}"
                 )
 
         if "rfc" in frontmatter:
-            if frontmatter["rfc"] not in cls.VALID_RFC:
+            rfc_value = frontmatter["rfc"]
+            if not cls._matches_valid_values(rfc_value, cls.VALID_RFC):
+                valid_options = ["required", "optional", "not-required"]
                 errors.append(
-                    f"Invalid rfc '{frontmatter['rfc']}'. "
-                    f"Must be one of: {', '.join(cls.VALID_RFC)}"
+                    f"Invalid rfc '{rfc_value}'. "
+                    f"Must be one of: {', '.join(valid_options)} or a GitHub "
+                    f"pull request link "
+                    f"([https://]github.com/thousandbrainsproject/tbp.monty/pull/X)"
                 )
 
         if "tags" in frontmatter:
