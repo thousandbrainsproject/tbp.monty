@@ -11,97 +11,14 @@
 import json
 import logging
 import os
-import re
 from pathlib import Path
 from typing import Dict, List
 
 from slugify import slugify
 
-from tools.github_readme_sync.colors import CYAN, GREEN, RED, RESET, YELLOW
+from tools.github_readme_sync.colors import CYAN, GREEN, RESET, YELLOW
 from tools.github_readme_sync.file import find_markdown_files, read_file_content
 from tools.github_readme_sync.md import parse_frontmatter
-
-COMMA_SEPARATED_FIELDS = ["tags", "skills", "owner"]
-TEXT_FIELDS = ["estimated-scope", "rfc", "status"]
-
-
-class FrontMatterValidator:
-    """Validates front-matter fields according to RFC requirements."""
-
-    @classmethod
-    def _matches_pattern(cls, value: str, patterns: List[str]) -> bool:
-        """Check if value matches any regex pattern or exact string.
-
-        Returns:
-            True if value matches any pattern, False otherwise.
-        """
-        return any(
-            re.match(p, value) if p.startswith("^") else value == p for p in patterns
-        )
-
-    @classmethod
-    def validate(cls, frontmatter: Dict) -> List[str]:
-        """Validate front-matter and return list of errors.
-
-        Returns:
-            List of validation error messages.
-        """
-        errors = []
-
-        validations = {
-            "status": (
-                [r"^completed$", r"^in-progress$", r"^none$"],
-                "completed, in-progress, none",
-            ),
-            "size": (
-                [r"^small$", r"^medium$", r"^large$", r"^unknown$"],
-                "small, medium, large, unknown",
-            ),
-            "rfc": (
-                [
-                    r"^required$",
-                    r"^optional$",
-                    r"^not-required$",
-                    r"^(?:https://)?github\.com/thousandbrainsproject/tbp\.monty/pull/\d+$",
-                ],
-                "required, optional, not-required or a GitHub pull request link",
-            ),
-        }
-
-        for field, (patterns, options) in validations.items():
-            if field in frontmatter and not cls._matches_pattern(
-                frontmatter[field], patterns
-            ):
-                errors.append(
-                    f"Invalid {field} '{frontmatter[field]}'. Must be one of: {options}"
-                )
-
-        for field, max_count in [("tags", 10), ("skills", 10)]:
-            if field in frontmatter:
-                items = parse_comma_separated_field(frontmatter[field])
-                if len(items) > max_count:
-                    errors.append(
-                        f"Too many {field} ({len(items)}). Maximum allowed: {max_count}"
-                    )
-
-        return errors
-
-
-def parse_comma_separated_field(value) -> List[str]:
-    """Parse a field that might be comma-separated or already a list.
-
-    Args:
-        value: Field value (string, list, or other)
-
-    Returns:
-        List of cleaned string values
-    """
-    if not value:
-        return []
-    if isinstance(value, list):
-        return [str(item).strip() for item in value if str(item).strip()]
-    items = str(value).split(",") if isinstance(value, str) else [str(value)]
-    return [item.strip() for item in items if item.strip()]
 
 
 def generate_path_components(file_path: Path, docs_root: Path) -> Dict[str, str]:
@@ -115,7 +32,7 @@ def generate_path_components(file_path: Path, docs_root: Path) -> Dict[str, str]
 
     path_components = {}
     for i, part in enumerate(parts):
-        path_components[f"path{i+1}"] = part
+        path_components[f"path{i + 1}"] = part
 
     return path_components
 
@@ -133,7 +50,6 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
         raise ValueError(f"Directory {docs_dir} does not exist")
 
     entries = []
-    errors_found = False
     docs_path = Path(docs_dir)
     folder_name = os.path.basename(docs_dir)
 
@@ -152,15 +68,6 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
             logging.warning(f"{YELLOW}No front-matter found in {md_file}{RESET}")
             continue
 
-        validation_errors = FrontMatterValidator.validate(frontmatter)
-        if validation_errors:
-            errors_found = True
-            rel_path = md_file.relative_to(docs_path)
-            logging.error(f"{RED}Validation errors in {rel_path}:{RESET}")
-            for error in validation_errors:
-                logging.error(f"  - {error}")
-            continue
-
         relative_path = md_file.relative_to(docs_path)
         entry = {
             "title": frontmatter.get("title", ""),
@@ -168,21 +75,16 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
             "path": f"{folder_name}/{relative_path}",
         }
 
-        for field in TEXT_FIELDS:
-            if field in frontmatter and frontmatter[field] is not None:
-                entry[field] = frontmatter[field]
-
-        for field in COMMA_SEPARATED_FIELDS:
-            if field in frontmatter:
-                parsed = parse_comma_separated_field(frontmatter[field])
-                if parsed:
-                    entry[field] = parsed
+        entry.update(
+            {
+                field: value
+                for field, value in frontmatter.items()
+                if field not in ["title"] and value is not None
+            }
+        )
 
         entry.update(generate_path_components(md_file, docs_path))
         entries.append(entry)
-
-    if errors_found:
-        raise ValueError("Validation errors found. Please fix the front-matter issues.")
 
     return entries
 
