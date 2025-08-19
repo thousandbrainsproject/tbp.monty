@@ -30,22 +30,19 @@ def find_markdown_files(
     Returns:
         List of full paths to markdown files
     """
-    if ignore_dirs is None:
-        ignore_dirs = DEFAULT_IGNORE_DIRS.copy()
-    if ignore_files is None:
-        ignore_files = DEFAULT_IGNORE_FILES.copy()
+    ignore_dirs = ignore_dirs or DEFAULT_IGNORE_DIRS
+    ignore_files = ignore_files or DEFAULT_IGNORE_FILES
 
     md_files = []
     for root, _, files in os.walk(folder):
-        # Skip directories that should be ignored
         if any(ignore_dir in root for ignore_dir in ignore_dirs):
             continue
 
-        # Find markdown files, excluding ignored files
-        for file in files:
-            if file.endswith(".md") and file not in ignore_files:
-                md_files.append(os.path.join(root, file))
-
+        md_files.extend(
+            os.path.join(root, file)
+            for file in files
+            if file.endswith(".md") and file not in ignore_files
+        )
     return md_files
 
 
@@ -60,3 +57,4 @@ def read_file_content(file_path: str) -> str:
     """
     with open(file_path, "r", encoding="utf-8") as f:
         return f.read()
+

@@ -13,7 +13,7 @@ import logging
 import os
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from slugify import slugify
 
@@ -101,20 +101,6 @@ def parse_comma_separated_field(value) -> List[str]:
     return [item.strip() for item in items if item.strip()]
 
 
-def extract_frontmatter_from_file(file_path: str) -> Optional[Dict]:
-    """Extract front-matter from a markdown file.
-
-    Returns:
-        Dictionary containing front-matter or None if error occurred.
-    """
-    try:
-        content = read_file_content(file_path)
-        return parse_frontmatter(content)
-    except (OSError, UnicodeDecodeError):
-        logging.exception(f"Error reading {file_path}")
-        return None
-
-
 def generate_path_components(file_path: Path, docs_root: Path) -> Dict[str, str]:
     """Generate path components for a file relative to docs root.
 
@@ -152,8 +138,14 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
         md_file = Path(md_file_path)
         logging.info(f"Processing: {CYAN}{md_file.relative_to(docs_path)}{RESET}")
 
-        frontmatter = extract_frontmatter_from_file(md_file_path)
-        if frontmatter is None:
+        try:
+            content = read_file_content(md_file_path)
+            frontmatter = parse_frontmatter(content)
+        except (OSError, UnicodeDecodeError):
+            logging.exception(f"Error reading {md_file_path}")
+            continue
+
+        if not frontmatter:
             logging.warning(f"{YELLOW}No front-matter found in {md_file}{RESET}")
             continue
 
