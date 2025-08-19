@@ -33,6 +33,9 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 
 The first example of Monty moving its sensors in the real-world.
 
+
+Follow the [LEGO tutorial](../how-to-use-monty/tutorials/using-monty-for-robotics#example-3-lego-based-robot) to try this out yourself
+
 See the [everything_is_awesome repository](https://github.com/thousandbrainsproject/everything_is_awesome) for more information.
 
 Watch the video:
@@ -55,6 +58,8 @@ Watch the video:
 ![](../figures/community/ultrasound_robot.jpg)
 
 Using sensorimotor AI to guide ultrasound.
+
+Follow the [ultrasound tutorial](../how-to-use-monty/tutorials/using-monty-for-robotics#example-2-ultrasound) to try this out yourself
 
 See the [ultrasound_perception repository](https://github.com/thousandbrainsproject/ultrasound_perception) for more information.
 
