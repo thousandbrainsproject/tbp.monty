@@ -15,6 +15,7 @@
 \b[Hh]ackathon\b
 \b[hH]eterarchy\b
 \b[hH]ippocampal\b
+\b[Hh]yperparameters?\b
 \b[Ii]nitializer\b
 \b[Mm]inicolumns?\b
 \b[mM]iniconda\b
@@ -66,6 +67,7 @@
 \bDomnisoru\b
 \bDrost\b
 \bEitan\b
+\bexcitatory\b
 \bElsevier\b
 \bentorhinal\b
 \beval\b
@@ -87,6 +89,7 @@
 \bGuillery\b
 \bHafner\b
 \bHebbian\b
+\bHedrick\b
 \bheterarchical\b
 \bHopfield\b
 \bhref\b
@@ -102,6 +105,7 @@
 \bKinkhabwala\b
 \bKlukas\b
 \bKnudstrup\b
+\bKomiyama\b
 \bLeadholm\b
 \blearnable\b
 \bLEGOs\b
@@ -128,6 +132,7 @@
 \bO'Keefe\b
 \boverconstrained\b
 \bparallelization\b
+\bparameterizing\b
 \bPennartz\b
 \bperceptrons\b
 \bprechecks\b
@@ -140,8 +145,7 @@
 \brdme\b
 \breimplements?\b
 \brepo\b
-\bresampled?\b
-\bresampling\b
+\b[Rr]esampl(e|ed|ing)?\b
 \b[Ss]accades?\b
 \bsaccading\b
 \bSampath\b
@@ -154,16 +158,19 @@
 \bskillset\b
 \bSMs?\b
 \bSpelke\b
+\bSpolsky\b
 \bStanovich\b
 \bsubclassed\b
 \bsubcomponents\b
 \bsubcortically\b
 \bsubdocuments\b
 \bsubfolders\b
+\bsubtasks\b
 \bsubstep\b
 \bsync'd\b
 \bSync'ing\b
 \bSzegedy\b
+\bTakaki\b
 \bTGZ|tgz\b
 \bThrun\b
 \btimeseries\b
@@ -174,11 +181,13 @@
 \bUsrey\b
 \butils\b
 \bViviane\b
+\bvivo\b
 \bvon\b
 \bvoxel\b
 \bvoxels\b
 \bVSCode\b
 \bWalkthrough\b
+\bWardley\b
 \bwandb\b
 \bworldimages\b
 \bxyz|XYZ\b
