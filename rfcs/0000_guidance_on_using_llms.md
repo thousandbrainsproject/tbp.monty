@@ -3,7 +3,7 @@
 
 # Motivation
 
-LLM code-assistants have the potential to improve the productivity of coders. At the same time, they can introduce non-intuitive drawbacks. The aim here is to describe these in more detail, and agree on what guidance we should ask of both ourselves and the community.
+LLM code-assistants have the potential to improve the productivity of coders. More generally, there is optimism that AI tools might accelerate science. At the same time, their use can introduce non-intuitive drawbacks. The aim of this RFC is to describe these in more detail, and agree on what guidance we should ask of both ourselves and the community.
 
 
 # Guidance on the Use of AI/LLMs
@@ -46,4 +46,10 @@ Below we provide further guidance on some edge cases.
 #### Agentic LLMs 
 - The issues highlighted mean that we ask that you do *not* use agentic workflows that write large amounts of code in an automated way, unless as a means of automating a simple task.
 - An example of a reasonable use of an agentic LLM setup would be widespread changes required to reflect an update in terminology. For example, in a [recent PR](https://github.com/thousandbrainsproject/tbp.tbs_sensorimotor_intelligence/pull/55/files), the order of two figures in our paper was swapped, requiring many small changes to the code and documentation. This was rapidly automated with LLM assistance. We then verified the correctness of the implementation after these changes.
-- On the other hand, please do not pass a Future Work item description into an LLM, and then open a PR with all of the code it generated. These kinds of contributions unfortunately slow down, rather than accelerate, our shared mission at the Thousand Brains Project.
+- On the other hand, please do not pass a Future Work item description into an LLM, and then open a PR with all of the code it generated. These kinds of contributions slow down, rather than accelerate, our shared mission at the Thousand Brains Project.
+
+## Contributing on the Forums
+
+- The TBP Discourse forums are an excellent setting to discuss nascent ideas.
+- In these discussions, we would love to engage with you and your ideas. As such, we ask that you not post the outputs of LLMs as if these were your own ideas.
+- If you would like to quote or refer to a conversation you have had with an LLM, please just indicate this clearly.
