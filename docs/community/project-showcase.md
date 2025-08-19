@@ -2,11 +2,11 @@
 title: Project Showcase
 description: A list of projects that utilize Monty or the TBT.
 ---
-This page showcases some projects that were realized using the Monty code-base. If you have a project that you would like to see featured here, simply create a PR adding it to this page. 
+This page showcases some projects that were realized using the Monty code-base. If you have a project that you would like to see featured here, simply create a PR adding it to this page.
 
 Please make sure your project is well documented, including a README on how to run it and ideally some images or video showcasing it. Feel free to also include a video or image here. Please also keep your description on this page short and concise.
 
-## Monty for Object Detection With the iPad Camera
+# Monty for Object Detection With the iPad Camera
 
 [block:embed]
 {
@@ -21,16 +21,59 @@ Please make sure your project is well documented, including a README on how to r
 }
 [/block]
 
+
 This is the first real-world demo of Monty the TBP team came up with. We used the iPad camera to take an image of an object. Monty then moves a small patch over this image and tries to recognize the object.
 
 See the [monty_lab project folder](https://github.com/thousandbrainsproject/monty_lab/tree/main/monty_meets_world) for more details.
 
-## LEGO Robot
+
+# LEGO Robot
 
 ![](../figures/community/lego_robot.png)
 
 The first example of Monty moving its sensors in the real-world.
 
+
+Follow the [LEGO tutorial](../how-to-use-monty/tutorials/using-monty-for-robotics#example-3-lego-based-robot) to try this out yourself
+
 See the [everything_is_awesome repository](https://github.com/thousandbrainsproject/everything_is_awesome) for more information.
 
+Watch the video:
 
+[block:embed]
+{
+  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2F_u7STtACQ50%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D_u7STtACQ50&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2F_u7STtACQ50%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"640\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
+  "url": "https://www.youtube.com/watch?v=_u7STtACQ50",
+  "title": "2025/05 - Robot Hackathon Presentations",
+  "favicon": "https://www.youtube.com/favicon.ico",
+  "image": "https://i.ytimg.com/vi/_u7STtACQ50/hqdefault.jpg",
+  "provider": "https://www.youtube.com/",
+  "href": "https://www.youtube.com/watch?v=_u7STtACQ50",
+  "typeOfEmbed": "youtube"
+}
+[/block]
+
+# Ultrasound Perception
+
+![](../figures/community/ultrasound_robot.jpg)
+
+Using sensorimotor AI to guide ultrasound.
+
+Follow the [ultrasound tutorial](../how-to-use-monty/tutorials/using-monty-for-robotics#example-2-ultrasound) to try this out yourself
+
+See the [ultrasound_perception repository](https://github.com/thousandbrainsproject/ultrasound_perception) for more information.
+
+Watch the video:
+
+[block:embed]
+{
+  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2F-zrq0oTJudo%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D-zrq0oTJudo&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2F-zrq0oTJudo%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
+  "url": "https://www.youtube.com/watch?v=-zrq0oTJudo",
+  "title": "2025-05 Ultrasound Presentation and Demo",
+  "favicon": "https://www.youtube.com/favicon.ico",
+  "image": "https://i.ytimg.com/vi/-zrq0oTJudo/hqdefault.jpg",
+  "provider": "https://www.youtube.com/",
+  "href": "https://www.youtube.com/watch?v=-zrq0oTJudo",
+  "typeOfEmbed": "youtube"
+}
+[/block]
