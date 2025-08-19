@@ -198,4 +198,4 @@ def some_other_method(...) -> MjsBody:
    ...
 ```
 
-This would be also good place to use newtypes to define _input_ argument types like quaternion tuples that have a particular order so that callers don't pass the wrong values into these external library functions. See [the nominal type guidance](#nominal-typing-should-be-used-to-name-concepts-using-types) above.
+This would also be a good place to use newtypes to define _input_ argument types like quaternion tuples that have a particular order so that callers don't pass the wrong values into these external library functions. See [the nominal type guidance](#nominal-typing-should-be-used-to-name-concepts-using-types) above.
