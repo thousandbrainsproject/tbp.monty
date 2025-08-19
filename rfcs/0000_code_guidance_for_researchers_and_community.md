@@ -3,17 +3,13 @@
 
 # Summary
 
-This RFC proposes some high-level guidance for how researchers and community members can contribute code to Monty.
+This RFC proposes some guidance on the workflow that TBP researchers (or community members doing research) should follow when contributing code to Monty.
 
 # Motivation
 
-We have recently identified several areas where additional guidance would be useful for researchers and community members when contributing to Monty's code-base. This includes an updated workflow for developing new research ideas in code, as well as guidance on the use of AI/large-language model (LLM) tools in research contributions.
+Research benefits from rapidly exploring new ideas and features. At the same time, we want to ensure that Monty is a stable platform built on high-quality code. In [RFC 14](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0014_conducting_research_while_building_a_stable_platform.md), we established a workflow for integrating code into Monty that balances these two objectives. The intent of this RFC is to provide additional, concrete guidelines to realize this new workflow and ensure it is successful.
 
-Workflows: Research benefits from rapidly exploring new ideas and features. At the same time, we want to ensure that Monty is a stable platform built on high-quality code. In [RFC 14](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0014_conducting_research_while_building_a_stable_platform.md), we established a workflow for integrating code into Monty that balances these two objectives. The intent of this RFC is to provide additional, concrete guidelines to realize this new workflow and ensure it is successful.
-
-Use of AI/LLMs: LLM code-assistants have the potential to improve the productivity of coders. At the same time, they can introduce non-intuitive drawbacks. The aim here is to describe these in more detail, and agree on what guidance we should ask of both ourselves and the community.
-
-When this RFC is merged, the intent is to transfer most of its contents into an updated page in our documentation.
+When this RFC is merged, the intent is to transfer most of its contents into an updated page(s) in our documentation.
 
 # Definitions
 
@@ -87,7 +83,7 @@ Below is a recommended workflow for researchers; however, it is guidance only, a
 
 ### Before Starting Any Code Work
 
-We're very excited to have contributions from the community to `tbp.monty`. Before you begin any significant work on code, we first ask that you follow the below guidelines:
+We're very excited to have contributions from the community to `tbp.monty`. Before you begin any significant work on code that is of a research nature, we first ask that you follow the below guidelines:
 - Please contact us (for example, by creating a post [on the Discourse forums](https://thousandbrains.discourse.group/)) if you have identified one of our existing [Future Work](https://thousandbrainsproject.readme.io/docs/project-roadmap) items that you would like to work on. Reaching out to us directly is a great way to begin the discussion about possible approaches you are considering. This can also help save time in case a Future Work item is no longer relevant, or has changed in nature since the Readme.com documentation was last updated.
 - The next step for any major code change is to then propose your idea in the form of [the RFC process](https://thousandbrainsproject.readme.io/docs/request-for-comments-rfc).
 
@@ -98,21 +94,3 @@ Following the above guidance will ensure you do not spend a large amount of time
 If you are a member of the community working on a research idea, then we would recommend you also follow the above guidance under [Workflow for TBP Researchers: from Research Prototype to Implementation Project](#workflow-for-tbp-researchers-from-research-prototype-to-implementation-project). The main additional points to highlight are:
 - When opening the fork, you should set yourself as the owner (it will not be possible to set the Thousand Brains Project as the owner).
 - Please tag a Maintainer of the TBP when making atomic PRs into your feature branch. This will help get involvement from the TBP research team at an early stage of your work.
-
-# Guidance on the Use of AI/LLMs
-
-## Writing RFCs
-
-We ask that all RFCs are written by you, and that you refrain from using Large Language Models (LLMs) like ChatGPT in this process. Some of our motivations for this are:
-- We want to get a clear understanding of your solution, and we have found that LLMs give poor, if approximately correct, RFC proposals. This is particularly the case because the work of the TBP falls very much in the "out of training distribution" domain.
-- When we review RFCs written by LLMs, it often ends up taking more time both for us, and for you, so it is much better if you write them yourself.
-- Please note that this does not apply to assistive technology such as grammar checkers, which we understand you might find helpful in copy-editing your RFC. If you need to use a more advanced AI tool for a specific reason, we ask that you reach out to us directly to discuss this beforehand.
-
-
-## Writing and Contributing Code
-
-In principle, you may use LLMs, such as code-assistants, when writing code that you contribute to the Thousand Brains Project. However, we ask that you do so in a limited manner, being mindful of the below issues:
-- As with RFCs, we have found that our code-base is out-of-distribution, and the quality of code written by LLMs, while superficially correct, often is not. Such code can take a great deal of time to review and debug, which can be avoided when it is written with intent by a person.
-- There are non-trivial legal concerns around contamination of code when using LLMs. See for example, [this recent study](https://arxiv.org/html/2408.02487v1). As such, while using an LLM to auto-complete variable names and other simple speed-ups can be appropriate, multi-line sections of algorithmic code should not be written by an LLM.
-
-The above guidance means that we ask that you do *not* use agentic workflows that write large amounts of code in an automated way, unless as a means of automating a simple task. For example, please do not pass a Future Work item description into an LLM, and then open a PR with all of the code it generated. These kinds of contributions unfortunately slow-down, rather than accelerate, our shared mission at the Thousand Brains Project. On the other hand, we would love to see contributions from yourself.
