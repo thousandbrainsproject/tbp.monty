@@ -25,29 +25,44 @@ class TestGenerateIndex(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
 
-    def test_generate_index_with_frontmatter(self):
-        markdown_content = """---
-title: "Test Document"
-status: "completed"
-rfc: "optional"
-tags: "tag1, tag2"
-skills: "skill1, skill2"
-owner: "test-owner"
-estimated-scope: "small"
----
+    def _create_markdown_file(
+        self,
+        frontmatter_fields: str,
+        filename: str = "test-doc.md",
+        subdir: str = "category1/subcategory2",
+    ) -> Path:
+        """Helper method to create markdown files with front matter.
 
-# Test Document
+        Args:
+            frontmatter_fields: The frontmatter fields (without --- delimiters)
+            filename: Name of the markdown file
+            subdir: Subdirectory path relative to temp_dir
 
-This is a test document with front matter.
-"""
-
-        subdir_path = Path(self.temp_dir) / "category1" / "subcategory2"
+        Returns:
+            Path to the created file
+        """
+        subdir_path = Path(self.temp_dir) / subdir
         subdir_path.mkdir(parents=True, exist_ok=True)
 
-        md_file_path = subdir_path / "test-doc.md"
-        with open(md_file_path, "w", encoding="utf-8") as f:
-            f.write(markdown_content)
+        content = f"---\n{frontmatter_fields}\n---\n"
 
+        md_file_path = subdir_path / filename
+        with open(md_file_path, "w", encoding="utf-8") as f:
+            f.write(content)
+
+        return md_file_path
+
+    def test_generate_index_with_frontmatter(self):
+        frontmatter = (
+            'status: "completed"\n'
+            'rfc: "optional"\n'
+            'tags: "tag1, tag2"\n'
+            'skills: "skill1, skill2"\n'
+            'owner: "test-owner"\n'
+            'estimated-scope: "small"'
+        )
+
+        self._create_markdown_file(frontmatter)
         index_file_path = generate_index(self.temp_dir)
 
         self.assertTrue(os.path.exists(index_file_path))
@@ -59,7 +74,6 @@ This is a test document with front matter.
 
         entry = index_data[0]
 
-        self.assertEqual(entry["title"], "Test Document")
         self.assertEqual(entry["status"], "completed")
         self.assertEqual(entry["rfc"], "optional")
         self.assertEqual(entry["tags"], ["tag1", "tag2"])
@@ -70,6 +84,68 @@ This is a test document with front matter.
         self.assertTrue(entry["path"].endswith("/category1/subcategory2/test-doc.md"))
         self.assertEqual(entry["path1"], "category1")
         self.assertEqual(entry["path2"], "subcategory2")
+
+    def test_validation_failures_for_restricted_fields(self):
+        """Test that invalid values for restricted fields cause validation failures."""
+        test_cases = [
+            ("status", "invalid"),
+            ("status", "complete"),
+            ("size", "tiny"),
+            ("size", "huge"),
+            ("rfc", "maybe"),
+            ("rfc", "http://example.com"),
+            ("rfc", "github.com/wrong/repo/pull/123"),
+        ]
+
+        for field, invalid_value in test_cases:
+            with self.subTest(field=field, invalid_value=invalid_value):
+                frontmatter = f'{field}: "{invalid_value}"'
+                self._create_markdown_file(frontmatter)
+
+                with self.assertRaises(ValueError) as context:
+                    generate_index(self.temp_dir)
+
+                self.assertIn("Validation errors found", str(context.exception))
+
+    def test_validation_failures_for_field_count_limits(self):
+        """Test that exceeding field count limits causes validation failures."""
+        test_cases = [
+            ("tags", 11),
+            ("skills", 15),
+        ]
+
+        for field, count in test_cases:
+            with self.subTest(field=field, count=count):
+                items = ", ".join([f"item{i}" for i in range(count)])
+                frontmatter = f'{field}: "{items}"'
+                self._create_markdown_file(frontmatter)
+
+                with self.assertRaises(ValueError) as context:
+                    generate_index(self.temp_dir)
+
+                self.assertIn("Validation errors found", str(context.exception))
+
+    def test_valid_rfc_github_links(self):
+        """Test that valid GitHub PR links are accepted for rfc field."""
+        test_cases = [
+            "https://github.com/thousandbrainsproject/tbp.monty/pull/123",
+            "github.com/thousandbrainsproject/tbp.monty/pull/456",
+        ]
+
+        for i, rfc_value in enumerate(test_cases):
+            with self.subTest(rfc_value=rfc_value):
+                frontmatter = f'rfc: "{rfc_value}"'
+                self._create_markdown_file(frontmatter, filename=f"test-doc-{i}.md")
+
+        index_file_path = generate_index(self.temp_dir)
+
+        with open(index_file_path, "r", encoding="utf-8") as f:
+            index_data = json.load(f)
+
+        self.assertEqual(len(index_data), len(test_cases))
+
+        for i, entry in enumerate(index_data):
+            self.assertEqual(entry["rfc"], test_cases[i])
 
 
 if __name__ == "__main__":
