@@ -37,15 +37,15 @@ Specifically targeted for the future work section.
 
 |                key|values|
 |------------------:|:-----|
-| `tags`            | infrastructure, refactoring|
-| `estimated-scope` | small &#124; medium &#124; large &#124; unknown|
-| `rfc`             | required &#124; optional &#124; not-required  &#124; URL to RFC|
+| `tags`            | `infrastructure`, `refactoring`|
+| `estimated-scope` | `small` &#124; `medium` &#124; `large` &#124; `unknown`|
+| `rfc`             | `required` &#124; `optional` &#124; `not-required`  &#124; `URL to RFC`|
 
 And these values after that work has begun:
 
 |              key|values|
 |----------------:|:-----|
-| `status`        | completed &#124; in-progress &#124; none|
+| `status`        | `completed` &#124; `in-progress` |
 | `owner`         | `codeallthethingz`, `vkakerbeck`|
 
 
