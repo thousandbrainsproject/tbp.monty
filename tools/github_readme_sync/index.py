@@ -21,6 +21,9 @@ from tools.github_readme_sync.colors import CYAN, GREEN, RED, RESET, YELLOW
 from tools.github_readme_sync.file import find_markdown_files, read_file_content
 from tools.github_readme_sync.md import parse_frontmatter
 
+COMMA_SEPARATED_FIELDS = ["tags", "skills", "owner"]
+TEXT_FIELDS = ["estimated-scope", "rfc", "status"]
+
 
 class FrontMatterValidator:
     """Validates front-matter fields according to RFC requirements."""
@@ -165,12 +168,11 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
             "path": f"{folder_name}/{relative_path}",
         }
 
-        simple_fields = ["group", "size", "rfc", "status", "rfc-link"]
-        for field in simple_fields:
+        for field in TEXT_FIELDS:
             if field in frontmatter and frontmatter[field] is not None:
                 entry[field] = frontmatter[field]
 
-        for field in ["tags", "skills", "implementation"]:
+        for field in COMMA_SEPARATED_FIELDS:
             if field in frontmatter:
                 parsed = parse_comma_separated_field(frontmatter[field])
                 if parsed:
