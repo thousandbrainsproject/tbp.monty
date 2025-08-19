@@ -27,9 +27,8 @@ class TestGenerateIndex(unittest.TestCase):
 
     def _create_markdown_file(
         self,
+        subdir: str,
         frontmatter_fields: str,
-        filename: str = "test-doc.md",
-        subdir: str = "category1/subcategory2",
     ) -> Path:
         """Helper method to create markdown files with front matter.
 
@@ -44,25 +43,18 @@ class TestGenerateIndex(unittest.TestCase):
         subdir_path = Path(self.temp_dir) / subdir
         subdir_path.mkdir(parents=True, exist_ok=True)
 
-        content = f"---\n{frontmatter_fields}\n---\n"
+        content = f"---\ntitle: test doc\n{frontmatter_fields}\n---\n"
 
-        md_file_path = subdir_path / filename
+        md_file_path = subdir_path / "test-doc.md"
         with open(md_file_path, "w", encoding="utf-8") as f:
             f.write(content)
 
         return md_file_path
 
     def test_generate_index_with_frontmatter(self):
-        frontmatter = (
-            'status: "completed"\n'
-            'rfc: "optional"\n'
-            'tags: "tag1, tag2"\n'
-            'skills: "skill1, skill2"\n'
-            'owner: "test-owner"\n'
-            'estimated-scope: "small"'
-        )
+        frontmatter = 'status: "completed"\n'
 
-        self._create_markdown_file(frontmatter)
+        self._create_markdown_file(subdir="category1", frontmatter_fields=frontmatter)
         index_file_path = generate_index(self.temp_dir)
 
         self.assertTrue(os.path.exists(index_file_path))
@@ -75,15 +67,36 @@ class TestGenerateIndex(unittest.TestCase):
         entry = index_data[0]
 
         self.assertEqual(entry["status"], "completed")
-        self.assertEqual(entry["rfc"], "optional")
-        self.assertEqual(entry["tags"], "tag1, tag2")
-        self.assertEqual(entry["skills"], "skill1, skill2")
-        self.assertEqual(entry["owner"], "test-owner")
-        self.assertEqual(entry["estimated-scope"], "small")
-        self.assertEqual(entry["slug"], "test-doc")
-        self.assertTrue(entry["path"].endswith("/category1/subcategory2/test-doc.md"))
+        self.assertEqual(entry["title"], "test doc")
+        self.assertTrue(entry["path"].endswith("/category1/test-doc.md"))
         self.assertEqual(entry["path1"], "category1")
-        self.assertEqual(entry["path2"], "subcategory2")
+        self.assertNotIn("path2", entry)
+        self.assertEqual(entry["slug"], "test-doc")
+
+    def test_generate_index_with_subdirs(self):
+        frontmatter = 'status: "completed"\n'
+
+        self._create_markdown_file(
+            subdir="category/subcategory/subsubcategory", frontmatter_fields=frontmatter
+        )
+        index_file_path = generate_index(self.temp_dir)
+
+        self.assertTrue(os.path.exists(index_file_path))
+
+        with open(index_file_path, "r", encoding="utf-8") as f:
+            index_data = json.load(f)
+
+        self.assertEqual(len(index_data), 1)
+
+        entry = index_data[0]
+
+        self.assertEqual(entry["status"], "completed")
+        self.assertTrue(
+            entry["path"].endswith("/category/subcategory/subsubcategory/test-doc.md")
+        )
+        self.assertEqual(entry["path1"], "category")
+        self.assertEqual(entry["path2"], "subcategory")
+        self.assertEqual(entry["path3"], "subsubcategory")
 
 
 
