@@ -9,7 +9,7 @@ This RFC proposes some guidance on the workflow that TBP researchers (or communi
 
 Research benefits from rapidly exploring new ideas and features. At the same time, we want to ensure that Monty is a stable platform built on high-quality code. In [RFC 14](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0014_conducting_research_while_building_a_stable_platform.md), we established a workflow for integrating code into Monty that balances these two objectives. The intent of this RFC is to provide additional, concrete guidelines to realize this new workflow and ensure it is successful.
 
-When this RFC is merged, the intent is to transfer most of its contents into an updated page(s) in our documentation.
+When this RFC is merged, the intent is to transfer most of its contents into an updated page (or pages) in our documentation.
 
 # Definitions
 
@@ -18,7 +18,7 @@ When this RFC is merged, the intent is to transfer most of its contents into an 
 
 # Guidance on Research Workflows
 
-As earlier noted, the following guidance is designed to complement [RFC 14 Conducting Research While Building a Stable Platform](https://github.com/thousandbrainsproject/tbp.monty/pull/405/files). Please refer to that RFC first if you are not familiar with its contents.
+As earlier noted, the following guidance is designed to complement [RFC 14 Conducting Research While Building a Stable Platform](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0014_conducting_research_while_building_a_stable_platform.md). Please refer to that RFC first if you are not familiar with its contents.
 
 ## Workflow for TBP Researchers: from Research Prototype to Implementation Project
 
@@ -26,18 +26,22 @@ Below is a recommended workflow for researchers; however, it is guidance only, a
 
 ### Setup
 1. Begin a new Research Prototype by creating a fork of [tbp.monty](https://github.com/thousandbrainsproject/tbp.monty/):
-    - When creating the fork, the owner should be set to the `thousandbrainsproject` organization (see below)
-    - Give your fork a name like `feat.description_of_prototype`
+
+
+When creating the fork, the owner should be set to the `thousandbrainsproject` organization:
+<img src="0000_code_guidance_for_researchers_and_community/create_new_RP_fork.png" alt="Create New Research Prototype Fork" width="500">
+
+Give your fork a name like `feat.description_of_prototype`:
+<img src="0000_code_guidance_for_researchers_and_community/RP_fork_name.png" alt="Naming your Fork" width="500">
+
 2. Clone the new fork, and then create a new development branch that is appropriately named.
     - Your fork should now have a `main` branch, and a feature branch or branches where you will carry out active work.
 
-<img src="0000_code_guidance_for_researchers_and_community/create_new_RP_fork.png" alt="Create New Research Prototype Fork" width="600">
-
 ### Workflow
 - The aim is to progressively implement the Research Prototype via a series of PRs into the `main` branch of your RP fork.
-    - You should therefore formulate PRs into the main branch as _atomic_ PRs for review by other researchers.
+    - You should formulate PRs into the main branch as _atomic_ PRs for review by other researchers.
     - Note that _atomic_ does not always mean small, although it is a common finding that PRs (especially by researchers!) are too large. Rather, atomic means that the PR represents a full, minimally self-contained change. The PR should not depend on code that will be added in the future, although context can be provided where helpful re. future changes.
-- When you open a PR into your fork's `main` branch, tag at least one other researcher for review.
+- When you open a PR into your fork's `main` branch, tag at least one other TBP researcher for review.
     - You should NOT merge PR changes into the Research Prototype `main` branch without receiving a review from another researcher.
     - Note that this will not be enshrined in any protection rules, since doing so would enforce a PR process whenever the fork / branches are synced with upstream changes.
 - During your work, ensure you regularly update your fork and its branches with any upstream changes to `thousandbrainsproject/tbp.monty`. This will reduce the chance that a longer RP-project is associated with significant merge conflicts when you later wish to merge it into the primary Monty code-base.
@@ -68,7 +72,7 @@ Below is a recommended workflow for researchers; however, it is guidance only, a
 - When contemplating such PRs, it is important to consider when a change is suitable for a researcher to work on, vs. when it would benefit from an engineer's expertise. For example, major refactors, or features that are primarily about infrastructure tooling, are likely to be a poorer fit for a researcher's focus.
 
 ### PRs without RFCs
-- Researchers are reminded that not all research work requires an [RFC](https://thousandbrainsproject.readme.io/docs/request-for-comments-rfc) before it can be carried out. For example, a significant idea might occasionally require a single line of code to evaluate, in which case it is quicker to simply make the change and report the results, rather than begin with the RFC process.
+- Researchers are reminded that not all research work requires an [RFC](https://thousandbrainsproject.readme.io/docs/request-for-comments-rfc) before it can be carried out. For example, a significant idea might require a single line of code to evaluate, in which case it is quicker to simply make the change and report the results, rather than begin with the RFC process.
 
 ### Multiple Researchers Working on a Single Research Prototype
 - From time-to-time, two or more researchers may be working on ideas that could be considered elements of a single, over-arching Research Prototype. In this case, it is perfectly acceptable for them to use a shared RP fork.
