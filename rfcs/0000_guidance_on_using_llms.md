@@ -13,10 +13,8 @@ LLM code-assistants have the potential to improve the productivity of coders. Mo
 We ask that all RFCs are written by you, and that you refrain from using Large Language Models (LLMs) like ChatGPT in this process. Some of our motivations for this are:
 - We want to get a clear understanding of your solution, and we have found that LLMs give poor, if approximately correct, RFC proposals. This is particularly the case because the work of the TBP falls very much in the "out of training distribution" domain.
 - When we review RFCs written by LLMs, it often ends up taking more time both for us, and for you, so it is much better if you write them yourself.
-- Please note that this does not apply to assistive technology such as grammar checkers, which we understand you might find helpful in copy-editing your RFC. If you need to use a more advanced AI tool for a specific reason, we ask that you reach out to us directly to discuss this beforehand.
 
-
-## Writing and Contributing Code to `tbp.monty`
+## Contributing Code to `tbp.monty`
 
 In principle, you may use LLMs, such as code-assistants, when writing code that you contribute to the Thousand Brains Project. However, we ask that you do so in a limited manner, being mindful of the below issues:
 
@@ -29,7 +27,7 @@ Due to the above reasons, LLM-generated code can take a great deal of time to re
 
 ### Legal Concerns
 - There are non-trivial legal concerns around contamination of code when using LLMs. See for example, [this recent study](https://arxiv.org/html/2408.02487v1), which demonstrates that LLM-generated code can violate copyright restrictions in a significant number of cases.
-- A cornerstone of the Thousand Brains Project is its open source nature, and this motivates our use of an MIT licence when we distribute our code. However, the inadvertent integration of copyright-protected code into `thousandbrainsproject/tbp.monty` could jeopardize this approach, disrupting any distributions of the platform.
+- A cornerstone of the Thousand Brains Project is its open source nature, and this motivates our use of an MIT licence when we distribute our code. However, the inadvertent integration of copyright-protected code into `thousandbrainsproject/tbp.monty` could jeopardize the ability to make the code open-source, disrupting any distributions of the platform.
 
 ### Take-Aways
 
@@ -53,3 +51,6 @@ Below we provide further guidance on some edge cases.
 - [The TBP Discourse forums](https://thousandbrains.discourse.group/) are an excellent setting to discuss nascent ideas.
 - In these discussions, we would love to engage with you and your ideas. As such, we ask that you not post the outputs of LLMs as if these were your own ideas.
 - If you would like to quote or refer to a conversation you have had with an LLM, please just indicate this clearly.
+
+## Assistive Technology
+- Please note that the above guidance does not apply to assistive technology such as grammar checkers, which we understand you might find helpful in copy-editing text in RFCs and forum posts. If you need to use a more advanced AI tool for a specific reason, we ask that you reach out to us directly to discuss this beforehand.
