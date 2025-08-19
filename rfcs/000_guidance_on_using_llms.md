@@ -22,14 +22,14 @@ In principle, you may use LLMs, such as code-assistants, when writing code that 
 
 ### Quality Concerns
 - As with RFCs, we have found that our code-base is out-of-distribution, and the quality of code written by LLMs, while superficially correct, often is not.
-- Similarly, Monty is fundamentally about developing sensorimotor AI that can succeed in emobidied settings. These are precisely the settings that LLMs struggle to perform in, and so once again we have found they frequently provide incorrect, logically inconsistent solutions.
-- LLM code is often verbose, or results in excessive, unecessary changes to the code.
+- Similarly, Monty is fundamentally about developing sensorimotor AI that can succeed in embodied settings. These are precisely the settings that LLMs struggle to perform in, and so once again we have found they frequently provide incorrect, logically inconsistent solutions.
+- LLM code is often verbose, or results in excessive, unnecessary changes to the code.
 
 Due to the above reasons, LLM-generated code can take a great deal of time to review and debug. This can be avoided when PRs are written with intent by a person.
 
 ### Legal Concerns
-- There are non-trivial legal concerns around contamination of code when using LLMs. See for example, [this recent study](https://arxiv.org/html/2408.02487v1), which demonstrates that LLM generated code can violate copyright restrictions in a significant number of cases.
-- A cornerstone of the Thousand Brains Project is its open source nature, and this motivates our use of an MIT licence when we distribute our code. However, the inadvertant integration of copyright protected code into `thousandbrainsproject/tbp.monty` could jeapordize this approach, disrupting any distributions of the platform.
+- There are non-trivial legal concerns around contamination of code when using LLMs. See for example, [this recent study](https://arxiv.org/html/2408.02487v1), which demonstrates that LLM-generated code can violate copyright restrictions in a significant number of cases.
+- A cornerstone of the Thousand Brains Project is its open source nature, and this motivates our use of an MIT licence when we distribute our code. However, the inadvertent integration of copyright-protected code into `thousandbrainsproject/tbp.monty` could jeopardize this approach, disrupting any distributions of the platform.
 
 ### Take-Aways
 
@@ -37,7 +37,7 @@ The high-level guidance based on the above is:
 - Using an LLM to auto-complete variable names and other simple speed-ups can be appropriate.
 - Multi-line sections of algorithmic code written by LLMs should be thoroughly checked for logical correctness and potential copyright violations before opening a PR into `thousandbrainsproject/tbp.monty`.
 
-Below we provide further guidance on some edge-cases.
+Below we provide further guidance on some edge cases.
 
 #### Work on Research Prototypes
 - Research Prototypes are separate forks of `thousandbrainsproject/tbp.monty` intended to rapidly evaluate the merits of a particular research idea. As they are not part of the core Monty platform, the legal concerns described above are less relevant, however the code-quality issues remain.
@@ -46,4 +46,4 @@ Below we provide further guidance on some edge-cases.
 #### Agentic LLMs 
 - The issues highlighted mean that we ask that you do *not* use agentic workflows that write large amounts of code in an automated way, unless as a means of automating a simple task.
 - An example of a reasonable use of an agentic LLM setup would be widespread changes required to reflect an update in terminology. For example, in a [recent PR](https://github.com/thousandbrainsproject/tbp.tbs_sensorimotor_intelligence/pull/55/files), the order of two figures in our paper was swapped, requiring many small changes to the code and documentation. This was rapidly automated with LLM assistance. We then verified the correctness of the implementation after these changes.
-- On the other hand, please do not pass a Future Work item description into an LLM, and then open a PR with all of the code it generated. These kinds of contributions unfortunately slow-down, rather than accelerate, our shared mission at the Thousand Brains Project.
+- On the other hand, please do not pass a Future Work item description into an LLM, and then open a PR with all of the code it generated. These kinds of contributions unfortunately slow down, rather than accelerate, our shared mission at the Thousand Brains Project.
