@@ -83,7 +83,7 @@ Give your fork a name like `feat.description_of_prototype`:
 - When adopting this approach, it is advised that all researchers working on this shared fork review any PRs made by other researchers into the fork.
 
 
-## Workflow for Community Members
+## Workflow for Community Members Conducting Research
 
 (note to TBP reviewers of this RFC: the below includes a bit of repetition of [our existing guidance in the Future Work section](https://thousandbrainsproject.readme.io/docs/project-roadmap), and [on making PRs](https://thousandbrainsproject.readme.io/docs/pull-requests), but the aim will be to make this guidance a bit clearer, including the motivation)
 
