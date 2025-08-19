@@ -89,13 +89,17 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
     return entries
 
 
-def generate_index(docs_dir: str) -> str:
+def generate_index(docs_dir: str, output_file_path: str) -> str:
     """Generate index.json file from docs directory.
+
+    Args:
+        docs_dir: The directory containing markdown files to scan.
+        output_file_path: Path where to write the index.json file.
 
     Returns:
         Path to the generated index.json file.
     """
-    output_file = os.path.join(docs_dir, "index.json")
+    output_file = output_file_path
     logging.info(f"Scanning docs directory: {CYAN}{docs_dir}{RESET}")
 
     entries = process_markdown_files(docs_dir)

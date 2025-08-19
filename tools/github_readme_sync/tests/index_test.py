@@ -55,7 +55,8 @@ class TestGenerateIndex(unittest.TestCase):
         frontmatter = 'status: "completed"\n'
 
         self._create_markdown_file(subdir="category1", frontmatter_fields=frontmatter)
-        index_file_path = generate_index(self.temp_dir)
+        output_file_path = os.path.join(self.temp_dir, "index.json")
+        index_file_path = generate_index(self.temp_dir, output_file_path)
 
         self.assertTrue(os.path.exists(index_file_path))
 
@@ -79,7 +80,8 @@ class TestGenerateIndex(unittest.TestCase):
         self._create_markdown_file(
             subdir="category/subcategory/subsubcategory", frontmatter_fields=frontmatter
         )
-        index_file_path = generate_index(self.temp_dir)
+        output_file_path = os.path.join(self.temp_dir, "index.json")
+        index_file_path = generate_index(self.temp_dir, output_file_path)
 
         self.assertTrue(os.path.exists(index_file_path))
 
@@ -98,6 +100,34 @@ class TestGenerateIndex(unittest.TestCase):
         self.assertEqual(entry["path2"], "subcategory")
         self.assertEqual(entry["path3"], "subsubcategory")
 
+    def test_generate_index_with_custom_output_path(self):
+        frontmatter = 'status: "completed"\n'
+
+        self._create_markdown_file(subdir="category1", frontmatter_fields=frontmatter)
+
+        custom_output_dir = tempfile.mkdtemp()
+        try:
+            custom_output_path = os.path.join(custom_output_dir, "custom_index.json")
+
+            returned_path = generate_index(self.temp_dir, custom_output_path)
+
+            self.assertEqual(returned_path, custom_output_path)
+            self.assertTrue(os.path.exists(custom_output_path))
+
+            with open(custom_output_path, "r", encoding="utf-8") as f:
+                index_data = json.load(f)
+
+            self.assertEqual(len(index_data), 1)
+
+            entry = index_data[0]
+            self.assertEqual(entry["status"], "completed")
+            self.assertEqual(entry["title"], "test doc")
+            self.assertTrue(entry["path"].endswith("/category1/test-doc.md"))
+            self.assertEqual(entry["path1"], "category1")
+            self.assertEqual(entry["slug"], "test-doc")
+
+        finally:
+            shutil.rmtree(custom_output_dir)
 
 
 if __name__ == "__main__":

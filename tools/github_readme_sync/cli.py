@@ -92,6 +92,9 @@ def main():
     index_parser.add_argument(
         "folder", help="The docs directory to scan for markdown files"
     )
+    index_parser.add_argument(
+        "output_file", help="Path where to write the index.json file"
+    )
 
     args = parser.parse_args()
 
@@ -120,7 +123,7 @@ def main():
         rdme.delete_version()
 
     elif args.command == "generate-index":
-        generate_index(args.folder)
+        generate_index(args.folder, args.output_file)
 
 
 def check_readme_api_key():
