@@ -204,14 +204,10 @@ def check_links(path):
 
 def check_external(folder, ignore_dirs, rdme):
     errors = {}
-    # Extend ignore_dirs with defaults, including figures
-    all_ignore_dirs = [".pytest_cache", ".github", ".git", "figures"]
-    all_ignore_dirs.extend(ignore_dirs)
     total_links_checked = 0
     url_cache = {}  # Cache to store URL check results
 
-    # Use shared utility to find markdown files
-    md_files = find_markdown_files(folder, ignore_dirs=all_ignore_dirs)
+    md_files = find_markdown_files(folder, ignore_dirs=ignore_dirs)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         future_to_file = {
