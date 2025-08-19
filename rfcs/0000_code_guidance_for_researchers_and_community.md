@@ -29,9 +29,11 @@ Below is a recommended workflow for researchers; however, it is guidance only, a
 
 
 When creating the fork, the owner should be set to the `thousandbrainsproject` organization:
+
 <img src="0000_code_guidance_for_researchers_and_community/create_new_RP_fork.png" alt="Create New Research Prototype Fork" width="500">
 
 Give your fork a name like `feat.description_of_prototype`:
+
 <img src="0000_code_guidance_for_researchers_and_community/RP_fork_name.png" alt="Naming your Fork" width="500">
 
 2. Clone the new fork, and then create a new development branch that is appropriately named.
