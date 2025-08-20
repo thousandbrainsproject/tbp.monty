@@ -21,7 +21,6 @@ from tbp.monty.frameworks.actions.action_samplers import (
 from tbp.monty.frameworks.config_utils.config_args import make_base_policy_config
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentDataLoader,
-    EnvironmentDataset,
     SaccadeOnImageDataLoader,
     SaccadeOnImageFromStreamDataLoader,
 )
@@ -55,7 +54,7 @@ EXPECTED_ACTIONS_ABS = [
     POSSIBLE_ACTIONS_ABS[i]
     for i in np.random.randint(0, len(POSSIBLE_ACTIONS_ABS), 100)
 ]
-EXPECTED_STATES = np.random.rand(DATASET_LEN)
+EXPECTED_STATES = np.random.rand(DATASET_LEN)  # TODO(anna) - what is this expecting? rename to - NUM_STEPS maybe?
 
 
 class FakeActionSpace(tuple, ActionSpace):
@@ -142,17 +141,8 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
 
 
 class EmbodiedDataTest(unittest.TestCase):
-    def test_embodied_dataset_dist(self):
+    def test_embodied_dataset_dist(self):  # TODO(anna) rename method & vars
         rng = np.random.RandomState(42)
-        dataset_dist = EnvironmentDataset(
-            env_init_func=FakeEnvironmentRel, env_init_args={}, rng=rng
-        )
-
-        action_space_dist = dataset_dist.action_space
-        self.assertIsInstance(action_space_dist, ActionSpace)
-        self.assertSequenceEqual(action_space_dist, EXPECTED_ACTIONS_DIST)
-        self.assertIn(action_space_dist.sample(), EXPECTED_ACTIONS_DIST)
-
         base_policy_config_dist = make_base_policy_config(
             action_space_type="distant_agent",
             action_sampler_class=UniformlyDistributedSampler,
@@ -161,19 +151,30 @@ class EmbodiedDataTest(unittest.TestCase):
         motor_system_dist = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_config_dist.__dict__)
         )
+        env_interface_dist = EnvironmentDataLoader(
+            env_init_func=FakeEnvironmentRel,
+            env_init_args={},
+            rng=rng,
+            motor_system=motor_system_dist,
+        )
+
+        action_space_dist = env_interface_dist.action_space
+        self.assertIsInstance(action_space_dist, ActionSpace)
+        self.assertSequenceEqual(action_space_dist, EXPECTED_ACTIONS_DIST)
+        self.assertIn(action_space_dist.sample(), EXPECTED_ACTIONS_DIST)
 
         for i in range(1, DATASET_LEN):
-            obs_dist, _ = dataset_dist[motor_system_dist()]
+            obs_dist, _ = env_interface_dist.__getitem__(motor_system_dist())
             print(obs_dist)
             self.assertTrue(
                 np.all(obs_dist[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
             )
 
-        initial_state, _ = dataset_dist.reset()
+        initial_state, _ = env_interface_dist.reset()
         self.assertTrue(
             np.all(initial_state[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[0])
         )
-        obs_dist, _ = dataset_dist[motor_system_dist()]
+        obs_dist, _ = env_interface_dist.__getitem__(motor_system_dist())
         self.assertFalse(
             np.all(
                 obs_dist[AGENT_ID][SENSOR_ID]["sensor"]
@@ -181,22 +182,12 @@ class EmbodiedDataTest(unittest.TestCase):
             )
         )
 
-        dataset_dist.close()
+        env_interface_dist.close()
         with self.assertRaises(Exception):  # noqa: B017
-            obs_dist, _ = dataset_dist[motor_system_dist()]
+            obs_dist, _ = env_interface_dist.__getitem__(motor_system_dist())
 
-    # @unittest.skip("debugging")
     def test_embodied_dataset_abs(self):
         rng = np.random.RandomState(42)
-
-        dataset_abs = EnvironmentDataset(
-            env_init_func=FakeEnvironmentAbs, env_init_args={}, rng=rng
-        )
-
-        action_space_abs = dataset_abs.action_space
-        self.assertIsInstance(action_space_abs, ActionSpace)
-        self.assertSequenceEqual(action_space_abs, EXPECTED_ACTIONS_ABS)
-        self.assertIn(action_space_abs.sample(), EXPECTED_ACTIONS_ABS)
 
         base_policy_config_abs = make_base_policy_config(
             action_space_type="absolute_only",
@@ -206,18 +197,29 @@ class EmbodiedDataTest(unittest.TestCase):
         motor_system_abs = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_config_abs.__dict__)
         )
+        env_interface_abs = EnvironmentDataLoader(
+            env_init_func=FakeEnvironmentAbs,
+            env_init_args={},
+            rng=rng,
+            motor_system=motor_system_abs,
+        )
+
+        action_space_abs = env_interface_abs.action_space
+        self.assertIsInstance(action_space_abs, ActionSpace)
+        self.assertSequenceEqual(action_space_abs, EXPECTED_ACTIONS_ABS)
+        self.assertIn(action_space_abs.sample(), EXPECTED_ACTIONS_ABS)
 
         for i in range(1, DATASET_LEN):
-            obs_abs, _ = dataset_abs[motor_system_abs()]
+            obs_abs, _ = env_interface_abs.__getitem__(motor_system_abs())
             self.assertTrue(
                 np.all(obs_abs[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
             )
 
-        initial_state, _ = dataset_abs.reset()
+        initial_state, _ = env_interface_abs.reset()
         self.assertTrue(
             np.all(initial_state[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[0])
         )
-        obs_abs, _ = dataset_abs[motor_system_abs()]
+        obs_abs, _ = env_interface_abs.__getitem__(motor_system_abs())
         self.assertFalse(
             np.all(
                 obs_abs[AGENT_ID][SENSOR_ID]["sensor"]
@@ -225,19 +227,12 @@ class EmbodiedDataTest(unittest.TestCase):
             )
         )
 
-        dataset_abs.close()
+        env_interface_abs.close()
         with self.assertRaises(Exception):  # noqa: B017
-            obs_abs, _ = dataset_abs[motor_system_abs()]
+            obs_abs, _ = env_interface_abs.__getitem__(motor_system_abs())
 
-    # @unittest.skip("debugging")
     def test_embodied_dataloader_dist(self):
         rng = np.random.RandomState(42)
-        dataset_dist = EnvironmentDataset(
-            env_init_func=FakeEnvironmentRel,
-            env_init_args={},
-            rng=rng,
-        )
-
         base_policy_config_dist = make_base_policy_config(
             action_space_type="distant_agent",
             action_sampler_class=UniformlyDistributedSampler,
@@ -246,24 +241,22 @@ class EmbodiedDataTest(unittest.TestCase):
         motor_system_dist = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_config_dist.__dict__)
         )
-
-        dataloader_dist = EnvironmentDataLoader(
-            dataset_dist, motor_system_dist, rng=rng
+        env_interface_dist = EnvironmentDataLoader(
+            env_init_func=FakeEnvironmentRel,
+            env_init_args={},
+            rng=rng,
+            motor_system=motor_system_dist
         )
-        for i, item in enumerate(dataloader_dist):
+
+        for i, item in enumerate(env_interface_dist):  # TODO(anna): does enumerate env interface make sense?
             self.assertTrue(
                 np.all(item[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
             )
             if i >= DATASET_LEN - 1:
                 break
 
-    # @unittest.skip("debugging")
     def test_embodied_dataloader_abs(self):
         rng = np.random.RandomState(42)
-
-        dataset_abs = EnvironmentDataset(
-            env_init_func=FakeEnvironmentAbs, env_init_args={}, rng=rng
-        )
 
         base_policy_config_abs = make_base_policy_config(
             action_space_type="absolute_only",
@@ -273,9 +266,14 @@ class EmbodiedDataTest(unittest.TestCase):
         motor_system_abs = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_config_abs.__dict__)
         )
+        env_interface_abs = EnvironmentDataLoader(
+            env_init_func=FakeEnvironmentAbs,
+            env_init_args={},
+            rng=rng,
+            motor_system=motor_system_abs
+        )
 
-        dataloader_abs = EnvironmentDataLoader(dataset_abs, motor_system_abs, rng)
-        for i, item in enumerate(dataloader_abs):
+        for i, item in enumerate(env_interface_abs):
             self.assertTrue(
                 np.all(item[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
             )
@@ -329,12 +327,6 @@ class EmbodiedDataTest(unittest.TestCase):
             Path(__file__).parent, "resources/dataloader_test_images/"
         )
 
-        dataset_rel = EnvironmentDataset(
-            env_init_func=SaccadeOnImageEnvironment,
-            env_init_args={"patch_size": patch_size, "data_path": data_path},
-            rng=rng,
-        )
-
         base_policy_config_rel = make_base_policy_config(
             action_space_type="distant_agent",
             action_sampler_class=UniformlyDistributedSampler,
@@ -343,6 +335,11 @@ class EmbodiedDataTest(unittest.TestCase):
 
         motor_system_rel = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_config_rel.__dict__)
+        )
+        dataset_rel = EnvironmentDataset(
+            env_init_func=SaccadeOnImageEnvironment,
+            env_init_args={"patch_size": patch_size, "data_path": data_path},
+            rng=rng,
         )
 
         dataloader_rel = SaccadeOnImageDataLoader(
@@ -396,6 +393,7 @@ class EmbodiedDataTest(unittest.TestCase):
             if i >= DATASET_LEN - 1:
                 break
 
+    @unittest.skip("debugging")
     def test_saccade_on_image_stream_dataloader(self):
         rng = np.random.RandomState(42)
         sensor_id = "patch"
