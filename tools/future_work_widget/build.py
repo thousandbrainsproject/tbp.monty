@@ -43,11 +43,10 @@ class RecordValidator:
         transformed_record = record.copy()
 
         for field in self.COMMA_SEPARATED_FIELDS:
-            if (field in transformed_record
-                and isinstance(transformed_record[field], str)):
-                items = [
-                    tag.strip() for tag in transformed_record[field].split(",")
-                ]
+            if field in transformed_record and isinstance(
+                transformed_record[field], str
+            ):
+                items = [tag.strip() for tag in transformed_record[field].split(",")]
                 if len(items) > self.MAX_COMMA_SEPARATED_ITEMS:
                     self.errors.append(
                         f"{field} field cannot have more than "
@@ -258,6 +257,5 @@ def build(
         json.dump(future_work_items, f, indent=2, ensure_ascii=False)
 
     logging.info(
-        f"Generated data.json with {len(future_work_items)} items in "
-        f"{output_dir}"
+        f"Generated data.json with {len(future_work_items)} items in {output_dir}"
     )

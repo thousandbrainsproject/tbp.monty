@@ -29,9 +29,7 @@ def main():
     build_parser = subparsers.add_parser(
         "build", help="Build the data and package the widget"
     )
-    build_parser.add_argument(
-        "index_file", help="The index.json file to process"
-    )
+    build_parser.add_argument("index_file", help="The index.json file to process")
     build_parser.add_argument(
         "output_dir", help="The output directory to create and save data.json"
     )
@@ -66,9 +64,6 @@ def initialize():
         logging.basicConfig(level=logging.INFO, format="%(message)s")
     else:
         logging.basicConfig(level=env_log_level.upper(), format="%(message)s")
-
-
-
 
 
 if __name__ == "__main__":

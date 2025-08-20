@@ -48,7 +48,7 @@ class TestBuild(unittest.TestCase):
     def _expect_build_failure(
         self,
         input_data: List[Dict[str, Any]],
-        expected_error_fragment: str = "Validation failed"
+        expected_error_fragment: str = "Validation failed",
     ):
         """Helper method to test that build fails with expected error."""
         index_file = self.temp_path / "index.json"
@@ -69,14 +69,14 @@ class TestBuild(unittest.TestCase):
                 "title": "Improve voting mechanism",
                 "content": "Test content for voting",
                 "estimated-scope": "medium",
-                "rfc": "required"
+                "rfc": "required",
             },
             {
                 "path1": "how-monty-works",
                 "path2": "learning-modules",
                 "title": "Learning modules overview",
-                "content": "Test content for learning"
-            }
+                "content": "Test content for learning",
+            },
         ]
 
         result_data = self._run_build_test(input_data)
@@ -258,26 +258,34 @@ class TestBuild(unittest.TestCase):
         max_items = RecordValidator.MAX_COMMA_SEPARATED_ITEMS
 
         too_many_tags = ",".join([f"tag{i}" for i in range(max_items + 1)])
-        self._expect_build_failure([{
-            "path1": "future-work",
-            "path2": "test-item",
-            "title": "Test item with too many tags",
-            "content": "Test content",
-            "tags": too_many_tags,
-            "estimated-scope": "medium",
-            "rfc": "required"
-        }])
+        self._expect_build_failure(
+            [
+                {
+                    "path1": "future-work",
+                    "path2": "test-item",
+                    "title": "Test item with too many tags",
+                    "content": "Test content",
+                    "tags": too_many_tags,
+                    "estimated-scope": "medium",
+                    "rfc": "required",
+                }
+            ]
+        )
 
         exactly_max_tags = ",".join([f"tag{i}" for i in range(max_items)])
-        result_data = self._run_build_test([{
-            "path1": "future-work",
-            "path2": "test-item",
-            "title": "Test item with exactly max tags",
-            "content": "Test content",
-            "tags": exactly_max_tags,
-            "estimated-scope": "medium",
-            "rfc": "required"
-        }])
+        result_data = self._run_build_test(
+            [
+                {
+                    "path1": "future-work",
+                    "path2": "test-item",
+                    "title": "Test item with exactly max tags",
+                    "content": "Test content",
+                    "tags": exactly_max_tags,
+                    "estimated-scope": "medium",
+                    "rfc": "required",
+                }
+            ]
+        )
 
         self.assertEqual(len(result_data), 1)
         self.assertEqual(len(result_data[0]["tags"]), max_items)
