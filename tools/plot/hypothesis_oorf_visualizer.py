@@ -40,6 +40,7 @@ from vedo import (
 
 from tbp.monty.frameworks.run_env import setup_env
 from tbp.monty.frameworks.utils.graph_matching_utils import get_custom_distances
+from tbp.monty.frameworks.utils.spatial_arithmetics import rotate_pose_dependent_features
 
 from .data_utils import (
     EpisodeDataLoader,
@@ -104,16 +105,18 @@ def is_hypothesis_inside_object_reference_frame(
 
     nearest_node_locs = target_model.locations[nearest_node_ids]
 
-    # Transform sensed rotation by each hypothesis rotation to get surface normals
+    # Transform sensed rotation by all hypothesis rotations at once using spatial_arithmetics
+    # Create features dict for rotate_pose_dependent_features
+    features = {"pose_vectors": sensed_rotation}
+    
     # hyp_rotation: R^W_B (body frame → world frame, after world transform)
     # sensed_rotation: R_sensed^B (pose vectors in body/sensor frame)
     # Result: R^W_B * R_sensed^B = pose vectors transformed to world frame
-    surface_normals = np.zeros((len(hypothesis_rotations), 3))
-    for i, hyp_rotation in enumerate(hypothesis_rotations):
-        transformed_pose_vectors = hyp_rotation @ sensed_rotation
-        surface_normals[i] = transformed_pose_vectors[
-            :, 0
-        ]  # Extract transformed surface normal
+    rotated_features = rotate_pose_dependent_features(features, hypothesis_rotations)
+    transformed_pose_vectors = rotated_features["pose_vectors"]  # Shape: (n_hypotheses, 3, 3)
+    
+    # Extract surface normals (first row of each pose vector matrix)
+    surface_normals = transformed_pose_vectors[:, 0, :]  # Shape: (n_hypotheses, 3)
 
     custom_nearest_node_dists = get_custom_distances(
         nearest_node_locs,
@@ -605,15 +608,16 @@ class HypothesesOORFVisualizer:
         is_mlh: bool = False,
     ) -> None:
         """Add ellipsoid at given location with orientation from transformed sensed rotation."""
-        # Transform sensed pose vectors by hypothesis rotation
-        # hypothesis_rotation: R^W_B (world frame)
-        # current_sensed_rotation: R_sensed^B (pose vectors in body/sensor frame)
-        # Result: R^W_B * R_sensed^B = pose vectors transformed to world frame
-        transformed_pose_vectors = hypothesis_rotation @ self.current_sensed_rotation
+        # Transform sensed pose vectors by hypothesis rotation using spatial_arithmetics
+        features = {"pose_vectors": self.current_sensed_rotation}
+        # Reshape single rotation matrix to have batch dimension for consistency
+        hypothesis_rotation_batch = hypothesis_rotation.reshape(1, 3, 3)
+        rotated_features = rotate_pose_dependent_features(features, hypothesis_rotation_batch)
+        transformed_pose_vectors = rotated_features["pose_vectors"]  # Shape: (1, 3, 3)
 
-        surface_normal = transformed_pose_vectors[:, 0]  # Transformed surface normal
-        tangent1 = transformed_pose_vectors[:, 1]  # Transformed PC1 (dir1)
-        tangent2 = transformed_pose_vectors[:, 2]  # Transformed PC2 (dir2)
+        surface_normal = transformed_pose_vectors[0, 0, :]  # Transformed surface normal
+        tangent1 = transformed_pose_vectors[0, 1, :]  # Transformed PC1 (dir1)
+        tangent2 = transformed_pose_vectors[0, 2, :]  # Transformed PC2 (dir2)
 
         stretch_factor = 1.0 / (np.abs(self.current_sensed_curvature) + 0.5)
         semi_axis_tangent = self.max_match_distance
@@ -648,8 +652,7 @@ class HypothesesOORFVisualizer:
         self, location: np.ndarray, is_inside_reference_frame: bool
     ) -> None:
         """Add a cube at the MLH location."""
-        color = TBP_COLORS["blue"] if is_inside_reference_frame else TBP_COLORS["pink"]
-        self.mlh_cube = Cube(location, side=0.005, c=color, alpha=0.6)
+        self.mlh_cube = Cube(location, side=0.003, c="black", alpha=0.6)
         self.plotter.at(self.main_renderer_ix).add(self.mlh_cube)
 
     def _add_nearest_neighbor_points(self, nearest_node_locs: np.ndarray) -> None:
@@ -669,15 +672,17 @@ class HypothesesOORFVisualizer:
         """Add arrows showing transformed sensed tangent and normal directions."""
         arrow_length = 0.02
 
-        # Transform sensed pose vectors by hypothesis rotation
-        # hypothesis_rotation: R^W_B (body frame → world frame, after world transform)
-        # current_sensed_rotation: R_sensed^B (pose vectors in body/sensor frame)
-        # Result: R^W_B * R_sensed^B = pose vectors transformed to world frame
-        transformed_pose_vectors = hypothesis_rotation @ self.current_sensed_rotation
+        # Transform sensed pose vectors by hypothesis rotation using spatial_arithmetics
+        features = {"pose_vectors": self.current_sensed_rotation}
+        # Reshape single rotation matrix to have batch dimension for consistency
+        hypothesis_rotation_batch = hypothesis_rotation.reshape(1, 3, 3)
+        rotated_features = rotate_pose_dependent_features(features, hypothesis_rotation_batch)
+        transformed_pose_vectors = rotated_features["pose_vectors"]  # Shape: (1, 3, 3)
 
-        surface_normal = transformed_pose_vectors[:, 0]  # Transformed surface normal
-        tangent1 = transformed_pose_vectors[:, 1]  # Transformed PC1 (dir1)
-        tangent2 = transformed_pose_vectors[:, 2]  # Transformed PC2 (dir2)
+        # Pose vectors are in Darboux Frame
+        surface_normal = transformed_pose_vectors[0, 0, :]  # Transformed surface normal
+        tangent1 = transformed_pose_vectors[0, 1, :]  # Transformed PC1 (dir1)
+        tangent2 = transformed_pose_vectors[0, 2, :]  # Transformed PC2 (dir2)
 
         arrow1 = Arrow(
             location,
@@ -705,7 +710,7 @@ class HypothesesOORFVisualizer:
         arrow3.alpha(0.9)
         self.hypothesis_axes.append(arrow3)
         self.plotter.at(self.main_renderer_ix).add(arrow3)
-
+        
     def _format_array(self, arr: np.ndarray | list) -> str:
         """Format array for display with consistent precision.
 
@@ -781,7 +786,7 @@ class HypothesesOORFVisualizer:
             ("PC1 Axis (Arrow)", TBP_COLORS["purple"], 0.18),
             ("PC2 Axis (Arrow)", TBP_COLORS["green"], 0.16),
             ("Surface Normal (Arrow)", TBP_COLORS["yellow"], 0.14),
-            ("MLH (Cube)", TBP_COLORS["blue"], 0.12),
+            ("MLH (Cube)", "black", 0.12),
             ("Nearest Neighbor (Point)", TBP_COLORS["yellow"], 0.1),
         ]
 
