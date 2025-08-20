@@ -1,4 +1,4 @@
-name: Docs
+name: Future Work
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
@@ -13,8 +13,8 @@ on:
       - future-work-action # TODO: change back to main before merging
 
 jobs:
-  check_docs:
-    name: check-docs
+  build_future_work_widget:
+    name: build-future-work-widget
     runs-on: ubuntu-latest
     needs:
       - should_run_future_work
@@ -84,7 +84,7 @@ jobs:
           path: |
             ~/miniconda
           key: ${{ steps.restore_cache.outputs.cache-primary-key }}
-      - name: Check docs
+      - name: Build future work widget
         if: ${{ needs.should_run_future_work.outputs.should_run_future_work == 'true' }}
         working-directory: tbp.monty
         run: |
