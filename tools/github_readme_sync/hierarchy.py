@@ -256,6 +256,7 @@ def process_file(file_path, rdme, url_cache):
 
     return file_errors, links_checked
 
+
 def extract_external_links(content):
     return (
         re.findall(r"\[[^\]]*\]\(([^)]+)\)", content)
