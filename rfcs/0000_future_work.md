@@ -43,10 +43,10 @@ Specifically targeted for the future work section.
 
 And these values after that work has begun:
 
-|              key|values|
-|----------------:|:-----|
-| `status`        | `completed` &#124; `in-progress` |
-| `owner`         | `codeallthethingz`, `vkakerbeck`|
+|                    key|values|
+|----------------------:|:-----|
+| `status`              | `completed` &#124; `in-progress` |
+| `contributor`         | `codeallthethingz`, `vkakerbeck`|
 
 
 These structured pieces of data are extracted to a central file for downstream visualizations and consumers.
@@ -61,7 +61,7 @@ A mock-up of what that table may look like:
 
 # Reference-level explanation
 
-As mentioned above, the front-matter of all the docs in the in the `/docs` folder will be extracted and put into specified data file `/tmp/index.json`.
+As mentioned above, the front-matter of all the docs in the in the `/docs` folder will be extracted and put into a data file.
 
 ```js
 [
@@ -71,7 +71,7 @@ As mentioned above, the front-matter of all the docs in the in the `/docs` folde
     "skills": ["python","gpu architecture"],
     "estimated-scope": "small",
     "status": "in-progress",
-    "owner": ["codeallthethingz","vkakerbeck"],
+    "contributor": ["codeallthethingz","vkakerbeck"],
     // Generated values
     "slug": "extract-sensor-modules", // for linking back to the docs
     "path1": "future-work", // will be used for filtering to a subset of the docs
@@ -114,6 +114,7 @@ Requirements
 
 Nice To Haves (will implement if there is time after the requirements are met)
 - Structured filtering. Filtering will work with simple text matches, so a search for 'large' will find both the rows with the estimated-scope tag 'large' and titles with 'large' in them as well as matches like largest and larger.
+- Have a way of gathering statistics of the queries executed against the table as a way to understand what sorts of things the community is looking for.
 
 Not requirements (but feel free to tell me if you think these are required)
 - Persisting the state of the table.  For example, collapsing a group won't be remembered through page reloads.
@@ -152,7 +153,7 @@ Having free form text powering downstream applications that require structured i
 
 We could instead, tie into a structured SaaS platform.  Our internal Shortcut tool could be a possibility here as it potentially allows for structured tags and centralizes all work into a single place.  However, there would be considerable synchronization required. I have not looked into this idea extensively.
 
-# Unresolved questions
+# (Un)resolved questions
 
 Q: Where should we host the widget?  It's a simple HTML page that makes a fetch to the raw data file on GitHub. It could be added to our website, thousandbrains.org as a custom HTML page. It could be stored and served from a S3 bucket.
 A: S3 Bucket.
