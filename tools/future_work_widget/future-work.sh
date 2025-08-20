@@ -1,3 +1,4 @@
+set -e
 source /opt/miniconda3/etc/profile.d/conda.sh
 conda activate tbp.monty
 python -m tools.github_readme_sync.cli generate-index docs /tmp/index.json

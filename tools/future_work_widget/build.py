@@ -10,8 +10,9 @@
 
 import json
 import logging
+import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 
 class RecordValidator:
@@ -20,11 +21,10 @@ class RecordValidator:
     COMMA_SEPARATED_FIELDS = ["tags", "owner", "skills"]
     MAX_COMMA_SEPARATED_ITEMS = 10
     REQUIRED_FIELDS = ["estimated-scope", "rfc"]
-    VALID_RFC_VALUES = {"required", "optional", "not-required"}
 
     def __init__(self, docs_snippets_dir: Optional[str] = None):
         self.errors: List[str] = []
-        self.validation_sets: Dict[str, Set[str]] = {}
+        self.validation_sets: Dict[str, List[str]] = {}
         if docs_snippets_dir:
             self._load_validation_files(docs_snippets_dir)
 
@@ -37,10 +37,6 @@ class RecordValidator:
         Returns:
             The transformed record if valid, None if invalid
         """
-        if not isinstance(record, dict):
-            self.errors.append("Record must be a dictionary")
-            return None
-
         if record.get("path1") != "future-work" or "path2" not in record:
             return None
 
@@ -61,7 +57,6 @@ class RecordValidator:
                 transformed_record[field] = items
 
         self._validate_required_fields(transformed_record)
-        self._validate_rfc(transformed_record)
         self._validate_field_values(transformed_record)
 
         return transformed_record
@@ -74,36 +69,32 @@ class RecordValidator:
             elif not isinstance(record[field], str) or not record[field].strip():
                 self.errors.append(f"Required field '{field}' cannot be empty")
 
-    def _validate_rfc(self, record: Dict[str, Any]) -> None:
-        """Validate rfc field."""
-        if "rfc" in record:
-            value = record["rfc"]
-            if not isinstance(value, str):
-                self.errors.append("rfc must be a string")
-                return
+    def _extract_readable_values(
+        self, regex_patterns: List[str], field_name: str
+    ) -> List[str]:
+        """Extract human-readable values from regex patterns for error messages.
 
-            if value in self.VALID_RFC_VALUES:
-                return
-
-            if self._is_valid_rfc_url(value):
-                return
-
-            valid_values = ", ".join(sorted(self.VALID_RFC_VALUES))
-            self.errors.append(
-                f"rfc must be one of: {valid_values} or a valid RFC URL. Got: {value}"
-            )
-
-    def _is_valid_rfc_url(self, url: str) -> bool:
-        """Check if the URL is a valid RFC URL.
+        Args:
+            regex_patterns: List of regex patterns
+            field_name: Name of the field being validated
 
         Returns:
-            True if the URL is a valid RFC URL, False otherwise
+            List of readable values for error messages
         """
-        github_patterns = [
-            "github.com/thousandbrainsproject/tbp.monty/pull/",
-            "https://github.com/thousandbrainsproject/tbp.monty/pull/",
-        ]
-        return any(url.startswith(pattern) for pattern in github_patterns)
+        readable_values = []
+        for pattern in regex_patterns:
+            if pattern.startswith("\\b") and pattern.endswith("\\b"):
+                # Extract simple word from \bword\b and unescape it
+                escaped_word = pattern[2:-2]
+                # Unescape common escaped characters
+                unescaped_word = escaped_word.replace("\\-", "-").replace("\\.", ".")
+                readable_values.append(unescaped_word)
+            elif field_name == "rfc" and "github" in pattern:
+                readable_values.append("valid RFC URL")
+            else:
+                # Show pattern description for complex patterns
+                readable_values.append(f"pattern: {pattern}")
+        return sorted(readable_values)
 
     def get_errors(self) -> List[str]:
         """Get all validation errors.
@@ -137,17 +128,25 @@ class RecordValidator:
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read().strip()
 
-                valid_values = set()
+                # All fields now support regex patterns
+                regex_patterns = []
                 for raw_item in content.split("`"):
                     clean_item = raw_item.strip()
                     if clean_item:
-                        valid_values.add(clean_item)
+                        # If it looks like a simple word, wrap with word boundaries
+                        if re.match(r"^[a-zA-Z0-9-]+$", clean_item):
+                            # Don't escape hyphens in simple words
+                            escaped_item = re.escape(clean_item).replace("\\-", "-")
+                            regex_patterns.append(f"\\b{escaped_item}\\b")
+                        else:
+                            # Treat as regex pattern (for URLs, special patterns, etc.)
+                            regex_patterns.append(clean_item)
 
-                if valid_values:
-                    self.validation_sets[field_name] = valid_values
+                if regex_patterns:
+                    self.validation_sets[field_name] = regex_patterns
                     logging.info(
-                        f"Loaded {len(valid_values)} valid values for '{field_name}' "
-                        f"from {file_path.name}"
+                        f"Loaded {len(regex_patterns)} regex patterns for "
+                        f"'{field_name}' from {file_path.name}"
                     )
 
             except (OSError, UnicodeDecodeError):
@@ -159,69 +158,46 @@ class RecordValidator:
         Args:
             record: The record to validate
         """
-        for field_name, valid_values in self.validation_sets.items():
+        for field_name, regex_patterns in self.validation_sets.items():
             if field_name in record:
                 record_values = record[field_name]
 
                 if isinstance(record_values, list):
+                    # Handle comma-separated fields (tags, skills, owner)
                     for value in record_values:
-                        if value not in valid_values:
-                            sorted_valid = sorted(valid_values)
+                        is_valid = any(
+                            re.fullmatch(pattern, value) for pattern in regex_patterns
+                        )
+                        if not is_valid:
+                            readable_values = self._extract_readable_values(
+                                regex_patterns, field_name
+                            )
+                            values_str = ", ".join(readable_values)
                             self.errors.append(
                                 f"Invalid {field_name} value '{value}'. "
-                                f"Valid values are: {', '.join(sorted_valid)}"
+                                f"Valid values are: {values_str}"
                             )
                 elif isinstance(record_values, str):
-                    if record_values not in valid_values:
-                        sorted_valid = sorted(valid_values)
-                        self.errors.append(
-                            f"Invalid {field_name} value '{record_values}'. "
-                            f"Valid values are: {', '.join(sorted_valid)}"
+                    # Handle single-value fields (rfc, status, estimated-scope)
+                    is_valid = any(
+                        re.fullmatch(pattern, record_values)
+                        for pattern in regex_patterns
+                    )
+                    if not is_valid:
+                        readable_values = self._extract_readable_values(
+                            regex_patterns, field_name
                         )
-
-        # Handle estimated-scope field specifically (required field)
-        if "estimated-scope" in record:
-            value = record["estimated-scope"]
-            if "estimated-scope" in self.validation_sets:
-                # Validate against loaded validation set
-                valid_scopes = self.validation_sets["estimated-scope"]
-                if not isinstance(value, str) or value not in valid_scopes:
-                    sorted_valid = sorted(valid_scopes)
-                    self.errors.append(
-                        f"estimated-scope must be one of: {', '.join(sorted_valid)}. "
-                        f"Got: {value}"
-                    )
-            else:
-                # Fallback to hardcoded values if snippet file not available
-                fallback_scopes = {"small", "medium", "large", "unknown"}
-                if not isinstance(value, str) or value not in fallback_scopes:
-                    sorted_valid = sorted(fallback_scopes)
-                    self.errors.append(
-                        f"estimated-scope must be one of: {', '.join(sorted_valid)}. "
-                        f"Got: {value}"
-                    )
-
-        # Handle status field specifically
-        if "status" in record:
-            value = record["status"]
-            if "status" in self.validation_sets:
-                # Validate against loaded validation set
-                valid_statuses = self.validation_sets["status"]
-                if not isinstance(value, str) or value not in valid_statuses:
-                    sorted_valid = sorted(valid_statuses)
-                    self.errors.append(
-                        f"status must be one of: {', '.join(sorted_valid)}. "
-                        f"Got: {value}"
-                    )
-            else:
-                # Fallback to hardcoded values if snippet file not available
-                fallback_statuses = {"completed", "in-progress"}
-                if not isinstance(value, str) or value not in fallback_statuses:
-                    sorted_valid = sorted(fallback_statuses)
-                    self.errors.append(
-                        f"status must be one of: {', '.join(sorted_valid)}. "
-                        f"Got: {value}"
-                    )
+                        values_str = ", ".join(readable_values)
+                        if field_name == "rfc":
+                            self.errors.append(
+                                f"rfc must be one of: {values_str}. "
+                                f"Got: {record_values}"
+                            )
+                        else:
+                            self.errors.append(
+                                f"Invalid {field_name} value '{record_values}'. "
+                                f"Valid values are: {values_str}"
+                            )
 
 
 def build(

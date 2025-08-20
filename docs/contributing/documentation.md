@@ -188,3 +188,7 @@ The future work documents have special Frontmatter metadata that is used to powe
 ### Status
 
 !snippet[../snippets/future-work-status.md]
+
+### RFC
+
+!snippet[../snippets/future-work-rfc.md]

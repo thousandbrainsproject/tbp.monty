@@ -47,7 +47,16 @@ def main():
 
     if args.command == "build":
         docs_snippets_dir = args.docs_snippets_dir
-        build(args.index_file, args.output_dir, docs_snippets_dir)
+        try:
+            build(args.index_file, args.output_dir, docs_snippets_dir)
+        except ValueError as e:
+            # Handle validation errors gracefully without stack trace
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+        except Exception as e:
+            # For unexpected errors, show the full traceback
+            logging.exception("Unexpected error during build")
+            sys.exit(1)
 
 
 def initialize():

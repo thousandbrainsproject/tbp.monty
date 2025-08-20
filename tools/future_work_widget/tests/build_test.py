@@ -134,76 +134,124 @@ class TestBuild(unittest.TestCase):
 
     def test_validation_failures(self):
         """Test various validation failure scenarios."""
+        # Create validation files for field validation tests
+        snippets_dir = self.temp_path / "snippets"
+        snippets_dir.mkdir()
+
+        # Create snippet files for fields that need validation
+        scope_file = snippets_dir / "future-work-estimated-scope.md"
+        with open(scope_file, "w", encoding="utf-8") as f:
+            f.write("`small` `medium` `large` `unknown`")
+
+        rfc_file = snippets_dir / "future-work-rfc.md"
+        with open(rfc_file, "w", encoding="utf-8") as f:
+            f.write("`required` `optional` `not-required`")
+
+        status_file = snippets_dir / "future-work-status.md"
+        with open(status_file, "w", encoding="utf-8") as f:
+            f.write("`completed` `in-progress`")
+
         failure_cases = [
             {
-                "name": "non_dict_item",
-                "input": ["not_a_dict"],
-                "error_fragment": "Validation failed"
-            },
-            {
                 "name": "invalid_estimated_scope",
-                "input": [{
-                    "path1": "future-work",
-                    "path2": "test-item",
-                    "title": "Test item",
-                    "content": "Test content",
-                    "estimated-scope": "huge",
-                    "rfc": "required"
-                }],
-                "error_fragment": "Validation failed"
+                "input": [
+                    {
+                        "path1": "future-work",
+                        "path2": "test-item",
+                        "title": "Test item",
+                        "content": "Test content",
+                        "estimated-scope": "huge",
+                        "rfc": "required",
+                    }
+                ],
+                "error_fragment": "Validation failed",
+                "needs_snippets": True,
             },
             {
                 "name": "invalid_rfc_value",
-                "input": [{
-                    "path1": "future-work",
-                    "path2": "test-item",
-                    "title": "Test item",
-                    "content": "Test content",
-                    "estimated-scope": "medium",
-                    "rfc": "invalid-value"
-                }],
-                "error_fragment": "Validation failed"
+                "input": [
+                    {
+                        "path1": "future-work",
+                        "path2": "test-item",
+                        "title": "Test item",
+                        "content": "Test content",
+                        "estimated-scope": "medium",
+                        "rfc": "invalid-value",
+                    }
+                ],
+                "error_fragment": "Validation failed",
+                "needs_snippets": True,
             },
             {
                 "name": "invalid_status",
-                "input": [{
-                    "path1": "future-work",
-                    "path2": "test-item",
-                    "title": "Test item",
-                    "content": "Test content",
-                    "estimated-scope": "medium",
-                    "rfc": "required",
-                    "status": "pending"
-                }],
-                "error_fragment": "Validation failed"
+                "input": [
+                    {
+                        "path1": "future-work",
+                        "path2": "test-item",
+                        "title": "Test item",
+                        "content": "Test content",
+                        "estimated-scope": "medium",
+                        "rfc": "required",
+                        "status": "pending",
+                    }
+                ],
+                "error_fragment": "Validation failed",
+                "needs_snippets": True,
             },
             {
                 "name": "missing_required_fields",
-                "input": [{
-                    "path1": "future-work",
-                    "path2": "test-item",
-                    "title": "Test item missing required fields",
-                    "content": "Test content"
-                }],
-                "error_fragment": "Validation failed"
+                "input": [
+                    {
+                        "path1": "future-work",
+                        "path2": "test-item",
+                        "title": "Test item missing required fields",
+                        "content": "Test content",
+                    }
+                ],
+                "error_fragment": "Validation failed",
+                "needs_snippets": False,
             },
             {
                 "name": "empty_required_fields",
-                "input": [{
-                    "path1": "future-work",
-                    "path2": "test-item",
-                    "title": "Test item with empty required fields",
-                    "content": "Test content",
-                    "estimated-scope": "",
-                    "rfc": "  "
-                }],
-                "error_fragment": "Validation failed"
-            }
+                "input": [
+                    {
+                        "path1": "future-work",
+                        "path2": "test-item",
+                        "title": "Test item with empty required fields",
+                        "content": "Test content",
+                        "estimated-scope": "",
+                        "rfc": "  ",
+                    }
+                ],
+                "error_fragment": "Validation failed",
+                "needs_snippets": False,
+            },
         ]
 
         for case in failure_cases:
             with self.subTest(case=case["name"]):
-                self._expect_build_failure(case["input"], case["error_fragment"])
+                if case["needs_snippets"]:
+                    self._expect_build_failure_with_snippets(
+                        case["input"], case["error_fragment"], str(snippets_dir)
+                    )
+                else:
+                    self._expect_build_failure(case["input"], case["error_fragment"])
+
+    def _expect_build_failure_with_snippets(
+        self,
+        input_data: List[Dict[str, Any]],
+        expected_error_fragment: str,
+        snippets_dir: str,
+    ):
+        """Helper method to test build fails with expected error and snippets."""
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        with self.assertRaises(ValueError) as context:
+            build(str(index_file), str(self.output_path), snippets_dir)
+
+        self.assertIn(expected_error_fragment, str(context.exception))
 
     def test_comma_separated_field_limits(self):
         """Test comma-separated field limits."""
@@ -256,11 +304,26 @@ class TestBuild(unittest.TestCase):
         self.assertIn("tags", validator.validation_sets)
         self.assertIn("skills", validator.validation_sets)
 
-        expected_tags = {"accuracy", "pose", "learning", "multiobj"}
-        expected_skills = {"python", "github-actions", "JS", "HTML"}
+        # Check that validation sets contain regex patterns
+        expected_tags = [
+            "\\baccuracy\\b",
+            "\\bpose\\b",
+            "\\blearning\\b",
+            "\\bmultiobj\\b",
+        ]
+        expected_skills = [
+            "\\bpython\\b",
+            "\\bgithub-actions\\b",
+            "\\bJS\\b",
+            "\\bHTML\\b",
+        ]
 
-        self.assertEqual(validator.validation_sets["tags"], expected_tags)
-        self.assertEqual(validator.validation_sets["skills"], expected_skills)
+        self.assertEqual(
+            sorted(validator.validation_sets["tags"]), sorted(expected_tags)
+        )
+        self.assertEqual(
+            sorted(validator.validation_sets["skills"]), sorted(expected_skills)
+        )
 
     def test_tag_validation_success(self):
         """Test successful tag validation against loaded validation files."""
@@ -502,50 +565,11 @@ class TestBuild(unittest.TestCase):
 
         error_message = str(context.exception)
         self.assertIn(
-            "estimated-scope must be one of: large, medium, small, unknown",
+            "Invalid estimated-scope value",
             error_message,
         )
-        self.assertIn("Got: huge", error_message)
-
-    def test_estimated_scope_fallback_validation(self):
-        """Test estimated-scope validation falls back when snippet missing."""
-        # Create snippets directory but no estimated-scope file
-        snippets_dir = self.temp_path / "snippets"
-        snippets_dir.mkdir()
-
-        # Test valid scope (should work with fallback)
-        input_data = [
-            {
-                "path1": "future-work",
-                "path2": "test-item",
-                "title": "Test item with valid scope fallback",
-                "content": "Test content",
-                "estimated-scope": "medium",
-                "rfc": "required",
-            }
-        ]
-
-        index_file = self.temp_path / "index.json"
-        with open(index_file, "w", encoding="utf-8") as f:
-            json.dump(input_data, f)
-
-        # Should not raise any exceptions
-        build(str(index_file), str(self.output_path), str(snippets_dir))
-
-        # Test invalid scope (should fail with fallback values)
-        input_data[0]["estimated-scope"] = "huge"
-
-        with open(index_file, "w", encoding="utf-8") as f:
-            json.dump(input_data, f)
-
-        with self.assertRaises(ValueError) as context:
-            build(str(index_file), str(self.output_path), str(snippets_dir))
-
-        error_message = str(context.exception)
-        self.assertIn(
-            "estimated-scope must be one of: large, medium, small, unknown",
-            error_message,
-        )
+        self.assertIn("large, medium, small, unknown", error_message)
+        self.assertIn("huge", error_message)
 
     def test_status_validation(self):
         """Test status validation against snippet file."""
@@ -588,27 +612,33 @@ class TestBuild(unittest.TestCase):
 
         error_message = str(context.exception)
         self.assertIn(
-            "status must be one of: completed, in-progress",
+            "Invalid status value",
             error_message,
         )
-        self.assertIn("Got: pending", error_message)
+        self.assertIn("completed, in-progress", error_message)
+        self.assertIn("pending", error_message)
 
-    def test_status_fallback_validation(self):
-        """Test status validation falls back when snippet missing."""
-        # Create snippets directory but no status file
+    def test_rfc_validation_with_regex(self):
+        """Test RFC validation using regex patterns for both simple values and URLs."""
+        # Create temporary validation files
         snippets_dir = self.temp_path / "snippets"
         snippets_dir.mkdir()
 
-        # Test valid status (should work with fallback)
+        rfc_file = snippets_dir / "future-work-rfc.md"
+        with open(rfc_file, "w", encoding="utf-8") as f:
+            f.write(
+                "`required` `optional` `not-required` `https://github\\.com/thousandbrainsproject/tbp\\.monty/pull/\\d+`"
+            )
+
+        # Test valid predefined values
         input_data = [
             {
                 "path1": "future-work",
                 "path2": "test-item",
-                "title": "Test item with valid status fallback",
+                "title": "Test item with valid RFC",
                 "content": "Test content",
                 "estimated-scope": "medium",
                 "rfc": "required",
-                "status": "in-progress",
             }
         ]
 
@@ -619,8 +649,19 @@ class TestBuild(unittest.TestCase):
         # Should not raise any exceptions
         build(str(index_file), str(self.output_path), str(snippets_dir))
 
-        # Test invalid status (should fail with fallback values)
-        input_data[0]["status"] = "pending"
+        # Test valid URL
+        input_data[0]["rfc"] = (
+            "https://github.com/thousandbrainsproject/tbp.monty/pull/123"
+        )
+
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        # Should not raise any exceptions
+        build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        # Test invalid RFC value
+        input_data[0]["rfc"] = "invalid-rfc"
 
         with open(index_file, "w", encoding="utf-8") as f:
             json.dump(input_data, f)
@@ -629,10 +670,102 @@ class TestBuild(unittest.TestCase):
             build(str(index_file), str(self.output_path), str(snippets_dir))
 
         error_message = str(context.exception)
-        self.assertIn(
-            "status must be one of: completed, in-progress",
-            error_message,
-        )
+        self.assertIn("rfc must be one of:", error_message)
+        self.assertIn("not-required, optional, required, valid RFC URL", error_message)
+
+    def test_regex_validation_for_tags(self):
+        """Test that tags field also supports regex patterns."""
+        # Create temporary validation files with regex pattern
+        snippets_dir = self.temp_path / "snippets"
+        snippets_dir.mkdir()
+
+        tags_file = snippets_dir / "future-work-tags.md"
+        with open(tags_file, "w", encoding="utf-8") as f:
+            # Mix simple words and regex patterns
+            f.write("`accuracy` `pose` `learning.*` `test-\\d+`")
+
+        # Test valid simple tag
+        input_data = [
+            {
+                "path1": "future-work",
+                "path2": "test-item",
+                "title": "Test item with valid tags",
+                "content": "Test content",
+                "tags": "accuracy,pose",
+                "estimated-scope": "medium",
+                "rfc": "required",
+            }
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        # Should not raise any exceptions
+        build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        # Test valid regex pattern match
+        input_data[0]["tags"] = "learning-module,test-123"
+
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        # Should not raise any exceptions
+        build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        # Test invalid tag that doesn't match any pattern
+        input_data[0]["tags"] = "invalid-tag"
+
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        with self.assertRaises(ValueError) as context:
+            build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        error_message = str(context.exception)
+        self.assertIn("Invalid tags value 'invalid-tag'", error_message)
+
+    def test_word_boundary_wrapping(self):
+        """Test that simple alphanumeric words are wrapped with word boundaries."""
+        # Create temporary validation files
+        snippets_dir = self.temp_path / "snippets"
+        snippets_dir.mkdir()
+
+        tags_file = snippets_dir / "future-work-tags.md"
+        with open(tags_file, "w", encoding="utf-8") as f:
+            f.write("`test` `multi-word`")
+
+        # Test that "test" matches exactly due to word boundaries
+        input_data = [
+            {
+                "path1": "future-work",
+                "path2": "test-item",
+                "title": "Test word boundary validation",
+                "content": "Test content",
+                "tags": "test",
+                "estimated-scope": "medium",
+                "rfc": "required",
+            }
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        # Should not raise any exceptions
+        build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        # Test that partial matches are rejected due to word boundaries
+        input_data[0]["tags"] = "testing"  # Should not match "test"
+
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        with self.assertRaises(ValueError) as context:
+            build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        error_message = str(context.exception)
+        self.assertIn("Invalid tags value 'testing'", error_message)
 
 
 if __name__ == "__main__":
