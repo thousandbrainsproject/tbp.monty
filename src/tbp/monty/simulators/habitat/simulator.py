@@ -87,7 +87,7 @@ class HabitatSim(HabitatActuator):
         )
         with HabitatSim(agents=[camera]) as sim:
             sim.add_object(name="coneSolid", position=(0.0, 1.5, -0.2))
-            obs = sim.get_observations()
+            obs = sim.observations
 
         plot_image(obs["camera"]["camera_id"]["rgba"])
         plot_image(obs["camera"]["camera_id"]["depth"])
@@ -309,10 +309,10 @@ class HabitatSim(HabitatActuator):
         # Compare the intended number of objects added (counter) vs the number
         # instantiated in the Habitat environmnet
         self._object_counter += 1
-        num_objects_added = self.get_num_objects()
+        num_objects_added = self.num_objects
         if isinstance(num_objects_added, int):
             # In some units tests (e.g. MontyRunTest.test_main_with_single_experiment),
-            # a simulator mock object is used, and so self.get_num_objects does not
+            # a simulator mock object is used, and so self.num_objects does not
             # return a meaningful int, but instead another mock object
             # TODO make this test more robust and move to its own unit test
             assert self._object_counter == num_objects_added, "Not all objects added"
@@ -450,12 +450,14 @@ class HabitatSim(HabitatActuator):
 
         raise RuntimeError("Failed to find non-colliding positions")
 
-    def get_num_objects(self):
+    @property
+    def num_objects(self):
         """Return the number of instantiated objects."""
         rigid_mgr = self._sim.get_rigid_object_manager()
         return rigid_mgr.get_num_objects()
 
-    def get_action_space(self):
+    @property
+    def action_space(self):
         """Returns a set with all available actions.
 
         All available actions are those registered by all agents in the
@@ -511,10 +513,11 @@ class HabitatSim(HabitatActuator):
 
         action.act(self)
 
-        observations = self.get_observations()
+        observations = self.observations
         return observations
 
-    def get_observations(self) -> dict:
+    @property
+    def observations(self) -> dict:
         """Get sensor observations.
 
         Returns:
@@ -560,14 +563,15 @@ class HabitatSim(HabitatActuator):
 
         return processed_obs
 
-    def get_states(self) -> dict:
+    @property
+    def states(self) -> dict:
         """Get agent and sensor states (position, rotation, etc..).
 
         Returns:
             A dictionary with the agent pose in world coordinates and any other
             agent specific state as well as every sensor pose relative to the agent
             as well as any sensor specific state that is not returned by
-            :meth:`get_observations`.
+            :attr:`observations`.
 
             For example:
                 {
