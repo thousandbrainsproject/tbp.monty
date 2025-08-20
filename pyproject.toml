@@ -94,7 +94,9 @@ github_readme_sync_tool = [
     'colorama',
     'markdown2',
     'python-slugify',
-    'nh3'
+    'nh3',
+    'types-PyYAML',
+    'types-requests'
 ]
 future_work_widget = [
     'colorama',

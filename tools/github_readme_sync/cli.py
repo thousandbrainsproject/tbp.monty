@@ -89,12 +89,8 @@ def main():
     index_parser = subparsers.add_parser(
         "generate-index", help="Generate index.json from docs front-matter"
     )
-    index_parser.add_argument(
-        "folder", help="The docs directory to scan for markdown files"
-    )
-    index_parser.add_argument(
-        "output_file", help="Path where to write the index.json file"
-    )
+    index_parser.add_argument("folder", help="The directory to scan for markdown files")
+    index_parser.add_argument("output_file", help="Output file name")
 
     args = parser.parse_args()
 

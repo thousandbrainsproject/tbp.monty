@@ -14,6 +14,7 @@ import os
 import re
 import sys
 import timeit
+from typing import Any, Dict, List
 
 import requests
 
@@ -79,9 +80,9 @@ def check_hierarchy_file(folder: str):
         content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
         lines = content.splitlines()
 
-    parent_stack = []
+    parent_stack: List[Dict[str, Any]] = []
     current_category = None
-    unique_slugs = {}
+    unique_slugs: Dict[str, str] = {}
     link_check_errors = []
 
     for line in lines:
@@ -111,7 +112,7 @@ def check_hierarchy_file(folder: str):
             parent_stack.append(new_doc)
 
             full_path = (
-                os.path.join(folder, *(el["slug"] for el in parent_stack)) + ".md"
+                os.path.join(folder, *[el["slug"] for el in parent_stack]) + ".md"
             )
             errors = sanity_check(full_path)
             if errors:
@@ -129,6 +130,8 @@ def check_hierarchy_file(folder: str):
 def extract_slug(line: str):
     regex = r"\[(.*)\]\(.*\)"
     match = re.search(regex, line)
+    if match is None:
+        raise ValueError(f"No slug found in line: {line}")
     return match.group(1)
 
 

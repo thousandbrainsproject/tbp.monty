@@ -42,7 +42,7 @@ def find_markdown_files(
     ignore_dirs = ignore_dirs or DEFAULT_IGNORE_DIRS
     ignore_files = ignore_files or DEFAULT_IGNORE_FILES
 
-    md_files = []
+    md_files: List[str] = []
     for root, _, files in os.walk(folder):
         if any(ignore_dir in root for ignore_dir in ignore_dirs):
             continue
