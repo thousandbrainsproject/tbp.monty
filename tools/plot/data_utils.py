@@ -256,6 +256,8 @@ class EpisodeDataLoader:
 
         self.all_hypotheses_locations = []
         self.all_hypotheses_rotations = []
+        self.highest_evidence_locations = []
+        self.highest_evidence_rotations = []
         self.all_mlh_locations = []
         self.all_mlh_rotations = []
         self.all_mlh_graph_ids = []
@@ -323,6 +325,10 @@ class EpisodeDataLoader:
                 0
             ]  # not timestep dependent
             hypotheses_rotations = np.array(possible_rotations[self.target_name])
+            hypotheses_evidences = self.lm_data["evidences"][lm_step][self.target_name]
+            highest_evidence_index = np.argmax(hypotheses_evidences)
+            highest_evidence_rotation = hypotheses_rotations[highest_evidence_index]
+            highest_evidence_location = hypotheses_locations[highest_evidence_index]
 
             transformed_locations, transformed_rotations = apply_world_transform(
                 hypotheses_locations,
@@ -331,33 +337,31 @@ class EpisodeDataLoader:
                 self.ground_truth_position,
                 self.ground_truth_rotation,
             )
-
-            self.all_hypotheses_locations.append(transformed_locations)
-            self.all_hypotheses_rotations.append(transformed_rotations)
-
-    def _initialize_mlh_data(self) -> None:
-        """Extract and transform most likely hypothesis (MLH) data to world frame."""
-        learned_position = np.array([0, 1.5, 0])
-
-        for lm_step in range(self.num_lm_steps):
-            current_mlh = self.lm_data["current_mlh"][lm_step]
-            location = np.array(current_mlh["location"])
-            rotation_euler = np.array(current_mlh["rotation"])  # Euler angles
-
-            rotation_matrix = R.from_euler(
-                "xyz", rotation_euler, degrees=True
-            ).as_matrix()
-
-            transformed_location, transformed_rotation = apply_world_transform(
-                location.reshape(1, 3),
-                rotation_matrix.reshape(1, 3, 3),
+            (
+                transformed_highest_evidence_location,
+                transformed_highest_evidence_rotation,
+            ) = apply_world_transform(
+                highest_evidence_location.reshape(1, 3),
+                highest_evidence_rotation.reshape(1, 3, 3),
                 learned_position,
                 self.ground_truth_position,
                 self.ground_truth_rotation,
             )
 
-            self.all_mlh_locations.append(transformed_location[0])
-            self.all_mlh_rotations.append(transformed_rotation[0])
+            self.all_hypotheses_locations.append(transformed_locations)
+            self.all_hypotheses_rotations.append(transformed_rotations)
+            self.highest_evidence_locations.append(
+                transformed_highest_evidence_location.squeeze()
+            )
+            self.highest_evidence_rotations.append(
+                transformed_highest_evidence_rotation.squeeze()
+            )
+
+    def _initialize_mlh_data(self) -> None:
+        """Extract and transform most likely hypothesis (MLH) data to world frame."""
+
+        for lm_step in range(self.num_lm_steps):
+            current_mlh = self.lm_data["current_mlh"][lm_step]
             self.all_mlh_graph_ids.append(current_mlh["graph_id"])
 
     def _find_lm_to_sm_mapping(self) -> None:

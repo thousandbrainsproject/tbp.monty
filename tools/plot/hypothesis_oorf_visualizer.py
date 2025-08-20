@@ -40,7 +40,9 @@ from vedo import (
 
 from tbp.monty.frameworks.run_env import setup_env
 from tbp.monty.frameworks.utils.graph_matching_utils import get_custom_distances
-from tbp.monty.frameworks.utils.spatial_arithmetics import rotate_pose_dependent_features
+from tbp.monty.frameworks.utils.spatial_arithmetics import (
+    rotate_pose_dependent_features,
+)
 
 from .data_utils import (
     EpisodeDataLoader,
@@ -108,13 +110,15 @@ def is_hypothesis_inside_object_reference_frame(
     # Transform sensed rotation by all hypothesis rotations at once using spatial_arithmetics
     # Create features dict for rotate_pose_dependent_features
     features = {"pose_vectors": sensed_rotation}
-    
+
     # hyp_rotation: R^W_B (body frame → world frame, after world transform)
     # sensed_rotation: R_sensed^B (pose vectors in body/sensor frame)
     # Result: R^W_B * R_sensed^B = pose vectors transformed to world frame
     rotated_features = rotate_pose_dependent_features(features, hypothesis_rotations)
-    transformed_pose_vectors = rotated_features["pose_vectors"]  # Shape: (n_hypotheses, 3, 3)
-    
+    transformed_pose_vectors = rotated_features[
+        "pose_vectors"
+    ]  # Shape: (n_hypotheses, 3, 3)
+
     # Extract surface normals (first row of each pose vector matrix)
     surface_normals = transformed_pose_vectors[:, 0, :]  # Shape: (n_hypotheses, 3)
 
@@ -169,8 +173,8 @@ class HypothesesOORFVisualizer:
         )
         self.current_hypotheses_locations = None
         self.current_hypotheses_rotations = None
-        self.current_mlh_location = None
-        self.current_mlh_rotation = None
+        self.current_highest_evidence_location = None
+        self.current_highest_evidence_rotation = None
         self.current_mlh_graph_id = None
         self.current_sm0_location = None
         self.current_sm1_location = None
@@ -315,8 +319,8 @@ class HypothesesOORFVisualizer:
 
         mlh_oorf_info = is_hypothesis_inside_object_reference_frame(
             self.object_model,
-            self.current_mlh_location.reshape(1, 3),
-            self.current_mlh_rotation.reshape(1, 3, 3),
+            self.current_highest_evidence_location.reshape(1, 3),
+            self.current_highest_evidence_rotation.reshape(1, 3, 3),
             self.current_sensed_rotation,
             self.current_sensed_curvature,
             self.max_nneighbors,
@@ -327,18 +331,18 @@ class HypothesesOORFVisualizer:
         self.mlh_custom_nearest_node_dists = mlh_oorf_info["custom_nearest_node_dists"]
 
         self._add_ellipsoid(
-            self.current_mlh_location,
-            self.current_mlh_rotation,
+            self.current_highest_evidence_location,
+            self.current_highest_evidence_rotation,
             self.is_mlh_inside_reference_frame,
             is_mlh=True,
         )
         self._add_mlh_cube(
-            self.current_mlh_location, self.is_mlh_inside_reference_frame
+            self.current_highest_evidence_location, self.is_mlh_inside_reference_frame
         )
         self._add_nearest_neighbor_points(self.mlh_nearest_node_locs)
         self._add_axes_arrows(
-            self.current_mlh_location,
-            self.current_mlh_rotation,
+            self.current_highest_evidence_location,
+            self.current_highest_evidence_rotation,
         )
 
         self._add_sensor_spheres(timestep)
@@ -413,18 +417,18 @@ class HypothesesOORFVisualizer:
 
         # Also re-add MLH ellipsoid, cube, nearest neighbors, and axes
         self._add_ellipsoid(
-            self.current_mlh_location,
-            self.current_mlh_rotation,
+            self.current_highest_evidence_location,
+            self.current_highest_evidence_rotation,
             self.is_mlh_inside_reference_frame,
             is_mlh=True,
         )
         self._add_mlh_cube(
-            self.current_mlh_location, self.is_mlh_inside_reference_frame
+            self.current_highest_evidence_location, self.is_mlh_inside_reference_frame
         )
         self._add_nearest_neighbor_points(self.mlh_nearest_node_locs)
         self._add_axes_arrows(
-            self.current_mlh_location,
-            self.current_mlh_rotation,
+            self.current_highest_evidence_location,
+            self.current_highest_evidence_rotation,
         )
 
         # Update statistics text with new ellipsoid and NN info
@@ -459,8 +463,8 @@ class HypothesesOORFVisualizer:
         self.current_hypotheses_rotations = self.data_loader.all_hypotheses_rotations[
             timestep
         ]
-        self.current_mlh_location = self.data_loader.all_mlh_locations[timestep]
-        self.current_mlh_rotation = self.data_loader.all_mlh_rotations[timestep]
+        self.current_highest_evidence_location = self.data_loader.highest_evidence_locations[timestep]
+        self.current_highest_evidence_rotation = self.data_loader.highest_evidence_rotations[timestep]
         self.current_mlh_graph_id = self.data_loader.all_mlh_graph_ids[timestep]
         self.current_sm0_location = self.data_loader.all_sm0_locations[timestep]
         self.current_sm1_location = self.data_loader.all_sm1_locations[timestep]
@@ -612,7 +616,9 @@ class HypothesesOORFVisualizer:
         features = {"pose_vectors": self.current_sensed_rotation}
         # Reshape single rotation matrix to have batch dimension for consistency
         hypothesis_rotation_batch = hypothesis_rotation.reshape(1, 3, 3)
-        rotated_features = rotate_pose_dependent_features(features, hypothesis_rotation_batch)
+        rotated_features = rotate_pose_dependent_features(
+            features, hypothesis_rotation_batch
+        )
         transformed_pose_vectors = rotated_features["pose_vectors"]  # Shape: (1, 3, 3)
 
         surface_normal = transformed_pose_vectors[0, 0, :]  # Transformed surface normal
@@ -676,7 +682,9 @@ class HypothesesOORFVisualizer:
         features = {"pose_vectors": self.current_sensed_rotation}
         # Reshape single rotation matrix to have batch dimension for consistency
         hypothesis_rotation_batch = hypothesis_rotation.reshape(1, 3, 3)
-        rotated_features = rotate_pose_dependent_features(features, hypothesis_rotation_batch)
+        rotated_features = rotate_pose_dependent_features(
+            features, hypothesis_rotation_batch
+        )
         transformed_pose_vectors = rotated_features["pose_vectors"]  # Shape: (1, 3, 3)
 
         # Pose vectors are in Darboux Frame
@@ -710,7 +718,7 @@ class HypothesesOORFVisualizer:
         arrow3.alpha(0.9)
         self.hypothesis_axes.append(arrow3)
         self.plotter.at(self.main_renderer_ix).add(arrow3)
-        
+
     def _format_array(self, arr: np.ndarray | list) -> str:
         """Format array for display with consistent precision.
 
@@ -746,7 +754,6 @@ class HypothesesOORFVisualizer:
         # Format position and rotation arrays with scientific notation
         formatted_position = self._format_array(self.data_loader.ground_truth_position)
         formatted_rotation = self._format_array(self.data_loader.ground_truth_rotation)
-        formatted_mlh_location = self._format_array(self.current_mlh_location)
 
         # Get corresponding SM step for this LM timestep
         sm_step = self.data_loader.lm_to_sm_mapping[timestep]
