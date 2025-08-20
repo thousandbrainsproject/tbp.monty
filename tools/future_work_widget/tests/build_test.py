@@ -234,6 +234,234 @@ class TestBuild(unittest.TestCase):
         self.assertEqual(len(result_data), 1)
         self.assertEqual(len(result_data[0]["tags"]), max_items)
 
+    def test_validation_files_loading(self):
+        """Test loading validation files from docs/snippets directory."""
+        # Create temporary validation files
+        snippets_dir = self.temp_path / "snippets"
+        snippets_dir.mkdir()
+
+        # Create future-work-tags.md
+        tags_file = snippets_dir / "future-work-tags.md"
+        with open(tags_file, "w", encoding="utf-8") as f:
+            f.write("`accuracy` `pose` `learning` `multiobj`")
+
+        # Create future-work-skills.md
+        skills_file = snippets_dir / "future-work-skills.md"
+        with open(skills_file, "w", encoding="utf-8") as f:
+            f.write("`python` `github-actions` `JS` `HTML`")
+
+        validator = RecordValidator(str(snippets_dir))
+
+        # Check that validation sets were loaded
+        self.assertIn("tags", validator.validation_sets)
+        self.assertIn("skills", validator.validation_sets)
+
+        expected_tags = {"accuracy", "pose", "learning", "multiobj"}
+        expected_skills = {"python", "github-actions", "JS", "HTML"}
+
+        self.assertEqual(validator.validation_sets["tags"], expected_tags)
+        self.assertEqual(validator.validation_sets["skills"], expected_skills)
+
+    def test_tag_validation_success(self):
+        """Test successful tag validation against loaded validation files."""
+        # Create temporary validation files
+        snippets_dir = self.temp_path / "snippets"
+        snippets_dir.mkdir()
+
+        tags_file = snippets_dir / "future-work-tags.md"
+        with open(tags_file, "w", encoding="utf-8") as f:
+            f.write("`accuracy` `pose` `learning` `multiobj`")
+
+        input_data = [
+            {
+                "path1": "future-work",
+                "path2": "test-item",
+                "title": "Test item with valid tags",
+                "content": "Test content",
+                "tags": "accuracy,learning",
+                "estimated-scope": "medium",
+                "rfc": "required",
+            }
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        # Should not raise any exceptions
+        build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        # Verify the data was processed correctly
+        data_file = self.output_path / "data.json"
+        with open(data_file, "r", encoding="utf-8") as f:
+            result_data = json.load(f)
+
+        self.assertEqual(len(result_data), 1)
+        self.assertEqual(result_data[0]["tags"], ["accuracy", "learning"])
+
+    def test_tag_validation_failure(self):
+        """Test tag validation failure with invalid tags."""
+        # Create temporary validation files
+        snippets_dir = self.temp_path / "snippets"
+        snippets_dir.mkdir()
+
+        tags_file = snippets_dir / "future-work-tags.md"
+        with open(tags_file, "w", encoding="utf-8") as f:
+            f.write("`accuracy` `pose` `learning` `multiobj`")
+
+        input_data = [
+            {
+                "path1": "future-work",
+                "path2": "test-item",
+                "title": "Test item with invalid tags",
+                "content": "Test content",
+                "tags": "accuracy,invalid-tag,learning",
+                "estimated-scope": "medium",
+                "rfc": "required",
+            }
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        with self.assertRaises(ValueError) as context:
+            build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        error_message = str(context.exception)
+        self.assertIn("Invalid tags value 'invalid-tag'", error_message)
+        self.assertIn("accuracy, learning, multiobj, pose", error_message)
+
+    def test_skills_validation(self):
+        """Test skills field validation and comma-separated handling."""
+        # Create temporary validation files
+        snippets_dir = self.temp_path / "snippets"
+        snippets_dir.mkdir()
+
+        skills_file = snippets_dir / "future-work-skills.md"
+        with open(skills_file, "w", encoding="utf-8") as f:
+            f.write("`python` `github-actions` `JS` `HTML` `CSS`")
+
+        # Test valid skills
+        input_data = [
+            {
+                "path1": "future-work",
+                "path2": "test-item",
+                "title": "Test item with valid skills",
+                "content": "Test content",
+                "skills": "python,JS,HTML",
+                "estimated-scope": "medium",
+                "rfc": "required",
+            }
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        # Verify the data was processed correctly
+        data_file = self.output_path / "data.json"
+        with open(data_file, "r", encoding="utf-8") as f:
+            result_data = json.load(f)
+
+        self.assertEqual(len(result_data), 1)
+        self.assertEqual(result_data[0]["skills"], ["python", "JS", "HTML"])
+
+        # Test invalid skills
+        input_data[0]["skills"] = "python,invalid-skill"
+
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        with self.assertRaises(ValueError) as context:
+            build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        error_message = str(context.exception)
+        self.assertIn("Invalid skills value 'invalid-skill'", error_message)
+
+    def test_missing_validation_files_graceful(self):
+        """Test graceful handling of missing validation files."""
+        # Create snippets directory but no validation files
+        snippets_dir = self.temp_path / "snippets"
+        snippets_dir.mkdir()
+
+        input_data = [
+            {
+                "path1": "future-work",
+                "path2": "test-item",
+                "title": "Test item without validation files",
+                "content": "Test content",
+                "tags": "any-tag",
+                "skills": "any-skill",
+                "estimated-scope": "medium",
+                "rfc": "required",
+            }
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        # Should not raise exceptions - validation should be skipped
+        build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        # Verify the data was processed
+        data_file = self.output_path / "data.json"
+        with open(data_file, "r", encoding="utf-8") as f:
+            result_data = json.load(f)
+
+        self.assertEqual(len(result_data), 1)
+        self.assertEqual(result_data[0]["tags"], ["any-tag"])
+        self.assertEqual(result_data[0]["skills"], ["any-skill"])
+
+    def test_nonexistent_snippets_directory(self):
+        """Test handling of nonexistent snippets directory."""
+        nonexistent_dir = self.temp_path / "nonexistent"
+
+        input_data = [
+            {
+                "path1": "future-work",
+                "path2": "test-item",
+                "title": "Test item with nonexistent snippets dir",
+                "content": "Test content",
+                "estimated-scope": "medium",
+                "rfc": "required",
+            }
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        # Should not raise exceptions
+        build(str(index_file), str(self.output_path), str(nonexistent_dir))
+
+        # Verify the data was processed
+        data_file = self.output_path / "data.json"
+        with open(data_file, "r", encoding="utf-8") as f:
+            result_data = json.load(f)
+
+        self.assertEqual(len(result_data), 1)
+
+    def test_build_without_snippets_dir(self):
+        """Test build function without docs_snippets_dir parameter."""
+        input_data = [
+            {
+                "path1": "future-work",
+                "path2": "test-item",
+                "title": "Test item without snippets validation",
+                "content": "Test content",
+                "estimated-scope": "medium",
+                "rfc": "required",
+            }
+        ]
+
+        # This should work the same as before (no validation files)
+        result_data = self._run_build_test(input_data)
+        self.assertEqual(len(result_data), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

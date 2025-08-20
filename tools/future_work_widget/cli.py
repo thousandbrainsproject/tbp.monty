@@ -35,13 +35,19 @@ def main():
     build_parser.add_argument(
         "output_dir", help="The output directory to create and save data.json"
     )
+    build_parser.add_argument(
+        "--docs-snippets-dir",
+        help="Path to docs/snippets directory for validation files",
+        default="docs/snippets",
+    )
 
     args = parser.parse_args()
 
     initialize()
 
     if args.command == "build":
-        build(args.index_file, args.output_dir)
+        docs_snippets_dir = args.docs_snippets_dir
+        build(args.index_file, args.output_dir, docs_snippets_dir)
 
 
 def initialize():

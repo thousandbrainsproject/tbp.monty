@@ -11,21 +11,24 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 
 class RecordValidator:
     """Validates and transforms records for the future work widget."""
 
-    COMMA_SEPARATED_FIELDS = ["tags", "owner"]
+    COMMA_SEPARATED_FIELDS = ["tags", "owner", "skills"]
     MAX_COMMA_SEPARATED_ITEMS = 10
     REQUIRED_FIELDS = ["estimated-scope", "rfc"]
     VALID_ESTIMATED_SCOPE = {"small", "medium", "large", "unknown"}
     VALID_RFC_VALUES = {"required", "optional", "not-required"}
     VALID_STATUS = {"completed", "in-progress"}
 
-    def __init__(self):
+    def __init__(self, docs_snippets_dir: Optional[str] = None):
         self.errors: List[str] = []
+        self.validation_sets: Dict[str, Set[str]] = {}
+        if docs_snippets_dir:
+            self._load_validation_files(docs_snippets_dir)
 
     def validate(self, record: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Validate and transform a record.
@@ -63,6 +66,7 @@ class RecordValidator:
         self._validate_estimated_scope(transformed_record)
         self._validate_rfc(transformed_record)
         self._validate_status(transformed_record)
+        self._validate_field_values(transformed_record)
 
         return transformed_record
 
@@ -139,13 +143,79 @@ class RecordValidator:
         """Clear all validation errors."""
         self.errors.clear()
 
+    def _load_validation_files(self, docs_snippets_dir: str) -> None:
+        """Load validation files from docs/snippets directory.
 
-def build(index_file: str, output_dir: str) -> None:
+        Args:
+            docs_snippets_dir: Path to the docs/snippets directory
+        """
+        snippets_path = Path(docs_snippets_dir)
+        if not snippets_path.exists():
+            logging.warning(f"Snippets directory not found: {docs_snippets_dir}")
+            return
+
+        future_work_files = list(snippets_path.glob("future-work-*.md"))
+
+        for file_path in future_work_files:
+            field_name = file_path.stem.replace("future-work-", "")
+
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read().strip()
+
+                valid_values = set()
+                for raw_item in content.split("`"):
+                    clean_item = raw_item.strip()
+                    if clean_item:
+                        valid_values.add(clean_item)
+
+                if valid_values:
+                    self.validation_sets[field_name] = valid_values
+                    logging.info(
+                        f"Loaded {len(valid_values)} valid values for '{field_name}' "
+                        f"from {file_path.name}"
+                    )
+
+            except (OSError, UnicodeDecodeError):
+                logging.exception(f"Failed to load validation file {file_path}")
+
+    def _validate_field_values(self, record: Dict[str, Any]) -> None:
+        """Validate field values against loaded validation sets.
+
+        Args:
+            record: The record to validate
+        """
+        for field_name, valid_values in self.validation_sets.items():
+            if field_name in record:
+                record_values = record[field_name]
+
+                if isinstance(record_values, list):
+                    for value in record_values:
+                        if value not in valid_values:
+                            sorted_valid = sorted(valid_values)
+                            self.errors.append(
+                                f"Invalid {field_name} value '{value}'. "
+                                f"Valid values are: {', '.join(sorted_valid)}"
+                            )
+                elif isinstance(record_values, str):
+                    if record_values not in valid_values:
+                        sorted_valid = sorted(valid_values)
+                        self.errors.append(
+                            f"Invalid {field_name} value '{record_values}'. "
+                            f"Valid values are: {', '.join(sorted_valid)}"
+                        )
+
+
+def build(
+    index_file: str, output_dir: str, docs_snippets_dir: Optional[str] = None
+) -> None:
     """Build the future work widget data.
 
     Args:
         index_file: Path to the index.json file to process
         output_dir: Path to the output directory to create and save data.json
+        docs_snippets_dir: Optional path to docs/snippets directory for
+            validation files
 
     Raises:
         FileNotFoundError: If the index file does not exist
@@ -164,7 +234,7 @@ def build(index_file: str, output_dir: str) -> None:
     if not isinstance(data, list):
         raise TypeError("Index file must contain a JSON array")
 
-    validator = RecordValidator()
+    validator = RecordValidator(docs_snippets_dir)
     future_work_items = []
 
     for item in data:
@@ -176,7 +246,10 @@ def build(index_file: str, output_dir: str) -> None:
     if errors:
         for error in errors:
             logging.error(f"Validation error: {error}")
-        raise ValueError(f"Validation failed with {len(errors)} error(s)")
+        error_details = "; ".join(errors)
+        raise ValueError(
+            f"Validation failed with {len(errors)} error(s): {error_details}"
+        )
 
     logging.info(
         f"Found {len(future_work_items)} future-work items out of "
