@@ -182,12 +182,12 @@ The granularity SHOULD NOT be individual NumPy functions, but rather whole opera
 
 ```python
 # Don't do something this granular
-def get_worldbody(spec: MjSpec) -> MjsBody:
+def mujoco_worldbody(spec: MjSpec) -> MjsBody:
     return spec.worldbody  # this might require `cast(MjsBody, spec.worldbody)`
 
 def some_other_method(...) -> None:
     ...
-    worldbody = get_worldbody(spec)
+    worldbody = mujoco_worldbody(spec)
     ...
 
 # Instead, just declare the types in the other method where needed
