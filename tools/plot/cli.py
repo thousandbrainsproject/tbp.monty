@@ -17,6 +17,7 @@ sys.path.append(str(monty_root))
 
 from tools.plot import (  # noqa: E402
     correct_percentage_per_episode,
+    interactive_hypothesis_space_correlation,
     interactive_objects_evidence_over_time,
     objects_evidence_over_time,
     pose_error_over_time,
@@ -41,6 +42,7 @@ def main():
     pose_error_over_time.add_subparser(subparsers, parent_parser)
     correct_percentage_per_episode.add_subparser(subparsers, parent_parser)
     interactive_objects_evidence_over_time.add_subparser(subparsers, parent_parser)
+    interactive_hypothesis_space_correlation.add_subparser(subparsers, parent_parser)
 
     args = parser.parse_args()
 
