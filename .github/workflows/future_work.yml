@@ -90,7 +90,7 @@ jobs:
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
-          echo "Hello, world!"
+          echo "Hello, world 2!"
 
   should_run_future_work:
     name: should-run-future-work
