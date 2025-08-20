@@ -179,6 +179,11 @@ class EnvironmentDataLoader:
         self._action = None
         self._counter = 0
 
+# anna added. necessary? or do we want to require callers to access the env for this?
+    @property
+    def action_space(self):
+        return self.env.action_space
+
     def __iter__(self) -> Self:
         """Implement the iterator protocol.
 
