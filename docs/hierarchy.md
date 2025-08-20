@@ -25,7 +25,6 @@
 - [running-benchmarks](how-to-use-monty/running-benchmarks.md)
 - [logging-and-analysis](how-to-use-monty/logging-and-analysis.md)
 - [customizing-monty](how-to-use-monty/customizing-monty.md)
-- [implementing-actions](how-to-use-monty/implementing-actions.md)
 - [tutorials](how-to-use-monty/tutorials.md)
   - [running-your-first-experiment](how-to-use-monty/tutorials/running-your-first-experiment.md)
   - [pretraining-a-model](how-to-use-monty/tutorials/pretraining-a-model.md)
