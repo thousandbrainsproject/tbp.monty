@@ -171,7 +171,7 @@ The Monty documentation uses the first two parts of semantic versioning (semver)
 
 ## Future Work Metadata
 
-The future work documents have special Frontmatter metadata that is used to power the future-work widget.  Some of these tags are used as an allow list to mitigate the explosion of allowable tags.
+The future work documents have special Frontmatter metadata that is used to power the future-work widget.  The following fields are validated against allow lists defined in snippet files to ensure consistency and quality.
 
 ### Tags
 
@@ -180,3 +180,11 @@ The future work documents have special Frontmatter metadata that is used to powe
 ### Skills
 
 !snippet[../snippets/future-work-skills.md]
+
+### Estimated Scope
+
+!snippet[../snippets/future-work-estimated-scope.md]
+
+### Status
+
+!snippet[../snippets/future-work-status.md]

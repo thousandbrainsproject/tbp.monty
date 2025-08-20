@@ -20,9 +20,7 @@ class RecordValidator:
     COMMA_SEPARATED_FIELDS = ["tags", "owner", "skills"]
     MAX_COMMA_SEPARATED_ITEMS = 10
     REQUIRED_FIELDS = ["estimated-scope", "rfc"]
-    VALID_ESTIMATED_SCOPE = {"small", "medium", "large", "unknown"}
     VALID_RFC_VALUES = {"required", "optional", "not-required"}
-    VALID_STATUS = {"completed", "in-progress"}
 
     def __init__(self, docs_snippets_dir: Optional[str] = None):
         self.errors: List[str] = []
@@ -63,9 +61,7 @@ class RecordValidator:
                 transformed_record[field] = items
 
         self._validate_required_fields(transformed_record)
-        self._validate_estimated_scope(transformed_record)
         self._validate_rfc(transformed_record)
-        self._validate_status(transformed_record)
         self._validate_field_values(transformed_record)
 
         return transformed_record
@@ -77,17 +73,6 @@ class RecordValidator:
                 self.errors.append(f"Required field '{field}' is missing")
             elif not isinstance(record[field], str) or not record[field].strip():
                 self.errors.append(f"Required field '{field}' cannot be empty")
-
-    def _validate_estimated_scope(self, record: Dict[str, Any]) -> None:
-        """Validate estimated-scope field."""
-        if "estimated-scope" in record:
-            value = record["estimated-scope"]
-            if not isinstance(value, str) or value not in self.VALID_ESTIMATED_SCOPE:
-                valid_values = ", ".join(sorted(self.VALID_ESTIMATED_SCOPE))
-                self.errors.append(
-                    f"estimated-scope must be one of: {valid_values}. "
-                    f"Got: {value}"
-                )
 
     def _validate_rfc(self, record: Dict[str, Any]) -> None:
         """Validate rfc field."""
@@ -105,19 +90,8 @@ class RecordValidator:
 
             valid_values = ", ".join(sorted(self.VALID_RFC_VALUES))
             self.errors.append(
-                f"rfc must be one of: {valid_values} or a valid RFC URL. "
-                f"Got: {value}"
+                f"rfc must be one of: {valid_values} or a valid RFC URL. Got: {value}"
             )
-
-    def _validate_status(self, record: Dict[str, Any]) -> None:
-        """Validate status field."""
-        if "status" in record:
-            value = record["status"]
-            if not isinstance(value, str) or value not in self.VALID_STATUS:
-                valid_values = ", ".join(sorted(self.VALID_STATUS))
-                self.errors.append(
-                    f"status must be one of: {valid_values}. Got: {value}"
-                )
 
     def _is_valid_rfc_url(self, url: str) -> bool:
         """Check if the URL is a valid RFC URL.
@@ -204,6 +178,50 @@ class RecordValidator:
                             f"Invalid {field_name} value '{record_values}'. "
                             f"Valid values are: {', '.join(sorted_valid)}"
                         )
+
+        # Handle estimated-scope field specifically (required field)
+        if "estimated-scope" in record:
+            value = record["estimated-scope"]
+            if "estimated-scope" in self.validation_sets:
+                # Validate against loaded validation set
+                valid_scopes = self.validation_sets["estimated-scope"]
+                if not isinstance(value, str) or value not in valid_scopes:
+                    sorted_valid = sorted(valid_scopes)
+                    self.errors.append(
+                        f"estimated-scope must be one of: {', '.join(sorted_valid)}. "
+                        f"Got: {value}"
+                    )
+            else:
+                # Fallback to hardcoded values if snippet file not available
+                fallback_scopes = {"small", "medium", "large", "unknown"}
+                if not isinstance(value, str) or value not in fallback_scopes:
+                    sorted_valid = sorted(fallback_scopes)
+                    self.errors.append(
+                        f"estimated-scope must be one of: {', '.join(sorted_valid)}. "
+                        f"Got: {value}"
+                    )
+
+        # Handle status field specifically
+        if "status" in record:
+            value = record["status"]
+            if "status" in self.validation_sets:
+                # Validate against loaded validation set
+                valid_statuses = self.validation_sets["status"]
+                if not isinstance(value, str) or value not in valid_statuses:
+                    sorted_valid = sorted(valid_statuses)
+                    self.errors.append(
+                        f"status must be one of: {', '.join(sorted_valid)}. "
+                        f"Got: {value}"
+                    )
+            else:
+                # Fallback to hardcoded values if snippet file not available
+                fallback_statuses = {"completed", "in-progress"}
+                if not isinstance(value, str) or value not in fallback_statuses:
+                    sorted_valid = sorted(fallback_statuses)
+                    self.errors.append(
+                        f"status must be one of: {', '.join(sorted_valid)}. "
+                        f"Got: {value}"
+                    )
 
 
 def build(

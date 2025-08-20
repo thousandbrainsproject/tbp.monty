@@ -462,6 +462,178 @@ class TestBuild(unittest.TestCase):
         result_data = self._run_build_test(input_data)
         self.assertEqual(len(result_data), 1)
 
+    def test_estimated_scope_validation(self):
+        """Test estimated-scope validation against snippet file."""
+        # Create temporary validation files
+        snippets_dir = self.temp_path / "snippets"
+        snippets_dir.mkdir()
+
+        scope_file = snippets_dir / "future-work-estimated-scope.md"
+        with open(scope_file, "w", encoding="utf-8") as f:
+            f.write("`small` `medium` `large` `unknown`")
+
+        # Test valid estimated-scope
+        input_data = [
+            {
+                "path1": "future-work",
+                "path2": "test-item",
+                "title": "Test item with valid scope",
+                "content": "Test content",
+                "estimated-scope": "medium",
+                "rfc": "required",
+            }
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        # Should not raise any exceptions
+        build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        # Test invalid estimated-scope
+        input_data[0]["estimated-scope"] = "huge"
+
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        with self.assertRaises(ValueError) as context:
+            build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        error_message = str(context.exception)
+        self.assertIn(
+            "estimated-scope must be one of: large, medium, small, unknown",
+            error_message,
+        )
+        self.assertIn("Got: huge", error_message)
+
+    def test_estimated_scope_fallback_validation(self):
+        """Test estimated-scope validation falls back when snippet missing."""
+        # Create snippets directory but no estimated-scope file
+        snippets_dir = self.temp_path / "snippets"
+        snippets_dir.mkdir()
+
+        # Test valid scope (should work with fallback)
+        input_data = [
+            {
+                "path1": "future-work",
+                "path2": "test-item",
+                "title": "Test item with valid scope fallback",
+                "content": "Test content",
+                "estimated-scope": "medium",
+                "rfc": "required",
+            }
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        # Should not raise any exceptions
+        build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        # Test invalid scope (should fail with fallback values)
+        input_data[0]["estimated-scope"] = "huge"
+
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        with self.assertRaises(ValueError) as context:
+            build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        error_message = str(context.exception)
+        self.assertIn(
+            "estimated-scope must be one of: large, medium, small, unknown",
+            error_message,
+        )
+
+    def test_status_validation(self):
+        """Test status validation against snippet file."""
+        # Create temporary validation files
+        snippets_dir = self.temp_path / "snippets"
+        snippets_dir.mkdir()
+
+        status_file = snippets_dir / "future-work-status.md"
+        with open(status_file, "w", encoding="utf-8") as f:
+            f.write("`completed` `in-progress`")
+
+        # Test valid status
+        input_data = [
+            {
+                "path1": "future-work",
+                "path2": "test-item",
+                "title": "Test item with valid status",
+                "content": "Test content",
+                "estimated-scope": "medium",
+                "rfc": "required",
+                "status": "completed",
+            }
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        # Should not raise any exceptions
+        build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        # Test invalid status
+        input_data[0]["status"] = "pending"
+
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        with self.assertRaises(ValueError) as context:
+            build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        error_message = str(context.exception)
+        self.assertIn(
+            "status must be one of: completed, in-progress",
+            error_message,
+        )
+        self.assertIn("Got: pending", error_message)
+
+    def test_status_fallback_validation(self):
+        """Test status validation falls back when snippet missing."""
+        # Create snippets directory but no status file
+        snippets_dir = self.temp_path / "snippets"
+        snippets_dir.mkdir()
+
+        # Test valid status (should work with fallback)
+        input_data = [
+            {
+                "path1": "future-work",
+                "path2": "test-item",
+                "title": "Test item with valid status fallback",
+                "content": "Test content",
+                "estimated-scope": "medium",
+                "rfc": "required",
+                "status": "in-progress",
+            }
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        # Should not raise any exceptions
+        build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        # Test invalid status (should fail with fallback values)
+        input_data[0]["status"] = "pending"
+
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        with self.assertRaises(ValueError) as context:
+            build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        error_message = str(context.exception)
+        self.assertIn(
+            "status must be one of: completed, in-progress",
+            error_message,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
