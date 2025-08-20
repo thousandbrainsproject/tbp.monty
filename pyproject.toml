@@ -96,6 +96,10 @@ github_readme_sync_tool = [
     'python-slugify',
     'nh3'
 ]
+future_work_widget = [
+    'colorama',
+    'markdown2'
+]
 print_version_tool = [
     'semver'
 ]
