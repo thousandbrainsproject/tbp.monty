@@ -1,5 +1,7 @@
 ---
 title: Test Learning at Different Speeds Depending on Level in Hierarchy
+rfc: optional
+estimated-scope: unknown
 ---
 
 Our general view is that episodic memory and working memory in the brain leverage similar representations to those in learning modules, i.e. structured reference frames of discrete objects.

@@ -1,5 +1,7 @@
 ---
 title: Outline Routing Protocol Attention
+rfc: optional
+estimated-scope: unknown
 ---
 
 As we create Monty systems with more LMs, it will become increasingly important to be able to emphasize the representations in certain LMs over others, as a form of "covert" attention. This will complement the current ability to explicitly attend to a point in space through motor actions.

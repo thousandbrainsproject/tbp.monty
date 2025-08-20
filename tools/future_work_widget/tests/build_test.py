@@ -101,11 +101,11 @@ class TestBuild(unittest.TestCase):
                     "content": "Test content",
                     "tags": "machine-learning,voting,algorithms",
                     "estimated-scope": "medium",
-                    "rfc": "required"
+                    "rfc": "required",
                 },
                 "expected_result": {
                     "tags": ["machine-learning", "voting", "algorithms"]
-                }
+                },
             },
             {
                 "name": "handles_rfc_url",
@@ -115,12 +115,12 @@ class TestBuild(unittest.TestCase):
                     "title": "Test item with RFC URL",
                     "content": "Test content",
                     "estimated-scope": "medium",
-                    "rfc": "https://github.com/thousandbrainsproject/pull/1223"
+                    "rfc": "https://github.com/thousandbrainsproject/tbp.monty/pull/1223",
                 },
                 "expected_result": {
-                    "rfc": "https://github.com/thousandbrainsproject/pull/1223"
-                }
-            }
+                    "rfc": "https://github.com/thousandbrainsproject/tbp.monty/pull/1223"
+                },
+            },
         ]
 
         for case in test_cases:

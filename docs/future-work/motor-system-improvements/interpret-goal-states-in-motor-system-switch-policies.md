@@ -1,5 +1,7 @@
 ---
 title: Interpret Goal States in Motor System & Switch Policies
+rfc: optional
+estimated-scope: unknown
 ---
 
 We would like to implement a state-switching mechanism where an LM (or multiple LMs) can pass a goal-state to the motor system to switch the model-free policies that it is executing.

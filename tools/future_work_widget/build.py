@@ -40,7 +40,7 @@ class RecordValidator:
             self.errors.append("Record must be a dictionary")
             return None
 
-        if record.get("path1") != "future-work":
+        if record.get("path1") != "future-work" or "path2" not in record:
             return None
 
         transformed_record = record.copy()
@@ -122,8 +122,8 @@ class RecordValidator:
             True if the URL is a valid RFC URL, False otherwise
         """
         github_patterns = [
-            "github.com/thousandbrainsproject/pull/",
-            "https://github.com/thousandbrainsproject/pull/"
+            "github.com/thousandbrainsproject/tbp.monty/pull/",
+            "https://github.com/thousandbrainsproject/tbp.monty/pull/",
         ]
         return any(url.startswith(pattern) for pattern in github_patterns)
 

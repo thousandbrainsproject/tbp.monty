@@ -1,5 +1,7 @@
 ---
 title: Implement a Simple Cross-Modal Policy for Sensory Guidance
+rfc: optional
+estimated-scope: unknown
 ---
 
 Once we have infrastructure support for multiple agents that move independently (see [Add Infrastructure for Multiple Agents that Move Independently](../framework-improvements/add-infrastructure-for-multiple-agents-that-move-independently.md)), we would like to implement a simple cross-modal policy for sensory guidance.
