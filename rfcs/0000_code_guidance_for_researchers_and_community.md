@@ -14,7 +14,7 @@ When this RFC is merged, the intent is to transfer most of its contents into an 
 # Definitions
 
 - *Research Prototype (RP)*: A rapidly implemented feature intended to evaluate a research idea. This can establish or refute the hypothesized benefits of the idea, as well as enable measuring other qualities associated with it.
-- *Implementation Project (IP)*: The process of refactoring a Research Prototype (as well as potentially `tbp.monty` itself) in order to merge a useful RP into the platform code-base (`thousandbrainsproject/tbp.monty`).
+- *Implementation Project (IP)*: The process of refactoring a Research Prototype (as well as potentially `tbp.monty` itself) in order to merge a feature that was proven useful by an RP into the platform code-base (`thousandbrainsproject/tbp.monty`).
 
 # Guidance on Research Workflows
 
