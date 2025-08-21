@@ -62,7 +62,22 @@ Give your fork a name like `feat.description_of_prototype`:
 - Similarly, GitHub Workflows (such as unit tests and linting) will not automatically run in your new fork. It is recommended that you regularly run linting and unit-tests in your local environment when developing. 
 
 ### Alternative Workflows
-- We discussed using branches within existing personal forks as a way of managing Research Prototypes. However, this risks becoming overwhelming with the number of features. It also does not provide the same visibility to the community about existing prototypes that are reaching a mature stage of development.
+
+### `dev` Branch as Intermediary
+- A slight modification to the above...
+
+<img src="0000_code_guidance_for_researchers_and_community/dev_workflow.png" alt="Using a Dev Branch" width="500">
+
+### `tbp.monty` as a Dependency
+- Another alternative is to have `tbp.monty` as a dependency, and simply subclass or overwrite any functions that need to be altered.
+- This can clearly demarcate what parts of the code have changed, and might be particularly suitable when creating a new child-class, or an entirely new function. Examples of this might be implementing a new data-loader for a particular dataset, or a new type of sensor module.
+- This approach is less well suited when significant parts of the existing code need to be altered in-place. While still doable, it can be challenging with this approach and a standard `diff` to see what is genuinely new.
+
+### Feature Branches (Not Feature Forks)
+- We discussed using branches within existing personal forks as a way of managing Research Prototypes.
+- However, this risks becoming overwhelming with the number of features.
+- It also does not provide the same visibility to the community about existing prototypes that are reaching a mature stage of development.
+- If you are a member of the community doing research and you are unable to create multiple forks on your profile, this can actually be a good approach.
 
 ### Discontinued Research Prototypes
 - Sometimes a research idea will not bear fruit. This is fine, indeed we expect this to happen from time to time, and it is the primary reason we expect the proposed workflow to be faster than merging all changes into `tbp.monty`. When an RP does not demonstrate a fundamental improvement, you should archive the fork in question.
