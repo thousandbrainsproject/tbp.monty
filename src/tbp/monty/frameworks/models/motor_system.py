@@ -38,7 +38,12 @@ class MotorSystem:
 
     @property
     def agent_id(self) -> str:
-        """Returns the agent ID of the motor system."""
+        """Returns the agent ID of the motor system.
+
+        NOTE: this assumes one agent is associated with the motor system.
+        When we move to a motor system composed of many motor modules, agent IDs
+        will likely be associated with the latter.
+        """
         return self._policy.agent_id
 
     @property
