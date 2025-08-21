@@ -10,9 +10,11 @@ LLM code-assistants have the potential to improve the productivity of coders. Mo
 
 ## Writing RFCs
 
-We ask that all RFCs are written by you, and that you refrain from using Large Language Models (LLMs) like ChatGPT in this process. Some of our motivations for this are:
+We ask that all RFCs are written by you, and that you refrain from using Large Language Models (LLMs) like ChatGPT in the writing process. Some of our motivations for this are:
 - We want to get a clear understanding of your solution, and we have found that LLMs give poor, if approximately correct, RFC proposals. This is particularly the case because the work of the TBP falls very much in the "out of training distribution" domain.
 - When we review RFCs written by LLMs, it often ends up taking more time both for us, and for you, so it is much better if you write them yourself.
+
+Note that it is acceptable to discuss ideas with an LLM when formulating your own thoughts. For example, there may be a concept in neuroscience or computer vision that you would like to understand better, and LLM conversations can be a useful starting point. However, the RFC should be written in your own words. Furthermore, we recommend that you always be wary of hallucinations in LLM outputs; due to their frequent occurrence, LLMs are better used as an initial - but not final - provider of information on a topic.
 
 ## Contributing Code to `tbp.monty`
 
