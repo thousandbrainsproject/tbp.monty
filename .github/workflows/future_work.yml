@@ -90,7 +90,10 @@ jobs:
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
-          echo "Hello, world 2!"
+          python -m tools.github_readme_sync.cli generate-index docs "${{ runner.temp }}/index.json"
+          python -m tools.future_work_widget.cli build "${{ runner.temp }}/index.json" "${{ runner.temp }}/future-work-widget"
+          cp tools/future_work_widget/app/* "${{ runner.temp }}/future-work-widget/"
+          ls -lR "${{ runner.temp }}"
 
   should_run_future_work:
     name: should-run-future-work
