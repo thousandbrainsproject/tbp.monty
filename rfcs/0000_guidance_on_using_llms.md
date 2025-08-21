@@ -22,7 +22,7 @@ In principle, you may use LLMs, such as code-assistants, when writing code that 
 
 ### Quality Concerns
 - As with RFCs, we have found that our code-base is out-of-distribution, and the quality of code written by LLMs, while superficially correct, often is not.
-- Similarly, Monty is fundamentally about developing sensorimotor AI that can succeed in embodied settings. These are precisely the settings that LLMs struggle to perform in, and so once again we have found they frequently provide incorrect, logically inconsistent solutions.
+- Similarly, Monty is fundamentally about developing sensorimotor AI that can succeed in embodied settings. These are precisely the settings that LLMs struggle to perform in, and so once again we have found they frequently provide incorrect solutions.
 - LLM code is often verbose, or results in excessive, unnecessary changes to the code.
 
 Due to the above reasons, LLM-generated code can take a great deal of time to review and debug. This can be avoided when PRs are written with intent by a person.
@@ -46,13 +46,14 @@ Below we provide further guidance on some edge cases.
 #### Agentic LLMs 
 - The issues highlighted mean that we ask that you do *not* use agentic workflows that write large amounts of code in an automated way, unless as a means of automating a simple task.
 - An example of a reasonable use of an agentic LLM setup would be widespread changes required to reflect an update in terminology. For example, in a [recent PR](https://github.com/thousandbrainsproject/tbp.tbs_sensorimotor_intelligence/pull/55/files), the order of two figures in our paper was swapped, requiring many small changes to the code and documentation. This was rapidly automated with LLM assistance. We then verified the correctness of the implementation after these changes.
-- On the other hand, please do not pass a Future Work item description into an LLM, and then open a PR with all of the code it generated. These kinds of contributions slow down, rather than accelerate, our shared mission at the Thousand Brains Project.
+- On the other hand, please do not pass a [Future Work item](https://thousandbrainsproject.readme.io/docs/project-roadmap) description into an LLM, and then open a PR with all of the code it generated. These kinds of contributions slow down, rather than accelerate, our shared mission at the Thousand Brains Project.
 
 ## Contributing on the Forums
 
 - [The TBP Discourse forums](https://thousandbrains.discourse.group/) are an excellent setting to discuss nascent ideas.
 - In these discussions, we would love to engage with you and your ideas. As such, we ask that you not post the outputs of LLMs as if these were your own ideas.
 - If you would like to quote or refer to a conversation you have had with an LLM, please just indicate this clearly.
+- See the advice under [Writing RFCs](#writing-rfcs) for suggestions about when LLMs can be useful "tutors" when exploring a topic.
 
 ## Assistive Technology
 - Please note that the above guidance does not apply to assistive technology such as grammar checkers, which we understand you might find helpful in copy-editing text in RFCs and forum posts. If you need to use a more advanced AI tool for a specific reason, we ask that you reach out to us directly to discuss this beforehand.
