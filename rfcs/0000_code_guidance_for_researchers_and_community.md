@@ -41,11 +41,11 @@ Give your fork a name like `feat.description_of_prototype`:
 
 ### Workflow
 - The aim is to progressively implement the Research Prototype via a series of PRs into the `main` branch of your RP fork.
-    - You should formulate PRs into the main branch as _atomic_ PRs for review by other researchers.
+    - Please try to formulate PRs into the main branch as _atomic_ PRs for review by other researchers.
     - Note that _atomic_ does not always mean small, although it is a common finding that PRs (especially by researchers!) are too large. Rather, atomic means that the PR represents a full, minimally self-contained change. The PR should not depend on code that will be added in the future, although context can be provided where helpful re. future changes.
-- When you open a PR into your fork's `main` branch, tag at least one other TBP researcher for review.
-    - You should NOT merge PR changes into the Research Prototype `main` branch without receiving a review from another researcher.
-    - Note that this will not be enshrined in any protection rules, since doing so would enforce a PR process whenever the fork / branches are synced with upstream changes.
+- When you open a PR into your fork's `main` branch, it is generally recommended that you tag at least one other TBP researcher for review.
+    - The aim is that RP work should be regularly reviewed and discussed with other researchers; getting reviews early, particularly for complex or conceptually important changes, reduces the chance that significant effort will be spent on a change that might be in a suboptimal direction.
+    - However, researchers should use their own judgement to weigh the benefits of reviews on every atomic change against the benefit of quick iteration and experimentation.
 - During your work, ensure you regularly update your fork and its branches with any upstream changes to `thousandbrainsproject/tbp.monty`. This will reduce the chance that a longer RP-project is associated with significant merge conflicts when you later wish to merge it into the primary Monty code-base.
 - When a research prototype has been fully implemented and its merits established through evaluations and visualizations, the `main` branch is ready to form the basis of an Implementation Project.
 - The Implementation Project (IP) involves any necessary refactoring of the Research Prototype to ensure it adheres to the [guidelines of the platform](https://thousandbrainsproject.readme.io/docs/code-style-guide) before merging into `tbp.monty`. For more information, see [RFC 14 Conducting Research While Building a Stable Platform](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0014_conducting_research_while_building_a_stable_platform.md).
