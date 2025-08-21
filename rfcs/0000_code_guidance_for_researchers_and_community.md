@@ -98,5 +98,5 @@ Following the above guidance will ensure you do not spend a large amount of time
 ### Workflow for Contributing Code
 
 If you are a member of the community working on a research idea, then we would recommend you also follow the above guidance under [Workflow for TBP Researchers: from Research Prototype to Implementation Project](#workflow-for-tbp-researchers-from-research-prototype-to-implementation-project). The main additional points to highlight are:
-- When opening the fork, you should set yourself as the owner (it will not be possible to set the Thousand Brains Project as the owner).
+- When creating the fork, you should set yourself as the owner (it will not be possible to set the Thousand Brains Project as the owner).
 - Please tag a Maintainer of the TBP when making atomic PRs into your feature branch. This will help get involvement from the TBP research team at an early stage of your work.
