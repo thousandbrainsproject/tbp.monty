@@ -126,7 +126,6 @@ class MontyBase(Monty):
                 "sensor_module id; no more, no less!"
             )
 
-        # Create goal state selector
         self.goal_state_selector = GoalStateSelector()
 
     ###
