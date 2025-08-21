@@ -80,7 +80,9 @@ Give your fork a name like `feat.description_of_prototype`:
 - From time-to-time, two or more researchers may be working on ideas that could be considered elements of a single, over-arching Research Prototype. In this case, it is perfectly acceptable for them to use a shared RP fork.
 - As with typical Research Prototypes, this work should still regularly be synced with the upstream `tbp.monty`. The main difference is that the collaborating researchers can submit PRs into this shared fork.
 - This enables them to each pull changes from this shared fork, minimizing the chance of merge conflicts if they are working on similar parts of the code.
-- When adopting this approach, it is advised that all researchers working on this shared fork review any PRs made by other researchers into the fork.
+- When adopting this approach, it is advised that all researchers working on this shared fork adopt a collaborative workflow. The two main strategies for this are:
+    - Pair programming: this can be an excellent way to make progress together on a complex feature that requires multiple perspectives, or is addressing shared objectives. If pair programming, it is also NOT necessary to have an additional PR review before merging code into you shared fork.
+    - Ask that the collaborator/other researcher reviews all PRs made by you into the fork: this ensures that one researcher isn't unaware of changes to the upstream that they are depending on.
 
 
 ## Workflow for Community Members Conducting Research
@@ -99,4 +101,4 @@ Following the above guidance will ensure you do not spend a large amount of time
 
 If you are a member of the community working on a research idea, then we would recommend you also follow the above guidance under [Workflow for TBP Researchers: from Research Prototype to Implementation Project](#workflow-for-tbp-researchers-from-research-prototype-to-implementation-project). The main additional points to highlight are:
 - When creating the fork, you should set yourself as the owner (it will not be possible to set the Thousand Brains Project as the owner).
-- Please tag a Maintainer of the TBP when making atomic PRs into your feature branch. This will help get involvement from the TBP research team at an early stage of your work.
+- Please tag a Maintainer of the TBP when making atomic PRs into your feature branch. This will help get involvement from the TBP research team at an early stage of your work. Once you have tagged a Maintainer, we will triage and determine the most appropriate member of the team to review the PR.
