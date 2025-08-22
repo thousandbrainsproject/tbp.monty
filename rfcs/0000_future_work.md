@@ -37,7 +37,7 @@ Specifically targeted for the future work section.
 
 |                key|values|
 |------------------:|:-----|
-| `improved-motric` | `infrastructure`, `refactoring`|
+| `improved-metric` | `infrastructure`, `refactoring`|
 | `estimated-scope` | `small` &#124; `medium` &#124; `large` &#124; `unknown`|
 | `rfc`             | `required` &#124; `optional` &#124; `not-required`  &#124; `URL to RFC`|
 | `skills`          | `GPU`, `python`, `etc...`|
