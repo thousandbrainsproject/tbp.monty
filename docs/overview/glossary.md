@@ -35,7 +35,7 @@ A computational unit that takes features at poses as input and uses this informa
 
 # Model
 
-In Monty, a model (sometimes referred to as [Object Model](../how-monty-works/how-learning-modules-work.md#object-models)), is a representation of an object stored entirely within the boundaries of a learning module. The notion of a model in Monty differs from the concept of a deep learning neural network model in several ways:
+In Monty, a model (sometimes referred to as [Object Model](../how-monty-works/learning-module/object-models.md#object-models)), is a representation of an object stored entirely within the boundaries of a learning module. The notion of a model in Monty differs from the concept of a deep learning neural network model in several ways:
 
 - A single learning module **stores multiple object models** in memory, simultaneously.
 - The Monty system may have **multiple models of the same object** if there are multiple learning modules - this is a desired behavior.
