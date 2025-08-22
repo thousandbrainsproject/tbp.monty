@@ -6,8 +6,11 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-from typing import Dict, List, Optional
+from __future__ import annotations
 
+from typing import Any, Dict, List, Optional
+
+import mujoco
 from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
 
 from tbp.monty.frameworks.actions.actions import Action
@@ -15,6 +18,7 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     QuaternionWXYZ,
     VectorXYZ,
 )
+from tbp.monty.simulators.mujoco.agents import MuJoCoAgent
 from tbp.monty.simulators.simulator import Simulator
 
 
@@ -33,15 +37,25 @@ class MuJoCoSimulator(Simulator):
     recompile the model and data from whenever an object is added or removed.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, agents: Optional[List[MuJoCoAgent]] = None) -> None:
         self.spec = MjSpec()
-        self.model: MjModel = self.spec.compile()
-        self.data = MjData(self.model)
-
         # Track how many objects we add to the environment.
         # Note: We can't use the `model.ngeoms` for this since that will include parts
         # of the agents, especially when we start to add more structure to them.
         self._object_count = 0
+        # Create a map of agent IDs to agents and initialize them
+        agents = agents if agents is not None else []
+        self._agents = {a.agent_id: a for a in agents}
+        self._initialize_agents()
+
+        self.model: MjModel = self.spec.compile()
+        self.data = MjData(self.model)
+        # Take an initial step to position all the bodies in the scene
+        mujoco.mj_step(self.model, self.data)
+
+    def _initialize_agents(self) -> None:
+        for agent in self._agents.values():
+            agent.initialize(self.spec)
 
     def _recompile(self) -> None:
         """Recompile the MuJoCo model while retaining any state data."""
@@ -51,10 +65,12 @@ class MuJoCoSimulator(Simulator):
         pass
 
     def remove_all_objects(self) -> None:
+        # TODO: come up with a better way to remove only the objects added, not the
+        #  agent bodies as well.
         self.spec = MjSpec()
         self._recompile()
         self._object_count = 0
-        # TODO - reinitialize agents since they will have been removed
+        self._initialize_agents()
 
     def add_object(
         self,
@@ -74,6 +90,10 @@ class MuJoCoSimulator(Simulator):
         self._object_count += 1
 
         self._recompile()
+        # TODO: We need to step the simulation in order to position the new object in
+        #  the scene. They don't just appear at their position at first. This might
+        #  cause us some problems later if we decide to use the physics simulation.
+        mujoco.mj_step(self.model, self.data)
 
         # TODO: reinitialize agents?
 
@@ -134,8 +154,11 @@ class MuJoCoSimulator(Simulator):
     ) -> None:
         pass
 
-    def get_observations(self) -> None:
-        pass
+    def get_observations(self) -> dict[Any, Any]:
+        observations = {}
+        for agent in self._agents.values():
+            observations[agent.agent_id] = agent.observe(self.model, self.data)
+        return observations
 
     def get_states(self) -> None:
         pass
@@ -144,7 +167,18 @@ class MuJoCoSimulator(Simulator):
         return {}
 
     def reset(self) -> None:
-        pass
+        self.spec = MjSpec()
+        self._object_count = 0
+        self._initialize_agents()
+        self.model = self.spec.compile()
+        self.data = MjData(self.model)
 
     def close(self) -> None:
+        # MuJoCo doesn't actually have anything to close manually
         pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()

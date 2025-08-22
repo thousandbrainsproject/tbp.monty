@@ -370,6 +370,10 @@ jobs:
       - check_style_monty # Don't run if style check fails
       - check_types_monty # Don't run if type check fails
       - should_run_monty
+    env:
+      # Set MuJoCo to use EGL for rendering in a headless environment
+      MUJOCO_GL: egl
+      EGL_PLATFORM: surfaceless
     steps:
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
@@ -377,6 +381,11 @@ jobs:
         with:
           lfs: true
           path: tbp.monty
+      - name: Install dependencies
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        run: |
+          sudo apt update -y
+          sudo apt install -y --no-install-recommends libegl1-mesa-dev
       - name: Install uv
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: astral-sh/setup-uv@v5
@@ -387,7 +396,12 @@ jobs:
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
         continue-on-error: true
-        run: uv sync --locked --extra dev --extra simulator_mujoco
+        # We need to create an environment using the --seed parameter
+        # so that we can build the Pytorch extra packages.
+        run: |
+          uv venv --seed
+          uv pip install torch
+          uv sync --locked --extra dev --extra simulator_mujoco
       - name: Run tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
