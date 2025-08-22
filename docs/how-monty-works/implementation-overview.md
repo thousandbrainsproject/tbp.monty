@@ -17,7 +17,7 @@ The classes in the Monty code base implement the abstract concepts described abo
 The main testbed for Monty is currently focused on object and pose recognition. This also involves learning models of objects and interacting with the environment but it all serves the purpose of recognizing objects and their poses. In the future, this focus might shift more towards the interaction aspect where recognizing objects is mostly fulfilling the purpose of being able to meaningfully interact with the environment.
 
 # Overview of Monty's Current Default Setup
-This video gives a high level overview of all the components in Monty and the custom versions of them that we currently use for our [benchmark experiments](../overview/benchmark-experiments.md). It goes into some more depth on the [evidence based learning module](evidence-based-learning-module.md) (our current best LM implementation) and voting.
+This video gives a high level overview of all the components in Monty and the custom versions of them that we currently use for our [benchmark experiments](../overview/benchmark-experiments.md). It goes into some more depth on the [evidence based learning module](learning-module/evidence-based-learning-module.md) (our current best LM implementation) and voting.
 
 [block:embed]
 {
