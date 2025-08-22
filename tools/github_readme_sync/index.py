@@ -18,7 +18,7 @@ from slugify import slugify
 
 from tools.github_readme_sync.colors import CYAN, GREEN, RESET, YELLOW
 from tools.github_readme_sync.file import find_markdown_files, read_file_content
-from tools.github_readme_sync.md import parse_frontmatter
+from tools.github_readme_sync.md import parse_frontmatter, process_markdown
 
 
 def generate_path_components(file_path: Path, docs_root: Path) -> Dict[str, str]:
@@ -68,11 +68,15 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
             logging.warning(f"{YELLOW}No front-matter found in {md_file}{RESET}")
             continue
 
+        processed_doc = process_markdown(content, slugify(md_file.stem))
+        body_content = processed_doc["body"]
+
         relative_path = md_file.relative_to(docs_path)
         entry = {
             "title": frontmatter.get("title", ""),
             "slug": slugify(md_file.stem),
             "path": f"{folder_name}/{relative_path}",
+            "text": body_content,
         }
 
         entry.update(
