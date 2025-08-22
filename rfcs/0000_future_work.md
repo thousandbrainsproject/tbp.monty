@@ -88,7 +88,7 @@ Additionally the raw markdown content will be added to a text attribute
 
 A GitHub action will process the documentation markdown files to build the central data file.  A good potential fit is the current documentation parser `github-readme-sync` tool.
 
-A subsequent GitHub action and tool will process that data file and check for validity and fail the build if the data is incorrect.  Notably, `status`, `estimated-scope` and `rfc` must have the correct values.
+A subsequent GitHub action and tool will process that data file and check for validity and fail the build if the data is incorrect.  Notably some fields must have correct values, and some mechanism will be used to ensure validity.
 
 A page in the documentation will describe all the allowable fields for tags / skills / etc...
 
