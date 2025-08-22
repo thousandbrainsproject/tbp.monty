@@ -37,9 +37,11 @@ Specifically targeted for the future work section.
 
 |                key|values|
 |------------------:|:-----|
-| `tags`            | `infrastructure`, `refactoring`|
+| `improved-motric` | `infrastructure`, `refactoring`|
 | `estimated-scope` | `small` &#124; `medium` &#124; `large` &#124; `unknown`|
 | `rfc`             | `required` &#124; `optional` &#124; `not-required`  &#124; `URL to RFC`|
+| `skills`          | `GPU`, `python`, `etc...`|
+| `output-type`     | `Code PR` &#124; `Documentation PR` &#124; `Publication` &#124; `Experimental results` &#124; `Video` &#124; `Blog post` |
 
 And these values after that work has begun:
 
@@ -63,20 +65,23 @@ A mock-up of what that table may look like:
 
 As mentioned above, the front-matter of all the docs in the in the `/docs` folder will be extracted and put into a data file.
 
+Additionally the raw markdown content will be added to a text attribute
+
 ```js
 [
   {
     "title": "Extract Sensor Modules",
-    "tags": ["infrastructure", "build"],
     "skills": ["python","gpu architecture"],
     "estimated-scope": "small",
     "status": "in-progress",
     "contributor": ["codeallthethingz","vkakerbeck"],
+    "etc...."
     // Generated values
     "slug": "extract-sensor-modules", // for linking back to the docs
     "path1": "future-work", // will be used for filtering to a subset of the docs
-    "path2": "motor-system-improvements" // will be used to group the table rows
+    "path2": "motor-system-improvements", // will be used to group the table rows
     // "pathN"...
+    "text": "full contents of the markdown file"
   }
 ]
 ```
