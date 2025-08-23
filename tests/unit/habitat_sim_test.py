@@ -278,7 +278,7 @@ class HabitatSimTest(unittest.TestCase):
             camera_obs = obs[agent_id][sensor_id]["semantic"].tolist()
             self.assertListEqual(expected_1x_zoom, camera_obs)
 
-    def test_get_states(self):
+    def test_states(self):
         agent_pos = np.array([2.125, 1.5, -5.278])
         agent_rot = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
         rotation_degrees = 10.0

@@ -21,7 +21,7 @@ sequenceDiagram
         agent_config -->>- HS : action_space
         alt amount is None
             HS ->>+ sim_agent : act(action_name)
-            sim_agent -->>- HS : 
+            sim_agent -->>- HS :
         else
             HS ->>+ sim_agent : agent_config
             sim_agent -->>- HS : agent_config
@@ -35,14 +35,14 @@ sequenceDiagram
             actuation -->>- HS : prev_amount
             HS ->> actuation : amount=amount
             HS ->>+ sim_agent : act(action_name)
-            sim_agent -->>- HS : 
+            sim_agent -->>- HS :
             HS ->> actuation : amount=prev_amount
         end
         break
-            HS -->> HS : 
+            HS -->> HS :
         end
     end
-    HS ->> HS : get_observations
+    HS ->> HS : observations
     activate HS
         HS ->>+ S : get_sensor_observations(agent_ids=agent_indices)
         S -->>- HS : obs
