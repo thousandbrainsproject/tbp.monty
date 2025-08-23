@@ -38,14 +38,14 @@ sequenceDiagram
             loop each action parameter
                 HP ->>+ action_params : [param]=[action.param]
             end
-        HP -->>- HAct : 
+        HP -->>- HAct :
         HAct ->>+ sim_agent : act(action_name)
-        sim_agent -->>- HAct : 
+        sim_agent -->>- HAct :
     deactivate HAct
 
-    HAct -->>- A : 
-    A -->>- HS : 
-    HS ->> HS : get_observations
+    HAct -->>- A :
+    A -->>- HS :
+    HS ->> HS : observations
     activate HS
         HS ->>+ S : get_sensor_observations(agent_ids=agent_indices)
         S -->>- HS : obs
