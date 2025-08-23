@@ -192,3 +192,7 @@ The future work documents have special Frontmatter metadata that is used to powe
 ### RFC
 
 !snippet[../snippets/future-work-rfc.md]
+
+### Owner
+
+The owner field should be GitHub usernames, as these are converted to their avatar inside the table.

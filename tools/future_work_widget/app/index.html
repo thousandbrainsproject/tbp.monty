@@ -193,13 +193,13 @@
     const formatStatusColumn = (cell) => {
       const rowData = cell.getRow().getData();
       const status = cell.getValue() || "";
-      const implementation = rowData.implementation || "";
+      const owner = rowData.owner || "";
 
       let result = status;
 
-      // Add GitHub avatars if implementation exists
-      if (implementation) {
-        const usernames = implementation.split(",").map(u => u.trim()).filter(Boolean);
+      // Add GitHub avatars if owner exists
+      if (owner) {
+        const usernames = Array.isArray(owner) ? owner : owner.split(",").map(u => u.trim()).filter(Boolean);
         const avatars = usernames.map(username =>
           `<img src="https://github.com/${encodeURIComponent(username)}.png" width="24" height="24" style="vertical-align:middle;border-radius:2px;margin-left:5px;" alt="${username}"/>`
         ).join(" ");
@@ -231,7 +231,7 @@
     // Define all available columns
     const allColumns = [
       { title: "Title", field: "title", formatter: formatTitleWithLinksColumn },
-      { title: "Size", field: "size", formatter: formatSizeColumn },
+      { title: "Estimated Scope", field: "estimated-scope", formatter: formatSizeColumn },
       { title: "RFC", field: "rfc" },
       { title: "Status", field: "status", formatter: formatStatusColumn },
       { title: "Tags", field: "tags", formatter: formatTagsColumn, widthGrow: 2, cssClass: "wrap-text" },
@@ -261,7 +261,7 @@
             table.clearFilter();
           } else {
             table.setFilter(data => {
-              const allText = [data.title, data.tags, data.skills, data.status, data.implementation, data.size, data.link, data.path2]
+              const allText = [data.title, data.tags, data.skills, data.status, data.owner, data["estimated-scope"], data.link, data.path2]
                 .filter(Boolean).join(" ").toLowerCase();
               return searchTerm.split(/\s+/).every(word => allText.includes(word));
             });
