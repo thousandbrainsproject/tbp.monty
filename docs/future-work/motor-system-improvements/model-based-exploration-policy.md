@@ -1,5 +1,7 @@
 ---
 title: Model-Based Exploration Policy
+rfc: optional
+estimated-scope: unknown
 ---
 During exploration/learning-focused movement, we do not make use of any model-based, top-down policies driven by LMs. Two approaches we would like to implement are:
 - A model-based policy that moves the sensors to areas that potentially represent the explored limits of an object. For example, if we've explored the surface of an object but not the entirety of it, then there will be points on the edge of the learned model with few neighboring points. Exploring in these regions is likely to efficiently uncover novel observations. Note that a "false-positive" for this heuristic is that thin objects like a wire or piece of paper will have such regions naturally at their edges, so it should only represent a bias in exploration, not a hard rule.

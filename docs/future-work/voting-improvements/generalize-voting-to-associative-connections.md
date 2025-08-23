@@ -1,5 +1,7 @@
 ---
 title: Generalize Voting to Associative Connections
+rfc: optional
+estimated-scope: unknown
 ---
 Currently, voting relies on all learning modules sharing the same object ID for any given object, as a form of supervised learning signal. Thanks to this, they can vote on this particular ID when communicating with one-another.
 

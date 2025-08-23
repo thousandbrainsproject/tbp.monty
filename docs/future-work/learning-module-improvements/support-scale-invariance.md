@@ -1,5 +1,7 @@
 ---
 title: Support Scale Invariance
+rfc: optional
+estimated-scope: unknown
 ---
 
 It remains unclear how scale invariance would be implemented at a neural level, although we have discussed the possibility that the frequency of oscillatory activity in neurons is scaled. This could in turn modulate how movements are accounted for during path integration.

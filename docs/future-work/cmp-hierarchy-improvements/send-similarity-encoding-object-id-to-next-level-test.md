@@ -1,5 +1,7 @@
 ---
 title: Send Similarity Encoding Object ID to Next Level & Test
+rfc: optional
+estimated-scope: unknown
 ---
 
 We have implemented the ability to encode object IDs using sparse-distributed representations (SDRs), and in particular can use this as a way of capturing similarity and dissimilarity between objects. Using such encodings in learned [Hierarchical Connections](add-top-down-connections.md), we should observe a degree of natural generalization when recognizing compositional objects.

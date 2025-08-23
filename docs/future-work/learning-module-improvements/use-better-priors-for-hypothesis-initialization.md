@@ -1,5 +1,7 @@
 ---
 title: Use Better Priors for Hypothesis Initialization
+rfc: optional
+estimated-scope: unknown
 ---
 
 Currently all object poses are equally likely, because stimuli exist in a void and are typically rotated randomly at test time. However, as we move towards compositional and scene-like datasets where certain object poses are more common, we would like to account for this information in our hypothesis testing.

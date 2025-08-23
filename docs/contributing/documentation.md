@@ -168,3 +168,31 @@ The documentation [Style Guide](style-guide.md#documentation-style-guide)
 # Versioning
 
 The Monty documentation uses the first two parts of semantic versioning (semver), as there is nothing to document for patch changes.  You can read about semver here <https://semver.org/>.
+
+## Future Work Metadata
+
+The future work documents have special Frontmatter metadata that is used to power the future-work widget.  The following fields are validated against allow lists defined in snippet files to ensure consistency and quality.
+
+### Tags
+
+!snippet[../snippets/future-work-tags.md]
+
+### Skills
+
+!snippet[../snippets/future-work-skills.md]
+
+### Estimated Scope
+
+!snippet[../snippets/future-work-estimated-scope.md]
+
+### Status
+
+!snippet[../snippets/future-work-status.md]
+
+### RFC
+
+!snippet[../snippets/future-work-rfc.md]
+
+### Owner
+
+The owner field should be GitHub usernames, as these are converted to their avatar inside the table.

@@ -1,5 +1,7 @@
 ---
 title: Make Dataset to Test Compositional Objects
+rfc: optional
+estimated-scope: unknown
 ---
 
 To test compositional objects, we would like to develop a minimal dataset based on common objects (such as mugs and bowls) with logos on their surfaces. This will enable us to learn on the component objects in isolation, while moving towards a more realistic setting where the component objects must be disentangled from one another. The logo-on-surface setup also enables exploring interesting challenges of object distortion, and learning multiple location-specific associations, such as when a logo has a 90 degree bend half-way along its length.
