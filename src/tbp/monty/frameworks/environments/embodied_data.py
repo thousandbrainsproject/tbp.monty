@@ -51,98 +51,22 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
-
-# class EnvironmentDataset(Dataset):
-    # """Wraps an embodied environment with a :class:`torch.utils.data.Dataset`.
-
-    # Attributes:
-    #     env_init_func: Callable function used to create the embodied environment. This
-    #         function should return a class implementing :class:`.EmbodiedEnvironment`
-    #     env_init_args: Arguments to `env_init_func`
-    #     n_actions_per_epoch: Number of actions per epoch. Used to determine
-    #         the number of observations this dataset will return per epoch. It can be
-    #         viewed as the dataset size.
-    #     transform: Callable used to tranform the observations returned by the dataset
-
-    # Note:
-    #     Main idea is to separate concerns:
-    #     - dataset owns the environment and creates it at initialization
-    #     - dataset just handles the :meth:`__getitem__` method
-    #     - dataset does not handle motor activity, it just accepts action from
-    #         policy and uses it to look up the next observation
-    # """
-
-    # def __init__(self, env_init_func, env_init_args, rng, transform=None):
-    #     self.rng = rng
-    #     self.transform = transform
-    #     if self.transform is not None:
-    #         for t in self.transform:
-    #             if t.needs_rng:
-    #                 t.rng = self.rng
-    #     env = env_init_func(**env_init_args)
-    #     assert isinstance(env, EmbodiedEnvironment)
-    #     self.env = env
-# TODO(anna): look for any calls of this method
-    # @property
-    # def action_space(self):
-    #     return self.env.action_space
-
-    # def reset(self):
-    #     observation = self.env.reset()
-    #     state = self.env.get_state()
-
-    #     if self.transform is not None:
-    #         observation = self.apply_transform(self.transform, observation, state)
-    #     return observation, ProprioceptiveState(state) if state else None
-
-    # def close(self):
-    #     self.env.close()
-
-    # def apply_transform(self, transform, observation, state):
-    #     if isinstance(transform, list):
-    #         for t in transform:
-    #             observation = t(observation, state)
-    #     else:
-    #         observation = transform(observation, state)
-    #     return observation
-
-    # def __getitem__(self, action: Action):
-    #     observation = self.env.step(action)
-    #     state = self.env.get_state()
-    #     if self.transform is not None:
-    #         observation = self.apply_transform(self.transform, observation, state)
-    #     return observation, ProprioceptiveState(state) if state else None
-
-    # def __len__(self):
-    #     return math.inf
-
-
 class EnvironmentDataLoader:
-    """Wraps an embodied environment with an iterator.
-
-    todo(anna) update this desc
+    """Provides an interface to an embodied environment.
 
     The observations are based on the actions returned by the `motor_system`.
 
-    The first value returned by this iterator are the observations of the
+    The first values returned by this iterator are the observations of the
     environment's initial state, subsequent observations are returned after the action
     returned by `motor_system` is applied.
 
     Attributes:
-        dataset: :class:`EnvironmentDataset` # todo(anna) update
-        motor_system: :class:`MotorSystem`
-
-
-    todo(anna): make sure these attributes that i brought over from EnvironmentDataset
-    are correct.
         env_init_func: Callable function used to create the embodied environment. This
             function should return a class implementing :class:`.EmbodiedEnvironment`
         env_init_args: Arguments to `env_init_func`
-        n_actions_per_epoch: Number of actions per epoch. Used to determine
-            the number of observations this dataset will return per epoch. It can be
-            viewed as the dataset size. todo(anna)
-        transform: Callable used to tranform the observations returned by the dataset todo(anna)
-
+        motor_system: :class:`MotorSystem`
+        transform: A list of callables used to transform the observations returned by
+            the environment
 
     Note:
         If the amount variable returned by motor_system is None, the amount used by
@@ -153,15 +77,12 @@ class EnvironmentDataLoader:
         This one on its own won't work.
     """
 
-    # TODO(anna) update all instances of EnvironmentDataLoader creation; no longer needs dataset, instead needs
     # TODO: fix this long list of init params
-    # env_init_func, env_init_args and optional transform
-    # def __init__(self, dataset: EnvironmentDataset, motor_system: MotorSystem, rng):
     def __init__(self, env_init_func, env_init_args, rng, motor_system: MotorSystem, transform=None):
         self.rng = rng
         self.transform = transform
         if self.transform is not None:
-            for t in self.transform:  # TODO: other ref of transform checks if isinstance(transform, list) - will this work if not a list? a transform on its own is a callable function. can it be iterated upon??
+            for t in self.transform:
                 if t.needs_rng:
                     t.rng = self.rng
 
@@ -179,7 +100,6 @@ class EnvironmentDataLoader:
         self._action = None
         self._counter = 0
 
-# anna added. necessary? or do we want to require callers to access the env for this?
     @property
     def action_space(self):
         return self.env.action_space
@@ -206,7 +126,7 @@ class EnvironmentDataLoader:
             )
             self._counter += 1
             return self._observation
-# start anna added
+
     def reset(self):
         observation = self.env.reset()
         state = self.env.get_state()
@@ -221,7 +141,7 @@ class EnvironmentDataLoader:
     def apply_transform(self, transform, observation, state):
         if isinstance(transform, list):
             for t in transform:
-                observation = t(observation, state)  # what happens if there are multiple transforms? observation is overwritten each time?
+                observation = t(observation, state)
         else:
             observation = transform(observation, state)
         return observation
@@ -232,7 +152,7 @@ class EnvironmentDataLoader:
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
         return observation, ProprioceptiveState(state) if state else None
-# ******* end anna added
+
     def pre_episode(self):
         self.motor_system.pre_episode()
 
