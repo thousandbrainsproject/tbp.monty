@@ -75,6 +75,9 @@ class EnvironmentDataLoader:
 
     Note:
         This one on its own won't work.
+
+    Raises:
+        TypeError: If `motor_system` is not an instance of `MotorSystem`.
     """
 
     # TODO: fix this long list of init params
@@ -91,7 +94,9 @@ class EnvironmentDataLoader:
         self.env = env
 
         if not isinstance(motor_system, MotorSystem):
-            f"motor_system must be an instance of MotorSystem, got {motor_system}"
+            raise TypeError(
+                f"motor_system must be an instance of MotorSystem, got {motor_system}"
+            )
         self.motor_system = motor_system
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
@@ -796,9 +801,6 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
             motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
-
-        Raises:
-            TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
         super(OmniglotDataLoader, self).__init__(
             *args, motor_system=motor_system, **kwargs
@@ -861,8 +863,6 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         self,
         scenes,
         versions,
-        # dataset: EnvironmentDataset, todo(anna)
-        motor_system: MotorSystem,
         *args,
         **kwargs,
     ):
@@ -871,34 +871,18 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         Args:
             scenes: List of scenes
             versions: List of versions
-            dataset: The environment dataset. todo(anna)
             motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
-
-        Raises:
-            TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
-        if not isinstance(motor_system, MotorSystem):
-            raise TypeError(
-                f"motor_system must be an instance of MotorSystem, got {motor_system}"
-            )
-        self.motor_system = motor_system
-        self._observation, proprioceptive_state = self.reset()
-        self.motor_system._state = (
-            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
-        )
-        self._action = None
-        self._counter = 0
+        super(SaccadeOnImageDataLoader, self).__init__(*args, **kwargs)
+        # Different from super class default
+        self.object_names = self.env.scene_names
 
         self.scenes = scenes
         self.versions = versions
-        self.object_names = self.env.scene_names
         self.current_scene_version = 0
         self.n_versions = len(versions)
-        self.episodes = 0
-        self.epochs = 0
-        self.primary_target = None
 
     def post_episode(self):
         self.motor_system.post_episode()
