@@ -21,6 +21,7 @@ from tbp.monty.frameworks.actions.action_samplers import (
 from tbp.monty.frameworks.config_utils.config_args import make_base_policy_config
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentDataLoader,
+    OmniglotDataLoader,
     SaccadeOnImageDataLoader,
     SaccadeOnImageFromStreamDataLoader,
 )
@@ -139,6 +140,11 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
     def close(self):
         self._current_state = None
 
+class FakeOmniglotEnvironment(FakeEnvironmentAbs):
+    def __init__(self):
+        self.alphabet_names = [
+            "name_one", "name_two", "name_three"
+        ]
 
 class EmbodiedDataTest(unittest.TestCase):
     def test_embodied_dataset_dist(self):  # TODO(anna) rename method & vars
@@ -316,6 +322,42 @@ class EmbodiedDataTest(unittest.TestCase):
                 "Agent should not have moved",
             )
 
+    def test_omniglot_data_loader(self):
+        rng = np.random.RandomState(42)
+
+        base_policy_config_abs = make_base_policy_config(
+            action_space_type="absolute_only",
+            action_sampler_class=UniformlyDistributedSampler,
+            agent_id=AGENT_ID,
+        )
+        motor_system_abs = MotorSystem(
+            policy=BasePolicy(rng=rng, **base_policy_config_abs.__dict__)
+        )
+
+        alphabets = [0, 0, 0, 1, 1, 1]
+        characters = [1, 2, 3, 1, 2, 3]
+        versions = [1, 1, 1, 1, 1, 1]
+        num_objects = len(characters)
+
+        omniglot_data_loader_abs = OmniglotDataLoader(
+            env_init_func=FakeOmniglotEnvironment,
+            env_init_args={},
+            rng=rng,
+            motor_system=motor_system_abs,
+            alphabets=alphabets,
+            characters=characters,
+            versions=versions,
+        )
+
+        self.assertEqual(
+            alphabets,
+            omniglot_data_loader_abs.alphabets,
+            "Env not initiated.",
+        )
+        self.assertEqual("name_one_1", omniglot_data_loader_abs.object_names[0])
+        self.assertEqual(num_objects, omniglot_data_loader_abs.n_objects)
+
+    @unittest.skip("anna debugging")
     def test_saccade_on_image_dataloader(self):
         rng = np.random.RandomState(42)
         sensor_id = "patch"
@@ -393,7 +435,7 @@ class EmbodiedDataTest(unittest.TestCase):
             if i >= DATASET_LEN - 1:
                 break
 
-    @unittest.skip("debugging")
+    @unittest.skip("anna debugging")
     def test_saccade_on_image_stream_dataloader(self):
         rng = np.random.RandomState(42)
         sensor_id = "patch"

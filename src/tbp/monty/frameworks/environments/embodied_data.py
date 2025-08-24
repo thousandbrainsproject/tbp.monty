@@ -192,7 +192,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
     sampled from the same object list, can be added.
     """
 
-    def __init__(self, object_names, object_init_sampler, *args, **kwargs):
+    def __init__(self, *args,  object_names=None, object_init_sampler=None, **kwargs):
         """Initialize dataloader.
 
         Args:
@@ -218,30 +218,34 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             TypeError: If `object_names` is not a list or dictionary
         """
         super(EnvironmentDataLoaderPerObject, self).__init__(*args, **kwargs)
-        if isinstance(object_names, list):
-            self.object_names = object_names
-            # Return an (ordered) list of unique items:
-            self.source_object_list = list(dict.fromkeys(object_names))
-            self.num_distractors = 0
-        elif isinstance(object_names, dict):
-            # TODO when we want more advanced multi-object experiments, update these
-            # arguments along with the Object Initializers so that we can easily
-            # specify a set of primary targets and distractors, i.e. random sampling
-            # of the distractor objects shouldn't happen here
-            self.object_names = object_names["targets_list"]
-            self.source_object_list = list(
-                dict.fromkeys(object_names["source_object_list"])
-            )
-            self.num_distractors = object_names["num_distractors"]
-        else:
-            raise TypeError("Object names should be a list or dictionary")
-        self.create_semantic_mapping()
 
-        self.object_init_sampler = object_init_sampler
-        self.object_init_sampler.rng = self.rng
-        self.object_params = self.object_init_sampler()
+        if object_names is not None:
+            if isinstance(object_names, list):
+                self.object_names = object_names
+                # Return an (ordered) list of unique items:
+                self.source_object_list = list(dict.fromkeys(object_names))
+                self.num_distractors = 0
+            elif isinstance(object_names, dict):
+                # TODO when we want more advanced multi-object experiments, update these
+                # arguments along with the Object Initializers so that we can easily
+                # specify a set of primary targets and distractors, i.e. random sampling
+                # of the distractor objects shouldn't happen here
+                self.object_names = object_names["targets_list"]
+                self.source_object_list = list(
+                    dict.fromkeys(object_names["source_object_list"])
+                )
+                self.num_distractors = object_names["num_distractors"]
+            else:
+                raise TypeError("Object names should be a list or dictionary")
+            self.create_semantic_mapping()
+            self.n_objects = len(self.object_names)
+
+        if object_init_sampler is not None:
+            self.object_init_sampler = object_init_sampler
+            self.object_init_sampler.rng = self.rng
+            self.object_params = self.object_init_sampler()
+
         self.current_object = 0
-        self.n_objects = len(self.object_names)
         self.episodes = 0
         self.epochs = 0
         self.primary_target = None
@@ -779,7 +783,6 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         alphabets,
         characters,
         versions,
-        dataset,  # TODO(anna). will this work if dataset is passed to env dataloader
         motor_system: MotorSystem,
         *args,
         **kwargs,
@@ -790,7 +793,6 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
             alphabets: List of alphabets.
             characters: List of characters.
             versions: List of versions.
-            dataset: The environment dataset. todo(anna)
             motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
@@ -798,26 +800,16 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         Raises:
             TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
-        if not isinstance(motor_system, MotorSystem):
-            raise TypeError(
-                f"motor_system must be an instance of MotorSystem, got {motor_system}"
-            )
-        self.motor_system = motor_system
-        self._observation, proprioceptive_state = self.reset()
-        self.motor_system._state = (
-            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
+        super(OmniglotDataLoader, self).__init__(
+            *args, motor_system=motor_system, **kwargs
         )
-        self._action = None
-        self._counter = 0
 
         self.alphabets = alphabets
         self.characters = characters
         self.versions = versions
-        self.current_object = 0
+
+        # Different init values than super class
         self.n_objects = len(characters)
-        self.episodes = 0
-        self.epochs = 0
-        self.primary_target = None
         self.object_names = [
             str(self.env.alphabet_names[alphabets[i]])
             + "_"
