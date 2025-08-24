@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import copy
 import dataclasses
 import importlib
 from inspect import Parameter, signature
@@ -163,16 +162,14 @@ def config_to_dict(config: DataclassInstance | Dict[str, Any]) -> Dict[str, Any]
     We want to convert configs composed of mixed dataclass and dict elements to
     pure dicts without dataclasses for backward compatibility.
 
-    TODO: Remove once all other configs are converted to dict only
-
     Args:
-        config: Config to convert to dict.
+        config: dict or dataclass instance to convert to dict.
 
     Returns:
         Pure dict version of config.
 
     Raises:
-        TypeError: If the object is not a dataclass instance
+        TypeError: If the object is not a dict or dataclass instance
     """
     if isinstance(config, dict):
         return dataclasses._asdict_inner(config, dict)
