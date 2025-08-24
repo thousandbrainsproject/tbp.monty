@@ -8,13 +8,76 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import os
+from copy import deepcopy
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, Literal
+
+import numpy as np
+import trimesh
+from vedo import Mesh
 
 from tbp.monty.frameworks.utils.logging_utils import deserialize_json_chunks
 
 if TYPE_CHECKING:
     from os import PathLike
+
+
+class YCBMeshLoader:
+    def __init__(self, data_path: str):
+        self.data_path = data_path
+
+    def _find_glb_file(self, obj_name: str) -> str:
+        """Search for the .glb.orig file of a given YCB object in a directory.
+
+        Args:
+            obj_name: The object name to search for (e.g., "potted_meat_can").
+
+        Returns:
+            Full path to the .glb.orig file.
+
+        Raises:
+            FileNotFoundError: If the .glb.orig file for the object is not found.
+
+        """
+        for path in Path(self.data_path).rglob("*"):
+            if path.is_dir() and path.name.endswith(obj_name):
+                glb_orig_path = path / "google_16k" / "textured.glb.orig"
+                if glb_orig_path.exists():
+                    return str(glb_orig_path)
+
+        raise FileNotFoundError(
+            f"Could not find .glb.orig file for '{obj_name}' in '{self.data_path}'"
+        )
+
+    def create_mesh(self, obj_name: str) -> Mesh:
+        """Reads a 3D object file in glb format and returns a Vedo Mesh object.
+
+        Args:
+            obj_name: Name of the object to load.
+
+        Returns:
+            vedo.Mesh object with UV texture and transformed orientation.
+        """
+        file_path = self._find_glb_file(obj_name)
+        with open(file_path, "rb") as f:
+            mesh = trimesh.load_mesh(f, file_type="glb")
+
+        # create mesh from vertices and faces
+        obj = Mesh([mesh.vertices, mesh.faces])
+
+        # add texture
+        obj.texture(
+            tname=np.array(mesh.visual.material.baseColorTexture),
+            tcoords=mesh.visual.uv,
+        )
+
+        # Shift to geometry mean and rotate to the up/front of the glb
+        obj.shift(-np.mean(obj.bounds().reshape(3, 2), axis=1))
+        obj.rotate_x(-90)
+
+        return obj
 
 
 class DataParser:
@@ -31,6 +94,7 @@ class DataParser:
             path: Filesystem path to a JSON or JSON-lines file.
 
         """
+        path = os.path.join(path, "detailed_run_stats.json")
         self.data = deserialize_json_chunks(path)
 
     def extract(self, locator: DataLocator, **kwargs: dict[str, Any]) -> Any:
@@ -123,6 +187,14 @@ class DataLocatorStep:
     type: Literal["key", "index"]
     value: str | int = None
 
+    @classmethod
+    def key(cls, name: str, value: str | None = None) -> DataLocatorStep:
+        return cls(name=name, type="key", value=value)
+
+    @classmethod
+    def index(cls, name: str, value: int | None = None) -> DataLocatorStep:
+        return cls(name=name, type="index", value=value)
+
 
 @dataclass
 class DataLocator:
@@ -141,6 +213,15 @@ class DataLocator:
             A list of steps whose `value` is None.
         """
         return [step for step in self.path if step.value is None]
+
+    def extend(self, steps: list[DataLocatorStep]) -> DataLocator:
+        """Clone and append multiple steps.
+
+        Returns:
+            Cloned DataLocator with extended path steps
+
+        """
+        return DataLocator(path=[*self.path, *[deepcopy(s) for s in steps]])
 
     def __repr__(self) -> str:
         """Return a human-readable representation of the path."""

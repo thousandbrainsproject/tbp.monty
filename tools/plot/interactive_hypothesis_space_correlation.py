@@ -11,41 +11,44 @@ from __future__ import annotations
 
 import logging
 import sys
-import time
+from copy import deepcopy
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import trimesh
 from pandas import DataFrame
-from scipy.spatial import cKDTree
-from vedo import (
-    Button,
-    Circle,
-    Image,
-    Mesh,
-    Plotter,
-    Text2D,
-    settings,
-)
+from pubsub.core import Publisher
+from vedo import Image, Plotter
 
-from tbp.monty.frameworks.utils.logging_utils import load_stats
+from tools.plot.interactive.data import (
+    DataLocator,
+    DataLocatorStep,
+    DataParser,
+    YCBMeshLoader,
+)
+from tools.plot.interactive.widgets import (
+    TopicMessage,
+    TopicSpec,
+    VtkDebounceScheduler,
+    Widget,
+    WidgetUpdater,
+    set_slider_state,
+)
 
 if TYPE_CHECKING:
     import argparse
 
-    from vedo import Slider2D
 
 logger = logging.getLogger(__name__)
 
 
 # Set splitting ratio for renderers, font, and disable immediate_rendering
-settings.immediate_rendering = False
-settings.default_font = "Theemim"
-settings.window_splitting_position = 0.5
+# settings.immediate_rendering = True
+# settings.default_font = "Theemim"
+# settings.window_splitting_position = 0.2
 
 HUE_PALETTE = {
     "Added": "#66c2a5",
@@ -54,159 +57,566 @@ HUE_PALETTE = {
 }
 
 
-def get_closest_row(df: pd.DataFrame, slope: float, error: float) -> pd.Series:
-    if df.empty:
-        raise ValueError("DataFrame is empty.")
-    tree = cKDTree(df[["Evidence Slope", "Pose Error"]].values)
-    dist, idx = tree.query([slope, error])
-    return df.iloc[idx]
+class EpisodeSliderWidgetOps:
+    def __init__(self, plotter, data_parser):
+        self.plotter = plotter
+        self.data_parser = data_parser
 
-
-class DataExtractor:
-    """Extracts and processes data from JSON logs of unsupervised inference experiments.
-
-    Args:
-        exp_path: Path to the experiment directory.
-        data_path: Path to the root directory containing object meshes.
-            default set to `~/tbp/data/habitat/objects/ycb/meshes`
-        learning_module: Which learning module to use for data extraction.
-
-    Attributes:
-        exp_path: Path to the experiment directory where a `detailed_run_stats.json`
-            exists.
-        lm: Learning module defined by the user. Defaults to "LM_0".
-        data: Dictionary with keys being episodes, and values being slopes, pose errors
-            and more.
-    """
-
-    def __init__(self, exp_path: str, data_path: str, learning_module: str):
-        self.exp_path = exp_path
-        self.data_path = data_path
-        self.lm = learning_module
-
-        self.read_data()
-        self.import_objects()
-
-    def read_data(self) -> None:
-        _, _, self.data, _ = load_stats(self.exp_path, False, False, True, False)
-        self.object_names = set(self.__getitem__(0)[0].keys())
-
-    def resolve_primary(self, episode: int):
-        return self.data[str(episode)]["target"]["primary_target_object"]
-
-    def cycle_graph(self, current, shift_by):
-        graphs = list(self.__getitem__(0)[0].keys())
-        total_graphs = len(graphs)
-        curr_ix = graphs.index(current)
-        return graphs[(curr_ix + shift_by) % total_graphs]
-
-    def __getitem__(self, ix: str | int) -> dict:
-        if type(ix) is int:
-            ix = str(ix)
-
-        return self.data[ix][self.lm]["hypotheses_updater_telemetry"]
-
-    def _find_glb_file(self, obj_name: str) -> str:
-        """Search for the .glb.orig file of a given YCB object in a directory.
-
-        Args:
-            obj_name: The object name to search for (e.g., "potted_meat_can").
-
-        Returns:
-            Full path to the .glb.orig file.
-
-        Raises:
-            FileNotFoundError: If the .glb.orig file for the object is not found.
-
-        """
-        for path in Path(self.data_path).rglob("*"):
-            if path.is_dir() and path.name.endswith(obj_name):
-                glb_orig_path = path / "google_16k" / "textured.glb.orig"
-                if glb_orig_path.exists():
-                    return str(glb_orig_path)
-
-        raise FileNotFoundError(
-            f"Could not find .glb.orig file for '{obj_name}' in '{self.data_path}'"
+        self.updaters = []
+        self._add_kwargs = dict(
+            xmin=0, xmax=10, value=0, pos=[(0.1, 0.2), (0.7, 0.2)], title="Episode"
         )
 
-    def create_mesh(self, obj_name: str) -> Mesh:
-        """Reads a 3D object file in glb format and returns a Vedo Mesh object.
+        self._locators = self.create_locators()
 
-        Args:
-            obj_name: Name of the object to load.
+    def create_locators(self):
+        locators = {}
 
-        Returns:
-            vedo.Mesh object with UV texture and transformed orientation.
-        """
-        file_path = self._find_glb_file(obj_name)
-        with open(file_path, "rb") as f:
-            mesh = trimesh.load_mesh(f, file_type="glb")
+        locators["episode"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+            ],
+        )
+        return locators
 
-        # create mesh from vertices and faces
-        obj = Mesh([mesh.vertices, mesh.faces])
+    def add(self, callback: Callable) -> int:
+        kwargs = deepcopy(self._add_kwargs)
+        locator = self._locators["episode"]
+        kwargs.update({"xmax": len(self.data_parser.query(locator)) - 1})
+        return self.plotter.add_slider(callback, **kwargs)
 
-        # add texture
-        obj.texture(
-            tname=np.array(mesh.visual.material.baseColorTexture),
-            tcoords=mesh.visual.uv,
+    def remove(self, widget: Any):
+        self.plotter.remove(widget)
+
+    def extract_state(self, widget: Any) -> int:
+        return round(widget.GetRepresentation().GetValue())
+
+    def set_state(self, widget: Any, value: Any) -> None:
+        set_slider_state(widget, value)
+
+    def state_to_messages(self, state: int) -> list[TopicMessage]:
+        messages = [TopicMessage(name="episode_number", value=state)]
+        return messages
+
+
+class StepSliderWidgetOps:
+    def __init__(self, plotter, data_parser):
+        self.plotter = plotter
+        self.data_parser = data_parser
+        self.updaters = [
+            WidgetUpdater(
+                topics=[TopicSpec("episode_number", required=True)],
+                callback=self.update_slider_range,
+            )
+        ]
+
+        self._add_kwargs = dict(
+            xmin=0,
+            xmax=10,
+            value=0,
+            pos=[(0.1, 0.1), (0.7, 0.1)],
+            title="Step",
+        )
+        self._locators = self.create_locators()
+
+    def create_locators(self):
+        locators = {}
+        locators["step"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+                DataLocatorStep.key(name="lm", value="LM_0"),
+                DataLocatorStep.key(
+                    name="telemetry", value="hypotheses_updater_telemetry"
+                ),
+                DataLocatorStep.index(name="step"),
+            ]
+        )
+        return locators
+
+    def add(self, callback: Callable) -> int:
+        return self.plotter.add_slider(callback, **self._add_kwargs)
+
+    def remove(self, widget: Any):
+        self.plotter.remove(widget)
+
+    def extract_state(self, widget: Any) -> int:
+        return round(widget.GetRepresentation().GetValue())
+
+    def set_state(self, widget: Any, value: Any) -> None:
+        return set_slider_state(widget, value)
+
+    def state_to_messages(self, state: int) -> list[TopicMessage]:
+        messages = [TopicMessage(name="step_number", value=state)]
+        return messages
+
+    def update_slider_range(
+        self, widget: Any, msgs: list[TopicMessage]
+    ) -> tuple[Any, bool]:
+        for msg in msgs:
+            if msg.name == "episode_number":
+                episode_number = msg.value
+                break
+
+        # set widget range to the correct step number
+        widget.range = [
+            0,
+            len(
+                self.data_parser.query(
+                    self._locators["step"], episode=str(episode_number)
+                )
+            )
+            - 1,
+        ]
+
+        # set slider value back to zero
+        self.set_state(widget, 0)
+
+        # render the plotter to show the changes
+        self.plotter.render()
+
+        return widget, True
+
+
+class GtMeshWidgetOps:
+    def __init__(self, plotter, data_parser, ycb_loader=None):
+        self.plotter = plotter
+        self.data_parser = data_parser
+        self.ycb_loader = ycb_loader
+        self.updaters = [
+            WidgetUpdater(
+                topics=[TopicSpec("episode_number", required=True)],
+                callback=self.update_mesh,
+            )
+        ]
+        self._locators = self.create_locators()
+
+    def create_locators(self):
+        locators = {}
+        locators["target"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+                DataLocatorStep.key(name="lm", value="target"),
+            ]
+        )
+        return locators
+
+    def add(self, callback: Callable) -> int:
+        return None
+
+    def remove(self, widget: Any):
+        self.plotter.remove(widget)
+
+    def extract_state(self, widget: Any) -> int:
+        return None
+
+    def state_to_messages(self, state: int) -> list[TopicMessage]:
+        return []
+
+    def update_mesh(self, widget: Any, msgs: list[TopicMessage]) -> tuple[Any, bool]:
+        if widget is not None:
+            self.remove(widget)
+
+        for msg in msgs:
+            if msg.name == "episode_number":
+                episode_number = msg.value
+                break
+
+        locator = self._locators["target"]
+        target = self.data_parser.extract(locator, episode=str(episode_number))
+        target_id = target["primary_target_object"]
+        target_rot = target["primary_target_rotation_euler"]
+        widget = self.ycb_loader.create_mesh(target["primary_target_object"]).clone(
+            deep=True
+        )
+        widget.rotate_x(target_rot[0])
+        widget.rotate_y(target_rot[1])
+        widget.rotate_z(target_rot[2])
+        widget.scale(1500)
+
+        widget.shift(-np.mean(widget.bounds().reshape(3, 2), axis=1))
+        widget.pos(-200, 250)
+        self.plotter.add(widget)
+
+        self.plotter.render()
+
+        return widget, False
+
+
+class PrimaryButtonWidgetOps:
+    def __init__(self, plotter):
+        self.plotter = plotter
+        self.updaters = []
+
+        self._add_kwargs = dict(
+            pos=(0.85, 0.2),
+            states=["Primary Target"],
+            c=["w"],
+            bc=["dg"],
+            size=30,
+            font="Calco",
+            bold=True,
+        )
+        self._locators = self.create_locators()
+
+        self.objects_list = []
+        self.current_object = None
+
+    def create_locators(self):
+        return {}
+
+    def add(self, callback: Callable) -> int:
+        return self.plotter.add_button(callback, **self._add_kwargs)
+
+    def remove(self, widget: Any):
+        self.plotter.remove(widget)
+
+    def extract_state(self, widget: Any) -> bool:
+        return True
+
+    def state_to_messages(self, state: str) -> list[TopicMessage]:
+        messages = [
+            TopicMessage(name="primary_button", value=True),
+        ]
+        return messages
+
+
+class PrevButtonWidgetOps:
+    def __init__(self, plotter):
+        self.plotter = plotter
+        self.updaters = []
+
+        self._add_kwargs = dict(
+            pos=(0.83, 0.13),
+            states=["<"],
+            c=["w"],
+            bc=["dg"],
+            size=30,
+            font="Calco",
+            bold=True,
+        )
+        self._locators = self.create_locators()
+
+        self.objects_list = []
+        self.current_object = None
+
+    def create_locators(self):
+        return {}
+
+    def add(self, callback: Callable) -> int:
+        return self.plotter.add_button(callback, **self._add_kwargs)
+
+    def remove(self, widget: Any):
+        self.plotter.remove(widget)
+
+    def extract_state(self, widget: Any) -> bool:
+        return True
+
+    def state_to_messages(self, state: str) -> list[TopicMessage]:
+        messages = [
+            TopicMessage(name="prev_button", value=True),
+        ]
+        return messages
+
+
+class NextButtonWidgetOps:
+    def __init__(self, plotter):
+        self.plotter = plotter
+        self.updaters = []
+
+        self._add_kwargs = dict(
+            pos=(0.88, 0.13),
+            states=[">"],
+            c=["w"],
+            bc=["dg"],
+            size=30,
+            font="Calco",
+            bold=True,
+        )
+        self._locators = self.create_locators()
+
+        self.objects_list = []
+        self.current_object = None
+
+    def create_locators(self):
+        return {}
+
+    def add(self, callback: Callable) -> int:
+        return self.plotter.add_button(callback, **self._add_kwargs)
+
+    def remove(self, widget: Any):
+        self.plotter.remove(widget)
+
+    def extract_state(self, widget: Any) -> bool:
+        return True
+
+    def state_to_messages(self, state: str) -> list[TopicMessage]:
+        messages = [
+            TopicMessage(name="next_button", value=True),
+        ]
+        return messages
+
+
+class CurrentObjectWidgetOps:
+    def __init__(self, data_parser):
+        self.data_parser = data_parser
+        self.updaters = [
+            WidgetUpdater(
+                topics=[
+                    TopicSpec("episode_number", required=True),
+                    TopicSpec("primary_button", required=False),
+                ],
+                callback=self.update_to_primary,
+            ),
+            WidgetUpdater(
+                topics=[
+                    TopicSpec("prev_button", required=True),
+                ],
+                callback=self.update_current_object,
+            ),
+            WidgetUpdater(
+                topics=[
+                    TopicSpec("next_button", required=True),
+                ],
+                callback=self.update_current_object,
+            ),
+        ]
+
+        self._add_kwargs = dict(
+            pos=(0.83, 0.13),
+            states=["<"],
+            c=["w"],
+            bc=["dg"],
+            size=30,
+            font="Calco",
+            bold=True,
+        )
+        self._locators = self.create_locators()
+
+        self.objects_list = []
+        self.current_object_ix = None
+
+    def create_locators(self):
+        locators = {}
+        locators["objects_list"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+                DataLocatorStep.key(name="lm", value="LM_0"),
+                DataLocatorStep.key(
+                    name="telemetry", value="hypotheses_updater_telemetry"
+                ),
+                DataLocatorStep.index(name="step"),
+                DataLocatorStep.key(name="objects"),
+            ]
+        )
+        locators["target"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+                DataLocatorStep.key(name="lm", value="target"),
+            ]
+        )
+        return locators
+
+    def add(self, callback: Callable) -> int:
+        obj_list_locator = self._locators["objects_list"]
+        self.objects_list = self.data_parser.query(
+            obj_list_locator,
+            episode="0",
+            step=0,
+        )
+        return None
+
+    def remove(self, widget: Any):
+        pass
+
+    def extract_state(self, widget: Any) -> str:
+        state = self.objects_list[self.current_object_ix]
+        return state
+
+    def state_to_messages(self, state: str) -> list[TopicMessage]:
+        messages = [
+            TopicMessage(name="current_object", value=state),
+        ]
+        return messages
+
+    def update_to_primary(self, widget: Any, msgs: list[TopicMessage]) -> tuple(
+        Any, bool
+    ):
+        msgs_dict = {msg.name: msg.value for msg in msgs}
+
+        target_locator = self._locators["target"]
+        current_object = self.data_parser.extract(
+            target_locator,
+            episode=str(msgs_dict["episode_number"]),
+        )["primary_target_object"]
+        self.current_object_ix = self.objects_list.index(current_object)
+
+        return widget, True
+
+    def update_current_object(self, widget: Any, msgs: list[TopicMessage]) -> tuple(
+        Any, bool
+    ):
+        # This callback listens to a single topic
+        assert len(msgs) == 1
+
+        if msgs[0].name == "prev_button":
+            self.current_object_ix -= 1
+        elif msgs[0].name == "next_button":
+            self.current_object_ix += 1
+
+        self.current_object_ix %= len(self.objects_list)
+        return widget, True
+
+
+class ClickWidgetOps:
+    def __init__(self, plotter: Plotter):
+        self.plotter = plotter
+        self.updaters = []
+
+    def add(self, callback: Callable) -> int:
+        self._on_change_cb = callback
+        self.plotter.add_callback("LeftButtonPress", self.on_click)
+
+    def remove(self, widget: Any):
+        self.plotter.remove_callback("LeftButtonPress")
+
+    def extract_state(self, widget: Any) -> str:
+        return self.click_location
+
+    def state_to_messages(self, state: str) -> list[TopicMessage]:
+        messages = [
+            TopicMessage(name="LeftButtonPress", value=state),
+        ]
+        return messages
+
+    def on_click(self, event):
+        location = event.picked2d
+
+        if location is None:
+            return
+
+        self.click_location = location
+        self._on_change_cb(widget=None, _event="")
+
+
+class CorrelationPlotWidgetOps:
+    def __init__(self, plotter: Plotter, data_parser: DataParser):
+        self.plotter = plotter
+        self.data_parser = data_parser
+        self.updaters = [
+            WidgetUpdater(
+                topics=[
+                    TopicSpec("episode_number", required=True),
+                    TopicSpec("step_number", required=True),
+                    TopicSpec("current_object", required=True),
+                ],
+                callback=self.update_plot,
+            ),
+        ]
+
+        self._locators = self.create_locators()
+
+    def create_locators(self):
+        locators = {}
+        locators["input_channel"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+                DataLocatorStep.key(name="lm", value="LM_0"),
+                DataLocatorStep.key(
+                    name="telemetry", value="hypotheses_updater_telemetry"
+                ),
+                DataLocatorStep.index(name="step"),
+                DataLocatorStep.key(name="obj"),
+                DataLocatorStep.key(name="channel"),
+            ],
+        )
+        locators["pose_error"] = locators["input_channel"].extend(
+            steps=[
+                DataLocatorStep.key(name="stat", value="pose_errors"),
+            ],
+        )
+        locators["evidence"] = locators["input_channel"].extend(
+            steps=[
+                DataLocatorStep.key(name="stat", value="evidence"),
+            ],
+        )
+        locators["rotations"] = locators["input_channel"].extend(
+            steps=[
+                DataLocatorStep.key(name="stat", value="rotations"),
+            ],
+        )
+        locators["added_ids"] = locators["input_channel"].extend(
+            steps=[
+                DataLocatorStep.key(name="stat", value="hypotheses_updater"),
+                DataLocatorStep.key(name="updater_stats", value="added_ids"),
+            ],
+        )
+        locators["ages"] = locators["input_channel"].extend(
+            steps=[
+                DataLocatorStep.key(name="stat", value="hypotheses_updater"),
+                DataLocatorStep.key(name="updater_stats", value="ages"),
+            ],
+        )
+        locators["removed_ids"] = locators["input_channel"].extend(
+            steps=[
+                DataLocatorStep.key(name="stat", value="hypotheses_updater"),
+                DataLocatorStep.key(name="updater_stats", value="removed_ids"),
+            ],
+        )
+        locators["evidence_slopes"] = locators["input_channel"].extend(
+            steps=[
+                DataLocatorStep.key(name="stat", value="hypotheses_updater"),
+                DataLocatorStep.key(name="updater_stats", value="evidence_slopes"),
+            ],
+        )
+        return locators
+
+    def add(self, callback: Callable) -> None:
+        pass
+
+    def remove(self, widget: Any):
+        if widget is not None:
+            self.plotter.remove(widget)
+
+    def extract_state(self, widget: Any) -> str:
+        return ""
+
+    def state_to_messages(self, state: str) -> list[TopicMessage]:
+        messages = []
+        return messages
+
+    def generate_df(self, episode, step, graph_id):
+        input_channels = self.data_parser.query(
+            self._locators["input_channel"],
+            episode=str(episode),
+            step=step,
+            obj=graph_id,
         )
 
-        # Shift to geometry mean and rotate to the up/front of the glb
-        obj.shift(-np.mean(obj.bounds().reshape(3, 2), axis=1))
-        obj.rotate_x(-90)
-
-        return obj
-
-    def import_objects(self) -> None:
-        """Load all unique object meshes into memory."""
-        self.imported_objects = {
-            obj_name: self.create_mesh(obj_name) for obj_name in self.object_names
-        }
-
-    def __len__(self) -> int:
-        return len(self.data)
-
-
-class CorrelationPlot:
-    """Renders a correlation plot of evidence slopes and pose errors.
-
-    Args:
-        data_extractor: A DataExtractor instance with evidence scores and transitions.
-        renderer_ix: Index of the Vedo renderer to draw into. Defaults to 0.
-
-    Attributes:
-        lines: List of vedo.Line objects, one per object class.
-        bg_rects: Colored background rectangles indicating the current target object.
-        bg_labels: Text labels above rectangles indicating target object names.
-        guide_line: Vertical guide line indicating the current step.
-        added_plot_flag: Whether the static elements (lines and background) were added.
-    """
-
-    def __init__(self, data_extractor: DataExtractor, renderer_ix: int = 0):
-        self.data_extractor = data_extractor
-        self.renderer_ix = renderer_ix
-        self.fig = None
-
-    def _data_at_ix(self, episode, step, graph_id):
-        step_data = self.data_extractor[episode][step][graph_id]
         all_dfs = []
-
-        for input_channel in step_data:
-            channel_data = step_data[input_channel]
+        for input_channel in input_channels:
+            channel_data = self.data_parser.extract(
+                self._locators["input_channel"],
+                episode=str(episode),
+                step=step,
+                obj=graph_id,
+                channel=input_channel,
+            )
             updater_data = channel_data["hypotheses_updater"]
 
             # -- Added --
-            add_ids = updater_data.get("add_ids", [])
-            if add_ids:
+            added_ids = updater_data.get("added_ids", [])
+            if added_ids:
                 df_added = DataFrame(
                     {
+                        "Evidence": np.array(channel_data["evidence"])[added_ids],
                         "Evidence Slope": np.array(updater_data["evidence_slopes"])[
-                            add_ids
+                            added_ids
                         ],
-                        "Rot_x": np.array(channel_data["rotations"])[add_ids][:, 0],
-                        "Rot_y": np.array(channel_data["rotations"])[add_ids][:, 1],
-                        "Rot_z": np.array(channel_data["rotations"])[add_ids][:, 2],
-                        "Pose Error": np.array(channel_data["pose_errors"])[add_ids],
+                        "Rot_x": np.array(channel_data["rotations"])[added_ids][:, 0],
+                        "Rot_y": np.array(channel_data["rotations"])[added_ids][:, 1],
+                        "Rot_z": np.array(channel_data["rotations"])[added_ids][:, 2],
+                        "Pose Error": np.array(channel_data["pose_errors"])[added_ids],
+                        "age": np.array(updater_data["ages"])[added_ids],
                         "kind": "Added",
                         "input_channel": input_channel,
                     }
@@ -217,25 +627,41 @@ class CorrelationPlot:
             removed_ids = updater_data.get("removed_ids", [])
             if len(removed_ids) > 0:
                 # If step is 0, go to last step of previous episode
-                if step == 0 and episode == 0:
+                if episode == 0 and step == 0:
                     break
                 prev_episode = episode - 1 if step == 0 else episode
                 prev_step = -1 if step == 0 else step - 1
 
-                prev_data = self.data_extractor[prev_episode][prev_step][graph_id]
-                prev_channel = prev_data[input_channel]
-                prev_updater = prev_channel["hypotheses_updater"]
+                prev_channel_data = self.data_parser.extract(
+                    self._locators["input_channel"],
+                    episode=str(prev_episode),
+                    step=prev_step,
+                    obj=graph_id,
+                    channel=input_channel,
+                )
+                prev_updater_data = channel_data["hypotheses_updater"]
+
                 df_removed = DataFrame(
                     {
-                        "Evidence Slope": np.array(prev_updater["evidence_slopes"])[
+                        "Evidence": np.array(prev_channel_data["evidence"])[
                             removed_ids
                         ],
-                        "Rot_x": np.array(prev_channel["rotations"])[removed_ids][:, 0],
-                        "Rot_y": np.array(prev_channel["rotations"])[removed_ids][:, 1],
-                        "Rot_z": np.array(prev_channel["rotations"])[removed_ids][:, 2],
-                        "Pose Error": np.array(prev_channel["pose_errors"])[
+                        "Evidence Slope": np.array(
+                            prev_updater_data["evidence_slopes"]
+                        )[removed_ids],
+                        "Rot_x": np.array(prev_channel_data["rotations"])[removed_ids][
+                            :, 0
+                        ],
+                        "Rot_y": np.array(prev_channel_data["rotations"])[removed_ids][
+                            :, 1
+                        ],
+                        "Rot_z": np.array(prev_channel_data["rotations"])[removed_ids][
+                            :, 2
+                        ],
+                        "Pose Error": np.array(prev_channel_data["pose_errors"])[
                             removed_ids
                         ],
+                        "age": np.array(prev_updater_data["ages"])[removed_ids],
                         "kind": "Removed",
                         "input_channel": input_channel,
                     }
@@ -244,10 +670,11 @@ class CorrelationPlot:
 
             # -- Maintained --
             total_ids = list(range(len(updater_data["evidence_slopes"])))
-            maintained_ids = sorted(set(total_ids) - set(add_ids))
+            maintained_ids = sorted(set(total_ids) - set(added_ids))
             if maintained_ids:
                 df_maintained = DataFrame(
                     {
+                        "Evidence": np.array(channel_data["evidence"])[maintained_ids],
                         "Evidence Slope": np.array(updater_data["evidence_slopes"])[
                             maintained_ids
                         ],
@@ -263,6 +690,7 @@ class CorrelationPlot:
                         "Pose Error": np.array(channel_data["pose_errors"])[
                             maintained_ids
                         ],
+                        "age": np.array(updater_data["ages"])[maintained_ids],
                         "kind": "Maintained",
                         "input_channel": input_channel,
                     }
@@ -320,36 +748,22 @@ class CorrelationPlot:
         g.fig.tight_layout()
         return g.fig
 
-    def __call__(
-        self, plotter: Plotter, episode: int, step: int, graph_id: str
-    ) -> None:
-        """Render evidence lines, background labels, and guide line.
+    def update_plot(self, widget: Any, msgs: list[TopicMessage]) -> tuple[Any, bool]:
+        self.remove(widget)
 
-        Args:
-            plotter: The vedo.Plotter instance to draw into.
-            episode: Current episode index
-            step: Current step index
-            graph_id: Current object to visualize
-        """
-        if self.fig is not None:
-            plotter.remove(self.fig)
+        msgs_dict = {msg.name: msg.value for msg in msgs}
+        df = self.generate_df(
+            episode=msgs_dict["episode_number"],
+            step=msgs_dict["step_number"],
+            graph_id=msgs_dict["current_object"],
+        )
+        fig = self.create_figure(df)
+        widget = Image(fig)
+        plt.close(fig)
 
-        df = self._data_at_ix(episode=episode, step=step, graph_id=graph_id)
-        img = self.create_figure(df)
-        self.fig = Image(img)
-        plt.close(img)
-        plotter.add(self.fig)
-
-    def cam_dict(self) -> dict[str, tuple[float, float, float]]:
-        """Returns camera parameters for an overhead view of the plot.
-
-        Returns:
-            Dictionary with camera position and focal point.
-        """
-        x_val = 300
-        y_val = 200
-        z_val = 1500
-        return {"pos": (x_val, y_val, z_val), "focal_point": (x_val, y_val, 0)}
+        self.plotter.add(widget)
+        self.plotter.render()
+        return widget, False
 
 
 class InteractivePlot:
@@ -379,255 +793,119 @@ class InteractivePlot:
         exp_path: str,
         data_path: str,
         learning_module: str,
-        throttle_time: float = 0.3,
     ):
-        self.throttle_time = throttle_time
-        self.data_extractor = DataExtractor(exp_path, data_path, learning_module)
+        self.data_parser = DataParser(exp_path)
+        self.ycb_loader = YCBMeshLoader(data_path)
+        self.event_bus = Publisher()
+        self.plotter = Plotter(size=(1000, 1000), sharecam=False).render()
+        self.scheduler = VtkDebounceScheduler(self.plotter.interactor, period_ms=33)
 
-        self.correlation_plotter = CorrelationPlot(
-            data_extractor=self.data_extractor, renderer_ix=0
-        )
+        # create and add the widgets to the plotter
+        self._widgets = self.create_widgets()
+        for w in self._widgets.values():
+            w.add()
 
-        self.plotter = Plotter(size=(1000, 1000))
+        self.plotter.show(interactive=True, resetcam=False, camera=self.cam_dict())
 
-        # Create a slider on the plot
-        self.episode_slider = self.plotter.at(0).add_slider(
-            self.episode_slider_callback,
-            xmin=0,
-            xmax=len(self.data_extractor) - 1,
-            value=0,
-            pos=[(0.1, 0.2), (0.7, 0.2)],
-            title="Episode",
-        )
+    def cam_dict(self) -> dict[str, tuple[float, float, float]]:
+        """Returns camera parameters for an overhead view of the plot.
 
-        self.episode_curr_slider_val = None
-        self.episode_last_call_time = time.time()
-
-        self.step_slider = self.plotter.at(0).add_slider(
-            self.step_slider_callback,
-            xmin=0,
-            xmax=len(self.data_extractor[0]) - 1,
-            value=0,
-            pos=[(0.1, 0.1), (0.7, 0.1)],
-            title="Step",
-        )
-
-        self.step_curr_slider_val = None
-        self.step_last_call_time = time.time()
-
-        self.primary_button = self.plotter.at(0).add_button(
-            self.primary_button_callback,
-            pos=(0.85, 0.2),
-            states=["Primary Target"],
-            size=30,
-            font="Calco",
-            bold=True,
-        )
-
-        self.previous_button = self.plotter.at(0).add_button(
-            self.previous_button_callback,
-            pos=(0.83, 0.13),
-            states=["<"],
-            size=30,
-            font="Calco",
-            bold=True,
-        )
-        self.next_button = self.plotter.at(0).add_button(
-            self.next_button_callback,
-            pos=(0.88, 0.13),
-            states=[">"],
-            size=30,
-            font="Calco",
-            bold=True,
-        )
-
-        self.current_graph = self.data_extractor.resolve_primary(0)
-        self.current_graph_label = Text2D(
-            txt=self.current_graph,
-            pos=(0.85, 0.26),
-            s=1.2,
-            font="Calco",
-            justify="center",
-            bold=True,
-            c="black",
-        )
-        self.plotter.at(0).add(self.current_graph_label)
-        self.current_graph_object = self.data_extractor.imported_objects[
-            self.current_graph
-        ].clone(deep=True)
-        self.plotter.at(0).add(self.current_graph_object.scale(2000).pos(-200, 250))
-        self.predicted_graph_object = None
-
-        self.highlight_circle = None
-        self.plotter.add_callback("LeftButtonPress", self.on_scatter_click)
-
-    def highlight_point(self, slope: float, error: float):
-        if self.highlight_circle:
-            self.plotter.remove(self.highlight_circle)
-
-        pos = self.map_data_coords_to_world(slope, error)
-        self.highlight_circle = Circle(pos=pos, r=3.0, res=16).c("red")
-        self.plotter.add(self.highlight_circle)
-        self.plotter.render()
-
-    def map_click_to_data_coords(self, click_point: np.ndarray) -> tuple[float, float]:
-        xmin, xmax, ymin, ymax = 74, 496, 64, 496
-        xlim = [-2.0, 2.0]
-        ylim = [0, 3.25]
-
-        # Normalize click to image coordinate
-        x_rel = (click_point[0] - xmin) / (xmax - xmin)
-        y_rel = (click_point[1] - ymin) / (ymax - ymin)
-
-        # Map to data coordinate space
-        slope = xlim[0] + x_rel * (xlim[1] - xlim[0])
-        error = ylim[0] + y_rel * (ylim[1] - ylim[0])
-
-        return slope, error
-
-    def map_data_coords_to_world(
-        self, slope: float, error: float
-    ) -> tuple[float, float, float]:
-        xmin, xmax, ymin, ymax = 74, 496, 64, 496
-        xlim = [-2.0, 2.0]
-        ylim = [0, 3.25]
-
-        x_rel = (slope - xlim[0]) / (xlim[1] - xlim[0])
-        y_rel = (error - ylim[0]) / (ylim[1] - ylim[0])
-
-        x_world = xmin + x_rel * (xmax - xmin)
-        y_world = ymin + y_rel * (ymax - ymin)
-        return x_world, y_world, 0.1
-
-    def on_scatter_click(self, event):
-        if event.picked3d is None:
-            return
-
-        # Ignore clicks outside of scatter plot limits
-        (slope, error) = self.map_click_to_data_coords(event.picked3d)
-        if not -2.0 <= slope <= 2.0 or not 0 <= error <= 3.25:
-            return
-
-        episode = round(self.episode_slider.GetRepresentation().GetValue())
-        step = round(self.step_slider.GetRepresentation().GetValue())
-        graph_id = self.current_graph
-
-        # Get current dataframe
-        df = self.correlation_plotter._data_at_ix(episode, step, graph_id)
-
-        # Get closest point
-        closest = get_closest_row(df, slope, error)
-        self.highlight_point(closest["Evidence Slope"], closest["Pose Error"])
-
-        if self.predicted_graph_object:
-            self.plotter.remove(self.predicted_graph_object)
-        self.predicted_graph_object = self.data_extractor.imported_objects[
-            graph_id
-        ].clone(deep=True)
-        self.predicted_graph_object.shift(
-            -np.mean(self.predicted_graph_object.bounds().reshape(3, 2), axis=1)
-        )
-        self.predicted_graph_object.rotate_x(closest["Rot_x"]).rotate_y(
-            closest["Rot_y"]
-        ).rotate_z(closest["Rot_z"])
-        self.predicted_graph_object.scale(2000)
-        self.predicted_graph_object.shift(840, 250)
-
-        self.plotter.at(0).add(self.predicted_graph_object)
-
-    def primary_button_callback(self, widget: Button, _event: str) -> None:
-        episode_val = round(self.episode_slider.GetRepresentation().GetValue())
-        resolved_graph = self.data_extractor.resolve_primary(episode_val)
-        if resolved_graph != self.current_graph:
-            self.current_graph = resolved_graph
-            self.current_graph_label.text(self.current_graph)
-
-            # Replace primary object
-            if self.current_graph_object:
-                self.plotter.remove(self.current_graph_object)
-            self.current_graph_object = self.data_extractor.imported_objects[
-                self.current_graph
-            ].clone(deep=True)
-            self.plotter.at(0).add(self.current_graph_object.scale(2000).pos(-200, 250))
-
-            self.step_slider.representation.SetValue(0)
-            self.step_slider_callback(self.step_slider, "force_run")
-
-    def previous_button_callback(self, widget: Button, _event: str) -> None:
-        resolved_graph = self.data_extractor.cycle_graph(self.current_graph, -1)
-        if resolved_graph != self.current_graph:
-            self.current_graph = resolved_graph
-            self.current_graph_label.text(self.current_graph)
-            self.step_slider.representation.SetValue(0)
-            self.step_slider_callback(self.step_slider, "force_run")
-
-    def next_button_callback(self, widget: Button, _event: str) -> None:
-        resolved_graph = self.data_extractor.cycle_graph(self.current_graph, 1)
-        if resolved_graph != self.current_graph:
-            self.current_graph = resolved_graph
-            self.current_graph_label.text(self.current_graph)
-            self.step_slider.representation.SetValue(0)
-            self.step_slider_callback(self.step_slider, "force_run")
-
-    def episode_slider_callback(self, widget: Slider2D, event: str) -> None:
-        """Respond to episode change by updating the visualization.
-
-        Note: This function is throttled to prevent recursion depth errors
-            while continue to be responsive.
+        Returns:
+            Dictionary with camera position and focal point.
         """
-        episode_val = round(widget.GetRepresentation().GetValue())
-        if event == "force_run" or (
-            episode_val != self.episode_curr_slider_val
-            and time.time() - self.episode_last_call_time > self.throttle_time
-        ):
-            self.episode_curr_slider_val = episode_val
-            self.episode_last_call_time = time.time()
+        x_val = 300
+        y_val = 200
+        z_val = 1500
+        return {"pos": (x_val, y_val, z_val), "focal_point": (x_val, y_val, 0)}
 
-            self.primary_button_callback(self.primary_button, "")
+    def create_widgets(self):
+        widgets = {}
 
-    def step_slider_callback(self, widget: Slider2D, event: str) -> None:
-        """Respond to episode change by updating the visualization.
-
-        Note: This function is throttled to prevent recursion depth errors
-            while continue to be responsive.
-        """
-        step_val = round(widget.GetRepresentation().GetValue())
-        if event == "force_run" or (
-            step_val != self.step_curr_slider_val
-            and time.time() - self.step_last_call_time > self.throttle_time
-        ):
-            episode_val = round(self.episode_slider.GetRepresentation().GetValue())
-            self.correlation_plotter(
+        widgets["episode_slider"] = Widget(
+            widget_ops=EpisodeSliderWidgetOps(
                 plotter=self.plotter,
-                episode=episode_val,
-                step=step_val,
-                graph_id=self.current_graph,
-            )
-
-            if self.highlight_circle:
-                self.plotter.remove(self.highlight_circle)
-                self.highlight_circle = None
-
-            if self.predicted_graph_object:
-                self.plotter.remove(self.predicted_graph_object)
-                self.predicted_graph_object = None
-
-            self.step_curr_slider_val = step_val
-            self.step_last_call_time = time.time()
-            self.render()
-
-    def render(self, resetcam: bool = False) -> None:
-        """Render the visualization layout.
-
-        Args:
-            resetcam: If True, resets camera for all renderers.
-        """
-        self.plotter.render()
-        self.plotter.at(self.correlation_plotter.renderer_ix).show(
-            camera=self.correlation_plotter.cam_dict(),
-            resetcam=resetcam,
-            interactive=True,
+                data_parser=self.data_parser,
+            ),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.5,
+            dedupe=True,
         )
+
+        widgets["step_slider"] = Widget(
+            widget_ops=StepSliderWidgetOps(
+                plotter=self.plotter,
+                data_parser=self.data_parser,
+            ),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.5,
+            dedupe=True,
+        )
+
+        widgets["primary_mesh"] = Widget(
+            widget_ops=GtMeshWidgetOps(
+                plotter=self.plotter,
+                data_parser=self.data_parser,
+                ycb_loader=self.ycb_loader,
+            ),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.5,
+            dedupe=True,
+        )
+
+        widgets["primary_button"] = Widget(
+            widget_ops=PrimaryButtonWidgetOps(plotter=self.plotter),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.2,
+            dedupe=False,
+        )
+
+        widgets["prev_button"] = Widget(
+            widget_ops=PrevButtonWidgetOps(plotter=self.plotter),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.2,
+            dedupe=False,
+        )
+
+        widgets["next_button"] = Widget(
+            widget_ops=NextButtonWidgetOps(plotter=self.plotter),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.2,
+            dedupe=False,
+        )
+
+        widgets["current_object"] = Widget(
+            widget_ops=CurrentObjectWidgetOps(data_parser=self.data_parser),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.2,
+            dedupe=True,
+        )
+
+        widgets["click_widget"] = Widget(
+            widget_ops=ClickWidgetOps(plotter=self.plotter),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.1,
+            dedupe=True,
+        )
+
+        widgets["correlation_plot"] = Widget(
+            widget_ops=CorrelationPlotWidgetOps(
+                plotter=self.plotter, data_parser=self.data_parser
+            ),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.3,
+            dedupe=True,
+        )
+
+        return widgets
 
 
 def plot_interactive_hypothesis_space_correlation(
@@ -656,7 +934,6 @@ def plot_interactive_hypothesis_space_correlation(
     data_path = str(Path(data_path).expanduser())
 
     plot = InteractivePlot(exp_path, data_path, learning_module)
-    plot.render(resetcam=False)
 
     return 0
 

@@ -1,0 +1,442 @@
+# Copyright 2025 Thousand Brains Project
+#
+# Copyright may exist in Contributors' modifications
+# and/or contributions to the work.
+#
+# Use of this source code is governed by the MIT
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+
+from __future__ import annotations
+
+import time
+from contextlib import suppress
+from dataclasses import dataclass, field
+from typing import Any, Callable, Hashable, Iterable, Protocol
+
+from pubsub.core import Publisher
+from vedo import Button
+from vedo.vtkclasses import vtkRenderWindowInteractor
+
+
+def extract_slider_state(widget: Any) -> int:
+    """Read the slider state and round it to an integer value.
+
+    Args:
+        widget: The Vedo slider.
+
+    Returns:
+        The current slider value rounded to the nearest integer.
+    """
+    return round(widget.GetRepresentation().GetValue())
+
+
+def set_slider_state(widget: Any, value: Any) -> None:
+    """Set the slider value after type and range checks.
+
+    Args:
+        widget: The Vedo slider.
+        value: The requested value to set.
+
+    Raises:
+        TypeError: If value cannot be converted to float.
+        ValueError: If value falls outside `widget.range`.
+    """
+    try:
+        value = float(value)
+    except (TypeError, ValueError) as err:
+        raise TypeError("Slider value must be castable to float") from err
+
+    min_val, max_val = widget.range
+    if not (min_val <= value <= max_val):
+        raise ValueError(
+            f"Slider requested value {value} out of range [{min_val}, {max_val}]"
+        )
+
+    widget.GetRepresentation().SetValue(float(value))
+
+
+def extract_button_state(widget: Any) -> str:
+    """Read the current button state label.
+
+    Args:
+        widget: The Vedo button.
+
+    Returns:
+        The current state string.
+    """
+    return widget.states[widget.status_idx]
+
+
+def set_button_state(widget, value):
+    """Set the button state by label or index.
+
+    Args:
+        widget: The Vedo button.
+        value: Either a string in `widget.states` or an int index.
+
+    Raises:
+        TypeError: If value is neither int nor str.
+        ValueError: If index is out of range or label is unknown.
+    """
+    states = list(widget.states)
+
+    if isinstance(value, str):
+        try:
+            idx = states.index(value)
+        except ValueError as err:
+            raise ValueError(
+                f"Unknown state {value!r}. Allowed states: {states}"
+            ) from err
+    elif isinstance(value, int):
+        if not 0 <= value < len(states):
+            raise ValueError(f"Index {value} out of range")
+        idx = value
+    else:
+        raise TypeError("value must be int or str")
+
+    widget.status_idx = idx
+    widget.status(idx)
+
+
+class WidgetOps(Protocol):
+    """Protocol for defining specific widget state operations."""
+
+    def extract_state(self, widget: Any) -> Any:
+        """Return the current state of a widget.
+
+        Args:
+            widget: The underlying VTK/Vedo widget instance.
+
+        Returns:
+            The current state of the widget.
+        """
+        ...
+
+    def set_state(self, widget: Any, value: Any) -> None:
+        """Set the state of a widget.
+
+        Args:
+            widget: The underlying VTK/Vedo widget instance.
+            value: Desired state value, type depends on widget.
+        """
+        ...
+
+    def add(self, callback: Callable) -> Any:
+        """Creates and returns a widget.
+
+        Args:
+            callback: Callable function for UI interaction.
+            kwargs: additional kwargs to define how the widget will be added.
+
+        Returns:
+            The created widget object
+        """
+        ...
+
+    def remove(self, widget: Any) -> None:
+        """Removes a widget from a plotter.
+
+        Args:
+            widget: The widget to be removed
+        """
+        ...
+
+
+class VtkDebounceScheduler:
+    """Single repeating VTK timer that services many debounced callbacks.
+
+    The scheduler keeps one repeating VTK timer and a registry of callbacks that
+    are scheduled to run once at or after a given time. Each callback is keyed
+    by a hashable token.
+
+    Attributes:
+        _iren: A `vtkRenderWindowInteractor` object.
+        _period_ms: Timer period in milliseconds.
+        _obs_tag: Observer tag for the registered VTK timer event.
+        _timer_id: VTK timer id.
+        _callbacks: Mapping from keys to callbacks.
+        _due: Mapping from keys to ready times in seconds.
+    """
+
+    def __init__(self, interactor: vtkRenderWindowInteractor, period_ms: int = 33):
+        """Initialize the scheduler.
+
+        Args:
+            interactor: VTK render window interactor.
+            period_ms: Repeating timer period in milliseconds.
+        """
+        self._iren = interactor
+        self._period_ms = period_ms
+
+        self._obs_tag: int | None = None
+        self._timer_id: int | None = None
+        self._callbacks: dict[Hashable, Callable[[], None]] = {}
+        self._due: dict[Hashable, float] = {}
+
+    def start(self) -> None:
+        """Ensure the repeating timer is running and the observer is set."""
+        if self._obs_tag is None:
+            self._obs_tag = self._iren.AddObserver("TimerEvent", self._on_timer)
+        if self._timer_id is None:
+            self._timer_id = self._iren.CreateRepeatingTimer(self._period_ms)
+
+    def register(self, key: Hashable, callback: Callable[[], None]) -> None:
+        """Register a callback under a key and start the timer if needed.
+
+        Args:
+            key: Unique hashable key for the callback.
+            callback: callback function to invoke when due.
+        """
+        self._callbacks[key] = callback
+        self.start()
+
+    def schedule_once(self, key: Hashable, delay_sec: float) -> None:
+        """Schedule a registered callback to run after a delay.
+
+        Args:
+            key: Key of a previously registered callback.
+            delay_sec: Delay in seconds. If less than or equal to zero, schedule
+                immediately.
+
+        Raises:
+            KeyError: If the key is not registered.
+        """
+        if key not in self._callbacks:
+            raise KeyError("Key not registered with scheduler")
+        now = time.perf_counter()
+        self._due[key] = now if delay_sec <= 0 else now + delay_sec
+
+    def cancel(self, key: Hashable) -> None:
+        """Cancel a scheduled callback and remove it from the registry.
+
+        Args:
+            key: Key for the callback to cancel.
+        """
+        self._due.pop(key, None)
+        self._callbacks.pop(key, None)
+        if not self._callbacks:
+            self._teardown()
+
+    def shutdown(self) -> None:
+        """Clear all callbacks and tear down the timer and observer."""
+        self._due.clear()
+        self._callbacks.clear()
+        self._teardown()
+
+    def _teardown(self) -> None:
+        """Tear down the VTK timer and observer if present."""
+        if self._timer_id is not None:
+            with suppress(Exception):
+                self._iren.DestroyTimer(self._timer_id)
+            self._timer_id = None
+        if self._obs_tag is not None:
+            with suppress(Exception):
+                self._iren.RemoveObserver(self._obs_tag)
+            self._obs_tag = None
+
+    def _on_timer(self, _obj: Any, _evt: str) -> None:
+        """VTK timer event handler.
+
+        Args:
+            _obj: VTK callback object (i.e., vtkXRenderWindowInteractor).
+            _evt: Event name (e.g., "TimerEvent").
+        """
+        if not self._due:
+            return
+        now = time.perf_counter()
+        ready = [k for k, t in list(self._due.items()) if now >= t]
+        for key in ready:
+            self._due.pop(key, None)
+            cb = self._callbacks.get(key)
+            if cb:
+                cb()
+
+
+@dataclass
+class Widget:
+    """High-level wrapper that connects a Vedo widget to a pubsub topic.
+
+    The widget is created via `widget_ops.add` and removed via
+    `widget_ops.remove`. State reads and writes are delegated to
+    `widget_ops`. This wrapper implements Debounce logic through the
+    `VtkDebounceScheduler`, which runs a timer in the background effectively
+    collapsing rapid changes in widget states.
+
+    Note that the widget-specific operations are extracted to the a composed
+    class that follows the `WidgetOps` protocol (e.g., `SliderOps`,
+    `ButtonOps`).
+
+    Attributes:
+        bus: Pubsub bus used to send messages.
+        scheduler: Debounce scheduler used to collapse rapid UI changes.
+        widget_ops: Strategy object for get/set/add/remove operations.
+        plotter: A `vedo.Plotter` host to attach widgets to.
+        debounce_sec: Debounce delay in seconds for change publications.
+        dedupe: If True, skip publishing unchanged values.
+
+    Runtime Attributes:
+        widget: The created widget instance.
+        state: Last observed state value.
+        last_published_state: Previous published state value for dedupe logic.
+        _sched_key: Unique hashable key for the scheduler.
+    """
+
+    def __init__(
+        self,
+        widget_ops: WidgetOps,
+        bus: Publisher,
+        scheduler: VtkDebounceScheduler,
+        debounce_sec: float = 0.25,
+        dedupe: bool = True,
+    ):
+        self.bus = bus
+        self.scheduler = scheduler
+        self.debounce_sec = debounce_sec
+        self.dedupe = dedupe
+        self.widget_ops = widget_ops
+
+        self.widget = None
+        self.state = None
+        self.last_published_state = None
+        self._sched_key = object()  # hashable unique key
+
+        for topic in self.updater_topics:
+            self.bus.subscribe(self._on_update_topic, topic)
+
+    @property
+    def updater_topics(self) -> set[str]:
+        return {t.name for u in self.widget_ops.updaters for t in u.topics}
+
+    def add(self) -> None:
+        """Create the widget and register debounce."""
+        self.widget = self.widget_ops.add(self._on_change)
+        self.scheduler.register(self._sched_key, self._on_debounce_fire)
+
+    def remove(self) -> None:
+        """Remove the widget from the plotter."""
+        self.scheduler.cancel(self._sched_key)
+
+        if self.widget is not None:
+            self.widget_ops.remove(self.widget)
+        self.widget = None
+
+    def extract_state(self) -> Any:
+        """Read the current state from the widget via `widget_ops`.
+
+        Returns:
+            The current state or None if the widget is not present.
+        """
+        return self.widget_ops.extract_state(self.widget)
+
+    def set_state(self, value: Any, publish: bool = True) -> None:
+        """Set the widget state and optionally schedule a publish.
+
+        Args:
+            value: Desired state value.
+            publish: If True, schedule a debounced publish.
+        """
+        self.widget_ops.set_state(self.widget, value)
+        self.state = self.extract_state()
+
+        if publish:
+            self.scheduler.schedule_once(self._sched_key, self.debounce_sec)
+
+    def _on_change(self, widget: Any, _event: str) -> None:
+        """Internal callback when the underlying widget reports a UI change.
+
+        Args:
+            widget: The VTK widget instance.
+            _event: Event name from VTK/Vedo.
+        """
+        if isinstance(widget, Button):
+            widget.switch()
+
+        self.state = self.extract_state()
+        self.scheduler.schedule_once(self._sched_key, self.debounce_sec)
+
+    def _on_update_topic(self, msg: TopicMessage):
+        for updater in self.widget_ops.updaters:
+            self.widget, publish_state = updater(self.widget, msg)
+            if publish_state:
+                self.state = self.extract_state()
+                self.scheduler.schedule_once(self._sched_key, self.debounce_sec)
+
+    def _on_debounce_fire(self) -> None:
+        """Handler fired by the scheduler to publish debounced state."""
+        self._publish(self.extract_state())
+
+    def _publish(self, state: Any) -> None:
+        """Publish the state to the pubsub topic if not a duplicate or if forced.
+
+        Args:
+            state: State to publish.
+        """
+        if self.dedupe and self.last_published_state == state:
+            return
+
+        for msg in self.widget_ops.state_to_messages(state):
+            self.bus.sendMessage(msg.name, msg=msg)
+            print(msg)
+
+        self.last_published_state = state
+
+
+@dataclass
+class TopicMessage:
+    name: str
+    value: str | int | float
+
+
+@dataclass(frozen=True)
+class TopicSpec:
+    name: str
+    required: bool = True
+
+
+@dataclass
+class WidgetUpdater:
+    """Collect messages for a set of topics and callback when required topics are ready.
+
+    Args:
+        topics: Iterable of TopicSpec. Required topics gate readiness.
+        callback: Called as callback(widget, inbox_list) when ready.
+                  inbox_list is ordered by the topic spec order.
+    """
+
+    topics: Iterable[TopicSpec]
+    callback: Callable
+
+    _inbox: dict[str, TopicMessage] = field(default_factory=dict, init=False)
+
+    @property
+    def ready(self) -> bool:
+        """True if every required topic has at least one message."""
+        return all(spec.name in self._inbox for spec in self.topics if spec.required)
+
+    @property
+    def inbox(self) -> list[TopicMessage]:
+        """Inbox as a list ordered by the TopicSpec order, skipping missing ones."""
+        return [
+            self._inbox[spec.name] for spec in self.topics if spec.name in self._inbox
+        ]
+
+    def accepts(self, msg: TopicMessage) -> bool:
+        """Return True if tracking the message's topic (required or optional)."""
+        return any(spec.name == msg.name for spec in self.topics)
+
+    def __call__(self, widget: Any, msg: TopicMessage):
+        """Record a message for a topic and maybe fire the callback.
+
+        Returns:
+            Callback output if invoked, otherwise tuple(widget, False).
+        """
+        if not self.accepts(msg):
+            return widget, False
+
+        self._inbox[msg.name] = msg
+
+        if self.ready:
+            return self.callback(widget, self.inbox)
+
+        return widget, False
