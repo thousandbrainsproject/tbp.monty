@@ -231,7 +231,6 @@ class CreateDataclassArgsTest(unittest.TestCase):
 
 
 class ConfigToDictTest(unittest.TestCase):
-
     def test_simple_dataclass(self):
         config = SimpleDataclass(field1="1", field2=1)
 
@@ -598,6 +597,7 @@ class IsDataclassInstanceTest(unittest.TestCase):
         self.assertFalse(
             dataclass_utils.is_dataclass_instance(FakeNamedTuple(name=0, value=[]))
         )
+
 
 class GetSubsetArgsTest(unittest.TestCase):
     def test_get_subset_args(self):
