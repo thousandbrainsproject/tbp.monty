@@ -8,12 +8,22 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Literal
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system_state import MotorSystemState
 from tbp.monty.frameworks.models.states import GoalState, State
+
+
+@dataclass
+class MotorSystemTelemetry:
+    state: MotorSystemState
+    driving_goal_state: GoalState | None
+    experiment_mode: Literal["train", "eval"] | None
+    processed_observations: State | None
+    last_action: Action | None
 
 
 class MotorSystem:
@@ -66,6 +76,11 @@ class MotorSystem:
         """Sets the state of the motor system."""
         self._state = state
 
+    @property
+    def telemetry(self) -> list[MotorSystemTelemetry]:
+        """Returns the telemetry of the motor system."""
+        return self._telemetry
+
     def driving_goal_state(self) -> GoalState | None:
         """Returns the driving goal state."""
         return self._driving_goal_state
@@ -102,6 +117,7 @@ class MotorSystem:
         self._experiment_mode = None
         self._processed_observations = None
         self._last_action = None
+        self._telemetry = []
 
     def pre_episode(self) -> None:
         """Pre episode hook."""
@@ -150,6 +166,15 @@ class MotorSystem:
         # Need to keep this in sync with the policy's driving goal state since
         # derive_habitat_goal_state() consumes the goal state.
         self._driving_goal_state = getattr(self._policy, "driving_goal_state", None)
+        self._telemetry.append(
+            MotorSystemTelemetry(
+                state=self._state,
+                driving_goal_state=self._driving_goal_state,
+                experiment_mode=self._experiment_mode,
+                processed_observations=self._processed_observations,
+                last_action=self._last_action,
+            )
+        )
 
     def __call__(self) -> Action:
         """Defines the structure for __call__.
