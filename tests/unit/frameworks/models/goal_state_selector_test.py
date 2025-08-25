@@ -52,25 +52,29 @@ class SortStatesByConfidenceTest(unittest.TestCase):
         """Test that states are sorted by confidence."""
         a = make_dummy_state(confidence=0.0)
         b = make_dummy_state(confidence=1.0)
-        self.assertEqual(sort_states_by_confidence([a, b]), [a, b])
+        c = make_dummy_state(confidence=0.5)
+        self.assertEqual(sort_states_by_confidence([a, b, c]), [a, c, b])
 
     def test_reverse(self) -> None:
         """Test that reverse=True puts higher-confidence states first."""
         a = make_dummy_state(confidence=0.0)
         b = make_dummy_state(confidence=1.0)
-        self.assertEqual(sort_states_by_confidence([a, b], reverse=True), [b, a])
+        c = make_dummy_state(confidence=0.5)
+        self.assertEqual(sort_states_by_confidence([a, b, c], reverse=True), [b, c, a])
 
     def test_none_and_nan(self) -> None:
         """Test that None and np.nan values are sorted w/ lowest possible confidence."""
         a = make_dummy_state(confidence=None, use_state=False)
-        b = make_dummy_state(confidence=0.0)
-        self.assertEqual(sort_states_by_confidence([a, b]), [a, b])
-        self.assertEqual(sort_states_by_confidence([a, b], reverse=True), [b, a])
+        b = make_dummy_state(confidence=1.0)
+        c = make_dummy_state(confidence=0.0)
+        self.assertEqual(sort_states_by_confidence([a, b, c]), [a, c, b])
+        self.assertEqual(sort_states_by_confidence([a, b, c], reverse=True), [b, c, a])
 
         a = make_dummy_state(confidence=np.nan, use_state=False)
-        b = make_dummy_state(confidence=0.0)
-        self.assertEqual(sort_states_by_confidence([a, b]), [a, b])
-        self.assertEqual(sort_states_by_confidence([a, b], reverse=True), [b, a])
+        b = make_dummy_state(confidence=1.0)
+        c = make_dummy_state(confidence=0.0)
+        self.assertEqual(sort_states_by_confidence([a, b, c]), [a, c, b])
+        self.assertEqual(sort_states_by_confidence([a, b, c], reverse=True), [b, c, a])
 
 
 class GoalStateSelectorTest(unittest.TestCase):
