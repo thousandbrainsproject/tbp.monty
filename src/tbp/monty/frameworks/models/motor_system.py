@@ -32,9 +32,7 @@ class MotorSystem:
                 Defaults to None.
         """
         self._policy = policy
-        self.reset()
-        if state:
-            self._state = state
+        self.reset(state)
 
     @property
     def agent_id(self) -> str:
@@ -95,9 +93,9 @@ class MotorSystem:
         self._processed_observations = processed_observations
         self._policy.processed_observations = processed_observations
 
-    def reset(self) -> None:
+    def reset(self, state: MotorSystemState | None = None) -> None:
         """Reset the motor system."""
-        self._state = None
+        self._state = state
         self._driving_goal_state = None
         self._experiment_mode = None
         self._processed_observations = None
