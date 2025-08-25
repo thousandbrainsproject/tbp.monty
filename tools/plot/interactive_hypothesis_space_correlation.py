@@ -21,7 +21,7 @@ import pandas as pd
 import seaborn as sns
 from pandas import DataFrame
 from pubsub.core import Publisher
-from vedo import Image, Plotter
+from vedo import Circle, Image, Plotter
 
 from tools.plot.interactive.data import (
     DataLocator,
@@ -29,12 +29,19 @@ from tools.plot.interactive.data import (
     DataParser,
     YCBMeshLoader,
 )
+from tools.plot.interactive.utils import (
+    Bounds,
+    CoordinateMapper,
+    Location2D,
+    Location3D,
+)
 from tools.plot.interactive.widgets import (
     TopicMessage,
     TopicSpec,
     VtkDebounceScheduler,
     Widget,
     WidgetUpdater,
+    extract_slider_state,
     set_slider_state,
 )
 
@@ -178,7 +185,7 @@ class StepSliderWidgetOps:
 
 
 class GtMeshWidgetOps:
-    def __init__(self, plotter, data_parser, ycb_loader=None):
+    def __init__(self, plotter, data_parser, ycb_loader):
         self.plotter = plotter
         self.data_parser = data_parser
         self.ycb_loader = ycb_loader
@@ -356,6 +363,35 @@ class NextButtonWidgetOps:
         return messages
 
 
+class AgeThresholdWidgetOps:
+    def __init__(self, plotter):
+        self.plotter = plotter
+        self.updaters = []
+
+        self._add_kwargs = dict(
+            xmin=0,
+            xmax=10,
+            value=0,
+            pos=[(0.05, 0.01), (0.05, 0.3)],
+            title="Age",
+        )
+
+    def add(self, callback: Callable) -> int:
+        return self.plotter.add_slider(callback, **self._add_kwargs)
+
+    def remove(self, widget: Any):
+        self.plotter.remove(widget)
+
+    def extract_state(self, widget: Any) -> bool:
+        return extract_slider_state(widget)
+
+    def state_to_messages(self, state: str) -> list[TopicMessage]:
+        messages = [
+            TopicMessage(name="age_threshold", value=state),
+        ]
+        return messages
+
+
 class CurrentObjectWidgetOps:
     def __init__(self, data_parser):
         self.data_parser = data_parser
@@ -484,17 +520,17 @@ class ClickWidgetOps:
 
     def state_to_messages(self, state: str) -> list[TopicMessage]:
         messages = [
-            TopicMessage(name="LeftButtonPress", value=state),
+            TopicMessage(name="click_location", value=state),
         ]
         return messages
 
     def on_click(self, event):
-        location = event.picked2d
+        location = event.picked3d
 
         if location is None:
             return
 
-        self.click_location = location
+        self.click_location = Location3D(*location)
         self._on_change_cb(widget=None, _event="")
 
 
@@ -508,16 +544,30 @@ class CorrelationPlotWidgetOps:
                     TopicSpec("episode_number", required=True),
                     TopicSpec("step_number", required=True),
                     TopicSpec("current_object", required=True),
+                    TopicSpec("age_threshold", required=True),
                 ],
                 callback=self.update_plot,
             ),
+            WidgetUpdater(
+                topics=[
+                    TopicSpec("click_location", required=True),
+                ],
+                callback=self.update_selection,
+            ),
         ]
+        self.df = None
+        self.highlight_circle = None
+        self.selected_hypothesis = None
 
         self._locators = self.create_locators()
+        self._coordinate_mapper = CoordinateMapper(
+            gui=Bounds(74, 496, 64, 496),
+            data=Bounds(-2.0, 2.0, 0.0, 3.25),
+        )
 
     def create_locators(self):
         locators = {}
-        locators["input_channel"] = DataLocator(
+        locators["channel"] = DataLocator(
             path=[
                 DataLocatorStep.key(name="episode"),
                 DataLocatorStep.key(name="lm", value="LM_0"),
@@ -529,43 +579,9 @@ class CorrelationPlotWidgetOps:
                 DataLocatorStep.key(name="channel"),
             ],
         )
-        locators["pose_error"] = locators["input_channel"].extend(
-            steps=[
-                DataLocatorStep.key(name="stat", value="pose_errors"),
-            ],
-        )
-        locators["evidence"] = locators["input_channel"].extend(
-            steps=[
-                DataLocatorStep.key(name="stat", value="evidence"),
-            ],
-        )
-        locators["rotations"] = locators["input_channel"].extend(
-            steps=[
-                DataLocatorStep.key(name="stat", value="rotations"),
-            ],
-        )
-        locators["added_ids"] = locators["input_channel"].extend(
+        locators["updater"] = locators["channel"].extend(
             steps=[
                 DataLocatorStep.key(name="stat", value="hypotheses_updater"),
-                DataLocatorStep.key(name="updater_stats", value="added_ids"),
-            ],
-        )
-        locators["ages"] = locators["input_channel"].extend(
-            steps=[
-                DataLocatorStep.key(name="stat", value="hypotheses_updater"),
-                DataLocatorStep.key(name="updater_stats", value="ages"),
-            ],
-        )
-        locators["removed_ids"] = locators["input_channel"].extend(
-            steps=[
-                DataLocatorStep.key(name="stat", value="hypotheses_updater"),
-                DataLocatorStep.key(name="updater_stats", value="removed_ids"),
-            ],
-        )
-        locators["evidence_slopes"] = locators["input_channel"].extend(
-            steps=[
-                DataLocatorStep.key(name="stat", value="hypotheses_updater"),
-                DataLocatorStep.key(name="updater_stats", value="evidence_slopes"),
             ],
         )
         return locators
@@ -578,15 +594,32 @@ class CorrelationPlotWidgetOps:
             self.plotter.remove(widget)
 
     def extract_state(self, widget: Any) -> str:
-        return ""
+        return None
 
     def state_to_messages(self, state: str) -> list[TopicMessage]:
-        messages = []
+        if self.selected_hypothesis is None:
+            messages = [TopicMessage("clear_selected_hypothesis", value=True)]
+        else:
+            messages = [
+                TopicMessage("selected_hypothesis", value=self.selected_hypothesis)
+            ]
         return messages
+
+    def increment_step(self, episode, step):
+        last_episode = len(self.data_parser.query(self._locators["channel"])) - 1
+        last_step = (
+            len(self.data_parser.query(self._locators["channel"], episode=str(episode)))
+            - 1
+        )
+        if episode == last_episode and step == last_step:
+            return episode, step
+        if step < last_step:
+            return episode, step + 1
+        return episode + 1, 0
 
     def generate_df(self, episode, step, graph_id):
         input_channels = self.data_parser.query(
-            self._locators["input_channel"],
+            self._locators["channel"],
             episode=str(episode),
             step=step,
             obj=graph_id,
@@ -595,19 +628,58 @@ class CorrelationPlotWidgetOps:
         all_dfs = []
         for input_channel in input_channels:
             channel_data = self.data_parser.extract(
-                self._locators["input_channel"],
+                self._locators["channel"],
                 episode=str(episode),
                 step=step,
                 obj=graph_id,
                 channel=input_channel,
             )
-            updater_data = channel_data["hypotheses_updater"]
+            updater_data = self.data_parser.extract(
+                self._locators["updater"],
+                episode=str(episode),
+                step=step,
+                obj=graph_id,
+                channel=input_channel,
+            )
+            inc_episode, inc_step = self.increment_step(episode, step)
+            inc_updater_data = self.data_parser.extract(
+                self._locators["updater"],
+                episode=str(inc_episode),
+                step=inc_step,
+                obj=graph_id,
+                channel=input_channel,
+            )
+
+            # -- Removed --
+            removed_ids = inc_updater_data.get("removed_ids", [])
+            if len(removed_ids) > 0:
+                df_removed = DataFrame(
+                    {
+                        "graph_id": graph_id,
+                        "Evidence": np.array(channel_data["evidence"])[removed_ids],
+                        "Evidence Slope": np.array(updater_data["evidence_slopes"])[
+                            removed_ids
+                        ],
+                        "Rot_x": np.array(channel_data["rotations"])[removed_ids][:, 0],
+                        "Rot_y": np.array(channel_data["rotations"])[removed_ids][:, 1],
+                        "Rot_z": np.array(channel_data["rotations"])[removed_ids][:, 2],
+                        "Pose Error": np.array(channel_data["pose_errors"])[
+                            removed_ids
+                        ],
+                        "age": np.array(updater_data["ages"])[removed_ids],
+                        "kind": "Removed",
+                        "input_channel": input_channel,
+                    }
+                )
+                all_dfs.append(df_removed)
 
             # -- Added --
             added_ids = updater_data.get("added_ids", [])
+            added_ids = sorted(set(added_ids) - set(removed_ids))
             if added_ids:
                 df_added = DataFrame(
                     {
+                        "graph_id": graph_id,
                         "Evidence": np.array(channel_data["evidence"])[added_ids],
                         "Evidence Slope": np.array(updater_data["evidence_slopes"])[
                             added_ids
@@ -623,57 +695,15 @@ class CorrelationPlotWidgetOps:
                 )
                 all_dfs.append(df_added)
 
-            # -- Removed --
-            removed_ids = updater_data.get("removed_ids", [])
-            if len(removed_ids) > 0:
-                # If step is 0, go to last step of previous episode
-                if episode == 0 and step == 0:
-                    break
-                prev_episode = episode - 1 if step == 0 else episode
-                prev_step = -1 if step == 0 else step - 1
-
-                prev_channel_data = self.data_parser.extract(
-                    self._locators["input_channel"],
-                    episode=str(prev_episode),
-                    step=prev_step,
-                    obj=graph_id,
-                    channel=input_channel,
-                )
-                prev_updater_data = channel_data["hypotheses_updater"]
-
-                df_removed = DataFrame(
-                    {
-                        "Evidence": np.array(prev_channel_data["evidence"])[
-                            removed_ids
-                        ],
-                        "Evidence Slope": np.array(
-                            prev_updater_data["evidence_slopes"]
-                        )[removed_ids],
-                        "Rot_x": np.array(prev_channel_data["rotations"])[removed_ids][
-                            :, 0
-                        ],
-                        "Rot_y": np.array(prev_channel_data["rotations"])[removed_ids][
-                            :, 1
-                        ],
-                        "Rot_z": np.array(prev_channel_data["rotations"])[removed_ids][
-                            :, 2
-                        ],
-                        "Pose Error": np.array(prev_channel_data["pose_errors"])[
-                            removed_ids
-                        ],
-                        "age": np.array(prev_updater_data["ages"])[removed_ids],
-                        "kind": "Removed",
-                        "input_channel": input_channel,
-                    }
-                )
-                all_dfs.append(df_removed)
-
             # -- Maintained --
             total_ids = list(range(len(updater_data["evidence_slopes"])))
-            maintained_ids = sorted(set(total_ids) - set(added_ids))
+            maintained_ids = sorted(
+                (set(total_ids) - set(added_ids)) - set(removed_ids)
+            )
             if maintained_ids:
                 df_maintained = DataFrame(
                     {
+                        "graph_id": graph_id,
                         "Evidence": np.array(channel_data["evidence"])[maintained_ids],
                         "Evidence Slope": np.array(updater_data["evidence_slopes"])[
                             maintained_ids
@@ -699,13 +729,13 @@ class CorrelationPlotWidgetOps:
 
         return pd.concat(all_dfs, ignore_index=True)
 
-    def create_figure(self, df: DataFrame):
-        g = sns.JointGrid(data=df, x="Evidence Slope", y="Pose Error", height=6)
+    def create_figure(self, df: DataFrame, x="Evidence Slope", y="Pose Error"):
+        g = sns.JointGrid(data=df, x=x, y=y, height=6)
 
         sns.scatterplot(
             data=df,
-            x="Evidence Slope",
-            y="Pose Error",
+            x=x,
+            y=y,
             hue="kind",
             ax=g.ax_joint,
             s=8,
@@ -715,7 +745,7 @@ class CorrelationPlotWidgetOps:
 
         sns.kdeplot(
             data=df,
-            x="Evidence Slope",
+            x=x,
             hue="kind",
             ax=g.ax_marg_x,
             fill=True,
@@ -727,7 +757,7 @@ class CorrelationPlotWidgetOps:
 
         sns.kdeplot(
             data=df,
-            y="Pose Error",
+            y=y,
             hue="kind",
             ax=g.ax_marg_y,
             fill=True,
@@ -743,13 +773,26 @@ class CorrelationPlotWidgetOps:
 
         g.ax_joint.set_xlim(-2.0, 2.0)
         g.ax_joint.set_ylim(0, 3.25)
-        g.ax_joint.set_xlabel("Evidence Slope", labelpad=10)
-        g.ax_joint.set_ylabel("Pose Error", labelpad=10)
+        g.ax_joint.set_xlabel(x, labelpad=10)
+        g.ax_joint.set_ylabel(y, labelpad=10)
         g.fig.tight_layout()
         return g.fig
 
+    def get_closest_row(self, df: DataFrame, slope: float, error: float) -> pd.Series:
+        if df.empty:
+            raise ValueError("DataFrame is empty.")
+
+        # Compute Euclidean distance
+        distances = np.sqrt(
+            (df["Evidence Slope"] - slope) ** 2 + (df["Pose Error"] - error) ** 2
+        )
+        return df.loc[distances.idxmin()]
+
     def update_plot(self, widget: Any, msgs: list[TopicMessage]) -> tuple[Any, bool]:
         self.remove(widget)
+        if self.highlight_circle:
+            self.remove(self.highlight_circle)
+            self.selected_hypothesis = None
 
         msgs_dict = {msg.name: msg.value for msg in msgs}
         df = self.generate_df(
@@ -757,12 +800,100 @@ class CorrelationPlotWidgetOps:
             step=msgs_dict["step_number"],
             graph_id=msgs_dict["current_object"],
         )
-        fig = self.create_figure(df)
+        self.df = df[df["age"] >= msgs_dict["age_threshold"]]
+        fig = self.create_figure(self.df)
         widget = Image(fig)
         plt.close(fig)
 
         self.plotter.add(widget)
         self.plotter.render()
+        return widget, True
+
+    def update_selection(
+        self, widget: Any, msgs: list[TopicMessage]
+    ) -> tuple[any, bool]:
+        if widget is None:
+            return widget, False
+
+        msgs_dict = {msg.name: msg.value for msg in msgs}
+        location = msgs_dict["click_location"].to_2d()
+
+        if not self._coordinate_mapper.gui.contains(location):
+            return widget, False
+
+        data_location = self._coordinate_mapper.map_click_to_data_coords(location)
+        df_row = self.get_closest_row(
+            self.df, slope=data_location.x, error=data_location.y
+        )
+        df_location = Location2D(df_row["Evidence Slope"], df_row["Pose Error"])
+
+        gui_location = self._coordinate_mapper.map_data_coords_to_world(
+            df_location
+        ).to_3d(z=0.1)
+
+        if self.highlight_circle:
+            self.remove(self.highlight_circle)
+
+        self.highlight_circle = Circle(pos=gui_location.to_numpy(), r=3.0, res=16).c(
+            "red"
+        )
+        self.plotter.add(self.highlight_circle)
+        self.selected_hypothesis = df_row
+
+        self.plotter.render()
+        return widget, True
+
+
+class HypothesisMeshWidgetOps:
+    def __init__(self, plotter, ycb_loader):
+        self.plotter = plotter
+        self.ycb_loader = ycb_loader
+        self.updaters = [
+            WidgetUpdater(
+                topics=[TopicSpec("clear_selected_hypothesis", required=True)],
+                callback=self.clear_mesh,
+            ),
+            WidgetUpdater(
+                topics=[TopicSpec("selected_hypothesis", required=True)],
+                callback=self.update_mesh,
+            ),
+        ]
+
+    def add(self, callback: Callable) -> int:
+        return None
+
+    def remove(self, widget: Any):
+        self.plotter.remove(widget)
+
+    def extract_state(self, widget: Any) -> int:
+        return None
+
+    def state_to_messages(self, state: int) -> list[TopicMessage]:
+        return []
+
+    def clear_mesh(self, widget: Any, msgs: list[TopicMessage]) -> tuple[Any, bool]:
+        if widget is not None:
+            self.remove(widget)
+            self.plotter.render()
+        return widget, False
+
+    def update_mesh(self, widget: Any, msgs: list[TopicMessage]) -> tuple[Any, bool]:
+        if widget is not None:
+            self.remove(widget)
+
+        msgs_dict = {msg.name: msg.value for msg in msgs}
+        hypothesis = msgs_dict["selected_hypothesis"]
+
+        widget = self.ycb_loader.create_mesh(hypothesis["graph_id"]).clone(deep=True)
+        widget.rotate_x(hypothesis["Rot_x"])
+        widget.rotate_y(hypothesis["Rot_y"])
+        widget.rotate_z(hypothesis["Rot_z"])
+        widget.scale(1500)
+
+        widget.pos(840, 250)
+        self.plotter.add(widget)
+        self.plotter.render()
+
         return widget, False
 
 
@@ -879,6 +1010,14 @@ class InteractivePlot:
             dedupe=False,
         )
 
+        widgets["age_threshold"] = Widget(
+            widget_ops=AgeThresholdWidgetOps(plotter=self.plotter),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.5,
+            dedupe=True,
+        )
+
         widgets["current_object"] = Widget(
             widget_ops=CurrentObjectWidgetOps(data_parser=self.data_parser),
             bus=self.event_bus,
@@ -902,7 +1041,18 @@ class InteractivePlot:
             bus=self.event_bus,
             scheduler=self.scheduler,
             debounce_sec=0.3,
-            dedupe=True,
+            dedupe=False,
+        )
+
+        widgets["hypothesis_mesh"] = Widget(
+            widget_ops=HypothesisMeshWidgetOps(
+                plotter=self.plotter,
+                ycb_loader=self.ycb_loader,
+            ),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.0,
+            dedupe=False,
         )
 
         return widgets

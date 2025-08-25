@@ -9,14 +9,13 @@
 
 from __future__ import annotations
 
-import time
-from contextlib import suppress
 from dataclasses import dataclass, field
-from typing import Any, Callable, Hashable, Iterable, Protocol
+from typing import Any, Callable, Iterable, Protocol
 
 from pubsub.core import Publisher
 from vedo import Button
-from vedo.vtkclasses import vtkRenderWindowInteractor
+
+from tools.plot.interactive.utils import VtkDebounceScheduler
 
 
 def extract_slider_state(widget: Any) -> int:
@@ -141,116 +140,6 @@ class WidgetOps(Protocol):
             widget: The widget to be removed
         """
         ...
-
-
-class VtkDebounceScheduler:
-    """Single repeating VTK timer that services many debounced callbacks.
-
-    The scheduler keeps one repeating VTK timer and a registry of callbacks that
-    are scheduled to run once at or after a given time. Each callback is keyed
-    by a hashable token.
-
-    Attributes:
-        _iren: A `vtkRenderWindowInteractor` object.
-        _period_ms: Timer period in milliseconds.
-        _obs_tag: Observer tag for the registered VTK timer event.
-        _timer_id: VTK timer id.
-        _callbacks: Mapping from keys to callbacks.
-        _due: Mapping from keys to ready times in seconds.
-    """
-
-    def __init__(self, interactor: vtkRenderWindowInteractor, period_ms: int = 33):
-        """Initialize the scheduler.
-
-        Args:
-            interactor: VTK render window interactor.
-            period_ms: Repeating timer period in milliseconds.
-        """
-        self._iren = interactor
-        self._period_ms = period_ms
-
-        self._obs_tag: int | None = None
-        self._timer_id: int | None = None
-        self._callbacks: dict[Hashable, Callable[[], None]] = {}
-        self._due: dict[Hashable, float] = {}
-
-    def start(self) -> None:
-        """Ensure the repeating timer is running and the observer is set."""
-        if self._obs_tag is None:
-            self._obs_tag = self._iren.AddObserver("TimerEvent", self._on_timer)
-        if self._timer_id is None:
-            self._timer_id = self._iren.CreateRepeatingTimer(self._period_ms)
-
-    def register(self, key: Hashable, callback: Callable[[], None]) -> None:
-        """Register a callback under a key and start the timer if needed.
-
-        Args:
-            key: Unique hashable key for the callback.
-            callback: callback function to invoke when due.
-        """
-        self._callbacks[key] = callback
-        self.start()
-
-    def schedule_once(self, key: Hashable, delay_sec: float) -> None:
-        """Schedule a registered callback to run after a delay.
-
-        Args:
-            key: Key of a previously registered callback.
-            delay_sec: Delay in seconds. If less than or equal to zero, schedule
-                immediately.
-
-        Raises:
-            KeyError: If the key is not registered.
-        """
-        if key not in self._callbacks:
-            raise KeyError("Key not registered with scheduler")
-        now = time.perf_counter()
-        self._due[key] = now if delay_sec <= 0 else now + delay_sec
-
-    def cancel(self, key: Hashable) -> None:
-        """Cancel a scheduled callback and remove it from the registry.
-
-        Args:
-            key: Key for the callback to cancel.
-        """
-        self._due.pop(key, None)
-        self._callbacks.pop(key, None)
-        if not self._callbacks:
-            self._teardown()
-
-    def shutdown(self) -> None:
-        """Clear all callbacks and tear down the timer and observer."""
-        self._due.clear()
-        self._callbacks.clear()
-        self._teardown()
-
-    def _teardown(self) -> None:
-        """Tear down the VTK timer and observer if present."""
-        if self._timer_id is not None:
-            with suppress(Exception):
-                self._iren.DestroyTimer(self._timer_id)
-            self._timer_id = None
-        if self._obs_tag is not None:
-            with suppress(Exception):
-                self._iren.RemoveObserver(self._obs_tag)
-            self._obs_tag = None
-
-    def _on_timer(self, _obj: Any, _evt: str) -> None:
-        """VTK timer event handler.
-
-        Args:
-            _obj: VTK callback object (i.e., vtkXRenderWindowInteractor).
-            _evt: Event name (e.g., "TimerEvent").
-        """
-        if not self._due:
-            return
-        now = time.perf_counter()
-        ready = [k for k, t in list(self._due.items()) if now >= t]
-        for key in ready:
-            self._due.pop(key, None)
-            cb = self._callbacks.get(key)
-            if cb:
-                cb()
 
 
 @dataclass
