@@ -13,12 +13,12 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable, Protocol
 
 from pubsub.core import Publisher
-from vedo import Button
+from vedo import Button, Slider2D
 
 from tools.plot.interactive.utils import VtkDebounceScheduler
 
 
-def extract_slider_state(widget: Any) -> int:
+def extract_slider_state(widget: Slider2D) -> int:
     """Read the slider state and round it to an integer value.
 
     Args:
@@ -30,7 +30,7 @@ def extract_slider_state(widget: Any) -> int:
     return round(widget.GetRepresentation().GetValue())
 
 
-def set_slider_state(widget: Any, value: Any) -> None:
+def set_slider_state(widget: Slider2D, value: Any) -> None:
     """Set the slider value after type and range checks.
 
     Args:
@@ -55,7 +55,7 @@ def set_slider_state(widget: Any, value: Any) -> None:
     widget.GetRepresentation().SetValue(float(value))
 
 
-def set_button_state(widget, value):
+def set_button_state(widget: Button, value: str | int):
     """Set the button state by label or index.
 
     Args:
@@ -182,6 +182,9 @@ class Widget:
         Returns:
             A set of topic names the widget listens to for updates.
         """
+        if not hasattr(self.widget_ops, "updaters"):
+            return {}
+
         return {t.name for u in self.widget_ops.updaters for t in u.topics}
 
     def add(self) -> None:
@@ -190,7 +193,8 @@ class Widget:
         After creation, the wrapper schedules debounced publications using
         the shared scheduler.
         """
-        self.widget = self.widget_ops.add(self._on_change)
+        add_fn = getattr(self.widget_ops, "add", None)
+        self.widget = add_fn(self._on_change) if callable(add_fn) else None
         self.scheduler.register(self._sched_key, self._on_debounce_fire)
 
     def remove(self) -> None:
@@ -207,7 +211,8 @@ class Widget:
         Returns:
             The current state as defined by `widget_ops`.
         """
-        return self.widget_ops.extract_state(self.widget)
+        extract_fn = getattr(self.widget_ops, "extract_state", None)
+        return extract_fn(self.widget) if callable(extract_fn) else None
 
     def set_state(self, value: Any, publish: bool = True) -> None:
         """Set the widget state and optionally schedule a publish.
@@ -240,6 +245,9 @@ class Widget:
         self.scheduler.schedule_once(self._sched_key, self.debounce_sec)
 
     def _on_update_topic(self, msg: TopicMessage):
+        if not hasattr(self.widget_ops, "updaters"):
+            return
+
         for updater in self.widget_ops.updaters:
             self.widget, publish_state = updater(self.widget, msg)
             if publish_state:
@@ -259,7 +267,11 @@ class Widget:
         if self.dedupe and self.last_published_state == state:
             return
 
-        for msg in self.widget_ops.state_to_messages(state):
+        payload_fn = getattr(self.widget_ops, "state_to_messages", None)
+        if not callable(payload_fn):
+            return
+
+        for msg in payload_fn(state):
             self.bus.sendMessage(msg.name, msg=msg)
 
         self.last_published_state = state
@@ -275,7 +287,7 @@ class TopicMessage:
     """
 
     name: str
-    value: str | int | float
+    value: Any
 
 
 @dataclass
