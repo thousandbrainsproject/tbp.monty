@@ -20,6 +20,10 @@ The currently most used environment is an **empty space with a floor and one obj
 
 Of course, the DataLoader and DataSet classes can also be customized to use different environments and setups as shown in the table below. We are not even limited to 3D environments and can for example let an agent move in 2D over an image such as when testing on the Omniglot dataset. The only crucial requirement is that we can use an action to retrieve a new, action-dependent, observation from which we can extract a pose.
 
+> [!NOTE] 
+> For some examples of how to use Monty with other environments than Habitat (or even in the real world), see [this tutorial](../how-to-use-monty/tutorials/using-monty-in-a-custom-application.md).
+
+
 <br />
 
 | List of all data loader classes    | Description                                                                                                                                                                                                                                                                                                                              |

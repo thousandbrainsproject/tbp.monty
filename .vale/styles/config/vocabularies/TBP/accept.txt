@@ -194,3 +194,4 @@
 \byoutube\b
 \bYouTube\b
 \bzsh\b
+\bDiscretizing\b
