@@ -9,7 +9,7 @@
 # https://opensource.org/licenses/MIT.
 import dataclasses
 import unittest
-from typing import Any, NamedTuple, Optional, Union
+from typing import Any, NamedTuple, Union
 
 from tbp.monty.frameworks.config_utils.config_args import Dataclass
 from tbp.monty.frameworks.utils import dataclass_utils
