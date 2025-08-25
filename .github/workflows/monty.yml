@@ -387,7 +387,12 @@ jobs:
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
         continue-on-error: true
-        run: uv sync --locked --extra dev --extra simulator_mujoco
+        # We need to create an environment using the --seed parameter
+        # so that we can build the Pytorch extra packages.
+        run: |
+          uv venv --seed
+          uv pip install torch
+          uv sync --locked --extra dev --extra simulator_mujoco
       - name: Run tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
