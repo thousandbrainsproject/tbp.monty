@@ -55,18 +55,6 @@ def set_slider_state(widget: Any, value: Any) -> None:
     widget.GetRepresentation().SetValue(float(value))
 
 
-def extract_button_state(widget: Any) -> str:
-    """Read the current button state label.
-
-    Args:
-        widget: The Vedo button.
-
-    Returns:
-        The current state string.
-    """
-    return widget.states[widget.status_idx]
-
-
 def set_button_state(widget, value):
     """Set the button state by label or index.
 
@@ -142,7 +130,6 @@ class WidgetOps(Protocol):
         ...
 
 
-@dataclass
 class Widget:
     """High-level wrapper that connects a Vedo widget to a pubsub topic.
 
@@ -152,15 +139,10 @@ class Widget:
     `VtkDebounceScheduler`, which runs a timer in the background effectively
     collapsing rapid changes in widget states.
 
-    Note that the widget-specific operations are extracted to the a composed
-    class that follows the `WidgetOps` protocol (e.g., `SliderOps`,
-    `ButtonOps`).
-
     Attributes:
         bus: Pubsub bus used to send messages.
         scheduler: Debounce scheduler used to collapse rapid UI changes.
-        widget_ops: Strategy object for get/set/add/remove operations.
-        plotter: A `vedo.Plotter` host to attach widgets to.
+        widget_ops: Composed functionality for get/set/add/remove operations.
         debounce_sec: Debounce delay in seconds for change publications.
         dedupe: If True, skip publishing unchanged values.
 
@@ -195,15 +177,24 @@ class Widget:
 
     @property
     def updater_topics(self) -> set[str]:
+        """Names of topics that can update this widget with `WidgetUpdater`.
+
+        Returns:
+            A set of topic names the widget listens to for updates.
+        """
         return {t.name for u in self.widget_ops.updaters for t in u.topics}
 
     def add(self) -> None:
-        """Create the widget and register debounce."""
+        """Create the widget and register the debounce callback.
+
+        After creation, the wrapper schedules debounced publications using
+        the shared scheduler.
+        """
         self.widget = self.widget_ops.add(self._on_change)
         self.scheduler.register(self._sched_key, self._on_debounce_fire)
 
     def remove(self) -> None:
-        """Remove the widget from the plotter."""
+        """Remove the widget and cancel any pending debounced messages."""
         self.scheduler.cancel(self._sched_key)
 
         if self.widget is not None:
@@ -214,7 +205,7 @@ class Widget:
         """Read the current state from the widget via `widget_ops`.
 
         Returns:
-            The current state or None if the widget is not present.
+            The current state as defined by `widget_ops`.
         """
         return self.widget_ops.extract_state(self.widget)
 
@@ -233,6 +224,10 @@ class Widget:
 
     def _on_change(self, widget: Any, _event: str) -> None:
         """Internal callback when the underlying widget reports a UI change.
+
+        When a widget value changes from the UI (e.g., slider moved or button
+        pressed), this function gets called, which extracts the new state and
+        publishes it.
 
         Args:
             widget: The VTK widget instance.
@@ -256,7 +251,7 @@ class Widget:
         self._publish(self.extract_state())
 
     def _publish(self, state: Any) -> None:
-        """Publish the state to the pubsub topic if not a duplicate or if forced.
+        """Publish the state to the pubsub topic if not a duplicate.
 
         Args:
             state: State to publish.
@@ -266,19 +261,34 @@ class Widget:
 
         for msg in self.widget_ops.state_to_messages(state):
             self.bus.sendMessage(msg.name, msg=msg)
-            print(msg)
 
         self.last_published_state = state
 
 
 @dataclass
 class TopicMessage:
+    """Message passed on the pubsub bus.
+
+    Attributes:
+        name: Topic name.
+        value: Value for the topic.
+    """
+
     name: str
     value: str | int | float
 
 
-@dataclass(frozen=True)
+@dataclass
 class TopicSpec:
+    """Specification for a topic tracked by a widget updater.
+
+    Attributes:
+        name: Topic name to track.
+        required: Whether this topic is required for the callback trigger. If
+            True, the updater will not call the callback until a message for this
+            topic arrives.
+    """
+
     name: str
     required: bool = True
 
@@ -287,10 +297,24 @@ class TopicSpec:
 class WidgetUpdater:
     """Collect messages for a set of topics and callback when required topics are ready.
 
+    The updater maintains an inbox keyed by topic name. Each time a message
+    is received, it is recorded. When all required topics have at least one
+    message, the callback is invoked with the current widget and the ordered
+    inbox list.
+
+    The callback decides how to update the widget and whether to publish
+    the new state. It must return a tuple ``(widget, publish_state)``.
+
     Args:
         topics: Iterable of TopicSpec. Required topics gate readiness.
         callback: Called as callback(widget, inbox_list) when ready.
                   inbox_list is ordered by the topic spec order.
+
+    Attributes:
+        topics: Iterable of topic specs.
+        callback: Callable that receives `(widget, inbox_list)` and returns
+            `(widget, publish_state)`. The inbox list is ordered to match
+            `topics`.
     """
 
     topics: Iterable[TopicSpec]
@@ -300,7 +324,7 @@ class WidgetUpdater:
 
     @property
     def ready(self) -> bool:
-        """True if every required topic has at least one message."""
+        """Whether every required topic has at least one message."""
         return all(spec.name in self._inbox for spec in self.topics if spec.required)
 
     @property
@@ -311,14 +335,26 @@ class WidgetUpdater:
         ]
 
     def accepts(self, msg: TopicMessage) -> bool:
-        """Return True if tracking the message's topic (required or optional)."""
+        """Check if this updater tracks the message's topic.
+
+        Args:
+            msg: Incoming topic message.
+
+        Returns:
+            True if the topic is listed in ``topics``. False otherwise.
+        """
         return any(spec.name == msg.name for spec in self.topics)
 
     def __call__(self, widget: Any, msg: TopicMessage):
-        """Record a message for a topic and maybe fire the callback.
+        """Record a message and invoke the callback if all required topics are ready.
+
+        Args:
+            widget: The widget instance to pass to the callback.
+            msg: Received topic message.
 
         Returns:
-            Callback output if invoked, otherwise tuple(widget, False).
+            A tuple `(widget, publish_state)`. If the callback was invoked,
+            this is whatever it returned. If not, returns `(widget, False)`.
         """
         if not self.accepts(msg):
             return widget, False

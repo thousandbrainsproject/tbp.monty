@@ -15,12 +15,18 @@ from dataclasses import dataclass
 from typing import Any, Callable, Hashable
 
 import numpy as np
+import numpy.typing as npt
 from vedo.vtkclasses import vtkRenderWindowInteractor
 
 
-@dataclass(frozen=True)
+@dataclass
 class Location2D:
-    """2D location wrapper."""
+    """2D location wrapper.
+
+    Attributes:
+        x: X coordinate.
+        y: Y coordinate.
+    """
 
     x: float
     y: float
@@ -29,18 +35,37 @@ class Location2D:
         """Return True only if same class and all values match exactly."""
         if other.__class__ is self.__class__:
             return self.x == other.x and self.y == other.y
-        return NotImplemented
+        return False
 
-    def to_3d(self, z):
+    def to_3d(self, z: float) -> Location3D:
+        """Create a 3D location by adding a z coordinate.
+
+        Args:
+            z: Z coordinate value.
+
+        Returns:
+            A new Location3D with (x, y, z).
+        """
         return Location3D(self.x, self.y, z)
 
-    def to_numpy(self):
-        return np.array([self.x, self.y, self.z])
+    def to_numpy(self) -> npt.NDArray[np.float64]:
+        """Convert to a NumPy array in the form [x, y].
+
+        Returns:
+            A NumPy array with shape (2,).
+        """
+        return np.array([self.x, self.y], dtype=float)
 
 
-@dataclass(frozen=True)
+@dataclass
 class Location3D:
-    """3D location wrapper."""
+    """3D location wrapper.
+
+    Attributes:
+        x: X coordinate.
+        y: Y coordinate.
+        z: Z coordinate.
+    """
 
     x: float
     y: float
@@ -50,18 +75,35 @@ class Location3D:
         """Return True only if same class and all values match exactly."""
         if other.__class__ is self.__class__:
             return self.x == other.x and self.y == other.y and self.z == other.z
-        return NotImplemented
+        return False
 
-    def to_2d(self):
+    def to_2d(self) -> Location2D:
+        """Drop the z coordinate and return a 2D location.
+
+        Returns:
+            A new Location2D with (x, y).
+        """
         return Location2D(self.x, self.y)
 
-    def to_numpy(self):
-        return np.array([self.x, self.y, self.z])
+    def to_numpy(self) -> npt.NDArray[np.float64]:
+        """Convert to a NumPy array in the form [x, y, z].
+
+        Returns:
+            A NumPy array with shape (3,).
+        """
+        return np.array([self.x, self.y, self.z], dtype=float)
 
 
 @dataclass
 class Bounds:
-    """Axis-aligned rectangle described by (xmin, xmax, ymin, ymax)."""
+    """rectangle bounds described by (xmin, xmax, ymin, ymax).
+
+    Attributes:
+        xmin: Minimum x value.
+        xmax: Maximum x value.
+        ymin: Minimum y value.
+        ymax: Maximum y value.
+    """
 
     xmin: float
     xmax: float
@@ -75,6 +117,14 @@ class Bounds:
         return self.ymax - self.ymin
 
     def contains(self, location: Location2D) -> bool:
+        """Check whether a 2D point lies inside or on the boundary.
+
+        Args:
+            location: Location to test.
+
+        Returns:
+            True if x and y values lie within the rectangle boundary.
+        """
         return (self.xmin <= location.x <= self.xmax) and (
             self.ymin <= location.y <= self.ymax
         )
@@ -84,8 +134,12 @@ class Bounds:
 class CoordinateMapper:
     """Map between GUI click coordinates and data coordinates, and back.
 
-    Notes:
-        If a provided value is outside its bounds, the function returns None.
+    Attributes:
+        gui: Bounds for the GUI rectangle.
+        data: Bounds for the data rectangle.
+
+    Raises:
+        ValueError: If any provided bounds have nonpositive width or height.
     """
 
     gui: Bounds
@@ -100,8 +154,11 @@ class CoordinateMapper:
     def map_click_to_data_coords(self, location: Location2D) -> Location2D:
         """Map a GUI click (x, y) to data coordinates (x_val, y_val).
 
+        Args:
+            location: Click location in GUI coordinates.
+
         Returns:
-            location of the click point in data coordinates.
+            Location of the click point in data coordinates.
         """
         x_rel = (location.x - self.gui.xmin) / self.gui.width()
         y_rel = (location.y - self.gui.ymin) / self.gui.height()
@@ -113,8 +170,11 @@ class CoordinateMapper:
     def map_data_coords_to_world(self, location: Location2D) -> Location2D:
         """Map data coordinates (x, y) back to GUI coordinates (x_gui, y_gui).
 
+        Args:
+            location: Point in data coordinates.
+
         Returns:
-            location of the click point in GUI coordinates.
+            Location of the point in GUI coordinates.
         """
         x_rel = (location.x - self.data.xmin) / self.data.width()
         y_rel = (location.y - self.data.ymin) / self.data.height()

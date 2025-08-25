@@ -25,7 +25,22 @@ if TYPE_CHECKING:
 
 
 class YCBMeshLoader:
+    """Load YCB object meshes as `vedo.Mesh` with texture.
+
+    This helper looks for meshes in a YCB-like folder structure where each
+    object directory ends with the object name and contains
+    `google_16k/textured.glb.orig`.
+
+    Attributes:
+        data_path: Root directory that contains YCB object folders.
+    """
+
     def __init__(self, data_path: str):
+        """Initialize the loader.
+
+        Args:
+            data_path: Path to the root directory holding YCB object folders.
+        """
         self.data_path = data_path
 
     def _find_glb_file(self, obj_name: str) -> str:
@@ -53,6 +68,11 @@ class YCBMeshLoader:
 
     def create_mesh(self, obj_name: str) -> Mesh:
         """Reads a 3D object file in glb format and returns a Vedo Mesh object.
+
+        This loads the GLB via `trimesh`, constructs a `vedo.Mesh` from its vertices
+        and faces, applies the base color texture and UVs, recenters the geometry
+        to its bounding box mean, and rotates it so the object uses a conventional
+        up/front orientation.
 
         Args:
             obj_name: Name of the object to load.
