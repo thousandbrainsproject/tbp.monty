@@ -131,7 +131,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
 
     @property
     def action_space(self):
-        return HabitatActionSpace(self._env.get_action_space())
+        return HabitatActionSpace(self._env.action_space)
 
     def add_object(
         self,
@@ -179,4 +179,4 @@ class HabitatEnvironment(EmbodiedEnvironment):
             self._env = None
 
     def get_state(self):
-        return self._env.get_states()
+        return self._env.states
