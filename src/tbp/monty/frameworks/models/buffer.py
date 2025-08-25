@@ -15,6 +15,7 @@ import logging
 import time
 from typing import Any, Callable, Dict, Optional, Type, Union
 
+import magnum
 import numpy as np
 import quaternion
 import torch
@@ -680,6 +681,7 @@ class BufferEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
+
 BufferEncoder.register(np.generic, lambda obj: obj.item())
 BufferEncoder.register(np.ndarray, lambda obj: obj.tolist())
 BufferEncoder.register(Rotation, lambda obj: obj.as_euler("xyz", degrees=True))
@@ -688,3 +690,4 @@ BufferEncoder.register(
     quaternion.quaternion, lambda obj: quaternion.as_float_array(obj)
 )
 BufferEncoder.register(Action, ActionJSONEncoder)
+BufferEncoder.register(magnum.Vector3, lambda obj: [obj.x, obj.y, obj.z])
