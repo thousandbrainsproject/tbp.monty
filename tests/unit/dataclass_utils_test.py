@@ -599,6 +599,16 @@ class IsDataclassInstanceTest(unittest.TestCase):
             dataclass_utils.is_dataclass_instance(FakeNamedTuple(name=0, value=[]))
         )
 
+class GetSubsetArgsTest(unittest.TestCase):
+    def test_get_subset_args(self):
+        pooled_dict = dict(field1="a", field2=3, field3="b")
+        subset_args = dataclass_utils.get_subset_of_args(
+            pooled_dict, SampleClass2.__init__
+        )
+
+        expected_subset_args = dict(field2=3, field3="b")
+        self.assertEqual(subset_args, expected_subset_args)
+
 
 if __name__ == "__main__":
     unittest.main()
