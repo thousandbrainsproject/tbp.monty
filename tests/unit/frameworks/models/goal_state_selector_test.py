@@ -76,12 +76,12 @@ class SortStatesByConfidenceTest(unittest.TestCase):
 class GoalStateSelectorTest(unittest.TestCase):
 
     def test_select_empty_list(self) -> None:
-        """Test that empty iterables are sorted to an empty list."""
+        """Test that empty iterables result in None."""
         gss = GoalStateSelector()
         self.assertEqual(gss.select([]), None)
 
     def test_select_no_valid_goal_states_returns_none(self) -> None:
-        """Test that empty iterables are sorted to an empty list."""
+        """Test that empty iterables result in None."""
         goal_states = [
             None,
             make_dummy_goal_state(use_state=False),
@@ -93,8 +93,9 @@ class GoalStateSelectorTest(unittest.TestCase):
         """Test that the goal state with the highest confidence is returned."""
         a = make_dummy_goal_state(confidence=0.0)
         b = make_dummy_goal_state(confidence=1.0)
+        c = make_dummy_goal_state(confidence=0.5)
         gss = GoalStateSelector()
-        self.assertEqual(gss.select([a, b]), b)
+        self.assertEqual(gss.select([a, b, c]), b)
 
     def test_select_nested_heterogeneous_input(self) -> None:
         """Test that the goal state with the highest confidence is returned.
