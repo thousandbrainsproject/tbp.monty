@@ -355,7 +355,7 @@ class HypothesesOORFVisualizer:
         self._add_sensor_spheres(timestep)
         self._add_sensor_images(timestep)
 
-        stats_text = self._create_statistics_text(
+        stats_text = self._create_summary_text(
             timestep,
         )
         # Left-justified stats text in top-left, lowered to avoid cutoff
@@ -443,7 +443,7 @@ class HypothesesOORFVisualizer:
         if hasattr(self, "stats_text"):
             self.plotter.remove(self.stats_text)
 
-        stats_text = self._create_statistics_text(
+        stats_text = self._create_summary_text(
             self.current_timestep,
         )
         # Left-justified stats text in top-left, lowered to avoid cutoff
@@ -809,29 +809,14 @@ class HypothesesOORFVisualizer:
 
         return angle_degrees, hypothesis_surface_normal, model_surface_normal
 
-    def _format_array(self, arr: np.ndarray | list) -> str:
-        """Format array for display with consistent precision.
-
-        Args:
-            arr: Array or list to format
-
-        Returns:
-            Formatted string representation of the array
-        """
-        # Convert to numpy array if needed
-        arr = np.asarray(arr)
-        return np.array2string(arr, precision=2, separator=", ", suppress_small=False)
-
-    def _create_statistics_text(
+    def _create_summary_text(
         self,
         timestep: int,
     ) -> str:
-        """Create statistics text for display.
+        """Create summary text for current timestep.
 
         Args:
             timestep: Current timestep
-            hypotheses_locations: Array of hypothesis locations
-            mlh_location: Location of most likely hypothesis
 
         Returns:
             Formatted statistics text
@@ -841,13 +826,21 @@ class HypothesesOORFVisualizer:
             ~self.hypotheses_inside_reference_frame
         )
 
-        # Format position and rotation arrays with scientific notation
-        formatted_position = self._format_array(self.data_loader.ground_truth_position)
-        formatted_rotation = self._format_array(self.data_loader.ground_truth_rotation)
+        formatted_position = np.array2string(
+            np.array(self.data_loader.ground_truth_position),
+            precision=2,  # show up to 2 decimal places
+            separator=", ",
+            suppress_small=False,
+        )
+        formatted_rotation = np.array2string(
+            np.array(self.data_loader.ground_truth_rotation),
+            precision=2,
+            separator=", ",
+            suppress_small=False,
+        )
 
-        # Get corresponding SM step for this LM timestep
         sm_step = self.data_loader.lm_to_sm_mapping[timestep]
-        target_stats = [
+        object_summary = [
             f"Object: {self.data_loader.target_name}",
             f"Object position: {formatted_position}",
             f"Object rotation: {formatted_rotation}",
@@ -855,38 +848,14 @@ class HypothesesOORFVisualizer:
             f"SM Step: {sm_step}",
         ]
 
-        hypotheses_stats = [
-            f"Inside Ref. Frame: {num_hypotheses_in_reference_frame}",
-            f"Outside Ref. Frame: {num_hypotheses_outside_reference_frame}",
+        hypotheses_summary = [
+            f"Num Hyp. Inside Ref. Frame: {num_hypotheses_in_reference_frame}",
+            f"Num Hyp. Outside Ref. Frame: {num_hypotheses_outside_reference_frame}",
             f"Current MLH: {self.current_mlh_graph_id}",
         ]
 
-        # Add surface normal comparison for current hypothesis
-        if hasattr(self, "current_hypothesis_index") and hasattr(
-            self, "current_hypotheses_locations"
-        ):
-            try:
-                angle_deg, hyp_normal, model_normal = (
-                    self._compute_surface_normal_comparison(
-                        self.current_hypotheses_locations[
-                            self.current_hypothesis_index
-                        ],
-                        self.current_hypotheses_rotations[
-                            self.current_hypothesis_index
-                        ],
-                    )
-                )
-                surface_normal_stats = [
-                    f"Surface Normal Angle: {angle_deg:.1f}°",
-                    f"Normal Match: {'Good' if angle_deg < 30 else 'Poor'}",
-                ]
-                hypotheses_stats.extend(surface_normal_stats)
-            except Exception as e:
-                logger.warning(f"Could not compute surface normal comparison: {e}")
-
-        stats_text = "\n".join(target_stats + hypotheses_stats)
-
-        return stats_text
+        summary_text = "\n".join(object_summary + hypotheses_summary)
+        return summary_text
 
     def _add_legend(self) -> None:
         """Add a legend with color-coded text."""
