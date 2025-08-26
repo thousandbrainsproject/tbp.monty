@@ -14,10 +14,6 @@ from tools.plot.interactive.generics import S, W
 from tools.plot.interactive.topics import TopicMessage
 from tools.plot.interactive.widget_updaters import WidgetUpdaterProto
 
-# @runtime_checkable
-# class WidgetOpsProto(Protocol[W, S]):
-#     pass
-
 
 @runtime_checkable
 class WidgetOpsProto(Protocol):

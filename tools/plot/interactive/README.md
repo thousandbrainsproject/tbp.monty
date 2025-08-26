@@ -270,4 +270,4 @@ class StepSliderWidgetOps:
 
 #### More examples
 
-A more complex examples of more widgets can be found in the `interactive_hypothesis_space_correlation` plot.
+More complex examples of more widgets can be found in the `interactive_hypothesis_space_correlation` plot.
