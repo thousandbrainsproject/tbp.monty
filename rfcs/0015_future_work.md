@@ -1,6 +1,5 @@
 - Start Date: 2025-08-14
-- RFC PR: (leave this empty, it will be filled in after RFC is merged)
-
+- RFC PR: https://github.com/thousandbrainsproject/tbp.monty/pull/428
 
 # Summary
 
@@ -58,7 +57,7 @@ The widget will read in the structured file mentioned above, and give the user a
 
 A mock-up of what that table may look like:
 
-![](0000_future_work/table.png)
+![](0015_future_work/table.png)
 
 # Reference-level explanation
 
@@ -94,7 +93,7 @@ A page in the documentation will describe all the allowable fields for tags / sk
 This tool or the action that uses it, will also be responsible for deploying the widget and data to an S3 bucket for web access.
 
 ## Sequence Diagram
-![](0000_future_work/sequence.png)
+![](0015_future_work/sequence.png)
 
 ## Filterable Table Widget
 
@@ -103,7 +102,7 @@ In the scope of this RFC is the future work filterable widget. This widget will 
 A quick review of the open-source table solutions led us to Tabulator (https://tabulator.info/) Tabulator has a set of features that cover our use-case, and an MIT license. The screenshot below is a mock-up using this library.
 
 
-![](0000_future_work/table.png)
+![](0015_future_work/table.png)
 
 Requirements
 - Global filter by the text of any cell in the table.
@@ -127,11 +126,11 @@ Not requirements (but feel free to tell me if you think these are required)
 
 General overview:
 
-![](0000_future_work/architecture.png)
+![](0015_future_work/architecture.png)
 
 This widget can then be displayed using an iFrame within our docs / main website.
 
-![](0000_future_work/iframed.png)
+![](0015_future_work/iframed.png)
 
 
 ## Chaos Mitigation
