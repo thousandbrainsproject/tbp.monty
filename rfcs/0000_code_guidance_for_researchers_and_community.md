@@ -59,8 +59,6 @@ If your RP is related to a particular [RFC](https://thousandbrainsproject.readme
 >
 > -- [RFC 14](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0014_conducting_research_while_building_a_stable_platform.md)
 
-- When you believe the RP is ready for the IP process, please tag (`@`) or otherwise discuss with the TBP lead engineer, [Tristan Slominski](https://github.com/tristanls).
-
 The workflow is shown in the below diagram:
 
 <img src="0000_code_guidance_for_researchers_and_community/main_workflow.png" alt="Workflow with a Feature Fork" width="450">
@@ -145,3 +143,4 @@ If you are a member of the community working on a research idea, then we would r
 - When creating the fork, you should set yourself as the owner (it will not be possible to set the Thousand Brains Project as the owner).
 - Unless you have a paid account, you will only be able to have a single personal fork of `tbp.monty`. If this is the case, you can follow the workflow described under [Feature Branches (Not Feature Forks)](#feature-branches-not-feature-forks).
 - We recommend that you tag a Maintainer of the TBP (i.e. using the `@` feature on GitHub) when making PRs into your feature branch. This will help get involvement from a Maintainer (including TBP research team members) at an early stage of your work. Once you have tagged a Maintainer, we will triage and determine the most appropriate member of the team to review the PR. In some instances, the Maintainer may abstain from reviewing these PRs.
+- Similarly, if you believe an RP is suitable to become an IP, you are welcome to tag one of the Maintainers to discuss this.
