@@ -21,7 +21,7 @@ To generate the LM's output, we need to get the pose of the sensed object relati
 
 Once the learning module has determined the ID of an object and its pose, it can take the most recent observations (and possibly collect more) to update its model of this object. We can therefore continually learn more about the world and learning and inference are two intertwined processes.
 
-See our [implementation documentation](../../how-monty-works/how-learning-modules-work.md) for details on how we implement learning modules in Monty.
+See our [implementation documentation](../../how-monty-works/learning-module.md) for details on how we implement learning modules in Monty.
 
 # Footnotes
 
