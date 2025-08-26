@@ -13,7 +13,7 @@ LLM code-assistants have the potential to improve the productivity of coders. Mo
 # Guidance on the Use of AI/LLMs
 
 ## High-Level Guidance
-The below sections provide descriptions of concerning attributes associated with LLM-generated contributions, and why these can be problematic. While we do not institute any strict guidance, please note: if we feel that the use of AI/LLMs has resulted in a contribution which matches these concerning patterns, Maintainers may not review your contribution. We do not want to discourage contributions, but this balancing act on our part is an unfortunate side-effect of the small size of the Maintainers team vs. the speed at which LLM content can be generated.
+The below sections provide descriptions of concerning attributes associated with LLM-generated contributions, and why these can be problematic. While we do not institute any strict guidance, please note: if we feel that the use of AI/LLMs has resulted in a contribution which matches these concerning patterns, Maintainers reserve the right to not review your contribution. We do not want to discourage contributions, but this balancing act on our part is an unfortunate side-effect of the small size of the Maintainers team vs. the speed at which LLM content can be generated.
 
 ## Writing RFCs
 
