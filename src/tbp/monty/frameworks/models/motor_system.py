@@ -44,6 +44,7 @@ class MotorSystem:
         self,
         policy: MotorPolicy,
         state: MotorSystemState | None = None,
+        save_telemetry: bool = False,
     ) -> None:
         """Initialize the motor system with a motor policy.
 
@@ -51,9 +52,12 @@ class MotorSystem:
             policy: The motor policy to use.
             state: The initial state of the motor system.
                 Defaults to None.
+            save_telemetry: Whether to save telemetry.
+                Defaults to False.
         """
         self._default_policy = self._policy = policy
         self._look_at_policy = LookAtPolicy(rng=self._default_policy.rng)
+        self.save_telemetry = save_telemetry
         self.reset(state)
 
     @property
@@ -180,15 +184,16 @@ class MotorSystem:
 
     def _post_call(self, action: Action) -> None:
         """Post call hook."""
-        self._telemetry.append(
-            MotorSystemTelemetry(
-                state=self._state,
-                driving_goal_state=self._driving_goal_state,
-                experiment_mode=self._experiment_mode,
-                processed_observations=self._processed_observations,
-                action=action,
+        if self.save_telemetry:
+            self._telemetry.append(
+                MotorSystemTelemetry(
+                    state=self._state,
+                    driving_goal_state=self._driving_goal_state,
+                    experiment_mode=self._experiment_mode,
+                    processed_observations=self._processed_observations,
+                    action=action,
+                )
             )
-        )
 
         # Need to keep this in sync with the policy's driving goal state since
         # derive_habitat_goal_state() consumes the goal state.

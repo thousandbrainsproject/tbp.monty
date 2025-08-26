@@ -1119,7 +1119,7 @@ class SmGoalStateGenerator(GoalStateGenerator):
 
     def reset(self):
         """Reset any stored attributes of the GSG."""
-        self.telemetry = [] if self.save_telemetry else None
+        self.telemetry = []
         self.set_driving_goal_state(None)
         self.output_goal_state = []
 
