@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
 
@@ -15,7 +16,10 @@ import quaternion
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    GoalStateGenerator,
+    SensorModule,
+)
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.sensor_processing import (
     log_sign,
@@ -33,6 +37,7 @@ logger = logging.getLogger(__name__)
 class DetailedLoggingSM(SensorModule):
     """Sensor module that keeps track of raw observations for logging."""
 
+
     def __init__(
         self,
         sensor_module_id,
@@ -40,6 +45,8 @@ class DetailedLoggingSM(SensorModule):
         pc1_is_pc2_threshold=10,
         surface_normal_method="TLS",
         weight_curvature=True,
+        gsg_class: type[GoalStateGenerator] | None = None,
+        gsg_args: dict | None = None,
         **kwargs,
     ):
         """Initialize Sensor Module.
@@ -56,6 +63,9 @@ class DetailedLoggingSM(SensorModule):
                 Any other value will raise an error.
             weight_curvature: determines whether to use the "weighted" (True) or
                 "unweighted" (False) implementation for principal curvature extraction.
+            gsg_class: The goal state generator class to instantiate. If None, no
+                goal state generator will be used.
+            gsg_args: The GSG's init arguments.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -69,6 +79,12 @@ class DetailedLoggingSM(SensorModule):
         self.surface_normal_method = surface_normal_method
         self.weight_curvature = weight_curvature
 
+        if gsg_class is not None:
+            gsg_args = gsg_args or {}
+            self.gsg = gsg_class(self, **gsg_args)
+        else:
+            self.gsg = None
+
     def state_dict(self):
         """Return state_dict."""
         # this is what is saved to detailed stats
@@ -76,16 +92,19 @@ class DetailedLoggingSM(SensorModule):
             "Should have a SM value for every set of observations."
         )
 
-        return dict(
+        state_dict = dict(
             raw_observations=self.raw_observations, sm_properties=self.sm_properties
         )
+        if self.gsg is not None and self.gsg.save_telemetry:
+            state_dict["gsg_telemetry"] = self.gsg.telemetry
+        return state_dict
 
     def update_state(self, state):
         """Update information about the sensors location and rotation."""
         # TODO: This stores the entire AgentState. Extract sensor-specific state.
         self.state = state
 
-    def step(self, data):
+    def step(self, data, step_gsg: bool = True):
         """Add raw observations to SM buffer."""
         if self.save_raw_obs and not self.is_exploring:
             self.raw_observations.append(data)
@@ -114,6 +133,15 @@ class DetailedLoggingSM(SensorModule):
                             sm_location=np.array(self.state["location"]),
                         )
                     )
+
+        if step_gsg and self.gsg is not None:
+            self.gsg.step(data, None)
+
+    def propose_goal_state(self):
+        """Return goal-state(s) proposed by this SM's GSG."""
+        if self.gsg is not None:
+            return self.gsg.get_output_goal_state()
+        return None
 
     def pre_episode(self):
         """Reset buffer and is_exploring flag."""
@@ -540,17 +568,18 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             # sensor_states=self.states, # pickle problem with magnum
         )
 
-    def step(self, data):
+    def step(self, data, step_gsg: bool = True):
         """Turn raw observations into dict of features at location.
 
         Args:
             data: Raw observations.
+            step_gsg: Whether to step the goal state generator.
 
         Returns:
             State with features and morphological features. Noise may be added.
             use_state flag may be set.
         """
-        super().step(data)  # for logging
+        super().step(data, step_gsg=False)  # for logging
         observed_state = self.observations_to_comunication_protocol(
             data, on_object_only=self.on_object_obs_only
         )
@@ -564,6 +593,9 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             # Set interesting-features flag to False, as should not be passed to
             # LM, even in e.g. pre-training experiments that might otherwise do so
             observed_state.use_state = False
+
+        if step_gsg and self.gsg is not None:
+            self.gsg.step(data, observed_state)
 
         return observed_state
 
@@ -635,9 +667,9 @@ class FeatureChangeSM(HabitatDistantPatchSM):
         super().pre_episode()
         self.last_features = None
 
-    def step(self, data):
+    def step(self, data, step_gsg: bool = True):
         """Return Features if they changed significantly."""
-        patch_observation = super().step(data)  # get extracted features
+        patch_observation = super().step(data, step_gsg=False)  # get extracted features
 
         if not patch_observation.use_state:
             # If we already know the features are uninteresting (e.g. invalid point
@@ -649,7 +681,6 @@ class FeatureChangeSM(HabitatDistantPatchSM):
         if self.last_features is None:  # first step
             logger.debug("Performing first sensation step of FeatureChangeSM")
             self.last_features = patch_observation
-            return patch_observation
 
         else:
             logger.debug("Performing FeatureChangeSM step")
@@ -666,7 +697,10 @@ class FeatureChangeSM(HabitatDistantPatchSM):
             else:
                 self.last_sent_n_steps_ago += 1
 
-            return patch_observation
+        if step_gsg and self.gsg is not None:
+            self.gsg.step(data, patch_observation)
+
+        return patch_observation
 
     def check_feature_change(self, observed_features):
         """Check feature change between last transmitted observation.

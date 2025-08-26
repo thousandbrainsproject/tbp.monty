@@ -25,6 +25,7 @@ class Monty(metaclass=abc.ABCMeta):
         self._vote()
         self._pass_goal_states()
         self._pass_infos_to_motor_system()
+        self._step_motor_system()
         self._set_step_type_and_check_if_done()
         self._post_step()
 
@@ -35,7 +36,9 @@ class Monty(metaclass=abc.ABCMeta):
         """
         self.aggregate_sensory_inputs(observation)
         self._step_learning_modules()
+        self._pass_goal_states()
         self._pass_infos_to_motor_system()
+        self._step_motor_system()
         self._set_step_type_and_check_if_done()
         self._post_step()
 
@@ -70,7 +73,7 @@ class Monty(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def _pass_goal_states(self):
-        """Pass goal states in the network between learning-modules.
+        """Pass goal states between learning modules, goal-state-selectors, etc.
 
         Aggregate any goal states for sending to the motor-system.
         """
@@ -79,6 +82,11 @@ class Monty(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def _pass_infos_to_motor_system(self):
         """Pass input observations and goal states to the motor system."""
+        pass
+
+    @abc.abstractmethod
+    def _step_motor_system(self):
+        """Step the motor system."""
         pass
 
     @abc.abstractmethod
@@ -190,7 +198,10 @@ class LearningModule(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def propose_goal_state(self):
-        """Return the goal-state proposed by this LM's GSG."""
+        """Return the goal-state(s) proposed by the LM's GSG.
+
+        If the LM has no GSG, return None.
+        """
         pass
 
     @abc.abstractmethod
@@ -259,7 +270,9 @@ class ObjectModel(metaclass=abc.ABCMeta):
 
 
 class GoalStateGenerator(metaclass=abc.ABCMeta):
-    """Generate goal-states that other learning modules and motor-systems will attempt.
+    """Generate goal-states that can be received by other LMs or a GoalStateSelector.
+
+    Both SMs and LMs can be associated with GSGs.
 
     Generate goal-states potentially (in the case of LMs) by outputing their own
     sub-goal-states. Provides a mechanism for implementing hierarchical action policies
@@ -276,12 +289,12 @@ class GoalStateGenerator(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_output_goal_state(self):
-        """Return current output goal-state."""
+        """Return current output goal-state(s)."""
         pass
 
     @abc.abstractmethod
     def step(self):
-        """Called on each step of the LM to which the GSG belongs."""
+        """Called on each step of the parent LM/SM to which the GSG belongs."""
         pass
 
 
@@ -319,4 +332,12 @@ class SensorModule(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def set_experiment_mode(self, mode: str):
+        pass
+
+    @abc.abstractmethod
+    def propose_goal_state(self):
+        """Return the goal-state(s) proposed by this SM's GSG.
+
+        If the SM has no GSG, return None.
+        """
         pass

@@ -435,6 +435,7 @@ class MontyForGraphMatching(MontyBase):
         Omit goal states in this case.
         """
         # TODO M: generalize to multiple sensor modules
+        super()._pass_infos_to_motor_system()
 
         if (
             self.step_type == "matching_step"
@@ -498,7 +499,7 @@ class MontyForGraphMatching(MontyBase):
         provides locations associated with tangential movements; this can help ensure we
         e.g. avoid revisiting old locations.
         """
-        self.motor_system._policy.processed_observations = infos
+        self.motor_system.set_processed_observations(infos)
 
         # TODO M clean up the below when refactoring the surface-agent policy
         if hasattr(self.motor_system._policy, "tangent_locs"):
@@ -719,7 +720,7 @@ class GraphLM(LearningModule):
         pass
 
     def propose_goal_state(self):
-        """Return the goal-state proposed by this LM's GSG.
+        """Return the goal-state(s) proposed by this LM's GSG.
 
         Only returned if the LM/GSG was stepped, otherwise returns None goal-state.
         """

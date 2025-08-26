@@ -13,6 +13,7 @@ import logging
 
 from tbp.monty.frameworks.loggers.exp_logger import TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import Monty
+from tbp.monty.frameworks.models.goal_state_selector import GoalStateSelector
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
 
@@ -76,9 +77,7 @@ class MontyBase(Monty):
         """
         # Basic instance attributes
         self.sensor_modules = sensor_modules
-        self.sm_ids = [s.sensor_module_id for s in self.sensor_modules]
         self.learning_modules = learning_modules
-        self.n_lms = len(self.learning_modules)
         self.motor_system = motor_system
         self.sm_to_agent_dict = sm_to_agent_dict
         self.sm_to_lm_matrix = sm_to_lm_matrix
@@ -119,12 +118,15 @@ class MontyBase(Monty):
                 "The lengths of learning_modules and lm_to_lm_vote_matrix must match"
             )
 
-        # Validate number of sensor modules and mapping
-        if set(self.sm_ids) != set(sm_to_agent_dict.keys()):
+        # Check that every sensor module is assigned to an agent.
+        sm_ids = [sm.sensor_module_id for sm in self.sensor_modules]
+        if set(sm_ids) != set(self.sm_to_agent_dict.keys()):
             raise ValueError(
                 "sm_to_agent_dict must contain exactly one key for each "
                 "sensor_module id; no more, no less!"
             )
+
+        self.goal_state_selector = GoalStateSelector()
 
     ###
     # Basic methods that specify the algorithm
@@ -270,26 +272,35 @@ class MontyBase(Monty):
                 self.learning_modules[i].receive_votes(voting_data)
 
     def _pass_goal_states(self):
-        """Pass goal states between learning modules.
+        """Collect goal states, perform selection, and pass it to the motor system.
 
         Currently we just aggregate these for later passing to the (single) motor
         system.
 
         TODO M implement more complex, hierarchical passing of goal-states.
         """
-        self.gsg_outputs = []  # NB we reset these at each step to ensure the goal
+        gsg_outputs = []  # NB we reset these at each step to ensure the goal
         # states do not persist unless this is expected by the GSGs. NOTE we may need
         # to revisit this with heterarchy if we have some LMs that are being stepped
         # at higher frequencies than others.
 
-        # Currently only use GSG outputs at inference
+        # Currently only use LM GSG outputs at inference
         if self.step_type == "matching_step":
             for lm in self.learning_modules:
-                self.gsg_outputs.append(lm.propose_goal_state())
+                gsg_outputs.append(lm.propose_goal_state())
+
+        for sm in self.sensor_modules:
+            gsg_outputs.append(sm.propose_goal_state())
+
+        gs = self.goal_state_selector.select(gsg_outputs)
+        self.motor_system.set_driving_goal_state(gs)
 
     def _pass_infos_to_motor_system(self):
         """Pass input observations and goal states to the motor system."""
         pass
+
+    def _step_motor_system(self):
+        self.motor_system.step()
 
     def _set_step_type_and_check_if_done(self):
         """Check terminal conditions and decide if we change the step type.
