@@ -22,7 +22,6 @@ There are some downsides to this:
 There are some upsides to the approach we propose in this RFC:
 
 - We would like the community to more easily find work to contribute to based on their skills, desire and available time. The skills and scope data doesn't currently exist and adding it to a single place would be preferable.
-
 - Having a central place to create and manage the future work should reduce the friction of adding new types of work or enriching existing documents.
 
 Please note: there is manual maintenance work to keep these three places in sync, and there is also work to keep track of who is working on what and which work is complete - this RFC will not remove all of that manual work but does intend to reduce and centralize two of those places.
