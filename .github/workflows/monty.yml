@@ -256,7 +256,7 @@ jobs:
       - check_license_monty # Don't run if license check fails
       - should_run_monty
     outputs:
-      conda_env_cache_key_sha: ${{ steps.generate_cache_key.outputs.conda_env_cache_key_sha }}
+      conda_env_cache_key_sha: ${{ steps.install_monty.outputs.conda_env_cache_key_sha }}
     steps:
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
@@ -266,6 +266,7 @@ jobs:
           lfs: true
           path: tbp.monty
       - name: Install Monty
+        id: install_monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true'}}
         uses: ./tbp.monty/.github/actions/install_monty
         with:
