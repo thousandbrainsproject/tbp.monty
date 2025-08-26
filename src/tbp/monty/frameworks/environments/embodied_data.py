@@ -7,11 +7,13 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import copy
 import logging
 import math
 from pprint import pformat
+from typing import Iterable
 
 import numpy as np
 import quaternion
@@ -112,8 +114,11 @@ class EnvironmentDataset(Dataset):
             observation = transform(observation, state)
         return observation
 
-    def __getitem__(self, action: Action):
-        observation = self.env.step(action)
+    def __getitem__(self, action: Action | Iterable[Action]):
+        if isinstance(action, Action):
+            action = [action]
+        for act in action:
+            observation = self.env.step(act)
         state = self.env.get_state()
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)

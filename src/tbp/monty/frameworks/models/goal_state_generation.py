@@ -12,9 +12,12 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Dict, Optional
 
 import numpy as np
+from matplotlib import colors
+from numpy.typing import ArrayLike
+from scipy import ndimage
 
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     GoalStateGenerator,
@@ -1116,7 +1119,7 @@ class SmGoalStateGenerator(GoalStateGenerator):
 
     def reset(self):
         """Reset any stored attributes of the GSG."""
-        self.telemetry = [] if self.save_telemetry else None
+        self.telemetry = []
         self.set_driving_goal_state(None)
         self.output_goal_state = []
 

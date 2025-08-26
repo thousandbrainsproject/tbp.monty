@@ -330,7 +330,7 @@ class GoalState(State):
         assert isinstance(self.info, dict), "info must be a dictionary"
 
 
-def encode_goal_state(goal_state: GoalState) -> Dict[str, Any]:
+def encode_state(state: State) -> Dict[str, Any]:
     """Encode a goal state into a dictionary.
 
     Args:
@@ -340,16 +340,33 @@ def encode_goal_state(goal_state: GoalState) -> Dict[str, Any]:
         A dictionary containing the goal state's attributes.
     """
     return {
-        "location": goal_state.location,
-        "morphological_features": goal_state.morphological_features,
-        "non_morphological_features": goal_state.non_morphological_features,
-        "confidence": goal_state.confidence,
-        "use_state": goal_state.use_state,
-        "sender_id": goal_state.sender_id,
-        "sender_type": goal_state.sender_type,
-        "goal_tolerances": goal_state.goal_tolerances,
-        "info": goal_state.info,
+        "location": state.location,
+        "morphological_features": state.morphological_features,
+        "non_morphological_features": state.non_morphological_features,
+        "confidence": state.confidence,
+        "use_state": state.use_state,
+        "sender_id": state.sender_id,
+        "sender_type": state.sender_type,
     }
 
 
+def encode_goal_state(goal_state: GoalState) -> Dict[str, Any]:
+    """Encode a goal state into a dictionary.
+
+    Args:
+        goal_state: The goal state to encode.
+
+    Returns:
+        A dictionary containing the goal state's attributes.
+    """
+    dct = encode_state(goal_state)
+    dct.update(
+        {
+            "goal_tolerances": goal_state.goal_tolerances,
+            "info": goal_state.info,
+        }
+    )
+    return dct
+
+BufferEncoder.register(State, encode_state)
 BufferEncoder.register(GoalState, encode_goal_state)
