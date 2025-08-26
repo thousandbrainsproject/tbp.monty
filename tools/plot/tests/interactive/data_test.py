@@ -98,7 +98,6 @@ class BaseWithSampleData(unittest.TestCase):
         self.assertEqual(candidates, [0, 1])
 
     def test_query_returns_key_candidates(self) -> None:
-        # Query keys under "meta"
         loc = DataLocator(
             path=[
                 DataLocatorStep.key("mlh", "mlh"),
