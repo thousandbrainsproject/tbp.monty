@@ -102,7 +102,7 @@ def is_hypothesis_inside_object_reference_frame(
     if max_nneighbors == 1:
         nearest_node_ids = np.expand_dims(nearest_node_ids, axis=1)
 
-    nearest_node_locs = target_model.locations_wrt_world[nearest_node_ids]
+    nearest_node_locs = target_model.object_points_wrt_world[nearest_node_ids]
 
     # Transform sensed rotation by all hypothesis rotations at once using spatial_arithmetics
     # Create features dict for rotate_pose_dependent_features
@@ -203,7 +203,6 @@ class HypothesesOORFVisualizer:
         self.plotter = None
         self.slider = None
         self.stats_text = None
-        self.legend_text = None
 
         # ============ RENDERER ============
         self.main_renderer_ix = 0
@@ -507,13 +506,6 @@ class HypothesesOORFVisualizer:
                 self.plotter.at(self.main_renderer_ix).remove(self.hypotheses_points)
         if self.stats_text is not None:
             self.plotter.at(self.main_renderer_ix).remove(self.stats_text)
-        if self.legend_text is not None:
-            if isinstance(self.legend_text, list):
-                for item in self.legend_text:
-                    self.plotter.at(self.main_renderer_ix).remove(item)
-            else:
-                self.plotter.at(self.main_renderer_ix).remove(self.legend_text)
-            self.legend_text = None
         for ellipsoid in self.hypothesis_ellipsoids:
             self.plotter.at(self.main_renderer_ix).remove(ellipsoid)
         self.hypothesis_ellipsoids = []
@@ -561,7 +553,7 @@ class HypothesesOORFVisualizer:
         """Initialize object model and convex hull visualization."""
         self.object_model = self.data_loader.object_model
 
-        self.target_pointcloud = Points(self.object_model.locations_wrt_world, c="gray")
+        self.target_pointcloud = Points(self.object_model.object_points_wrt_world, c="gray")
         self.target_pointcloud.point_size(8)
         self.plotter.at(self.main_renderer_ix).add(self.target_pointcloud)
 
@@ -754,10 +746,10 @@ class HypothesesOORFVisualizer:
 
         arrow_length = 0.01
         # Sample more points for better coverage (every 10th point)
-        sample_indices = np.arange(0, len(self.object_model.locations_wrt_world), 4)
+        sample_indices = np.arange(0, len(self.object_model.object_points_wrt_world), 4)
 
-        locations = self.object_model.locations_wrt_world[sample_indices]
-        pose_vectors = self.object_model.orientations_wrt_world[
+        locations = self.object_model.object_points_wrt_world[sample_indices]
+        pose_vectors = self.object_model.object_feature_orientations_wrt_world[
             sample_indices
         ]  # Shape: (n_sampled, 9)
 
@@ -897,18 +889,16 @@ class HypothesesOORFVisualizer:
         return stats_text
 
     def _add_legend(self) -> None:
-        """Add a legend with color-coded text and shape prefixes."""
-        # Legend title
+        """Add a legend with color-coded text."""
         legend_title = Text2D(
             "Legend",
-            pos=(0.02, 0.25),  # Lowered to fit tighter spacing
+            pos=(0.02, 0.25),
             s=0.8,
             font="Calco",
             c="black",
         )
         self.plotter.at(self.main_renderer_ix).add(legend_title)
 
-        # Create individual colored text entries with much tighter spacing (0.02 gaps)
         legend_items = [
             ("Inside RF (Point)", TBP_COLORS["blue"], 0.22),
             ("Outside RF (Point)", TBP_COLORS["pink"], 0.20),
@@ -919,18 +909,14 @@ class HypothesesOORFVisualizer:
             ("Nearest Neighbor (Point)", TBP_COLORS["yellow"], 0.1),
         ]
 
-        # Store all legend elements for cleanup
-        self.legend_text = [legend_title]
-
         for text, color, y_pos in legend_items:
             item = Text2D(
                 text,
                 pos=(0.02, y_pos),
-                s=0.65,  # Larger text size
-                font="Courier",  # Monospace for better shape rendering
-                c=color,  # Use actual color from visualization
+                s=0.65,
+                font="Courier",
+                c=color,
             )
-            self.legend_text.append(item)
             self.plotter.at(self.main_renderer_ix).add(item)
 
 
@@ -973,7 +959,7 @@ def add_subparser(
     """
     parser = subparsers.add_parser(
         "hypothesis_oorf",
-        help="Interactive tool to visualize which hypotheses are out of object reference frame.",
+        help="Interactive tool to visualize hypotheses' locations and rotations.",
         parents=[parent_parser] if parent_parser else [],
     )
     parser.add_argument(
