@@ -194,4 +194,4 @@
 \byoutube\b
 \bYouTube\b
 \bzsh\b
-\bDiscretizing\b
+\b[Dd]iscretizing\b
