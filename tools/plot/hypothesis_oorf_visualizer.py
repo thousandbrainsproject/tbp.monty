@@ -44,11 +44,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     rotate_pose_dependent_features,
 )
 
-from .data_utils import (
-    EpisodeDataLoader,
-    ObjectModel,
-    get_model_path,
-)
+from .data_models import ObjectModelForVisualization
+from .episode_loader import EpisodeDataLoader, get_model_path
 
 if TYPE_CHECKING:
     import argparse
@@ -73,7 +70,7 @@ TBP_COLORS = {
 
 
 def is_hypothesis_inside_object_reference_frame(
-    target_model: ObjectModel,
+    target_model: ObjectModelForVisualization,
     hypothesis_locations: np.ndarray,
     hypothesis_rotations: np.ndarray,
     sensed_rotation: np.ndarray,
@@ -105,7 +102,7 @@ def is_hypothesis_inside_object_reference_frame(
     if max_nneighbors == 1:
         nearest_node_ids = np.expand_dims(nearest_node_ids, axis=1)
 
-    nearest_node_locs = target_model.locations[nearest_node_ids]
+    nearest_node_locs = target_model.locations_wrt_world[nearest_node_ids]
 
     # Transform sensed rotation by all hypothesis rotations at once using spatial_arithmetics
     # Create features dict for rotate_pose_dependent_features
@@ -198,6 +195,9 @@ class HypothesesOORFVisualizer:
         self.sm1_image = None
         self.sm0_label = None
         self.sm1_label = None
+        self.pose_vector_arrows = []
+        self.pose_vectors_visible = False
+        self.current_hypothesis_index = 0
 
         # ============ UI ============
         self.plotter = None
@@ -240,11 +240,18 @@ class HypothesesOORFVisualizer:
             show_value=False,
         )
 
-        # Button placed below sensor images in top-right
         self.resample_button = self.plotter.at(self.main_renderer_ix).add_button(
             self.resample_ellipsoids_callback,
-            pos=(0.5, 0.1),
+            pos=(0.40, 0.1),
             states=[" Resample Hypothesis "],
+            size=20,
+            font="Calco",
+        )
+
+        self.pose_vectors_button = self.plotter.at(self.main_renderer_ix).add_button(
+            self.toggle_pose_vectors_callback,
+            pos=(0.6, 0.1),
+            states=[" Show Pose Vectors ", " Hide Pose Vectors "],
             size=20,
             font="Calco",
         )
@@ -304,6 +311,7 @@ class HypothesesOORFVisualizer:
 
         # Select a random hypothesis and add ellipsoid, center point, nearest neighbors, and axes arrows
         idx = np.random.choice(len(self.current_hypotheses_locations), 1)[0]
+        self.current_hypothesis_index = idx
         self._add_ellipsoid(
             self.current_hypotheses_locations[idx],
             self.current_hypotheses_rotations[idx],
@@ -402,6 +410,7 @@ class HypothesesOORFVisualizer:
 
         # Select a new random hypothesis and add ellipsoid, center point, nearest neighbors, and axes arrows
         idx = np.random.choice(len(self.current_hypotheses_locations), 1)[0]
+        self.current_hypothesis_index = idx
         self._add_ellipsoid(
             self.current_hypotheses_locations[idx],
             self.current_hypotheses_rotations[idx],
@@ -451,27 +460,42 @@ class HypothesesOORFVisualizer:
         self.plotter.at(self.sm1_renderer_ix).render()
         self.plotter.at(self.main_renderer_ix).render()
 
+    def toggle_pose_vectors_callback(self, _widget: Button, _event: str) -> None:
+        """Toggle visibility of pose vector arrows."""
+        self.pose_vectors_visible = not self.pose_vectors_visible
+
+        if self.pose_vectors_visible:
+            self._add_pose_vector_arrows()
+        else:
+            for arrow in self.pose_vector_arrows:
+                self.plotter.at(self.main_renderer_ix).remove(arrow)
+            self.pose_vector_arrows = []
+
+        self.plotter.at(self.main_renderer_ix).render()
+
     def _initialize_timestep_data(self, timestep: int) -> tuple:
         """Get data for a specific timestep.
 
         Args:
             timestep: The timestep to retrieve data for
         """
-        self.current_hypotheses_locations = self.data_loader.all_hypotheses_locations[
-            timestep
-        ]
-        self.current_hypotheses_rotations = self.data_loader.all_hypotheses_rotations[
-            timestep
-        ]
-        self.current_highest_evidence_location = self.data_loader.highest_evidence_locations[timestep]
-        self.current_highest_evidence_rotation = self.data_loader.highest_evidence_rotations[timestep]
+        self.current_hypotheses_locations = self.data_loader.all_hyp_locations[timestep]
+        self.current_hypotheses_rotations = (
+            self.data_loader.all_hyp_object_orientations[timestep]
+        )
+        self.current_highest_evidence_location = (
+            self.data_loader.highest_evidence_location[timestep]
+        )
+        self.current_highest_evidence_rotation = (
+            self.data_loader.highest_evidence_object_orientation[timestep]
+        )
         self.current_mlh_graph_id = self.data_loader.all_mlh_graph_ids[timestep]
         self.current_sm0_location = self.data_loader.all_sm0_locations[timestep]
         self.current_sm1_location = self.data_loader.all_sm1_locations[timestep]
         self.current_sm0_rgba = self.data_loader.all_sm0_rgba[timestep]
         self.current_sm1_rgba = self.data_loader.all_sm1_rgba[timestep]
-        self.current_sensed_curvature = self.data_loader.sensed_curvatures[timestep]
-        self.current_sensed_rotation = self.data_loader.sensed_rotations[timestep]
+        self.current_sensed_curvature = self.data_loader.max_abs_curvatures[timestep]
+        self.current_sensed_rotation = self.data_loader.sensed_orientations[timestep]
 
     def _cleanup_previous_visualizations(self) -> None:
         """Remove previous visualization objects from the plotter."""
@@ -529,12 +553,15 @@ class HypothesesOORFVisualizer:
         if self.sm1_label is not None:
             self.plotter.at(self.sm1_renderer_ix).remove(self.sm1_label)
             self.sm1_label = None
+        for arrow in self.pose_vector_arrows:
+            self.plotter.at(self.main_renderer_ix).remove(arrow)
+        self.pose_vector_arrows = []
 
     def _initialize_target_visualization(self) -> None:
         """Initialize object model and convex hull visualization."""
         self.object_model = self.data_loader.object_model
 
-        self.target_pointcloud = Points(self.object_model.locations, c="gray")
+        self.target_pointcloud = Points(self.object_model.locations_wrt_world, c="gray")
         self.target_pointcloud.point_size(8)
         self.plotter.at(self.main_renderer_ix).add(self.target_pointcloud)
 
@@ -719,6 +746,77 @@ class HypothesesOORFVisualizer:
         self.hypothesis_axes.append(arrow3)
         self.plotter.at(self.main_renderer_ix).add(arrow3)
 
+    def _add_pose_vector_arrows(self) -> None:
+        """Add arrows showing surface normals from object_model pose vectors."""
+        if not hasattr(self.object_model, "pose_vectors"):
+            logger.warning("Object model does not have pose_vectors attribute")
+            return
+
+        arrow_length = 0.01
+        # Sample more points for better coverage (every 10th point)
+        sample_indices = np.arange(0, len(self.object_model.locations_wrt_world), 4)
+
+        locations = self.object_model.locations_wrt_world[sample_indices]
+        pose_vectors = self.object_model.orientations_wrt_world[
+            sample_indices
+        ]  # Shape: (n_sampled, 9)
+
+        # Reshape pose vectors to matrices (n_sampled, 3, 3)
+        pose_matrices = pose_vectors.reshape(-1, 3, 3)
+
+        for i, (location, pose_matrix) in enumerate(zip(locations, pose_matrices)):
+            # Extract only surface normal (first row)
+            surface_normal = pose_matrix[0, :]  # First row
+
+            # Surface normal arrow (gray)
+            arrow_normal = Arrow(
+                location,
+                location + surface_normal * arrow_length,
+                c="gray",
+            )
+            arrow_normal.alpha(0.4)
+            self.pose_vector_arrows.append(arrow_normal)
+            self.plotter.at(self.main_renderer_ix).add(arrow_normal)
+
+    def _compute_surface_normal_comparison(
+        self, hypothesis_location: np.ndarray, hypothesis_rotation: np.ndarray
+    ) -> tuple[float, np.ndarray, np.ndarray]:
+        """Compare hypothesis surface normal with nearest object model surface normal.
+
+        Args:
+            hypothesis_location: Location of the hypothesis (3,)
+            hypothesis_rotation: Rotation matrix of the hypothesis (3, 3)
+
+        Returns:
+            Tuple of (angle_degrees, hypothesis_surface_normal, nearest_model_surface_normal)
+        """
+        # Get transformed surface normal from hypothesis
+        features = {"pose_vectors": self.current_sensed_rotation}
+        hypothesis_rotation_batch = hypothesis_rotation.reshape(1, 3, 3)
+        rotated_features = rotate_pose_dependent_features(
+            features, hypothesis_rotation_batch
+        )
+        transformed_pose_vectors = rotated_features["pose_vectors"]
+        hypothesis_surface_normal = transformed_pose_vectors[0, 0, :]  # First row
+
+        # Find nearest point in object model
+        distance, nearest_idx = self.object_model.kd_tree.query(
+            hypothesis_location, k=1
+        )
+
+        # Get surface normal from object model at nearest point
+        nearest_pose_vectors = self.object_model.pose_vectors[nearest_idx].reshape(3, 3)
+        model_surface_normal = nearest_pose_vectors[0, :]  # First row
+
+        # Compute angle between surface normals
+        dot_product = np.clip(
+            np.dot(hypothesis_surface_normal, model_surface_normal), -1.0, 1.0
+        )
+        angle_radians = np.arccos(np.abs(dot_product))  # Use abs to get acute angle
+        angle_degrees = np.degrees(angle_radians)
+
+        return angle_degrees, hypothesis_surface_normal, model_surface_normal
+
     def _format_array(self, arr: np.ndarray | list) -> str:
         """Format array for display with consistent precision.
 
@@ -770,6 +868,30 @@ class HypothesesOORFVisualizer:
             f"Outside Ref. Frame: {num_hypotheses_outside_reference_frame}",
             f"Current MLH: {self.current_mlh_graph_id}",
         ]
+
+        # Add surface normal comparison for current hypothesis
+        if hasattr(self, "current_hypothesis_index") and hasattr(
+            self, "current_hypotheses_locations"
+        ):
+            try:
+                angle_deg, hyp_normal, model_normal = (
+                    self._compute_surface_normal_comparison(
+                        self.current_hypotheses_locations[
+                            self.current_hypothesis_index
+                        ],
+                        self.current_hypotheses_rotations[
+                            self.current_hypothesis_index
+                        ],
+                    )
+                )
+                surface_normal_stats = [
+                    f"Surface Normal Angle: {angle_deg:.1f}°",
+                    f"Normal Match: {'Good' if angle_deg < 30 else 'Poor'}",
+                ]
+                hypotheses_stats.extend(surface_normal_stats)
+            except Exception as e:
+                logger.warning(f"Could not compute surface normal comparison: {e}")
+
         stats_text = "\n".join(target_stats + hypotheses_stats)
 
         return stats_text

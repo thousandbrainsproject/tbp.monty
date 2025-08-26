@@ -7,163 +7,26 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-"""Data models and loading utilities for hypothesis visualization."""
+"""Episode data loading utilities for hypothesis visualization."""
 
 from __future__ import annotations
 
 import json
 import logging
-import os
 from pathlib import Path
-
 
 import numpy as np
 import torch
-from scipy.spatial import KDTree
-from scipy.spatial.transform import Rotation as R
 
 from tbp.monty.frameworks.utils.graph_matching_utils import get_relevant_curvature
 
+from .data_models import (
+    ObjectModelForVisualization,
+    transform_locations_model_to_world,
+    transform_orientations_model_to_world,
+)
+
 logger = logging.getLogger(__name__)
-
-
-def apply_world_transform(
-    locations: np.ndarray,
-    rotation_matrices: np.ndarray,
-    learned_position: np.ndarray,  # [0, 1.5, 0]
-    target_position: np.ndarray,  # [0, 1.5, 0]
-    target_rotation: np.ndarray | R,  # gt object [280, 260, 160] in Euler degrees
-) -> tuple[np.ndarray, np.ndarray]:
-    """Apply world frame transformation to locations and rotation matrices.
-
-    Args:
-        locations: Locations to transform (n_points, 3).
-        rotation_matrices: Rotation matrices to transform (n_points, 3, 3).
-        learned_position: The position where locations were learned.
-        target_position: Target position in world frame.
-        target_rotation: Target rotation (Euler angles in degrees or Rotation object).
-
-    Returns:
-        Tuple of (transformed_locations, transformed_rotations).
-    """
-    if isinstance(target_rotation, R):
-        rot = target_rotation
-    else:
-        rot = R.from_euler("xyz", target_rotation, degrees=True)
-
-    # Transform locations
-    transformed_locations = locations - learned_position
-    transformed_locations = rot.apply(transformed_locations)
-    transformed_locations = transformed_locations + target_position
-
-    # Transform rotation matrices
-    rot_matrix = rot.as_matrix()
-    transformed_rotations = np.zeros_like(rotation_matrices)
-    for i in range(len(rotation_matrices)):  # 17,760 hypotheses.poses
-        transformed_rotations[i] = rot_matrix @ rotation_matrices[i]
-
-    return transformed_locations, transformed_rotations
-
-
-def deserialize_json_chunks_fast(
-    json_file, start=0, stop=None, episodes=None, episode_line=1
-):
-    # Load specific episode by line number (0-indexed)
-    with open(json_file, "r") as f:
-        for i in range(episode_line + 1):
-            line = f.readline().strip()
-        data = json.loads(line)
-
-    return data
-
-
-class ObjectModel:
-    """Mutable wrapper for object models.
-
-    Args:
-        pos (ArrayLike): The points of the object model as a sequence of points
-          (i.e., has shape (n_points, 3)).
-        features (Optional[Mapping]): The features of the object model. For
-          convenience, the features become attributes of the ObjectModel instance.
-    """
-
-    def __init__(
-        self,
-        locations: np.ndarray,
-        features: dict[str, np.ndarray],
-        learned_position: np.ndarray,
-        target_position: np.ndarray,
-        target_rotation: np.ndarray | R,
-    ):
-        """Initialize ObjectModel, transforming from learned to world frame.
-
-        Args:
-            locations: The points of the object model (n_points, 3).
-            features: Features of the object model.
-            learned_position: The learned position to transform from to world frame.
-            target_position: Target position in world frame for transformation.
-            target_rotation: Target rotation (Euler angles in degrees or Rotation object).
-        """
-        orientation_vectors = features["pose_vectors"]  # (n_points, 9)
-        n_points = len(orientation_vectors)
-        orientation_matrices = orientation_vectors.reshape(n_points, 3, 3)
-
-        transformed_locations, transformed_pose_matrices = apply_world_transform(
-            locations,
-            orientation_matrices,
-            learned_position,
-            target_position,
-            target_rotation,
-        )
-
-        self.locations = np.asarray(transformed_locations, dtype=float)
-        features["pose_vectors"] = transformed_pose_matrices.reshape(n_points, 9)
-
-        for key, value in features.items():
-            setattr(self, key, np.asarray(value))
-
-    @property
-    def x(self) -> np.ndarray:
-        return self.locations[:, 0]
-
-    @property
-    def y(self) -> np.ndarray:
-        return self.locations[:, 1]
-
-    @property
-    def z(self) -> np.ndarray:
-        return self.locations[:, 2]
-
-    @property
-    def kd_tree(self) -> KDTree:
-        return KDTree(self.locations, leafsize=40)
-
-    def __repr__(self) -> str:
-        """Return a detailed string representation of the ObjectModel."""
-        n_points = len(self.locations)
-
-        # Get bounding box information
-        min_coords = np.min(self.locations, axis=0)
-        max_coords = np.max(self.locations, axis=0)
-        bbox_size = max_coords - min_coords
-
-        # Get available features (excluding "locations" which is already shown)
-        feature_names = [
-            attr
-            for attr in dir(self)
-            if not attr.startswith("_")
-            and attr not in ["locations", "x", "y", "z", "kd_tree"]
-            and not callable(getattr(self, attr))
-        ]
-
-        return (
-            f"ObjectModel(n_points={n_points}, "
-            f"bbox_size=[{bbox_size[0]:.3f}, {bbox_size[1]:.3f}, {bbox_size[2]:.3f}], "
-            f"center=[{np.mean(self.locations, axis=0)[0]:.3f}, "
-            f"{np.mean(self.locations, axis=0)[1]:.3f}, "
-            f"{np.mean(self.locations, axis=0)[2]:.3f}], "
-            f"features={feature_names})"
-        )
 
 
 def get_model_path(experiment_log_dir: Path) -> Path:
@@ -186,13 +49,25 @@ def get_model_path(experiment_log_dir: Path) -> Path:
     return model_path
 
 
+def deserialize_json_chunks_fast(
+    json_file, start=0, stop=None, episodes=None, episode_line=1
+):
+    # Load specific episode by line number (0-indexed)
+    with open(json_file, "r") as f:
+        for i in range(episode_line + 1):
+            line = f.readline().strip()
+        data = json.loads(line)
+
+    return data
+
+
 def load_object_model(
     model_path: Path,
     object_name: str,
     target_position: np.ndarray,
     target_rotation: np.ndarray,
     lm_id: int = 0,
-) -> ObjectModel:
+) -> ObjectModelForVisualization:
     """Load an object model from a pretraining experiment.
 
     Args:
@@ -224,15 +99,12 @@ def load_object_model(
         feature_data = np.array(data.x[:, idx[0] : idx[1]])
         feature_dict[feature] = feature_data
 
-    # The pretrained models are stored at learned position [0, 1.5, 0]
-    learned_position = np.array([0, 1.5, 0])
-
-    return ObjectModel(
+    return ObjectModelForVisualization(
         points,
         features=feature_dict,
-        learned_position=learned_position,
-        target_position=target_position,
-        target_rotation=target_rotation,
+        model_origin_wrt_world=np.array([0, 1.5, 0]),
+        target_location_wrt_world=target_position,
+        target_orientation_wrt_world=target_rotation,
     )
 
 
@@ -254,19 +126,19 @@ class EpisodeDataLoader:
         self.num_lm_steps = 0
         self.lm_to_sm_mapping = []
 
-        self.all_hypotheses_locations = []
-        self.all_hypotheses_rotations = []
-        self.highest_evidence_locations = []
-        self.highest_evidence_rotations = []
+        self.all_hyp_locations = []
+        self.all_hyp_object_orientations = []
+        self.highest_evidence_location = []
+        self.highest_evidence_object_orientation = []
         self.all_mlh_locations = []
-        self.all_mlh_rotations = []
+        self.all_mlh_orientations = []
         self.all_mlh_graph_ids = []
         self.all_sm0_locations = []
         self.all_sm1_locations = []
         self.all_sm0_rgba = []
         self.all_sm1_rgba = []
-        self.sensed_curvatures = []
-        self.sensed_rotations = []
+        self.max_abs_curvatures = []
+        self.sensed_orientations = []
 
     def load_episode_data(self, episode_id: int = None) -> None:
         """Load episode data from JSON file."""
@@ -315,51 +187,58 @@ class EpisodeDataLoader:
         )
 
     def _initialize_hypotheses_data(self) -> None:
-        """Extract and transform hypotheses' locations and rotations to world frame."""
-        learned_position = np.array([0, 1.5, 0])
+        """Extract and transform hypotheses into world frame.
 
+        Additional identify hypotheses with highest evidence for the target object.
+        This may be different from MLH, which considers hypotheses across all objects.
+        """
         for lm_step in range(self.num_lm_steps):
-            possible_locations = self.lm_data["possible_locations"][lm_step]
-            hypotheses_locations = np.array(possible_locations[self.target_name])
-            possible_rotations = self.lm_data["possible_rotations"][
-                0
-            ]  # not timestep dependent
-            hypotheses_rotations = np.array(possible_rotations[self.target_name])
-            hypotheses_evidences = self.lm_data["evidences"][lm_step][self.target_name]
-            highest_evidence_index = np.argmax(hypotheses_evidences)
-            highest_evidence_rotation = hypotheses_rotations[highest_evidence_index]
-            highest_evidence_location = hypotheses_locations[highest_evidence_index]
+            hyp_locations_wrt_model = np.array(
+                self.lm_data["possible_locations"][lm_step][self.target_name]
+            )
+            hyp_object_orientations_wrt_model = np.array(
+                self.lm_data["possible_rotations"][0][self.target_name]
+            )  # not timestep dependent
+            hyp_evidences = self.lm_data["evidences"][lm_step][self.target_name]
 
-            transformed_locations, transformed_rotations = apply_world_transform(
-                hypotheses_locations,
-                hypotheses_rotations,
-                learned_position,
+            highest_evidence_index = np.argmax(hyp_evidences)
+            highest_evidence_rotation = hyp_object_orientations_wrt_model[
+                highest_evidence_index
+            ]
+            highest_evidence_location = hyp_locations_wrt_model[highest_evidence_index]
+
+            hyp_locations = transform_locations_model_to_world(
+                hyp_locations_wrt_model,
+                self.object_model.model_origin_wrt_world,
                 self.ground_truth_position,
                 self.ground_truth_rotation,
             )
-            (
-                transformed_highest_evidence_location,
-                transformed_highest_evidence_rotation,
-            ) = apply_world_transform(
+            hyp_object_orientations = transform_orientations_model_to_world(
+                hyp_object_orientations_wrt_model,
+                self.ground_truth_rotation,
+                row_vector_format=False,
+            )
+            highest_evidence_location = transform_locations_model_to_world(
                 highest_evidence_location.reshape(1, 3),
-                highest_evidence_rotation.reshape(1, 3, 3),
-                learned_position,
+                self.object_model.model_origin_wrt_world,
                 self.ground_truth_position,
                 self.ground_truth_rotation,
             )
-
-            self.all_hypotheses_locations.append(transformed_locations)
-            self.all_hypotheses_rotations.append(transformed_rotations)
-            self.highest_evidence_locations.append(
-                transformed_highest_evidence_location.squeeze()
+            highest_evidence_orientation = transform_orientations_model_to_world(
+                highest_evidence_rotation.reshape(1, 3, 3),
+                self.ground_truth_rotation,
+                row_vector_format=False,
             )
-            self.highest_evidence_rotations.append(
-                transformed_highest_evidence_rotation.squeeze()
+
+            self.all_hyp_locations.append(hyp_locations)
+            self.all_hyp_object_orientations.append(hyp_object_orientations)
+            self.highest_evidence_location.append(highest_evidence_location.squeeze())
+            self.highest_evidence_object_orientation.append(
+                highest_evidence_orientation.squeeze()
             )
 
     def _initialize_mlh_data(self) -> None:
-        """Extract and transform most likely hypothesis (MLH) data to world frame."""
-
+        """Extract target object name for MLH."""
         for lm_step in range(self.num_lm_steps):
             current_mlh = self.lm_data["current_mlh"][lm_step]
             self.all_mlh_graph_ids.append(current_mlh["graph_id"])
@@ -404,16 +283,16 @@ class EpisodeDataLoader:
                 "non_morphological_features"
             ]  # hsv and principal_curvatures_log
             max_abs_curvature = get_relevant_curvature(non_morphological_features)
-            self.sensed_curvatures.append(max_abs_curvature)
+            self.max_abs_curvatures.append(max_abs_curvature)
 
-        logger.info(f"Extracted {len(self.sensed_curvatures)} curvature values")
+        logger.info(f"Extracted {len(self.max_abs_curvatures)} curvature values")
         logger.info(
-            f"Curvature range: {min(self.sensed_curvatures):.4f} to "
-            f"{max(self.sensed_curvatures):.4f}"
+            f"Curvature range: {min(self.max_abs_curvatures):.4f} to "
+            f"{max(self.max_abs_curvatures):.4f}"
         )
 
     def _extract_sensed_rotations(self) -> None:
-        """Extract sensed pose vectors (rotations) from sensor module data for each timestep."""
+        """Extract sensed pose vectors from sensor module data for each timestep."""
         logger.info("Extracting sensed pose vectors from sensor module data")
 
         processed_obs = self.sm0_data["processed_observations"]
@@ -424,13 +303,17 @@ class EpisodeDataLoader:
 
             morphological_features = obs["morphological_features"]
             pose_vectors = np.array(morphological_features["pose_vectors"])
-            self.sensed_rotations.append(pose_vectors)
+            sensed_orientation_matrix = np.reshape(pose_vectors, (3, 3))
+            self.sensed_orientations.append(sensed_orientation_matrix)
 
-        logger.info(f"Extracted {len(self.sensed_rotations)} pose vector sets")
-        logger.info(f"Pose vectors shape: {self.sensed_rotations[0].shape}")
+        logger.info(f"Extracted {len(self.sensed_orientations)} orientation matrices")
+        logger.info(f"Orientation matrices shape: {self.sensed_orientations[0].shape}")
 
     def _extract_sensor_locations(self) -> None:
-        """Extract sensor locations from SM properties for each timestep."""
+        """Extract sensor locations from SM properties for each timestep.
+
+        Note that sensor locations are in world frame.
+        """
         logger.info("Extracting sensor locations from SM properties")
 
         sm0_properties = self.sm0_data["sm_properties"]
