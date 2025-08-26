@@ -37,11 +37,6 @@ jobs:
           path: |
             ~/miniconda
           key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
-      - name: Install Monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
-        uses: ./tbp.monty/.github/actions/install_monty
-        with:
-          working_directory: tbp.monty
       - name: Checkout tbp.monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/checkout@v4
@@ -49,6 +44,11 @@ jobs:
           fetch-depth: 0
           lfs: true
           path: tbp.monty
+      - name: Install Monty
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
+        uses: ./tbp.monty/.github/actions/install_monty
+        with:
+          working_directory: tbp.monty
       - name: Build API docs
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
@@ -83,17 +83,18 @@ jobs:
           path: |
             ~/miniconda
           key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
+      - name: Checkout tbp.monty
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
       - name: Install Monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
         uses: ./tbp.monty/.github/actions/install_monty
         with:
           working_directory: tbp.monty
-      - name: Checkout tbp.monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/checkout@v4
-        with:
-          lfs: true
-          path: tbp.monty
       - name: Build wheel
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
@@ -126,17 +127,18 @@ jobs:
           path: |
             ~/miniconda
           key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
+      - name: Checkout tbp.monty
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
       - name: Install Monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
         uses: ./tbp.monty/.github/actions/install_monty
         with:
           working_directory: tbp.monty
-      - name: Checkout tbp.monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/checkout@v4
-        with:
-          lfs: true
-          path: tbp.monty
       - name: Check dependencies
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
@@ -154,6 +156,7 @@ jobs:
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           lfs: true
           path: tbp.monty
       - name: Check license
@@ -183,17 +186,18 @@ jobs:
           path: |
             ~/miniconda
           key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
+      - name: Checkout tbp.monty
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
       - name: Install Monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
         uses: ./tbp.monty/.github/actions/install_monty
         with:
           working_directory: tbp.monty
-      - name: Checkout tbp.monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/checkout@v4
-        with:
-          lfs: true
-          path: tbp.monty
       - name: Check style
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
@@ -221,17 +225,18 @@ jobs:
           path: |
             ~/miniconda
           key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
+      - name: Checkout tbp.monty
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
       - name: Install Monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
         uses: ./tbp.monty/.github/actions/install_monty
         with:
           working_directory: tbp.monty
-      - name: Checkout tbp.monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/checkout@v4
-        with:
-          lfs: true
-          path: tbp.monty
       - name: Check types
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         continue-on-error: true # Accept type errors for now
@@ -253,6 +258,13 @@ jobs:
     outputs:
       conda_env_cache_key_sha: ${{ steps.generate_cache_key.outputs.conda_env_cache_key_sha }}
     steps:
+      - name: Checkout tbp.monty
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
       - name: Install Monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true'}}
         uses: ./tbp.monty/.github/actions/install_monty
@@ -308,17 +320,18 @@ jobs:
         run: |
           sudo apt update -y
           sudo apt install -y --no-install-recommends xvfb libegl1-mesa-dev git-lfs
+      - name: Checkout tbp.monty
+        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
       - name: Install Monty
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' && steps.restore_cache.outputs.cache-hit != 'true' }}
         uses: ./tbp.monty/.github/actions/install_monty
         with:
           working_directory: tbp.monty
-      - name: Checkout tbp.monty
-        if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
-        uses: actions/checkout@v4
-        with:
-          lfs: true
-          path: tbp.monty
       - name: Run python tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty

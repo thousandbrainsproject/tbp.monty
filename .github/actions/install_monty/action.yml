@@ -14,11 +14,6 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout tbp.monty
-      uses: actions/checkout@v4
-      with:
-        lfs: true
-        path: tbp.monty
     - name: Generate cache key
       id: generate_cache_key
       shell: bash
