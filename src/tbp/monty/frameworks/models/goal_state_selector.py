@@ -54,9 +54,7 @@ class GoalStateSelector:
         # Select the goal state with the highest confidence value.
         highest_confidence_goal_state = goal_states[0]
 
-        # TODO: Figure out how to prevent returning the same location.
         # TODO: Log the selected goal state.
-
         return highest_confidence_goal_state
 
 

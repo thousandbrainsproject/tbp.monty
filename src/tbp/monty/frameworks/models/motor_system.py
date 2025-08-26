@@ -176,7 +176,7 @@ class MotorSystem:
         """
         if self._driving_goal_state:
             if self._driving_goal_state.sender_id == "view_finder":
-                if self._n_steps < 10:
+                if self._n_steps < 100:
                     return self._look_at_policy
                 self._driving_goal_state = None
 
@@ -247,6 +247,15 @@ class LookAtPolicy(BasePolicy):
 
         # Find target location relative to sensor.
         target_loc_rel_world = self.driving_goal_state.location
+
+        # TODO: This isn't quite right. Need to account for rotation.
+        """"
+        p[A] = B.rot[A] * p[B] + B.origin[A]
+        
+        invert this
+
+        B.rot[A].inv * (p[A] - B.origin[A]) = p[B]  <--- need to do this
+        """
         target_loc_rel_sensor = target_loc_rel_world
         for node in reversed(poses):
             target_loc_rel_sensor = target_loc_rel_sensor - node["position"]
