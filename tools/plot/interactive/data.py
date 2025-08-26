@@ -117,7 +117,7 @@ class DataParser:
         path = os.path.join(path, "detailed_run_stats.json")
         self.data = deserialize_json_chunks(path)
 
-    def extract(self, locator: DataLocator, **kwargs: dict[str, Any]) -> Any:
+    def extract(self, locator: DataLocator, **kwargs: Any) -> Any:
         """Extract a value by following a `DataLocator` path.
 
         For each step in `locator`, this resolves the access value from
@@ -155,9 +155,7 @@ class DataParser:
             curr = curr[access_value]
         return curr
 
-    def query(
-        self, locator: DataLocator, **kwargs: dict[str, Any]
-    ) -> list[int] | list[str]:
+    def query(self, locator: DataLocator, **kwargs: Any) -> list[int] | list[str]:
         """Return available values for the first unresolved step in the path.
 
         Iterates the locator's path using any fixed `step.value` and any

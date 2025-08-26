@@ -13,7 +13,7 @@ import logging
 import sys
 from copy import deepcopy
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,7 +22,6 @@ import seaborn as sns
 from pandas import DataFrame, Series
 from pubsub.core import Publisher
 from vedo import Button, Circle, Image, Mesh, Plotter, Slider2D, Text2D
-from vedo.addons import settings
 
 from tools.plot.interactive.data import (
     DataLocator,
@@ -30,18 +29,17 @@ from tools.plot.interactive.data import (
     DataParser,
     YCBMeshLoader,
 )
+from tools.plot.interactive.topics import TopicMessage, TopicSpec
 from tools.plot.interactive.utils import (
     Bounds,
     CoordinateMapper,
     Location2D,
     Location3D,
 )
+from tools.plot.interactive.widget_updaters import WidgetUpdater
 from tools.plot.interactive.widgets import (
-    TopicMessage,
-    TopicSpec,
     VtkDebounceScheduler,
     Widget,
-    WidgetUpdater,
     extract_slider_state,
     set_slider_state,
 )
@@ -52,11 +50,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-
-# Set splitting ratio for renderers, font, and disable immediate_rendering
-settings.immediate_rendering = True
-# settings.default_font = "Theemim"
-# settings.window_splitting_position = 0.2
 
 HUE_PALETTE = {
     "Added": "#66c2a5",
@@ -106,7 +99,7 @@ class EpisodeSliderWidgetOps:
         )
         return locators
 
-    def add(self, callback: Callable) -> Slider2D:
+    def add(self, callback: Callable[[Slider2D, str], None]) -> Slider2D:
         """Create the slider widget and set its range from the data.
 
         The slider's `xmax` is set to the number of episodes.
@@ -125,7 +118,7 @@ class EpisodeSliderWidgetOps:
         self.plotter.render()
         return widget
 
-    def remove(self, widget: Slider2D):
+    def remove(self, widget: Slider2D) -> None:
         """Remove the slider widget and re-render.
 
         Args:
@@ -154,7 +147,7 @@ class EpisodeSliderWidgetOps:
         """
         set_slider_state(widget, value)
 
-    def state_to_messages(self, state: int) -> list[TopicMessage]:
+    def state_to_messages(self, state: int) -> Iterable[TopicMessage]:
         """Convert the slider state to pubsub messages.
 
         Args:
@@ -223,7 +216,7 @@ class StepSliderWidgetOps:
         )
         return locators
 
-    def add(self, callback: Callable) -> int:
+    def add(self, callback: Callable) -> Slider2D:
         """Create the slider widget.
 
         Args:
@@ -265,7 +258,7 @@ class StepSliderWidgetOps:
         """
         set_slider_state(widget, value)
 
-    def state_to_messages(self, state: int) -> list[TopicMessage]:
+    def state_to_messages(self, state: int) -> Iterable[TopicMessage]:
         """Convert the slider state to pubsub messages.
 
         Args:
@@ -369,9 +362,7 @@ class GtMeshWidgetOps:
             self.plotter.remove(widget)
             self.plotter.render()
 
-    def update_mesh(
-        self, widget: Mesh | None, msgs: list[TopicMessage]
-    ) -> tuple[Mesh, bool]:
+    def update_mesh(self, widget: Mesh, msgs: list[TopicMessage]) -> tuple[Mesh, bool]:
         """Update the target mesh when the episode changes.
 
         Removes any existing mesh, loads the episode's primary target object,
@@ -395,9 +386,7 @@ class GtMeshWidgetOps:
         )
         target_id = target["primary_target_object"]
         target_rot = target["primary_target_rotation_euler"]
-        widget = self.ycb_loader.create_mesh(target["primary_target_object"]).clone(
-            deep=True
-        )
+        widget = self.ycb_loader.create_mesh(target_id).clone(deep=True)
         widget.rotate_x(target_rot[0])
         widget.rotate_y(target_rot[1])
         widget.rotate_z(target_rot[2])
@@ -427,8 +416,8 @@ class PrimaryButtonWidgetOps:
         self._add_kwargs = dict(
             pos=(0.85, 0.2),
             states=["Primary Target"],
-            c=["w"],
-            bc=["dg"],
+            c="w",
+            bc="dg",
             size=30,
             font="Calco",
             bold=True,
@@ -447,7 +436,7 @@ class PrimaryButtonWidgetOps:
         self.plotter.render()
         return widget
 
-    def state_to_messages(self, state: str) -> list[TopicMessage]:
+    def state_to_messages(self, state: str) -> Iterable[TopicMessage]:
         """Convert the button state to pubsub messages.
 
         Args:
@@ -499,7 +488,7 @@ class PrevButtonWidgetOps:
         self.plotter.render()
         return widget
 
-    def state_to_messages(self, state: str) -> list[TopicMessage]:
+    def state_to_messages(self, state: str) -> Iterable[TopicMessage]:
         """Convert the button state to pubsub messages.
 
         Args:
@@ -551,7 +540,7 @@ class NextButtonWidgetOps:
         self.plotter.render()
         return widget
 
-    def state_to_messages(self, state: str) -> list[TopicMessage]:
+    def state_to_messages(self, state: str) -> Iterable[TopicMessage]:
         """Convert the button state to pubsub messages.
 
         Args:
@@ -618,7 +607,7 @@ class AgeThresholdWidgetOps:
         """
         return extract_slider_state(widget)
 
-    def state_to_messages(self, state: int) -> list[TopicMessage]:
+    def state_to_messages(self, state: int) -> Iterable[TopicMessage]:
         """Convert the slider state to pubsub messages.
 
         Args:
@@ -674,7 +663,7 @@ class CurrentObjectWidgetOps:
         ]
 
         self._locators = self.create_locators()
-        self.objects_list = []
+        self.objects_list = self.add_object_list()
         self.current_object_ix = None
 
     def create_locators(self) -> dict[str, DataLocator]:
@@ -706,56 +695,43 @@ class CurrentObjectWidgetOps:
                 DataLocatorStep.key(name="lm", value="target"),
             ]
         )
+
         return locators
 
-    def add(self, callback: Callable) -> None:
+    def add_object_list(self) -> list[str] | list[int]:
         """Initialize internal state; no visual widget is created.
 
         Preloads the objects list for episode 0, step 0 as a default.
+
+        Returns:
+            List of graph ids as the object list
         """
         obj_list_locator = self._locators["objects_list"]
-        self.objects_list = self.data_parser.query(
+        objects_list = self.data_parser.query(
             obj_list_locator,
             episode="0",
             step=0,
         )
+        return objects_list
 
-    def extract_state(self, _widget: None) -> str:
-        """Return the current object label.
-
-        Note that the state of this class does not depend on
-        the widget (since there is no visual widget for this
-        class). We still use it for the scheduling and deduplication
-        capabilities in the `Widget` class. This state will be used
-        in the payload function (`state_to_messages`).
-
-        Args:
-            _widget: The current widget. `None` in this case.
-
-        Returns:
-            The selected object label.
-
-        Raises:
-            RuntimeError: If no objects are loaded or no selection is set.
-        """
-        if not self.objects_list:
-            raise RuntimeError("objects_list is empty; call add() or update first.")
-        if self.current_object_ix is None:
-            raise RuntimeError("current_object_ix is not set yet.")
-
-        return self.objects_list[self.current_object_ix]
-
-    def state_to_messages(self, state: str) -> list[TopicMessage]:
+    def state_to_messages(self, state: str) -> Iterable[TopicMessage]:
         """Convert the current object to a pubsub message with topic `current_object`.
 
         Returns:
             List of topic messages to be published.
-        """
-        return [TopicMessage(name="current_object", value=state)]
 
-    def update_to_primary(self, widget: None, msgs: list[TopicMessage]) -> tuple(
-        None, bool
-    ):
+        Raises:
+            RuntimeError: If there is no current selection or the objects list is empty.
+        """
+        if self.current_object_ix is None or not self.objects_list:
+            raise RuntimeError("No current object is selected or list is empty.")
+
+        obj = self.objects_list[self.current_object_ix]
+        return [TopicMessage(name="current_object", value=obj)]
+
+    def update_to_primary(
+        self, widget: None, msgs: list[TopicMessage]
+    ) -> tuple[None, bool]:
         """Jump selection to the episode's primary target object.
 
         Also refreshes `objects_list` for that episode at step 0.
@@ -794,9 +770,9 @@ class CurrentObjectWidgetOps:
 
         return widget, True
 
-    def update_current_object(self, widget: None, msgs: list[TopicMessage]) -> tuple(
-        None, bool
-    ):
+    def update_current_object(
+        self, widget: None, msgs: list[TopicMessage]
+    ) -> tuple[None, bool]:
         """Step backward or forward through `objects_list`.
 
         Args:
@@ -845,11 +821,11 @@ class ClickWidgetOps:
         _on_change_cb: The widget callback to invoke on left-click.
     """
 
-    def __init__(self, plotter: Plotter, cam_dict: dict[str, Any]) -> Any:
+    def __init__(self, plotter: Plotter, cam_dict: dict[str, Any]) -> None:
         self.plotter = plotter
         self.cam_dict = cam_dict
-        self.click_location: Location3D | None = None
-        self._on_change_cb: Callable | None = None
+        self.click_location: Location3D
+        self._on_change_cb: Callable
 
     def add(self, callback: Callable) -> None:
         """Register mouse callbacks on the plotter.
@@ -869,11 +845,11 @@ class ClickWidgetOps:
         self.plotter.add_callback("LeftButtonPress", self.on_right_click)
         self.plotter.add_callback("RightButtonPress", self.on_left_click)
 
-    def extract_state(self, _widget: None) -> Location3D:
+    def extract_state(self, widget: None) -> Location3D:
         """Return the last picked 3D location."""
         return self.click_location
 
-    def state_to_messages(self, state: Location3D) -> list[TopicMessage]:
+    def state_to_messages(self, state: Location3D) -> Iterable[TopicMessage]:
         """Convert the current click location to pubsub messages.
 
         Publishes a single "click_location" message whose value is a Location3D with
@@ -909,12 +885,14 @@ class ClickWidgetOps:
         Notes:
             Bound to the "RightButtonPress" event in `self.add()`.
         """
-        cam = self.plotter.renderer.GetActiveCamera()
-        cam.SetPosition(self.cam_dict["pos"])
-        cam.SetFocalPoint(self.cam_dict["focal_point"])
-        cam.SetViewUp((0, 1, 0))
-        cam.SetClippingRange((0.01, 1000.01))
-        self.plotter.render()
+        renderer = self.plotter.renderer
+        if renderer is not None:
+            cam = renderer.GetActiveCamera()
+            cam.SetPosition(self.cam_dict["pos"])
+            cam.SetFocalPoint(self.cam_dict["focal_point"])
+            cam.SetViewUp((0, 1, 0))
+            cam.SetClippingRange((0.01, 1000.01))
+            self.plotter.render()
 
 
 class CorrelationPlotWidgetOps:
@@ -962,7 +940,7 @@ class CorrelationPlotWidgetOps:
             data=Bounds(-2.0, 2.0, 0.0, 3.25),
         )
 
-        self.df: DataFrame | None = None
+        self.df: DataFrame
         self.selected_hypothesis: Series | None = None
         self.highlight_circle: Circle | None = None
         self.info_widget: Text2D | None = None
@@ -993,17 +971,7 @@ class CorrelationPlotWidgetOps:
         )
         return locators
 
-    def remove(self, widget: Any) -> None:
-        """Remove widget from the plotter if present, and re-render.
-
-        Args:
-            widget: The widget to remove. If `None`, no action is taken.
-        """
-        if widget is not None:
-            self.plotter.remove(widget)
-            self.plotter.render()
-
-    def state_to_messages(self, _state: None) -> list[TopicMessage]:
+    def state_to_messages(self, state: None) -> Iterable[TopicMessage]:
         """Publish either the selected hypothesis row or a clear signal.
 
         Notes:
@@ -1234,8 +1202,8 @@ class CorrelationPlotWidgetOps:
         g.ax_joint.set_ylim(0, 3.25)
         g.ax_joint.set_xlabel(x, labelpad=10)
         g.ax_joint.set_ylabel(y, labelpad=10)
-        g.fig.tight_layout()
-        return g.fig
+        g.figure.tight_layout()
+        return g.figure
 
     def get_closest_row(self, df: DataFrame, slope: float, error: float) -> Series:
         """Return the row whose (Evidence Slope, Pose Error) is closest to a point.
@@ -1306,11 +1274,15 @@ class CorrelationPlotWidgetOps:
             `(new_widget, True)` where `new_widget` is the new image actor.
         """
         # Clear previous plot and selection
-        self.remove(widget)
-        self.remove(self.highlight_circle)
-        self.remove(self.info_widget)
-        self.highlight_circle = None
-        self.info_widget = None
+        if widget is not None:
+            self.plotter.remove(widget)
+
+        if self.highlight_circle is not None:
+            self.plotter.remove(self.highlight_circle)
+
+        if self.info_widget is not None:
+            self.plotter.remove(self.info_widget)
+
         self.selected_hypothesis = None
 
         # Build DataFrame and filter by age
@@ -1320,7 +1292,9 @@ class CorrelationPlotWidgetOps:
             step=msgs_dict["step_number"],
             graph_id=msgs_dict["current_object"],
         )
-        self.df = df[df["age"] >= msgs_dict["age_threshold"]]
+        age_threshold: int = int(msgs_dict["age_threshold"])
+        mask: Series = df["age"] >= age_threshold
+        self.df: DataFrame = df.loc[mask].copy()
 
         # Create figure and add to scene
         fig = self.create_figure(self.df)
@@ -1369,7 +1343,9 @@ class CorrelationPlotWidgetOps:
         df_row = self.get_closest_row(
             self.df, slope=data_location.x, error=data_location.y
         )
-        df_location = Location2D(df_row["Evidence Slope"], df_row["Pose Error"])
+        df_location = Location2D(
+            float(df_row["Evidence Slope"]), float(df_row["Pose Error"])
+        )
         self.selected_hypothesis = df_row
 
         # Map location back to a Location3D in GUI Space
@@ -1378,11 +1354,11 @@ class CorrelationPlotWidgetOps:
         ).to_3d(z=0.1)
 
         # Add the highlight circle
-        if self.highlight_circle:
-            self.remove(self.highlight_circle)
-        self.highlight_circle = Circle(pos=gui_location.to_numpy(), r=3.0, res=16).c(
-            "red"
-        )
+        if self.highlight_circle is not None:
+            self.plotter.remove(self.highlight_circle)
+
+        self.highlight_circle = Circle(pos=gui_location.to_numpy(), r=3.0, res=16)
+        self.highlight_circle.c("red")
         self.plotter.add(self.highlight_circle)
 
         self.plotter.render()
@@ -1420,20 +1396,14 @@ class HypothesisMeshWidgetOps:
         ]
         self.info_widget: Text2D | None = None
 
-    def extract_state(self, widget: Any) -> int:
-        return None
-
-    def state_to_messages(self, state: int) -> list[TopicMessage]:
-        return []
-
     def clear_mesh(
-        self, widget: Mesh | None, _msgs: list[TopicMessage]
+        self, widget: Mesh | None, msgs: list[TopicMessage]
     ) -> tuple[Any, bool]:
         """Clear the mesh and info panel if present.
 
         Args:
             widget: Current mesh object, if any.
-            _msgs: Unused. Present for the updater interface.
+            msgs: Unused. Present for the updater interface.
 
         Returns:
             `(widget, False)` to indicate no publish should occur.
@@ -1498,35 +1468,37 @@ class HypothesisMeshWidgetOps:
 class InteractivePlot:
     """An interactive plot for correlation of evidence slopes and pose errors.
 
+    This visualization provides means for inspecting the resampling of hypotheses
+    at every step. The main view is a scatter correlation plot where pose error is
+    expected to decrease as evidence slope increases. You can click points to inspect
+    the selected hypothesis and view its 3D mesh with basic stats. Additional controls
+    let you switch objects and threshold by hypothesis age.
+
     Args:
-        exp_path: Path to the JSON directory containing detailed run statistics.
-        data_path: Path to the root directory of YCB object meshes.
-        learning_module: Which learning module to use for data extraction.
-        throttle_time: Minimum delay between slider callbacks (seconds).
-            Defaults to 0.2 seconds.
+        exp_path: Path to the experiment log consumed by `DataParser`.
+        data_path: Root directory containing YCB meshes for `YCBMeshLoader`.
 
     Attributes:
-        throttle_time: Minimum delay between slider callbacks (seconds).
-        data_extractor: Instance of DataExtractor for parsing json data.
-        gt_sim: GroundTruthSimulator for rendering sensor and target objects.
-        mlh_sim: MlhSimulator for visualizing most likely hypotheses.
-        correlation_plotter: EvidencePlot for plotting evidence scores.
-        plotter: The main vedo.Plotter instance managing multiple renderers.
-        slider: The step slider widget.
-        curr_slider_val: The last processed slider value.
-        last_call_time: Timestamp of last callback execution (for throttling).
+        data_parser: Parser that reads the JSON log file and serves queries.
+        ycb_loader: Loader that provides textured YCB meshes.
+        event_bus: Publisher used to route `TopicMessage` events among widgets.
+        plotter: Vedo `Plotter` hosting all widgets.
+        scheduler: Debounce scheduler bound to the plotter interactor.
+        _widgets: Mapping of widget names to their `Widget` instances. It
+            includes episode and step sliders, primary/prev/next buttons, an
+            age-threshold slider, the correlation plot, and mesh viewers.
+
     """
 
     def __init__(
         self,
         exp_path: str,
         data_path: str,
-        learning_module: str,
     ):
         self.data_parser = DataParser(exp_path)
         self.ycb_loader = YCBMeshLoader(data_path)
         self.event_bus = Publisher()
-        self.plotter = Plotter(size=(1000, 1000), sharecam=False).render()
+        self.plotter = Plotter().render()
         self.scheduler = VtkDebounceScheduler(self.plotter.interactor, period_ms=33)
 
         # create and add the widgets to the plotter
@@ -1552,7 +1524,7 @@ class InteractivePlot:
     def create_widgets(self):
         widgets = {}
 
-        widgets["episode_slider"] = Widget(
+        widgets["episode_slider"] = Widget[Slider2D, int](
             widget_ops=EpisodeSliderWidgetOps(
                 plotter=self.plotter,
                 data_parser=self.data_parser,
@@ -1563,7 +1535,7 @@ class InteractivePlot:
             dedupe=True,
         )
 
-        widgets["step_slider"] = Widget(
+        widgets["step_slider"] = Widget[Slider2D, int](
             widget_ops=StepSliderWidgetOps(
                 plotter=self.plotter,
                 data_parser=self.data_parser,
@@ -1574,7 +1546,7 @@ class InteractivePlot:
             dedupe=True,
         )
 
-        widgets["primary_mesh"] = Widget(
+        widgets["primary_mesh"] = Widget[Mesh, None](
             widget_ops=GtMeshWidgetOps(
                 plotter=self.plotter,
                 data_parser=self.data_parser,
@@ -1586,7 +1558,7 @@ class InteractivePlot:
             dedupe=True,
         )
 
-        widgets["primary_button"] = Widget(
+        widgets["primary_button"] = Widget[Button, str](
             widget_ops=PrimaryButtonWidgetOps(plotter=self.plotter),
             bus=self.event_bus,
             scheduler=self.scheduler,
@@ -1594,7 +1566,7 @@ class InteractivePlot:
             dedupe=False,
         )
 
-        widgets["prev_button"] = Widget(
+        widgets["prev_button"] = Widget[Button, str](
             widget_ops=PrevButtonWidgetOps(plotter=self.plotter),
             bus=self.event_bus,
             scheduler=self.scheduler,
@@ -1602,7 +1574,7 @@ class InteractivePlot:
             dedupe=False,
         )
 
-        widgets["next_button"] = Widget(
+        widgets["next_button"] = Widget[Button, str](
             widget_ops=NextButtonWidgetOps(plotter=self.plotter),
             bus=self.event_bus,
             scheduler=self.scheduler,
@@ -1610,7 +1582,7 @@ class InteractivePlot:
             dedupe=False,
         )
 
-        widgets["age_threshold"] = Widget(
+        widgets["age_threshold"] = Widget[Slider2D, int](
             widget_ops=AgeThresholdWidgetOps(plotter=self.plotter),
             bus=self.event_bus,
             scheduler=self.scheduler,
@@ -1618,15 +1590,15 @@ class InteractivePlot:
             dedupe=True,
         )
 
-        widgets["current_object"] = Widget(
+        widgets["current_object"] = Widget[None, str](
             widget_ops=CurrentObjectWidgetOps(data_parser=self.data_parser),
             bus=self.event_bus,
             scheduler=self.scheduler,
             debounce_sec=0.2,
-            dedupe=True,
+            dedupe=False,
         )
 
-        widgets["click_widget"] = Widget(
+        widgets["click_widget"] = Widget[None, Location3D](
             widget_ops=ClickWidgetOps(plotter=self.plotter, cam_dict=self.cam_dict()),
             bus=self.event_bus,
             scheduler=self.scheduler,
@@ -1634,7 +1606,7 @@ class InteractivePlot:
             dedupe=True,
         )
 
-        widgets["correlation_plot"] = Widget(
+        widgets["correlation_plot"] = Widget[None, Series](
             widget_ops=CorrelationPlotWidgetOps(
                 plotter=self.plotter, data_parser=self.data_parser
             ),
@@ -1644,7 +1616,7 @@ class InteractivePlot:
             dedupe=False,
         )
 
-        widgets["hypothesis_mesh"] = Widget(
+        widgets["hypothesis_mesh"] = Widget[Mesh, None](
             widget_ops=HypothesisMeshWidgetOps(
                 plotter=self.plotter,
                 ycb_loader=self.ycb_loader,
@@ -1661,18 +1633,12 @@ class InteractivePlot:
 def plot_interactive_hypothesis_space_correlation(
     exp_path: str,
     data_path: str,
-    learning_module: str,
 ) -> int:
-    """Interactive visualization for unsupervised inference experiments.
-
-    This visualization provides a 3-pane renderers to allow for inspecting the objects,
-    MLH, and sensor locations while stepping through the maximum evidence scores for
-    each object.
+    """Interactive visualization for inspecting the hypothesis space.
 
     Args:
         exp_path: Path to the experiment directory containing the detailed stats file.
         data_path: Path to the root directory of YCB object meshes.
-        learning_module: The learning module to use for extracting evidence data.
 
     Returns:
         Exit code.
@@ -1683,7 +1649,7 @@ def plot_interactive_hypothesis_space_correlation(
 
     data_path = str(Path(data_path).expanduser())
 
-    plot = InteractivePlot(exp_path, data_path, learning_module)
+    InteractivePlot(exp_path, data_path)
 
     return 0
 
@@ -1714,16 +1680,11 @@ def add_subparser(
         default="~/tbp/data/habitat/objects/ycb/meshes",
         help=("The directory containing the mesh objects."),
     )
-    parser.add_argument(
-        "-lm",
-        "--learning_module",
-        default="LM_0",
-        help='The name of the learning module (default: "LM_0").',
-    )
     parser.set_defaults(
         func=lambda args: sys.exit(
             plot_interactive_hypothesis_space_correlation(
-                args.experiment_log_dir, args.objects_mesh_dir, args.learning_module
+                args.experiment_log_dir,
+                args.objects_mesh_dir,
             )
         )
     )
