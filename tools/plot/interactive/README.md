@@ -30,11 +30,11 @@ For example, the widget type `Slider2D` would have a state `int`, or a `Button` 
 ```python
 Widget[Slider2D, int](
     widget_ops=StepSliderWidgetOps(
-        plotter=self.plotter,
-        data_parser=self.data_parser,
+        plotter=plotter,
+        data_parser=data_parser,
     ),
-    bus=self.event_bus,
-    scheduler=self.scheduler,
+    bus=event_bus,
+    scheduler=scheduler,
     debounce_sec=0.5,
     dedupe=True,
 )
@@ -75,7 +75,7 @@ class HasUpdaters(Protocol[W]):
 
 The `WidgetOps` can have the `updaters` capability.
 The `updaters` listen to different topic messages and trigger a callback function when it receives messages on those topics.
-Every `Widget` can have a list of these updaters with different callback functions.
+Every `WidgetOps` can have a list of these updaters with different callback functions.
 
 ```python
 updaters = [
@@ -115,8 +115,8 @@ class HasStateToMessages(Protocol[S]):
 It is common for `WidgetOps` to require accessing data from experiment logs. 
 A `WidgetOps` can define it's own `DataLocator` instances that describe how to access a dict structure to retrieve information.
 The `DataLocator` describes the path (e.g., keys and indices) to access the required information.
-The `DataLocator` can also be used to query the available options (i.e., keys or indices) at an level of the dictionary.
-This is useful e.g., for when setting the step slider range based on a specific episode.
+The `DataLocator` can also be used to query the available options (i.e., keys or indices) at a level of the dictionary.
+This is useful e.g., when setting the step slider range based on a specific episode.
 
 
 ```python
