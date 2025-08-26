@@ -239,7 +239,7 @@ class DataLocator:
             Cloned DataLocator with extended path steps
 
         """
-        return DataLocator(path=[*self.path, *[deepcopy(s) for s in steps]])
+        return DataLocator(path=[*deepcopy(self.path), *[deepcopy(s) for s in steps]])
 
     def __repr__(self) -> str:
         """Return a human-readable representation of the path."""
