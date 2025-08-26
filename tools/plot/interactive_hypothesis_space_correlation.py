@@ -271,8 +271,8 @@ class StepSliderWidgetOps:
         return messages
 
     def update_slider_range(
-        self, widget: Any, msgs: list[TopicMessage]
-    ) -> tuple[Any, bool]:
+        self, widget: Slider2D, msgs: list[TopicMessage]
+    ) -> tuple[Slider2D, bool]:
         """Adjust slider range based on the selected episode and reset to 0.
 
         Looks up the `"episode_number"` message, queries the number of steps for
