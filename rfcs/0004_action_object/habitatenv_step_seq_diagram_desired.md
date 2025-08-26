@@ -45,7 +45,7 @@ sequenceDiagram
 
     HAct -->>- A :
     A -->>- HS :
-    HS ->> HS : observations
+    HS ->> HS : get_observations
     activate HS
         HS ->>+ S : get_sensor_observations(agent_ids=agent_indices)
         S -->>- HS : obs

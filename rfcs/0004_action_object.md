@@ -262,7 +262,7 @@ def apply_action(self, action: Action):
 
     action.act(self)
 
-    observations = self.observations
+    observations = self.get_observations()
     return observations
 ```
 
@@ -748,7 +748,7 @@ def apply_action(self, action: Action):
 
     action.act(self)
 
-    observations = self.observations
+    observations = self.get_observations()
     return observations
 ```
 
