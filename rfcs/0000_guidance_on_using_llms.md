@@ -1,6 +1,10 @@
 - Start Date: 2025-08-19
 - RFC PR: (leave this empty, it will be filled in after RFC is merged)
 
+# Summary
+
+This RFC proposes suggestions on when and to what degree LLMs should be used within the Thousand Brains Project, or by those wishing to contribute to its development.
+
 # Motivation
 
 LLM code-assistants have the potential to improve the productivity of coders. More generally, there is optimism that AI tools might accelerate science. At the same time, their use can introduce non-intuitive drawbacks. The aim of this RFC is to describe these in more detail, and agree on what guidance we should ask of both ourselves and the community.
@@ -8,17 +12,20 @@ LLM code-assistants have the potential to improve the productivity of coders. Mo
 
 # Guidance on the Use of AI/LLMs
 
+## High-Level Guidance
+The below sections provide descriptions of concerning attributes associated with LLM-generated contributions, and why these can be problematic. While we do not institute any strict guidance, please note: if we feel that the use of AI/LLMs has resulted in a contribution which matches these concerning patterns, the TBP team may not review your contribution. We do not want to discourage contributions, but this balancing act on our part is an unfortunate side-effect of the small size of our team vs. the speed at which LLM content can be generated.
+
 ## Writing RFCs
 
-We ask that all RFCs are written by you, and that you refrain from using Large Language Models (LLMs) like ChatGPT in the writing process. Some of our motivations for this are:
+We suggest that all RFCs are written by you, and that you try to avoid using Large Language Models (LLMs) like ChatGPT in the writing process. Some of our motivations for this are:
 - We want to get a clear understanding of your solution, and we have found that LLMs give poor, if approximately correct, RFC proposals. This is particularly the case because the work of the TBP falls very much in the "out of training distribution" domain.
 - When we review RFCs written by LLMs, it often ends up taking more time both for us, and for you, so it is much better if you write them yourself.
 
-Note that it is acceptable to discuss ideas with an LLM when formulating your own thoughts. For example, there may be a concept in neuroscience or computer vision that you would like to understand better, and LLM conversations can be a useful starting point. However, the RFC should be written in your own words. Furthermore, we recommend that you always be wary of hallucinations in LLM outputs; due to their frequent occurrence, LLMs are better used as an initial - but not final - provider of information on a topic.
+Note that it is perfectly acceptable to discuss ideas with an LLM when formulating your own thoughts. For example, there may be a concept in neuroscience or computer vision that you would like to understand better, and LLM conversations can be a useful starting point. However, we recommend that you always be wary of hallucinations in LLM outputs; due to their frequent occurrence, LLMs are better used as an initial - but not final - provider of information on a topic.
 
 ## Contributing Code to `tbp.monty`
 
-In principle, you may use LLMs, such as code-assistants, when writing code that you contribute to the Thousand Brains Project. However, we ask that you do so in a limited manner, being mindful of the below issues:
+In principle, you may use LLMs, such as code-assistants, when writing code that you contribute to the Thousand Brains Project. However, we suggest that you do so in a limited manner, being mindful of the below issues:
 
 ### Quality Concerns
 - As with RFCs, we have found that our code-base is out-of-distribution, and the quality of code written by LLMs, while superficially correct, often is not.
@@ -34,19 +41,19 @@ Due to the above reasons, LLM-generated code can take a great deal of time to re
 ### Take-Aways
 
 The high-level guidance based on the above is:
-- Using an LLM to auto-complete variable names and other simple speed-ups can be appropriate.
-- Multi-line sections of algorithmic code written by LLMs should be thoroughly checked for logical correctness and potential copyright violations before opening a PR into `thousandbrainsproject/tbp.monty`.
+- Using an LLM to auto-complete variable names and other simple speed-ups is appropriate.
+- Multi-line sections of algorithmic code written by LLMs should be checked for logical correctness and potential copyright violations before opening a PR into `thousandbrainsproject/tbp.monty`.
 
 Below we provide further guidance on some edge cases.
 
 #### Work on Research Prototypes
 - [Research Prototypes](https://github.com/nielsleadholm/tbp.monty/blob/978b15653a4c08bb21e28752a2ea9e01a3da906b/rfcs/0000_code_guidance_for_researchers_and_community.md) are separate forks of `thousandbrainsproject/tbp.monty` intended to rapidly evaluate the merits of a particular research idea. As they are not part of the core Monty platform, the legal concerns described above are less relevant, however the code-quality issues remain.
-- If you do end up integrating significant portions of LLM code into a Research Prototype PR, please ensure you clearly label this code as such. That way, if the RP is deemed significant enough to integrate into `thousandbrainsproject/tbp.monty`, any legal issues can be addressed at this time. However, this may delay the [Implementation Project process](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0014_conducting_research_while_building_a_stable_platform.md#implementation-project), and so it is again advised that you minimize using significant portions of code written by LLMs.
+- If you do end up integrating significant portions of LLM code into a Research Prototype PR, we ask that you clearly label this code as such. That way, if the RP is deemed significant enough to integrate into `thousandbrainsproject/tbp.monty`, any legal issues can be addressed at this time. However, this may delay the [Implementation Project process](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0014_conducting_research_while_building_a_stable_platform.md#implementation-project), and so it is again suggested that you minimize using significant portions of code written by LLMs.
 
 #### Agentic LLMs 
-- The issues highlighted mean that we ask that you do *not* use agentic workflows that write large amounts of code in an automated way, unless as a means of automating a simple task.
-- An example of a reasonable use of an agentic LLM setup would be widespread changes required to reflect an update in terminology. For example, in a [recent PR](https://github.com/thousandbrainsproject/tbp.tbs_sensorimotor_intelligence/pull/55/files), the order of two figures in our paper was swapped, requiring many small changes to the code and documentation. This was rapidly automated with LLM assistance. We then verified the correctness of the implementation after these changes.
-- On the other hand, please do not pass a [Future Work item](https://thousandbrainsproject.readme.io/docs/project-roadmap) description into an LLM, and then open a PR with all of the code it generated. These kinds of contributions slow down, rather than accelerate, our shared mission at the Thousand Brains Project.
+- The issues highlighted mean that we suggest you do not use agentic workflows that write large amounts of code in an automated way, unless as a means of automating a simple task.
+- An example of a good use of an agentic LLM setup would be widespread changes required to reflect an update in terminology. For example, in a [recent PR](https://github.com/thousandbrainsproject/tbp.tbs_sensorimotor_intelligence/pull/55/files), the order of two figures in our paper was swapped, requiring many small changes to the code and documentation. This was rapidly automated with LLM assistance. We then verified the correctness of the implementation after these changes.
+- On the other hand, we suggest that you do not pass a [Future Work item](https://thousandbrainsproject.readme.io/docs/project-roadmap) description into an LLM, and then open a PR with all of the code it generated.
 
 ## Contributing on the Forums
 
