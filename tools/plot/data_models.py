@@ -157,7 +157,7 @@ def transform_orientations_model_to_world(
             or Rotation object).
         row_vector_format: Whether the orientations are in row vector format.
             This is true for pose_vectors stored in ObjectModel, which is a 3x3 matrix
-            of stacked [pc1, pc2, surfance_normal] row vectors for each point.
+            of stacked [surface_normal, pc1, pc2] row vectors for each point.
             For hypothesized object orientations, this is a regular 3x3 rotation
             matrix following column-vector convention for each hypothesis.
 

@@ -287,7 +287,7 @@ class HypothesesOORFVisualizer:
         self._initialize_timestep_data(self.current_timestep)
 
         if self.target_pointcloud is None:
-            self._initialize_target_visualization()
+            self._add_object_pointcloud()
 
         hypotheses_oorf_info = is_hypothesis_inside_object_reference_frame(
             self.object_model,
@@ -355,7 +355,7 @@ class HypothesesOORFVisualizer:
         self._add_sensor_spheres(timestep)
         self._add_sensor_images(timestep)
 
-        stats_text = self._create_summary_text(
+        stats_text = self._add_summary_text(
             timestep,
         )
         # Left-justified stats text in top-left, lowered to avoid cutoff
@@ -443,7 +443,7 @@ class HypothesesOORFVisualizer:
         if hasattr(self, "stats_text"):
             self.plotter.remove(self.stats_text)
 
-        stats_text = self._create_summary_text(
+        stats_text = self._add_summary_text(
             self.current_timestep,
         )
         # Left-justified stats text in top-left, lowered to avoid cutoff
@@ -464,7 +464,7 @@ class HypothesesOORFVisualizer:
         self.pose_vectors_visible = not self.pose_vectors_visible
 
         if self.pose_vectors_visible:
-            self._add_pose_vector_arrows()
+            self._add_object_surface_normal_arrows()
         else:
             for arrow in self.pose_vector_arrows:
                 self.plotter.at(self.main_renderer_ix).remove(arrow)
@@ -549,11 +549,14 @@ class HypothesesOORFVisualizer:
             self.plotter.at(self.main_renderer_ix).remove(arrow)
         self.pose_vector_arrows = []
 
-    def _initialize_target_visualization(self) -> None:
-        """Initialize object model and convex hull visualization."""
+    def _add_object_pointcloud(self) -> None:
+        """Add object pointcloud to visualization."""
         self.object_model = self.data_loader.object_model
 
-        self.target_pointcloud = Points(self.object_model.object_points_wrt_world, c="gray")
+        self.target_pointcloud = Points(
+            self.object_model.object_points_wrt_world,
+            c="gray",
+        )
         self.target_pointcloud.point_size(8)
         self.plotter.at(self.main_renderer_ix).add(self.target_pointcloud)
 
@@ -738,29 +741,25 @@ class HypothesesOORFVisualizer:
         self.hypothesis_axes.append(arrow3)
         self.plotter.at(self.main_renderer_ix).add(arrow3)
 
-    def _add_pose_vector_arrows(self) -> None:
-        """Add arrows showing surface normals from object_model pose vectors."""
-        if not hasattr(self.object_model, "pose_vectors"):
-            logger.warning("Object model does not have pose_vectors attribute")
-            return
+    def _add_object_surface_normal_arrows(self) -> None:
+        """Add arrows showing surface normals from object_model's pose vectors.
 
+        Note that the object_model's pose vectors is a 3x3 matrix of stacked
+        [surface_normal, pc1, pc2] row vectors for each point.
+        """
         arrow_length = 0.01
-        # Sample more points for better coverage (every 10th point)
+
+        # Sample because showing all surface normals is too cluttered for visualization
         sample_indices = np.arange(0, len(self.object_model.object_points_wrt_world), 4)
 
         locations = self.object_model.object_points_wrt_world[sample_indices]
-        pose_vectors = self.object_model.object_feature_orientations_wrt_world[
+        feature_orientations = self.object_model.object_feature_orientations_wrt_world[
             sample_indices
-        ]  # Shape: (n_sampled, 9)
+        ]  # Shape: (n_sampled, 3, 3)
 
-        # Reshape pose vectors to matrices (n_sampled, 3, 3)
-        pose_matrices = pose_vectors.reshape(-1, 3, 3)
+        for location, feature_orientation in zip(locations, feature_orientations):
+            surface_normal = feature_orientation[0, :]  # surface normal is first row
 
-        for i, (location, pose_matrix) in enumerate(zip(locations, pose_matrices)):
-            # Extract only surface normal (first row)
-            surface_normal = pose_matrix[0, :]  # First row
-
-            # Surface normal arrow (gray)
             arrow_normal = Arrow(
                 location,
                 location + surface_normal * arrow_length,
@@ -770,46 +769,7 @@ class HypothesesOORFVisualizer:
             self.pose_vector_arrows.append(arrow_normal)
             self.plotter.at(self.main_renderer_ix).add(arrow_normal)
 
-    def _compute_surface_normal_comparison(
-        self, hypothesis_location: np.ndarray, hypothesis_rotation: np.ndarray
-    ) -> tuple[float, np.ndarray, np.ndarray]:
-        """Compare hypothesis surface normal with nearest object model surface normal.
-
-        Args:
-            hypothesis_location: Location of the hypothesis (3,)
-            hypothesis_rotation: Rotation matrix of the hypothesis (3, 3)
-
-        Returns:
-            Tuple of (angle_degrees, hypothesis_surface_normal, nearest_model_surface_normal)
-        """
-        # Get transformed surface normal from hypothesis
-        features = {"pose_vectors": self.current_sensed_rotation}
-        hypothesis_rotation_batch = hypothesis_rotation.reshape(1, 3, 3)
-        rotated_features = rotate_pose_dependent_features(
-            features, hypothesis_rotation_batch
-        )
-        transformed_pose_vectors = rotated_features["pose_vectors"]
-        hypothesis_surface_normal = transformed_pose_vectors[0, 0, :]  # First row
-
-        # Find nearest point in object model
-        distance, nearest_idx = self.object_model.kd_tree.query(
-            hypothesis_location, k=1
-        )
-
-        # Get surface normal from object model at nearest point
-        nearest_pose_vectors = self.object_model.pose_vectors[nearest_idx].reshape(3, 3)
-        model_surface_normal = nearest_pose_vectors[0, :]  # First row
-
-        # Compute angle between surface normals
-        dot_product = np.clip(
-            np.dot(hypothesis_surface_normal, model_surface_normal), -1.0, 1.0
-        )
-        angle_radians = np.arccos(np.abs(dot_product))  # Use abs to get acute angle
-        angle_degrees = np.degrees(angle_radians)
-
-        return angle_degrees, hypothesis_surface_normal, model_surface_normal
-
-    def _create_summary_text(
+    def _add_summary_text(
         self,
         timestep: int,
     ) -> str:
