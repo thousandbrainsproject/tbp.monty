@@ -19,7 +19,7 @@ There are some downsides to this:
 - It's cumbersome to add new structured data and have it be useful to the community.
 - It is not possible to filter the tasks by different aspects. The only grouping we currently have is which Monty component a task relates to (columns in the sheet + sections in the docs). But it would be useful to also be able to filter by skills required, scope, output type, etc...
 
-There are some upsides to the proposed approach:
+There are some upsides to the approach we propose in this RFC:
 
 - We would like the community to more easily find work to contribute to based on their skills, desire and available time. The skills and scope data doesn't currently exist and adding it to a single place would be preferable.
 
