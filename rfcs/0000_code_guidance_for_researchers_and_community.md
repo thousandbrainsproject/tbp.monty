@@ -79,7 +79,7 @@ Below shows the potential follow-up workflow. In the example shown, the first RP
 - As such, researchers should not follow these guidelines if it will introduce significant delays. Rather, the guidance they provide (e.g., being mindful of how state is added or accessed in code) can provide general tips for writing high-quality code from the beginning.
 
 ### Other Comments
-- Your new fork will not have any controls in place to prevent force pushes from other [Members of the TBP organization](https://github.com/orgs/thousandbrainsproject/people). We therefore ask that everyone exercise care in working with the forks of other team members. If you are going to be interacting with another fork significantly (see e.g. discussion of multiple researchers using one fork further below), you can run the command `git remote set-url upstream --push "readonly"`, changing `upstream` to the fork in question. This will help prevent accidental pushes to the remote.
+- Your new fork will not have any controls in place to prevent force pushes from other [Members of the TBP organization](https://github.com/orgs/thousandbrainsproject/people). We therefore ask that everyone exercise care in working with the forks of other team members. If you are going to be interacting with another contributor's fork significantly (see e.g. discussion of multiple researchers using one fork further below), you can run the command `git remote set-url upstream --push "readonly"`, changing `upstream` to the fork in question. This will help prevent accidental pushes to the remote.
 - Similarly, GitHub Workflows (such as unit tests and linting) will not automatically run in your new fork. It is recommended that you regularly run linting and unit-tests in your local environment when developing. 
 
 ### Alternative Workflows
@@ -98,7 +98,7 @@ Below shows the potential follow-up workflow. In the example shown, the first RP
 - Another possibility is using branches within existing personal forks as a way of managing Research Prototypes.
 - In this case, a new pair of branches is made in your personal fork whenever starting work on a Research Prototype.
 - We have decided that for internal use-cases, this risks becoming overwhelming with the number of RPs/features that we explore, so is generally best avoided.
-- It also does not provide the same visibility to the community about existing prototypes that are reaching a mature stage of development.
+- It also does not provide the same visibility to the community about existing prototypes that are reaching a mature stage of development, as these forks are often private.
 - However, if you are a member of the community doing research and you are unable to create multiple forks on your profile, this can be a good approach to adopt.
 
 This approach is shown diagrammatically below:
