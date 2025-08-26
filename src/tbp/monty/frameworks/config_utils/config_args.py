@@ -29,7 +29,6 @@ from typing import (
 import numpy as np
 import wandb
 from scipy.spatial.transform import Rotation
-from typing_extensions import runtime_checkable
 
 from tbp.monty.frameworks.actions.action_samplers import (
     ConstantSampler,
@@ -83,7 +82,6 @@ from tbp.monty.frameworks.models.sensor_modules import (
 monty_logs_dir = os.getenv("MONTY_LOGS")
 
 
-@runtime_checkable
 class Dataclass(Protocol):
     """A protocol for dataclasses to be used in type hints.
 
