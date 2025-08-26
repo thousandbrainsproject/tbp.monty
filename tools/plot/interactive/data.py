@@ -203,7 +203,7 @@ class DataLocatorStep:
 
     name: str
     type: Literal["key", "index"]
-    value: str | int = None
+    value: str | int | None = None
 
     @classmethod
     def key(cls, name: str, value: str | None = None) -> DataLocatorStep:
