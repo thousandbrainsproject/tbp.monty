@@ -8,13 +8,9 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import numpy as np
-
 
 def get_edge_index(graph, previous_node, new_node):
     """Get the edge index between two nodes in a graph.
-
-    TODO: There must be an easier way to do this!
 
     Args:
         graph: torch_geometric.data graph
@@ -24,8 +20,6 @@ def get_edge_index(graph, previous_node, new_node):
     Returns:
         edge ID between the two nodes
     """
-    edges_of_node = np.where(graph.edge_index[0] == previous_node)[0]
-    for i in range(len(edges_of_node)):
-        possible_next_node = graph.edge_index[1][edges_of_node[i]]
-        if possible_next_node == new_node:
-            return edges_of_node[i]
+    mask = (graph.edge_index[0] == previous_node) & (graph.edge_index[1] == new_node)
+    edge_ids = mask.nonzero(as_tuple=False).view(-1)
+    return edge_ids[0].item() if len(edge_ids) > 0 else None
