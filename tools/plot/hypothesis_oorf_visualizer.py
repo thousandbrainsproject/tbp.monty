@@ -69,48 +69,45 @@ TBP_COLORS = {
 }
 
 
-def is_hypothesis_inside_object_reference_frame(
-    target_model: ObjectModelForVisualization,
+def compute_reference_frame_analysis(
+    object_model: ObjectModelForVisualization,
     hypothesis_locations: np.ndarray,
     hypothesis_rotations: np.ndarray,
-    sensed_rotation: np.ndarray,
+    sensed_orientation: np.ndarray,
     max_abs_curvature: float,
     max_nneighbors: int = 3,
     max_match_distance: float = 0.01,
-) -> np.ndarray:
-    """Check if hypotheses are in the object reference frame.
+) -> dict:
+    """Compute reference frame analysis for hypotheses.
 
     Args:
-        target_model: ObjectModel containing points and features.
+        object_model: ObjectModel containing points and features.
         hypothesis_locations: Array of hypothesis locations (n_hypotheses, 3).
-        hypothesis_rotations: Rotation matrices for each hypothesis (n_hypotheses, 3, 3).
-        sensed_rotation: Current sensed pose vectors (3, 3) to be transformed by hypotheses.
-        max_abs_curvature: Sensed curvature of the object (max absolute value of principal_curvature_log)
+        hypothesis_rotations: Rotation matrix for each hypothesis (n_hypotheses, 3, 3).
+        sensed_orientation: Sensed pose vectors (3, 3) to be transformed by hypotheses.
+            At each timestep, the Sensor Module extracts pose_vectors from RGBD image,
+            where pose_vectors represent row vectors of [surface_normal, pc1, pc2].
+        max_abs_curvature: Maximum absolute value of principal_curvature_logs.
         max_nneighbors: Maximum number of nearest neighbors to consider (default: 3).
         max_match_distance: Maximum distance for matching (default: 0.01).
 
     Returns:
-        Array of booleans indicating if each hypothesis is in the object reference frame.
+        Dictionary containing:
+            - is_inside_reference_frame: Array of booleans indicating if hypothesis is
+                inside the object's reference frame.
+            - nearest_node_locs: Locations of nearest neighbors for each hypothesis
+                just for visualizing nearest neighbor points.
     """
-    _, nearest_node_ids = target_model.kd_tree.query(
+    _, nearest_node_ids = object_model.kd_tree.query(
         hypothesis_locations,
         k=max_nneighbors,
         p=2,
         workers=1,
     )
+    nearest_node_locs = object_model.object_points_wrt_world[nearest_node_ids]
 
-    if max_nneighbors == 1:
-        nearest_node_ids = np.expand_dims(nearest_node_ids, axis=1)
-
-    nearest_node_locs = target_model.object_points_wrt_world[nearest_node_ids]
-
-    # Transform sensed rotation by all hypothesis rotations at once using spatial_arithmetics
-    # Create features dict for rotate_pose_dependent_features
-    features = {"pose_vectors": sensed_rotation}
-
-    # hyp_rotation: R^W_B (body frame → world frame, after world transform)
-    # sensed_rotation: R_sensed^B (pose vectors in body/sensor frame)
-    # Result: R^W_B * R_sensed^B = pose vectors transformed to world frame
+    # Transform sensed orientation by all hypothesized object rotations
+    features = {"pose_vectors": sensed_orientation}
     rotated_features = rotate_pose_dependent_features(features, hypothesis_rotations)
     transformed_pose_vectors = rotated_features[
         "pose_vectors"
@@ -134,9 +131,7 @@ def is_hypothesis_inside_object_reference_frame(
     is_outside = np.all(mask, axis=1)
     return {
         "is_inside_reference_frame": ~is_outside,
-        "nearest_node_ids": nearest_node_ids,
         "nearest_node_locs": nearest_node_locs,
-        "custom_nearest_node_dists": custom_nearest_node_dists,
     }
 
 
@@ -180,31 +175,30 @@ class HypothesesOORFVisualizer:
         self.current_sensed_curvature = None
 
         # ============ 3D VEDO OBJECTS ============
-        self.target_pointcloud = None
+        self.object_pointcloud = None
         self.hypotheses_points = []
-        self.hypothesis_ellipsoids = []
-        self.ellipsoid_centers = []
-        self.hypothesis_axes = []
-        self.hypothesis_neighbor_points = []
-        self.mlh_cube = None
-        self.mlh_ellipsoid = None
-        self.mlh_axes = []
+        self.hypothesis_ellipsoid = None
+        self.ellipsoid_center_point = None
+        self.random_hypothesis_neighbor_points = []
+        self.heh_neighbor_points = []
+        self.random_hypothesis_pose_arrows = []
+        self.heh_pose_arrows = []
+        self.highest_evidence_ellipsoid = None
+        self.highest_evidence_cube = None
         self.sm0_sphere = None
         self.sm1_sphere = None
         self.sm0_image = None
         self.sm1_image = None
-        self.sm0_label = None
-        self.sm1_label = None
-        self.pose_vector_arrows = []
+        self.object_pose_vector_arrows = []
         self.pose_vectors_visible = False
         self.current_hypothesis_index = 0
 
         # ============ UI ============
         self.plotter = None
-        self.slider = None
-        self.stats_text = None
+        self.timestep_slider = None
+        self.summary_text = None
 
-        # ============ RENDERER ============
+        # ============ RENDERERS ============
         self.main_renderer_ix = 0
         self.sm0_renderer_ix = 1
         self.sm1_renderer_ix = 2
@@ -214,48 +208,51 @@ class HypothesesOORFVisualizer:
     def create_interactive_visualization(self) -> None:
         """Create interactive visualization with slider for timestep navigation."""
         # Create plotter main view and 2 small overlays for sensor images
-        custom_shape = [
+        custom_view_areas = [
             dict(bottomleft=(0.0, 0.0), topright=(1.0, 1.0)),  # Main view (full window)
             dict(bottomleft=(0.73, 0.79), topright=(0.86, 0.99)),  # SM_0 (top-right)
             dict(bottomleft=(0.86, 0.79), topright=(0.99, 0.99)),  # SM_1 (top-right)
         ]
 
         self.plotter = Plotter(
-            shape=custom_shape,
+            shape=custom_view_areas,
             size=(1400, 1000),
             sharecam=False,
             title=f"Hypotheses Out of Reference Frame",
         )
+        # Add static elements to main renderer
+        self._add_object_pointcloud()
+        self._add_legend()
 
+        # Add timestep dependent elements to main renderer
         self.update_visualization(timestep=0)
 
-        self.slider = self.plotter.at(self.main_renderer_ix).add_slider(
-            self.slider_callback,
+        # Add widgets to main renderer
+        self.timestep_slider = self.plotter.at(self.main_renderer_ix).add_slider(
+            self.timestep_slider_callback,
             xmin=0,
             xmax=self.data_loader.num_lm_steps - 1,
             value=0,
             pos=[(0.2, 0.05), (0.8, 0.05)],
             title="LM step",
-            show_value=False,
+            show_value=True,
         )
-
-        self.resample_button = self.plotter.at(self.main_renderer_ix).add_button(
-            self.resample_ellipsoids_callback,
-            pos=(0.40, 0.1),
+        self.resample_ellipsoid_button = self.plotter.at(
+            self.main_renderer_ix
+        ).add_button(
+            self.resample_ellipsoid_callback,
+            pos=(0.40, 0.14),
             states=[" Resample Hypothesis "],
             size=20,
             font="Calco",
         )
-
         self.pose_vectors_button = self.plotter.at(self.main_renderer_ix).add_button(
             self.toggle_pose_vectors_callback,
-            pos=(0.6, 0.1),
+            pos=(0.6, 0.14),
             states=[" Show Pose Vectors ", " Hide Pose Vectors "],
             size=20,
             font="Calco",
         )
-
-        self._add_legend()
 
         self.plotter.at(self.sm0_renderer_ix).axes = 0
         self.plotter.at(self.sm0_renderer_ix).resetcam = True
@@ -275,25 +272,22 @@ class HypothesesOORFVisualizer:
         self.plotter.at(self.main_renderer_ix).show(
             axes=True,
             viewup="y",
-            camera=dict(pos=(0.5, 1.5, 2.0), focal_point=(0, 1.5, 0)),
+            camera=dict(pos=(0.5, 1.5, 0.5), focal_point=(0, 1.5, 0)),
         )
         self.plotter.show(interactive=True)
 
     def update_visualization(self, timestep: int) -> None:
         """Update visualization for given timestep."""
-        self._cleanup_previous_visualizations()
+        self._clear_visualizations()
 
         self.current_timestep = timestep
         self._initialize_timestep_data(self.current_timestep)
 
-        if self.target_pointcloud is None:
-            self._add_object_pointcloud()
-
-        hypotheses_oorf_info = is_hypothesis_inside_object_reference_frame(
+        hypotheses_oorf_info = compute_reference_frame_analysis(
             self.object_model,
             self.current_hypotheses_locations,
             self.current_hypotheses_rotations,
-            self.current_sensed_rotation,
+            self.current_sensed_orientation,
             self.current_sensed_curvature,
             self.max_nneighbors,
             self.max_match_distance,
@@ -302,178 +296,50 @@ class HypothesesOORFVisualizer:
             "is_inside_reference_frame"
         ]
         self.hypotheses_nearest_node_locs = hypotheses_oorf_info["nearest_node_locs"]
-        self.hypotheses_custom_nearest_node_dists = hypotheses_oorf_info[
-            "custom_nearest_node_dists"
-        ]
 
         self._add_hypotheses_points()
+        self._add_random_hypothesis_visualization()
+        self._add_highest_evidence_hypothesis_visualization()
+        self._add_sensor_location_spheres()
+        self._add_sensor_images()
+        self._add_summary_text()
 
-        # Select a random hypothesis and add ellipsoid, center point, nearest neighbors, and axes arrows
-        idx = np.random.choice(len(self.current_hypotheses_locations), 1)[0]
-        self.current_hypothesis_index = idx
-        self._add_ellipsoid(
-            self.current_hypotheses_locations[idx],
-            self.current_hypotheses_rotations[idx],
-            self.hypotheses_inside_reference_frame[idx],
-            is_mlh=False,
-        )
-        self._add_hypothesis_center_point(self.current_hypotheses_locations[idx])
-        self._add_nearest_neighbor_points(self.hypotheses_nearest_node_locs[idx])
-        self._add_axes_arrows(
-            self.current_hypotheses_locations[idx],
-            self.current_hypotheses_rotations[idx],
-        )
-
-        mlh_oorf_info = is_hypothesis_inside_object_reference_frame(
-            self.object_model,
-            self.current_highest_evidence_location.reshape(1, 3),
-            self.current_highest_evidence_rotation.reshape(1, 3, 3),
-            self.current_sensed_rotation,
-            self.current_sensed_curvature,
-            self.max_nneighbors,
-            self.max_match_distance,
-        )
-        self.is_mlh_inside_reference_frame = mlh_oorf_info["is_inside_reference_frame"]
-        self.mlh_nearest_node_locs = mlh_oorf_info["nearest_node_locs"]
-        self.mlh_custom_nearest_node_dists = mlh_oorf_info["custom_nearest_node_dists"]
-
-        self._add_ellipsoid(
-            self.current_highest_evidence_location,
-            self.current_highest_evidence_rotation,
-            self.is_mlh_inside_reference_frame,
-            is_mlh=True,
-        )
-        self._add_mlh_cube(
-            self.current_highest_evidence_location, self.is_mlh_inside_reference_frame
-        )
-        self._add_nearest_neighbor_points(self.mlh_nearest_node_locs)
-        self._add_axes_arrows(
-            self.current_highest_evidence_location,
-            self.current_highest_evidence_rotation,
-        )
-
-        self._add_sensor_spheres(timestep)
-        self._add_sensor_images(timestep)
-
-        stats_text = self._add_summary_text(
-            timestep,
-        )
-        # Left-justified stats text in top-left, lowered to avoid cutoff
-        self.stats_text = Text2D(
-            stats_text,
-            pos="top-left",
-            s=0.8,
-            font="Calco",
-        )
-        self.plotter.at(self.main_renderer_ix).add(self.stats_text)
-
-        # Add compact legend in bottom-left corner
-        self._add_legend()
-
-    def slider_callback(self, widget: Slider2D, _event: str) -> None:
+    def timestep_slider_callback(self, widget: Slider2D, _event: str) -> None:
         """Respond to slider step by updating the visualization."""
         timestep = round(widget.GetRepresentation().GetValue())
         if timestep != self.current_timestep:
             self.update_visualization(timestep)
             self.plotter.render()
 
-    def resample_ellipsoids_callback(self, _widget: Button, _event: str) -> None:
-        """Resample the ellipsoids to show a different random selection."""
-        for ellipsoid in self.hypothesis_ellipsoids:
-            self.plotter.remove(ellipsoid)
-        self.hypothesis_ellipsoids = []
+    def resample_ellipsoid_callback(self, _widget: Button, _event: str) -> None:
+        """Resample hypothesis (and its ellipsoid) to show a different example."""
+        self.plotter.remove(self.hypothesis_ellipsoid)
+        self.plotter.remove(self.ellipsoid_center_point)
+        self.plotter.remove(self.random_hypothesis_neighbor_points)
+        self.plotter.remove(self.random_hypothesis_pose_arrows)
 
-        for point in self.ellipsoid_centers:
-            self.plotter.remove(point)
-        self.ellipsoid_centers = []
+        self.random_hypothesis_neighbor_points.clear()
+        self.random_hypothesis_pose_arrows.clear()
 
-        for arrow in self.hypothesis_axes:
-            self.plotter.remove(arrow)
-        self.hypothesis_axes = []
-
-        for points in self.hypothesis_neighbor_points:
-            self.plotter.remove(points)
-        self.hypothesis_neighbor_points = []
-
-        for arrow in self.mlh_axes:
-            self.plotter.remove(arrow)
-        self.mlh_axes = []
-
-        # Remove MLH ellipsoid and cube
-        if self.mlh_ellipsoid is not None:
-            self.plotter.remove(self.mlh_ellipsoid)
-            self.mlh_ellipsoid = None
-        if self.mlh_cube is not None:
-            self.plotter.remove(self.mlh_cube)
-            self.mlh_cube = None
-
-        # Select a new random hypothesis and add ellipsoid, center point, nearest neighbors, and axes arrows
-        idx = np.random.choice(len(self.current_hypotheses_locations), 1)[0]
-        self.current_hypothesis_index = idx
-        self._add_ellipsoid(
-            self.current_hypotheses_locations[idx],
-            self.current_hypotheses_rotations[idx],
-            self.hypotheses_inside_reference_frame[idx],
-            is_mlh=False,
-        )
-        self._add_hypothesis_center_point(self.current_hypotheses_locations[idx])
-        self._add_nearest_neighbor_points(self.hypotheses_nearest_node_locs[idx])
-        self._add_axes_arrows(
-            self.current_hypotheses_locations[idx],
-            self.current_hypotheses_rotations[idx],
-        )
-
-        # Also re-add MLH ellipsoid, cube, nearest neighbors, and axes
-        self._add_ellipsoid(
-            self.current_highest_evidence_location,
-            self.current_highest_evidence_rotation,
-            self.is_mlh_inside_reference_frame,
-            is_mlh=True,
-        )
-        self._add_mlh_cube(
-            self.current_highest_evidence_location, self.is_mlh_inside_reference_frame
-        )
-        self._add_nearest_neighbor_points(self.mlh_nearest_node_locs)
-        self._add_axes_arrows(
-            self.current_highest_evidence_location,
-            self.current_highest_evidence_rotation,
-        )
-
-        # Update statistics text with new ellipsoid and NN info
-        if hasattr(self, "stats_text"):
-            self.plotter.remove(self.stats_text)
-
-        stats_text = self._add_summary_text(
-            self.current_timestep,
-        )
-        # Left-justified stats text in top-left, lowered to avoid cutoff
-        self.stats_text = Text2D(
-            stats_text,
-            pos="top-left",
-            s=0.8,
-            font="Calco",
-        )
-        self.plotter.at(self.main_renderer_ix).add(self.stats_text)
-
-        self.plotter.at(self.sm0_renderer_ix).render()
-        self.plotter.at(self.sm1_renderer_ix).render()
+        self._add_random_hypothesis_visualization()
         self.plotter.at(self.main_renderer_ix).render()
 
     def toggle_pose_vectors_callback(self, _widget: Button, _event: str) -> None:
         """Toggle visibility of pose vector arrows."""
         self.pose_vectors_visible = not self.pose_vectors_visible
+        self.pose_vectors_button.switch()
 
         if self.pose_vectors_visible:
             self._add_object_surface_normal_arrows()
         else:
-            for arrow in self.pose_vector_arrows:
-                self.plotter.at(self.main_renderer_ix).remove(arrow)
-            self.pose_vector_arrows = []
+            self.plotter.at(self.main_renderer_ix).remove(
+                self.object_pose_vector_arrows
+            )
 
         self.plotter.at(self.main_renderer_ix).render()
 
     def _initialize_timestep_data(self, timestep: int) -> tuple:
-        """Get data for a specific timestep.
+        """Initialize data for a specific timestep.
 
         Args:
             timestep: The timestep to retrieve data for
@@ -488,86 +354,66 @@ class HypothesesOORFVisualizer:
         self.current_highest_evidence_rotation = (
             self.data_loader.highest_evidence_object_orientation[timestep]
         )
+        self.current_highest_evidence_index = self.data_loader.highest_evidence_indices[
+            timestep
+        ]
         self.current_mlh_graph_id = self.data_loader.all_mlh_graph_ids[timestep]
         self.current_sm0_location = self.data_loader.all_sm0_locations[timestep]
         self.current_sm1_location = self.data_loader.all_sm1_locations[timestep]
         self.current_sm0_rgba = self.data_loader.all_sm0_rgba[timestep]
         self.current_sm1_rgba = self.data_loader.all_sm1_rgba[timestep]
         self.current_sensed_curvature = self.data_loader.max_abs_curvatures[timestep]
-        self.current_sensed_rotation = self.data_loader.sensed_orientations[timestep]
+        self.current_sensed_orientation = self.data_loader.sensed_orientations[timestep]
 
-    def _cleanup_previous_visualizations(self) -> None:
-        """Remove previous visualization objects from the plotter."""
-        if self.hypotheses_points is not None:
-            if isinstance(self.hypotheses_points, list):
-                for pts in self.hypotheses_points:
-                    self.plotter.at(self.main_renderer_ix).remove(pts)
-            else:
-                self.plotter.at(self.main_renderer_ix).remove(self.hypotheses_points)
-        if self.stats_text is not None:
-            self.plotter.at(self.main_renderer_ix).remove(self.stats_text)
-        for ellipsoid in self.hypothesis_ellipsoids:
-            self.plotter.at(self.main_renderer_ix).remove(ellipsoid)
-        self.hypothesis_ellipsoids = []
-        for point in self.ellipsoid_centers:
-            self.plotter.at(self.main_renderer_ix).remove(point)
-        self.ellipsoid_centers = []
-        for arrow in self.hypothesis_axes:
-            self.plotter.at(self.main_renderer_ix).remove(arrow)
-        self.hypothesis_axes = []
-        for points in self.hypothesis_neighbor_points:
-            self.plotter.at(self.main_renderer_ix).remove(points)
-        self.hypothesis_neighbor_points = []
-        for arrow in self.mlh_axes:
-            self.plotter.at(self.main_renderer_ix).remove(arrow)
-        self.mlh_axes = []
-        if self.mlh_cube is not None:
-            self.plotter.at(self.main_renderer_ix).remove(self.mlh_cube)
-            self.mlh_cube = None
-        if self.mlh_ellipsoid is not None:
-            self.plotter.at(self.main_renderer_ix).remove(self.mlh_ellipsoid)
-            self.mlh_ellipsoid = None
-        if self.sm0_sphere is not None:
-            self.plotter.at(self.main_renderer_ix).remove(self.sm0_sphere)
-            self.sm0_sphere = None
-        if self.sm1_sphere is not None:
-            self.plotter.at(self.main_renderer_ix).remove(self.sm1_sphere)
-            self.sm1_sphere = None
-        if self.sm0_image is not None:
-            self.plotter.at(self.sm0_renderer_ix).remove(self.sm0_image)
-            self.sm0_image = None
-        if self.sm0_label is not None:
-            self.plotter.at(self.sm0_renderer_ix).remove(self.sm0_label)
-            self.sm0_label = None
-        if self.sm1_image is not None:
-            self.plotter.at(self.sm1_renderer_ix).remove(self.sm1_image)
-            self.sm1_image = None
-        if self.sm1_label is not None:
-            self.plotter.at(self.sm1_renderer_ix).remove(self.sm1_label)
-            self.sm1_label = None
-        for arrow in self.pose_vector_arrows:
-            self.plotter.at(self.main_renderer_ix).remove(arrow)
-        self.pose_vector_arrows = []
+    def _clear_visualizations(self) -> None:
+        """Remove visualization objects from the plotter.
+
+        Note that it does not remove static elements like object
+        pointcloud, object pose vector arrows, and legend.
+        """
+        self.plotter.at(self.main_renderer_ix).remove(self.hypotheses_points)
+        self.plotter.at(self.main_renderer_ix).remove(self.summary_text)
+        self.plotter.at(self.main_renderer_ix).remove(self.hypothesis_ellipsoid)
+        self.plotter.at(self.main_renderer_ix).remove(self.ellipsoid_center_point)
+        self.plotter.at(self.main_renderer_ix).remove(
+            self.random_hypothesis_pose_arrows
+        )
+        self.plotter.at(self.main_renderer_ix).remove(self.heh_pose_arrows)
+        self.plotter.at(self.main_renderer_ix).remove(
+            self.random_hypothesis_neighbor_points
+        )
+        self.plotter.at(self.main_renderer_ix).remove(self.heh_neighbor_points)
+        self.plotter.at(self.main_renderer_ix).remove(self.highest_evidence_cube)
+        self.plotter.at(self.main_renderer_ix).remove(self.highest_evidence_ellipsoid)
+        self.plotter.at(self.main_renderer_ix).remove(self.sm0_sphere)
+        self.plotter.at(self.main_renderer_ix).remove(self.sm1_sphere)
+        self.plotter.at(self.sm0_renderer_ix).remove(self.sm0_image)
+        self.plotter.at(self.sm1_renderer_ix).remove(self.sm1_image)
+
+        self.hypotheses_points.clear()
+        self.random_hypothesis_neighbor_points.clear()
+        self.heh_neighbor_points.clear()
+        self.random_hypothesis_pose_arrows.clear()
+        self.heh_pose_arrows.clear()
 
     def _add_object_pointcloud(self) -> None:
         """Add object pointcloud to visualization."""
         self.object_model = self.data_loader.object_model
 
-        self.target_pointcloud = Points(
+        self.object_pointcloud = Points(
             self.object_model.object_points_wrt_world,
             c="gray",
         )
-        self.target_pointcloud.point_size(8)
-        self.plotter.at(self.main_renderer_ix).add(self.target_pointcloud)
+        self.object_pointcloud.point_size(8)
+        self.plotter.at(self.main_renderer_ix).add(self.object_pointcloud)
 
     def _add_hypotheses_points(
         self,
     ) -> None:
-        """Plot hypotheses in world frame colored by OORF status.
+        """Add hypotheses' locations in world frame colored by OORF status.
 
-        Args:
-            hypotheses_locations: Array of hypothesis locations in world frame
-            hypotheses_rotations: Array of rotation matrices for each hypothesis in world frame
+        The points are colored blue if they are inside the object's reference frame,
+        and pink if they are outside.
         """
         inside_hypotheses = self.current_hypotheses_locations[
             self.hypotheses_inside_reference_frame
@@ -588,7 +434,212 @@ class HypothesesOORFVisualizer:
             self.hypotheses_points.append(outside_points)
             self.plotter.at(self.main_renderer_ix).add(outside_points)
 
-    def _add_sensor_spheres(self, timestep: int) -> None:
+    def _add_random_hypothesis_visualization(self) -> None:
+        """Select a random hypothesis and add its visualization elements.
+
+        Adds ellipsoid, center point, nearest neighbors, and sensed pose vector arrows
+        for a randomly selected hypothesis.
+        """
+        idx = np.random.choice(len(self.current_hypotheses_locations), 1)[0]
+        self.current_hypothesis_index = idx
+        self._add_ellipsoid(
+            self.current_hypotheses_locations[idx],
+            self.current_hypotheses_rotations[idx],
+            self.hypotheses_inside_reference_frame[idx],
+            is_heh=False,
+        )
+        self._add_hypothesis_center_point(self.current_hypotheses_locations[idx])
+        self._add_nearest_neighbor_points(
+            self.hypotheses_nearest_node_locs[idx], is_heh=False
+        )
+        self._add_sensed_pose_vector_arrows(
+            self.current_hypotheses_locations[idx],
+            self.current_hypotheses_rotations[idx],
+            is_heh=False,
+        )
+
+    def _add_highest_evidence_hypothesis_visualization(self) -> None:
+        """Add visualization elements for the highest evidence hypothesis.
+
+        Adds ellipsoid, center cube, nearest neighbors, and sensed pose vector arrows
+        for the highest evidence hypothesis.
+        """
+        is_inside_reference_frame = self.hypotheses_inside_reference_frame[
+            self.current_highest_evidence_index
+        ]
+        highest_evidence_nearest_node_locs = self.hypotheses_nearest_node_locs[
+            self.current_highest_evidence_index
+        ]
+        self._add_ellipsoid(
+            self.current_highest_evidence_location,
+            self.current_highest_evidence_rotation,
+            is_inside_reference_frame,
+            is_heh=True,
+        )
+        self._add_highest_hypothesis_center_cube(
+            self.current_highest_evidence_location, is_inside_reference_frame
+        )
+        self._add_nearest_neighbor_points(
+            highest_evidence_nearest_node_locs, is_heh=True
+        )
+        self._add_sensed_pose_vector_arrows(
+            self.current_highest_evidence_location,
+            self.current_highest_evidence_rotation,
+            is_heh=True,
+        )
+
+    def _add_ellipsoid(
+        self,
+        location: np.ndarray,
+        hypothesis_rotation: np.ndarray,
+        is_inside_reference_frame: bool,
+        is_heh: bool = False,
+    ) -> None:
+        """Add ellipsoid around hypothesis based on sensed orientation."""
+        surface_normal, tangent1, tangent2 = (
+            self._transform_sensed_orientation_by_hypothesis(hypothesis_rotation)
+        )
+
+        stretch_factor = 1.0 / (np.abs(self.current_sensed_curvature) + 0.5)
+        semi_axis_tangent = self.max_match_distance
+        semi_axis_normal = self.max_match_distance / (1 + stretch_factor)
+
+        color = TBP_COLORS["blue"] if is_inside_reference_frame else TBP_COLORS["pink"]
+
+        ellipsoid = Ellipsoid(
+            pos=location,
+            axis1=tangent1 * semi_axis_tangent,
+            axis2=tangent2 * semi_axis_tangent,
+            axis3=surface_normal * semi_axis_normal,
+            c=color,
+        )
+        ellipsoid.alpha(0.15)
+
+        if is_heh:
+            self.highest_evidence_ellipsoid = ellipsoid
+        else:
+            self.hypothesis_ellipsoid = ellipsoid
+
+        self.plotter.at(self.main_renderer_ix).add(ellipsoid)
+
+    def _add_hypothesis_center_point(self, location: np.ndarray) -> None:
+        """Add a black point at the hypothesis center.
+
+        This point is a randomly selected hypothesis that goes along with the ellipsoid,
+        and changes when the hypothesis is resampled within a step.
+        """
+        hyp_point = Point(location, c="black")
+        hyp_point.point_size(25)
+        self.ellipsoid_center_point = hyp_point
+        self.plotter.at(self.main_renderer_ix).add(hyp_point)
+
+    def _add_highest_hypothesis_center_cube(
+        self, location: np.ndarray, is_inside_reference_frame: bool
+    ) -> None:
+        """Add a cube at the location of the highest evidence hypothesis.
+
+        The highest evidence hypothesis is the one with the highest evidence score
+        for the subset of hypotheses whose target is the same as the object. It can be
+        different from the MLH, which is the highest evidence hypothesis across entire
+        set of objects.
+
+        The cube denoting this location is fixed within a step.
+        """
+        self.highest_evidence_cube = Cube(location, side=0.003, c="black", alpha=0.6)
+        self.plotter.at(self.main_renderer_ix).add(self.highest_evidence_cube)
+
+    def _add_nearest_neighbor_points(
+        self, nearest_node_locs: np.ndarray, is_heh: bool = False
+    ) -> None:
+        """Add yellow points indicating the nearest neighbors of a hypothesis.
+
+        The nearest neighbors are points within the object model. It is used for
+        debugging to verify that a hypothesis is considered within an object's
+        reference frame if at least one of its nearest neighbors is within the
+        ellipsoid of the hypothesis.
+        """
+        nearest_node_points = Points(
+            nearest_node_locs.squeeze(), c=TBP_COLORS["yellow"]
+        )
+        nearest_node_points.point_size(15)
+        if is_heh:
+            self.heh_neighbor_points.append(nearest_node_points)
+        else:
+            self.random_hypothesis_neighbor_points.append(nearest_node_points)
+
+        self.plotter.at(self.main_renderer_ix).add(nearest_node_points)
+
+    def _add_sensed_pose_vector_arrows(
+        self,
+        location: np.ndarray,
+        hypothesis_rotation: np.ndarray,
+        is_heh: bool = False,
+    ) -> None:
+        """Add arrows showing transformed sensed tangent and normal directions."""
+        arrow_length = 0.02
+
+        surface_normal, tangent1, tangent2 = (
+            self._transform_sensed_orientation_by_hypothesis(hypothesis_rotation)
+        )
+
+        arrow1 = Arrow(
+            location,
+            location + tangent1 * arrow_length,
+            c=TBP_COLORS["purple"],
+        )
+        arrow1.alpha(0.7)
+
+        arrow2 = Arrow(
+            location,
+            location + tangent2 * arrow_length,
+            c=TBP_COLORS["green"],
+        )
+        arrow2.alpha(0.7)
+
+        arrow3 = Arrow(
+            location,
+            location + surface_normal * arrow_length,
+            c=TBP_COLORS["yellow"],
+        )
+        arrow3.alpha(0.9)
+
+        if is_heh:
+            self.heh_pose_arrows.extend([arrow1, arrow2, arrow3])
+        else:
+            self.random_hypothesis_pose_arrows.extend([arrow1, arrow2, arrow3])
+
+        self.plotter.at(self.main_renderer_ix).add([arrow1, arrow2, arrow3])
+
+    def _add_object_surface_normal_arrows(self) -> None:
+        """Add arrows showing surface normals from object_model's pose vectors.
+
+        These are the ground truth surface normals useful for debugging. Note that
+        the object_model's pose vectors is a 3x3 matrix of stacked
+        [surface_normal, pc1, pc2] row vectors for each point.
+        """
+        arrow_length = 0.01
+
+        # Sample because showing all surface normals is too cluttered for visualization
+        sample_indices = np.arange(0, len(self.object_model.object_points_wrt_world), 4)
+
+        locations = self.object_model.object_points_wrt_world[sample_indices]
+        feature_orientations = self.object_model.object_feature_orientations_wrt_world[
+            sample_indices
+        ]  # Shape: (n_sampled, 3, 3)
+
+        for location, feature_orientation in zip(locations, feature_orientations):
+            surface_normal = feature_orientation[0, :]
+
+            arrow_normal = Arrow(
+                location,
+                location + surface_normal * arrow_length,
+                c="gray",
+            )
+            arrow_normal.alpha(0.4)
+            self.object_pose_vector_arrows.append(arrow_normal)
+            self.plotter.at(self.main_renderer_ix).add(arrow_normal)
+
+    def _add_sensor_location_spheres(self) -> None:
         """Add spheres to visualize sensor locations."""
         self.sm0_sphere = Sphere(
             self.current_sm0_location,
@@ -606,8 +657,8 @@ class HypothesesOORFVisualizer:
         )
         self.plotter.at(self.main_renderer_ix).add(self.sm1_sphere)
 
-    def _add_sensor_images(self, timestep: int) -> None:
-        """Add sensor RGB patch visualizations to separate renderers."""
+    def _add_sensor_images(self) -> None:
+        """Add sensor_0 (patch) and sensor_1 (view_finder) RGB images."""
         rgba_patch = self.current_sm0_rgba
         rgb_patch = rgba_patch[:, :, :3]
 
@@ -626,161 +677,8 @@ class HypothesesOORFVisualizer:
         self.sm1_label = Text2D("SM_1", pos="top-center", c="black", font="Calco")
         self.plotter.at(self.sm1_renderer_ix).add(self.sm1_label)
 
-    def _add_ellipsoid(
-        self,
-        location: np.ndarray,
-        hypothesis_rotation: np.ndarray,
-        is_inside_reference_frame: bool,
-        is_mlh: bool = False,
-    ) -> None:
-        """Add ellipsoid at given location with orientation from transformed sensed rotation."""
-        # Transform sensed pose vectors by hypothesis rotation using spatial_arithmetics
-        features = {"pose_vectors": self.current_sensed_rotation}
-        # Reshape single rotation matrix to have batch dimension for consistency
-        hypothesis_rotation_batch = hypothesis_rotation.reshape(1, 3, 3)
-        rotated_features = rotate_pose_dependent_features(
-            features, hypothesis_rotation_batch
-        )
-        transformed_pose_vectors = rotated_features["pose_vectors"]  # Shape: (1, 3, 3)
-
-        surface_normal = transformed_pose_vectors[0, 0, :]  # Transformed surface normal
-        tangent1 = transformed_pose_vectors[0, 1, :]  # Transformed PC1 (dir1)
-        tangent2 = transformed_pose_vectors[0, 2, :]  # Transformed PC2 (dir2)
-
-        stretch_factor = 1.0 / (np.abs(self.current_sensed_curvature) + 0.5)
-        semi_axis_tangent = self.max_match_distance
-        semi_axis_normal = self.max_match_distance / (1 + stretch_factor)
-
-        color = TBP_COLORS["blue"] if is_inside_reference_frame else TBP_COLORS["pink"]
-
-        ellipsoid = Ellipsoid(
-            pos=location,
-            axis1=tangent1 * semi_axis_tangent,
-            axis2=tangent2 * semi_axis_tangent,
-            axis3=surface_normal * semi_axis_normal,
-            c=color,
-        )
-        ellipsoid.alpha(0.15)
-
-        if is_mlh:
-            self.mlh_ellipsoid = ellipsoid
-        else:
-            self.hypothesis_ellipsoids.append(ellipsoid)
-
-        self.plotter.at(self.main_renderer_ix).add(ellipsoid)
-
-    def _add_hypothesis_center_point(self, location: np.ndarray) -> None:
-        """Add a black point at the hypothesis center."""
-        hyp_point = Point(location, c="black")
-        hyp_point.point_size(25)
-        self.ellipsoid_centers.append(hyp_point)
-        self.plotter.at(self.main_renderer_ix).add(hyp_point)
-
-    def _add_mlh_cube(
-        self, location: np.ndarray, is_inside_reference_frame: bool
-    ) -> None:
-        """Add a cube at the MLH location."""
-        self.mlh_cube = Cube(location, side=0.003, c="black", alpha=0.6)
-        self.plotter.at(self.main_renderer_ix).add(self.mlh_cube)
-
-    def _add_nearest_neighbor_points(self, nearest_node_locs: np.ndarray) -> None:
-        """Add yellow points for nearest neighbors."""
-        nearest_node_points = Points(
-            nearest_node_locs.squeeze(), c=TBP_COLORS["yellow"]
-        )
-        nearest_node_points.point_size(15)
-        self.hypothesis_neighbor_points.append(nearest_node_points)
-        self.plotter.at(self.main_renderer_ix).add(nearest_node_points)
-
-    def _add_axes_arrows(
-        self,
-        location: np.ndarray,
-        hypothesis_rotation: np.ndarray,
-    ) -> None:
-        """Add arrows showing transformed sensed tangent and normal directions."""
-        arrow_length = 0.02
-
-        # Transform sensed pose vectors by hypothesis rotation using spatial_arithmetics
-        features = {"pose_vectors": self.current_sensed_rotation}
-        # Reshape single rotation matrix to have batch dimension for consistency
-        hypothesis_rotation_batch = hypothesis_rotation.reshape(1, 3, 3)
-        rotated_features = rotate_pose_dependent_features(
-            features, hypothesis_rotation_batch
-        )
-        transformed_pose_vectors = rotated_features["pose_vectors"]  # Shape: (1, 3, 3)
-
-        # Pose vectors are in Darboux Frame
-        surface_normal = transformed_pose_vectors[0, 0, :]  # Transformed surface normal
-        tangent1 = transformed_pose_vectors[0, 1, :]  # Transformed PC1 (dir1)
-        tangent2 = transformed_pose_vectors[0, 2, :]  # Transformed PC2 (dir2)
-
-        arrow1 = Arrow(
-            location,
-            location + tangent1 * arrow_length,
-            c=TBP_COLORS["purple"],
-        )
-        arrow1.alpha(0.7)
-        self.hypothesis_axes.append(arrow1)
-        self.plotter.at(self.main_renderer_ix).add(arrow1)
-
-        arrow2 = Arrow(
-            location,
-            location + tangent2 * arrow_length,
-            c=TBP_COLORS["green"],
-        )
-        arrow2.alpha(0.7)
-        self.hypothesis_axes.append(arrow2)
-        self.plotter.at(self.main_renderer_ix).add(arrow2)
-
-        arrow3 = Arrow(
-            location,
-            location + surface_normal * arrow_length,
-            c=TBP_COLORS["yellow"],
-        )
-        arrow3.alpha(0.9)
-        self.hypothesis_axes.append(arrow3)
-        self.plotter.at(self.main_renderer_ix).add(arrow3)
-
-    def _add_object_surface_normal_arrows(self) -> None:
-        """Add arrows showing surface normals from object_model's pose vectors.
-
-        Note that the object_model's pose vectors is a 3x3 matrix of stacked
-        [surface_normal, pc1, pc2] row vectors for each point.
-        """
-        arrow_length = 0.01
-
-        # Sample because showing all surface normals is too cluttered for visualization
-        sample_indices = np.arange(0, len(self.object_model.object_points_wrt_world), 4)
-
-        locations = self.object_model.object_points_wrt_world[sample_indices]
-        feature_orientations = self.object_model.object_feature_orientations_wrt_world[
-            sample_indices
-        ]  # Shape: (n_sampled, 3, 3)
-
-        for location, feature_orientation in zip(locations, feature_orientations):
-            surface_normal = feature_orientation[0, :]  # surface normal is first row
-
-            arrow_normal = Arrow(
-                location,
-                location + surface_normal * arrow_length,
-                c="gray",
-            )
-            arrow_normal.alpha(0.4)
-            self.pose_vector_arrows.append(arrow_normal)
-            self.plotter.at(self.main_renderer_ix).add(arrow_normal)
-
-    def _add_summary_text(
-        self,
-        timestep: int,
-    ) -> str:
-        """Create summary text for current timestep.
-
-        Args:
-            timestep: Current timestep
-
-        Returns:
-            Formatted statistics text
-        """
+    def _add_summary_text(self) -> None:
+        """Create summary text for current timestep."""
         num_hypotheses_in_reference_frame = sum(self.hypotheses_inside_reference_frame)
         num_hypotheses_outside_reference_frame = sum(
             ~self.hypotheses_inside_reference_frame
@@ -799,12 +697,12 @@ class HypothesesOORFVisualizer:
             suppress_small=False,
         )
 
-        sm_step = self.data_loader.lm_to_sm_mapping[timestep]
+        sm_step = self.data_loader.lm_to_sm_mapping[self.current_timestep]
         object_summary = [
             f"Object: {self.data_loader.target_name}",
             f"Object position: {formatted_position}",
             f"Object rotation: {formatted_rotation}",
-            f"LM Step: {timestep}",
+            f"LM Step: {self.current_timestep}",
             f"SM Step: {sm_step}",
         ]
 
@@ -814,8 +712,41 @@ class HypothesesOORFVisualizer:
             f"Current MLH: {self.current_mlh_graph_id}",
         ]
 
-        summary_text = "\n".join(object_summary + hypotheses_summary)
-        return summary_text
+        combined_text = "\n".join(object_summary + hypotheses_summary)
+
+        self.summary_text = Text2D(
+            combined_text,
+            pos="top-left",
+            s=0.8,
+            font="Calco",
+        )
+        self.plotter.at(self.main_renderer_ix).add(self.summary_text)
+
+    def _transform_sensed_orientation_by_hypothesis(
+        self, hypothesis_rotation: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Transform sensed orientation by hypothesis rotation.
+
+        Args:
+            hypothesis_rotation: Rotation matrix (3, 3) for the hypothesis.
+
+        Returns:
+            Tuple of (surface_normal, tangent1, tangent2) vectors.
+        """
+        features = {"pose_vectors": self.current_sensed_orientation}
+
+        # Reshape single rotation matrix to have batch dimension
+        hypothesis_rotation_batch = hypothesis_rotation.reshape(1, 3, 3)
+        rotated_features = rotate_pose_dependent_features(
+            features, hypothesis_rotation_batch
+        )
+        transformed_pose_vectors = rotated_features["pose_vectors"][0]
+
+        surface_normal = transformed_pose_vectors[0, :]
+        tangent1 = transformed_pose_vectors[1, :]
+        tangent2 = transformed_pose_vectors[2, :]
+
+        return surface_normal, tangent1, tangent2
 
     def _add_legend(self) -> None:
         """Add a legend with color-coded text."""
@@ -834,8 +765,8 @@ class HypothesesOORFVisualizer:
             ("PC1 Axis (Arrow)", TBP_COLORS["purple"], 0.18),
             ("PC2 Axis (Arrow)", TBP_COLORS["green"], 0.16),
             ("Surface Normal (Arrow)", TBP_COLORS["yellow"], 0.14),
-            ("MLH (Cube)", "black", 0.12),
-            ("Nearest Neighbor (Point)", TBP_COLORS["yellow"], 0.1),
+            ("Highest Evidence Hypothesis (Cube)", "black", 0.12),
+            ("Nearest Neighbors (Point)", TBP_COLORS["yellow"], 0.1),
         ]
 
         for text, color, y_pos in legend_items:

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
@@ -25,6 +25,9 @@ from .data_models import (
     transform_locations_model_to_world,
     transform_orientations_model_to_world,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -49,12 +52,10 @@ def get_model_path(experiment_log_dir: Path) -> Path:
     return model_path
 
 
-def deserialize_json_chunks_fast(
-    json_file, start=0, stop=None, episodes=None, episode_line=1
-):
+def deserialize_json_chunks_fast(json_file, episode_id=0):
     # Load specific episode by line number (0-indexed)
     with open(json_file, "r") as f:
-        for i in range(episode_line + 1):
+        for _ in range(episode_id + 1):
             line = f.readline().strip()
         data = json.loads(line)
 
@@ -130,6 +131,7 @@ class EpisodeDataLoader:
         self.all_hyp_object_orientations = []
         self.highest_evidence_location = []
         self.highest_evidence_object_orientation = []
+        self.highest_evidence_indices = []
         self.all_mlh_locations = []
         self.all_mlh_orientations = []
         self.all_mlh_graph_ids = []
@@ -147,7 +149,7 @@ class EpisodeDataLoader:
         logger.info(f"Loading episode {episode_id} data from: {self.json_path}")
 
         episode_data = deserialize_json_chunks_fast(
-            self.json_path, episodes=[episode_id], episode_line=episode_id
+            self.json_path, episode_id=episode_id
         )[str(episode_id)]
         self.lm_data = episode_data["LM_0"]
         self.num_lm_steps = len(self.lm_data["possible_locations"])
@@ -166,7 +168,7 @@ class EpisodeDataLoader:
 
         self._find_lm_to_sm_mapping()
         self._extract_max_abs_curvature()
-        self._extract_sensed_rotations()
+        self._extract_sensed_orientations()
         self._extract_sensor_locations()
         self._extract_sensor_rgba_patches()
 
@@ -236,6 +238,7 @@ class EpisodeDataLoader:
             self.highest_evidence_object_orientation.append(
                 highest_evidence_orientation.squeeze()
             )
+            self.highest_evidence_indices.append(highest_evidence_index)
 
     def _initialize_mlh_data(self) -> None:
         """Extract target object name for MLH."""
@@ -291,7 +294,7 @@ class EpisodeDataLoader:
             f"{max(self.max_abs_curvatures):.4f}"
         )
 
-    def _extract_sensed_rotations(self) -> None:
+    def _extract_sensed_orientations(self) -> None:
         """Extract sensed pose vectors from sensor module data for each timestep."""
         logger.info("Extracting sensed pose vectors from sensor module data")
 

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import numpy as np
 from scipy.spatial import KDTree
-from scipy.spatial.transform import Rotation as R
+from scipy.spatial.transform import Rotation
 
 
 class ObjectModelForVisualization:
@@ -59,10 +59,12 @@ class ObjectModelForVisualization:
         object_feature_orientations_wrt_model = np.reshape(
             features["pose_vectors"], (-1, 3, 3)
         )
-        self.object_feature_orientations_wrt_world = transform_orientations_model_to_world(  # noqa: E501
-            object_feature_orientations_wrt_model,
-            self.target_orientation_wrt_world,
-            row_vector_format=True,
+        self.object_feature_orientations_wrt_world = (
+            transform_orientations_model_to_world(
+                object_feature_orientations_wrt_model,
+                self.target_orientation_wrt_world,
+                row_vector_format=True,
+            )
         )
 
     @property
@@ -98,7 +100,7 @@ def transform_locations_model_to_world(
     locations_wrt_model: np.ndarray,
     model_origin_wrt_world: np.ndarray,
     target_location_wrt_world: np.ndarray,
-    target_orientation_wrt_world: np.ndarray | R,
+    target_orientation_wrt_world: np.ndarray | Rotation,
 ) -> np.ndarray:
     """Transform locations from model to world coordinates.
 
@@ -120,8 +122,8 @@ def transform_locations_model_to_world(
     Returns:
         Transformed locations in world frame.
     """
-    if not isinstance(target_orientation_wrt_world, R):
-        target_orientation_wrt_world = R.from_euler(
+    if not isinstance(target_orientation_wrt_world, Rotation):
+        target_orientation_wrt_world = Rotation.from_euler(
             "xyz", target_orientation_wrt_world, degrees=True
         )
 
@@ -134,7 +136,7 @@ def transform_locations_model_to_world(
 
 def transform_orientations_model_to_world(
     orientations_wrt_model: np.ndarray,
-    target_rotation_wrt_world: np.ndarray | R,
+    target_rotation_wrt_world: np.ndarray | Rotation,
     row_vector_format: bool = False,
 ) -> np.ndarray:
     """Transform orientation matrices from model to world coordinates.
@@ -164,8 +166,8 @@ def transform_orientations_model_to_world(
     Returns:
         Transformed orientations in world frame.
     """
-    if not isinstance(target_rotation_wrt_world, R):
-        target_rotation_wrt_world = R.from_euler(
+    if not isinstance(target_rotation_wrt_world, Rotation):
+        target_rotation_wrt_world = Rotation.from_euler(
             "xyz", target_rotation_wrt_world, degrees=True
         ).as_matrix()
 
