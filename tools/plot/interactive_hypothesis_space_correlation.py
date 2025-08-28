@@ -943,6 +943,7 @@ class CorrelationPlotWidgetOps:
         self.df: DataFrame
         self.selected_hypothesis: Series | None = None
         self.highlight_circle: Circle | None = None
+        self.mlh_circle: Circle | None = None
         self.info_widget: Text2D | None = None
 
     def create_locators(self) -> dict[str, DataLocator]:
@@ -1144,23 +1145,20 @@ class CorrelationPlotWidgetOps:
 
         return pd.concat(all_dfs, ignore_index=True)
 
-    def create_figure(
-        self, df: DataFrame, x="Evidence Slope", y="Pose Error"
-    ) -> plt.Figure:
+    def add_correlation_figure(self, x="Evidence Slope", y="Pose Error") -> Image:
         """Create a seaborn joint scatter with marginal KDEs.
 
         Args:
-            df: Data frame to plot.
             x: X column name. Defaults to "Evidence Slope".
             y: Y column name. Defaults to "Pose Error".
 
         Returns:
-            A Matplotlib `Figure`.
+            The Image widget for the correlation plot.
         """
-        g = sns.JointGrid(data=df, x=x, y=y, height=6)
+        g = sns.JointGrid(data=self.df, x=x, y=y, height=6)
 
         sns.scatterplot(
-            data=df,
+            data=self.df,
             x=x,
             y=y,
             hue="kind",
@@ -1171,7 +1169,7 @@ class CorrelationPlotWidgetOps:
         )
 
         sns.kdeplot(
-            data=df,
+            data=self.df,
             x=x,
             hue="kind",
             ax=g.ax_marg_x,
@@ -1183,7 +1181,7 @@ class CorrelationPlotWidgetOps:
         )
 
         sns.kdeplot(
-            data=df,
+            data=self.df,
             y=y,
             hue="kind",
             ax=g.ax_marg_y,
@@ -1203,7 +1201,11 @@ class CorrelationPlotWidgetOps:
         g.ax_joint.set_xlabel(x, labelpad=10)
         g.ax_joint.set_ylabel(y, labelpad=10)
         g.figure.tight_layout()
-        return g.figure
+
+        widget = Image(g.figure)
+        plt.close(g.figure)
+        self.plotter.add(widget)
+        return widget
 
     def get_closest_row(self, df: DataFrame, slope: float, error: float) -> Series:
         """Return the row whose (Evidence Slope, Pose Error) is closest to a point.
@@ -1228,26 +1230,21 @@ class CorrelationPlotWidgetOps:
         )
         return df.loc[distances.idxmin()]
 
-    def create_info_text(self, df: DataFrame) -> str:
-        """Summarize hypotheses statistics from a dataframe.
+    def add_info_text(self) -> None:
+        """Summarize hypotheses statistics from a dataframe and add to plot."""
+        if self.info_widget is not None:
+            self.plotter.remove(self.info_widget)
 
-        Args:
-            df: DataFrame with at least 'graph_id' and 'kind' columns.
-                 'kind' should contain values 'Added', 'Removed', or 'Maintained'.
-
-        Returns:
-            str: Formatted summary string.
-        """
-        if df.empty:
-            return "No hypotheses found."
+        if self.df.empty:
+            return
 
         # Assume all rows share the same object name
-        graph_id = df["graph_id"].iloc[0]
+        graph_id = self.df["graph_id"].iloc[0]
 
         # Count per kind
-        kind_counts = df["kind"].value_counts()
+        kind_counts = self.df["kind"].value_counts()
 
-        total = len(df)
+        total = len(self.df)
         added = kind_counts.get("Added", 0)
         removed = kind_counts.get("Removed", 0)
 
@@ -1257,7 +1254,46 @@ class CorrelationPlotWidgetOps:
             f"Added Hypotheses: {added}\n"
             f"To be removed Hypotheses: {removed}"
         )
-        return text
+
+        self.info_widget = Text2D(txt=text, pos="top-left")
+        self.plotter.add(self.info_widget)
+
+    def add_mlh_circle(self):
+        """Adds the circle marker for the MLH."""
+        if self.mlh_circle is not None:
+            self.plotter.remove(self.mlh_circle)
+
+        if self.df.empty:
+            return
+
+        (slope, error) = tuple(
+            self.df.loc[self.df["Evidence"].idxmax(), ["Evidence Slope", "Pose Error"]]
+        )
+
+        if pd.isna(slope):
+            return
+
+        # Map location back to a Location3D in GUI Space
+        gui_location = self._coordinate_mapper.map_data_coords_to_world(
+            Location2D(slope, error)
+        ).to_3d(z=0.05)
+
+        self.mlh_circle = Circle(pos=gui_location.to_numpy(), r=3.0, res=16)
+        self.mlh_circle.c("green")
+        self.plotter.add(self.mlh_circle)
+
+    def add_highlight_circle(self, gui_location: Location3D):
+        """Adds the circle marker for the selected hypothesis.
+
+        Args:
+            gui_location: the location at which to add the marker
+        """
+        if self.highlight_circle is not None:
+            self.plotter.remove(self.highlight_circle)
+
+        self.highlight_circle = Circle(pos=gui_location.to_numpy(), r=3.0, res=16)
+        self.highlight_circle.c("red")
+        self.plotter.add(self.highlight_circle)
 
     def update_plot(self, widget: Image, msgs: list[TopicMessage]) -> tuple[Any, bool]:
         """Rebuild the plot for the selected episode, step, object, and age threshold.
@@ -1273,16 +1309,8 @@ class CorrelationPlotWidgetOps:
         Returns:
             `(new_widget, True)` where `new_widget` is the new image actor.
         """
-        # Clear previous plot and selection
-        if widget is not None:
-            self.plotter.remove(widget)
-
         if self.highlight_circle is not None:
             self.plotter.remove(self.highlight_circle)
-
-        if self.info_widget is not None:
-            self.plotter.remove(self.info_widget)
-
         self.selected_hypothesis = None
 
         # Build DataFrame and filter by age
@@ -1296,16 +1324,16 @@ class CorrelationPlotWidgetOps:
         mask: Series = df["age"] >= age_threshold
         self.df: DataFrame = df.loc[mask].copy()
 
-        # Create figure and add to scene
-        fig = self.create_figure(self.df)
-        widget = Image(fig)
-        plt.close(fig)
-        self.plotter.add(widget)
+        # Add the scatter correlation plot to the scene
+        if widget is not None:
+            self.plotter.remove(widget)
+        widget = self.add_correlation_figure()
 
         # Add info text to scene
-        info_text = self.create_info_text(self.df)
-        self.info_widget = Text2D(txt=info_text, pos="top-left")
-        self.plotter.add(self.info_widget)
+        self.add_info_text()
+
+        # Add mlh circle to scene
+        self.add_mlh_circle()
 
         self.plotter.render()
         return widget, True
@@ -1353,13 +1381,8 @@ class CorrelationPlotWidgetOps:
             df_location
         ).to_3d(z=0.1)
 
-        # Add the highlight circle
-        if self.highlight_circle is not None:
-            self.plotter.remove(self.highlight_circle)
-
-        self.highlight_circle = Circle(pos=gui_location.to_numpy(), r=3.0, res=16)
-        self.highlight_circle.c("red")
-        self.plotter.add(self.highlight_circle)
+        # Add the selected hypothesis marker
+        self.add_highlight_circle(gui_location)
 
         self.plotter.render()
         return widget, True
