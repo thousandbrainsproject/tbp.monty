@@ -29,10 +29,6 @@ __all__ = [
 # Keeps track of the dataclass type in a serializable dataclass dict
 _DATACLASS_TYPE = "__dataclass_type__"
 
-# The name of an attribute on the class where Field objects are stored.
-# Primarily used here to check if a class is a dataclass.
-_DATACLASS_FIELDS = "__dataclass_fields__"
-
 
 def as_dataclass_dict(obj):
     """Convert a dataclass instance to a serializable dataclass dict.
