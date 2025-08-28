@@ -157,7 +157,8 @@ class MontyExperiment:
                 f"policy_class must be a subclass of MotorPolicy, got {policy_class}"
             )
         policy = policy_class(rng=self.rng, **policy_args)
-        motor_system = motor_system_class(policy=policy)
+        ms_args = get_subset_of_args(motor_system_args, motor_system_class.__init__)
+        motor_system = motor_system_class(policy=policy, **ms_args)
 
         # Get mapping between sensor modules, learning modules and agents
         lm_len = len(learning_modules)

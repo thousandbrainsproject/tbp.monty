@@ -13,7 +13,9 @@ from typing import Literal
 
 import numpy as np
 import quaternion
+from numpy.typing import ArrayLike
 from scipy.spatial.transform import Rotation
+from scipy.spatial.transform import Rotation as SciPyRotation
 
 from tbp.monty.frameworks.actions.action_samplers import (
     ActionSampler,
@@ -251,7 +253,7 @@ class LookAtPolicy(BasePolicy):
         # TODO: This isn't quite right. Need to account for rotation.
         """"
         p[A] = B.rot[A] * p[B] + B.origin[A]
-        
+
         invert this
 
         B.rot[A].inv * (p[A] - B.origin[A]) = p[B]  <--- need to do this
@@ -275,6 +277,35 @@ class LookAtPolicy(BasePolicy):
         left_amount = -np.degrees(np.arctan2(x_rot, -z_rot))
         distance_horiz = np.sqrt(x_rot**2 + z_rot**2)
         down_amount = -np.degrees(np.arctan2(y_rot, distance_horiz))
+
+        # ---------------------------------
+        _agent_rot = as_rotation_matrix(state["agent_id_0"]["rotation"])
+        _agent_pos = state["agent_id_0"]["position"]
+        _sensor_rot = as_rotation_matrix(
+            state["agent_id_0"]["sensors"]["view_finder"]["rotation"]
+        )
+        _sensor_pos = state["agent_id_0"]["sensors"]["view_finder"]["position"]
+        _agent_transform = RigidTransform(_agent_pos, _agent_rot)
+        _sensor_transform = RigidTransform(_sensor_pos, _sensor_rot)
+        _chain = TransformChain([_agent_transform, _sensor_transform])
+        _chain_inv = _chain.inv()
+
+        _target_loc_rel_sensor = _chain_inv(target_loc_rel_world)
+        _x_rot, _y_rot, _z_rot = _target_loc_rel_sensor
+        _left_amount = -np.degrees(np.arctan2(_x_rot, -_z_rot))
+        _distance_horiz = np.sqrt(_x_rot**2 + _z_rot**2)
+        _down_amount = -np.degrees(np.arctan2(_y_rot, _distance_horiz))
+        _ar = SciPyRotation.from_matrix(_agent_rot)
+        _sr = SciPyRotation.from_matrix(_sensor_rot)
+        _sw = _ar * _sr
+        print(f"ar: {_ar.as_euler('xyz', degrees=True)}")
+        print(f"sr: {_sr.as_euler('xyz', degrees=True)}")
+        print(f"sw: {_sw.as_euler('xyz', degrees=True)}")
+        print(f"left_amount: {left_amount}, down_amount: {down_amount}")
+        print(f"_left_amount: {_left_amount}, _down_amount: {_down_amount}")
+        print(target_loc_rel_world)
+
+        # ---------------------------------
         return [
             LookDown(agent_id=self.agent_id, rotation_degrees=down_amount),
             TurnLeft(agent_id=self.agent_id, rotation_degrees=left_amount),
@@ -319,3 +350,53 @@ def walk_poses(state: dict, path: tuple[str]) -> list[dict]:
                 }
             )
     return poses
+
+
+def as_rotation_matrix(
+    obj: quaternion.quaternion | ArrayLike | SciPyRotation,
+) -> np.ndarray:
+    if isinstance(obj, SciPyRotation):
+        rot = obj
+    elif isinstance(obj, quaternion.quaternion):
+        rot = SciPyRotation.from_quat(np.array([obj.x, obj.y, obj.z, obj.w]))
+    else:
+        rot = SciPyRotation.from_matrix(obj)
+    return rot.as_matrix()
+
+
+class RigidTransform:
+    def __init__(self, pos: np.ndarray, rot: np.ndarray):
+        self.pos = np.array(pos)
+        self.rot = as_rotation_matrix(rot)
+
+    def inv(self) -> RigidTransform:
+        rot = self.rot.T
+        pos = -rot @ self.pos
+        return RigidTransform(pos, rot)
+
+    def __call__(self, point: np.ndarray) -> np.ndarray:
+        point = np.asarray(point)
+        if point.ndim == 1:
+            return self.rot @ point + self.pos
+        else:
+            return (self.rot @ point.T).T + self.pos
+
+    def __repr__(self):
+        return f"RigidTransform(pos={self.pos}, rot={self.rot})"
+
+
+class TransformChain:
+    def __init__(self, transforms: list[RigidTransform]):
+        self.transforms = transforms
+
+    def __call__(self, point: np.ndarray) -> np.ndarray:
+        for transform in self.transforms:
+            point = transform(point)
+        return point
+
+    def inv(self) -> TransformChain:
+        tforms = list(reversed([t.inv() for t in self.transforms]))
+        return TransformChain(tforms)
+
+    def __repr__(self):
+        return f"TransformChain({self.transforms})"

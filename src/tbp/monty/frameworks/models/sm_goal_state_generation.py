@@ -318,6 +318,54 @@ class DecayKernel:
         return 1 - (self.w_t() * self.w_s(point))
 
 
+class DecayField:
+    """Implements inhibition of return.
+
+    Used to weight `GoalState.confidence` values.
+    """
+
+    def __init__(
+        self,
+        kernel_factory: Callable[[Any, ...], DecayKernel] = DecayKernel,
+        kernel_args: dict | None = None,
+        save_telemetry: bool = False,
+    ):
+        self.kernel_factory = kernel_factory
+        self.kernel_args = dict(kernel_args) if kernel_args else {}
+        self.kernels = []
+        self.save_telemetry = save_telemetry
+        self.telemetry = []
+
+    def reset(self) -> None:
+        self.kernels = []
+        self.telemetry = []
+
+    def add(self, location: np.ndarray, **kwargs) -> None:
+        """Add a kernel to the field."""
+        if kwargs:
+            kernel_args = {**self.kernel_args, **kwargs}
+        else:
+            kernel_args = self.kernel_args
+        kernel = self.kernel_factory(location, **kernel_args)
+        self.kernels.append(kernel)
+
+    def step(self) -> None:
+        """Step each kernel, and keep only non-expired ones."""
+        for k in self.kernels:
+            k.step()
+        self.kernels = [k for k in self.kernels if not k.expired]
+
+    def __call__(self, point: np.ndarray) -> float | np.ndarray:
+        if not self.kernels:
+            return 1.0 if point.ndim == 1 else np.ones(point.shape[0])
+        if len(self.kernels) == 1:
+            return self.kernels[0](point)
+
+        # Stack kernel parameters and compute in batch
+        results = np.array([k(point) for k in self.kernels])
+        return combine_decay_values(results)
+
+
 # class DecayField:
 #     """Implements inhibition of return.
 
@@ -335,118 +383,72 @@ class DecayKernel:
 #         self.save_telemetry = save_telemetry
 #         self.telemetry = []
 
+#         self.N = 100
+#         self.location = np.zeros((self.N, 3))
+#         self.where = np.zeros(self.N, dtype=bool)
+#         self.tau_t = np.full(self.N, 5.0)
+#         self.tau_s = np.full(self.N, 0.025)
+#         self.w_t_min = np.full(self.N, 0.1)
+#         self.t = np.zeros(self.N)
+#         self.expired = np.zeros(self.N, dtype=bool)
+
+#         self.w_t = np.zeros(self.N)
+#         self.w_s = np.zeros(self.N)
+#         self.w = np.zeros(self.N)
+
 #     def reset(self) -> None:
 #         self.kernels = []
 #         self.telemetry = []
 
 #     def add(self, location: np.ndarray, **kwargs) -> None:
 #         """Add a kernel to the field."""
-#         if kwargs:
-#             kernel_args = {**self.kernel_args, **kwargs}
-#         else:
-#             kernel_args = self.kernel_args
-#         kernel = self.kernel_factory(location, **kernel_args)
-#         self.kernels.append(kernel)
+#         # find first index where 'where' is false
+#         inds = np.argwhere(~self.where)
+#         if inds.size == 0:
+#             # double capacity
+#             self.N *= 2
+#             self.location = np.resize(self.location, (self.N, 3))
+#             self.where = np.resize(self.where, self.N)
+#             self.tau_t = np.resize(self.tau_t, self.N)
+#             self.tau_s = np.resize(self.tau_s, self.N)
+#             self.w_t_min = np.resize(self.w_t_min, self.N)
+#             self.t = np.resize(self.t, self.N)
+#             self.expired = np.resize(self.expired, self.N)
+#             self.w_t = np.resize(self.w_t, self.N)
+#             self.w_s = np.resize(self.w_s, self.N)
+#             self.w = np.resize(self.w, self.N)
+
+#         ind = inds[0][0]
+#         self.location[ind] = location
+#         self.where[ind] = True
+#         self.t[ind] = 0
+#         self.expired[ind] = False
+#         self.w_t[ind] = 1.0
+#         self.w_s[ind] = 1.0
+#         self.w[ind] = 1.0
+
 
 #     def step(self) -> None:
 #         """Step each kernel, and keep only non-expired ones."""
-#         for k in self.kernels:
-#             k.step()
-#         self.kernels = [k for k in self.kernels if not k.expired]
+#         self.t += 1
+#         self.expired = self.w_t < self.w_t_min
+#         self.where = self.where & ~self.expired
 
 #     def __call__(self, point: np.ndarray) -> float | np.ndarray:
-#         if not self.kernels:
+#         if not self.where.any():
 #             return 1.0 if point.ndim == 1 else np.ones(point.shape[0])
-#         if len(self.kernels) == 1:
-#             return self.kernels[0](point)
+#         lam_t = self.tau_t / np.log(2)
+#         lam_s = self.tau_s / np.log(2)
 
-#         # Stack kernel parameters and compute in batch
-#         results = np.array([k(point) for k in self.kernels])
-#         return combine_decay_values(results)
+#         np.exp(-self.t / lam_t, out=self.w_t, where=self.where)
 
-class DecayField:
-    """Implements inhibition of return.
-
-    Used to weight `GoalState.confidence` values.
-    """
-    def __init__(
-        self,
-        kernel_factory: Callable[[Any, ...], DecayKernel] = DecayKernel,
-        kernel_args: dict | None = None,
-        save_telemetry: bool = False,
-        ):
-        self.kernel_factory = kernel_factory
-        self.kernel_args = dict(kernel_args) if kernel_args else {}
-        self.kernels = []
-        self.save_telemetry = save_telemetry
-        self.telemetry = []
-
-        self.N = 100
-        self.location = np.zeros((self.N, 3))
-        self.where = np.zeros(self.N, dtype=bool)
-        self.tau_t = np.full(self.N, 5.0)
-        self.tau_s = np.full(self.N, 0.025)
-        self.w_t_min = np.full(self.N, 0.1)
-        self.t = np.zeros(self.N)
-        self.expired = np.zeros(self.N, dtype=bool)
-
-        self.w_t = np.zeros(self.N)
-        self.w_s = np.zeros(self.N)
-        self.w = np.zeros(self.N)
-
-    def reset(self) -> None:
-        self.kernels = []
-        self.telemetry = []
-
-    def add(self, location: np.ndarray, **kwargs) -> None:
-        """Add a kernel to the field."""
-        # find first index where 'where' is false
-        inds = np.argwhere(~self.where)
-        if inds.size == 0:
-            # double capacity
-            self.N *= 2
-            self.location = np.resize(self.location, (self.N, 3))
-            self.where = np.resize(self.where, self.N)
-            self.tau_t = np.resize(self.tau_t, self.N)
-            self.tau_s = np.resize(self.tau_s, self.N)
-            self.w_t_min = np.resize(self.w_t_min, self.N)
-            self.t = np.resize(self.t, self.N)
-            self.expired = np.resize(self.expired, self.N)
-            self.w_t = np.resize(self.w_t, self.N)
-            self.w_s = np.resize(self.w_s, self.N)
-            self.w = np.resize(self.w, self.N)
-        else:
-            ind = inds[0][0]
-            self.location[ind] = location
-            self.where[ind] = True
-            self.t[ind] = 0
-            self.expired[ind] = False
-            self.w_t[ind] = 1.0
-            self.w_s[ind] = 1.0
-            self.w[ind] = 1.0
-
-
-    def step(self) -> None:
-        """Step each kernel, and keep only non-expired ones."""
-        self.t += 1
-        self.expired = self.w_t < self.w_t_min
-        self.where = self.where & ~self.expired
-
-    def __call__(self, point: np.ndarray) -> float | np.ndarray:
-        if not self.where.any():
-            return 1.0 if point.ndim == 1 else np.ones(point.shape[0])
-        lam_t = self.tau_t / np.log(2)
-        lam_s = self.tau_s / np.log(2)
-
-        np.exp(-self.t / lam_t, out=self.w_t, where=self.where)
-
-        np.exp(-np.linalg.norm(point - self.location, axis=1) / lam_s,
-            out=self.w_s, where=self.where
-        )
-        np.multiply(self.w_t, self.w_s, out=self.w, where=self.where)
-        self.w = 1 - self.w
-        w = self.w[self.where]
-        return np.min(w, axis=0)
+#         np.exp(-np.linalg.norm(point - self.location, axis=1) / lam_s,
+#             out=self.w_s, where=self.where
+#         )
+#         np.multiply(self.w_t, self.w_s, out=self.w, where=self.where)
+#         self.w = 1 - self.w
+#         w = self.w[self.where]
+#         return np.min(w, axis=0)
 
 
 def combine_decay_values(data: np.ndarray) -> np.ndarray:
