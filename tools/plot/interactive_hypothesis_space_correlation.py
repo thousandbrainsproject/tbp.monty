@@ -391,7 +391,7 @@ class GtMeshWidgetOps:
         widget.rotate_y(target_rot[1])
         widget.rotate_z(target_rot[2])
         widget.scale(1500)
-        widget.pos(-300, 100, -500)
+        widget.pos(-300, 0, -500)
 
         self.plotter.add(widget)
         self.plotter.render()
@@ -1469,7 +1469,7 @@ class HypothesisMeshWidgetOps:
         widget.rotate_y(hypothesis["Rot_y"])
         widget.rotate_z(hypothesis["Rot_z"])
         widget.scale(1500)
-        widget.pos(1000, 100, -500)
+        widget.pos(1000, 0, -500)
         self.plotter.add(widget)
 
         # Add info text
@@ -1486,6 +1486,163 @@ class HypothesisMeshWidgetOps:
 
         self.plotter.render()
 
+        return widget, False
+
+
+class HypSpaceSizeWidgetOps:
+    """WidgetOps for a 3-line hypothesis space relative size plot.
+
+    Listens to:
+      - "episode_number"
+      - "current_object"
+
+    Renders a Seaborn line plot with:
+      1) Hyp. space size for the current object
+      2) Hyp. space size for the other objects combined
+      3) Total Hyp. space size for all the existing objects
+
+    This widget is display-only and does not publish messages.
+
+    Attributes:
+        plotter: The vedo.Plotter to add/remove the plot.
+        data_parser: Parser that extracts entries from the JSON log.
+        updaters: One WidgetUpdater reacting to episode/object updates.
+        _locators: Data accessors used to fetch objects, channels, and updater stats.
+    """
+
+    def __init__(self, plotter: Plotter, data_parser: DataParser) -> None:
+        self.plotter = plotter
+        self.data_parser = data_parser
+        self.updaters = [
+            WidgetUpdater(
+                topics=[
+                    TopicSpec("episode_number", required=True),
+                    TopicSpec("current_object", required=True),
+                ],
+                callback=self.update_plot,
+            )
+        ]
+        self._locators = self.create_locators()
+
+    def create_locators(self) -> dict[str, DataLocator]:
+        """Returns data locators used by this widget."""
+        locators = {}
+
+        locators["hyp_space_size"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+                DataLocatorStep.key(name="lm", value="LM_0"),
+                DataLocatorStep.key(
+                    name="telemetry", value="hypotheses_updater_telemetry"
+                ),
+                DataLocatorStep.index(name="step"),
+                DataLocatorStep.key(name="obj"),
+                DataLocatorStep.key(name="channel", value="patch"),
+                DataLocatorStep.key(name="telemetry", value="evidence"),
+            ]
+        )
+
+        return locators
+
+    def _hyp_space_size(self, episode: int) -> pd.DataFrame:
+        """Return a DataFrame of hypothesis space sizes for each step and object.
+
+        Args:
+            episode: Episode index.
+
+        Returns:
+            DataFrame with columns ["step", "object", "size"].
+        """
+        # Objects available in this episode (same across steps)
+        objects_list = self.data_parser.query(
+            self._locators["hyp_space_size"], episode=str(episode), step=0
+        )
+
+        # All steps for this episode
+        steps = self.data_parser.query(
+            self._locators["hyp_space_size"], episode=str(episode)
+        )
+
+        rows: list[dict[str, int | str]] = []
+        for step in steps:
+            for obj in objects_list:
+                size = len(
+                    self.data_parser.extract(
+                        self._locators["hyp_space_size"],
+                        episode=str(episode),
+                        step=step,
+                        obj=obj,
+                    )
+                )
+                rows.append({"step": step, "object": obj, "size": size})
+
+        return pd.DataFrame(rows, columns=["step", "object", "size"])
+
+    def add_hyp_space_size_figure(
+        self,
+        df: pd.DataFrame,
+        current_object: str,
+    ) -> Image:
+        """Plot current vs others vs total Hyp space size relative to step 0.
+
+        Args:
+            df: DataFrame with columns ["step", "object", "size"] for one episode.
+            current_object: Object label to isolate as the "current" line.
+
+        Returns:
+            vedo Image widget.
+        """
+        total = (
+            df.groupby("step", as_index=False)["size"]
+            .sum()
+            .rename(columns={"size": "total"})
+        )
+        current = (
+            df[df["object"] == current_object]
+            .groupby("step", as_index=False)["size"]
+            .sum()
+            .rename(columns={"size": "current"})
+        )
+
+        merged = total.merge(current, on="step", how="left")
+        merged["others"] = merged["total"] - merged["current"]
+        merged = merged.sort_values("step")
+
+        merged["idx_current"] = (merged["current"] / merged["current"].iloc[0]) * 100.0
+        merged["idx_others"] = (merged["others"] / merged["others"].iloc[0]) * 100.0
+        merged["idx_total"] = (merged["total"] / merged["total"].iloc[0]) * 100.0
+
+        fig, ax = plt.subplots(figsize=(6, 3))
+        sns.lineplot(
+            ax=ax, data=merged, x="step", y="idx_current", label=str(current_object)
+        )
+        sns.lineplot(
+            ax=ax, data=merged, x="step", y="idx_others", label="Other objects"
+        )
+        sns.lineplot(ax=ax, data=merged, x="step", y="idx_total", label="Total")
+
+        ax.set_xlabel("Step")
+        ax.set_ylabel("% change from step 0")
+        ax.set_title("Hypothesis Space size")
+        leg = ax.legend(loc="best", frameon=True)
+
+        fig.tight_layout()
+        widget = Image(fig)
+        widget.scale(0.6)
+        widget.pos(-400, 300, 0)
+        plt.close(fig)
+        self.plotter.add(widget)
+        return widget
+
+    def update_plot(
+        self, widget: Image, msgs: Iterable[TopicMessage]
+    ) -> tuple[Image, bool]:
+        msgs_dict = {msg.name: msg.value for msg in msgs}
+
+        hyp_size_df = self._hyp_space_size(episode=msgs_dict["episode_number"])
+        widget = self.add_hyp_space_size_figure(
+            hyp_size_df, msgs_dict["current_object"]
+        )
         return widget, False
 
 
@@ -1648,6 +1805,17 @@ class InteractivePlot:
             bus=self.event_bus,
             scheduler=self.scheduler,
             debounce_sec=0.0,
+            dedupe=False,
+        )
+
+        widgets["hypothesis_space_size"] = Widget[Image, None](
+            widget_ops=HypSpaceSizeWidgetOps(
+                plotter=self.plotter,
+                data_parser=self.data_parser,
+            ),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.3,
             dedupe=False,
         )
 
