@@ -21,30 +21,44 @@ from tools.github_readme_sync.file import find_markdown_files, read_file_content
 from tools.github_readme_sync.md import parse_frontmatter, process_markdown
 
 
-def generate_path_components(file_path: Path, docs_root: Path) -> Dict[str, str]:
-    """Generate path components for a file relative to docs root.
+def generate_index(docs_dir: str, output_file_path: str) -> str:
+    """Generate index.json file from docs directory.
+
+    Args:
+        docs_dir: The directory containing markdown files to scan.
+        output_file_path: Path where to write the output file.
 
     Returns:
-        Dictionary with path1, path2, etc. keys for directory components.
+        Path to the generated output file.
     """
-    relative_path = file_path.relative_to(docs_root)
-    parts = relative_path.parts[:-1]
+    output_file = output_file_path
+    logging.info(f"Scanning docs directory: {CYAN}{docs_dir}{RESET}")
 
-    path_components = {}
-    for i, part in enumerate(parts):
-        path_components[f"path{i + 1}"] = part
+    entries = process_markdown_files(docs_dir)
 
-    return path_components
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump(entries, f, indent=2, ensure_ascii=False)
+
+    logging.info(
+        f"{GREEN}Generated index with {len(entries)} entries: {output_file}{RESET}"
+    )
+    return output_file
 
 
 def process_markdown_files(docs_dir: str) -> List[Dict]:
     """Process all markdown files in docs directory and extract front-matter.
 
+    Args:
+        docs_dir: The directory containing markdown files to scan.
+
+    Continues if there are errors in the markdown files.
+
     Returns:
-        List of dictionaries containing extracted front-matter and metadata.
+        List of dictionaries containing extracted front-matter and the body text.
 
     Raises:
-        ValueError: If docs directory doesn't exist or validation errors found.
+        ValueError: If directory doesn't exist.
     """
     if not os.path.exists(docs_dir):
         raise ValueError(f"Directory {docs_dir} does not exist")
@@ -83,7 +97,7 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
             {
                 field: value
                 for field, value in frontmatter.items()
-                if field not in ["title"] and value is not None
+                if field != "title" and value is not None
             }
         )
 
@@ -92,30 +106,17 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
 
     return entries
 
-
-def generate_index(docs_dir: str, output_file_path: str) -> str:
-    """Generate index.json file from docs directory.
-
-    Args:
-        docs_dir: The directory containing markdown files to scan.
-        output_file_path: Path where to write the index.json file.
+def generate_path_components(file_path: Path, docs_root: Path) -> Dict[str, str]:
+    """Generate path components for a file relative to docs root.
 
     Returns:
-        Path to the generated index.json file.
+        Dictionary with path1, path2, etc. keys for directory components.
     """
-    output_file = output_file_path
-    logging.info(f"Scanning docs directory: {CYAN}{docs_dir}{RESET}")
+    relative_path = file_path.relative_to(docs_root)
+    parts = relative_path.parts[:-1]
 
-    entries = process_markdown_files(docs_dir)
-    entries.sort(
-        key=lambda x: (x.get("path1", ""), x.get("path2", ""), x.get("title", ""))
-    )
+    path_components = {}
+    for i, part in enumerate(parts):
+        path_components[f"path{i + 1}"] = part
 
-    os.makedirs(os.path.dirname(output_file), exist_ok=True)
-    with open(output_file, "w", encoding="utf-8") as f:
-        json.dump(entries, f, indent=2, ensure_ascii=False)
-
-    logging.info(
-        f"{GREEN}Generated index with {len(entries)} entries: {output_file}{RESET}"
-    )
-    return output_file
+    return path_components
