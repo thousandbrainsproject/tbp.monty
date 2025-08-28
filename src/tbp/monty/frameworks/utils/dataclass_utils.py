@@ -247,7 +247,7 @@ def is_dataclass_instance(obj: Any) -> bool:
     Returns:
         True if obj is an instance of a dataclass, False otherwise.
     """
-    return hasattr(type(obj), _DATACLASS_FIELDS)
+    return dataclasses.is_dataclass(obj) and not isinstance(obj, type)
 
 
 def get_subset_of_args(arguments, function):
