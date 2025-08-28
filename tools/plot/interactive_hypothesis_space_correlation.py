@@ -1454,7 +1454,8 @@ class HypothesisMeshWidgetOps:
             f"Object: {hypothesis['graph_id']}\n"
             + f"Age: {hypothesis['age']}\n"
             + f"Evidence: {hypothesis['Evidence']:.2f}\n"
-            + f"Evidence Slope: {hypothesis['Evidence Slope']:.2f}"
+            + f"Evidence Slope: {hypothesis['Evidence Slope']:.2f}\n"
+            + f"Pose Error: {hypothesis['Pose Error']:.2f}"
         )
         info_widget = Text2D(txt=info, pos="top-right")
         self.plotter.add(info_widget)
