@@ -381,7 +381,7 @@ class DefaultHypothesesDisplacer:
             # nodes where pc1==pc2 receive no cd evidence but twice the pn evidence
             # -> overall evidence can be in range [-1, 1]
             cd1_evidence = cd1_evidence * use_cd
-            pn_evidence[np.logical_not(use_cd)] * 2
+            pn_evidence[np.logical_not(use_cd)] *= 2
         # weight angle errors by feature weights
         # if sensed pc1==pc2 cd1_weight==0 and overall evidence is in [-0.5, 0.5]
         # otherwise it is in [-1, 1].
