@@ -33,12 +33,11 @@ class TestGenerateIndex(unittest.TestCase):
         """Helper method to create markdown files with front matter.
 
         Args:
-            frontmatter_fields: The frontmatter fields (without --- delimiters)
-            filename: Name of the markdown file
             subdir: Subdirectory path relative to temp_dir
+            frontmatter_fields: Additional frontmatter fields (without --- delimiters)
 
         Returns:
-            Path to the created file
+            Path to the created file named 'test-doc.md'
         """
         subdir_path = Path(self.temp_dir) / subdir
         subdir_path.mkdir(parents=True, exist_ok=True)
