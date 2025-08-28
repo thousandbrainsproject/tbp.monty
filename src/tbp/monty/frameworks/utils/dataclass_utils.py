@@ -175,7 +175,7 @@ def config_to_dict(config: DataclassInstance | Dict[str, Any]) -> Dict[str, Any]
     Raises:
         TypeError: If the object is not a dict or dataclass instance
     """
-    if isinstance(config, dict) or is_dataclass_instance(config):
+    if is_config_like(config):
         return _config_to_dict_inner(config)
     else:
         msg = f"Expecting dict or dataclass instance but got {type(config)}"
