@@ -352,9 +352,9 @@ class ConfigToDictTest(unittest.TestCase):
             },
         )
 
-    # -------------------------------------------------------------------------
-    # - Basic (not-nested)
-    # -------------------------------------------------------------------------
+
+class ConfigToDictBasicTest(unittest.TestCase):
+    """Tests config_to_dict non-nested data."""
 
     def test_with_basic_attr(self):
         dict_config = {"name": 0, "value": "a basic attribute"}
@@ -418,9 +418,9 @@ class ConfigToDictTest(unittest.TestCase):
         self.assertDictEqual(dataclass_result, expected)
         self.assertIsInstance(dataclass_result["value"], FakeNamedTuple)
 
-    # -------------------------------------------------------------------------
-    # - Nested
-    # -------------------------------------------------------------------------
+
+class ConfigToDictNestedTest(unittest.TestCase):
+    """Tests config_to_dict nested data."""
 
     def test_with_nested_attr(self):
         obj_0 = FakeDataclass(name=0)
