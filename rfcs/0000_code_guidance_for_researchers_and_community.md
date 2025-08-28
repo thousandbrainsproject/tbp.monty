@@ -32,7 +32,7 @@ When creating the fork, the owner should be set to the `thousandbrainsproject` o
 
 <img src="0000_code_guidance_for_researchers_and_community/create_new_RP_fork.png" alt="Create New Research Prototype Fork" width="500">
 
-Give your fork a name like `feat.description_of_prototype`:
+Give your fork a name like `feat.description_of_prototype` (for other examples of prefixes we use, see [RFC 10 - Conventional Commits](0010_conventional_commits.md); most RPs would best be described as `feat` or `perf` changes):
 
 <img src="0000_code_guidance_for_researchers_and_community/RP_fork_name.png" alt="Naming your Fork" width="500">
 
@@ -48,7 +48,8 @@ If your RP is related to a particular [RFC](https://thousandbrainsproject.readme
 - When you open a PR into your fork's `main` branch, it is generally recommended that you tag at least one other TBP researcher for review.
     - The aim is that RP work should be regularly reviewed and discussed with other researchers; getting reviews early, particularly for complex or conceptually important changes, reduces the chance that significant effort will be spent on a change that might be in a suboptimal direction.
     - However, researchers should use their own judgement to weigh the benefits of reviews on every atomic change against the benefit of quick iteration and experimentation.
-- During your work, ensure you regularly update your fork and its branches with any upstream changes to `thousandbrainsproject/tbp.monty`. This will reduce the chance that a longer RP-project is associated with significant merge conflicts when you later wish to merge it into the primary Monty code-base.
+- During your work, it is recommended that you regularly update your fork and its branches with any upstream changes to `thousandbrainsproject/tbp.monty`. This will reduce the chance that a longer RP-project is associated with significant merge conflicts when you later wish to merge it into the primary Monty code-base.
+    - NOTE: if pulling from upstream ever introduces breaking changes, then rather than try to resolve them at that time, the recommendation is to revert to the pre-merge commit. Any breaking merge conflicts can then be dealt with later during the IP. Recall however that regularly pulling from upstream can often avoid getting into this situation, as it is less likely that you end up working on a piece of code at the same time as someone else.
 - When a research prototype has been fully implemented and its merits established through evaluations and visualizations, the `main` branch is ready to form the basis of an Implementation Project.
 - The Implementation Project (IP) involves any necessary refactoring of the Research Prototype to ensure it adheres to the [guidelines of the platform](https://thousandbrainsproject.readme.io/docs/code-style-guide) before merging into `tbp.monty`. For more information, see [the description of the IP process in RFC 14 Conducting Research While Building a Stable Platform](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0014_conducting_research_while_building_a_stable_platform.md#implementation-project).
 - As a brief summary of the IP process, please see the below extract:
@@ -63,7 +64,7 @@ The workflow is shown in the below diagram:
 
 <img src="0000_code_guidance_for_researchers_and_community/main_workflow.png" alt="Workflow with a Feature Fork" width="450">
 
-Green arrows indicate pulling from upstream, blue arrows indicate PRs. Above the blue arrows, a suggestion is provided for whether a researcher or engineer would more suitable to review the PR. If you are contributing as a non-Maintainer, it will be the responsibility of the Maintainer you tag to determine who is most suitable to review the PR.
+Green arrows indicate pulling from upstream, blue arrows indicate PRs. Above the blue arrows, a suggestion is provided for whether a researcher or engineer would more suitable to review the PR. If you are contributing as a non-Maintainer, it will be the responsibility of the Maintainer you tag to determine who is most suitable to review the PR. NOTE that when implementing the IP, a researcher will pair with an engineer (i.e. it is not solely the responsibility of engineers to handle the IP process from start to finish).
 
 Below shows the potential follow-up workflow. In the example shown, the first RP (RP "A") did not demonstrate significant benefit, and the fork is archived without ever going through the IP process. A new fork is made to work on a new RP / feature.
 
