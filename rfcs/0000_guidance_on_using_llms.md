@@ -47,7 +47,7 @@ The high-level guidance based on the above is:
 Below we provide further guidance on some edge cases.
 
 #### Work on Research Prototypes
-- [Research Prototypes](https://github.com/nielsleadholm/tbp.monty/blob/978b15653a4c08bb21e28752a2ea9e01a3da906b/rfcs/0000_code_guidance_for_researchers_and_community.md) are separate forks of `thousandbrainsproject/tbp.monty` intended to rapidly evaluate the merits of a particular research idea. As they are not part of the core Monty platform, the legal concerns described above are less relevant, however the code-quality issues remain.
+- [Research Prototypes](https://github.com/thousandbrainsproject/tbp.monty/blob/2ed5607ec45bb23bba449373b36628030cf4d1b4/rfcs/0000_code_guidance_for_researchers_and_community.md) are separate forks of `thousandbrainsproject/tbp.monty` intended to rapidly evaluate the merits of a particular research idea. As they are not part of the core Monty platform, the legal concerns described above are less relevant, however the code-quality issues remain.
 - If you do end up integrating significant portions of LLM code into a Research Prototype PR, we ask that you clearly label this code as such. That way, if the RP is deemed significant enough to integrate into `thousandbrainsproject/tbp.monty`, any legal issues can be addressed at this time. However, this may delay the [Implementation Project process](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0014_conducting_research_while_building_a_stable_platform.md#implementation-project), and so it is again suggested that you minimize using significant portions of code written by LLMs.
 
 #### Agentic LLMs 
@@ -62,5 +62,5 @@ Below we provide further guidance on some edge cases.
 - If you would like to quote or refer to a conversation you have had with an LLM, please just indicate this clearly.
 - See the advice under [Writing RFCs](#writing-rfcs) for suggestions about when LLMs can be useful "tutors" when exploring a topic.
 
-## Assistive Technology
-- Please note that the above guidance does not apply to assistive technology such as grammar checkers, which we understand you might find helpful in copy-editing text in RFCs and forum posts. If you need to use a more advanced AI tool for a specific reason, we ask that you reach out to us directly to discuss this beforehand.
+## Productivity Tools
+- Please note that the above guidance does not apply to productivity tools such as grammar checkers, which we understand you might find helpful in copy-editing text in RFCs and forum posts. If you need to use a more advanced AI tool for a specific reason (speech-to-text, etc.), we simply ask that you keep the concerns in this RFC in mind.
