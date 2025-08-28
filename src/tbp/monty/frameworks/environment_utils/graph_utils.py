@@ -21,5 +21,5 @@ def get_edge_index(graph, previous_node, new_node):
         edge ID between the two nodes
     """
     mask = (graph.edge_index[0] == previous_node) & (graph.edge_index[1] == new_node)
-    edge_ids = mask.nonzero(as_tuple=False).view(-1)
+    edge_ids = mask.nonzero().view(-1)
     return edge_ids[0].item() if len(edge_ids) > 0 else None
