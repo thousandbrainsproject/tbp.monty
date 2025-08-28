@@ -79,6 +79,37 @@ class TestGenerateIndex(unittest.TestCase):
         self.assertEqual(entry["path2"], "subcategory")
         self.assertEqual(entry["path3"], "subsubcategory")
 
+    def test_generate_index_invalid_parameters(self):
+        """Test various invalid parameter combinations."""
+        test_cases = [
+            ("None docs_dir", None, "valid_output.json", TypeError),
+            ("empty docs_dir", "", "valid_output.json", ValueError),
+            ("None output_file", "valid_dir", None, TypeError),
+            ("empty output_file", "valid_dir", "", (ValueError, OSError)),
+        ]
+
+        for case_name, docs_dir, output_file_path, expected_exception in test_cases:
+            with self.subTest(case=case_name):
+                actual_docs_dir = docs_dir
+                actual_output_file = output_file_path
+
+                if docs_dir == "valid_dir":
+                    actual_docs_dir = self.temp_dir
+                if output_file_path == "valid_output.json":
+                    actual_output_file = os.path.join(self.temp_dir, "index.json")
+
+                with self.assertRaises(expected_exception):
+                    generate_index(actual_docs_dir, actual_output_file)
+
+    def test_generate_index_nonexistent_docs_folder(self):
+        nonexistent_dir = os.path.join(self.temp_dir, "nonexistent")
+        output_file_path = os.path.join(self.temp_dir, "index.json")
+
+        with self.assertRaises(ValueError) as context:
+            generate_index(nonexistent_dir, output_file_path)
+
+        self.assertIn("does not exist", str(context.exception))
+
 
 if __name__ == "__main__":
     unittest.main()
