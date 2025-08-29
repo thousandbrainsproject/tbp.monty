@@ -176,26 +176,28 @@ The Monty documentation uses the first two parts of semantic versioning (semver)
 
 The future work documents have special Frontmatter metadata that is used to power the future-work widget.  The following fields are validated against allow lists defined in snippet files to ensure consistency and quality.
 
-### Tags
+### Tags [edit](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-tags.md)
 
 !snippet[../snippets/future-work-tags.md]
 
-### Skills
+### Skills [edit](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-skills.md)
 
 !snippet[../snippets/future-work-skills.md]
 
-### Estimated Scope
+### Estimated Scope [edit](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-estimated-scope.md)
 
 !snippet[../snippets/future-work-estimated-scope.md]
 
-### Status
+### Status [edit](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-status.md)
 
 !snippet[../snippets/future-work-status.md]
 
-### RFC
+### RFC [edit](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-rfc.md)
 
 !snippet[../snippets/future-work-rfc.md]
 
 ### Owner
 
 The owner field should be GitHub usernames, as these are converted to their avatar inside the table.
+
+!snippet[../snippets/future-work-owner.md]
