@@ -1,7 +1,5 @@
 ---
 title: Use Pose for Voting
-rfc: optional
-estimated-scope: unknown
 ---
 
 Currently we do not send out pose hypotheses when we are voting, however we believe it will be an important signal to use. One complication is that the poses stored for any given LM's object models are arbitrary with respect to other LM's models, as each uses an object-centric coordinate system.

@@ -1,7 +1,5 @@
 ---
 title: Implement & Test GNNs to Model Object Behaviors & States
-rfc: optional
-estimated-scope: unknown
 ---
 
 We would like to test using local functions between nodes of an LM's graph to model object behaviors. In particular, we would like to model how an object evolves over time due to external and internal influences, by learning how nodes within the object impact one-another based on these factors. This relates to graph-neural networks, and [graph networks more generally](https://arxiv.org/pdf/1806.01261), however learning should rely on sensory and motor information local to the LM. Ideally learned relations will generalize across different edges, e.g. the understanding that two nodes are connected by a rigid edge vs. a spring.

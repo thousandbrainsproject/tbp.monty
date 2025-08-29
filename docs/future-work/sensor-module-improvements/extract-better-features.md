@@ -1,7 +1,5 @@
 ---
 title: Extract Better Features
-rfc: optional
-estimated-scope: unknown
 ---
 
 Currently non-morphological features are very simple, such as extracting the RGB or hue value at the center of the sensor patch.

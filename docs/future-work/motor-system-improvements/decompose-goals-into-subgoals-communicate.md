@@ -1,7 +1,5 @@
 ---
 title: Decompose Goals into Subgoals & Communicate
-rfc: optional
-estimated-scope: unknown
 ---
 
 This will be most relevant when we begin implementing policies that change the state of the world, rather than just those that support efficient sensing and inference.

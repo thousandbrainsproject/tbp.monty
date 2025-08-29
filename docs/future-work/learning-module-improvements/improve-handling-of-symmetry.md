@@ -1,7 +1,5 @@
 ---
 title: Improve Handling of Symmetry
-rfc: optional
-estimated-scope: unknown
 ---
 
 LMs currently recognize symmetry by making multiple observations in a row that are all consistent with a set of multiple poses. I.e. if new observations of an object do not eliminate any of a set of poses, then it is likely that these poses are equivalent/symmetric.

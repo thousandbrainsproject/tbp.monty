@@ -1,7 +1,5 @@
 ---
 title: Implement Efficient Saccades Driven by Model-Free and Model-Based Signals
-rfc: optional
-estimated-scope: unknown
 ---
 
 Currently the main way that the distant agent moves is by performing small, random, saccade-like movements. In addition, the entire agent can teleport to a received goal-state in order to e.g. test a hypothesis. We would like to implement the ability to perform larger saccades that are driven by both model-free and model-based signals, depending on the situation.

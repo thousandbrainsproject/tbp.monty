@@ -1,7 +1,5 @@
 ---
 title: Re-Anchor Hypotheses for Robustness to Noise and Distortions
-rfc: optional
-estimated-scope: unknown
 ---
 
 One aspect that we believe may contribute to dealing with object distortions, such as perceiving Dali's melted clocks for the first time, or being robust to the way a logo follows the surface of a mug, is through re-anchoring of hypotheses. More concretely, as the system moves over the object and path-integrates, the estimate of where the sensor is in space might lend greater weight to sensory landmarks, resulting in a re-assessment of the current location. Such re-anchoring is required even without distortions, due to the fact that path integration in the real world is imperfect.
