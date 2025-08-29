@@ -14,14 +14,11 @@ import datetime
 import logging
 import os
 import pprint
-from typing import TYPE_CHECKING, Any, Dict, Literal
+from typing import Any, Dict, Literal
 
 import numpy as np
 import torch
 from typing_extensions import Self
-
-if TYPE_CHECKING:
-    from _typeshed import DataclassInstance
 
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentDataLoader,
@@ -42,6 +39,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.dataclass_utils import (
+    Dataclass,
     config_to_dict,
     get_subset_of_args,
 )
@@ -58,7 +56,7 @@ class MontyExperiment:
     the outermost loops for training and evaluating (including run epoch and episode)
     """
 
-    def __init__(self, config: DataclassInstance | Dict[str, Any]) -> None:
+    def __init__(self, config: Dataclass | Dict[str, Any]) -> None:
         """Initialize the experiment based on the provided configuration.
 
         Args:
