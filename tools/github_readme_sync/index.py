@@ -90,7 +90,7 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
             "title": frontmatter.get("title", ""),
             "slug": slugify(md_file.stem),
             "path": f"{folder_name}/{relative_path}",
-            "text": body_content,
+            "text": body_content.strip(),
         }
 
         entry.update(
