@@ -18,7 +18,7 @@ The below sections provide descriptions of concerning attributes associated with
 ## Writing RFCs
 
 We suggest that all RFCs are written by you, and that you try to avoid using Large Language Models (LLMs) like ChatGPT in the writing process. Some of our motivations for this are:
-- We want to get a clear understanding of your solution, and we have found that LLMs give poor, if approximately correct, RFC proposals. This is particularly the case because the work of the TBP falls very much in the "out of training distribution" domain.
+- We want to get a clear understanding of your solution, and we have found that LLMs give poor, if approximately correct, RFC proposals. The approximate correctness makes it more difficult to spot logical inconsistencies, and the additional verbosity makes them time-consuming to review. Logical inconsistencies are particularly common because the work of the TBP falls very much in the "out of training distribution" domain.
 - When we review RFCs written by LLMs, it often ends up taking more time both for us, and for you, so it is much better if you write them yourself.
 
 Note that it is perfectly acceptable to discuss ideas with an LLM when formulating your own thoughts. For example, there may be a concept in neuroscience or computer vision that you would like to understand better, and LLM conversations can be a useful starting point. However, we recommend that you always be wary of hallucinations in LLM outputs; due to their frequent occurrence, LLMs are better used as an initial - but not final - provider of information on a topic.
