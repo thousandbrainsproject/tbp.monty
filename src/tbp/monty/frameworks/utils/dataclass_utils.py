@@ -9,6 +9,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import copy
 import dataclasses
 import importlib
 from inspect import Parameter, signature
@@ -162,19 +163,60 @@ def config_to_dict(config: DataclassInstance | Dict[str, Any]) -> Dict[str, Any]
     We want to convert configs composed of mixed dataclass and dict elements to
     pure dicts without dataclasses for backward compatibility.
 
-    TODO: Remove once all other configs are converted to dict only
+    Like `dataclasses.asdict` (and `dataclasses._asdict_inner`), objects that
+    are not or do not contain dataclass instances are deep-copied and returned.
 
     Args:
-        config: Config to convert to dict.
+        config: dict or dataclass instance to convert to dict.
 
     Returns:
         Pure dict version of config.
+
+    Raises:
+        TypeError: If the object is not a dict or dataclass instance
     """
-    return (
-        {k: config_to_dict(v) if is_config_like(v) else v for k, v in config.items()}
-        if isinstance(config, dict)
-        else dataclasses.asdict(config)
-    )
+    if is_config_like(config):
+        return _config_to_dict_inner(config)
+    else:
+        msg = f"Expecting dict or dataclass instance but got {type(config)}"
+        raise TypeError(msg)
+
+
+def _config_to_dict_inner(obj: Any) -> Any:
+    """Recursively convert any dataclass instances to dictionaries.
+
+    This function is used to convert dataclass instances to dictionaries, including
+    any dataclass instances nested within dictionaries, lists, tuples
+    (including namedtuples), and dataclass fields. It replicates
+    `dataclasses._asdict_inner`. It is reimplemented here
+    since `dataclasses._asdict_inner` is not public.
+
+    Args:
+        obj: Any object that may be a dataclass instance or contain one.
+
+    Returns:
+        Like `obj` but with any dataclass instances converted to dictionaries.
+    """
+    if is_dataclass_instance(obj):
+        result = []
+        for f in dataclasses.fields(obj):
+            value = _config_to_dict_inner(getattr(obj, f.name))
+            result.append((f.name, value))
+        return dict(result)
+    elif isinstance(obj, tuple) and hasattr(obj, "_fields"):
+        # obj is a namedtuple.
+        return type(obj)(*[_config_to_dict_inner(v) for v in obj])
+    elif isinstance(obj, (list, tuple)):
+        # Assume we can create an object of this type by passing in a
+        # generator (which is not true for namedtuples, handled
+        # above).
+        return type(obj)(_config_to_dict_inner(v) for v in obj)
+    elif isinstance(obj, dict):
+        return type(obj)(
+            (_config_to_dict_inner(k), _config_to_dict_inner(v)) for k, v in obj.items()
+        )
+    else:
+        return copy.deepcopy(obj)
 
 
 def is_config_like(obj: Any) -> TypeIs[DataclassInstance | Dict[str, Any]]:
@@ -186,9 +228,22 @@ def is_config_like(obj: Any) -> TypeIs[DataclassInstance | Dict[str, Any]]:
     Returns:
         True if config is a dataclass or dict, False otherwise.
     """
-    if isinstance(obj, type):
-        return False
-    return isinstance(obj, dict) or dataclasses.is_dataclass(obj)
+    return isinstance(obj, dict) or is_dataclass_instance(obj)
+
+
+def is_dataclass_instance(obj: Any) -> bool:
+    """Returns True if obj is an instance of a dataclass.
+
+    This function replicates `dataclasses._is_dataclass_instance`.  It is
+    reimplemented here since `dataclasses._is_dataclass_instance` is not public.
+
+    Args:
+        obj: The object to check.
+
+    Returns:
+        True if obj is an instance of a dataclass, False otherwise.
+    """
+    return dataclasses.is_dataclass(obj) and not isinstance(obj, type)
 
 
 def get_subset_of_args(arguments, function):
