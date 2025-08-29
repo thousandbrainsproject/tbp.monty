@@ -184,11 +184,13 @@ The future work documents have special Frontmatter metadata that is used to powe
 
 !snippet[../snippets/future-work-skills.md]
 
-### Estimated Scope [edit](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-estimated-scope.md)
+### Estimated Scope 
 
 !snippet[../snippets/future-work-estimated-scope.md]
+[edit](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-estimated-scope.md)
 
-### Status [edit](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-status.md)
+### Status 
+[edit](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-status.md)
 
 !snippet[../snippets/future-work-status.md]
 
