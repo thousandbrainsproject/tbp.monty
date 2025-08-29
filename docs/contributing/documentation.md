@@ -151,6 +151,9 @@ To check the links, [activate the conda environment](../how-to-use-monty/getting
 python -m tools.github_readme_sync.cli check docs
 ```
 
+> [!NOTE] 
+> See the [readme sync tool documentation](https://github.com/thousandbrainsproject/tbp.monty/blob/main/tools/github_readme_sync/README.md) for more details on how to use it and how to install the additional dependencies for it.
+
 # Images
 
 See the [Style Guide](style-guide.md#images) images section for details about creating and referencing images correctly.

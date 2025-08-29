@@ -1,11 +1,12 @@
 ---
 title: Monty
 ---
-**The Monty class contains everything an agent needs to model and interact with the environment.** It contains (1) sensorimotor learning systems (also called [learning modules](learning-module.md)), (2) communication between sensorimotor modules (see [here](../overview/architecture-overview/cortical-messaging-protocol.md)) , and (3) motor system for taking action (see [here](policy.md)).
+**The Monty class contains everything an agent needs to model and interact with the environment.** It contains (1) [sensor modules](observations-transforms-sensor-modules.md) (2) sensorimotor learning systems (also called [learning modules](learning-module.md)), and (3) a motor system for taking action (see [here](policy.md)). The Monty class manages the communication between these components using the cortical messaging protocol (see [here](../overview/architecture-overview/cortical-messaging-protocol.md))
 
 A Monty instance can be arbitrarily customized as long as it implements a handful of types of abstract methods listed below.
 
-It contains:
+# What the Monty Class Does
+A Monty class should have:
 
 - **Step and Voting methods**, which define the modeling and action logic, and communications logic respectively
 
@@ -13,6 +14,7 @@ It contains:
 
 - Methods called at **event markers** like pre-episode and post-episode
 
+# Defining a Monty Instance
 Below are the arguments associated with the Monty classes.
 
 - a list of **SensorModule instances**, each of which is responsible for processing raw sensory input and transforming it into a canonical format that any LearningModule can operate on.
@@ -33,7 +35,7 @@ Using the above arguments we can specify the structure underlying our modeling s
 
 ![Example Monty class with five sensors, sensor modules, and learning modules as used in the FiveLMMontyConfig. Each sensor patch perceives a small part of the environment and sends it to its connected sensor module. The SM extracts features from the patch and a pose (location and rotation relative to the body). This is sent to the LM which models the input and outputs another feature (most likely object ID) and its pose (most likely rotation and location of the object). LMs have lateral connections between each other (dotted lines) to communicate possible poses and narrow down their hypotheses faster.](../figures/how-monty-works/five_lm_monty.png)
 
-
+# Monty Classes Currently Implemented
 | List of all Monty classes         | Description                                                                                                                                                                       |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Monty**                         | Abstract Monty class from which all others inherit. Defines step method framework and other communication elements like voting.                                                   |

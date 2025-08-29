@@ -30,7 +30,6 @@ import pandas as pd
 
 from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
 from tbp.monty.frameworks.config_utils.config_args import (
-    Dataclass,
     FiveLMMontyConfig,
     InformedPolicy,
     LoggingConfig,
@@ -55,6 +54,7 @@ from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphL
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
 from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.models.motor_system import MotorSystem
+from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 from tbp.monty.frameworks.utils.follow_up_configs import (
     create_eval_config_multiple_episodes,
     create_eval_episode_config,
