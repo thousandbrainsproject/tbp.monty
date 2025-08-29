@@ -61,7 +61,7 @@ const formatStatusColumn = (cell) => {
   if (owner) {
     const usernames = Array.isArray(owner) ? owner : owner.split(",").map(u => u.trim()).filter(Boolean);
     const avatars = usernames.map(username =>
-      `<img src="https://github.com/${encodeURIComponent(username)}.png" width="24" height="24" style="vertical-align:middle;border-radius:2px;margin-left:5px;" alt="${username}"/>`
+      `<img src="https://github.com/${encodeURIComponent(username)}.png" width="16" height="16" style="vertical-align:middle;border-radius:2px;margin-left:5px;" alt="${username}"/>`
     ).join(" ");
 
     if (status.toLowerCase() === "in-progress") {
