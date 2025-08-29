@@ -106,6 +106,7 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
 
     return entries
 
+
 def generate_path_components(file_path: Path, docs_root: Path) -> Dict[str, str]:
     """Generate path components for a file relative to docs root.
 
