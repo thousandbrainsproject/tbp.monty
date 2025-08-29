@@ -1,0 +1,2358 @@
+# Copyright 2025 Thousand Brains Project
+#
+# Copyright may exist in Contributors' modifications
+# and/or contributions to the work.
+#
+# Use of this source code is governed by the MIT
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+
+from __future__ import annotations
+
+import logging
+import sys
+from copy import deepcopy
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Callable, Iterable
+
+import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from pandas import DataFrame, Series
+from pubsub.core import Publisher
+from vedo import Button, Circle, Image, Mesh, Plotter, Slider2D, Text2D
+
+from tools.plot.interactive.data import (
+    DataLocator,
+    DataLocatorStep,
+    DataParser,
+    YCBMeshLoader,
+)
+from tools.plot.interactive.topics import TopicMessage, TopicSpec
+from tools.plot.interactive.utils import (
+    Bounds,
+    CoordinateMapper,
+    Location2D,
+    Location3D,
+    trace_hypothesis_backward,
+    trace_hypothesis_forward,
+)
+from tools.plot.interactive.widget_updaters import WidgetUpdater
+from tools.plot.interactive.widgets import (
+    VtkDebounceScheduler,
+    Widget,
+    extract_slider_state,
+    set_slider_state,
+)
+
+if TYPE_CHECKING:
+    import argparse
+
+
+logger = logging.getLogger(__name__)
+
+
+HUE_PALETTE = {
+    "Added": "#66c2a5",
+    "Removed": "#fc8d62",
+    "Maintained": "#8da0cb",
+    "Evidence": "#1f77b4",
+    "Slope": "#ff7f0e",
+}
+
+
+class EpisodeSliderWidgetOps:
+    """WidgetOps implementation for an Episode slider.
+
+    This class sets the slider's range based on the number of
+    available episodes and publishes changes as `TopicMessage` items
+    under the "episode_number" topic.
+
+    Attributes:
+        plotter: A `vedo.Plotter` object to add or remove the slider and render.
+        data_parser: A parser that extracts or queries information from the
+            json log file.
+        _add_kwargs: Default keyword arguments passed to `plotter.add_slider`.
+        _locators: Data accessors keyed by name. These instruct the DataParser
+            on how to retrieve the required information.
+    """
+
+    def __init__(self, plotter: Plotter, data_parser: DataParser) -> None:
+        self.plotter = plotter
+        self.data_parser = data_parser
+
+        self._add_kwargs = dict(
+            xmin=0, xmax=10, value=0, pos=[(0.1, 0.2), (0.7, 0.2)], title="Episode"
+        )
+
+        self._locators = self.create_locators()
+
+    def create_locators(self) -> dict[str, DataLocator]:
+        """Create and return data locators used by this widget.
+
+        Returns:
+            A dictionary containing the created locators.
+        """
+        locators = {}
+
+        locators["episode"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+            ],
+        )
+        return locators
+
+    def add(self, callback: Callable[[Slider2D, str], None]) -> Slider2D:
+        """Create the slider widget and set its range from the data.
+
+        The slider's `xmax` is set to the number of episodes.
+
+        Args:
+            callback: Function called with the arguments `(widget, event)` when
+                the slider changes in the UI.
+
+        Returns:
+            The created widget as returned by the plotter.
+        """
+        kwargs = deepcopy(self._add_kwargs)
+        locator = self._locators["episode"]
+        kwargs.update({"xmax": len(self.data_parser.query(locator)) - 1})
+        widget = self.plotter.add_slider(callback, **kwargs)
+        self.plotter.render()
+        return widget
+
+    def remove(self, widget: Slider2D) -> None:
+        """Remove the slider widget and re-render.
+
+        Args:
+            widget: The widget object.
+        """
+        self.plotter.remove(widget)
+        self.plotter.render()
+
+    def extract_state(self, widget: Slider2D) -> int:
+        """Read the current slider value from its VTK representation.
+
+        Args:
+            widget: The widget object.
+
+        Returns:
+            The current slider value rounded to the nearest integer.
+        """
+        return extract_slider_state(widget)
+
+    def set_state(self, widget: Slider2D, value: int) -> None:
+        """Set the slider's value.
+
+        Args:
+            widget: Slider widget object.
+            value: Desired episode index.
+        """
+        set_slider_state(widget, value)
+
+    def state_to_messages(self, state: int) -> Iterable[TopicMessage]:
+        """Convert the slider state to pubsub messages.
+
+        Args:
+            state: Selected episode index.
+
+        Returns:
+            A list with a single `TopicMessage` named `"episode_number"`.
+        """
+        messages = [TopicMessage(name="episode_number", value=state)]
+        return messages
+
+
+class StepSliderWidgetOps:
+    """WidgetOps implementation for a Step slider.
+
+    This class listens for the current episode selection and adjusts the step
+    slider range to match the number of steps in that episode. It publishes
+    changes as `TopicMessage` items under the "step_number" topic.
+
+    Attributes:
+        plotter: A `vedo.Plotter` object to add or remove the slider and render.
+        data_parser: A parser that extracts or queries information from the
+            JSON log file.
+        updaters: A list with a single `WidgetUpdater` that reacts to the
+            `"episode_number"` topic and calls `update_slider_range`.
+        _add_kwargs: Default keyword arguments passed to `plotter.add_slider`.
+        _locators: Data accessors keyed by name that instruct the `DataParser`
+            how to retrieve the required information.
+    """
+
+    def __init__(self, plotter: Plotter, data_parser: DataParser) -> None:
+        self.plotter = plotter
+        self.data_parser = data_parser
+        self.updaters = [
+            WidgetUpdater(
+                topics=[TopicSpec("episode_number", required=True)],
+                callback=self.update_slider_range,
+            )
+        ]
+
+        self._add_kwargs = dict(
+            xmin=0,
+            xmax=10,
+            value=0,
+            pos=[(0.1, 0.1), (0.7, 0.1)],
+            title="Step",
+        )
+        self._locators = self.create_locators()
+
+    def create_locators(self) -> dict[str, DataLocator]:
+        """Create and return data locators used by this widget.
+
+        Returns:
+            A dictionary containing the created locators.
+        """
+        locators = {}
+        locators["step"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+                DataLocatorStep.key(name="lm", value="LM_0"),
+                DataLocatorStep.key(
+                    name="telemetry", value="hypotheses_updater_telemetry"
+                ),
+                DataLocatorStep.index(name="step"),
+            ]
+        )
+        return locators
+
+    def add(self, callback: Callable) -> Slider2D:
+        """Create the slider widget.
+
+        Args:
+            callback: Function called with `(widget, event)` when the UI changes.
+
+        Returns:
+            The created `Slider2D` widget.
+        """
+        widget = self.plotter.add_slider(callback, **self._add_kwargs)
+        self.plotter.render()
+        return widget
+
+    def remove(self, widget: Slider2D) -> None:
+        """Remove the slider widget and re-render.
+
+        Args:
+            widget: The slider widget object.
+        """
+        self.plotter.remove(widget)
+        self.plotter.render()
+
+    def extract_state(self, widget: Slider2D) -> int:
+        """Read the current slider value.
+
+        Args:
+            widget: The slider widget.
+
+        Returns:
+            The current slider value rounded to the nearest integer.
+        """
+        return extract_slider_state(widget)
+
+    def set_state(self, widget: Slider2D, value: int) -> None:
+        """Set the slider's value.
+
+        Args:
+            widget: Slider widget object.
+            value: Desired step index.
+        """
+        set_slider_state(widget, value)
+
+    def state_to_messages(self, state: int) -> Iterable[TopicMessage]:
+        """Convert the slider state to pubsub messages.
+
+        Args:
+            state: Selected step index.
+
+        Returns:
+            A list with a single `TopicMessage` for the topic `"step_number"`.
+        """
+        messages = [TopicMessage(name="step_number", value=state)]
+        return messages
+
+    def update_slider_range(
+        self, widget: Slider2D, msgs: list[TopicMessage]
+    ) -> tuple[Slider2D, bool]:
+        """Adjust slider range based on the selected episode and reset to 0.
+
+        Looks up the `"episode_number"` message, queries the number of steps for
+        that episode, sets the slider range to `[0, num_steps - 1]`, resets the
+        value to 0, and re-renders.
+
+        Args:
+            widget: The slider widget to update.
+            msgs: Messages from the `WidgetUpdater`.
+
+        Returns:
+            A tuple `(widget, True)` indicating the updated widget and whether
+            a publish should occur.
+        """
+        msgs_dict = {msg.name: msg.value for msg in msgs}
+
+        # set widget range to the correct step number
+        widget.range = [
+            0,
+            len(
+                self.data_parser.query(
+                    self._locators["step"], episode=str(msgs_dict["episode_number"])
+                )
+            )
+            - 1,
+        ]
+
+        # set slider value back to zero
+        self.set_state(widget, 0)
+        self.plotter.render()
+
+        return widget, True
+
+
+class GtMeshWidgetOps:
+    """WidgetOps implementation for rendering the ground-truth target mesh.
+
+    This widget is display-only. It listens for `"episode_number"` updates,
+    loads the target object's YCB mesh, applies the episode-specific rotations,
+    scales and positions it, and adds it to the plotter. It does not publish
+    any messages.
+
+    Attributes:
+        plotter: A `vedo.Plotter` used to add and remove actors.
+        data_parser: A parser that extracts entries from the JSON log.
+        ycb_loader: Loader that returns a textured `vedo.Mesh` for a YCB object.
+        updaters: A single `WidgetUpdater` that reacts to `"episode_number"`.
+        _locators: Data accessors keyed by name for the parser.
+    """
+
+    def __init__(
+        self, plotter: Plotter, data_parser: DataParser, ycb_loader: YCBMeshLoader
+    ):
+        self.plotter = plotter
+        self.data_parser = data_parser
+        self.ycb_loader = ycb_loader
+        self.updaters = [
+            WidgetUpdater(
+                topics=[TopicSpec("episode_number", required=True)],
+                callback=self.update_mesh,
+            )
+        ]
+        self._locators = self.create_locators()
+
+    def create_locators(self) -> dict[str, DataLocator]:
+        """Create and return data locators used by this widget.
+
+        Returns:
+            A dictionary containing the created locators.
+        """
+        locators = {}
+        locators["target"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+                DataLocatorStep.key(name="lm", value="target"),
+            ]
+        )
+        return locators
+
+    def remove(self, widget: Mesh) -> None:
+        """Remove the mesh widget and re-render.
+
+        Args:
+            widget: The mesh widget to remove. If `None`, no action is taken.
+        """
+        if widget is not None:
+            self.plotter.remove(widget)
+            self.plotter.render()
+
+    def update_mesh(self, widget: Mesh, msgs: list[TopicMessage]) -> tuple[Mesh, bool]:
+        """Update the target mesh when the episode changes.
+
+        Removes any existing mesh, loads the episode's primary target object,
+        applies its Euler rotations, scales and positions it, then adds it to
+        the plotter.
+
+        Args:
+            widget: The currently displayed mesh, if any.
+            msgs: Messages received from the `WidgetUpdater`.
+
+        Returns:
+            A tuple `(mesh, False)`. The second value is `False` to indicate
+            that no publish should occur.
+        """
+        self.remove(widget)
+        msgs_dict = {msg.name: msg.value for msg in msgs}
+
+        locator = self._locators["target"]
+        target = self.data_parser.extract(
+            locator, episode=str(msgs_dict["episode_number"])
+        )
+        target_id = target["primary_target_object"]
+        target_rot = target["primary_target_rotation_euler"]
+        widget = self.ycb_loader.create_mesh(target_id).clone(deep=True)
+        widget.rotate_x(target_rot[0])
+        widget.rotate_y(target_rot[1])
+        widget.rotate_z(target_rot[2])
+        widget.scale(1500)
+        widget.pos(-300, 0, -500)
+
+        self.plotter.add(widget)
+        self.plotter.render()
+
+        return widget, False
+
+
+class PrimaryButtonWidgetOps:
+    """WidgetOps implementation for a primary-target button.
+
+    The button publishes a `"primary_button"` boolean message whenever it is
+    pressed.
+
+    Attributes:
+        plotter: A `vedo.Plotter` object used to add/remove actors and render.
+        _add_kwargs: Default keyword arguments passed to `plotter.add_button`.
+    """
+
+    def __init__(self, plotter: Plotter):
+        self.plotter = plotter
+
+        self._add_kwargs = dict(
+            pos=(0.85, 0.2),
+            states=["Primary Target"],
+            c="w",
+            bc="dg",
+            size=30,
+            font="Calco",
+            bold=True,
+        )
+
+    def add(self, callback: Callable) -> Button:
+        """Create the button widget and re-render.
+
+        Args:
+            callback: Function called with `(widget, event)` on UI interaction.
+
+        Returns:
+            The created `vedo.Button`.
+        """
+        widget = self.plotter.add_button(callback, **self._add_kwargs)
+        self.plotter.render()
+        return widget
+
+    def state_to_messages(self, state: str) -> Iterable[TopicMessage]:
+        """Convert the button state to pubsub messages.
+
+        Args:
+            state: Current button state.
+
+        Returns:
+            A list with a single `TopicMessage` with the topic "primary_button" .
+        """
+        messages = [
+            TopicMessage(name="primary_button", value=True),
+        ]
+        return messages
+
+
+class PrevButtonWidgetOps:
+    """WidgetOps implementation for a previous object button.
+
+    The button publishes a `"prev_button"` boolean message whenever it is
+    pressed.
+
+    Attributes:
+        plotter: A `vedo.Plotter` object used to add/remove actors and render.
+        _add_kwargs: Default keyword arguments passed to `plotter.add_button`.
+    """
+
+    def __init__(self, plotter: Plotter):
+        self.plotter = plotter
+
+        self._add_kwargs = dict(
+            pos=(0.83, 0.13),
+            states=["<"],
+            c=["w"],
+            bc=["dg"],
+            size=30,
+            font="Calco",
+            bold=True,
+        )
+
+    def add(self, callback: Callable) -> Button:
+        """Create the button widget and re-render.
+
+        Args:
+            callback: Function called with `(widget, event)` on UI interaction.
+
+        Returns:
+            The created `vedo.Button`.
+        """
+        widget = self.plotter.add_button(callback, **self._add_kwargs)
+        self.plotter.render()
+        return widget
+
+    def state_to_messages(self, state: str) -> Iterable[TopicMessage]:
+        """Convert the button state to pubsub messages.
+
+        Args:
+            state: Current button state.
+
+        Returns:
+            A list with a single `TopicMessage` with the topic `"prev_button"`.
+        """
+        messages = [
+            TopicMessage(name="prev_button", value=True),
+        ]
+        return messages
+
+
+class NextButtonWidgetOps:
+    """WidgetOps implementation for a next object button.
+
+    The button publishes a `"next_button"` boolean message whenever it is
+    pressed.
+
+    Attributes:
+        plotter: A `vedo.Plotter` object used to add/remove actors and render.
+        _add_kwargs: Default keyword arguments passed to `plotter.add_button`.
+    """
+
+    def __init__(self, plotter: Plotter):
+        self.plotter = plotter
+
+        self._add_kwargs = dict(
+            pos=(0.88, 0.13),
+            states=[">"],
+            c=["w"],
+            bc=["dg"],
+            size=30,
+            font="Calco",
+            bold=True,
+        )
+
+    def add(self, callback: Callable) -> Button:
+        """Create the button widget and re-render.
+
+        Args:
+            callback: Function called with `(widget, event)` on UI interaction.
+
+        Returns:
+            The created `vedo.Button`.
+        """
+        widget = self.plotter.add_button(callback, **self._add_kwargs)
+        self.plotter.render()
+        return widget
+
+    def state_to_messages(self, state: str) -> Iterable[TopicMessage]:
+        """Convert the button state to pubsub messages.
+
+        Args:
+            state: Current button state.
+
+        Returns:
+            A list with a single `TopicMessage` with the topic `"next_button"`.
+        """
+        return [TopicMessage(name="next_button", value=True)]
+
+
+class AgeThresholdWidgetOps:
+    """WidgetOps implementation for an age-threshold slider.
+
+    Publishes `"age_threshold"` with the current integer value whenever the
+    slider changes.
+
+    Attributes:
+        plotter: A `vedo.Plotter` used to add/remove the slider and render.
+        _add_kwargs: Default keyword arguments passed to `plotter.add_slider`.
+    """
+
+    def __init__(self, plotter: Plotter) -> None:
+        self.plotter = plotter
+
+        self._add_kwargs = dict(
+            xmin=0,
+            xmax=10,
+            value=0,
+            pos=[(0.05, 0.01), (0.05, 0.3)],
+            title="Age",
+        )
+
+    def add(self, callback: Callable) -> Slider2D:
+        """Create the slider widget and re-render.
+
+        Args:
+            callback: Function called with `(widget, event)` when the UI changes.
+
+        Returns:
+            The created `Slider2D` widget.
+        """
+        widget = self.plotter.add_slider(callback, **self._add_kwargs)
+        self.plotter.render()
+        return widget
+
+    def set_state(self, widget: Slider2D, value: int) -> None:
+        """Set the slider value.
+
+        Args:
+            widget: The slider widget.
+            value: Desired threshold (integer).
+        """
+        set_slider_state(widget, value)
+
+    def extract_state(self, widget: Slider2D) -> int:
+        """Read the current slider value.
+
+        Args:
+            widget: The slider widget.
+
+        Returns:
+            The current value as an integer.
+        """
+        return extract_slider_state(widget)
+
+    def state_to_messages(self, state: int) -> Iterable[TopicMessage]:
+        """Convert the slider state to pubsub messages.
+
+        Args:
+            state: Current threshold value.
+
+        Returns:
+            A list with a single `TopicMessage` named `"age_threshold"`.
+        """
+        return [TopicMessage(name="age_threshold", value=state)]
+
+
+class CurrentObjectWidgetOps:
+    """Tracks and publishes the currently selected object label.
+
+    This class has no visual widget of its own. It listens to:
+      - `"episode_number"` (and optionally `"primary_button"`) to jump selection
+        to the episode's primary target object.
+      - `"prev_button"` and `"next_button"` to step backward/forward within the
+        episode's object list.
+
+    It publishes the `"current_object"` topic with the selected `graph_id` label.
+
+    Attributes:
+        data_parser: Parser used to query objects and target info from logs.
+        updaters: Three `WidgetUpdater`s receiving the topics described above.
+        _locators: Data locators for the objects list and target info.
+        objects_list: Cached list of available object labels for the episode/step.
+        current_object_ix: Current index into `objects_list`, or None if unset.
+    """
+
+    def __init__(self, data_parser: DataParser) -> None:
+        self.data_parser = data_parser
+        self.updaters = [
+            WidgetUpdater(
+                topics=[
+                    TopicSpec("episode_number", required=True),
+                    TopicSpec("primary_button", required=False),
+                ],
+                callback=self.update_to_primary,
+            ),
+            WidgetUpdater(
+                topics=[
+                    TopicSpec("prev_button", required=True),
+                ],
+                callback=self.update_current_object,
+            ),
+            WidgetUpdater(
+                topics=[
+                    TopicSpec("next_button", required=True),
+                ],
+                callback=self.update_current_object,
+            ),
+        ]
+
+        self._locators = self.create_locators()
+        self.objects_list = self.add_object_list()
+        self.current_object_ix = None
+
+    def create_locators(self) -> dict[str, DataLocator]:
+        """Create and return data locators used by this class.
+
+        Two locators are defined:
+            - "objects_list": can be used to query the list of
+                objects available to the episode
+            - "target": can be used to extract the MLH
+
+        Returns:
+            Dictionary of data locators
+        """
+        locators = {}
+        locators["objects_list"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+                DataLocatorStep.key(name="lm", value="LM_0"),
+                DataLocatorStep.key(
+                    name="telemetry", value="hypotheses_updater_telemetry"
+                ),
+                DataLocatorStep.index(name="step"),
+                DataLocatorStep.key(name="objects"),
+            ]
+        )
+        locators["target"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+                DataLocatorStep.key(name="lm", value="target"),
+            ]
+        )
+
+        return locators
+
+    def add_object_list(self) -> list[str] | list[int]:
+        """Initialize internal state; no visual widget is created.
+
+        Preloads the objects list for episode 0, step 0 as a default.
+
+        Returns:
+            List of graph ids as the object list
+        """
+        obj_list_locator = self._locators["objects_list"]
+        objects_list = self.data_parser.query(
+            obj_list_locator,
+            episode="0",
+            step=0,
+        )
+        return objects_list
+
+    def state_to_messages(self, state: str) -> Iterable[TopicMessage]:
+        """Convert the current object to a pubsub message with topic `current_object`.
+
+        Returns:
+            List of topic messages to be published.
+
+        Raises:
+            RuntimeError: If there is no current selection or the objects list is empty.
+        """
+        if self.current_object_ix is None or not self.objects_list:
+            raise RuntimeError("No current object is selected or list is empty.")
+
+        obj = self.objects_list[self.current_object_ix]
+        return [TopicMessage(name="current_object", value=obj)]
+
+    def update_to_primary(
+        self, widget: None, msgs: list[TopicMessage]
+    ) -> tuple[None, bool]:
+        """Jump selection to the episode's primary target object.
+
+        Also refreshes `objects_list` for that episode at step 0.
+
+        Args:
+            widget: Unused (no visual widget).
+            msgs: Inbox containing `"episode_number"` and optionally `"primary_button"`.
+
+        Returns:
+            tuple of `(widget, True)` to publish the `current_object` state.
+        """
+        msgs_dict = {msg.name: msg.value for msg in msgs}
+        episode = msgs_dict["episode_number"]
+
+        # Refresh objects_list for the new episode at step 0
+        obj_list_locator = self._locators["objects_list"]
+        self.objects_list = list(
+            self.data_parser.query(obj_list_locator, episode=str(episode), step=0)
+        )
+
+        if not self.objects_list:
+            self.current_object_ix = None
+            return widget, False
+
+        target_locator = self._locators["target"]
+        current_object = self.data_parser.extract(
+            target_locator,
+            episode=str(episode),
+        )["primary_target_object"]
+
+        try:
+            self.current_object_ix = self.objects_list.index(current_object)
+        except ValueError:
+            # If the primary target is not in the list, fall back to the first item.
+            self.current_object_ix = 0
+
+        return widget, True
+
+    def update_current_object(
+        self, widget: None, msgs: list[TopicMessage]
+    ) -> tuple[None, bool]:
+        """Step backward or forward through `objects_list`.
+
+        Args:
+            widget: Returned as is. Value is `None` for this class with no visual
+                widget.
+            msgs: Single message with the topic "prev_button" or "next_button".
+
+        Returns:
+            `(widget, True)` if the selection changed, else `(widget, False)`.
+        """
+        if not self.objects_list:
+            return widget, False
+
+        # If object index not initialized, set to object 0
+        if self.current_object_ix is None:
+            self.current_object_ix = 0
+
+        # This callback listens to a single topic
+        if len(msgs) != 1:
+            return widget, False
+
+        # check topic name
+        topic_name = msgs[0].name
+        if topic_name == "prev_button":
+            self.current_object_ix -= 1
+        elif topic_name == "next_button":
+            self.current_object_ix += 1
+        else:
+            return widget, False
+
+        self.current_object_ix %= len(self.objects_list)
+        return widget, True
+
+
+class ClickWidgetOps:
+    """Captures 3D click positions and publish them on the bus.
+
+    This class registers plotter-level mouse callbacks. A left-click picks a 3D
+    point (if available) and triggers the widget callback; a right-click
+    resets the camera pose. There is no visual widget created by this class.
+
+    Attributes:
+        plotter: The `vedo.Plotter` where callbacks are installed.
+        cam_dict: Dictionary for camera default specs.
+        click_location: Last picked 3D location, if any.
+        _on_change_cb: The widget callback to invoke on left-click.
+    """
+
+    def __init__(self, plotter: Plotter, cam_dict: dict[str, Any]) -> None:
+        self.plotter = plotter
+        self.cam_dict = cam_dict
+        self.click_location: Location3D
+        self._on_change_cb: Callable
+
+    def add(self, callback: Callable) -> None:
+        """Register mouse callbacks on the plotter.
+
+        Note that this callback makes use of the `VtkDebounceScheduler`
+        to publish messages. Storing the callback and triggering it, will
+        simulate a UI change on e.g., a button or a slider, which schedules
+        a publish. We use this callback because this event is not triggered
+        by receiving topics from a `WidgetUpdater`.
+
+
+        Args:
+            callback: Function invoked like `(widget, event)` when a left-click
+                captures a 3D location.
+        """
+        self._on_change_cb = callback
+        self.plotter.add_callback("LeftButtonPress", self.on_right_click)
+        self.plotter.add_callback("RightButtonPress", self.on_left_click)
+
+    def extract_state(self, widget: None) -> Location3D:
+        """Return the last picked 3D location."""
+        return self.click_location
+
+    def state_to_messages(self, state: Location3D) -> Iterable[TopicMessage]:
+        """Convert the current click location to pubsub messages.
+
+        Publishes a single "click_location" message whose value is a Location3D with
+        "x,y,z" attributes.
+
+        Args:
+            state: The last picked 3D point.
+
+        Returns:
+            A list containing one `TopicMessage` with name "click_location".
+        """
+        messages = [
+            TopicMessage(name="click_location", value=state),
+        ]
+        return messages
+
+    def on_right_click(self, event) -> None:
+        """Handle left mouse press (picks a 3D point if available).
+
+        Notes:
+            Bound to the `LeftButtonPress` event in `self.add()`.
+        """
+        location = getattr(event, "picked3d", None)
+        if location is None or self._on_change_cb is None:
+            return
+
+        self.click_location = Location3D(*location)
+        self._on_change_cb(widget=None, _event=event)
+
+    def on_left_click(self, event):
+        """Handle right mouse press (reset camera pose and render).
+
+        Notes:
+            Bound to the "RightButtonPress" event in `self.add()`.
+        """
+        renderer = self.plotter.renderer
+        if renderer is not None:
+            cam = renderer.GetActiveCamera()
+            cam.SetPosition(self.cam_dict["pos"])
+            cam.SetFocalPoint(self.cam_dict["focal_point"])
+            cam.SetViewUp((0, 1, 0))
+            cam.SetClippingRange((0.01, 1000.01))
+            self.plotter.render()
+
+
+class CorrelationPlotWidgetOps:
+    """WidgetOps for a correlation scatter plot with selection highlighting.
+
+    Listens for episode, step, current object, and age threshold updates to
+    rebuild a seaborn joint plot. Also listens for a 3D click location to
+    select the nearest hypothesis in data space and highlight it on the plot.
+
+    Attributes:
+        plotter: The `vedo.Plotter` used to add and remove actors.
+        data_parser: Parser that extracts entries from the JSON log.
+        updaters: Two `WidgetUpdater`s, one for plot updates and one for selection.
+        df: The current pandas DataFrame for the correlation plot.
+        highlight_circle: The small circle placed over the selected point.
+        selected_hypothesis: The most recently selected row as a pandas Series.
+        info_widget: A `Text2D` widget with a brief summary of the hyp. space.
+        _locators: Data accessors used to query channels and updater stats.
+        _coordinate_mapper: Maps GUI pixel coordinates to data coordinates, and back.
+    """
+
+    def __init__(self, plotter: Plotter, data_parser: DataParser) -> None:
+        self.plotter = plotter
+        self.data_parser = data_parser
+        self.updaters = [
+            WidgetUpdater(
+                topics=[
+                    TopicSpec("episode_number", required=True),
+                    TopicSpec("step_number", required=True),
+                    TopicSpec("current_object", required=True),
+                    TopicSpec("age_threshold", required=True),
+                ],
+                callback=self.update_plot,
+            ),
+            WidgetUpdater(
+                topics=[
+                    TopicSpec("click_location", required=True),
+                ],
+                callback=self.update_selection,
+            ),
+        ]
+        self._locators = self.create_locators()
+        self._coordinate_mapper = CoordinateMapper(
+            gui=Bounds(74, 496, 64, 496),
+            data=Bounds(-2.0, 2.0, 0.0, 3.25),
+        )
+
+        self.df: DataFrame
+        self.selected_hypothesis: Series | None = None
+        self.highlight_circle: Circle | None = None
+        self.mlh_circle: Circle | None = None
+        self.info_widget: Text2D | None = None
+
+    def create_locators(self) -> dict[str, DataLocator]:
+        """Create and return data locators used by this widget.
+
+        Returns:
+            A dictionary with entries for `"channel"` and `"updater"`.
+        """
+        locators = {}
+        locators["channel"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+                DataLocatorStep.key(name="lm", value="LM_0"),
+                DataLocatorStep.key(
+                    name="telemetry", value="hypotheses_updater_telemetry"
+                ),
+                DataLocatorStep.index(name="step"),
+                DataLocatorStep.key(name="obj"),
+                DataLocatorStep.key(name="channel"),
+            ],
+        )
+        locators["updater"] = locators["channel"].extend(
+            steps=[
+                DataLocatorStep.key(name="stat", value="hypotheses_updater"),
+            ],
+        )
+        return locators
+
+    def state_to_messages(self, state: None) -> Iterable[TopicMessage]:
+        """Publish either the selected hypothesis row or a clear signal.
+
+        Notes:
+            - We do not use the widget state here, we instead store the
+                state in this class in `self.selected_hypothesis` as a pandas `Series`.
+                An alternative would be to define a `set_state` and `extract_state` to
+                store the state and retrieve it from the `Widget` class.
+            - The `Widget` state will always be `None` in this case. So make sure
+                `dedupe` is set to False, otherwise, messages will be not be published
+                because they would be considered duplicates.
+
+        Returns:
+            A single message:
+              - "selected_hypothesis" if a selection exists.
+              - "clear_selected_hypothesis" otherwise.
+        """
+        if self.selected_hypothesis is None:
+            return [TopicMessage("clear_selected_hypothesis", value=True)]
+        return [TopicMessage("selected_hypothesis", value=self.selected_hypothesis)]
+
+    def increment_step(self, episode: int, step: int) -> tuple[int, int]:
+        """Compute the next `(episode, step)` pair.
+
+        If this is the final step of the final episode, returns the same pair.
+
+        Args:
+            episode: Current episode index.
+            step: Current step index.
+
+        Returns:
+            A tuple `(next_episode, next_step)`.
+        """
+        last_episode = len(self.data_parser.query(self._locators["channel"])) - 1
+        last_step = (
+            len(self.data_parser.query(self._locators["channel"], episode=str(episode)))
+            - 1
+        )
+        if episode == last_episode and step == last_step:
+            return episode, step
+        if step < last_step:
+            return episode, step + 1
+        return episode + 1, 0
+
+    def generate_df(self, episode: int, step: int, graph_id: str) -> DataFrame:
+        """Build a DataFrame of hypotheses and their stats.
+
+        Rows are labeled as Added, Removed, or Maintained based on the hypotheses
+        updater stats.
+
+        Note that we retrieve the removed indices from the next step. At the current
+        step, we mark the existing hypotheses that will be removed in the next step,
+        as "Removed"
+
+        Args:
+            episode: Episode index.
+            step: Step index.
+            graph_id: Object identifier to select within the episode.
+
+        Returns:
+            A concatenated `DataFrame` (across input channels) with columns:
+            `["graph_id", "Evidence", "Evidence Slope", "Rot_x", "Rot_y", "Rot_z",
+              "Pose Error", "age", "kind", "input_channel"]`.
+        """
+        input_channels = self.data_parser.query(
+            self._locators["channel"],
+            episode=str(episode),
+            step=step,
+            obj=graph_id,
+        )
+
+        all_dfs: list[DataFrame] = []
+        for input_channel in input_channels:
+            channel_data = self.data_parser.extract(
+                self._locators["channel"],
+                episode=str(episode),
+                step=step,
+                obj=graph_id,
+                channel=input_channel,
+            )
+            updater_data = self.data_parser.extract(
+                self._locators["updater"],
+                episode=str(episode),
+                step=step,
+                obj=graph_id,
+                channel=input_channel,
+            )
+            inc_episode, inc_step = self.increment_step(episode, step)
+            inc_updater_data = self.data_parser.extract(
+                self._locators["updater"],
+                episode=str(inc_episode),
+                step=inc_step,
+                obj=graph_id,
+                channel=input_channel,
+            )
+
+            # Removed hypotheses
+            removed_ids = inc_updater_data.get("removed_ids", [])
+            if len(removed_ids) > 0:
+                df_removed = DataFrame(
+                    {
+                        "graph_id": graph_id,
+                        "Evidence": np.array(channel_data["evidence"])[removed_ids],
+                        "Evidence Slope": np.array(updater_data["evidence_slopes"])[
+                            removed_ids
+                        ],
+                        "Rot_x": np.array(channel_data["rotations"])[removed_ids][:, 0],
+                        "Rot_y": np.array(channel_data["rotations"])[removed_ids][:, 1],
+                        "Rot_z": np.array(channel_data["rotations"])[removed_ids][:, 2],
+                        "Pose Error": np.array(channel_data["pose_errors"])[
+                            removed_ids
+                        ],
+                        "age": np.array(updater_data["ages"])[removed_ids],
+                        "kind": "Removed",
+                        "input_channel": input_channel,
+                    }
+                )
+                all_dfs.append(df_removed)
+
+            # Added hypotheses
+            added_ids = updater_data.get("added_ids", [])
+            added_ids = sorted(set(added_ids) - set(removed_ids))
+            if added_ids:
+                df_added = DataFrame(
+                    {
+                        "graph_id": graph_id,
+                        "Evidence": np.array(channel_data["evidence"])[added_ids],
+                        "Evidence Slope": np.array(updater_data["evidence_slopes"])[
+                            added_ids
+                        ],
+                        "Rot_x": np.array(channel_data["rotations"])[added_ids][:, 0],
+                        "Rot_y": np.array(channel_data["rotations"])[added_ids][:, 1],
+                        "Rot_z": np.array(channel_data["rotations"])[added_ids][:, 2],
+                        "Pose Error": np.array(channel_data["pose_errors"])[added_ids],
+                        "age": np.array(updater_data["ages"])[added_ids],
+                        "kind": "Added",
+                        "input_channel": input_channel,
+                    }
+                )
+                all_dfs.append(df_added)
+
+            # Maintained hypotheses
+            total_ids = list(range(len(updater_data["evidence_slopes"])))
+            maintained_ids = sorted(set(total_ids) - set(added_ids) - set(removed_ids))
+            if maintained_ids:
+                df_maintained = DataFrame(
+                    {
+                        "graph_id": graph_id,
+                        "Evidence": np.array(channel_data["evidence"])[maintained_ids],
+                        "Evidence Slope": np.array(updater_data["evidence_slopes"])[
+                            maintained_ids
+                        ],
+                        "Rot_x": np.array(channel_data["rotations"])[maintained_ids][
+                            :, 0
+                        ],
+                        "Rot_y": np.array(channel_data["rotations"])[maintained_ids][
+                            :, 1
+                        ],
+                        "Rot_z": np.array(channel_data["rotations"])[maintained_ids][
+                            :, 2
+                        ],
+                        "Pose Error": np.array(channel_data["pose_errors"])[
+                            maintained_ids
+                        ],
+                        "age": np.array(updater_data["ages"])[maintained_ids],
+                        "kind": "Maintained",
+                        "input_channel": input_channel,
+                    }
+                )
+                all_dfs.append(df_maintained)
+
+        return pd.concat(all_dfs, ignore_index=True)
+
+    def add_correlation_figure(self, x="Evidence Slope", y="Pose Error") -> Image:
+        """Create a seaborn joint scatter with marginal KDEs.
+
+        Args:
+            x: X column name. Defaults to "Evidence Slope".
+            y: Y column name. Defaults to "Pose Error".
+
+        Returns:
+            The Image widget for the correlation plot.
+        """
+        g = sns.JointGrid(data=self.df, x=x, y=y, height=6)
+
+        sns.scatterplot(
+            data=self.df,
+            x=x,
+            y=y,
+            hue="kind",
+            ax=g.ax_joint,
+            s=8,
+            alpha=0.8,
+            palette=HUE_PALETTE,
+        )
+
+        sns.kdeplot(
+            data=self.df,
+            x=x,
+            hue="kind",
+            ax=g.ax_marg_x,
+            fill=True,
+            alpha=0.2,
+            common_norm=False,
+            palette=HUE_PALETTE,
+            legend=False,
+        )
+
+        sns.kdeplot(
+            data=self.df,
+            y=y,
+            hue="kind",
+            ax=g.ax_marg_y,
+            fill=True,
+            alpha=0.2,
+            common_norm=False,
+            palette=HUE_PALETTE,
+            legend=False,
+        )
+
+        legend = g.ax_joint.get_legend()
+        if legend:
+            legend.set_title(None)
+
+        g.ax_joint.set_xlim(-2.0, 2.0)
+        g.ax_joint.set_ylim(0, 3.25)
+        g.ax_joint.set_xlabel(x, labelpad=10)
+        g.ax_joint.set_ylabel(y, labelpad=10)
+        g.figure.tight_layout()
+
+        widget = Image(g.figure)
+        plt.close(g.figure)
+        self.plotter.add(widget)
+        return widget
+
+    def get_closest_row(self, df: DataFrame, slope: float, error: float) -> Series:
+        """Return the row whose (Evidence Slope, Pose Error) is closest to a point.
+
+        Args:
+            df: Data to search.
+            slope: Target x value in data space.
+            error: Target y value in data space.
+
+        Returns:
+            The closest row as a pandas Series.
+
+        Raises:
+            ValueError: If `df` is empty.
+        """
+        if df.empty:
+            raise ValueError("DataFrame is empty.")
+
+        # Compute Euclidean distance
+        distances = np.sqrt(
+            (df["Evidence Slope"] - slope) ** 2 + (df["Pose Error"] - error) ** 2
+        )
+        return df.loc[distances.idxmin()]
+
+    def add_info_text(self) -> None:
+        """Summarize hypotheses statistics from a dataframe and add to plot."""
+        if self.info_widget is not None:
+            self.plotter.remove(self.info_widget)
+
+        if self.df.empty:
+            return
+
+        # Assume all rows share the same object name
+        graph_id = self.df["graph_id"].iloc[0]
+
+        # Count per kind
+        kind_counts = self.df["kind"].value_counts()
+
+        total = len(self.df)
+        added = kind_counts.get("Added", 0)
+        removed = kind_counts.get("Removed", 0)
+
+        text = (
+            f"Object: {graph_id}\n"
+            f"Total Existing Hypotheses: {total}\n"
+            f"Added Hypotheses: {added}\n"
+            f"To be removed Hypotheses: {removed}"
+        )
+
+        self.info_widget = Text2D(txt=text, pos="top-left")
+        self.plotter.add(self.info_widget)
+
+    def add_mlh_circle(self):
+        """Adds the circle marker for the MLH."""
+        if self.mlh_circle is not None:
+            self.plotter.remove(self.mlh_circle)
+
+        if self.df.empty:
+            return
+
+        (slope, error) = tuple(
+            self.df.loc[self.df["Evidence"].idxmax(), ["Evidence Slope", "Pose Error"]]
+        )
+
+        if pd.isna(slope):
+            return
+
+        # Map location back to a Location3D in GUI Space
+        gui_location = self._coordinate_mapper.map_data_coords_to_world(
+            Location2D(slope, error)
+        ).to_3d(z=0.05)
+
+        self.mlh_circle = Circle(pos=gui_location.to_numpy(), r=3.0, res=16)
+        self.mlh_circle.c("green")
+        self.plotter.add(self.mlh_circle)
+
+    def add_highlight_circle(self, gui_location: Location3D):
+        """Adds the circle marker for the selected hypothesis.
+
+        Args:
+            gui_location: the location at which to add the marker
+        """
+        if self.highlight_circle is not None:
+            self.plotter.remove(self.highlight_circle)
+
+        self.highlight_circle = Circle(pos=gui_location.to_numpy(), r=3.0, res=16)
+        self.highlight_circle.c("red")
+        self.plotter.add(self.highlight_circle)
+
+    def update_plot(self, widget: Image, msgs: list[TopicMessage]) -> tuple[Any, bool]:
+        """Rebuild the plot for the selected episode, step, object, and age threshold.
+
+        Removes previous plot, generates the new DataFrame, creates a
+        joint scatter plot, places it in the scene, and adds an info text panel.
+
+        Args:
+            widget: The previous figure, if any.
+            msgs: Messages received, containing `"episode_number"`, `"step_number"`,
+                `"current_object"`, and `"age_threshold"`.
+
+        Returns:
+            `(new_widget, True)` where `new_widget` is the new image actor.
+        """
+        if self.highlight_circle is not None:
+            self.plotter.remove(self.highlight_circle)
+        self.selected_hypothesis = None
+
+        # Build DataFrame and filter by age
+        msgs_dict = {msg.name: msg.value for msg in msgs}
+        df = self.generate_df(
+            episode=msgs_dict["episode_number"],
+            step=msgs_dict["step_number"],
+            graph_id=msgs_dict["current_object"],
+        )
+        age_threshold: int = int(msgs_dict["age_threshold"])
+        mask: Series = df["age"] >= age_threshold
+        self.df: DataFrame = df.loc[mask].copy()
+
+        # Add the scatter correlation plot to the scene
+        if widget is not None:
+            self.plotter.remove(widget)
+        widget = self.add_correlation_figure()
+
+        # Add info text to scene
+        self.add_info_text()
+
+        # Add mlh circle to scene
+        self.add_mlh_circle()
+
+        self.plotter.render()
+        return widget, True
+
+    def update_selection(
+        self, widget: Image | None, msgs: list[TopicMessage]
+    ) -> tuple[Any, bool]:
+        """Highlight the data point nearest to a GUI click location.
+
+        Maps the 2D GUI click to data coordinates, finds the closest row,
+        places a small circle over the corresponding location in GUI space,
+        and stores the selected row in `selected_hypothesis`.
+
+        Args:
+            widget: The current image plot. If `None`, selection is ignored.
+            msgs: Inbox with a single "click_location" message whose value
+                is a `Location3D`.
+
+        Returns:
+            `(widget, True)` if a selection was made, otherwise `(widget, False)`.
+        """
+        if widget is None or self.df is None or self.df.empty:
+            return widget, False
+
+        msgs_dict = {msg.name: msg.value for msg in msgs}
+        location = msgs_dict["click_location"].to_2d()
+
+        if not self._coordinate_mapper.gui.contains(location):
+            return widget, False
+
+        # Get the location in data (slope, error) space
+        data_location = self._coordinate_mapper.map_click_to_data_coords(location)
+
+        # Find the closest data point in the data frame
+        df_row = self.get_closest_row(
+            self.df, slope=data_location.x, error=data_location.y
+        )
+        df_location = Location2D(
+            float(df_row["Evidence Slope"]), float(df_row["Pose Error"])
+        )
+        self.selected_hypothesis = df_row
+
+        # Map location back to a Location3D in GUI Space
+        gui_location = self._coordinate_mapper.map_data_coords_to_world(
+            df_location
+        ).to_3d(z=0.1)
+
+        # Add the selected hypothesis marker
+        self.add_highlight_circle(gui_location)
+
+        self.plotter.render()
+        return widget, True
+
+
+class HypothesisMeshWidgetOps:
+    """WidgetOps for displaying the selected hypothesis as a 3D mesh with info.
+
+    Listens to:
+      - `"clear_selected_hypothesis"` to remove any displayed mesh and info.
+      - `"selected_hypothesis"` to load and show the object mesh with its rotation.
+
+    This class only display the widget and does not publish any messages.
+
+    Attributes:
+        plotter: A `vedo.Plotter` used to add and remove actors.
+        ycb_loader: Loader that returns a textured `vedo.Mesh` for a YCB object.
+        updaters: Two `WidgetUpdater`s for clear and update actions.
+        info_widget: The text panel shown alongside the mesh.
+    """
+
+    def __init__(self, plotter: Plotter, ycb_loader: YCBMeshLoader) -> None:
+        self.plotter = plotter
+        self.ycb_loader = ycb_loader
+        self.updaters = [
+            WidgetUpdater(
+                topics=[TopicSpec("clear_selected_hypothesis", required=True)],
+                callback=self.clear_mesh,
+            ),
+            WidgetUpdater(
+                topics=[TopicSpec("selected_hypothesis", required=True)],
+                callback=self.update_mesh,
+            ),
+        ]
+        self.info_widget: Text2D | None = None
+
+    def clear_mesh(
+        self, widget: Mesh | None, msgs: list[TopicMessage]
+    ) -> tuple[Any, bool]:
+        """Clear the mesh and info panel if present.
+
+        Args:
+            widget: Current mesh object, if any.
+            msgs: Unused. Present for the updater interface.
+
+        Returns:
+            `(widget, False)` to indicate no publish should occur.
+        """
+        if widget is not None:
+            self.plotter.remove(widget)
+
+        if self.info_widget is not None:
+            self.plotter.remove(self.info_widget)
+            self.info_widget = None
+
+        self.plotter.render()
+        return widget, False
+
+    def update_mesh(
+        self, widget: Mesh | None, msgs: list[TopicMessage]
+    ) -> tuple[Any, bool]:
+        """Render the mesh and info panel for the selected hypothesis.
+
+        The hypothesis is expected to be a pandas Series with keys:
+        `graph_id`, `Rot_x`, `Rot_y`, `Rot_z`, `age`, `Evidence`, `Evidence Slope`.
+
+        Args:
+            widget: Current mesh, if any.
+            msgs: Messages received from the `WidgetUpdater` with a single
+                `"selected_hypothesis"` message.
+
+        Returns:
+            `(new_widget, False)` to indicate no publish should occur.
+        """
+        # Clear existing mesh and text
+        widget, _ = self.clear_mesh(widget, msgs)
+
+        msgs_dict = {msg.name: msg.value for msg in msgs}
+        hypothesis = msgs_dict["selected_hypothesis"]
+
+        # Add object mesh
+        widget = self.ycb_loader.create_mesh(hypothesis["graph_id"]).clone(deep=True)
+        widget.rotate_x(hypothesis["Rot_x"])
+        widget.rotate_y(hypothesis["Rot_y"])
+        widget.rotate_z(hypothesis["Rot_z"])
+        widget.scale(1500)
+        widget.pos(1000, 0, -500)
+        self.plotter.add(widget)
+
+        # Add info text
+        info = (
+            f"Object: {hypothesis['graph_id']}\n"
+            + f"Age: {hypothesis['age']}\n"
+            + f"Evidence: {hypothesis['Evidence']:.2f}\n"
+            + f"Evidence Slope: {hypothesis['Evidence Slope']:.2f}\n"
+            + f"Pose Error: {hypothesis['Pose Error']:.2f}"
+        )
+        info_widget = Text2D(txt=info, pos="top-right")
+        self.plotter.add(info_widget)
+        self.info_widget = info_widget
+
+        self.plotter.render()
+
+        return widget, False
+
+
+class HypSpaceSizeWidgetOps:
+    """WidgetOps for a 3-line hypothesis space relative size plot.
+
+    Listens to:
+      - "episode_number"
+      - "current_object"
+
+    Renders a Seaborn line plot with:
+      1) Hyp. space size for the current object
+      2) Hyp. space size for the other objects combined
+      3) Total Hyp. space size for all the existing objects
+
+    This widget is display-only and does not publish messages.
+
+    Attributes:
+        plotter: The vedo.Plotter to add/remove the plot.
+        data_parser: Parser that extracts entries from the JSON log.
+        updaters: One WidgetUpdater reacting to episode/object updates.
+        _locators: Data accessors used to fetch objects, channels, and updater stats.
+    """
+
+    def __init__(self, plotter: Plotter, data_parser: DataParser) -> None:
+        self.plotter = plotter
+        self.data_parser = data_parser
+        self.updaters = [
+            WidgetUpdater(
+                topics=[
+                    TopicSpec("episode_number", required=True),
+                    TopicSpec("current_object", required=True),
+                ],
+                callback=self.update_plot,
+            )
+        ]
+        self._locators = self.create_locators()
+
+    def create_locators(self) -> dict[str, DataLocator]:
+        """Returns data locators used by this widget."""
+        locators = {}
+
+        locators["hyp_space_size"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+                DataLocatorStep.key(name="lm", value="LM_0"),
+                DataLocatorStep.key(
+                    name="telemetry", value="hypotheses_updater_telemetry"
+                ),
+                DataLocatorStep.index(name="step"),
+                DataLocatorStep.key(name="obj"),
+                DataLocatorStep.key(name="channel", value="patch"),
+                DataLocatorStep.key(name="telemetry", value="evidence"),
+            ]
+        )
+
+        return locators
+
+    def _hyp_space_size(self, episode: int) -> pd.DataFrame:
+        """Return a DataFrame of hypothesis space sizes for each step and object.
+
+        Args:
+            episode: Episode index.
+
+        Returns:
+            DataFrame with columns ["step", "object", "size"].
+        """
+        # Objects available in this episode (same across steps)
+        objects_list = self.data_parser.query(
+            self._locators["hyp_space_size"], episode=str(episode), step=0
+        )
+
+        # All steps for this episode
+        steps = self.data_parser.query(
+            self._locators["hyp_space_size"], episode=str(episode)
+        )
+
+        rows: list[dict[str, int | str]] = []
+        for step in steps:
+            for obj in objects_list:
+                size = len(
+                    self.data_parser.extract(
+                        self._locators["hyp_space_size"],
+                        episode=str(episode),
+                        step=step,
+                        obj=obj,
+                    )
+                )
+                rows.append({"step": step, "object": obj, "size": size})
+
+        return pd.DataFrame(rows, columns=["step", "object", "size"])
+
+    def add_hyp_space_size_figure(
+        self,
+        df: pd.DataFrame,
+        current_object: str,
+    ) -> Image:
+        """Plot current vs others vs total Hyp space size relative to step 0.
+
+        Args:
+            df: DataFrame with columns ["step", "object", "size"] for one episode.
+            current_object: Object label to isolate as the "current" line.
+
+        Returns:
+            vedo Image widget.
+        """
+        total = (
+            df.groupby("step", as_index=False)["size"]
+            .sum()
+            .rename(columns={"size": "total"})
+        )
+        current = (
+            df[df["object"] == current_object]
+            .groupby("step", as_index=False)["size"]
+            .sum()
+            .rename(columns={"size": "current"})
+        )
+
+        merged = total.merge(current, on="step", how="left")
+        merged["others"] = merged["total"] - merged["current"]
+        merged = merged.sort_values("step")
+
+        merged["idx_current"] = (merged["current"] / merged["current"].iloc[0]) * 100.0
+        merged["idx_others"] = (merged["others"] / merged["others"].iloc[0]) * 100.0
+        merged["idx_total"] = (merged["total"] / merged["total"].iloc[0]) * 100.0
+
+        fig, ax = plt.subplots(figsize=(6, 3))
+        sns.lineplot(
+            ax=ax, data=merged, x="step", y="idx_current", label=str(current_object)
+        )
+        sns.lineplot(
+            ax=ax, data=merged, x="step", y="idx_others", label="Other objects"
+        )
+        sns.lineplot(ax=ax, data=merged, x="step", y="idx_total", label="Total")
+
+        ax.set_xlabel("Step")
+        ax.set_ylabel("% change from step 0")
+        ax.set_title("Hypothesis Space size")
+        leg = ax.legend(loc="best", frameon=True)
+
+        fig.tight_layout()
+        widget = Image(fig)
+        widget.scale(0.6)
+        widget.pos(-400, 300, 0)
+        plt.close(fig)
+        self.plotter.add(widget)
+        return widget
+
+    def update_plot(
+        self, widget: Image | None, msgs: Iterable[TopicMessage]
+    ) -> tuple[Image | None, bool]:
+        """Update the plot with a new Seaborn figure.
+
+        Args:
+            widget: Current existing plot.
+            msgs: Messages received from the `WidgetUpdater`.
+
+        Returns:
+            `(new_widget, False)` to indicate no publish should occur.
+        """
+        if widget is not None:
+            self.plotter.remove(widget)
+
+        msgs_dict = {msg.name: msg.value for msg in msgs}
+
+        hyp_size_df = self._hyp_space_size(episode=msgs_dict["episode_number"])
+        widget = self.add_hyp_space_size_figure(
+            hyp_size_df, msgs_dict["current_object"]
+        )
+        self.plotter.render()
+        return widget, False
+
+
+class HypothesisLifespanWidgetOps:
+    """WidgetOps for plotting the lifespan of a selected hypothesis.
+
+    Listens to:
+      - "episode_number"
+      - "step_number"
+      - "selected_hypothesis"
+      - "clear_selected_hypothesis"
+
+    Renders a small Seaborn plot (evidence and evidence slope vs step) for the
+    selected hypothesis from its birth step until deletion.
+
+    Display-only. Does not publish messages.
+    """
+
+    def __init__(self, plotter: Plotter, data_parser: DataParser) -> None:
+        self.plotter = plotter
+        self.data_parser = data_parser
+        self.updaters = [
+            WidgetUpdater(
+                topics=[
+                    TopicSpec("episode_number", required=True),
+                    TopicSpec("step_number", required=True),
+                    TopicSpec("selected_hypothesis", required=True),
+                ],
+                callback=self.update_plot,
+            ),
+            WidgetUpdater(
+                topics=[TopicSpec("clear_selected_hypothesis", required=True)],
+                callback=self.clear_plot,
+            ),
+        ]
+        self._locators = self.create_locators()
+
+    def create_locators(self) -> dict[str, DataLocator]:
+        """Returns data locators used by this widget."""
+        locators = {}
+
+        locators["episode"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+            ]
+        )
+
+        locators["step"] = locators["episode"].extend(
+            steps=[
+                DataLocatorStep.key(name="lm", value="LM_0"),
+                DataLocatorStep.key(
+                    name="telemetry", value="hypotheses_updater_telemetry"
+                ),
+                DataLocatorStep.index(name="step"),
+            ]
+        )
+
+        locators["channel"] = locators["step"].extend(
+            steps=[
+                DataLocatorStep.key(name="obj"),
+                DataLocatorStep.key(name="channel", value="patch"),
+            ]
+        )
+
+        locators["updater"] = locators["channel"].extend(
+            steps=[DataLocatorStep.key(name="stat", value="hypotheses_updater")]
+        )
+
+        return locators
+
+    def _extract_channel_data(
+        self, episode: str, step: int, obj: str
+    ) -> dict[str, Iterable]:
+        """Returns channel data as a dictionary."""
+        channel_data = self.data_parser.extract(
+            self._locators["channel"], episode=episode, step=step, obj=obj
+        )
+        updater_data = self.data_parser.extract(
+            self._locators["updater"], episode=episode, step=step, obj=obj
+        )
+        return {
+            "evidence": channel_data["evidence"],
+            "rotations": channel_data["rotations"],
+            "evidence_slopes": updater_data["evidence_slopes"],
+        }
+
+    def _extract_mod_ids(
+        self, episode: str, step: int, obj: str
+    ) -> tuple[Iterable[int], Iterable[int]]:
+        """Returns the added and removed ids."""
+        updater_data = self.data_parser.extract(
+            self._locators["updater"], episode=episode, step=step, obj=obj
+        )
+        return updater_data["added_ids"], updater_data["removed_ids"]
+
+    def _num_steps_in_episode(self, episode: str) -> int:
+        """Returns the number of steps in a specific episode."""
+        return len(self.data_parser.query(self._locators["step"], episode=episode))
+
+    def _num_episodes(self) -> int:
+        return len(self.data_parser.query(self._locators["episode"]))
+
+    def _increment_location_pair(
+        self, episode: str, step: int
+    ) -> tuple[str | None, int | None]:
+        """Increment (episode, step) pair by one step.
+
+        If `step` is not the final step of `episode`, the function returns the
+        next step within the same episode. Otherwise, it increments to the first
+        step (`0`) of the next episode when available. If the cursor is already
+        at the very last step of the final episode, it returns `(None, None)`.
+
+        Note:
+            This implementation returns the episode component as a **string**
+            (e.g., `"3"`) to align with the downstream data parser's API.
+
+        Args:
+            episode: Current episode index.
+            step: Step index within the current episode.
+
+        Returns:
+            A tuple `(next_episode, next_step)` where:
+                - `next_episode` is the episode index (or `None` if no next),
+                - `next_step` is the step index (or `None` if no next).
+        """
+        ep = int(episode)
+        num_episodes = self._num_episodes()
+        steps_here = self._num_steps_in_episode(episode)
+
+        if step < steps_here - 1:
+            return (episode, step + 1)
+
+        if ep < num_episodes - 1:
+            return (str(ep + 1), 0)
+
+        return (None, None)
+
+    def _decrement_location_pair(
+        self, episode: str, step: int
+    ) -> tuple[str | None, int | None]:
+        """Decrement (episode, step) pair by one step.
+
+        If `step` is not the first step of `episode`, the function returns the
+        previous step within the same episode. Otherwise, it moves to the last
+        step of the previous episode when available. If the cursor is already
+        at the very first global step (episode 0, step 0), it returns `(None, None)`.
+
+        Note:
+            This implementation returns the episode component as a **string**
+            (e.g., `"3"`) to align with the downstream data parser's API.
+
+        Args:
+            episode: Current episode index.
+            step: Step index within the current episode.
+
+        Returns:
+            A tuple `(next_episode, next_step)` where:
+                - `prev_episode` is the episode index (or `None` if no next),
+                - `prev_step` is the step index (or `None` if no next).
+        """
+        ep = int(episode)
+        if step > 0:
+            return (episode, step - 1)
+
+        if ep > 0:
+            dec_episode = str(ep - 1)
+            return (dec_episode, self._num_steps_in_episode(dec_episode) - 1)
+
+        return (None, None)
+
+    def _find_index_by_rotation(
+        self,
+        channel_rots: Iterable[Iterable[float]],
+        target_rot_xyz: tuple[float, float, float],
+        tol_deg: float = 1e-3,
+    ) -> int | None:
+        """Find the hypothesis index at a given step using rotation and age.
+
+        Args:
+            channel_rots: Iterable of rotations for all hypotheses at the current step,
+                shaped like (N, 3), where each inner iterable is (Rot_x, Rot_y, Rot_z)
+                in degrees.
+            target_rot_xyz: Target rotation as (Rot_x, Rot_y, Rot_z) in degrees
+                to identify the selected hypothesis.
+            tol_deg: Absolute tolerance in degrees used for element-wise comparison;
+                a hypothesis matches if all three absolute differences are <= `tol_deg`.
+
+        Returns:
+            Index of the selected hypotheses
+        """
+        rx, ry, rz = target_rot_xyz
+
+        # Match rotations within tolerance
+        candidates = np.arange(len(channel_rots))
+        diffs = np.abs(np.array(channel_rots) - np.array([rx, ry, rz])[None, :])
+        matches = np.all(diffs <= tol_deg, axis=1)
+        return int(candidates[np.argmax(matches)])
+
+    def _trace_hypothesis(
+        self, episode: str, step: int, obj: str, ix: int
+    ) -> DataFrame:
+        """Tracing the lifespan of a selected hypothesis.
+
+        This function loops backward and forward to trace the lifespan of
+        a specific selected hypothesis, and collects statistics at each timestep.
+
+        Args:
+            episode: The current episode for the selected hypothesis.
+            step: The current step for the selected hypothesis.
+            obj: The current graph_id for the selected hypothesis.
+            ix: The selected hypothesis id.
+
+        Returns:
+            DataFrame with the columns ["Episode", "Step", "Evidence", "Evidence Slope"]
+        """
+        # Current row
+        row_data = self._extract_channel_data(episode, step, obj)
+        row_current = [
+            {
+                "Episode": int(episode),
+                "Step": int(step),
+                "Evidence": row_data["evidence"][ix],
+                "Evidence Slopes": row_data["evidence_slopes"][ix],
+            }
+        ]
+
+        # Trace backward
+        rows_back: list[dict] = []
+        episode_b, step_b, idx_b = episode, step, ix
+        while True:
+            added_ids, removed_ids = self._extract_mod_ids(episode_b, step_b, obj)
+            idx_prev = trace_hypothesis_backward(
+                idx_b, removed_ids=sorted(removed_ids), added_ids=sorted(added_ids)
+            )
+
+            # Hypothesis added here
+            if idx_prev is None:
+                break
+
+            episode_prev, step_prev = self._decrement_location_pair(episode_b, step_b)
+
+            # This was the first episode
+            if episode_prev is None or step_prev is None:
+                break
+            episode_b, step_b, idx_b = episode_prev, step_prev, idx_prev
+
+            row_data = self._extract_channel_data(episode_b, step_b, obj)
+            rows_back.append(
+                {
+                    "Episode": int(episode_b),
+                    "Step": int(step_b),
+                    "Evidence": row_data["evidence"][idx_b],
+                    "Evidence Slopes": row_data["evidence_slopes"][idx_b],
+                }
+            )
+
+        # Trace forward
+        rows_forward: list[dict] = []
+        episode_f, step_f, idx_f = episode, step, ix
+
+        while True:
+            episode_next, step_next = self._increment_location_pair(episode_f, step_f)
+
+            # This was the last episode
+            if episode_next is None or step_next is None:
+                break
+
+            _, removed_ids = self._extract_mod_ids(episode_next, step_next, obj)
+            idx_next = trace_hypothesis_forward(idx_f, removed_ids=sorted(removed_ids))
+
+            # Hypothesis is deleted
+            if idx_next is None:
+                break
+
+            episode_f, step_f, idx_f = episode_next, step_next, idx_next
+
+            row_data = self._extract_channel_data(episode_f, step_f, obj)
+            rows_forward.append(
+                {
+                    "Episode": int(episode_f),
+                    "Step": int(step_f),
+                    "Evidence": row_data["evidence"][idx_f],
+                    "Evidence Slopes": row_data["evidence_slopes"][idx_f],
+                }
+            )
+
+        rows_back.reverse()
+        rows = rows_back + row_current + rows_forward
+
+        return DataFrame(
+            rows, columns=["Episode", "Step", "Evidence", "Evidence Slopes"]
+        )
+
+    def _add_lifespan_figure(
+        self,
+        df: DataFrame,
+        current_episode: int,
+        current_step: int,
+    ) -> Image:
+        """Render a twin-axis lifespan plot with episode/step ticks.
+
+        Major ticks mark episode starts; minor ticks mark every step.
+        A vertical dashed line highlights the current step.
+
+        Args:
+            df: DataFrame with columns ["Episode", "Step", "Evidence",
+                "Evidence Slopes"].
+            current_episode: Current episode index.
+            current_step: Current step index within the episode.
+
+        Returns:
+            The vedo.Image widget added to the plotter.
+        """
+        start_episode = df["Episode"].min()
+        end_episode = df["Episode"].max()
+        episode_offsets: dict[int, int] = {}
+        running = 0
+        for ep in range(start_episode, end_episode + 1):
+            episode_offsets[ep] = running
+            running += self._num_steps_in_episode(str(ep))
+
+        # Map rows to global x
+        df["x"] = df.apply(lambda r: episode_offsets[r["Episode"]] + r["Step"], axis=1)
+        x_current = episode_offsets[current_episode] + current_step
+
+        fig, ax1 = plt.subplots(figsize=(6, 3))
+        # Evidence plot on left axis
+        sns.lineplot(
+            ax=ax1,
+            data=df,
+            x="x",
+            y="Evidence",
+            marker="o",
+            markersize=4,
+            linewidth=1.2,
+            color=HUE_PALETTE["Evidence"],
+            label="Evidence",
+        )
+        ax1.set_xlabel("Episode / Step")
+        ax1.set_ylabel("Evidence")
+
+        # Evidence slopes plot on right axis
+        ax2 = ax1.twinx()
+        sns.lineplot(
+            ax=ax2,
+            data=df,
+            x="x",
+            y="Evidence Slopes",
+            marker="o",
+            markersize=4,
+            linewidth=1.2,
+            color=HUE_PALETTE["Slope"],
+            label="Evidence Slope",
+        )
+        ax2.set_ylabel("Evidence Slope")
+
+        # Setting ticks on x-axis
+        x_min, x_max = df["x"].min(), df["x"].max()
+        ax1.set_xlim(x_min - 0.5, x_max + 0.5)
+        major_locs_all = [
+            (ep, episode_offsets[ep]) for ep in range(start_episode, end_episode + 1)
+        ]
+        major_locs = [loc for ep, loc in major_locs_all if x_min <= loc <= x_max]
+        major_labels = [str(ep) for ep, loc in major_locs_all if x_min <= loc <= x_max]
+
+        ax1.xaxis.set_major_locator(mticker.FixedLocator(major_locs))
+        ax1.xaxis.set_major_formatter(mticker.FixedFormatter(major_labels))
+        ax1.xaxis.set_minor_locator(mticker.FixedLocator(df["x"]))
+        ax1.tick_params(axis="x", which="major", length=7)
+        ax1.tick_params(axis="x", which="minor", length=3)
+
+        # Faint vertical lines at episode boundaries
+        for xv in major_locs:
+            ax1.axvline(x=xv, color="0.85", linewidth=0.8, zorder=0)
+
+        # Current location marker
+        ax1.axvline(x=x_current, linestyle="--", linewidth=1.0, color="0.2")
+
+        # Legend for both axes
+        lines, labels = [], []
+        for ax in (ax1, ax2):
+            line, label = ax.get_legend_handles_labels()
+            if line:
+                lines += line
+                labels += label
+                ax.legend_.remove()
+        if lines:
+            ax1.legend(lines, labels, loc="best", frameon=True)
+
+        ax1.set_title("Hypothesis Lifespan")
+        fig.tight_layout()
+
+        widget = Image(fig)
+        widget.scale(0.6)
+        widget.pos(650, 300, 0)
+        plt.close(fig)
+        self.plotter.add(widget)
+        return widget
+
+    def update_plot(
+        self, widget: Image | None, msgs: list[TopicMessage]
+    ) -> tuple[Image | None, bool]:
+        """Update the plot with a new Seaborn figure.
+
+        Args:
+            widget: Current existing plot.
+            msgs: Messages received from the `WidgetUpdater`.
+
+        Returns:
+            `(new_widget, False)` to indicate no publish should occur.
+        """
+        if widget is not None:
+            self.plotter.remove(widget)
+
+        msgs_dict = {msg.name: msg.value for msg in msgs}
+        episode = str(msgs_dict["episode_number"])
+        step = int(msgs_dict["step_number"])
+        hyp = msgs_dict["selected_hypothesis"]
+        obj = hyp["graph_id"]
+        target_rot_xyz = (float(hyp["Rot_x"]), float(hyp["Rot_y"]), float(hyp["Rot_z"]))
+
+        data = self._extract_channel_data(episode, step, obj)
+        ix = self._find_index_by_rotation(data["rotations"], target_rot_xyz)
+
+        df = self._trace_hypothesis(episode, step, obj, ix)
+        widget = self._add_lifespan_figure(
+            df, current_episode=int(episode), current_step=step
+        )
+        self.plotter.render()
+
+        return widget, False
+
+    def clear_plot(
+        self, widget: Image | None, msgs: list[TopicMessage]
+    ) -> tuple[Image | None, bool]:
+        """Clear the plot if present.
+
+        Args:
+            widget: Current plot object.
+            msgs: Unused. Present for the updater interface.
+
+        Returns:
+            `(widget, False)` to indicate no publish should occur.
+        """
+        if widget is not None:
+            self.plotter.remove(widget)
+            self.plotter.render()
+        return None, False
+
+
+class InteractivePlot:
+    """An interactive plot for correlation of evidence slopes and pose errors.
+
+    This visualization provides means for inspecting the resampling of hypotheses
+    at every step. The main view is a scatter correlation plot where pose error is
+    expected to decrease as evidence slope increases. You can click points to inspect
+    the selected hypothesis and view its 3D mesh with basic stats. Additional controls
+    let you switch objects and threshold by hypothesis age.
+
+    Args:
+        exp_path: Path to the experiment log consumed by `DataParser`.
+        data_path: Root directory containing YCB meshes for `YCBMeshLoader`.
+
+    Attributes:
+        data_parser: Parser that reads the JSON log file and serves queries.
+        ycb_loader: Loader that provides textured YCB meshes.
+        event_bus: Publisher used to route `TopicMessage` events among widgets.
+        plotter: Vedo `Plotter` hosting all widgets.
+        scheduler: Debounce scheduler bound to the plotter interactor.
+        _widgets: Mapping of widget names to their `Widget` instances. It
+            includes episode and step sliders, primary/prev/next buttons, an
+            age-threshold slider, the correlation plot, and mesh viewers.
+
+    """
+
+    def __init__(
+        self,
+        exp_path: str,
+        data_path: str,
+    ):
+        self.data_parser = DataParser(exp_path)
+        self.ycb_loader = YCBMeshLoader(data_path)
+        self.event_bus = Publisher()
+        self.plotter = Plotter().render()
+        self.scheduler = VtkDebounceScheduler(self.plotter.interactor, period_ms=33)
+
+        # create and add the widgets to the plotter
+        self._widgets = self.create_widgets()
+        for w in self._widgets.values():
+            w.add()
+        self._widgets["episode_slider"].set_state(0)
+        self._widgets["age_threshold"].set_state(0)
+
+        self.plotter.show(interactive=True, resetcam=False, camera=self.cam_dict())
+
+    def cam_dict(self) -> dict[str, tuple[float, float, float]]:
+        """Returns camera parameters for an overhead view of the plot.
+
+        Returns:
+            Dictionary with camera position and focal point.
+        """
+        x_val = 300
+        y_val = 200
+        z_val = 1500
+        return {"pos": (x_val, y_val, z_val), "focal_point": (x_val, y_val, 0)}
+
+    def create_widgets(self):
+        widgets = {}
+
+        widgets["episode_slider"] = Widget[Slider2D, int](
+            widget_ops=EpisodeSliderWidgetOps(
+                plotter=self.plotter,
+                data_parser=self.data_parser,
+            ),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.5,
+            dedupe=True,
+        )
+
+        widgets["step_slider"] = Widget[Slider2D, int](
+            widget_ops=StepSliderWidgetOps(
+                plotter=self.plotter,
+                data_parser=self.data_parser,
+            ),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.5,
+            dedupe=True,
+        )
+
+        widgets["primary_mesh"] = Widget[Mesh, None](
+            widget_ops=GtMeshWidgetOps(
+                plotter=self.plotter,
+                data_parser=self.data_parser,
+                ycb_loader=self.ycb_loader,
+            ),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.5,
+            dedupe=True,
+        )
+
+        widgets["primary_button"] = Widget[Button, str](
+            widget_ops=PrimaryButtonWidgetOps(plotter=self.plotter),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.2,
+            dedupe=False,
+        )
+
+        widgets["prev_button"] = Widget[Button, str](
+            widget_ops=PrevButtonWidgetOps(plotter=self.plotter),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.2,
+            dedupe=False,
+        )
+
+        widgets["next_button"] = Widget[Button, str](
+            widget_ops=NextButtonWidgetOps(plotter=self.plotter),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.2,
+            dedupe=False,
+        )
+
+        widgets["age_threshold"] = Widget[Slider2D, int](
+            widget_ops=AgeThresholdWidgetOps(plotter=self.plotter),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.5,
+            dedupe=True,
+        )
+
+        widgets["current_object"] = Widget[None, str](
+            widget_ops=CurrentObjectWidgetOps(data_parser=self.data_parser),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.2,
+            dedupe=False,
+        )
+
+        widgets["click_widget"] = Widget[None, Location3D](
+            widget_ops=ClickWidgetOps(plotter=self.plotter, cam_dict=self.cam_dict()),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.1,
+            dedupe=True,
+        )
+
+        widgets["correlation_plot"] = Widget[None, Series](
+            widget_ops=CorrelationPlotWidgetOps(
+                plotter=self.plotter, data_parser=self.data_parser
+            ),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.3,
+            dedupe=False,
+        )
+
+        widgets["hypothesis_mesh"] = Widget[Mesh, None](
+            widget_ops=HypothesisMeshWidgetOps(
+                plotter=self.plotter,
+                ycb_loader=self.ycb_loader,
+            ),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.0,
+            dedupe=False,
+        )
+
+        widgets["hypothesis_space_size"] = Widget[Image, None](
+            widget_ops=HypSpaceSizeWidgetOps(
+                plotter=self.plotter,
+                data_parser=self.data_parser,
+            ),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.0,
+            dedupe=False,
+        )
+
+        widgets["hypothesis_life_span"] = Widget[Image, None](
+            widget_ops=HypothesisLifespanWidgetOps(
+                plotter=self.plotter,
+                data_parser=self.data_parser,
+            ),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.0,
+            dedupe=False,
+        )
+
+        return widgets
+
+
+def plot_interactive_hypothesis_space_correlation(
+    exp_path: str,
+    data_path: str,
+) -> int:
+    """Interactive visualization for inspecting the hypothesis space.
+
+    Args:
+        exp_path: Path to the experiment directory containing the detailed stats file.
+        data_path: Path to the root directory of YCB object meshes.
+
+    Returns:
+        Exit code.
+    """
+    if not Path(exp_path).exists():
+        logger.error(f"Experiment path not found: {exp_path}")
+        return 1
+
+    data_path = str(Path(data_path).expanduser())
+
+    InteractivePlot(exp_path, data_path)
+
+    return 0
+
+
+def add_subparser(
+    subparsers: argparse._SubParsersAction,
+    parent_parser: argparse.ArgumentParser | None = None,
+) -> None:
+    """Add the interactive slope and pose error subparser to the main parser.
+
+    Args:
+        subparsers: The subparsers object from the main parser.
+        parent_parser: Optional parent parser for shared arguments.
+    """
+    parser = subparsers.add_parser(
+        "interactive_hypothesis_space_correlation",
+        help="Creates a plot of evidence slope and pose error correlation.",
+        parents=[parent_parser] if parent_parser else [],
+    )
+    parser.add_argument(
+        "experiment_log_dir",
+        help=(
+            "The directory containing the experiment log with the detailed stats file."
+        ),
+    )
+    parser.add_argument(
+        "--objects_mesh_dir",
+        default="~/tbp/data/habitat/objects/ycb/meshes",
+        help=("The directory containing the mesh objects."),
+    )
+    parser.set_defaults(
+        func=lambda args: sys.exit(
+            plot_interactive_hypothesis_space_correlation(
+                args.experiment_log_dir,
+                args.objects_mesh_dir,
+            )
+        )
+    )

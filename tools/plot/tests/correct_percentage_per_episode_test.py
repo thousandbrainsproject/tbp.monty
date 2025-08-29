@@ -9,12 +9,14 @@
 
 import unittest
 
-from tools.plot.interactive_object_evidence_over_time import (
-    plot_interactive_objects_evidence_over_time,
+from tools.plot.correct_percentage_per_episode import (
+    plot_correct_percentage_per_episode,
 )
 
 
-class TestInteractiveObjectsEvidenceOverTime(unittest.TestCase):
+class TestCorrectPercentagePerEpisode(unittest.TestCase):
     def test_exit_1_if_exp_path_does_not_exist(self):
-        exit_code = plot_interactive_objects_evidence_over_time("nonexistent_path")
+        exit_code = plot_correct_percentage_per_episode(
+            "nonexistent_path", "LM0", "primary"
+        )
         self.assertEqual(exit_code, 1)
