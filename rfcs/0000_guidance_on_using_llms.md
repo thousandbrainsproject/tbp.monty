@@ -36,7 +36,7 @@ Due to the above reasons, LLM-generated code can take a great deal of time to re
 
 ### Legal Concerns
 - There are non-trivial legal concerns around contamination of code when using LLMs. See for example, [this recent study](https://arxiv.org/html/2408.02487v1), which demonstrates that LLM-generated code can violate copyright restrictions in a significant number of cases.
-- A cornerstone of the Thousand Brains Project is its open source nature, and this motivates our use of an MIT licence when we distribute our code. However, the inadvertent integration of copyright-protected code into `thousandbrainsproject/tbp.monty` could jeopardize the ability to make the code open-source, disrupting any distributions of the platform.
+- A cornerstone of the Thousand Brains Project is its open-source nature, and this motivates our use of an MIT licence when we distribute our code. However, the inadvertent integration of copyright-protected code into `thousandbrainsproject/tbp.monty` could jeopardize the ability to make the code open-source, disrupting any distributions of the platform.
 
 ### Take-Aways
 
