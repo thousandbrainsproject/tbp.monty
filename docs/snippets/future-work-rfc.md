@@ -1,1 +1,1 @@
-`required` `optional` `not-required` `unknown` `https://github\.com/thousandbrainsproject/tbp\.monty/pull/\d+`
+`required` `optional` `not-required` `unknown` `https://github\.com/thousandbrainsproject/tbp\.monty/.*`

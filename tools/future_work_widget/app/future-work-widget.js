@@ -73,6 +73,17 @@ const formatStatusColumn = (cell) => {
 
   return result;
 };
+const formatRfcColumn = (cell) => {
+  const value = cell.getValue();
+  if (!value) return "";
+
+  const isHttpUrl = /^https?:/.test(value.trim());
+  if (isHttpUrl) {
+    return `<a href="${value}" target="_blank" rel="noopener noreferrer">RFC <i class="fas fa-external-link-alt"></i></a>`;
+  }
+
+  return value;
+};
 
 function getColumnsToShow() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -88,7 +99,7 @@ function getColumnsToShow() {
 const allColumns = [
   { title: "Title", field: "title", formatter: formatTitleWithLinksColumn },
   { title: "Estimated Scope", field: "estimated-scope", formatter: formatSizeColumn },
-  { title: "RFC", field: "rfc" },
+  { title: "RFC", field: "rfc", formatter: formatRfcColumn },
   { title: "Status", field: "status", formatter: formatStatusColumn },
   { title: "Tags", field: "tags", formatter: formatTagsColumn, widthGrow: 2, cssClass: "wrap-text" },
   { title: "Skills", field: "skills", formatter: formatSkillsColumn, widthGrow: 2, cssClass: "wrap-text" }

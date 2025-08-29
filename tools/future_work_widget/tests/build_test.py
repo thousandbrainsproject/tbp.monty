@@ -140,7 +140,7 @@ class TestBuild(unittest.TestCase):
 
         rfc_file = snippets_dir / "future-work-rfc.md"
         with open(rfc_file, "w", encoding="utf-8") as f:
-            f.write("`required` `optional` `not-required`")
+            f.write("`required` `optional` `not-required` `https://github\\.com/thousandbrainsproject/tbp\\.monty/.*`")
 
         status_file = snippets_dir / "future-work-status.md"
         with open(status_file, "w", encoding="utf-8") as f:
@@ -461,7 +461,7 @@ class TestBuild(unittest.TestCase):
         rfc_file = snippets_dir / "future-work-rfc.md"
         with open(rfc_file, "w", encoding="utf-8") as f:
             f.write(
-                "`required` `optional` `not-required` `https://github\\.com/thousandbrainsproject/tbp\\.monty/pull/\\d+`"
+                "`required` `optional` `not-required` `https://github\\.com/thousandbrainsproject/tbp\\.monty/.*`"
             )
 
         input_data = [
@@ -483,6 +483,15 @@ class TestBuild(unittest.TestCase):
 
         input_data[0]["rfc"] = (
             "https://github.com/thousandbrainsproject/tbp.monty/pull/123"
+        )
+
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        build(str(index_file), str(self.output_path), str(snippets_dir))
+
+        input_data[0]["rfc"] = (
+            "https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0015_future_work.md"
         )
 
         with open(index_file, "w", encoding="utf-8") as f:
