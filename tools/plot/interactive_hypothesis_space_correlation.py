@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -35,6 +36,8 @@ from tools.plot.interactive.utils import (
     CoordinateMapper,
     Location2D,
     Location3D,
+    trace_hypothesis_backward,
+    trace_hypothesis_forward,
 )
 from tools.plot.interactive.widget_updaters import WidgetUpdater
 from tools.plot.interactive.widgets import (
@@ -55,6 +58,8 @@ HUE_PALETTE = {
     "Added": "#66c2a5",
     "Removed": "#fc8d62",
     "Maintained": "#8da0cb",
+    "Evidence": "#1f77b4",
+    "Slope": "#ff7f0e",
 }
 
 
@@ -1635,15 +1640,475 @@ class HypSpaceSizeWidgetOps:
         return widget
 
     def update_plot(
-        self, widget: Image, msgs: Iterable[TopicMessage]
-    ) -> tuple[Image, bool]:
+        self, widget: Image | None, msgs: Iterable[TopicMessage]
+    ) -> tuple[Image | None, bool]:
+        """Update the plot with a new Seaborn figure.
+
+        Args:
+            widget: Current existing plot.
+            msgs: Messages received from the `WidgetUpdater`.
+
+        Returns:
+            `(new_widget, False)` to indicate no publish should occur.
+        """
+        if widget is not None:
+            self.plotter.remove(widget)
+
         msgs_dict = {msg.name: msg.value for msg in msgs}
 
         hyp_size_df = self._hyp_space_size(episode=msgs_dict["episode_number"])
         widget = self.add_hyp_space_size_figure(
             hyp_size_df, msgs_dict["current_object"]
         )
+        self.plotter.render()
         return widget, False
+
+
+class HypothesisLifespanWidgetOps:
+    """WidgetOps for plotting the lifespan of a selected hypothesis.
+
+    Listens to:
+      - "episode_number"
+      - "step_number"
+      - "selected_hypothesis"
+      - "clear_selected_hypothesis"
+
+    Renders a small Seaborn plot (evidence and evidence slope vs step) for the
+    selected hypothesis from its birth step until deletion.
+
+    Display-only. Does not publish messages.
+    """
+
+    def __init__(self, plotter: Plotter, data_parser: DataParser) -> None:
+        self.plotter = plotter
+        self.data_parser = data_parser
+        self.updaters = [
+            WidgetUpdater(
+                topics=[
+                    TopicSpec("episode_number", required=True),
+                    TopicSpec("step_number", required=True),
+                    TopicSpec("selected_hypothesis", required=True),
+                ],
+                callback=self.update_plot,
+            ),
+            WidgetUpdater(
+                topics=[TopicSpec("clear_selected_hypothesis", required=True)],
+                callback=self.clear_plot,
+            ),
+        ]
+        self._locators = self.create_locators()
+
+    def create_locators(self) -> dict[str, DataLocator]:
+        """Returns data locators used by this widget."""
+        locators = {}
+
+        locators["episode"] = DataLocator(
+            path=[
+                DataLocatorStep.key(name="episode"),
+            ]
+        )
+
+        locators["step"] = locators["episode"].extend(
+            steps=[
+                DataLocatorStep.key(name="lm", value="LM_0"),
+                DataLocatorStep.key(
+                    name="telemetry", value="hypotheses_updater_telemetry"
+                ),
+                DataLocatorStep.index(name="step"),
+            ]
+        )
+
+        locators["channel"] = locators["step"].extend(
+            steps=[
+                DataLocatorStep.key(name="obj"),
+                DataLocatorStep.key(name="channel", value="patch"),
+            ]
+        )
+
+        locators["updater"] = locators["channel"].extend(
+            steps=[DataLocatorStep.key(name="stat", value="hypotheses_updater")]
+        )
+
+        return locators
+
+    def _extract_channel_data(
+        self, episode: str, step: int, obj: str
+    ) -> dict[str, Iterable]:
+        """Returns channel data as a dictionary."""
+        channel_data = self.data_parser.extract(
+            self._locators["channel"], episode=episode, step=step, obj=obj
+        )
+        updater_data = self.data_parser.extract(
+            self._locators["updater"], episode=episode, step=step, obj=obj
+        )
+        return {
+            "evidence": channel_data["evidence"],
+            "rotations": channel_data["rotations"],
+            "evidence_slopes": updater_data["evidence_slopes"],
+        }
+
+    def _extract_mod_ids(
+        self, episode: str, step: int, obj: str
+    ) -> tuple[Iterable[int], Iterable[int]]:
+        """Returns the added and removed ids."""
+        updater_data = self.data_parser.extract(
+            self._locators["updater"], episode=episode, step=step, obj=obj
+        )
+        return updater_data["added_ids"], updater_data["removed_ids"]
+
+    def _num_steps_in_episode(self, episode: str) -> int:
+        """Returns the number of steps in a specific episode."""
+        return len(self.data_parser.query(self._locators["step"], episode=episode))
+
+    def _num_episodes(self) -> int:
+        return len(self.data_parser.query(self._locators["episode"]))
+
+    def _increment_location_pair(
+        self, episode: int, step: int
+    ) -> tuple[str | None, int | None]:
+        """Increment (episode, step) pair by one step.
+
+        If `step` is not the final step of `episode`, the function returns the
+        next step within the same episode. Otherwise, it increments to the first
+        step (`0`) of the next episode when available. If the cursor is already
+        at the very last step of the final episode, it returns `(None, None)`.
+
+        Note:
+            This implementation returns the episode component as a **string**
+            (e.g., `"3"`) to align with the downstream data parser's API.
+
+        Args:
+            episode: Current episode index.
+            step: Step index within the current episode.
+
+        Returns:
+            A tuple `(next_episode, next_step)` where:
+                - `next_episode` is the episode index (or `None` if no next),
+                - `next_step` is the step index (or `None` if no next).
+        """
+        episode = int(episode)
+        num_episodes = self._num_episodes()
+        steps_here = self._num_steps_in_episode(str(episode))
+
+        if step < steps_here - 1:
+            return (str(episode), step + 1)
+
+        if episode < num_episodes - 1:
+            return (str(episode + 1), 0)
+
+        return (None, None)
+
+    def _decrement_location_pair(
+        self, episode: str, step: int
+    ) -> tuple[str | None, int | None]:
+        """Decrement (episode, step) pair by one step.
+
+        If `step` is not the first step of `episode`, the function returns the
+        previous step within the same episode. Otherwise, it moves to the last
+        step of the previous episode when available. If the cursor is already
+        at the very first global step (episode 0, step 0), it returns `(None, None)`.
+
+        Note:
+            This implementation returns the episode component as a **string**
+            (e.g., `"3"`) to align with the downstream data parser's API.
+
+        Args:
+            episode: Current episode index.
+            step: Step index within the current episode.
+
+        Returns:
+            A tuple `(next_episode, next_step)` where:
+                - `prev_episode` is the episode index (or `None` if no next),
+                - `prev_step` is the step index (or `None` if no next).
+        """
+        episode = int(episode)
+        if step > 0:
+            return (str(episode), step - 1)
+
+        if episode > 0:
+            dec_episode = str(episode - 1)
+            return (dec_episode, self._num_steps_in_episode(dec_episode) - 1)
+
+        return (None, None)
+
+    def _find_index_by_rotation(
+        self,
+        channel_rots: Iterable[Iterable[float]],
+        target_rot_xyz: tuple[float, float, float],
+        tol_deg: float = 1e-3,
+    ) -> int | None:
+        """Find the hypothesis index at a given step using rotation and age.
+
+        Args:
+            channel_rots: Iterable of rotations for all hypotheses at the current step,
+                shaped like (N, 3), where each inner iterable is (Rot_x, Rot_y, Rot_z)
+                in degrees.
+            target_rot_xyz: Target rotation as (Rot_x, Rot_y, Rot_z) in degrees
+                to identify the selected hypothesis.
+            tol_deg: Absolute tolerance in degrees used for element-wise comparison;
+                a hypothesis matches if all three absolute differences are <= `tol_deg`.
+
+        Returns:
+            Index of the selected hypotheses
+        """
+        rx, ry, rz = target_rot_xyz
+
+        # Match rotations within tolerance
+        candidates = np.arange(len(channel_rots))
+        diffs = np.abs(np.array(channel_rots) - np.array([rx, ry, rz])[None, :])
+        matches = np.all(diffs <= tol_deg, axis=1)
+        return int(candidates[np.argmax(matches)])
+
+    def _trace_hypothesis(
+        self, episode: str, step: int, obj: str, ix: int
+    ) -> DataFrame:
+        """Tracing the lifespan of a selected hypothesis.
+
+        This function loops backward and forward to trace the lifespan of
+        a specific selected hypothesis, and collects statistics at each timestep.
+
+        Args:
+            episode: The current episode for the selected hypothesis.
+            step: The current step for the selected hypothesis.
+            obj: The current graph_id for the selected hypothesis.
+            ix: The selected hypothesis id.
+
+        Returns:
+            DataFrame with the columns ["Episode", "Step", "Evidence", "Evidence Slope"]
+        """
+        # Current row
+        row_data = self._extract_channel_data(episode, step, obj)
+        row_current = [
+            {
+                "Episode": int(episode),
+                "Step": int(step),
+                "Evidence": row_data["evidence"][ix],
+                "Evidence Slopes": row_data["evidence_slopes"][ix],
+            }
+        ]
+
+        # Trace backward
+        rows_back: list[dict] = []
+        episode_b, step_b, idx_b = episode, step, ix
+        while True:
+            added_ids, removed_ids = self._extract_mod_ids(episode_b, step_b, obj)
+            idx_prev = trace_hypothesis_backward(
+                idx_b, removed_ids=sorted(removed_ids), added_ids=sorted(added_ids)
+            )
+
+            # Hypothesis added here
+            if idx_prev is None:
+                break
+
+            episode_prev, step_prev = self._decrement_location_pair(episode_b, step_b)
+
+            # This was the first episode
+            if episode_prev is None:
+                break
+            episode_b, step_b, idx_b = episode_prev, step_prev, idx_prev
+
+            row_data = self._extract_channel_data(episode_b, step_b, obj)
+            rows_back.append(
+                {
+                    "Episode": int(episode_b),
+                    "Step": int(step_b),
+                    "Evidence": row_data["evidence"][idx_b],
+                    "Evidence Slopes": row_data["evidence_slopes"][idx_b],
+                }
+            )
+
+        # Trace forward
+        rows_forward: list[dict] = []
+        episode_f, step_f, idx_f = episode, step, ix
+
+        while True:
+            episode_next, step_next = self._increment_location_pair(episode_f, step_f)
+
+            # This was the last episode
+            if episode_next is None:
+                break
+
+            _, removed_ids = self._extract_mod_ids(episode_next, step_next, obj)
+            idx_next = trace_hypothesis_forward(idx_f, removed_ids=sorted(removed_ids))
+
+            # Hypothesis is deleted
+            if idx_next is None:
+                break
+
+            episode_f, step_f, idx_f = episode_next, step_next, idx_next
+
+            row_data = self._extract_channel_data(episode_f, step_f, obj)
+            rows_forward.append(
+                {
+                    "Episode": int(episode_f),
+                    "Step": int(step_f),
+                    "Evidence": row_data["evidence"][idx_f],
+                    "Evidence Slopes": row_data["evidence_slopes"][idx_f],
+                }
+            )
+
+        rows_back.reverse()
+        rows = rows_back + row_current + rows_forward
+
+        return DataFrame(
+            rows, columns=["Episode", "Step", "Evidence", "Evidence Slopes"]
+        )
+
+    def _add_lifespan_figure(
+        self,
+        df: DataFrame,
+        current_episode: int,
+        current_step: int,
+    ) -> Image:
+        """Render a twin-axis lifespan plot with episode/step ticks.
+
+        Major ticks mark episode starts; minor ticks mark every step.
+        A vertical dashed line highlights the current step.
+
+        Args:
+            df: DataFrame with columns ["Episode", "Step", "Evidence",
+                "Evidence Slopes"].
+            current_episode: Current episode index.
+            current_step: Current step index within the episode.
+
+        Returns:
+            The vedo.Image widget added to the plotter.
+        """
+        start_episode = df["Episode"].min()
+        end_episode = df["Episode"].max()
+        episode_offsets: dict[int, int] = {}
+        running = 0
+        for ep in range(start_episode, end_episode + 1):
+            episode_offsets[ep] = running
+            running += self._num_steps_in_episode(str(ep))
+
+        # Map rows to global x
+        df["x"] = df.apply(lambda r: episode_offsets[r["Episode"]] + r["Step"], axis=1)
+        x_current = episode_offsets[current_episode] + current_step
+
+        fig, ax1 = plt.subplots(figsize=(6, 3))
+        # Evidence plot on left axis
+        sns.lineplot(
+            ax=ax1,
+            data=df,
+            x="x",
+            y="Evidence",
+            marker="o",
+            markersize=4,
+            linewidth=1.2,
+            color=HUE_PALETTE["Evidence"],
+            label="Evidence",
+        )
+        ax1.set_xlabel("Episode / Step")
+        ax1.set_ylabel("Evidence")
+
+        # Evidence slopes plot on right axis
+        ax2 = ax1.twinx()
+        sns.lineplot(
+            ax=ax2,
+            data=df,
+            x="x",
+            y="Evidence Slopes",
+            marker="o",
+            markersize=4,
+            linewidth=1.2,
+            color=HUE_PALETTE["Slope"],
+            label="Evidence Slope",
+        )
+        ax2.set_ylabel("Evidence Slope")
+
+        # Setting ticks on x-axis
+        x_min, x_max = df["x"].min(), df["x"].max()
+        ax1.set_xlim(x_min - 0.5, x_max + 0.5)
+        major_locs_all = [
+            (ep, episode_offsets[ep]) for ep in range(start_episode, end_episode + 1)
+        ]
+        major_locs = [loc for ep, loc in major_locs_all if x_min <= loc <= x_max]
+        major_labels = [str(ep) for ep, loc in major_locs_all if x_min <= loc <= x_max]
+
+        ax1.xaxis.set_major_locator(mticker.FixedLocator(major_locs))
+        ax1.xaxis.set_major_formatter(mticker.FixedFormatter(major_labels))
+        ax1.xaxis.set_minor_locator(mticker.FixedLocator(df["x"]))
+        ax1.tick_params(axis="x", which="major", length=7)
+        ax1.tick_params(axis="x", which="minor", length=3)
+
+        # Faint vertical lines at episode boundaries
+        for xv in major_locs:
+            ax1.axvline(x=xv, color="0.85", linewidth=0.8, zorder=0)
+
+        # Current location marker
+        ax1.axvline(x=x_current, linestyle="--", linewidth=1.0, color="0.2")
+
+        # Legend for both axes
+        lines, labels = [], []
+        for ax in (ax1, ax2):
+            line, label = ax.get_legend_handles_labels()
+            if line:
+                lines += line
+                labels += label
+                ax.legend_.remove()
+        if lines:
+            ax1.legend(lines, labels, loc="best", frameon=True)
+
+        ax1.set_title("Hypothesis Lifespan")
+        fig.tight_layout()
+
+        widget = Image(fig)
+        widget.scale(0.6)
+        widget.pos(650, 300, 0)
+        plt.close(fig)
+        self.plotter.add(widget)
+        return widget
+
+    def update_plot(
+        self, widget: Image | None, msgs: list[TopicMessage]
+    ) -> tuple[Image | None, bool]:
+        """Update the plot with a new Seaborn figure.
+
+        Args:
+            widget: Current existing plot.
+            msgs: Messages received from the `WidgetUpdater`.
+
+        Returns:
+            `(new_widget, False)` to indicate no publish should occur.
+        """
+        if widget is not None:
+            self.plotter.remove(widget)
+
+        msgs_dict = {msg.name: msg.value for msg in msgs}
+        episode = str(msgs_dict["episode_number"])
+        step = int(msgs_dict["step_number"])
+        hyp = msgs_dict["selected_hypothesis"]
+        obj = hyp["graph_id"]
+        target_rot_xyz = (float(hyp["Rot_x"]), float(hyp["Rot_y"]), float(hyp["Rot_z"]))
+
+        data = self._extract_channel_data(episode, step, obj)
+        ix = self._find_index_by_rotation(data["rotations"], target_rot_xyz)
+
+        df = self._trace_hypothesis(episode, step, obj, ix)
+        widget = self._add_lifespan_figure(
+            df, current_episode=int(episode), current_step=step
+        )
+        self.plotter.render()
+
+        return widget, False
+
+    def clear_plot(
+        self, widget: Image | None, msgs: list[TopicMessage]
+    ) -> tuple[Image | None, bool]:
+        """Clear the plot if present.
+
+        Args:
+            widget: Current plot object.
+            msgs: Unused. Present for the updater interface.
+
+        Returns:
+            `(widget, False)` to indicate no publish should occur.
+        """
+        if widget is not None:
+            self.plotter.remove(widget)
+            self.plotter.render()
+        return None, False
 
 
 class InteractivePlot:
@@ -1815,7 +2280,18 @@ class InteractivePlot:
             ),
             bus=self.event_bus,
             scheduler=self.scheduler,
-            debounce_sec=0.3,
+            debounce_sec=0.0,
+            dedupe=False,
+        )
+
+        widgets["hypothesis_life_span"] = Widget[Image, None](
+            widget_ops=HypothesisLifespanWidgetOps(
+                plotter=self.plotter,
+                data_parser=self.data_parser,
+            ),
+            bus=self.event_bus,
+            scheduler=self.scheduler,
+            debounce_sec=0.0,
             dedupe=False,
         )
 

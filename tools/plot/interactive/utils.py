@@ -10,9 +10,10 @@
 from __future__ import annotations
 
 import time
+from bisect import bisect_left
 from contextlib import suppress
 from dataclasses import dataclass
-from typing import Any, Callable, Hashable
+from typing import Any, Callable, Hashable, Iterable
 
 import numpy as np
 import numpy.typing as npt
@@ -292,3 +293,67 @@ class VtkDebounceScheduler:
             cb = self._callbacks.get(key)
             if cb:
                 cb()
+
+
+def trace_hypothesis_backward(
+    ix: int, removed_ids: Iterable[int], added_ids: Iterable[int]
+) -> int | None:
+    """Trace a hypothesis index backward one step in time.
+
+    This function reconstructs the index of a hypothesis at step `t-1`
+    given its index at step `t`, using the bookkeeping of which indices
+    were removed and which were newly added.
+
+    If `ix` corresponds to a newly added hypothesis at step `t`,
+    the hypothesis did not exist at step `t-1` → returns `None`.
+    Otherwise, reinserts the slots removed in the transition
+    (t-1 → t), which shifts the index to the right by one for each
+    removed index less than or equal to it.
+
+    Args:
+        ix: Index of the hypothesis at step t.
+        removed_ids: Sorted sequence of indices that were removed in
+            the transition (t-1 → t).
+        added_ids: Sorted sequence of indices that were newly added at step t.
+
+    Returns:
+        The index of the hypothesis at step (t-1), or `None` if the
+        hypothesis was newly added at step t.
+    """
+    ap = bisect_left(added_ids, ix)
+    if ap < len(added_ids) and added_ids[ap] == ix:
+        return None
+
+    i_prev = ix
+    for r in removed_ids:
+        if r <= i_prev:
+            i_prev += 1
+        else:
+            break
+    return i_prev
+
+
+def trace_hypothesis_forward(ix: int, removed_ids: Iterable[int]) -> int | None:
+    """Trace a hypothesis index forward one step in time.
+
+    This function computes the index of a hypothesis at step `t+1` given
+    its index at step `t`, using the list of indices removed during the
+    transition (t → t+1).
+
+    If the current index `ix` is removed, the hypothesis ceases to exist → returns
+    `None`. Otherwise, the index shifts left by the number of removed indices less
+    than `ix`.
+
+    Args:
+        ix: Index of the hypothesis at step t.
+        removed_ids: Sorted sequence of indices that were removed in the
+            transition (t → t+1).
+
+    Returns:
+        The index of the hypothesis at step (t+1), or `None` if the
+        hypothesis was removed.
+    """
+    pos = bisect_left(removed_ids, ix)
+    if pos < len(removed_ids) and removed_ids[pos] == ix:
+        return None
+    return ix - pos
