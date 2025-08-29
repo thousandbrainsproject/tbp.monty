@@ -7,7 +7,11 @@ This RFC proposes suggestions on when and to what degree LLMs should be used wit
 
 # Motivation
 
-LLM code-assistants have the potential to improve the productivity of coders. More generally, there is optimism that AI tools might accelerate science. At the same time, their use can introduce non-intuitive drawbacks. The aim of this RFC is to describe these in more detail, and agree on what guidance we should ask of both ourselves and the community.
+We're really excited to receive contributions from the wider community - one of the highlights of our day is when we see a new PR or RFC open from a non-Maintainer.
+
+The reason for this guide is that we have experienced a few instances of suspected LLM-based contributions. In these cases, the use of LLMs in writing material became an obstacle between us working together with the proposer, resulting in issues including long review times.
+
+As such, the below sections provide descriptions of the kinds of concerning attributes that are associated with LLM-generated contributions, and why these can be problematic. While we do not institute any strict guidance, please note that if we feel that the use of AI/LLMs has resulted in a contribution that matches these concerning patterns, Maintainers reserve the right to not review your contribution. We do not want to discourage contributions, but this balancing act on our part is an unfortunate side-effect of the small size of the Maintainers team vs. the speed at which LLM content can be generated.
 
 
 # Guidance on the Use of AI/LLMs
