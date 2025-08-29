@@ -92,9 +92,7 @@ def main():
     index_parser.add_argument(
         "folder", help="The docs directory to scan for markdown files"
     )
-    index_parser.add_argument(
-        "output_file", help="Path where to write the index.json file"
-    )
+    index_parser.add_argument("output_file", help="Path to output data file")
 
     args = parser.parse_args()
 

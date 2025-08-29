@@ -204,6 +204,7 @@ def check_links(path):
 
 def check_external(folder, ignore_dirs, rdme):
     errors = {}
+    ignore_dirs.extend([".pytest_cache", ".github", ".git"])
     total_links_checked = 0
     url_cache = {}  # Cache to store URL check results
 
