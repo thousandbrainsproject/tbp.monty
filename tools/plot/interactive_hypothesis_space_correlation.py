@@ -1764,7 +1764,7 @@ class HypothesisLifespanWidgetOps:
         return len(self.data_parser.query(self._locators["episode"]))
 
     def _increment_location_pair(
-        self, episode: int, step: int
+        self, episode: str, step: int
     ) -> tuple[str | None, int | None]:
         """Increment (episode, step) pair by one step.
 
@@ -1786,15 +1786,15 @@ class HypothesisLifespanWidgetOps:
                 - `next_episode` is the episode index (or `None` if no next),
                 - `next_step` is the step index (or `None` if no next).
         """
-        episode = int(episode)
+        ep = int(episode)
         num_episodes = self._num_episodes()
-        steps_here = self._num_steps_in_episode(str(episode))
+        steps_here = self._num_steps_in_episode(episode)
 
         if step < steps_here - 1:
-            return (str(episode), step + 1)
+            return (episode, step + 1)
 
-        if episode < num_episodes - 1:
-            return (str(episode + 1), 0)
+        if ep < num_episodes - 1:
+            return (str(ep + 1), 0)
 
         return (None, None)
 
@@ -1821,12 +1821,12 @@ class HypothesisLifespanWidgetOps:
                 - `prev_episode` is the episode index (or `None` if no next),
                 - `prev_step` is the step index (or `None` if no next).
         """
-        episode = int(episode)
+        ep = int(episode)
         if step > 0:
-            return (str(episode), step - 1)
+            return (episode, step - 1)
 
-        if episode > 0:
-            dec_episode = str(episode - 1)
+        if ep > 0:
+            dec_episode = str(ep - 1)
             return (dec_episode, self._num_steps_in_episode(dec_episode) - 1)
 
         return (None, None)
@@ -1903,7 +1903,7 @@ class HypothesisLifespanWidgetOps:
             episode_prev, step_prev = self._decrement_location_pair(episode_b, step_b)
 
             # This was the first episode
-            if episode_prev is None:
+            if episode_prev is None or step_prev is None:
                 break
             episode_b, step_b, idx_b = episode_prev, step_prev, idx_prev
 
@@ -1925,7 +1925,7 @@ class HypothesisLifespanWidgetOps:
             episode_next, step_next = self._increment_location_pair(episode_f, step_f)
 
             # This was the last episode
-            if episode_next is None:
+            if episode_next is None or step_next is None:
                 break
 
             _, removed_ids = self._extract_mod_ids(episode_next, step_next, obj)
