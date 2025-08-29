@@ -3,10 +3,6 @@ body {
   margin: 0px;
 }
 
-.search-container {
-  margin-bottom: 20px;
-}
-
 .badge,
 .badge-skills {
   padding: 2px 4px;
@@ -69,6 +65,7 @@ body {
   box-sizing: border-box;
   font-family: sans-serif;
   transition: border-color 0.2s ease;
+  margin-bottom: 10px;
 }
 
 #searchInput:focus {
