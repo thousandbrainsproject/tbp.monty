@@ -108,5 +108,8 @@ body {
 .tabulator-cell a:hover {
   color: white !important;
   transition: color 0.2s ease;
+}
 
+.tabulator-row.tabulator-group span {
+  display: none;
 }
