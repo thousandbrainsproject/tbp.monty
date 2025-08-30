@@ -861,8 +861,8 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
 
     def __init__(
         self,
-        scenes,
-        versions,
+        scenes=None,
+        versions=None,
         *args,
         **kwargs,
     ):
@@ -882,7 +882,9 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         self.scenes = scenes
         self.versions = versions
         self.current_scene_version = 0
-        self.n_versions = len(versions)
+        self.n_versions = (
+            len(versions) if versions else 0
+        )
 
     def post_episode(self):
         self.motor_system.post_episode()
@@ -933,38 +935,18 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
 
     def __init__(
         self,
-        # dataset: EnvironmentDataset, todo(anna)
-        motor_system: MotorSystem,
         *args,
         **kwargs,
     ):
         """Initialize dataloader.
 
         Args:
-            dataset: The environment dataset. todo(anna)
             motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
-
-        Raises:
-            TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
-        if not isinstance(motor_system, MotorSystem):
-            raise TypeError(
-                f"motor_system must be an instance of MotorSystem, got {motor_system}"
-            )
-        # TODO: call super init instead of duplication code & generally clean up more
-        self.motor_system = motor_system
-        self._observation, proprioceptive_state = self.reset()
-        self.motor_system._state = (
-            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
-        )
-        self._action = None
-        self._counter = 0
+        super(SaccadeOnImageFromStreamDataLoader, self).__init__(*args, **kwargs)
         self.current_scene = 0
-        self.episodes = 0
-        self.epochs = 0
-        self.primary_target = None
 
     def pre_epoch(self):
         # TODO: Could give a start index as parameter

@@ -430,7 +430,6 @@ class EmbodiedDataTest(unittest.TestCase):
             if i >= DATASET_LEN - 1:
                 break
 
-    @unittest.skip("anna debugging")
     def test_saccade_on_image_stream_dataloader(self):
         rng = np.random.RandomState(42)
         sensor_id = "patch"
@@ -441,12 +440,6 @@ class EmbodiedDataTest(unittest.TestCase):
         data_path = os.path.join(
             Path(__file__).parent,
             "resources/dataloader_test_images/0_numenta_mug/",
-        )
-
-        dataset_rel = EnvironmentDataset(
-            env_init_func=SaccadeOnImageFromStreamEnvironment,
-            env_init_args={"patch_size": patch_size, "data_path": data_path},
-            rng=rng,
         )
 
         base_policy_config_rel = make_base_policy_config(
@@ -460,20 +453,21 @@ class EmbodiedDataTest(unittest.TestCase):
         )
 
         dataloader_rel = SaccadeOnImageFromStreamDataLoader(
-            dataset=dataset_rel,
-            motor_system=motor_system_rel,
+            env_init_func=SaccadeOnImageFromStreamEnvironment,
+            env_init_args={"patch_size": patch_size, "data_path": data_path},
             rng=rng,
+            motor_system=motor_system_rel
         )
         dataloader_rel.pre_episode()
         initial_state = next(dataloader_rel)
         sensed_data = initial_state[AGENT_ID][sensor_id]
-        current_state = dataloader_rel.dataset.env.get_state()
+        current_state = dataloader_rel.env.get_state()
         prev_loc = current_state[AGENT_ID]["sensors"][sensor_id + ".depth"]["position"]
         self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
 
         for i, obs in enumerate(dataloader_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
-            current_state = dataloader_rel.dataset.env.get_state()
+            current_state = dataloader_rel.env.get_state()
             current_loc = current_state[AGENT_ID]["sensors"][sensor_id + ".depth"][
                 "position"
             ]
@@ -484,15 +478,16 @@ class EmbodiedDataTest(unittest.TestCase):
             prev_loc = current_loc
             if i >= DATASET_LEN - 1:
                 break
+
         dataloader_rel.post_episode()
         self.assertEqual(
-            dataloader_rel.dataset.env.current_scene,
+            dataloader_rel.env.current_scene,
             1,
             "Did not cycle to next scene version.",
         )
         for i, obs in enumerate(dataloader_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
-            current_state = dataloader_rel.dataset.env.get_state()
+            current_state = dataloader_rel.env.get_state()
             current_loc = current_state[AGENT_ID]["sensors"][sensor_id + ".depth"][
                 "position"
             ]
