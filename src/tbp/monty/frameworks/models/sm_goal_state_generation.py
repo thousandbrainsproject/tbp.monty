@@ -193,6 +193,10 @@ class TargetFinder:
 """
 
 class DecayKernel:
+    """Decay kernel represents a previously visited location.
+
+    Returns the product of an time- and space- dependent exponentials.
+    """
 
     def __init__(
         self,
@@ -321,7 +325,8 @@ class DecayKernel:
 class DecayField:
     """Implements inhibition of return.
 
-    Used to weight `GoalState.confidence` values.
+    Manages a collection of decay kernels. Used to weight
+    `GoalState.confidence` values.
     """
 
     def __init__(
