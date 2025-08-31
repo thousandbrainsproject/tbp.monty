@@ -122,10 +122,12 @@ class MuJoCoSimulator(Simulator):
             quat=rotation,
         )
 
-    def get_num_objects(self) -> int:
+    @property
+    def num_objects(self) -> int:
         return self._object_count
 
-    def get_action_space(self) -> None:
+    @property
+    def action_space(self) -> None:
         pass
 
     def get_agent(
@@ -134,10 +136,12 @@ class MuJoCoSimulator(Simulator):
     ) -> None:
         pass
 
-    def get_observations(self) -> None:
+    @property
+    def observations(self) -> None:
         pass
 
-    def get_states(self) -> None:
+    @property
+    def states(self) -> None:
         pass
 
     def apply_action(self, action: Action) -> Dict[str, Dict]:

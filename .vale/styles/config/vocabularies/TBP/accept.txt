@@ -57,9 +57,9 @@
 \bCorticofugal\b
 \bCPUs?\b
 \bCui\b
-\bdataclass\b
+\bdataclass(es)?\b
 \bDataloader\b
-\bdiscretization\b
+\b[Dd]iscretiz(ing|ation)\b
 \bdistractor\b
 \bDNNs?\b
 \b[Dd]ocstrings?\b
@@ -122,9 +122,11 @@
 \bMontymentous\b
 \bMountcastle\b
 \bmultimodal\b
+\b[Mm]ypy\b
 \bNadel\b
 \bNeuroanatomy\b
 \bneurophysiologist\b
+\b[Nn]ew[Tt]ype(s)?\b
 \bNum\b
 \bNumenta\b
 \bNumPy|Numpy\b
@@ -166,6 +168,7 @@
 \bsubfolders\b
 \bsubtasks\b
 \bsubstep\b
+\bsubtyp(e|ing)\b
 \bsync'd\b
 \bSync'ing\b
 \bSzegedy\b
@@ -176,6 +179,7 @@
 \bTolman's\b
 \btransthalamic\b
 \bunmerged\b
+\buntrusted\b
 \bURL\b
 \bUsrey\b
 \butils\b
