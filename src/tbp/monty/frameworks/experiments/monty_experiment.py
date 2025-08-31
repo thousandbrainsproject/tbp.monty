@@ -23,7 +23,6 @@ from typing_extensions import Self
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentDataLoader,
     EnvironmentDataLoaderPerObject,
-    EnvironmentDataset,
     SaccadeOnImageDataLoader,
     SaccadeOnImageFromStreamDataLoader,
 )
@@ -84,7 +83,7 @@ class MontyExperiment:
             monty_config=config["monty_config"],
             model_path=self.model_path,
         )
-        self.load_dataset_and_dataloaders(config)
+        self.load_dataloaders(config)
         self.init_monty_data_loggers(self.config["logging_config"])
         self.init_counters()
 
@@ -204,16 +203,23 @@ class MontyExperiment:
 
         return model
 
-    def load_dataset_and_dataloaders(self, config):
+    def load_dataloaders(self, config):
         # Initialize everything needed for dataloader
-        dataset_class = config["dataset_class"]
-        dataset_args = config["dataset_args"]
-        self.dataset = self.load_dataset(dataset_class, dataset_args)
+# TODO
+        # dataset_class = config["dataset_class"]
+        # dataset_args = config["dataset_args"]
+        # self.dataset = self.load_dataset(dataset_class, dataset_args)
+        dataloader_args = {
+            # TODO(anna): next step is to update config dataset_args
+            "env_init_func": config["dataset_args"]["env_init_func"],
+            "env_init_args": config["dataset_args"]["env_init_args"],
+            "transform": config["dataset_args"]["transform"],
+        }
 
         # Initialize train dataloaders if needed
         if config["experiment_args"]["do_train"]:
             dataloader_class = config["train_dataloader_class"]
-            dataloader_args = config["train_dataloader_args"]
+            dataloader_args.update(config["train_dataloader_args"])
             self.train_dataloader = self.create_data_loader(
                 dataloader_class, dataloader_args
             )
@@ -223,39 +229,15 @@ class MontyExperiment:
         # Initialize eval dataloaders if needed
         if config["experiment_args"]["do_eval"]:
             dataloader_class = config["eval_dataloader_class"]
-            dataloader_args = config["eval_dataloader_args"]
+            dataloader_args.update(config["eval_dataloader_args"])
             self.eval_dataloader = self.create_data_loader(
                 dataloader_class, dataloader_args
             )
         else:
             self.eval_dataloader = None
 
-    def load_dataset(self, dataset_class, dataset_args):
-        """Instantiate a dataset.
-
-        Possible splits include train and val for now, though this could change later
-        based on how we implement validation for monty.
-
-        Args:
-            dataset_class: The class of the dataset.
-            dataset_args: The arguments for the dataset.
-
-        Returns:
-            The instantiated dataset.
-
-        Raises:
-            TypeError: If `dataset_class` is not a subclass of `EnvironmentDataset`
-        """
-        # Require dataset_class to be EnvironmentDataset now, generalize later
-        if not issubclass(dataset_class, EnvironmentDataset):
-            raise TypeError("dataset class must be EnvironmentDataset (for now)")
-
-        dataset_args["rng"] = self.rng
-        dataset = dataset_class(**dataset_args)
-        return dataset
-
     def create_data_loader(self, dataloader_class, dataloader_args):
-        """Dataloader used to collect data by sampling from dataset.
+        """Dataloader used to collect data by sampling from dataset. anna todo.
 
         Args:
             dataloader_class: The class of the dataloader.
@@ -268,14 +250,13 @@ class MontyExperiment:
             TypeError: If `dataloader_class` is not a subclass of
                 `EnvironmentDataLoader`
         """
-        # lump dataset and motor system into dataloader args
+        # lump dataset and motor system into dataloader args todo(anna)
         # assume fixed dataset, training and validation are just different loaders
         if not issubclass(dataloader_class, EnvironmentDataLoader):
-            raise TypeError("dataset class must be EnvironmentDataLoader (for now)")
+            raise TypeError("dataloader class must be EnvironmentDataLoader (for now)")
 
         dataloader = dataloader_class(
             **dataloader_args,
-            dataset=self.dataset,
             motor_system=self.model.motor_system,
             rng=self.rng,
         )
@@ -631,8 +612,8 @@ class MontyExperiment:
             setattr(self, k, exp_state_dict[k])
 
     def close(self):
-        if isinstance(self.dataset, EnvironmentDataset):
-            self.dataset.close()
+        if isinstance(self.dataloader, EnvironmentDataLoader):
+            self.dataloader.close()
 
         # Close monty logging
         self.logger_handler.close(self.logger_args)
