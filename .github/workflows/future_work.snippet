@@ -1,0 +1,24 @@
+# build the future work widget - run this both for merges to main and PRs
+      - name: Build future work widget
+        if: ${{ needs.should_run_future_work.outputs.should_run_future_work == 'true' }}
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          python -m tools.github_readme_sync.cli generate-index docs "${{ runner.temp }}/index.json"
+          python -m tools.future_work_widget.cli build "${{ runner.temp }}/index.json" "${{ runner.temp }}/future-work-widget"
+          cp tools/future_work_widget/app/* "${{ runner.temp }}/future-work-widget/"
+          ls -lR "${{ runner.temp }}"
+
+# deploy the future work widget to S3 only run for merges to main.
+      - name: Configure AWS credentials
+        if: ${{ needs.should_run_future_work.outputs.should_run_future_work == 'true' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION || 'us-east-1' }}
+      - name: Upload future work widget to S3
+        if: ${{ needs.should_run_future_work.outputs.should_run_future_work == 'true' }}
+        run: |
+          aws s3 sync "${{ runner.temp }}/future-work-widget/" s3://${{ secrets.S3_BUCKET_NAME }}/future-work-widget/ --delete
