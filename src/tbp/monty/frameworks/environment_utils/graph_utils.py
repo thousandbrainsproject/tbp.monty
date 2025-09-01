@@ -9,6 +9,7 @@
 # https://opensource.org/licenses/MIT.
 from typing import Optional
 
+
 def get_edge_index(graph, previous_node, new_node) ->  Optional[int]:
     """Get the edge index between two nodes in a graph.
 
