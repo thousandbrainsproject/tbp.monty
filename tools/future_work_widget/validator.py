@@ -14,6 +14,22 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+class ValidationError:
+    """Represents a validation error with file context."""
+
+    def __init__(
+        self,
+        message: str,
+        file_path: str,
+        line_number: int = 1,
+        field: Optional[str] = None,
+    ):
+        self.message = message
+        self.file_path = file_path
+        self.line_number = line_number
+        self.field = field
+
+
 class RecordValidator:
     """Validates and transforms records for the future work widget."""
 
@@ -22,7 +38,7 @@ class RecordValidator:
     REQUIRED_FIELDS: List[str] = []  # add in rfc and estimated-scope once ready.
 
     def __init__(self, docs_snippets_dir: Optional[str] = None):
-        self.errors: List[str] = []
+        self.errors: List[ValidationError] = []
         self.validation_sets: Dict[str, List[str]] = {}
         if docs_snippets_dir:
             self._load_validation_files(docs_snippets_dir)
@@ -40,6 +56,7 @@ class RecordValidator:
             return None
 
         transformed_record = record.copy()
+        file_path = record.get("path", "unknown")
 
         for field in self.COMMA_SEPARATED_FIELDS:
             if field in transformed_record and isinstance(
@@ -48,24 +65,38 @@ class RecordValidator:
                 items = [tag.strip() for tag in transformed_record[field].split(",")]
                 if len(items) > self.MAX_COMMA_SEPARATED_ITEMS:
                     self.errors.append(
-                        f"{field} field cannot have more than "
-                        f"{self.MAX_COMMA_SEPARATED_ITEMS} items. "
-                        f"Got {len(items)} items: {', '.join(items)}"
+                        ValidationError(
+                            f"{field} field cannot have more than "
+                            f"{self.MAX_COMMA_SEPARATED_ITEMS} items. "
+                            f"Got {len(items)} items: {', '.join(items)}",
+                            file_path,
+                            field=field,
+                        )
                     )
                 transformed_record[field] = items
 
-        self._validate_required_fields(transformed_record)
-        self._validate_field_values(transformed_record)
+        self._validate_required_fields(transformed_record, file_path)
+        self._validate_field_values(transformed_record, file_path)
 
         return transformed_record
 
-    def _validate_required_fields(self, record: Dict[str, Any]) -> None:
+    def _validate_required_fields(self, record: Dict[str, Any], file_path: str) -> None:
         """Validate that all required fields are present and not empty."""
         for field in self.REQUIRED_FIELDS:
             if field not in record:
-                self.errors.append(f"Required field '{field}' is missing")
+                self.errors.append(
+                    ValidationError(
+                        f"Required field '{field}' is missing", file_path, field=field
+                    )
+                )
             elif not isinstance(record[field], str) or not record[field].strip():
-                self.errors.append(f"Required field '{field}' cannot be empty")
+                self.errors.append(
+                    ValidationError(
+                        f"Required field '{field}' cannot be empty",
+                        file_path,
+                        field=field,
+                    )
+                )
 
     def _extract_readable_values(self, regex_patterns: List[str]) -> List[str]:
         """Extract human-readable values from regex patterns for error messages.
@@ -86,11 +117,11 @@ class RecordValidator:
                 readable_values.append(f"pattern: {pattern}")
         return sorted(readable_values)
 
-    def get_errors(self) -> List[str]:
+    def get_errors(self) -> List[ValidationError]:
         """Get all validation errors.
 
         Returns:
-            List of validation error messages
+            List of ValidationError objects
         """
         return self.errors.copy()
 
@@ -138,11 +169,12 @@ class RecordValidator:
             except (OSError, UnicodeDecodeError):
                 logging.exception(f"Failed to load validation file {file_path}")
 
-    def _validate_field_values(self, record: Dict[str, Any]) -> None:
+    def _validate_field_values(self, record: Dict[str, Any], file_path: str) -> None:
         """Validate field values against loaded validation sets.
 
         Args:
             record: The record to validate
+            file_path: Path to the source file for error reporting
         """
         for field_name, regex_patterns in self.validation_sets.items():
             if field_name in record:
@@ -162,6 +194,10 @@ class RecordValidator:
                         values_str = ", ".join(readable_values)
 
                         self.errors.append(
-                            f"Invalid {field_name} value '{value}'. "
-                            f"Valid values are: {values_str}"
+                            ValidationError(
+                                f"Invalid {field_name} value '{value}'. "
+                                f"Valid values are: {values_str}",
+                                file_path,
+                                field=field_name,
+                            )
                         )

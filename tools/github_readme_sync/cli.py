@@ -109,7 +109,7 @@ def main():
     elif args.command == "upload":
         check_env()
         hierarchy = check_hierarchy_file(args.folder)
-        upload(hierarchy, args.folder, rdme=ReadMe(args.version))
+        upload(hierarchy, args.folder, ReadMe(args.version))
 
     elif args.command == "check-external":
         check_readme_api_key()

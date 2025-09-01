@@ -8,12 +8,16 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 import argparse
+import json
 import logging
 import os
 import sys
 from pathlib import Path
 
 from .build import build
+
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from github_readme_sync.colors import RED, RESET
 
 monty_root = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(monty_root))
@@ -38,6 +42,11 @@ def main():
         help="Path to docs/snippets directory for validation files",
         default="docs/snippets",
     )
+    build_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output validation results in JSON format for CI/CD integration",
+    )
 
     args = parser.parse_args()
 
@@ -45,14 +54,33 @@ def main():
 
     if args.command == "build":
         docs_snippets_dir = args.docs_snippets_dir
-        try:
-            build(args.index_file, args.output_dir, docs_snippets_dir)
-        except ValueError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            sys.exit(1)
-        except Exception as e:
-            logging.exception("Unexpected error during build")
-            sys.exit(1)
+
+        if args.json:
+            logging.getLogger().setLevel(logging.CRITICAL)
+
+        result = build(args.index_file, args.output_dir, docs_snippets_dir)
+
+        if args.json:
+            print(json.dumps(result, indent=2))
+        elif not result["success"]:
+            error_count = len(result["errors"])
+            print(
+                f"{RED}Error: Validation failed with {error_count} error(s):{RESET}",
+                file=sys.stderr,
+            )
+            print(file=sys.stderr)
+
+            for i, error in enumerate(result["errors"], 1):
+                file_path = error["file"]
+                line = error["line"]
+                message = error["message"]
+
+                print(f"{file_path}:{line}", file=sys.stderr)
+                print(f"{message}", file=sys.stderr)
+                if i < error_count:
+                    print(file=sys.stderr)
+
+        sys.exit(0 if result["success"] else 1)
 
 
 def initialize():

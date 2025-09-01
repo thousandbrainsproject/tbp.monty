@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from tools.future_work_widget.build import build
+from tools.future_work_widget.validator import RecordValidator
 
 
 class TestBuild(unittest.TestCase):
@@ -55,12 +56,18 @@ class TestBuild(unittest.TestCase):
 
         Returns:
             The processed data from the output JSON file.
+
+        Raises:
+            ValueError: If the build fails with validation errors.
         """
         index_file = self.temp_path / "index.json"
         with open(index_file, "w", encoding="utf-8") as f:
             json.dump(input_data, f)
 
-        build(str(index_file), str(self.output_path), snippets_dir)
+        result = build(str(index_file), str(self.output_path), snippets_dir)
+
+        if not result["success"]:
+            raise ValueError(result["error_message"])
 
         data_file = self.output_path / "data.json"
         with open(data_file, "r", encoding="utf-8") as f:
@@ -91,12 +98,18 @@ class TestBuild(unittest.TestCase):
 
         Returns:
             The processed data from the output JSON file.
+
+        Raises:
+            ValueError: If the build fails with validation errors.
         """
         index_file = self.temp_path / "index.json"
         with open(index_file, "w", encoding="utf-8") as f:
             json.dump(input_data, f)
 
-        build(str(index_file), str(self.output_path))
+        result = build(str(index_file), str(self.output_path))
+
+        if not result["success"]:
+            raise ValueError(result["error_message"])
 
         data_file = self.output_path / "data.json"
         with open(data_file, "r", encoding="utf-8") as f:
@@ -112,10 +125,10 @@ class TestBuild(unittest.TestCase):
         with open(index_file, "w", encoding="utf-8") as f:
             json.dump(input_data, f)
 
-        with self.assertRaises(ValueError) as context:
-            build(str(index_file), str(self.output_path))
+        result = build(str(index_file), str(self.output_path))
 
-        self.assertIn(expected_error_fragment, str(context.exception))
+        self.assertFalse(result["success"])
+        self.assertIn(expected_error_fragment, result["error_message"])
 
     def test_build_filters_future_work_items(self):
         input_data = [
@@ -192,6 +205,96 @@ class TestBuild(unittest.TestCase):
         result_data = self._run_build_test(input_data)
         self.assertEqual(len(result_data), 1)
 
+    def test_json_output_success(self):
+        """Test JSON output mode for successful build."""
+        input_data = [
+            self._create_test_item(path2="test-success", title="Test success item")
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        result = build(str(index_file), str(self.output_path))
+
+        self.assertIsNotNone(result)
+        self.assertTrue(result["success"])
+        self.assertEqual(result["processed_items"], 1)
+        self.assertEqual(result["total_items"], 1)
+        self.assertEqual(len(result["errors"]), 0)
+
+    def test_json_output_validation_errors(self):
+        """Test JSON output mode with validation errors."""
+        snippets_dir = self._create_snippets(
+            {"future-work-tags.md": "`accuracy` `pose` `learning`"}
+        )
+
+        input_data = [
+            self._create_test_item(
+                path="docs/future-work/test-item.md",
+                path2="test-item",
+                title="Test item with invalid tags",
+                tags="invalid-tag,accuracy",
+            )
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        result = build(str(index_file), str(self.output_path), snippets_dir)
+
+        self.assertIsNotNone(result)
+        self.assertFalse(result["success"])
+        self.assertEqual(result["processed_items"], 1)
+        self.assertEqual(result["total_items"], 1)
+        self.assertEqual(len(result["errors"]), 1)
+
+        error = result["errors"][0]
+        self.assertIn("Invalid tags value 'invalid-tag'", error["message"])
+        self.assertEqual(error["file"], "docs/future-work/test-item.md")
+        self.assertEqual(error["line"], 1)
+        self.assertEqual(error["field"], "tags")
+        self.assertEqual(error["level"], "error")
+        self.assertEqual(error["annotation_level"], "failure")
+        self.assertIn("test-item.md", error["title"])
+
+    def test_json_output_too_many_items_error(self):
+        """Test JSON output mode with too many comma-separated items."""
+        max_items = RecordValidator.MAX_COMMA_SEPARATED_ITEMS
+        too_many_tags = ",".join([f"tag{i}" for i in range(max_items + 1)])
+
+        input_data = [
+            self._create_test_item(
+                path="docs/future-work/test-limits.md",
+                path2="test-limits",
+                title="Test item with too many tags",
+                tags=too_many_tags,
+            )
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        result = build(str(index_file), str(self.output_path))
+
+        self.assertIsNotNone(result)
+        self.assertFalse(result["success"])
+        self.assertEqual(result["processed_items"], 1)
+        self.assertEqual(result["total_items"], 1)
+        self.assertEqual(len(result["errors"]), 1)
+
+        error = result["errors"][0]
+        self.assertIn("tags field cannot have more than", error["message"])
+        self.assertIn(str(max_items), error["message"])
+        self.assertEqual(error["file"], "docs/future-work/test-limits.md")
+        self.assertEqual(error["line"], 1)
+        self.assertEqual(error["field"], "tags")
+        self.assertEqual(error["level"], "error")
+        self.assertEqual(error["annotation_level"], "failure")
+        self.assertIn("test-limits.md", error["title"])
+
     def test_field_validation_scenarios(self):
         """Test validation for various fields with valid and invalid values."""
         validation_cases = [
@@ -249,7 +352,8 @@ class TestBuild(unittest.TestCase):
                 with open(index_file, "w", encoding="utf-8") as f:
                     json.dump([valid_item], f)
 
-                build(str(index_file), str(self.output_path), snippets_dir)
+                result = build(str(index_file), str(self.output_path), snippets_dir)
+                self.assertTrue(result["success"])
 
                 invalid_item = self._create_test_item(
                     **{case["field_name"]: case["invalid_value"]}
@@ -258,10 +362,10 @@ class TestBuild(unittest.TestCase):
                 with open(index_file, "w", encoding="utf-8") as f:
                     json.dump([invalid_item], f)
 
-                with self.assertRaises(ValueError) as context:
-                    build(str(index_file), str(self.output_path), snippets_dir)
+                result = build(str(index_file), str(self.output_path), snippets_dir)
+                self.assertFalse(result["success"])
 
-                error_message = str(context.exception)
+                error_message = result["error_message"]
                 for fragment in case["expected_error_fragments"]:
                     self.assertIn(fragment, error_message)
 
@@ -295,10 +399,10 @@ class TestBuild(unittest.TestCase):
         with open(index_file, "w", encoding="utf-8") as f:
             json.dump([invalid_item], f)
 
-        with self.assertRaises(ValueError) as context:
-            build(str(index_file), str(self.output_path), snippets_dir)
+        result = build(str(index_file), str(self.output_path), snippets_dir)
+        self.assertFalse(result["success"])
 
-        error_message = str(context.exception)
+        error_message = result["error_message"]
         self.assertIn("Invalid rfc value 'invalid-rfc'", error_message)
         self.assertIn("Valid values are:", error_message)
 
@@ -326,10 +430,10 @@ class TestBuild(unittest.TestCase):
         with open(index_file, "w", encoding="utf-8") as f:
             json.dump([invalid_item], f)
 
-        with self.assertRaises(ValueError) as context:
-            build(str(index_file), str(self.output_path), snippets_dir)
+        result = build(str(index_file), str(self.output_path), snippets_dir)
+        self.assertFalse(result["success"])
 
-        error_message = str(context.exception)
+        error_message = result["error_message"]
         self.assertIn("Invalid tags value 'invalid-tag'", error_message)
 
 
