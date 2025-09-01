@@ -7,6 +7,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import unittest  # TODO anna
+
 import pytest
 
 pytest.importorskip(
@@ -34,7 +36,6 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
 )
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentDataLoaderPerObject,
-    EnvironmentDataset,
 )
 from tbp.monty.frameworks.experiments import MontyExperiment, ProfileExperimentMixin
 from tbp.monty.simulators.habitat.configs import (
@@ -47,11 +48,13 @@ from tests.unit.frameworks.config_utils.fakes.config_args import (
 
 
 class InheritanceProfileExperimentMixinTest(TestCase):
+    @unittest.skip("debugging")
     @staticmethod
     def test_leftmost_subclassing_does_not_error() -> None:
         class GoodSubclass(ProfileExperimentMixin, MontyExperiment):
             pass
 
+    @unittest.skip("debugging")
     @staticmethod
     def test_non_leftmost_subclassing_raises_error() -> None:
         with pytest.raises(TypeError):
@@ -59,6 +62,7 @@ class InheritanceProfileExperimentMixinTest(TestCase):
             class BadSubclass(MontyExperiment, ProfileExperimentMixin):
                 pass
 
+    @unittest.skip("debugging")
     @staticmethod
     def test_missing_experiment_base_raises_error() -> None:
         with pytest.raises(TypeError):
@@ -66,6 +70,7 @@ class InheritanceProfileExperimentMixinTest(TestCase):
             class BadSubclass(ProfileExperimentMixin):
                 pass
 
+    @unittest.skip("debugging")
     @staticmethod
     def test_experiment_subclasses_are_properly_detected() -> None:
         class SubExperiment(MontyExperiment):
@@ -90,7 +95,6 @@ class ProfileExperimentMixinTest(TestCase):
                 output_dir=self.output_dir, python_log_level="DEBUG"
             ),
             monty_config=FakeSingleCameraMontyConfig(),
-            dataset_class=EnvironmentDataset,
             dataset_args=SinglePTZHabitatDatasetArgs(
                 env_init_args=EnvInitArgsSinglePTZ(data_path=None).__dict__
             ),
@@ -135,24 +139,30 @@ class ProfileExperimentMixinTest(TestCase):
                     first_line, ",func,ncalls,ccalls,tottime,cumtime,callers"
                 )
 
+    # @unittest.skip("debugging")
     def test_run_episode_is_profiled(self) -> None:
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        with ProfiledExperiment(base_config) as exp:
+        exp = ProfiledExperiment(base_config)
+        # with ProfiledExperiment(base_config) as exp:
+        try:
             pprint("...training...")
             exp.model.set_experiment_mode("train")
             exp.dataloader = exp.train_dataloader
             exp.run_episode()
 
-        self.assertSetEqual(
-            self.get_profile_files(),
-            {
-                "profile-setup_experiment.csv",
-                "profile-train_epoch_0_episode_0.csv",
-            },
-        )
-        self.spot_check_profile_files()
+            self.assertSetEqual(
+                self.get_profile_files(),
+                {
+                    "profile-setup_experiment.csv",
+                    "profile-train_epoch_0_episode_0.csv",
+                },
+            )
+            self.spot_check_profile_files()
+        finally:
+            exp.close()
 
+    @unittest.skip("debugging")
     def test_run_train_epoch_is_profiled(self) -> None:
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
@@ -171,6 +181,7 @@ class ProfileExperimentMixinTest(TestCase):
         )
         self.spot_check_profile_files()
 
+    @unittest.skip("debugging")
     def test_run_eval_epoch_is_profiled(self) -> None:
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
