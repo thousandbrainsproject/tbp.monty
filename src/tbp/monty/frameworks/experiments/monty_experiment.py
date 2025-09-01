@@ -612,11 +612,12 @@ class MontyExperiment:
             setattr(self, k, exp_state_dict[k])
 
     def close(self):
-        if isinstance(self.dataloader, EnvironmentDataLoader):
+        if hasattr(self, "dataloader") and isinstance(self.dataloader, EnvironmentDataLoader):
             self.dataloader.close()
 
         # Close monty logging
-        self.logger_handler.close(self.logger_args)
+        if hasattr(self, "logger_handler"):
+            self.logger_handler.close(self.logger_args)
 
         # Close python logging
         for handler in logger.handlers:
