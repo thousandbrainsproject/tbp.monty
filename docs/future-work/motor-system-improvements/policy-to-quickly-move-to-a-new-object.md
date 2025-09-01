@@ -1,7 +1,5 @@
 ---
 title: Policy to quickly move to a new object
-rfc: optional
-estimated-scope: unknown
 ---
 
 When exploring an environment with multiple objects (including components of a compositional object), it is beneficial to quickly move to a new object when the current one has been recognized, so as to rapidly build up a model of the outside world. 

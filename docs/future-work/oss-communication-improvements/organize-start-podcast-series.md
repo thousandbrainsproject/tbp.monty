@@ -1,5 +1,6 @@
 ---
 title: Organize & Start Podcast Series
-rfc: optional
-estimated-scope: unknown
+rfc: required
+estimated-scope: large
+skills: podcasting, interviewing, research, thousand brains theory, writing, video editing, content marketing
 ---

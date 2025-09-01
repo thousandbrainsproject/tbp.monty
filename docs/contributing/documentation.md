@@ -151,6 +151,9 @@ To check the links, [activate the conda environment](../how-to-use-monty/getting
 python -m tools.github_readme_sync.cli check docs
 ```
 
+> [!NOTE] 
+> See the [readme sync tool documentation](https://github.com/thousandbrainsproject/tbp.monty/blob/main/tools/github_readme_sync/README.md) for more details on how to use it and how to install the additional dependencies for it.
+
 # Images
 
 See the [Style Guide](style-guide.md#images) images section for details about creating and referencing images correctly.
@@ -175,20 +178,36 @@ The future work documents have special Frontmatter metadata that is used to powe
 
 ### Tags
 
+Tags is a comma separated list of keywords that might be useful for filtering the future work items. [edit](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-tags.md) them here.
+
 !snippet[../snippets/future-work-tags.md]
 
 ### Skills
+
+Skills is a comma separated list of skills that will be needed to complete this. [edit](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-skills.md) them here.
 
 !snippet[../snippets/future-work-skills.md]
 
 ### Estimated Scope
 
+Very roughly, how big of a chunk of work is this? [edit](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-estimated-scope.md) them here.
+
 !snippet[../snippets/future-work-estimated-scope.md]
 
 ### Status
+
+Is the work completed, or is it in progress? [edit](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-status.md) them here.
 
 !snippet[../snippets/future-work-status.md]
 
 ### RFC
 
+Does this work item required an RFC? [edit](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-rfc.md) them here.
+
 !snippet[../snippets/future-work-rfc.md]
+
+### Owner
+
+The owner field should be GitHub usernames, as these are converted to their avatar inside the table. [edit](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-owner.md) the regex here.
+
+!snippet[../snippets/future-work-owner.md]
