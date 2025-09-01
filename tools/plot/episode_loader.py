@@ -11,7 +11,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 from typing import TYPE_CHECKING
 
@@ -19,6 +18,7 @@ import numpy as np
 import torch
 
 from tbp.monty.frameworks.utils.graph_matching_utils import get_relevant_curvature
+from tbp.monty.frameworks.utils.logging_utils import deserialize_json_chunks
 
 from .data_models import (
     ObjectModelForVisualization,
@@ -50,16 +50,6 @@ def get_model_path(experiment_log_dir: Path) -> Path:
         raise FileNotFoundError(f"Model file not found at {model_path}")
 
     return model_path
-
-
-def deserialize_json_chunks_fast(json_file, episode_id=0):
-    # Load specific episode by line number (0-indexed)
-    with open(json_file, "r") as f:
-        for _ in range(episode_id + 1):
-            line = f.readline().strip()
-        data = json.loads(line)
-
-    return data
 
 
 def load_object_model(
@@ -148,9 +138,9 @@ class EpisodeDataLoader:
             episode_id = self.episode_id
         logger.info(f"Loading episode {episode_id} data from: {self.json_path}")
 
-        episode_data = deserialize_json_chunks_fast(
-            self.json_path, episode_id=episode_id
-        )[str(episode_id)]
+        episode_data = deserialize_json_chunks(self.json_path, episode_id=episode_id)[
+            str(episode_id)
+        ]
         self.lm_data = episode_data["LM_0"]
         self.num_lm_steps = len(self.lm_data["possible_locations"])
         self.sm0_data = episode_data["SM_0"]

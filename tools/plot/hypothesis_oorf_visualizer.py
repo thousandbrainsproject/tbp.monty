@@ -84,6 +84,7 @@ def compute_reference_frame_analysis(
         object_model: ObjectModel containing points and features.
         hypothesis_locations: Array of hypothesis locations (n_hypotheses, 3).
         hypothesis_rotations: Rotation matrix for each hypothesis (n_hypotheses, 3, 3).
+            This is the hypothesized rotation of the object.
         sensed_orientation: Sensed pose vectors (3, 3) to be transformed by hypotheses.
             At each timestep, the Sensor Module extracts pose_vectors from RGBD image,
             where pose_vectors represent row vectors of [surface_normal, pc1, pc2].
@@ -140,9 +141,8 @@ class HypothesesOORFVisualizer:
 
     Args:
         json_path: Path to the detailed_run_stats.json file containing episode data.
-        model_name: Name of pretrained model to load object from.
-        max_match_distance: Maximum distance for matching.
-        max_nneighbors: Maximum number of nearest neighbors to consider.
+        model_path: Path to the pretrained model to load object from.
+        episode_id: Episode ID to visualize.
     """
 
     def __init__(
@@ -407,9 +407,7 @@ class HypothesesOORFVisualizer:
         self.object_pointcloud.point_size(8)
         self.plotter.at(self.main_renderer_ix).add(self.object_pointcloud)
 
-    def _add_hypotheses_points(
-        self,
-    ) -> None:
+    def _add_hypotheses_points(self) -> None:
         """Add hypotheses' locations in world frame colored by OORF status.
 
         The points are colored blue if they are inside the object's reference frame,
@@ -459,10 +457,10 @@ class HypothesesOORFVisualizer:
         )
 
     def _add_highest_evidence_hypothesis_visualization(self) -> None:
-        """Add visualization elements for the highest evidence hypothesis.
+        """Add visualization elements for the highest evidence hypothesis (HEH).
 
         Adds ellipsoid, center cube, nearest neighbors, and sensed pose vector arrows
-        for the highest evidence hypothesis.
+        for the highest evidence hypothesis (HEH).
         """
         is_inside_reference_frame = self.hypotheses_inside_reference_frame[
             self.current_highest_evidence_index
@@ -495,7 +493,27 @@ class HypothesesOORFVisualizer:
         is_inside_reference_frame: bool,
         is_heh: bool = False,
     ) -> None:
-        """Add ellipsoid around hypothesis based on sensed orientation."""
+        """Add ellipsoid around hypothesis based on sensed orientation.
+
+        The ellipsoid represents the region where a hypothesis is considered valid
+        based on the custom distance metric that incorporates surface curvature.
+
+        Derivation of the normal axis length:
+        Let d be the distance in the direction of the surface normal.
+        The custom distance metric is:
+            custom_nearest_node_dists = d + d * stretch_factor
+        where stretch_factor = 1 / (|search_curvature| + 0.5)
+
+        For a point to be within the ellipsoid:
+            custom_nearest_node_dists <= max_match_distance
+            d * (1 + stretch_factor) <= max_match_distance
+            d <= max_match_distance / (1 + stretch_factor)
+
+        Therefore, the normal axis length is: max_match_distance / (1 + stretch_factor)
+
+        This creates an ellipsoid that accounts for the curvature-dependent stretching
+        of the distance metric in the normal direction.
+        """
         surface_normal, tangent1, tangent2 = (
             self._transform_sensed_orientation_by_hypothesis(hypothesis_rotation)
         )
@@ -536,7 +554,7 @@ class HypothesesOORFVisualizer:
     def _add_highest_hypothesis_center_cube(
         self, location: np.ndarray, is_inside_reference_frame: bool
     ) -> None:
-        """Add a cube at the location of the highest evidence hypothesis.
+        """Add a cube at the location of the highest evidence hypothesis (HEH).
 
         The highest evidence hypothesis is the one with the highest evidence score
         for the subset of hypotheses whose target is the same as the object. It can be
@@ -686,7 +704,7 @@ class HypothesesOORFVisualizer:
 
         formatted_position = np.array2string(
             np.array(self.data_loader.ground_truth_position),
-            precision=2,  # show up to 2 decimal places
+            precision=2,
             separator=", ",
             suppress_small=False,
         )
@@ -781,10 +799,7 @@ class HypothesesOORFVisualizer:
             self.plotter.at(self.main_renderer_ix).add(item)
 
 
-def plot_target_hypotheses(
-    exp_path: Path,
-    episode_id: int = 0,
-) -> int:
+def plot_target_hypotheses(exp_path: Path, episode_id: int = 0) -> int:
     """Plot target object hypotheses with interactive timestep slider.
 
     Args:
