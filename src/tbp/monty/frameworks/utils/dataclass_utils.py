@@ -13,17 +13,27 @@ import copy
 import dataclasses
 import importlib
 from inspect import Parameter, signature
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Type
+from typing import Any, Callable, ClassVar, Dict, Optional, Protocol, Type
 
 from typing_extensions import TypeIs
 
-if TYPE_CHECKING:
-    from _typeshed import DataclassInstance
+
+class Dataclass(Protocol):
+    """A protocol for dataclasses to be used in type hints.
+
+    The reason this exists is because dataclass.dataclass is not a valid type.
+    """
+
+    __dataclass_fields__: ClassVar[Dict[str, Any]]
+    """Checking for presence of __dataclass_fields__ is a hack to check if a class is a
+    dataclass."""
+
 
 __all__ = [
     "as_dataclass_dict",
     "create_dataclass_args",
     "from_dataclass_dict",
+    "Dataclass",
 ]
 
 # Keeps track of the dataclass type in a serializable dataclass dict
@@ -157,7 +167,7 @@ def create_dataclass_args(
     return dataclasses.make_dataclass(dataclass_name, _fields, bases=bases, frozen=True)
 
 
-def config_to_dict(config: DataclassInstance | Dict[str, Any]) -> Dict[str, Any]:
+def config_to_dict(config: Dataclass | Dict[str, Any]) -> Dict[str, Any]:
     """Convert config composed of mixed dataclass and dict elements to pure dict.
 
     We want to convert configs composed of mixed dataclass and dict elements to
@@ -219,7 +229,7 @@ def _config_to_dict_inner(obj: Any) -> Any:
         return copy.deepcopy(obj)
 
 
-def is_config_like(obj: Any) -> TypeIs[DataclassInstance | Dict[str, Any]]:
+def is_config_like(obj: Any) -> TypeIs[Dataclass | Dict[str, Any]]:
     """Returns True if obj is a dataclass or dict, False otherwise.
 
     Args:
