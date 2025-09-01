@@ -119,7 +119,7 @@ class ProfileExperimentMixin:
 
     def close(self):
         # If wandb is in use, send tables to wandb
-        if hasattr(self, "wandb_handlers") and len(self.wandb_handlers) > 0:
+        if len(self.wandb_handlers) > 0:
             profile_files = os.listdir(self.profile_dir)
             profile_paths = [
                 os.path.join(self.profile_dir, file) for file in profile_files
