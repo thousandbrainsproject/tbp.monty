@@ -138,7 +138,7 @@ class EpisodeDataLoader:
             episode_id = self.episode_id
         logger.info(f"Loading episode {episode_id} data from: {self.json_path}")
 
-        episode_data = deserialize_json_chunks(self.json_path, episode_id=episode_id)[
+        episode_data = deserialize_json_chunks(self.json_path, episodes=[episode_id])[
             str(episode_id)
         ]
         self.lm_data = episode_data["LM_0"]
@@ -181,7 +181,7 @@ class EpisodeDataLoader:
     def _initialize_hypotheses_data(self) -> None:
         """Extract and transform hypotheses into world frame.
 
-        Additional identify hypotheses with highest evidence for the target object.
+        Additionally identify hypotheses with highest evidence for the target object.
         This may be different from MLH, which considers hypotheses across all objects.
         """
         for lm_step in range(self.num_lm_steps):
@@ -238,6 +238,13 @@ class EpisodeDataLoader:
 
     def _find_lm_to_sm_mapping(self) -> None:
         """Find mapping between LM timesteps and SM timesteps using use_state.
+
+        This accounts for the fact that not all sensed observations are sent
+        to the LM, hence sensor module may be in a higher timestep than the LM.
+
+        For visualization, we want to find the corresponding SM timestep for each LM
+        timestep. Note that this may mean that the SM may seem to "jump" in location
+        as it jump from SM Timestep 1 to SM Timestep 6 (but only one LM step).
 
         Raises:
             ValueError: If the number of SM timesteps with use_state=True does not
@@ -296,8 +303,7 @@ class EpisodeDataLoader:
 
             morphological_features = obs["morphological_features"]
             pose_vectors = np.array(morphological_features["pose_vectors"])
-            sensed_orientation_matrix = np.reshape(pose_vectors, (3, 3))
-            self.sensed_orientations.append(sensed_orientation_matrix)
+            self.sensed_orientations.append(pose_vectors)
 
         logger.info(f"Extracted {len(self.sensed_orientations)} orientation matrices")
         logger.info(f"Orientation matrices shape: {self.sensed_orientations[0].shape}")
