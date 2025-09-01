@@ -14,15 +14,12 @@ from dataclasses import dataclass, field
 from itertools import product
 from numbers import Number
 from typing import (
-    Any,
     Callable,
-    ClassVar,
     Dict,
     Iterable,
     List,
     Mapping,
     Optional,
-    Protocol,
     Union,
 )
 
@@ -71,6 +68,7 @@ from tbp.monty.frameworks.models.sensor_modules import (
     HabitatDistantPatchSM,
     HabitatSurfacePatchSM,
 )
+from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 
 # -- Table of contents --
 # -----------------------
@@ -80,17 +78,6 @@ from tbp.monty.frameworks.models.sensor_modules import (
 # -----------------------
 
 monty_logs_dir = os.getenv("MONTY_LOGS")
-
-
-class Dataclass(Protocol):
-    """A protocol for dataclasses to be used in type hints.
-
-    The reason this exists is because dataclass.dataclass is not a valid type.
-    """
-
-    __dataclass_fields__: ClassVar[Dict[str, Any]]
-    """Checking for presence of __dataclass_fields__ is a hack to check if a class is a
-    dataclass."""
 
 
 @dataclass
