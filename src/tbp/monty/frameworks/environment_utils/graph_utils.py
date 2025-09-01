@@ -7,9 +7,9 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from typing import Optional
 
-
-def get_edge_index(graph, previous_node, new_node):
+def get_edge_index(graph, previous_node, new_node) ->  Optional[int]:
     """Get the edge index between two nodes in a graph.
 
     Args:
@@ -21,5 +21,6 @@ def get_edge_index(graph, previous_node, new_node):
         edge ID between the two nodes
     """
     mask = (graph.edge_index[0] == previous_node) & (graph.edge_index[1] == new_node)
-    edge_ids = mask.nonzero().view(-1)
-    return edge_ids[0].item() if len(edge_ids) > 0 else None
+    if mask.any():
+        return mask.nonzero().view(-1)[0].item()
+    return None
