@@ -704,6 +704,7 @@ class HypothesesOORFVisualizer:
             f"Object rotation: {formatted_rotation}",
             f"LM Step: {self.current_timestep}",
             f"SM Step: {sm_step}",
+            f"Current Sensed Curvature: {self.current_sensed_curvature}",
         ]
 
         hypotheses_summary = [
