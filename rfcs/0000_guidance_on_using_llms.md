@@ -23,6 +23,7 @@ We suggest that all RFCs are written by you, and that you try to avoid using Lar
 - When we review RFCs written by LLMs, it often ends up taking more time both for us, and for you, so it is much better if you write them yourself.
 - Writing the RFC yourself will serve as a useful starting point if you intend to implement the idea afterwards. Formulating the proposal in your own words often surfaces issues and ideas you didn't think about previously, which is not something that usually happens when you have an LLM generate the proposal for you. Note that RFCs don't need to be long-winded arguments and detailed elaborations of every step you intend to take. They are meant to be a concise summary of your idea and form the basis for discussion and feedback from others. As such, it brings you no benefits, both in your time spent and understanding gained, if they are LLM-generated.
 
+
 Note that it is perfectly acceptable to discuss ideas with an LLM when formulating your own thoughts. For example, there may be a concept in neuroscience or computer vision that you would like to understand better, and LLM conversations can be a useful starting point. However, we recommend that you always be wary of hallucinations in LLM outputs; due to their frequent occurrence, LLMs are better used as an initial - but not final - provider of information on a topic.
 
 ## Contributing Code to `tbp.monty`
