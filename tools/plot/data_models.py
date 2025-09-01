@@ -176,8 +176,6 @@ def transform_orientations_model_to_world(
     ).as_matrix()
 
     if row_vector_format:
-        # A @ R.T = B
         return orientations_wrt_model @ target_rotation_wrt_world.T
     else:
-        # R @ A = B
         return target_rotation_wrt_world @ orientations_wrt_model
