@@ -27,6 +27,10 @@ class ObjectModelForVisualization:
     ):
         """Initialize ObjectModel and transform from model to world coordinates.
 
+        This class takes the learned object model points and transforms them to be in
+        the location and orientation defined by the ground-truth pose of the object in
+        the world.
+
         Args:
             points: Stored points of the object model (n_points, 3).
             features: Stored features of the object model.
@@ -38,7 +42,8 @@ class ObjectModelForVisualization:
             target_location_wrt_world: Ground truth location of object in inference.
                 Currently in Monty, this is always [0, 1.5, 0] for all objects.
             target_orientation_wrt_world: Ground truth orientation of object in
-                inference. In Monty, this could be a random test rotation.
+                inference. In Monty, this could be a random test rotation that
+                differs from the canonical learning orientation.
         """
         self.object_points_wrt_model = points
 
@@ -136,7 +141,7 @@ def transform_locations_model_to_world(
 
 def transform_orientations_model_to_world(
     orientations_wrt_model: np.ndarray,
-    target_rotation_wrt_world: np.ndarray | Rotation,
+    target_rotation_wrt_world: Rotation,
     row_vector_format: bool = False,
 ) -> np.ndarray:
     """Transform orientation matrices from model to world coordinates.
@@ -155,8 +160,8 @@ def transform_orientations_model_to_world(
     Args:
         orientations_wrt_model: Orientations to transform, with shape
             (n_points or n_hypotheses, 3, 3).
-        target_rotation_wrt_world: Target orientation (Euler angles in degrees
-            or Rotation object).
+        target_rotation_wrt_world: Target orientation represented as Euler angles
+            (xyz, degrees) using scipy.spatial.transform.Rotation.
         row_vector_format: Whether the orientations are in row vector format.
             This is true for pose_vectors stored in ObjectModel, which is a 3x3 matrix
             of stacked [surface_normal, pc1, pc2] row vectors for each point.
@@ -166,10 +171,9 @@ def transform_orientations_model_to_world(
     Returns:
         Transformed orientations in world frame.
     """
-    if not isinstance(target_rotation_wrt_world, Rotation):
-        target_rotation_wrt_world = Rotation.from_euler(
-            "xyz", target_rotation_wrt_world, degrees=True
-        ).as_matrix()
+    target_rotation_wrt_world = Rotation.from_euler(
+        "xyz", target_rotation_wrt_world, degrees=True
+    ).as_matrix()
 
     if row_vector_format:
         # A @ R.T = B
