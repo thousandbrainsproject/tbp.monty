@@ -1,7 +1,5 @@
 ---
 title: Reuse Hypothesis-Testing Policy Target Points
-rfc: optional
-estimated-scope: unknown
 ---
 
 The hypothesis-testing policy is able to generate candidate points on an object that, when observed, should rapidly disambiguate between similar objects, or between similar poses of the same object.

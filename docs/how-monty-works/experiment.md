@@ -3,6 +3,7 @@ title: Experiment
 ---
 During an experiment in the Monty framework an agent is collecting a sequence of observations by interacting with an environment. We distinguish between training (internal models are being updated using this sequence of observations) and evaluation (the agent only performs inference using already learned models but does not update them). The MontyExperiment class implements and coordinates this training and evaluation of Monty models.
 
+# Step Types and Discretizing Time
 In reality an agent interacts continuously with the world and time is not explicitly discretized. For easier implementation we use steps as the smallest increment of time. Additionally, we divide an experiment into multiple episodes and epochs for easier measurement of performance. Overall, we **discretize time in the three ways** listed below.
 
 ![Three ways time is discretized in Monty is into steps (one movement and one observation), episodes (take as many steps as needed to reach the terminal condition of the environment such as recognizing an object or completing a task), and epoch (cycle through all objects/scenarios in the dataset once).](../figures/how-monty-works/step_episode_epoch.png)

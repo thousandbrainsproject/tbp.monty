@@ -89,8 +89,10 @@ def main():
     index_parser = subparsers.add_parser(
         "generate-index", help="Generate index.json from docs front-matter"
     )
-    index_parser.add_argument("folder", help="The directory to scan for markdown files")
-    index_parser.add_argument("output_file", help="Output file name")
+    index_parser.add_argument(
+        "folder", help="The docs directory to scan for markdown files"
+    )
+    index_parser.add_argument("output_file", help="Path to output data file")
 
     args = parser.parse_args()
 
@@ -107,7 +109,7 @@ def main():
     elif args.command == "upload":
         check_env()
         hierarchy = check_hierarchy_file(args.folder)
-        upload(hierarchy, args.folder, rdme=ReadMe(args.version))
+        upload(hierarchy, args.folder, ReadMe(args.version))
 
     elif args.command == "check-external":
         check_readme_api_key()

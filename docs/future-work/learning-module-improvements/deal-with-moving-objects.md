@@ -1,7 +1,5 @@
 ---
 title: Deal with Moving Objects
-rfc: optional
-estimated-scope: unknown
 ---
 
 This work relates to first being able to [Detect Local and Global Flow](../../future-work/sensor-module-improvements/detect-local-and-global-flow.md).

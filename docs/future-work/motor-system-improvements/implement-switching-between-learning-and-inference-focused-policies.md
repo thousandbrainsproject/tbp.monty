@@ -1,7 +1,5 @@
 ---
 title: Implement Switching Between Learning and Inference-Focused Policies
-rfc: optional
-estimated-scope: unknown
 ---
 
 Currently, a Monty system cannot flexibly switch between a learning-focused policy (such as the naive scan policy) and an inference-focused policy. Enabling LMs to guide such a switch based on their internal models, and whether they are in a matching or exploration state, would be a useful improvement.

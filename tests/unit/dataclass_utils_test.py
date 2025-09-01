@@ -7,10 +7,11 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-
 import dataclasses
 import unittest
+from typing import Any, NamedTuple, Union
 
+from tbp.monty.frameworks.config_utils.config_args import Dataclass
 from tbp.monty.frameworks.utils import dataclass_utils
 
 
@@ -45,6 +46,17 @@ class DeepNestedDataclass:
     field1: str
     field2: SimpleDataclass
     field3: NestedDataclass
+
+
+@dataclasses.dataclass
+class FakeDataclass:
+    name: Any = None
+    value: Union[list, tuple, dict, Dataclass] = dataclasses.field(default_factory=list)
+
+
+class FakeNamedTuple(NamedTuple):
+    name: Any
+    value: Union[list, tuple, dict, Dataclass]
 
 
 def sample_function(field1: str, field2: int):
@@ -338,6 +350,252 @@ class ConfigToDictTest(unittest.TestCase):
                     },
                 }
             },
+        )
+
+
+class ConfigToDictBasicTest(unittest.TestCase):
+    """Tests config_to_dict non-nested data."""
+
+    def test_with_basic_attr(self):
+        dict_config = {"name": 0, "value": "a basic attribute"}
+        dataclass_config = FakeDataclass(**dict_config)
+        expected = {
+            "name": 0,
+            "value": "a basic attribute",
+        }
+        dict_result = dataclass_utils.config_to_dict(dict_config)
+        dataclass_result = dataclass_utils.config_to_dict(dataclass_config)
+        self.assertDictEqual(dict_result, expected)
+        self.assertDictEqual(dataclass_result, expected)
+
+    def test_with_basic_dict(self):
+        dict_config = {"name": 0, "value": {"a": 0, "b": 1}}
+        dataclass_config = FakeDataclass(**dict_config)
+        expected = {
+            "name": 0,
+            "value": {"a": 0, "b": 1},
+        }
+        dict_result = dataclass_utils.config_to_dict(dict_config)
+        dataclass_result = dataclass_utils.config_to_dict(dataclass_config)
+        self.assertDictEqual(dict_result, expected)
+        self.assertDictEqual(dataclass_result, expected)
+
+    def test_with_basic_list(self):
+        dict_config = {"name": 0, "value": [0, 1]}
+        dataclass_config = FakeDataclass(**dict_config)
+        expected = {
+            "name": 0,
+            "value": [0, 1],
+        }
+        dict_result = dataclass_utils.config_to_dict(dict_config)
+        dataclass_result = dataclass_utils.config_to_dict(dataclass_config)
+        self.assertDictEqual(dict_result, expected)
+        self.assertDictEqual(dataclass_result, expected)
+
+    def test_with_basic_tuple(self):
+        dict_config = {"name": 0, "value": (0, 1)}
+        dataclass_config = FakeDataclass(**dict_config)
+        expected = {
+            "name": 0,
+            "value": (0, 1),
+        }
+        dict_result = dataclass_utils.config_to_dict(dict_config)
+        dataclass_result = dataclass_utils.config_to_dict(dataclass_config)
+        self.assertDictEqual(dict_result, expected)
+        self.assertDictEqual(dataclass_result, expected)
+
+    def test_with_basic_named_tuple(self):
+        dict_config = {"name": 0, "value": FakeNamedTuple(name=1, value=[])}
+        dataclass_config = FakeDataclass(**dict_config)
+        expected = {
+            "name": 0,
+            "value": FakeNamedTuple(name=1, value=[]),
+        }
+        dict_result = dataclass_utils.config_to_dict(dict_config)
+        dataclass_result = dataclass_utils.config_to_dict(dataclass_config)
+        self.assertDictEqual(dict_result, expected)
+        self.assertIsInstance(dict_result["value"], FakeNamedTuple)
+        self.assertDictEqual(dataclass_result, expected)
+        self.assertIsInstance(dataclass_result["value"], FakeNamedTuple)
+
+
+class ConfigToDictNestedTest(unittest.TestCase):
+    """Tests config_to_dict nested data."""
+
+    def test_with_nested_attr(self):
+        obj_0 = FakeDataclass(name=0)
+        dict_config = {"name": 1, "value": obj_0}
+        dataclass_config = FakeDataclass(**dict_config)
+        expected = {
+            "name": 1,
+            "value": {
+                "name": 0,
+                "value": [],
+            },
+        }
+        dict_result = dataclass_utils.config_to_dict(dict_config)
+        dataclass_result = dataclass_utils.config_to_dict(dataclass_config)
+        self.assertDictEqual(dict_result, expected)
+        self.assertDictEqual(dataclass_result, expected)
+
+    def test_with_nested_dict(self):
+        obj_0, obj_1 = FakeDataclass(name=0), FakeDataclass(name=1)
+        dict_config = {"name": 2, "value": {"a": obj_0, "b": obj_1}}
+        dataclass_config = FakeDataclass(**dict_config)
+        expected = {
+            "name": 2,
+            "value": {
+                "a": {
+                    "name": 0,
+                    "value": [],
+                },
+                "b": {
+                    "name": 1,
+                    "value": [],
+                },
+            },
+        }
+        dict_result = dataclass_utils.config_to_dict(dict_config)
+        dataclass_result = dataclass_utils.config_to_dict(dataclass_config)
+        self.assertDictEqual(dict_result, expected)
+        self.assertDictEqual(dataclass_result, expected)
+
+    def test_with_nested_list(self):
+        obj_0, obj_1 = FakeDataclass(name=0), FakeDataclass(name=1)
+        dict_config = {"name": 2, "value": [obj_0, obj_1]}
+        dataclass_config = FakeDataclass(**dict_config)
+        expected = {
+            "name": 2,
+            "value": [
+                {
+                    "name": 0,
+                    "value": [],
+                },
+                {
+                    "name": 1,
+                    "value": [],
+                },
+            ],
+        }
+        dict_result = dataclass_utils.config_to_dict(dict_config)
+        dataclass_result = dataclass_utils.config_to_dict(dataclass_config)
+        self.assertDictEqual(dict_result, expected)
+        self.assertDictEqual(dataclass_result, expected)
+
+    def test_with_nested_tuple(self):
+        obj_0, obj_1 = FakeDataclass(name=0), FakeDataclass(name=1)
+        dict_config = {"name": 2, "value": (obj_0, obj_1)}
+        dataclass_config = FakeDataclass(**dict_config)
+        expected = {
+            "name": 2,
+            "value": (
+                {
+                    "name": 0,
+                    "value": [],
+                },
+                {
+                    "name": 1,
+                    "value": [],
+                },
+            ),
+        }
+        dict_result = dataclass_utils.config_to_dict(dict_config)
+        dataclass_result = dataclass_utils.config_to_dict(dataclass_config)
+        self.assertDictEqual(dict_result, expected)
+        self.assertDictEqual(dataclass_result, expected)
+
+    def test_with_nested_named_tuple(self):
+        obj_0, obj_1 = FakeDataclass(name=0), FakeDataclass(name=1)
+        dict_config = {"name": 2, "value": FakeNamedTuple(name=0, value=[obj_0, obj_1])}
+        dataclass_config = FakeDataclass(**dict_config)
+        expected = {
+            "name": 2,
+            "value": FakeNamedTuple(
+                name=0,
+                value=[
+                    {
+                        "name": 0,
+                        "value": [],
+                    },
+                    {
+                        "name": 1,
+                        "value": [],
+                    },
+                ],
+            ),
+        }
+        dict_result = dataclass_utils.config_to_dict(dict_config)
+        dataclass_result = dataclass_utils.config_to_dict(dataclass_config)
+        self.assertDictEqual(dict_result, expected)
+        self.assertIsInstance(dict_result["value"], FakeNamedTuple)
+        self.assertDictEqual(dataclass_result, expected)
+        self.assertIsInstance(dataclass_result["value"], FakeNamedTuple)
+
+    def test_deeply_nested(self):
+        # Lowest-level objects
+        obj_0 = FakeDataclass(name=0, value={"a": 0, "b": 1})
+        obj_0_dict = {"name": 0, "value": {"a": 0, "b": 1}}
+
+        obj_1 = FakeDataclass(name=1, value=[obj_0])
+        obj_1_dict = {"name": 1, "value": [obj_0_dict]}
+
+        obj_2 = FakeDataclass(name=2, value=(obj_1,))
+        obj_2_dict = {"name": 2, "value": (obj_1_dict,)}
+
+        obj_3 = FakeDataclass(name=3, value=FakeNamedTuple(name=None, value=[obj_2]))
+        obj_3_dict = {"name": 3, "value": FakeNamedTuple(name=None, value=[obj_2_dict])}
+
+        dict_config = {"name": 4, "value": obj_3}
+        dataclass_config = FakeDataclass(**dict_config)
+        expected = {"name": 4, "value": obj_3_dict}
+
+        dict_result = dataclass_utils.config_to_dict(dict_config)
+        dataclass_result = dataclass_utils.config_to_dict(dataclass_config)
+        self.assertDictEqual(dict_result, expected)
+        self.assertDictEqual(dataclass_result, expected)
+
+
+class IsConfigLikeTest(unittest.TestCase):
+    def test_dataclass_instance(self):
+        self.assertTrue(dataclass_utils.is_config_like(FakeDataclass()))
+
+    def test_dict(self):
+        self.assertTrue(dataclass_utils.is_config_like({0: "a", 1: "b"}))
+
+    def test_dataclass_type(self):
+        self.assertFalse(dataclass_utils.is_config_like(FakeDataclass))
+
+    def test_list(self):
+        self.assertFalse(dataclass_utils.is_config_like([0, 1]))
+
+    def test_tuple(self):
+        self.assertFalse(dataclass_utils.is_config_like((0, 1)))
+
+    def test_named_tuple(self):
+        self.assertFalse(
+            dataclass_utils.is_config_like(FakeNamedTuple(name=0, value=[]))
+        )
+
+
+class IsDataclassInstanceTest(unittest.TestCase):
+    def test_dataclass_instance(self):
+        self.assertTrue(dataclass_utils.is_dataclass_instance(FakeDataclass()))
+
+    def test_dataclass_type(self):
+        self.assertFalse(dataclass_utils.is_dataclass_instance(FakeDataclass))
+
+    def test_dict(self):
+        self.assertFalse(dataclass_utils.is_dataclass_instance({0: "a", 1: "b"}))
+
+    def test_list(self):
+        self.assertFalse(dataclass_utils.is_dataclass_instance([0, 1]))
+
+    def test_tuple(self):
+        self.assertFalse(dataclass_utils.is_dataclass_instance((0, 1)))
+
+    def test_named_tuple(self):
+        self.assertFalse(
+            dataclass_utils.is_dataclass_instance(FakeNamedTuple(name=0, value=[]))
         )
 
 

@@ -1,7 +1,5 @@
 ---
 title: Detect Local and Global Flow
-rfc: optional
-estimated-scope: unknown
 ---
 
 Our general view is that there are two sources of flow processed by cortical columns. These should correspond to:
