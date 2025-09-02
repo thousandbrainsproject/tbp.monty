@@ -244,67 +244,32 @@ class LookAtPolicy(BasePolicy):
         self.driving_goal_state = goal_state
 
     def dynamic_call(self, state: MotorSystemState) -> Action:
+        # Clean up habitat state.
         state = clean_motor_system_state(state)
-        poses = walk_poses(state, ("agent_id_0", "sensors", "view_finder"))
 
         # Find target location relative to sensor.
         target_loc_rel_world = self.driving_goal_state.location
 
-        """"
-        p[A] = B.rot[A] * p[B] + B.origin[A]
+        # Construct transform chain that maps between world and sensor coordinates.
+        agent_rot = as_rotation_matrix(state["agent_id_0"]["rotation"])
+        agent_pos = state["agent_id_0"]["position"]
+        sensor_rot = as_rotation_matrix(
+            state["agent_id_0"]["sensors"]["view_finder"]["rotation"]
+        )
+        sensor_pos = state["agent_id_0"]["sensors"]["view_finder"]["position"]
+        agent_transform = RigidTransform(agent_pos, agent_rot)
+        sensor_transform = RigidTransform(sensor_pos, sensor_rot)
+        chain = TransformChain([agent_transform, sensor_transform])
 
-        invert this
+        # Map goal from world to sensor coordinates.
+        target_rel_sensor = chain.inv()(self.driving_goal_state.location)
 
-        B.rot[A].inv * (p[A] - B.origin[A]) = p[B]  <--- need to do this
-        """
-        target_loc_rel_sensor = target_loc_rel_world
-        for node in reversed(poses):
-            target_loc_rel_sensor = target_loc_rel_sensor - node["position"]
-
-        # Find sensor rotation relative to world.
-        sensor_rot_rel_world = quaternion.quaternion(1, 0, 0, 0)
-        for node in poses:
-            sensor_rot_rel_world = sensor_rot_rel_world * node["rotation"]
-
-        # Rotate target location relative to sensor to world coordinates.
-        w, x, y, z = sensor_rot_rel_world.components
-        sensor_rot_rel_world = Rotation.from_quat([x, y, z, w])
-        rotated_location = sensor_rot_rel_world.inv().apply(target_loc_rel_sensor)
-
-        # Calculate the necessary rotation amounts and convert them to degrees.
-        x_rot, y_rot, z_rot = rotated_location
+        # Convert from cartesion sensor coordinates to degrees.
+        x_rot, y_rot, z_rot = target_rel_sensor
         left_amount = -np.degrees(np.arctan2(x_rot, -z_rot))
         distance_horiz = np.sqrt(x_rot**2 + z_rot**2)
         down_amount = -np.degrees(np.arctan2(y_rot, distance_horiz))
 
-        # ---------------------------------
-        _agent_rot = as_rotation_matrix(state["agent_id_0"]["rotation"])
-        _agent_pos = state["agent_id_0"]["position"]
-        _sensor_rot = as_rotation_matrix(
-            state["agent_id_0"]["sensors"]["view_finder"]["rotation"]
-        )
-        _sensor_pos = state["agent_id_0"]["sensors"]["view_finder"]["position"]
-        _agent_transform = RigidTransform(_agent_pos, _agent_rot)
-        _sensor_transform = RigidTransform(_sensor_pos, _sensor_rot)
-        _chain = TransformChain([_agent_transform, _sensor_transform])
-        _chain_inv = _chain.inv()
-
-        _target_loc_rel_sensor = _chain_inv(target_loc_rel_world)
-        _x_rot, _y_rot, _z_rot = _target_loc_rel_sensor
-        _left_amount = -np.degrees(np.arctan2(_x_rot, -_z_rot))
-        _distance_horiz = np.sqrt(_x_rot**2 + _z_rot**2)
-        _down_amount = -np.degrees(np.arctan2(_y_rot, _distance_horiz))
-        _ar = SciPyRotation.from_matrix(_agent_rot)
-        _sr = SciPyRotation.from_matrix(_sensor_rot)
-        _sw = _ar * _sr
-        print(f"ar: {_ar.as_euler('xyz', degrees=True)}")
-        print(f"sr: {_sr.as_euler('xyz', degrees=True)}")
-        print(f"sw: {_sw.as_euler('xyz', degrees=True)}")
-        print(f"left_amount: {left_amount}, down_amount: {down_amount}")
-        print(f"_left_amount: {_left_amount}, _down_amount: {_down_amount}")
-        print(target_loc_rel_world)
-
-        # ---------------------------------
         return [
             LookDown(agent_id=self.agent_id, rotation_degrees=down_amount),
             TurnLeft(agent_id=self.agent_id, rotation_degrees=left_amount),
@@ -335,47 +300,22 @@ def clean_motor_system_state(state: dict) -> dict:
     return clean
 
 
-def walk_poses(state: dict, path: tuple[str]) -> list[dict]:
-    """Iterate through a path of sensor ids in a state."""
-    poses = []
-    dct = state
-    for part in path:
-        dct = dct[part]
-        if "position" in dct and "rotation" in dct:
-            poses.append(
-                {
-                    "position": dct["position"],
-                    "rotation": dct["rotation"],
-                }
-            )
-    return poses
-
-
-def as_scipy_rotation(
-    obj: quaternion.quaternion | ArrayLike | SciPyRotation,
-) -> SciPyRotation:
-    if isinstance(obj, SciPyRotation):
-        rot = obj
-    elif isinstance(obj, quaternion.quaternion):
-        rot = SciPyRotation.from_quat(np.array([obj.x, obj.y, obj.z, obj.w]))
-    else:
-        rot = SciPyRotation.from_matrix(obj)
-    return rot
-
-
 def as_rotation_matrix(
     obj: quaternion.quaternion | ArrayLike | SciPyRotation,
 ) -> np.ndarray:
-    rot = as_scipy_rotation(obj)
-    return rot.as_matrix()
-
-
-def repr_vec(vec):
-    return f"[{vec[0]:.2f}, {vec[1]:.2f}, {vec[2]:.2f}]"
+    if isinstance(obj, SciPyRotation):
+        scipy_rot = obj
+    elif isinstance(obj, quaternion.quaternion):
+        scipy_rot = SciPyRotation.from_quat(np.array([obj.x, obj.y, obj.z, obj.w]))
+    else:
+        scipy_rot = SciPyRotation.from_matrix(obj)
+    return scipy_rot.as_matrix()
 
 
 class RigidTransform:
-    def __init__(self, pos: np.ndarray, rot: np.ndarray):
+    def __init__(
+        self, pos: ArrayLike, rot: quaternion.quaternion | ArrayLike | SciPyRotation
+    ):
         self.pos = np.array(pos)
         self.rot = as_rotation_matrix(rot)
 
@@ -384,7 +324,7 @@ class RigidTransform:
         pos = rot @ (-self.pos)
         return RigidTransform(pos, rot)
 
-    def __call__(self, point: np.ndarray) -> np.ndarray:
+    def __call__(self, point: ArrayLike) -> np.ndarray:
         point = np.asarray(point)
         if point.ndim == 1:
             return self.rot @ point + self.pos
