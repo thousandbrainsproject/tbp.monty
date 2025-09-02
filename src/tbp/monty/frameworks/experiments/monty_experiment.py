@@ -253,7 +253,7 @@ class MontyExperiment:
             TypeError: If `dataloader_class` is not a subclass of
                 `EnvironmentDataLoader`
         """
-        # lump dataset and motor system into dataloader args todo(anna)
+        # lump dataset and motor system into dataloader args
         # assume fixed dataset, training and validation are just different loaders
         if not issubclass(dataloader_class, EnvironmentDataLoader):
             raise TypeError("dataloader class must be EnvironmentDataLoader (for now)")
@@ -616,7 +616,9 @@ class MontyExperiment:
 
     def close(self):
         dataloader = getattr(self, "dataloader", None)
-        if dataloader is not None and isinstance(self.dataloader, EnvironmentDataLoader):
+        if dataloader is not None and isinstance(
+            self.dataloader, EnvironmentDataLoader
+        ):
             self.dataloader.close()
             self.dataloader = None
 

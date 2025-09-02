@@ -55,7 +55,7 @@ EXPECTED_ACTIONS_ABS = [
     POSSIBLE_ACTIONS_ABS[i]
     for i in np.random.randint(0, len(POSSIBLE_ACTIONS_ABS), 100)
 ]
-EXPECTED_STATES = np.random.rand(DATASET_LEN)  # TODO(anna) - what is this expecting? rename to - NUM_STEPS maybe?
+EXPECTED_STATES = np.random.rand(DATASET_LEN)
 
 
 class FakeActionSpace(tuple, ActionSpace):
@@ -147,7 +147,7 @@ class FakeOmniglotEnvironment(FakeEnvironmentAbs):
         ]
 
 class EmbodiedDataTest(unittest.TestCase):
-    def test_embodied_dataset_dist(self):  # TODO(anna) rename method & vars
+    def test_embodied_dataset_dist(self):
         rng = np.random.RandomState(42)
         base_policy_config_dist = make_base_policy_config(
             action_space_type="distant_agent",
@@ -254,7 +254,7 @@ class EmbodiedDataTest(unittest.TestCase):
             motor_system=motor_system_dist
         )
 
-        for i, item in enumerate(env_interface_dist):  # TODO(anna): does enumerate env interface make sense?
+        for i, item in enumerate(env_interface_dist):
             self.assertTrue(
                 np.all(item[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
             )
