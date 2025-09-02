@@ -105,7 +105,6 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 monty_args=MontyFeatureGraphArgs(num_exploratory_steps=20),
                 learning_module_configs=default_evidence_lm_config,
             ),
-            dataset_class=ED.EnvironmentDataset,
             dataset_args=PatchViewFinderMountHabitatDatasetArgs(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
@@ -131,7 +130,6 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 monty_args=MontyFeatureGraphArgs(num_exploratory_steps=20),
                 learning_module_configs=default_unsupervised_evidence_lm_config,
             ),
-            dataset_class=ED.EnvironmentDataset,
             dataset_args=PatchViewFinderMountHabitatDatasetArgs(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),

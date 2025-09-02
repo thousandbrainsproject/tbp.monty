@@ -265,7 +265,6 @@ base_config_10distinctobj_dist_agent = dict(
         learning_module_configs=lower_max_nneighbors_1lm_config,
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
     ),
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=PatchViewFinderMountHabitatDatasetArgs(),
     eval_dataloader_class=ED.InformedEnvironmentDataLoader,
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
