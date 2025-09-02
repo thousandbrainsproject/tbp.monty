@@ -53,7 +53,6 @@ class BaseConfigTest(unittest.TestCase):
                 output_dir=self.output_dir, python_log_level="DEBUG"
             ),
             monty_config=FakeSingleCameraMontyConfig(),
-            dataset_class=ED.EnvironmentDataset,
             dataset_args=SinglePTZHabitatDatasetArgs(
                 env_init_args=EnvInitArgsSinglePTZ(data_path=None).__dict__
             ),
