@@ -51,6 +51,7 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
+
 class EnvironmentDataLoader:
     """Provides an interface to an embodied environment.
 
@@ -81,7 +82,14 @@ class EnvironmentDataLoader:
     """
 
     # TODO: fix this long list of init params
-    def __init__(self, env_init_func, env_init_args, rng, motor_system: MotorSystem, transform=None):
+    def __init__(
+        self,
+        env_init_func,
+        env_init_args,
+        rng,
+        motor_system: MotorSystem,
+        transform=None,
+    ):
         self.rng = rng
         self.transform = transform
         if self.transform is not None:
@@ -200,7 +208,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
     sampled from the same object list, can be added.
     """
 
-    def __init__(self, *args,  object_names=None, object_init_sampler=None, **kwargs):
+    def __init__(self, *args, object_names=None, object_init_sampler=None, **kwargs):
         """Initialize dataloader.
 
         Args:
@@ -816,9 +824,7 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         # Different init values than super class
         self.n_objects = len(characters)
         self.object_names = [
-            str(self.env.alphabet_names[alphabets[i]])
-            + "_"
-            + str(self.characters[i])
+            str(self.env.alphabet_names[alphabets[i]]) + "_" + str(self.characters[i])
             for i in range(self.n_objects)
         ]
 
@@ -885,9 +891,7 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         self.scenes = scenes
         self.versions = versions
         self.current_scene_version = 0
-        self.n_versions = (
-            len(versions) if versions else 0
-        )
+        self.n_versions = len(versions) if versions else 0
 
     def post_episode(self):
         self.motor_system.post_episode()
