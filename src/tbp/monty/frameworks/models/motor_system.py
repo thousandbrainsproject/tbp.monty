@@ -250,7 +250,6 @@ class LookAtPolicy(BasePolicy):
         # Find target location relative to sensor.
         target_loc_rel_world = self.driving_goal_state.location
 
-        # TODO: This isn't quite right. Need to account for rotation.
         """"
         p[A] = B.rot[A] * p[B] + B.origin[A]
 
@@ -352,16 +351,27 @@ def walk_poses(state: dict, path: tuple[str]) -> list[dict]:
     return poses
 
 
-def as_rotation_matrix(
+def as_scipy_rotation(
     obj: quaternion.quaternion | ArrayLike | SciPyRotation,
-) -> np.ndarray:
+) -> SciPyRotation:
     if isinstance(obj, SciPyRotation):
         rot = obj
     elif isinstance(obj, quaternion.quaternion):
         rot = SciPyRotation.from_quat(np.array([obj.x, obj.y, obj.z, obj.w]))
     else:
         rot = SciPyRotation.from_matrix(obj)
+    return rot
+
+
+def as_rotation_matrix(
+    obj: quaternion.quaternion | ArrayLike | SciPyRotation,
+) -> np.ndarray:
+    rot = as_scipy_rotation(obj)
     return rot.as_matrix()
+
+
+def repr_vec(vec):
+    return f"[{vec[0]:.2f}, {vec[1]:.2f}, {vec[2]:.2f}]"
 
 
 class RigidTransform:
@@ -371,7 +381,7 @@ class RigidTransform:
 
     def inv(self) -> RigidTransform:
         rot = self.rot.T
-        pos = -rot @ self.pos
+        pos = rot @ (-self.pos)
         return RigidTransform(pos, rot)
 
     def __call__(self, point: np.ndarray) -> np.ndarray:
@@ -390,7 +400,7 @@ class TransformChain:
         self.transforms = transforms
 
     def __call__(self, point: np.ndarray) -> np.ndarray:
-        for transform in self.transforms:
+        for transform in reversed(self.transforms):
             point = transform(point)
         return point
 
