@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Sequence
 
 import numpy as np
 import quaternion
@@ -277,6 +277,20 @@ class LookAtPolicy(BasePolicy):
 
 
 def clean_motor_system_state(state: dict) -> dict:
+    """Clean up a Habitat motor system state dictionaries.
+
+    Function that cleans up Habitat's MotorSystemState to a more usable format.
+    For example, a single RGBD camera would have separate and redundant positions
+    and rotations (e.g., "patch.depth" and "patch.rgba"). These have been consolidated
+    into a single position and rotation for the sensor.
+        Positions are also converted to numpy arrays (from magnum.Vector3).
+
+    Args:
+        state: The motor system state to clean.
+
+    Returns:
+        The cleaned motor system state.
+    """
     clean = {}
     for agent_id, agent_state in state.items():
         pos = agent_state["position"]
@@ -313,6 +327,8 @@ def as_rotation_matrix(
 
 
 class RigidTransform:
+    """A rigid transform (rotation + translation)."""
+
     def __init__(
         self, pos: ArrayLike, rot: quaternion.quaternion | ArrayLike | SciPyRotation
     ):
@@ -336,10 +352,12 @@ class RigidTransform:
 
 
 class TransformChain:
-    def __init__(self, transforms: list[RigidTransform]):
-        self.transforms = transforms
+    """A chain of rigid transformations."""
 
-    def __call__(self, point: np.ndarray) -> np.ndarray:
+    def __init__(self, transforms: Sequence[RigidTransform]):
+        self.transforms = list(transforms)
+
+    def __call__(self, point: ArrayLike) -> np.ndarray:
         for transform in reversed(self.transforms):
             point = transform(point)
         return point
