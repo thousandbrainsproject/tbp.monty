@@ -166,7 +166,6 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
-            dataset_class=ED.EnvironmentDataset,
             dataset_args=PatchViewFinderMountHabitatDatasetArgs(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),

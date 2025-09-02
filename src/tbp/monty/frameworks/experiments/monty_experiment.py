@@ -240,7 +240,7 @@ class MontyExperiment:
             self.eval_dataloader = None
 
     def create_data_loader(self, dataloader_class, dataloader_args):
-        """Dataloader used to collect data by sampling from dataset. anna todo.
+        """Dataloader used to collect data by sampling from dataset.
 
         Args:
             dataloader_class: The class of the dataloader.
