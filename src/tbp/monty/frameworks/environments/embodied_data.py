@@ -141,7 +141,10 @@ class EnvironmentDataLoader:
         return observation, ProprioceptiveState(state) if state else None
 
     def close(self):
-        self.env.close()
+        env = getattr(self, "env", None)
+        if env is not None:
+            self.env.close()
+            self.env = None
 
     def apply_transform(self, transform, observation, state):
         if isinstance(transform, list):
