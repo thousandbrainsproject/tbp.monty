@@ -42,6 +42,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
+from tbp.monty.frameworks.utils.decorator_utils import singleton
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
 from tbp.monty.simulators.habitat.environment_utils import get_bounding_corners
 
@@ -70,7 +71,7 @@ PRIMITIVE_OBJECT_TYPES = {
     "uvSphereSolid": 106,
 }
 
-
+@singleton
 class HabitatSim(HabitatActuator):
     """Habitat-sim interface for tbp.monty.
 
