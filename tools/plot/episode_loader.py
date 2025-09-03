@@ -133,15 +133,13 @@ class EpisodeDataLoader:
         self.max_abs_curvatures = []
         self.sensed_orientations = []
 
-    def load_episode_data(self, episode_id: int = None) -> None:
+    def load_episode_data(self) -> None:
         """Load episode data from JSON file."""
-        if episode_id is None:
-            episode_id = self.episode_id
-        logger.info(f"Loading episode {episode_id} data from: {self.json_path}")
+        logger.info(f"Loading episode {self.episode_id} data from: {self.json_path}")
 
-        episode_data = deserialize_json_chunks(self.json_path, episodes=[episode_id])[
-            str(episode_id)
-        ]
+        episode_data = deserialize_json_chunks(
+            self.json_path, episodes=[self.episode_id]
+        )[str(self.episode_id)]
         self.lm_data = episode_data["LM_0"]
         self.num_lm_steps = len(self.lm_data["possible_locations"])
         self.sm0_data = episode_data["SM_0"]
