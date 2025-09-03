@@ -208,7 +208,7 @@ class EpisodeDataLoader:
             hyp_object_orientations = transform_orientations_model_to_world(
                 hyp_object_orientations_wrt_model,
                 self.ground_truth_rotation,
-                row_vector_format=False,
+                orientations_in_row_vector_format=False,
             )
             highest_evidence_location = transform_locations_model_to_world(
                 highest_evidence_location.reshape(1, 3),
@@ -219,7 +219,7 @@ class EpisodeDataLoader:
             highest_evidence_orientation = transform_orientations_model_to_world(
                 highest_evidence_rotation.reshape(1, 3, 3),
                 self.ground_truth_rotation,
-                row_vector_format=False,
+                orientations_in_row_vector_format=False,
             )
 
             self.all_hyp_locations.append(hyp_locations)

@@ -72,7 +72,7 @@ class ObjectModelForVisualization:
             transform_orientations_model_to_world(
                 object_feature_orientations_wrt_model,
                 self.target_orientation_wrt_world,
-                row_vector_format=True,
+                orientations_in_row_vector_format=True,
             )
         )
 
@@ -146,7 +146,7 @@ def transform_locations_model_to_world(
 def transform_orientations_model_to_world(
     orientations_wrt_model: np.ndarray,
     target_rotation_wrt_world: Rotation,
-    row_vector_format: bool = False,
+    orientations_in_row_vector_format: bool = False,
 ) -> np.ndarray:
     """Transform orientation matrices from model to world coordinates.
 
@@ -166,11 +166,12 @@ def transform_orientations_model_to_world(
             (n_points or n_hypotheses, 3, 3).
         target_rotation_wrt_world: Target orientation represented as Euler angles
             (xyz, degrees) using scipy.spatial.transform.Rotation.
-        row_vector_format: Whether the orientations are in row vector format.
-            This is true for pose_vectors stored in ObjectModel, which is a 3x3 matrix
-            of stacked [surface_normal, pc1, pc2] row vectors for each point.
-            For hypothesized object orientations, this is a regular 3x3 rotation
-            matrix following column-vector convention for each hypothesis.
+        orientations_in_row_vector_format: Whether the orientations_wrt_model
+            parameter uses row vector format. This only affects how orientations_wrt_model
+            is interpreted, not target_rotation_wrt_world. True for pose_vectors stored
+            in ObjectModel, which is a 3x3 matrix of stacked [surface_normal, pc1, pc2]
+            row vectors for each point. False for hypothesized object orientations,
+            which are regular 3x3 rotation matrices following column-vector convention.
 
     Returns:
         Transformed orientations in world frame.
@@ -179,7 +180,7 @@ def transform_orientations_model_to_world(
         "xyz", target_rotation_wrt_world, degrees=True
     ).as_matrix()
 
-    if row_vector_format:
+    if orientations_in_row_vector_format:
         return orientations_wrt_model @ target_rotation_wrt_world.T
     else:
         return target_rotation_wrt_world @ orientations_wrt_model
