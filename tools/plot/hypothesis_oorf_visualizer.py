@@ -22,7 +22,7 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import numpy as np
 from vedo import (
@@ -69,6 +69,13 @@ TBP_COLORS = {
 }
 
 
+class RefFrameAnalysis(TypedDict):
+    """Results from reference frame analysis for hypotheses."""
+
+    is_inside_reference_frame: np.ndarray
+    nearest_node_locs: np.ndarray
+
+
 def compute_reference_frame_analysis(
     object_model: ObjectModelForVisualization,
     hypothesis_locations: np.ndarray,
@@ -77,7 +84,7 @@ def compute_reference_frame_analysis(
     max_abs_curvature: float,
     max_nneighbors: int = 3,
     max_match_distance: float = 0.01,
-) -> dict:
+) -> RefFrameAnalysis:
     """Compute reference frame analysis for hypotheses.
 
     Args:
@@ -93,7 +100,7 @@ def compute_reference_frame_analysis(
         max_match_distance: Maximum distance for matching (default: 0.01).
 
     Returns:
-        Dictionary containing:
+        RefFrameAnalysis containing:
             - is_inside_reference_frame: Array of booleans indicating if hypothesis is
                 inside the object's reference frame.
             - nearest_node_locs: Locations of nearest neighbors for each hypothesis
