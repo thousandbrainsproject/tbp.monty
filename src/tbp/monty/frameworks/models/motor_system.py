@@ -51,7 +51,7 @@ class MotorSystem:
         """Initialize the motor system with a motor policy.
 
         Args:
-            policy: The motor policy to use.
+            policy: The default motor policy to use.
             state: The initial state of the motor system.
                 Defaults to None.
             save_telemetry: Whether to save telemetry.
@@ -217,6 +217,13 @@ class MotorSystem:
         self._post_call(action)
         return action
 
+"""
+---------------------------------
+ - LookAtPolicy implementation
+
+This isn't meant to live in this file long-term, but `motor_policies.py`
+is already > 2k lines.
+"""
 
 class LookAtPolicy(BasePolicy):
     """A policy that looks at a target."""
@@ -280,10 +287,11 @@ def clean_motor_system_state(state: dict) -> dict:
     """Clean up a Habitat motor system state dictionaries.
 
     Function that cleans up Habitat's MotorSystemState to a more usable format.
-    For example, a single RGBD camera would have separate and redundant positions
-    and rotations (e.g., "patch.depth" and "patch.rgba"). These have been consolidated
-    into a single position and rotation for the sensor.
-        Positions are also converted to numpy arrays (from magnum.Vector3).
+    For example, a single RGBD camera normally has separate, redundant positions
+    and rotations. For example, "patch.depth" and "patch.rgba" are both present
+    and contain the same rotation and position data. This function consolidates
+    these into a single position and rotation for the sensor. Positions are also
+    converted to the more usable numpy arrays (as opposed to magnum.Vector3 objects).
 
     Args:
         state: The motor system state to clean.
@@ -317,6 +325,17 @@ def clean_motor_system_state(state: dict) -> dict:
 def as_rotation_matrix(
     obj: quaternion.quaternion | ArrayLike | SciPyRotation,
 ) -> np.ndarray:
+    """Convert a rotation description to a rotation matrix.
+
+    Helper function for `RigidTransform`.
+
+    Args:
+        obj: The rotation description to convert. This can be a quaternion, a
+            scipy rotation, or a rotation matrix.
+
+    Returns:
+        The rotation matrix.
+    """
     if isinstance(obj, SciPyRotation):
         scipy_rot = obj
     elif isinstance(obj, quaternion.quaternion):
@@ -355,6 +374,20 @@ class TransformChain:
     """A chain of rigid transformations."""
 
     def __init__(self, transforms: Sequence[RigidTransform]):
+        """Initialize the transform chain.
+
+        The order of transforms is meant to resemble parent to child ordering in
+        a graph. For example, the first transform in the chain would represent
+        an agent's position and rotation relative to the world, and the second
+        transform would represent a sensor, mounted on the agent, relative to the
+        agent's position and rotation. In this example, the chain would transform
+        data from the sensor's coordinate system to the world coordinate system.
+        Going in the opposite direction (i.e., from world to sensor) can be done
+        using the inverse of the chain.
+
+        Args:
+            transforms: The rigid transformations to chain.
+        """
         self.transforms = list(transforms)
 
     def __call__(self, point: ArrayLike) -> np.ndarray:
