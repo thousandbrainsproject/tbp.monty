@@ -61,6 +61,13 @@ def load_object_model(
 ) -> ObjectModelForVisualization:
     """Load an object model from a pretraining experiment.
 
+    The model file should contain a GraphObjectModel with feature_mapping that includes
+    available features: 'node_ids', 'pose_vectors', 'pose_fully_defined', 'on_object',
+    'object_coverage', 'rgba', 'hsv', 'principal_curvatures', 'principal_curvatures_log'
+    'gaussian_curvature', 'mean_curvature', 'gaussian_curvature_sc', and
+    'mean_curvature_sc'. Each feature maps to [start_index, end_index] for slicing the
+    feature tensor.
+
     Args:
         model_path: The path to the model.
         object_name: The name of the object.
@@ -78,12 +85,6 @@ def load_object_model(
     points = np.array(data.pos, dtype=float)
 
     feature_dict = {}
-    # data.feature_mapping contains feature names mapped to column indices in data.x.
-    # Available features include: 'node_ids', 'pose_vectors', 'pose_fully_defined',
-    # 'on_object', 'object_coverage', 'rgba', 'hsv', 'principal_curvatures',
-    # 'principal_curvatures_log', 'gaussian_curvature', 'mean_curvature',
-    # 'gaussian_curvature_sc', 'mean_curvature_sc'.
-    # Each feature maps to [start_index, end_index] for slicing the feature tensor.
 
     for feature in data.feature_mapping.keys():
         idx = data.feature_mapping[feature]
