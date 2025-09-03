@@ -102,7 +102,7 @@ class ObjectModelForVisualization:
             if not attr.startswith("_") and not callable(getattr(self, attr))
         ]
 
-        return f"ObjectModel(n_points={n_points}, features={feature_names})"
+        return f"ObjectModel({n_points=!s}, {feature_names=!s})"
 
 
 def transform_locations_model_to_world(
