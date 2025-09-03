@@ -61,6 +61,10 @@ class ObjectModelForVisualization:
             target_orientation_wrt_world,
         )
 
+        # Reshape pose_vectors from (n_points, 9) to (n_points, 3, 3).
+        # The original pose_vectors are stored as flattened row-major matrices
+        # [surface_normal, dir1, dir2]. Since we flatten and reshape using the same
+        # order ("C"), this preserves the row-major format without changing structure.
         object_feature_orientations_wrt_model = np.reshape(
             features["pose_vectors"], (-1, 3, 3)
         )
