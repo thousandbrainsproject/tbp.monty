@@ -17,6 +17,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 import torch
 
+
+class TimestepMappingError(Exception):
+    """Raised when LM and SM timesteps cannot be properly mapped."""
+
 from tbp.monty.frameworks.utils.graph_matching_utils import get_relevant_curvature
 from tbp.monty.frameworks.utils.logging_utils import deserialize_json_chunks
 
@@ -240,7 +244,7 @@ class EpisodeDataLoader:
         as it jump from SM Timestep 1 to SM Timestep 6 (but only one LM step).
 
         Raises:
-            ValueError: If the number of SM timesteps with use_state=True does not
+            TimestepMappingError: If the number of SM timesteps with use_state=True does not
                 match the number of LM timesteps.
         """
         logger.info("Finding LM to SM timestep mapping")
@@ -256,7 +260,7 @@ class EpisodeDataLoader:
             self.lm_to_sm_mapping = sm_timesteps_with_use_state_true
             logger.info("Successfully mapped LM timesteps to SM timesteps")
         else:
-            raise ValueError(
+            raise TimestepMappingError(
                 f"Mismatch: {len(sm_timesteps_with_use_state_true)} SM "
                 f"use_state=True vs {self.num_lm_steps} LM timesteps"
             )
