@@ -245,7 +245,6 @@ class EpisodeDataLoader:
         """
         logger.info("Finding LM to SM timestep mapping")
 
-        self.lm_to_sm_mapping = []
         processed_obs = self.sm0_data["processed_observations"]
 
         sm_timesteps_with_use_state_true = []
