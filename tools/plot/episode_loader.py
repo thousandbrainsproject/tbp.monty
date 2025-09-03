@@ -209,23 +209,17 @@ class EpisodeDataLoader:
                 self.ground_truth_rotation,
                 orientations_in_row_vector_format=False,
             )
-            highest_evidence_location = transform_locations_model_to_world(
-                highest_evidence_location.reshape(1, 3),
-                self.object_model.model_origin_wrt_world,
-                self.ground_truth_position,
-                self.ground_truth_rotation,
-            )
-            highest_evidence_orientation = transform_orientations_model_to_world(
-                highest_evidence_rotation.reshape(1, 3, 3),
-                self.ground_truth_rotation,
-                orientations_in_row_vector_format=False,
-            )
-
             self.all_hyp_locations.append(hyp_locations)
             self.all_hyp_object_orientations.append(hyp_object_orientations)
-            self.highest_evidence_location.append(highest_evidence_location.squeeze())
+
+            highest_evidence_location = hyp_locations[highest_evidence_index]
+            highest_evidence_orientation = hyp_object_orientations[
+                highest_evidence_index
+            ]
+
+            self.highest_evidence_location.append(highest_evidence_location)
             self.highest_evidence_object_orientation.append(
-                highest_evidence_orientation.squeeze()
+                highest_evidence_orientation
             )
             self.highest_evidence_indices.append(highest_evidence_index)
 
