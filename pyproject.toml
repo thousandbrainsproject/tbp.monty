@@ -339,4 +339,4 @@ namespaces = true
 
 [tool.uv]
 # Extra index for PyTorch extensions
-find-links = ["https://data.pyg.org/whl/torch-1.11.0+cpu.html"]
+find-links = ["https://data.pyg.org/whl/torch-1.13.1+cpu.html"]
