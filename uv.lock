@@ -3606,6 +3606,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pypubsub"
+version = "4.0.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/23/64/e7907a632cfbd76fd17e86ed6279422345958cf9fdc8216d95d13d9fee1b/pypubsub-4.0.3.tar.gz", hash = "sha256:32d662de3ade0fb0880da92df209c62a4803684de5ccb8d19421c92747a258c7", size = 49524, upload-time = "2025-07-21T11:48:14.001Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1a/41/a0aceb552d8ec63bb1e8223d130f9dd0f736470036d75d708183b104a2cb/Pypubsub-4.0.3-py3-none-any.whl", hash = "sha256:7f716bae9388afe01ff82b264ba8a96a8ae78b42bb1f114f2716ca8f9e404e2a", size = 61368, upload-time = "2019-01-28T00:36:11.389Z" },
+]
+
+[[package]]
 name = "pytest"
 version = "7.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -4922,6 +4931,7 @@ dependencies = [
 analysis = [
     { name = "ipython", version = "8.12.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "ipython", version = "8.18.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
+    { name = "pypubsub" },
     { name = "seaborn" },
     { name = "trimesh" },
     { name = "vedo" },
@@ -5003,6 +5013,7 @@ requires-dist = [
     { name = "pandas" },
     { name = "pillow" },
     { name = "pydata-sphinx-theme", marker = "extra == 'generate-api-docs-tool'" },
+    { name = "pypubsub", marker = "extra == 'analysis'" },
     { name = "pytest", marker = "extra == 'dev'", specifier = "==7.1.1" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = "==3.0.0" },
     { name = "pytest-xdist", marker = "extra == 'dev'", specifier = "==2.5.0" },
@@ -5034,7 +5045,7 @@ requires-dist = [
     { name = "vedo", marker = "extra == 'analysis'" },
     { name = "wandb" },
 ]
-provides-extras = ["simulator-habitat", "simulator-mujoco", "analysis", "build", "dev", "generate-api-docs-tool", "github-readme-sync-tool", "print-version-tool", "real-robots"]
+provides-extras = ["analysis", "build", "dev", "generate-api-docs-tool", "github-readme-sync-tool", "print-version-tool", "real-robots", "simulator-habitat", "simulator-mujoco"]
 
 [[package]]
 name = "text-unidecode"

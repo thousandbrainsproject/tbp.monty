@@ -58,6 +58,7 @@ analysis = [
     'seaborn',
     'vedo',
     'trimesh',
+    'pypubsub',
 ]
 build = [
     'build'
