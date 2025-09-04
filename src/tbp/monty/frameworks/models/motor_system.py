@@ -178,9 +178,7 @@ class MotorSystem:
         """
         if self._driving_goal_state:
             if self._driving_goal_state.sender_id == "view_finder":
-                if self._n_steps < 100:
-                    return self._look_at_policy
-                self._driving_goal_state = None
+                return self._look_at_policy
 
         return self._default_policy
 

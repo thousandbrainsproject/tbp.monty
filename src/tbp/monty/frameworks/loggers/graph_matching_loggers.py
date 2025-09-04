@@ -526,7 +526,9 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
         buffer_data["motor_system"]["action_sequence"] = (
             model.motor_system._policy.action_sequence
         )
-        buffer_data["motor_system"]["telemetry"] = model.motor_system.telemetry
+        # Handle custom telemetry.
+        if self.motor_system.save_telemetry:
+            buffer_data["motor_system"]["telemetry"] = model.motor_system.telemetry
 
         # Some motor systems store additional data specific to their policy, e.g. when
         # principal curvature has informed movements
