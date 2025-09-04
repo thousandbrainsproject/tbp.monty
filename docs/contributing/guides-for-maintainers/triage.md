@@ -138,7 +138,7 @@ Do not assign priority or severity to Pull Requests.
 
 ## Assignment
 
-Use your judgement to assign the Pull Request to one or more **Maintainers** for review (this is the [GitHub Assignees feature](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/assigning-issues-and-pull-requests-to-other-github-users)). Note that for RFCs, the meaning of the Assignees list is different (see [Request For Comments (RFC)](../request-for-comments-rfc.md)).
+Use your judgement to assign the Pull Request to one or more **Maintainers** for review (this is the [GitHub Assignees feature](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/assigning-issues-and-pull-requests-to-other-github-users)). If you are the author, you _may not_ assign the Pull Request to yourself. Note that for RFCs, the meaning of the Assignees list is different (see [Request For Comments (RFC)](../request-for-comments-rfc.md)).
 
 Use your judgement to request a review for the Pull Request from one or more people (this is the [GitHub Reviewers feature](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/requesting-a-pull-request-review)).
 
