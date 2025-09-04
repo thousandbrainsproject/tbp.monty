@@ -186,6 +186,107 @@ class TargetFinder:
 
         return targets
 
+
+class OnObjectGsg(SmGoalStateGenerator):
+    """Sensor module goal-state generator that finds targets in the image."""
+
+    def __init__(
+        self,
+        parent_sm: SensorModule,
+        goal_tolerances: dict | None = None,
+        save_telemetry: bool = False,
+        **kwargs,
+    ) -> None:
+        """Initialize the GSG.
+
+        Args:
+            parent_sm: The sensor module class instance that the GSG is embedded
+                within.
+            goal_tolerances: The tolerances for each attribute of the goal-state
+                that can be used by the GSG when determining whether a goal-state is
+                achieved.
+            save_telemetry: Whether to save telemetry data.
+            **kwargs: Additional keyword arguments. Unused.
+        """
+        super().__init__(parent_sm, goal_tolerances, save_telemetry, **kwargs)
+        self.decay_field = DecayField()
+
+    def _generate_output_goal_state(
+        self,
+        raw_observation: dict | None = None,
+        processed_observation: dict | None = None,
+    ) -> list[GoalState]:
+        """Generate the output goal state(s).
+
+        Generates the output goal state(s) based on the driving goal state and the
+        achieved goal state(s).
+
+        Args:
+            raw_observation: The parent sensor module's raw observations.
+            processed_observation: The parent sensor module's processed observations.
+
+        Returns:
+            The output goal state(s).
+        """
+        # Get coordinates of image data in (ypix, xpix, vector3d) format.
+        n_rows, n_cols = raw_observation["rgba"].shape[0:2]
+        pos_2d = raw_observation["semantic_3d"][:, 0:3].reshape(n_rows, n_cols, 3)
+        depth = raw_observation["depth"]
+
+        scores = np.zeros_like(depth)
+        depth_threshold = 0.5
+        scores[depth < depth_threshold] = 1.0
+
+        scores = ndimage.gaussian_filter(scores, 5, mode="constant")
+        scores = np.clip(scores, 0, 1)
+        scores[depth > depth_threshold] = 0.0
+
+        # Make goal states for each target.
+        targets_pix = np.where(scores > 0)
+        targets = [pos_2d[y, x] for y, x in zip(targets_pix[0], targets_pix[1])]
+        goal_states = []
+        for t in targets:
+            goal_states.append(self._create_goal_state(t))
+
+        # Update the decay field with the current sensed location.
+        cur_loc = pos_2d[n_rows // 2, n_cols // 2]
+        self.decay_field.add(cur_loc)
+
+        # Modify goal-state confidence values based on the decay field.
+        for g in goal_states:
+            val = self.decay_field(g.location)
+            g.confidence *= val
+
+        # Step the decay field.
+        self.decay_field.step()
+
+        # Return the goal states.
+        return goal_states
+
+    def _create_goal_state(
+        self,
+        location: np.ndarray,
+        morphological_features: Optional[Dict[str, Any]] = None,
+        non_morphological_features: Optional[Dict[str, Any]] = None,
+        confidence: float = 1.0,
+        use_state: bool = True,
+        goal_tolerances: Optional[Dict[str, Any]] = None,
+        info: Optional[Dict[str, Any]] = None,
+    ) -> GoalState:
+        """Create a goal state with default values."""
+        return GoalState(
+            location=location,
+            morphological_features=morphological_features,
+            non_morphological_features=non_morphological_features,
+            confidence=confidence,
+            use_state=use_state,
+            sender_id=self.parent_sm.sensor_module_id,
+            sender_type="GSG",
+            goal_tolerances=goal_tolerances,
+            info=info,
+        )
+
+
 """
 -------------------------------------------------------------------------------
  - Return Inhibition
