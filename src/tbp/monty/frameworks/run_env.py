@@ -10,6 +10,7 @@
 
 import os
 
+from pathlib import Path
 
 def setup_env(monty_logs_dir_default: str = "~/tbp/results/monty/"):
     """Setup environment variables for Monty.
@@ -17,30 +18,29 @@ def setup_env(monty_logs_dir_default: str = "~/tbp/results/monty/"):
     Args:
         monty_logs_dir_default: Default directory for Monty logs.
     """
-    monty_logs_dir = os.getenv("MONTY_LOGS")
 
-    if monty_logs_dir is None:
-        monty_logs_dir = monty_logs_dir_default
-        os.environ["MONTY_LOGS"] = monty_logs_dir
-        print(f"MONTY_LOGS not set. Using default directory: {monty_logs_dir}")
+    dir_path = os.getenv("MONTY_LOGS")
+    if dir_path is None:
+        dir_path = str(Path(monty_logs_dir_default).expanduser())
+        os.environ["MONTY_LOGS"] = dir_path
+        print(f"MONTY_LOGS not set. Using default directory: {dir_path}")
 
-    monty_models_dir = os.getenv("MONTY_MODELS")
+    monty_logs_dir = Path(dir_path)
+    
+    dir_path = os.getenv("MONTY_MODELS")
+    if dir_path is None:
+        dir_path = str(Path("~/tbp/results/monty").expanduser() / "pretrained_models")
+        os.environ["MONTY_MODELS"] = dir_path
+        print(f"MONTY_MODELS not set. Using default directory: {dir_path}")
 
-    if monty_models_dir is None:
-        monty_models_dir = f"{monty_logs_dir}pretrained_models/"
-        os.environ["MONTY_MODELS"] = monty_models_dir
-        print(f"MONTY_MODELS not set. Using default directory: {monty_models_dir}")
+    dir_path = os.getenv("MONTY_DATA")
+    if dir_path is None:
+        dir_path = str(Path("~/tbp/data").expanduser())
+        os.environ["MONTY_DATA"] = dir_path
+        print(f"MONTY_DATA not set. Using default directory: {dir_path}")
 
-    monty_data_dir = os.getenv("MONTY_DATA")
-
-    if monty_data_dir is None:
-        monty_data_dir = os.path.expanduser("~/tbp/data/")
-        os.environ["MONTY_DATA"] = monty_data_dir
-        print(f"MONTY_DATA not set. Using default directory: {monty_data_dir}")
-
-    wandb_dir = os.getenv("WANDB_DIR")
-
-    if wandb_dir is None:
-        wandb_dir = monty_logs_dir
-        os.environ["WANDB_DIR"] = wandb_dir
-        print(f"WANDB_DIR not set. Using default directory: {wandb_dir}")
+    dir_path = os.getenv("WANDB_DIR")
+    if dir_path is None:
+        dir_path = str(monty_logs_dir)
+        os.environ["WANDB_DIR"] = dir_path
+        print(f"WANDB_DIR not set. Using default directory: {dir_path}")
