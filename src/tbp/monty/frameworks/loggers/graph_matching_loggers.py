@@ -527,7 +527,7 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
             model.motor_system._policy.action_sequence
         )
         # Handle custom telemetry.
-        if self.motor_system.save_telemetry:
+        if model.motor_system.save_telemetry:
             buffer_data["motor_system"]["telemetry"] = model.motor_system.telemetry
 
         # Some motor systems store additional data specific to their policy, e.g. when
