@@ -211,30 +211,30 @@ class OnObjectGsg(SmGoalStateGenerator):
         super().__init__(parent_sm, goal_tolerances, save_telemetry, **kwargs)
         self.decay_field = DecayField()
 
-    def step(
-        self,
-        raw_observation: dict | None = None,
-        processed_observation: dict | None = None,
-    ):
-        """Step the GSG.
+    # def step(
+    #     self,
+    #     raw_observation: dict | None = None,
+    #     processed_observation: dict | None = None,
+    # ):
+    #     """Step the GSG.
 
-        Args:
-            raw_observation: The parent sensor module's raw observations.
-            processed_observation: The parent sensor module's processed observations.
-        """
-        self._set_achievement_status(raw_observation, processed_observation)
+    #     Args:
+    #         raw_observation: The parent sensor module's raw observations.
+    #         processed_observation: The parent sensor module's processed observations.
+    #     """
+    #     self._set_achievement_status(raw_observation, processed_observation)
 
-        # TODO: Logging.
-        self.output_goal_state = self._generate_output_goal_state(
-            raw_observation, processed_observation
-        )
-        if self.save_telemetry:
-            self.telemetry.append(
-                SmGoalStateGeneratorTelemetry(
-                    driving_goal_state=self.driving_goal_state,
-                    output_goal_state=self.output_goal_state,
-                )
-            )
+    #     # TODO: Logging.
+    #     self.output_goal_state = self._generate_output_goal_state(
+    #         raw_observation, processed_observation
+    #     )
+    #     if self.save_telemetry:
+    #         self.telemetry.append(
+    #             SmGoalStateGeneratorTelemetry(
+    #                 driving_goal_state=self.driving_goal_state,
+    #                 output_goal_state=self.output_goal_state,
+    #             )
+    #         )
 
     def _generate_output_goal_state(
         self,
