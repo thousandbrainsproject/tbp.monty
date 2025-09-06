@@ -199,3 +199,4 @@
 \byoutube\b
 \bYouTube\b
 \bzsh\b
+\b[Dd]iscretizing\b
