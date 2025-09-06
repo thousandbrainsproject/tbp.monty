@@ -14,6 +14,7 @@ import os
 import re
 import sys
 import timeit
+from typing import Any, Dict, List
 
 import requests
 
@@ -25,6 +26,7 @@ from tools.github_readme_sync.constants import (
     IGNORE_TABLES,
     REGEX_CSV_TABLE,
 )
+from tools.github_readme_sync.file import find_markdown_files, read_file_content
 
 HIERARCHY_FILE = "hierarchy.md"
 CATEGORY_PREFIX = "# "
@@ -78,9 +80,9 @@ def check_hierarchy_file(folder: str):
         content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
         lines = content.splitlines()
 
-    parent_stack = []
+    parent_stack: List[Dict[str, Any]] = []
     current_category = None
-    unique_slugs = {}
+    unique_slugs: Dict[str, str] = {}
     link_check_errors = []
 
     for line in lines:
@@ -110,7 +112,7 @@ def check_hierarchy_file(folder: str):
             parent_stack.append(new_doc)
 
             full_path = (
-                os.path.join(folder, *(el["slug"] for el in parent_stack)) + ".md"
+                os.path.join(folder, *[el["slug"] for el in parent_stack]) + ".md"
             )
             errors = sanity_check(full_path)
             if errors:
@@ -128,6 +130,8 @@ def check_hierarchy_file(folder: str):
 def extract_slug(line: str):
     regex = r"\[(.*)\]\(.*\)"
     match = re.search(regex, line)
+    if match is None:
+        raise ValueError(f"No slug found in line: {line}")
     return match.group(1)
 
 
@@ -207,13 +211,7 @@ def check_external(folder, ignore_dirs, rdme):
     total_links_checked = 0
     url_cache = {}  # Cache to store URL check results
 
-    md_files = []
-    for root, _, files in os.walk(folder):
-        if any(ignore_dir in root for ignore_dir in ignore_dirs):
-            continue
-        md_files.extend(
-            [os.path.join(root, file) for file in files if file.endswith(".md")]
-        )
+    md_files = find_markdown_files(folder, ignore_dirs=ignore_dirs)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         future_to_file = {
@@ -261,11 +259,6 @@ def process_file(file_path, rdme, url_cache):
             pass
 
     return file_errors, links_checked
-
-
-def read_file_content(file_path):
-    with open(file_path, "r", encoding="utf-8") as f:
-        return f.read()
 
 
 def extract_external_links(content):
