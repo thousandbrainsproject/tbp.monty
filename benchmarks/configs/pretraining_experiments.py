@@ -127,7 +127,6 @@ supervised_pre_training_base = dict(
             )
         ),  # use spiral policy for more even object coverage during learning
     ),
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=PatchViewFinderMountHabitatDatasetArgs(),
     train_dataloader_class=ED.InformedEnvironmentDataLoader,
     train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
@@ -199,7 +198,6 @@ only_surf_agent_training_10obj.update(
         ),
         motor_system_config=MotorSystemConfigCurvatureInformedSurface(),
     ),
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(),
     logging_config=PretrainLoggingConfig(
         output_dir=fe_pretrain_dir,

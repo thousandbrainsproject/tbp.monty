@@ -41,7 +41,7 @@ from tbp.monty.simulators.simulator import Simulator
 # Create agent and object configuration helper dataclasses
 
 # ObjectConfig dataclass based on the arguments of `HabitatSim.add_object` method
-ObjectConfig = create_dataclass_args("ObjectConfig", HabitatSim.add_object)
+ObjectConfig = create_dataclass_args("ObjectConfig", HabitatSim.__wrapped__.add_object)
 ObjectConfig.__module__ = __name__
 
 
