@@ -63,6 +63,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
                 achieved.
             **kwargs: Additional keyword arguments. Unused.
         """
+        super().__init__(**kwargs)
         self.parent_lm = parent_lm
         if goal_tolerances is None:
             self.goal_tolerances = dict(
@@ -72,11 +73,23 @@ class GraphGoalStateGenerator(GoalStateGenerator):
             self.goal_tolerances = goal_tolerances
 
         self.reset()
-        self.set_driving_goal_state(self._generate_none_goal_state())
 
     # =============== Public Interface Functions ===============
 
     # ------------------ Getters & Setters ---------------------
+    @property
+    def enabled(self) -> bool:
+        """See if the GSG is enabled."""
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        """Enable or disable the GSG."""
+        assert isinstance(value, bool), "Enabled must be a boolean"
+        self._enabled = value
+        if not self._enabled:
+            self.set_driving_goal_state(self._generate_none_goal_state())
+            self._set_output_goal_state(self._generate_none_goal_state())
 
     def reset(self):
         """Reset any stored attributes of the GSG."""
@@ -87,6 +100,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
                 goal_states=[],
                 matching_step_when_output_goal_set=[],
                 goal_state_achieved=[],
+                enabled=[],
             ),
             update_time=False,
             append=False,
@@ -152,6 +166,9 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         Check whether the GSG's output and driving goal-states are achieved, and
         generate a new output goal-state if necessary.
         """
+        if not self.enabled:
+            return
+
         output_goal_achieved = self._check_output_goal_state_achieved(observations)
 
         self._update_gsg_logging(output_goal_achieved)
@@ -457,6 +474,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
                     goal_states=self.output_goal_state,
                     matching_step_when_output_goal_set=match_step,
                     goal_state_achieved=output_goal_achieved,
+                    enabled=self.enabled,
                 ),
                 update_time=False,
                 append=True,

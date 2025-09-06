@@ -279,6 +279,19 @@ class GoalStateGenerator(metaclass=abc.ABCMeta):
     that are informed by world models/hypotheses.
     """
 
+    def __init__(self, enabled: bool = True, **kwargs):
+        self.enabled = enabled
+
+    @property
+    def enabled(self) -> bool:
+        """See if the GSG is enabled."""
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        """Enable or disable the GSG."""
+        self._enabled = value
+
     @abc.abstractmethod
     def set_driving_goal_state(self):
         """Set the driving goal state.
