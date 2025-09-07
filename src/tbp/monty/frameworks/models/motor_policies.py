@@ -65,6 +65,11 @@ class MotorPolicy(abc.ABC):
         self.is_predefined = False
 
     @abc.abstractmethod
+    def reset(self) -> None:
+        """Reset the motor policy."""
+        pass
+
+    @abc.abstractmethod
     def dynamic_call(self, state: MotorSystemState | None = None) -> Action | None:
         """Use this method when actions are not predefined.
 
@@ -312,6 +317,10 @@ class BasePolicy(MotorPolicy):
         self.episode_step = state_dict["episode_step"]
 
     def set_experiment_mode(self, mode: Literal["train", "eval"]) -> None:
+        pass
+
+    def reset(self) -> None:
+        """Reset the motor policy."""
         pass
 
 

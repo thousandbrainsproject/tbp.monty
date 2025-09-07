@@ -37,6 +37,7 @@ class MotorSystemTelemetry:
     experiment_mode: Literal["train", "eval"] | None
     processed_observations: State | None
     action: Action | None
+    policy_id: str | None
 
 
 class MotorSystem:
@@ -60,6 +61,10 @@ class MotorSystem:
         self._default_policy = self._policy = policy
         self._look_at_policy = LookAtPolicy(rng=self._default_policy.rng)
         self.save_telemetry = save_telemetry
+
+        self._default_policy.policy_id = self._default_policy.__class__.__name__
+        self._look_at_policy.policy_id = self._look_at_policy.__class__.__name__
+
         self.reset(state)
 
     @property
@@ -135,7 +140,11 @@ class MotorSystem:
         self._processed_observations = None
         self._last_action = None
         self._telemetry = []
-        self._n_steps = 0
+        # self._n_steps = 0
+
+        # clear policies
+        self._default_policy.reset()
+        self._look_at_policy.reset()
 
     def pre_episode(self) -> None:
         """Pre episode hook."""
@@ -164,7 +173,8 @@ class MotorSystem:
 
         If there is no driving goal state, pick some other policy.
         """
-        self._policy = self._select_policy()
+        policy = self._select_policy()
+        self._policy = policy
         self._policy.set_experiment_mode(self._experiment_mode)
         if hasattr(self._policy, "set_driving_goal_state"):
             self._policy.set_driving_goal_state(self._driving_goal_state)
@@ -192,14 +202,17 @@ class MotorSystem:
                     experiment_mode=self._experiment_mode,
                     processed_observations=self._processed_observations,
                     action=action,
+                    policy_id=self._policy.policy_id,
                 )
             )
 
         # Need to keep this in sync with the policy's driving goal state since
         # derive_habitat_goal_state() consumes the goal state.
-        self._driving_goal_state = getattr(self._policy, "driving_goal_state", None)
-        self._last_action = self._policy.last_action
-        self._n_steps += 1
+        # For now, just clear goal states. Figuring out how and when some should
+        # persist is unclear to me.
+        self._driving_goal_state = None
+        # self._driving_goal_state = getattr(self._policy, "driving_goal_state", None)
+        self._last_action = action
 
     def __call__(self) -> Action:
         """Defines the structure for __call__.
@@ -209,8 +222,6 @@ class MotorSystem:
         Returns:
             The action to take.
         """
-        # TODO: ?Mark a goal state being attempted as the one being attempted so
-        # it can be checked by a GSG.?
         action = self._policy(self._state)
         self._post_call(action)
         return action
@@ -226,22 +237,26 @@ is already > 2k lines.
 class LookAtPolicy(BasePolicy):
     """A policy that looks at a target."""
 
-    def __init__(self, rng):
+    def __init__(self, rng: np.random.Generator):
         action_sampler_class = ConstantSampler
         action_sampler_args = dict(
             actions=generate_action_list("distant_agent_no_translation"),
             rotation_degrees=5.0,
         )
-        agent_id = "agent_id_0"
-        switch_frequency = 1.0
 
         super().__init__(
             rng=rng,
             action_sampler_args=action_sampler_args,
             action_sampler_class=action_sampler_class,
-            agent_id=agent_id,
-            switch_frequency=switch_frequency,
+            agent_id="agent_id_0",
+            switch_frequency=1.0,
         )
+        self.driving_goal_state = None
+        self.processed_observations = None
+
+    def reset(self) -> None:
+        """Reset the look at policy."""
+        super().reset()
         self.driving_goal_state = None
         self.processed_observations = None
 
@@ -251,9 +266,6 @@ class LookAtPolicy(BasePolicy):
     def dynamic_call(self, state: MotorSystemState) -> Action:
         # Clean up habitat state.
         state = clean_motor_system_state(state)
-
-        # Find target location relative to sensor.
-        target_loc_rel_world = self.driving_goal_state.location
 
         # Construct transform chain that maps between world and sensor coordinates.
         agent_rot = as_rotation_matrix(state["agent_id_0"]["rotation"])
@@ -270,15 +282,21 @@ class LookAtPolicy(BasePolicy):
         target_rel_sensor = chain.inv()(self.driving_goal_state.location)
 
         # Convert from cartesion sensor coordinates to degrees.
-        x_rot, y_rot, z_rot = target_rel_sensor
-        left_amount = -np.degrees(np.arctan2(x_rot, -z_rot))
-        distance_horiz = np.sqrt(x_rot**2 + z_rot**2)
-        down_amount = -np.degrees(np.arctan2(y_rot, distance_horiz))
+        x, y, z = target_rel_sensor
+        left_amount = -np.degrees(np.arctan2(x, -z))
+        distance_horiz = np.sqrt(x**2 + z**2)
+        down_amount = -np.degrees(np.arctan2(y, distance_horiz))
 
-        return [
+        action = [
             LookDown(agent_id=self.agent_id, rotation_degrees=down_amount),
             TurnLeft(agent_id=self.agent_id, rotation_degrees=left_amount),
         ]
+
+        self.driving_goal_state.info["attempted"] = True
+        # Consume the goal state.
+        self.driving_goal_state = None
+
+        return action
 
 
 def clean_motor_system_state(state: dict) -> dict:
