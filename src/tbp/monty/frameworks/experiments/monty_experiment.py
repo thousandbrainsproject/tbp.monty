@@ -26,6 +26,7 @@ from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageDataLoader,
     SaccadeOnImageFromStreamDataLoader,
 )
+from tbp.monty.frameworks.environments.embodied_environment import EmbodiedEnvironment
 from tbp.monty.frameworks.loggers.exp_logger import (
     BaseMontyLogger,
     LoggingCallbackHandler,
@@ -203,17 +204,25 @@ class MontyExperiment:
 
         return model
 
+    def init_env(self, env_init_func, env_init_args):
+        env = env_init_func(**env_init_args)
+        assert isinstance(env, EmbodiedEnvironment)
+
+        return env
+
     def load_dataloaders(self, config):
         # Initialize everything needed for dataloader
-        dataset_args = config["dataset_args"]
+        env_interface_args = config["dataset_args"]
+        env = self.init_env(
+            env_interface_args["env_init_func"], env_interface_args["env_init_args"]
+        )
 
         # Initialize train dataloaders if needed
         if config["experiment_args"]["do_train"]:
             train_dataloader_class = config["train_dataloader_class"]
             train_dataloader_args = dict(
-                env_init_func=dataset_args["env_init_func"],
-                env_init_args=dataset_args["env_init_args"],
-                transform=dataset_args["transform"],
+                env=env,
+                transform=env_interface_args["transform"],
                 **config["train_dataloader_args"],
             )
 
@@ -227,9 +236,8 @@ class MontyExperiment:
         if config["experiment_args"]["do_eval"]:
             eval_dataloader_class = config["eval_dataloader_class"]
             eval_dataloader_args = dict(
-                env_init_func=dataset_args["env_init_func"],
-                env_init_args=dataset_args["env_init_args"],
-                transform=dataset_args["transform"],
+                env=env,
+                transform=env_interface_args["transform"],
                 **config["eval_dataloader_args"],
             )
 

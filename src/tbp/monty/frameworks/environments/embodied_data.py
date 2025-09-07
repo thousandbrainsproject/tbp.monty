@@ -62,9 +62,7 @@ class EnvironmentDataLoader:
     returned by `motor_system` is applied.
 
     Attributes:
-        env_init_func: Callable function used to create the embodied environment. This
-            function should return a class implementing :class:`.EmbodiedEnvironment`
-        env_init_args: Arguments to `env_init_func`
+        env: an instance of a class that implements :class:`.EmbodiedEnvironment`
         motor_system: :class:`MotorSystem`
         transform: A list of callables used to transform the observations returned by
             the environment
@@ -81,11 +79,9 @@ class EnvironmentDataLoader:
         TypeError: If `motor_system` is not an instance of `MotorSystem`.
     """
 
-    # TODO: fix this long list of init params
     def __init__(
         self,
-        env_init_func,
-        env_init_args,
+        env: EmbodiedEnvironment,
         rng,
         motor_system: MotorSystem,
         transform=None,
@@ -97,8 +93,6 @@ class EnvironmentDataLoader:
                 if t.needs_rng:
                     t.rng = self.rng
 
-        env = env_init_func(**env_init_args)
-        assert isinstance(env, EmbodiedEnvironment)
         self.env = env
 
         if not isinstance(motor_system, MotorSystem):
