@@ -25,7 +25,11 @@ from scipy.spatial.transform import Rotation
 from skimage import measure
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
-from tbp.monty.frameworks.models.goal_state_generation import SmGoalStateGenerator
+from tbp.monty.frameworks.models.goal_state_generation import (
+    SmGoalStateGenerator,
+    grid_center,
+    grid_raw_observation,
+)
 from tbp.monty.frameworks.models.states import GoalState
 
 logger = logging.getLogger(__name__)
@@ -105,29 +109,6 @@ class TargetFindingGsg(SmGoalStateGenerator):
         # Return the goal states.
         return goal_states
 
-    def _create_goal_state(
-        self,
-        location: np.ndarray,
-        morphological_features: Optional[Dict[str, Any]] = None,
-        non_morphological_features: Optional[Dict[str, Any]] = None,
-        confidence: float = 1.0,
-        use_state: bool = True,
-        goal_tolerances: Optional[Dict[str, Any]] = None,
-        info: Optional[Dict[str, Any]] = None,
-    ) -> GoalState:
-        """Create a goal state with default values."""
-        return GoalState(
-            location=location,
-            morphological_features=morphological_features,
-            non_morphological_features=non_morphological_features,
-            confidence=confidence,
-            use_state=use_state,
-            sender_id=self.parent_sm.sensor_module_id,
-            sender_type="GSG",
-            goal_tolerances=goal_tolerances,
-            info=info,
-        )
-
 
 class TargetFinder:
     def __init__(
@@ -151,7 +132,7 @@ class TargetFinder:
         rgb = rgb / 255.0 if np.issubdtype(rgb.dtype, np.integer) else rgb
 
         # Compute euclidean distance between each pixel's RGB values and target color
-        distances = np.sqrt(np.sum((rgb - self._match)**2, axis=2))
+        distances = np.sqrt(np.sum((rgb - self._match) ** 2, axis=2))
 
         # Create binary mask for matching pixels
         mask = distances < self._threshold
@@ -209,7 +190,7 @@ class OnObjectGsg(SmGoalStateGenerator):
             **kwargs: Additional keyword arguments. Unused.
         """
         super().__init__(parent_sm, goal_tolerances, save_telemetry, **kwargs)
-        self.decay_field = DecayField()
+        self.decay_field = DecayField(save_telemetry=save_telemetry)
 
     # def step(
     #     self,
@@ -259,12 +240,15 @@ class OnObjectGsg(SmGoalStateGenerator):
         depth = raw_observation["depth"]
 
         scores = np.zeros_like(depth)
-        depth_threshold = 0.5
-        scores[depth < depth_threshold] = 1.0
+        depth_threshold = 0.75
+        on_obj = (depth < depth_threshold).astype(int)
 
-        scores = ndimage.gaussian_filter(scores, 5, mode="constant")
-        scores = np.clip(scores, 0, 1)
-        scores[depth > depth_threshold] = 0.0
+        smooth_scores = ndimage.gaussian_filter(scores, 5, mode="constant")
+        smooth_scores = np.clip(smooth_scores, 0, 1)
+        smooth_scores = smooth_scores * on_obj
+        scores = smooth_scores
+
+        self.cur_telemetry["scores"] = scores
 
         # Make goal states for each target.
         targets_pix = np.where(scores > 0)
@@ -282,34 +266,27 @@ class OnObjectGsg(SmGoalStateGenerator):
             val = self.decay_field(g.location)
             g.confidence *= val
 
+        # Collect decay_field telemetry.
+        if self.decay_field.save_telemetry:
+            kernel_info = []
+            for k in self.decay_field.kernels:
+                kernel_info.append(
+                    {
+                        "location": k.location,
+                        "tau_t": k.tau_t,
+                        "tau_s": k.tau_s,
+                        "w_t_min": k.w_t_min,
+                        "t": k.t,
+                        "expired": k.expired,
+                    }
+                )
+            self.cur_telemetry["decay_field"] = {"kernels": kernel_info}
+
         # Step the decay field.
         self.decay_field.step()
 
         # Return the goal states.
         return goal_states
-
-    def _create_goal_state(
-        self,
-        location: np.ndarray,
-        morphological_features: Optional[Dict[str, Any]] = None,
-        non_morphological_features: Optional[Dict[str, Any]] = None,
-        confidence: float = 1.0,
-        use_state: bool = True,
-        goal_tolerances: Optional[Dict[str, Any]] = None,
-        info: Optional[Dict[str, Any]] = None,
-    ) -> GoalState:
-        """Create a goal state with default values."""
-        return GoalState(
-            location=location,
-            morphological_features=morphological_features,
-            non_morphological_features=non_morphological_features,
-            confidence=confidence,
-            use_state=use_state,
-            sender_id=self.parent_sm.sensor_module_id,
-            sender_type="GSG",
-            goal_tolerances=goal_tolerances,
-            info=info,
-        )
 
 
 """
@@ -453,6 +430,12 @@ class DecayField:
 
     Manages a collection of decay kernels. Used to weight
     `GoalState.confidence` values.
+
+    Calling order:
+      - add (usually)
+      - __call__ (usually many times)
+      - update_telemetry
+      - step
     """
 
     def __init__(

@@ -1124,6 +1124,7 @@ class SmGoalStateGenerator(GoalStateGenerator):
             save_telemetry: Whether to save telemetry data.
             **kwargs: Additional keyword arguments. Unused.
         """
+        super().__init__(**kwargs)
         self.parent_sm = parent_sm
         if goal_tolerances is None:
             self.goal_tolerances = {
@@ -1137,6 +1138,7 @@ class SmGoalStateGenerator(GoalStateGenerator):
 
     def reset(self):
         """Reset any stored attributes of the GSG."""
+        self.cur_telemetry = {}
         self.telemetry = []
         self.set_driving_goal_state(None)
         self.output_goal_state = []
@@ -1164,6 +1166,10 @@ class SmGoalStateGenerator(GoalStateGenerator):
             raw_observation: The parent sensor module's raw observations.
             processed_observation: The parent sensor module's processed observations.
         """
+        if not self.enabled:
+            return
+
+        self.cur_telemetry = {}
         self._set_achievement_status(raw_observation, processed_observation)
 
         # TODO: Logging.
@@ -1171,12 +1177,35 @@ class SmGoalStateGenerator(GoalStateGenerator):
             raw_observation, processed_observation
         )
         if self.save_telemetry:
-            self.telemetry.append(
-                SmGoalStateGeneratorTelemetry(
-                    driving_goal_state=self.driving_goal_state,
-                    output_goal_state=self.output_goal_state,
-                )
+            self.cur_telemetry.update(
+                {
+                    "driving_goal_state": self.driving_goal_state,
+                    "output_goal_state": self.output_goal_state,
+                }
             )
+            self.telemetry.append(self.cur_telemetry)
+
+    def _create_goal_state(
+        self,
+        location: np.ndarray,
+        morphological_features: Optional[Dict[str, Any]] = None,
+        non_morphological_features: Optional[Dict[str, Any]] = None,
+        confidence: float = 1.0,
+        use_state: bool = True,
+        info: Optional[Dict[str, Any]] = None,
+    ) -> GoalState:
+        """Create a goal state with default values."""
+        return GoalState(
+            location=location,
+            morphological_features=morphological_features,
+            non_morphological_features=non_morphological_features,
+            confidence=confidence,
+            use_state=use_state,
+            sender_id=self.parent_sm.sensor_module_id,
+            sender_type="GSG",
+            goal_tolerances=self.goal_tolerances,
+            info=info,
+        )
 
     def _generate_output_goal_state(
         self,
@@ -1219,7 +1248,7 @@ class SmGoalStateGenerator(GoalStateGenerator):
 
             # update telemetry for previous step.
             if self.save_telemetry and len(self.telemetry) > 0:
-                self.telemetry[-1].output_goal_state = generated
+                self.telemetry[-1]["output_goal_state"] = generated
 
     def _goal_state_achieved(
         self,
@@ -1232,4 +1261,45 @@ class SmGoalStateGenerator(GoalStateGenerator):
         Returns:
             Whether the goal state is within the goal tolerances.
         """
-        return False
+        if not self.goal_tolerances:
+            return True
+
+        gridded = grid_raw_observation(raw_observation)
+
+        for name, tol in goal_state.goal_tolerances.items():
+            if name == "location":
+                points = gridded["points"]
+                center_loc = grid_center(points)
+                if np.linalg.norm(goal_state.location - center_loc) > tol:
+                    return False
+            else:
+                raise NotImplementedError(f"Goal tolerance {name} not implemented")
+
+        return True
+
+
+def grid_center(arr: np.ndarray) -> np.generic | np.ndarray:
+    n_rows, n_cols = arr.shape[0], arr.shape[1]
+    return arr[n_rows // 2, n_cols // 2]
+
+
+def grid_raw_observation(raw_observation: dict) -> dict[str, np.ndarray]:
+    """Convert the raw observation into a grid of data.
+
+    Args:
+        raw_observation: The raw observation.
+
+    Returns:
+        The grid of data.
+    """
+    rgba = raw_observation["rgba"]
+    grid_shape = rgba.shape[:2]
+    semantic_3d = raw_observation["semantic_3d"]
+    points = semantic_3d[:, 0:3].reshape(grid_shape + (3,))
+    on_object = semantic_3d[:, 3].reshape(grid_shape).astype(int) > 0
+    return {
+        "rgba": rgba,
+        "depth": raw_observation["depth"],
+        "points": points,
+        "on_object": on_object,
+    }
