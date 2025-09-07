@@ -157,9 +157,9 @@ class EmbodiedDataTest(unittest.TestCase):
         motor_system_dist = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_config_dist.__dict__)
         )
+        env = FakeEnvironmentRel()
         env_interface_dist = EnvironmentDataLoader(
-            env_init_func=FakeEnvironmentRel,
-            env_init_args={},
+            env,
             rng=rng,
             motor_system=motor_system_dist,
         )
@@ -203,9 +203,9 @@ class EmbodiedDataTest(unittest.TestCase):
         motor_system_abs = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_config_abs.__dict__)
         )
+        env = FakeEnvironmentAbs()
         env_interface_abs = EnvironmentDataLoader(
-            env_init_func=FakeEnvironmentAbs,
-            env_init_args={},
+            env,
             rng=rng,
             motor_system=motor_system_abs,
         )
@@ -247,9 +247,9 @@ class EmbodiedDataTest(unittest.TestCase):
         motor_system_dist = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_config_dist.__dict__)
         )
+        env = FakeEnvironmentRel()
         env_interface_dist = EnvironmentDataLoader(
-            env_init_func=FakeEnvironmentRel,
-            env_init_args={},
+            env=env,
             rng=rng,
             motor_system=motor_system_dist
         )
@@ -272,9 +272,9 @@ class EmbodiedDataTest(unittest.TestCase):
         motor_system_abs = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_config_abs.__dict__)
         )
+        env = FakeEnvironmentAbs()
         env_interface_abs = EnvironmentDataLoader(
-            env_init_func=FakeEnvironmentAbs,
-            env_init_args={},
+            env=env,
             rng=rng,
             motor_system=motor_system_abs
         )
@@ -339,9 +339,9 @@ class EmbodiedDataTest(unittest.TestCase):
         versions = [1, 1, 1, 1, 1, 1]
         num_objects = len(characters)
 
+        env = FakeOmniglotEnvironment()
         omniglot_data_loader_abs = OmniglotDataLoader(
-            env_init_func=FakeOmniglotEnvironment,
-            env_init_args={},
+            env=env,
             rng=rng,
             motor_system=motor_system_abs,
             alphabets=alphabets,
@@ -378,9 +378,10 @@ class EmbodiedDataTest(unittest.TestCase):
             policy=BasePolicy(rng=rng, **base_policy_config_rel.__dict__)
         )
 
+        env_init_args = {"patch_size": patch_size, "data_path": data_path}
+        env = SaccadeOnImageEnvironment(**env_init_args)
         dataloader_rel = SaccadeOnImageDataLoader(
-            env_init_func=SaccadeOnImageEnvironment,
-            env_init_args={"patch_size": patch_size, "data_path": data_path},
+            env=env,
             rng=rng,
             motor_system=motor_system_rel,
             scenes=[0, 0],
@@ -452,9 +453,10 @@ class EmbodiedDataTest(unittest.TestCase):
             policy=BasePolicy(rng=rng, **base_policy_config_rel.__dict__)
         )
 
+        env_init_args = {"patch_size": patch_size, "data_path": data_path}
+        env = SaccadeOnImageFromStreamEnvironment(**env_init_args)
         dataloader_rel = SaccadeOnImageFromStreamDataLoader(
-            env_init_func=SaccadeOnImageFromStreamEnvironment,
-            env_init_args={"patch_size": patch_size, "data_path": data_path},
+            env=env,
             rng=rng,
             motor_system=motor_system_rel
         )
