@@ -239,14 +239,13 @@ class OnObjectGsg(SmGoalStateGenerator):
         pos_2d = raw_observation["semantic_3d"][:, 0:3].reshape(n_rows, n_cols, 3)
         depth = raw_observation["depth"]
 
-        scores = np.zeros_like(depth)
         depth_threshold = 0.75
-        on_obj = (depth < depth_threshold).astype(int)
+        on_obj = (depth < depth_threshold).astype(float)
 
-        smooth_scores = ndimage.gaussian_filter(scores, 5, mode="constant")
-        smooth_scores = np.clip(smooth_scores, 0, 1)
-        smooth_scores = smooth_scores * on_obj
-        scores = smooth_scores
+        smooth_on_obj = ndimage.gaussian_filter(on_obj, 5, mode="constant")
+        smooth_on_obj = np.clip(smooth_on_obj, 0, 1)
+        smooth_on_obj = smooth_on_obj * on_obj
+        scores = smooth_on_obj
 
         self.cur_telemetry["scores"] = scores
 
@@ -264,6 +263,9 @@ class OnObjectGsg(SmGoalStateGenerator):
         # Modify goal-state confidence values based on the decay field.
         for g in goal_states:
             val = self.decay_field(g.location)
+            val = val * 0.8
+            val = val + np.random.normal(0, 0.1)
+            val = np.clip(val, 0, 1)
             g.confidence *= val
 
         # Collect decay_field telemetry.
