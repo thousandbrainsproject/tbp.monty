@@ -215,6 +215,10 @@ class OnObjectGsg(SmGoalStateGenerator):
         points = obs["points"]
         on_obj = obs["on_object"]
 
+        # do salience...
+        rgba = obs["rgba"]
+        depth = obs["depth"]
+
         # Make a goal for each on-object pixel. Their default confidence value is 1.0.
         # It gets weighted downward later based on previously visited locations.
         targets_pix = np.where(on_obj)
