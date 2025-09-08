@@ -10,7 +10,7 @@ description: How to get the code running.
 > [!WARNING]
 > This guide will not work on Windows or non-`x86_64/amd64` Linux.
 >
-> A guide for Windows Subsystem for Linux is available here: [Getting Started on Windows via WSL](getting-started-on-windows-via-wsl.md)
+> A guide for Windows Subsystem for Linux is available here: [Getting Started on Windows via WSL](getting-started/getting-started-on-windows-via-wsl.md)
 >
 > You can follow these GitHub issues for updates:
 > - [Windows native](https://github.com/thousandbrainsproject/tbp.monty/issues/52)
