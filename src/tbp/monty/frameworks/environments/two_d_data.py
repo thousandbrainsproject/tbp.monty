@@ -176,7 +176,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         self.character_version = version_id
         self.current_image, self.locations = self.load_new_character_data()
 
-    def remove_all_objects(self):
+    def remove_all_objects(self) -> None:
         # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
         #      interface and how the class hierarchy is defined and used.
         raise NotImplementedError(
@@ -424,7 +424,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             self.current_sf_scene_point_cloud,
         ) = self.get_3d_scene_point_cloud()
 
-    def remove_all_objects(self):
+    def remove_all_objects(self) -> None:
         # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
         #      interface and how the class hierarchy is defined and used.
         raise NotImplementedError(

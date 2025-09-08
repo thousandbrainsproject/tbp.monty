@@ -61,7 +61,7 @@ class RealRobotsEnvironment(EmbodiedEnvironment):
         observation, reward, done, info = self._env.step(action)
         return dict(**observation, reward=reward, done=done, info=info)
 
-    def remove_all_objects(self):
+    def remove_all_objects(self) -> None:
         # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
         #      interface and how the class hierarchy is defined and used.
         raise NotImplementedError(

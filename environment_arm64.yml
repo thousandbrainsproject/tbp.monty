@@ -14,7 +14,7 @@
 #     $ conda config --env --set subdir osx-64
 #
 # platform: osx-arm64
-name: tbp.monty
+name: prototype.simulator
 channels:
   - aihabitat
   - pytorch

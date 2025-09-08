@@ -13,7 +13,7 @@
 #     $ conda activate tbp.monty
 #
 # platform: default
-name: tbp.monty
+name: prototype.simulator
 channels:
   - aihabitat
   - pytorch

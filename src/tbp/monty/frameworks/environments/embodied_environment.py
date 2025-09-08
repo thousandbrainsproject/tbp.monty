@@ -90,7 +90,7 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def remove_all_objects(self):
+    def remove_all_objects(self) -> None:
         """Remove all objects from the environment.
 
         TODO: This remove_all_objects interface is elevated from
