@@ -27,8 +27,8 @@ from skimage import measure
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
 from tbp.monty.frameworks.models.goal_state_generation import (
     SmGoalStateGenerator,
-    grid_center,
-    grid_raw_observation,
+    center_value,
+    clean_raw_observation,
 )
 from tbp.monty.frameworks.models.states import GoalState
 
@@ -190,32 +190,8 @@ class OnObjectGsg(SmGoalStateGenerator):
             **kwargs: Additional keyword arguments. Unused.
         """
         super().__init__(parent_sm, goal_tolerances, save_telemetry, **kwargs)
-        self.decay_field = DecayField(save_telemetry=save_telemetry)
-
-    # def step(
-    #     self,
-    #     raw_observation: dict | None = None,
-    #     processed_observation: dict | None = None,
-    # ):
-    #     """Step the GSG.
-
-    #     Args:
-    #         raw_observation: The parent sensor module's raw observations.
-    #         processed_observation: The parent sensor module's processed observations.
-    #     """
-    #     self._set_achievement_status(raw_observation, processed_observation)
-
-    #     # TODO: Logging.
-    #     self.output_goal_state = self._generate_output_goal_state(
-    #         raw_observation, processed_observation
-    #     )
-    #     if self.save_telemetry:
-    #         self.telemetry.append(
-    #             SmGoalStateGeneratorTelemetry(
-    #                 driving_goal_state=self.driving_goal_state,
-    #                 output_goal_state=self.output_goal_state,
-    #             )
-    #         )
+        self.decay_field = DecayField()
+        self.rng = np.random.default_rng(seed=42)
 
     def _generate_output_goal_state(
         self,
@@ -235,56 +211,45 @@ class OnObjectGsg(SmGoalStateGenerator):
             The output goal state(s).
         """
         # Get coordinates of image data in (ypix, xpix, vector3d) format.
-        n_rows, n_cols = raw_observation["rgba"].shape[0:2]
-        pos_2d = raw_observation["semantic_3d"][:, 0:3].reshape(n_rows, n_cols, 3)
-        depth = raw_observation["depth"]
+        obs = clean_raw_observation(raw_observation)
+        points = obs["points"]
+        on_obj = obs["on_object"].astype(
+            float
+        )  # For some reason, this needs to be float rather than int.
 
-        depth_threshold = 0.75
-        on_obj = (depth < depth_threshold).astype(float)
-
+        # This is supposed to help not select goals on the edges, but I don't
+        # think it's working and don't have time to figure out why.
         smooth_on_obj = ndimage.gaussian_filter(on_obj, 5, mode="constant")
         smooth_on_obj = np.clip(smooth_on_obj, 0, 1)
         smooth_on_obj = smooth_on_obj * on_obj
         scores = smooth_on_obj
 
-        self.cur_telemetry["scores"] = scores
-
-        # Make goal states for each target.
+        # Make a goal for each on-object pixel. Their default confidence value is 1.0.
+        # It gets weighted downward later based on previously visited locations.
         targets_pix = np.where(scores > 0)
-        targets = [pos_2d[y, x] for y, x in zip(targets_pix[0], targets_pix[1])]
+        targets = [points[y, x] for y, x in zip(targets_pix[0], targets_pix[1])]
         goal_states = []
         for t in targets:
             goal_states.append(self._create_goal_state(t))
 
         # Update the decay field with the current sensed location.
-        cur_loc = pos_2d[n_rows // 2, n_cols // 2]
+        cur_loc = center_value(points)
         self.decay_field.add(cur_loc)
 
         # Modify goal-state confidence values based on the decay field.
+        # Here we are adding randomness to help keep from always picking the goal
+        # state all the way to outermost edge of the object.
         for g in goal_states:
             val = self.decay_field(g.location)
+            # The following rescaling by 0.8 + clipping is to keep goal states
+            # within [0, 1]. Alternatively, we could probably just normalie
+            # confidence values.
             val = val * 0.8
-            val = val + np.random.normal(0, 0.1)
+            val = val + self.rng.normal(0, 0.1)
             val = np.clip(val, 0, 1)
             g.confidence *= val
 
-        # Collect decay_field telemetry.
-        if self.decay_field.save_telemetry:
-            kernel_info = []
-            for k in self.decay_field.kernels:
-                kernel_info.append(
-                    {
-                        "location": k.location,
-                        "tau_t": k.tau_t,
-                        "tau_s": k.tau_s,
-                        "w_t_min": k.w_t_min,
-                        "t": k.t,
-                        "expired": k.expired,
-                    }
-                )
-            self.cur_telemetry["decay_field"] = {"kernels": kernel_info}
-
-        # Step the decay field.
+        # Step the decay field at the end o this function.
         self.decay_field.step()
 
         # Return the goal states.
@@ -444,17 +409,13 @@ class DecayField:
         self,
         kernel_factory: Callable[[Any, ...], DecayKernel] = DecayKernel,
         kernel_args: dict | None = None,
-        save_telemetry: bool = False,
     ):
         self.kernel_factory = kernel_factory
         self.kernel_args = dict(kernel_args) if kernel_args else {}
         self.kernels = []
-        self.save_telemetry = save_telemetry
-        self.telemetry = []
 
     def reset(self) -> None:
         self.kernels = []
-        self.telemetry = []
 
     def add(self, location: np.ndarray, **kwargs) -> None:
         """Add a kernel to the field."""

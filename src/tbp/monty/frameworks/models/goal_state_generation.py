@@ -1264,12 +1264,12 @@ class SmGoalStateGenerator(GoalStateGenerator):
         if not self.goal_tolerances:
             return True
 
-        gridded = grid_raw_observation(raw_observation)
+        gridded = clean_raw_observation(raw_observation)
 
         for name, tol in goal_state.goal_tolerances.items():
             if name == "location":
                 points = gridded["points"]
-                center_loc = grid_center(points)
+                center_loc = center_value(points)
                 if np.linalg.norm(goal_state.location - center_loc) > tol:
                     return False
             else:
@@ -1278,19 +1278,34 @@ class SmGoalStateGenerator(GoalStateGenerator):
         return True
 
 
-def grid_center(arr: np.ndarray) -> np.generic | np.ndarray:
+def center_value(arr: np.ndarray) -> np.generic | np.ndarray:
+    """Convenience function for extracting the value at the center of an image."""
     n_rows, n_cols = arr.shape[0], arr.shape[1]
     return arr[n_rows // 2, n_cols // 2]
 
 
-def grid_raw_observation(raw_observation: dict) -> dict[str, np.ndarray]:
-    """Convert the raw observation into a grid of data.
+def clean_raw_observation(raw_observation: dict) -> dict[str, np.ndarray]:
+    """Convert raw observation data into image format.
+
+    This function (mostly) reformats the arrays in a raw observations dictionary
+    so that they're all indexable by row and column. It also splits the semantic_3d
+    array into 3D locations and an on-object/surface indicator array.
+
+    Some arrays in "raw_observations" are structured naturally, meaning
+    array[i, j] gives you some value for the pixel at row i and column j. This is
+    the case for "rgba" and "depth".
+
+    On the other hand, some arrays are in a flattened format, where the index i
+    corresponds to whatever pixel you get after flattening the image. This makes it
+    harder to access data given some row and column since you have to convert
+    indices back to row/column format. This is the case for "semantic_3d" which
+    contains the 3D locations associated with each pixel.
 
     Args:
-        raw_observation: The raw observation.
+        raw_observation: A sensor's raw observations dictionary.
 
     Returns:
-        The grid of data.
+        The grid/matrix fornatted data.
     """
     rgba = raw_observation["rgba"]
     grid_shape = rgba.shape[:2]
