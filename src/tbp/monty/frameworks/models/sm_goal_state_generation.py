@@ -216,7 +216,7 @@ class OnObjectGsg(SmGoalStateGenerator):
         on_obj = obs["on_object"].astype(float)  # bool -> float
 
         # This is supposed to help not select goals on the edges, but I don't
-        # think it's working and don't have time to figure out why.
+        # think it's working, and don't have time to figure out why.
         smooth_on_obj = ndimage.gaussian_filter(on_obj, 5, mode="constant")
         smooth_on_obj = np.clip(smooth_on_obj, 0, 1)
         smooth_on_obj = smooth_on_obj * on_obj
@@ -240,9 +240,9 @@ class OnObjectGsg(SmGoalStateGenerator):
         for g in goal_states:
             val = self.decay_field(g.location)
             # The following rescaling by 0.8 + clipping is to keep goal states
-            # within [0, 1]. Alternatively, we could probably just normalie
+            # within [0, 1]. Alternatively, we could probably just normalize
             # confidence values.
-            val = val * 0.8
+            val = val * 0.8  # make some room for positive random values to be added
             val = val + self.rng.normal(0, 0.1)
             val = np.clip(val, 0, 1)
             g.confidence *= val
@@ -250,7 +250,6 @@ class OnObjectGsg(SmGoalStateGenerator):
         # Step the decay field at the end o this function.
         self.decay_field.step()
 
-        # Return the goal states.
         return goal_states
 
 
