@@ -213,18 +213,11 @@ class OnObjectGsg(SmGoalStateGenerator):
         # Get coordinates of image data in (ypix, xpix, vector3d) format.
         obs = clean_raw_observation(raw_observation)
         points = obs["points"]
-        on_obj = obs["on_object"].astype(float)  # bool -> float
-
-        # This is supposed to help not select goals on the edges, but I don't
-        # think it's working, and don't have time to figure out why.
-        smooth_on_obj = ndimage.gaussian_filter(on_obj, 5, mode="constant")
-        smooth_on_obj = np.clip(smooth_on_obj, 0, 1)
-        smooth_on_obj = smooth_on_obj * on_obj
-        scores = smooth_on_obj
+        on_obj = obs["on_object"]
 
         # Make a goal for each on-object pixel. Their default confidence value is 1.0.
         # It gets weighted downward later based on previously visited locations.
-        targets_pix = np.where(scores > 0)
+        targets_pix = np.where(on_obj)
         targets = [points[y, x] for y, x in zip(targets_pix[0], targets_pix[1])]
         goal_states = []
         for t in targets:
@@ -251,6 +244,7 @@ class OnObjectGsg(SmGoalStateGenerator):
         self.decay_field.step()
 
         return goal_states
+
 
 
 """
