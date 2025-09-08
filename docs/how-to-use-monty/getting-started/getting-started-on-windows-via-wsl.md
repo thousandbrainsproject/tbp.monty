@@ -38,7 +38,7 @@ conda init --all
 
 It is best practice (and required if you ever want to contribute code) first to **make a fork of our repository** and then make any changes on your local fork. To do this you can simply [visit our repository](https://github.com/thousandbrainsproject/tbp.monty) and click on the fork button as shown in the picture below. For more detailed instructions see the [GitHub documentation on Forks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo).
 
-![](../figures/how-to-use-monty/fork.png)
+![](../../figures/how-to-use-monty/fork.png)
 
 Next, you need to **clone the repository onto the system**. To do that, enter the following command in the Ubuntu terminal, adjusting `YOUR_GITHUB_USERNAME` accordingly:
 
@@ -54,7 +54,7 @@ If you just forked and cloned this repository, you may skip this step, but any o
 
 To make sure your fork is up to date with our repository you need to click on `Sync fork` -> `Update branch` in the GitHub interface. Afterwards, you will need to **get the newest version of the code** into your local copy by running `git pull` inside this folder.
 
-![](../figures/how-to-use-monty/update_branch.png)
+![](../../figures/how-to-use-monty/update_branch.png)
 
 You can also update your code using the terminal by calling `git fetch upstream; git merge upstream/main`. If you have not linked the upstream repository yet, you may first need to call:
 ```
@@ -190,11 +190,11 @@ cd ~/tbp && code .
 
 If you followed all the previous steps, normally you should have VS Code open on the Monty project, ready to go. Try running the unit tests:
 
-![](../figures/how-to-use-monty/vscode_tests_ready.png)
+![](../../figures/how-to-use-monty/vscode_tests_ready.png)
 
 This will take some time, about 10 minutes on an 8-core i7-11700K for example:
 
-![](../figures/how-to-use-monty/vscode_tests_passed.png)
+![](../../figures/how-to-use-monty/vscode_tests_passed.png)
 
 Finally, let’s run a benchmark. You can do this in either the Ubuntu terminal or directly in the VS Code terminal. In the VS Code top menu, select Terminal > Open Terminal, then enter:
 
@@ -204,14 +204,14 @@ python benchmarks/run.py -e base_config_10distinctobj_dist_agent
 
 In this case, it took a little over 5 minutes:
 
-![](../figures/how-to-use-monty/vscode_benchmark_results.png)
+![](../../figures/how-to-use-monty/vscode_benchmark_results.png)
 
 
 # 8. What Next?
-A good next step to get more familiar with our approach and the Monty code base is to go through our [tutorials](./tutorials.md). They include follow-along code and detailed explanations on how Monty experiments are structured, how Monty can be configured in different ways, and what happens when you run a Monty experiment.
+A good next step to get more familiar with our approach and the Monty code base is to go through our [tutorials](../tutorials.md). They include follow-along code and detailed explanations on how Monty experiments are structured, how Monty can be configured in different ways, and what happens when you run a Monty experiment.
 
-If you would like to contribute to the project, you can have a look at the many potential [ways to contribute](../contributing/contributing.md), particularly [ways to contribute code](../contributing/ways-to-contribute-to-code.md).
+If you would like to contribute to the project, you can have a look at the many potential [ways to contribute](../../contributing/contributing.md), particularly [ways to contribute code](../../contributing/ways-to-contribute-to-code.md).
 
-You can also have a look at the [capabilities of Monty](../overview/vision-of-the-thousand-brains-project/capabilities-of-the-system.md) and our [project roadmap](../future-work/project-roadmap.md) to get an idea of what Monty is currently capable of and what features our team is actively working on.
+You can also have a look at the [capabilities of Monty](../../overview/vision-of-the-thousand-brains-project/capabilities-of-the-system.md) and our [project roadmap](../../future-work/project-roadmap.md) to get an idea of what Monty is currently capable of and what features our team is actively working on.
 
-If you run into any issues or questions, please head over to our [Discourse forum](https://thousandbrains.discourse.group/) or [open an Issue](../contributing/contributing.md#report-an-issue). We are always happy to help!
+If you run into any issues or questions, please head over to our [Discourse forum](https://thousandbrains.discourse.group/) or [open an Issue](../../contributing/contributing.md#report-an-issue). We are always happy to help!
