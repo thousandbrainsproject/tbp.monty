@@ -213,9 +213,7 @@ class OnObjectGsg(SmGoalStateGenerator):
         # Get coordinates of image data in (ypix, xpix, vector3d) format.
         obs = clean_raw_observation(raw_observation)
         points = obs["points"]
-        on_obj = obs["on_object"].astype(
-            float
-        )  # For some reason, this needs to be float rather than int.
+        on_obj = obs["on_object"].astype(float)  # bool -> float
 
         # This is supposed to help not select goals on the edges, but I don't
         # think it's working and don't have time to figure out why.
