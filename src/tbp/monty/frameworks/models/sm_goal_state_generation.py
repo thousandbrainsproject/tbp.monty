@@ -250,7 +250,6 @@ class OnObjectGsg(SmGoalStateGenerator):
         return goal_states
 
 
-
 """
 -------------------------------------------------------------------------------
  - Return Inhibition
