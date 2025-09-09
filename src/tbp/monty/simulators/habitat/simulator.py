@@ -55,6 +55,7 @@ __all__ = [
 from tbp.monty.frameworks.environments.embodied_environment import (
     ObjectID,
     QuaternionWXYZ,
+    SemanticID,
     VectorXYZ,
 )
 
@@ -223,7 +224,7 @@ class HabitatSim(HabitatActuator):
         # TODO: Remove object_to_avoid; primary_target_object should be enough
         object_to_avoid: bool = False,
         primary_target_object: ObjectID | None = None,
-    ) -> ObjectID:
+    ) -> tuple[ObjectID, SemanticID]:
         """Add new object to simulated environment.
 
         Args:

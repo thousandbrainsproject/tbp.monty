@@ -6,12 +6,15 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
 from typing import Dict, List, Optional, Protocol
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
     ObjectID,
     QuaternionWXYZ,
+    SemanticID,
     VectorXYZ,
 )
 
@@ -43,7 +46,7 @@ class Simulator(Protocol):
         enable_physics: bool = False,
         object_to_avoid: bool = False,
         primary_target_bb: Optional[List] = None,
-    ) -> ObjectID:
+    ) -> tuple[ObjectID, SemanticID]:
         """Add new object to simulated environment.
 
         Adds a new object based on the named object. This assumes that the set of
@@ -63,7 +66,7 @@ class Simulator(Protocol):
               obscuring the primary object with the new object.
 
         Returns:
-            ID of the added object.
+            Tuple with the ID of the added object and the semantic ID of the object.
         """
         ...
 

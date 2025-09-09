@@ -24,6 +24,7 @@ __all__ = [
 ]
 
 ObjectID = NewType("ObjectID", str)
+SemanticID = NewType("SemanticID", int)
 VectorXYZ = Tuple[float, float, float]
 QuaternionWXYZ = Tuple[float, float, float, float]
 
