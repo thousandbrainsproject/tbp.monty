@@ -467,7 +467,7 @@ class HabitatSim(HabitatActuator):
             new_object.translation = obj_pos
 
             # Extract updated bounding box of new object being added
-            min_corner, max_corner = get_bounding_corners(new_object)
+            min_corner, max_corner = self._bounding_corners(new_object.semantic_id)
 
             # Step the physics simulation to allow objects to settle and compute
             # collisions

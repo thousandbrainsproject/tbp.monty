@@ -27,7 +27,6 @@ from tbp.monty.simulators.habitat import (
     MultiSensorAgent,
     SingleSensorAgent,
 )
-from tbp.monty.simulators.habitat.environment_utils import get_bounding_corners
 
 __all__ = [
     "AgentConfig",
@@ -146,13 +145,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
         object_to_avoid: bool = False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectID:
-        primary_target_bb = None
-        if primary_target_object is not None:
-            # TODO It may be worth memoizing this result. If we are adding multiple
-            #      objects to the scene, we may be calling this function multiple times
-            #      for the same primary target object.
-            min_corner, max_corner = get_bounding_corners(primary_target_object)
-            primary_target_bb = [min_corner, max_corner]
+
 
         return self._env.add_object(
             name,
@@ -162,7 +155,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
             semantic_id,
             enable_physics,
             object_to_avoid,
-            primary_target_bb=primary_target_bb,
+            primary_target_object,
         )
 
     def step(self, action: Action) -> Dict[str, Dict]:
