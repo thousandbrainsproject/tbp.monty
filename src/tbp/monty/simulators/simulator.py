@@ -73,10 +73,6 @@ class Simulator(Protocol):
         """Return the number of instantiated objects in the environment."""
         ...
 
-    def get_agent(self, agent_id: AgentID):
-        """Return agent instance."""
-        ...
-
     @property
     def observations(self):
         """Get sensor observations."""
