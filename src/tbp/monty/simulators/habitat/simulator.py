@@ -219,7 +219,7 @@ class HabitatSim(HabitatActuator):
         position: VectorXYZ = (0.0, 0.0, 0.0),
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
-        semantic_id: Optional[str] = None,
+        semantic_id: int | None = None,
         enable_physics: bool = False,
         # TODO: Remove object_to_avoid; primary_target_object should be enough
         object_to_avoid: bool = False,
@@ -325,7 +325,7 @@ class HabitatSim(HabitatActuator):
             # TODO make this test more robust and move to its own unit test
             assert len(self._objects) == num_objects_added, "Not all objects added"
 
-        return object_id
+        return object_id, SemanticID(obj.semantic_id)
 
     def _bounding_corners(self, object_id: ObjectID) -> tuple[np.ndarray, np.ndarray]:
         """Determine and return the bounding box of a Habitat object.
