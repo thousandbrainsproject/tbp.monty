@@ -277,6 +277,11 @@ class HabitatSim(HabitatActuator):
             rotation = np.quaternion(*rotation)
         obj.rotation = sim_utils.quat_to_magnum(rotation)
 
+        # Need to store the reference to the object here so that we can
+        # use it in the find_non_colliding_positions function.
+        object_id = ObjectID(str(obj.object_id))
+        self._objects[object_id] = obj
+
         if object_to_avoid and primary_target_object is not None:
             assert self.sim_enable_physics, (
                 "Sim-level physics must be enabled to support collision detection"
@@ -315,8 +320,6 @@ class HabitatSim(HabitatActuator):
 
         # Compare the intended number of objects added (counter) vs the number
         # instantiated in the Habitat environmnet
-        object_id = ObjectID(str(obj.object_id))
-        self._objects[object_id] = obj
         num_objects_added = self.num_objects
         if isinstance(num_objects_added, int):
             # In some units tests (e.g. MontyRunTest.test_main_with_single_experiment),

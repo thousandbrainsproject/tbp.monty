@@ -147,9 +147,19 @@ class HabitatSimTest(unittest.TestCase):
             self.assertEqual(num_objs, 1)
 
             # Add another object
-            sim.add_object(name="cubeSolid", position=(0.5, 1.0, 0.2))
+            object_id, _ = sim.add_object(name="cubeSolid", position=(0.5, 1.0, 0.2))
             num_objs = sim.num_objects
             self.assertEqual(num_objs, 2)
+
+            # And another
+            sim.add_object(
+                name="cubeSolid",
+                position=(0.6, 1.0, 0.2),
+                object_to_avoid=True,
+                primary_target_object=object_id,
+            )
+            num_objs = sim.num_objects
+            self.assertEqual(num_objs, 3)
 
             # Test remove objects
             sim.remove_all_objects()
