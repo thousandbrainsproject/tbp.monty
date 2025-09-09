@@ -357,7 +357,6 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         init_params["semantic_id"] = self.semantic_label_to_id[self.object_names[idx]]
 
         # TODO clean this up with its own specific call i.e. Law of Demeter
-        # FIXME: add_object returns **None**, so this needs a different implementation.
         primary_target_obj = self.dataset.env.add_object(
             name=self.object_names[idx], **init_params
         )

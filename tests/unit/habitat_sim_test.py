@@ -802,7 +802,9 @@ class HabitatSimTest(unittest.TestCase):
         sensor_id = agents[0].sensor_id
         with HabitatSim(agents=agents) as sim:
             # Place cube 0.5 meters away from camera
-            sim.add_object(name="cube", position=(0.0, 1.5, -0.5), semantic_id=1)
+            sim.add_object(
+                name="cube", position=(0.0, 1.5, -0.5), semantic_id=SemanticID(1)
+            )
 
             # Check original cube observations without scale
             obs = sim.observations
@@ -817,7 +819,7 @@ class HabitatSimTest(unittest.TestCase):
                 name="cube",
                 position=(0.0, 1.5, -0.5),
                 scale=(2.0, 2.0, 2.0),
-                semantic_id=1,
+                semantic_id=SemanticID(1),
             )
             obs = sim.observations
             camera_obs = obs[agent_id][sensor_id]["semantic"].tolist()
@@ -829,7 +831,7 @@ class HabitatSimTest(unittest.TestCase):
                 name="cube",
                 position=(0.0, 1.5, -0.5),
                 scale=(2.0, 2.0, 2.0),
-                semantic_id=1,
+                semantic_id=SemanticID(1),
             )
             obs = sim.observations
             camera_obs = obs[agent_id][sensor_id]["semantic"].tolist()

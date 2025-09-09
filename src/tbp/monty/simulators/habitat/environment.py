@@ -18,9 +18,13 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     EmbodiedEnvironment,
     ObjectID,
     QuaternionWXYZ,
+    SemanticID,
     VectorXYZ,
 )
-from tbp.monty.frameworks.utils.dataclass_utils import create_dataclass_args
+from tbp.monty.frameworks.utils.dataclass_utils import (
+    create_dataclass_args,
+    is_dataclass_instance,
+)
 from tbp.monty.simulators.habitat import (
     HabitatAgent,
     HabitatSim,
@@ -102,7 +106,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
     def __init__(
         self,
         agents: List[Union[dict, AgentConfig]],
-        objects: Optional[List[Union[dict, ObjectConfig]]] = None,
+        objects: Optional[List[dict | ObjectConfig]] = None,
         scene_id: Optional[str] = None,
         seed: int = 42,
         data_path: Optional[str] = None,
@@ -127,7 +131,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
 
         if objects is not None:
             for obj in objects:
-                obj_dict = asdict(obj) if is_dataclass(obj) else obj
+                obj_dict = asdict(obj) if is_dataclass_instance(obj) else obj
                 self._env.add_object(**obj_dict)
 
     @property
@@ -140,7 +144,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
         position: VectorXYZ = (0.0, 0.0, 0.0),
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
-        semantic_id: int | None = None,
+        semantic_id: SemanticID | None = None,
         enable_physics: bool = False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectID:

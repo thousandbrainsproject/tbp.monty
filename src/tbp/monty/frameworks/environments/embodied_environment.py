@@ -52,7 +52,7 @@ class EmbodiedEnvironment(abc.ABC):
         position: VectorXYZ = (0.0, 0.0, 0.0),
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
-        semantic_id: int | None = None,
+        semantic_id: SemanticID | None = None,
         enable_physics: Optional[bool] = False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectID:
