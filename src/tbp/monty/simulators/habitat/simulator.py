@@ -289,7 +289,7 @@ class HabitatSim(HabitatActuator):
             primary_target_bb = self._bounding_corners(primary_target_object)
             # Temporarily enable *object* physics for collision detection
             obj.motion_type = habitat_sim.physics.MotionType.DYNAMIC
-            obj = self.find_non_colliding_positions(
+            self._find_non_colliding_positions(
                 obj,
                 start_position=position,
                 start_orientation=rotation,
@@ -391,7 +391,7 @@ class HabitatSim(HabitatActuator):
         x = self.np_rng.choice([-1.0, 1.0])
         return np.array([x, 0, z])
 
-    def check_viewpoint_collision(
+    def _check_viewpoint_collision(
         self,
         primary_obj_bb,
         new_obj_bb,
@@ -431,7 +431,7 @@ class HabitatSim(HabitatActuator):
 
         return overlap_proportion > overlap_threshold
 
-    def find_non_colliding_positions(
+    def _find_non_colliding_positions(
         self,
         new_object,
         start_position,
@@ -439,7 +439,7 @@ class HabitatSim(HabitatActuator):
         primary_obj_bb,
         max_distance=1,
         step_size=0.00005,
-    ):
+    ) -> None:
         """Find a position for the object being added.
 
         The criteria are such that the object does not:
@@ -447,7 +447,10 @@ class HabitatSim(HabitatActuator):
         intersect)
         ii) "collide" with the initial view of the primary target object, i.e. obscure
         the ability of the agent to start on the primary target at the beginning of an
-        experiment
+        experiment.
+
+        Caution:
+            This function updates the new_object via side-effect (by reference).
 
         Args:
             new_object: The object being added
@@ -457,9 +460,6 @@ class HabitatSim(HabitatActuator):
                 defining corners)
             max_distance: The maximum distance to attempt moving the new object
             step_size: The step size for moving the new object
-
-        Returns:
-            The newly added object (position updated)
 
         Raises:
             RuntimeError: If failed to find a non-colliding position
@@ -488,13 +488,13 @@ class HabitatSim(HabitatActuator):
                 # timestep can cause the object to rotate from this
                 new_object.rotation = sim_utils.quat_to_magnum(start_orientation)
 
-            viewpoint_collision = self.check_viewpoint_collision(
+            viewpoint_collision = self._check_viewpoint_collision(
                 primary_obj_bb=primary_obj_bb, new_obj_bb=[min_corner, max_corner]
             )
 
             if not physical_collision and not viewpoint_collision:
                 # No collision, so not necessary to reset the pose
-                return new_object
+                return
 
         raise RuntimeError("Failed to find non-colliding positions")
 
