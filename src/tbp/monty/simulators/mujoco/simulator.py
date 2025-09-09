@@ -14,7 +14,9 @@ from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
+    ObjectID,
     QuaternionWXYZ,
+    SemanticID,
     VectorXYZ,
 )
 from tbp.monty.simulators.simulator import Simulator
@@ -67,8 +69,8 @@ class MuJoCoSimulator(Simulator):
         semantic_id: int | None = None,
         enable_physics: bool = False,
         object_to_avoid: bool = False,
-        primary_target_bb: Optional[List] = None,
-    ) -> None:
+        primary_target_object: ObjectID | None = None,
+    ) -> tuple[ObjectID, SemanticID | None]:
         obj_name = f"{name}_{self._object_count}"
 
         # TODO: support arbitrary objects from a registry

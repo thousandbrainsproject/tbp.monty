@@ -224,7 +224,7 @@ class HabitatSim(HabitatActuator):
         # TODO: Remove object_to_avoid; primary_target_object should be enough
         object_to_avoid: bool = False,
         primary_target_object: ObjectID | None = None,
-    ) -> tuple[ObjectID, SemanticID]:
+    ) -> tuple[ObjectID, SemanticID | None]:
         """Add new object to simulated environment.
 
         Args:
@@ -325,7 +325,8 @@ class HabitatSim(HabitatActuator):
             # TODO make this test more robust and move to its own unit test
             assert len(self._objects) == num_objects_added, "Not all objects added"
 
-        return object_id, SemanticID(obj.semantic_id)
+        semantic_id = SemanticID(obj.semantic_id) if obj.semantic_id != 0 else None
+        return object_id, semantic_id
 
     def _bounding_corners(self, object_id: ObjectID) -> tuple[np.ndarray, np.ndarray]:
         """Determine and return the bounding box of a Habitat object.

@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.frameworks.environments.embodied_environment import SemanticID
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -162,13 +164,14 @@ class HabitatSimTest(unittest.TestCase):
         with HabitatSim(agents=agents) as sim:
             for obj_name, expected_obj_id in PRIMITIVE_OBJECT_TYPES.items():
                 sim.remove_all_objects()
-                sim.add_object(obj_name, position=(0.0, 1.5, -0.2))
+                _, semantic_id = sim.add_object(obj_name, position=(0.0, 1.5, -0.2))
                 obs = sim.observations
                 agent_obs = obs[agent_id]
                 sensor_obs = agent_obs[sensor_id]
                 semantic = sensor_obs["semantic"]
                 actual = np.unique(semantic[semantic.nonzero()])
                 self.assertEqual(actual, expected_obj_id)
+                self.assertEqual(semantic_id, SemanticID(expected_obj_id))
 
     def test_move_and_get_agent_state(self):
         """Move agent and return agent state and sensor observations."""
@@ -192,7 +195,7 @@ class HabitatSimTest(unittest.TestCase):
             agent_obs = obs[agent_id]
             sensor_obs = agent_obs[sensor_id]
             semantic = sensor_obs["semantic"]
-            actual = set(semantic[semantic.nonzero()])
+            actual = {SemanticID(s) for s in set(semantic[semantic.nonzero()])}
             self.assertSetEqual(expected, actual)
 
             # Turn the camera 10 degrees to the left.
@@ -202,7 +205,7 @@ class HabitatSimTest(unittest.TestCase):
             obs = obs[agent_id]
             expected = {cylinder}
             semantic = np.unique(obs[sensor_id]["semantic"])
-            actual = set(semantic[semantic.nonzero()])
+            actual = {SemanticID(s) for s in set(semantic[semantic.nonzero()])}
             self.assertSetEqual(expected, actual)
 
             # Reset simulator and now the cylinder and cube should be back into view
@@ -211,7 +214,7 @@ class HabitatSimTest(unittest.TestCase):
             expected = {cylinder, cube}
             semantic = np.unique(obs[sensor_id]["semantic"])
 
-            actual = set(semantic[semantic.nonzero()])
+            actual = {SemanticID(s) for s in set(semantic[semantic.nonzero()])}
             self.assertSetEqual(expected, actual)
 
     def test_zoom(self):
@@ -391,8 +394,9 @@ class HabitatSimTest(unittest.TestCase):
                     {"render_asset": "icosphereSolid_subdivs_1", "mass": 1}, json_file
                 )
             with HabitatSim(agents=agents, data_path=data_path) as sim:
-                obj_id = sim.add_object("test_obj")
+                obj_id, semantic_id = sim.add_object("test_obj")
                 self.assertTrue(obj_id)
+                self.assertIsNone(semantic_id)
 
         # Check valid dataset path
         with tempfile.TemporaryDirectory() as data_path:
@@ -405,8 +409,10 @@ class HabitatSimTest(unittest.TestCase):
                     {"render_asset": "icosphereSolid_subdivs_1", "mass": 1}, json_file
                 )
             with HabitatSim(agents=agents, data_path=data_path) as sim:
-                obj_id = sim.add_object("test_obj")
+                obj_id, semantic_id = sim.add_object("test_obj")
                 self.assertTrue(obj_id)
+                self.assertIsNone(semantic_id)
+
         # Check invalid data path (i.e. without any valid habitat json files)
         with tempfile.TemporaryDirectory() as data_path:
             with self.assertRaises(ValueError):
