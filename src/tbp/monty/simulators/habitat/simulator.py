@@ -314,7 +314,8 @@ class HabitatSim(HabitatActuator):
 
         # Compare the intended number of objects added (counter) vs the number
         # instantiated in the Habitat environmnet
-        self._objects[ObjectID(str(obj.semantic_id))] = obj
+        object_id = ObjectID(str(obj.object_id))
+        self._objects[object_id] = obj
         num_objects_added = self.num_objects
         if isinstance(num_objects_added, int):
             # In some units tests (e.g. MontyRunTest.test_main_with_single_experiment),
@@ -323,7 +324,7 @@ class HabitatSim(HabitatActuator):
             # TODO make this test more robust and move to its own unit test
             assert len(self._objects) == num_objects_added, "Not all objects added"
 
-        return obj
+        return object_id
 
     def _bounding_corners(self, object_id: ObjectID) -> tuple[np.ndarray, np.ndarray]:
         """Determine and return the bounding box of a Habitat object.
@@ -467,7 +468,9 @@ class HabitatSim(HabitatActuator):
             new_object.translation = obj_pos
 
             # Extract updated bounding box of new object being added
-            min_corner, max_corner = self._bounding_corners(new_object.semantic_id)
+            min_corner, max_corner = self._bounding_corners(
+                ObjectID(str(new_object.object_id))
+            )
 
             # Step the physics simulation to allow objects to settle and compute
             # collisions
