@@ -24,7 +24,9 @@ __all__ = [
 ]
 
 ObjectID = NewType("ObjectID", int)
+"""Unique identifier for an object in the environment."""
 SemanticID = NewType("SemanticID", int)
+"""Unique identifier for an object's semantic class."""
 VectorXYZ = Tuple[float, float, float]
 QuaternionWXYZ = Tuple[float, float, float, float]
 
