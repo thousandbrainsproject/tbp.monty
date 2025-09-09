@@ -19,6 +19,7 @@ __all__ = [
     "EmbodiedEnvironment",
     "ActionSpace",
     "ObjectID",
+    "SemanticID",
     "VectorXYZ",
     "QuaternionWXYZ",
 ]
