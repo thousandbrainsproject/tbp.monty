@@ -92,10 +92,6 @@ class EnvironmentDataset(Dataset):
         assert isinstance(env, EmbodiedEnvironment)
         self.env = env
 
-    @property
-    def action_space(self):
-        return self.env.action_space
-
     def reset(self):
         observation = self.env.reset()
         state = self.env.get_state()

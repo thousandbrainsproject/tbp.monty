@@ -14,7 +14,6 @@ from typing import Dict, List, Optional, Type, Union
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
-    ActionSpace,
     EmbodiedEnvironment,
     ObjectID,
     QuaternionWXYZ,
@@ -34,7 +33,6 @@ from tbp.monty.simulators.habitat import (
 
 __all__ = [
     "AgentConfig",
-    "HabitatActionSpace",
     "HabitatEnvironment",
     "MultiSensorAgentArgs",
     "ObjectConfig",
@@ -81,17 +79,6 @@ class AgentConfig:
     agent_args: Union[dict, Type[HabitatAgentArgs]]
 
 
-class HabitatActionSpace(tuple, ActionSpace):
-    """`ActionSpace` wrapper for Habitat's `AgentConfiguration`.
-
-    Wraps :class:`habitat_sim.agent.AgentConfiguration` action space as monty
-    :class:`.ActionSpace`.
-    """
-
-    def sample(self):
-        return self.rng.choice(self)
-
-
 class HabitatEnvironment(EmbodiedEnvironment):
     """habitat-sim environment compatible with Monty.
 
@@ -133,10 +120,6 @@ class HabitatEnvironment(EmbodiedEnvironment):
             for obj in objects:
                 obj_dict = asdict(obj) if is_dataclass_instance(obj) else obj
                 self._env.add_object(**obj_dict)
-
-    @property
-    def action_space(self):
-        return HabitatActionSpace(self._env.action_space)
 
     def add_object(
         self,

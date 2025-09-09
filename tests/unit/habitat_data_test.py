@@ -29,7 +29,6 @@ from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentDataLoader,
     EnvironmentDataset,
 )
-from tbp.monty.frameworks.environments.embodied_environment import ActionSpace
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.simulators.habitat import SingleSensorAgent
@@ -41,32 +40,6 @@ AGENT_ID = "camera"
 SENSOR_ID = "sensor_id_0"
 SENSORS = ["depth"]
 EXPECTED_STATES = np.random.rand(DATASET_LEN, 64, 64, 1)
-EXPECTED_ACTIONS_DIST = (
-    f"{AGENT_ID}.look_down",
-    f"{AGENT_ID}.look_up",
-    f"{AGENT_ID}.move_forward",
-    f"{AGENT_ID}.turn_left",
-    f"{AGENT_ID}.turn_right",
-    f"{AGENT_ID}.set_agent_pose",
-    f"{AGENT_ID}.set_sensor_rotation",
-)
-EXPECTED_ACTIONS_ABS = (
-    f"{AGENT_ID}.set_yaw",
-    f"{AGENT_ID}.set_agent_pitch",
-    f"{AGENT_ID}.set_sensor_pitch",
-    f"{AGENT_ID}.set_agent_pose",
-    f"{AGENT_ID}.set_sensor_rotation",
-    f"{AGENT_ID}.set_sensor_pose",
-)
-EXPECTED_ACTIONS_SURF = (
-    f"{AGENT_ID}.move_forward",
-    f"{AGENT_ID}.move_tangentially",
-    f"{AGENT_ID}.orient_horizontal",
-    f"{AGENT_ID}.orient_vertical",
-    f"{AGENT_ID}.set_agent_pose",
-    f"{AGENT_ID}.set_sensor_rotation",
-)
-
 
 class HabitatDataTest(unittest.TestCase):
     def setUp(self):
@@ -126,13 +99,6 @@ class HabitatDataTest(unittest.TestCase):
             rng=rng,
         )
 
-        # Check distant-agent action space
-        action_space_dist = dataset_dist.action_space
-        action_space_dist.rng = rng
-        self.assertIsInstance(action_space_dist, ActionSpace)
-        self.assertCountEqual(action_space_dist, EXPECTED_ACTIONS_DIST)
-        self.assertIn(action_space_dist.sample(), EXPECTED_ACTIONS_DIST)
-
         # Create distant-agent motor systems / policies
         base_policy_config_dist = make_base_policy_config(
             action_space_type="distant_agent",
@@ -166,8 +132,6 @@ class HabitatDataTest(unittest.TestCase):
         )
 
         dataset_dist.close()
-        with self.assertRaises(Exception):  # noqa: B017
-            _ = dataset_dist[action_space_dist.sample()]
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
@@ -193,13 +157,6 @@ class HabitatDataTest(unittest.TestCase):
             env_init_args=dict(agents=[self.camera_abs_config]),
             rng=rng,
         )
-
-        # Check absolute action space
-        action_space_abs = dataset_abs.action_space
-        action_space_abs.rng = rng
-        self.assertIsInstance(action_space_abs, ActionSpace)
-        self.assertCountEqual(action_space_abs, EXPECTED_ACTIONS_ABS)
-        self.assertIn(action_space_abs.sample(), EXPECTED_ACTIONS_ABS)
 
         base_policy_config_abs = make_base_policy_config(
             action_space_type="absolute_only",
@@ -233,8 +190,6 @@ class HabitatDataTest(unittest.TestCase):
         )
 
         dataset_abs.close()
-        with self.assertRaises(Exception):  # noqa: B017
-            _ = dataset_abs[action_space_abs.sample()]
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
@@ -260,13 +215,6 @@ class HabitatDataTest(unittest.TestCase):
             env_init_args=dict(agents=[self.camera_surf_config]),
             rng=rng,
         )
-
-        # Check surface-agent action space
-        action_space_surf = dataset_surf.action_space
-        action_space_surf.rng = rng
-        self.assertIsInstance(action_space_surf, ActionSpace)
-        self.assertCountEqual(action_space_surf, EXPECTED_ACTIONS_SURF)
-        self.assertIn(action_space_surf.sample(), EXPECTED_ACTIONS_SURF)
 
         # Note we just test random actions (i.e. base policy) with the surface-agent
         # action space
@@ -302,8 +250,6 @@ class HabitatDataTest(unittest.TestCase):
         )
 
         dataset_surf.close()
-        with self.assertRaises(Exception):  # noqa: B017
-            _ = dataset_surf[action_space_surf.sample()]
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
