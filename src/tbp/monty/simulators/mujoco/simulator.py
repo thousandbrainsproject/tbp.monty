@@ -129,12 +129,6 @@ class MuJoCoSimulator(Simulator):
     def num_objects(self) -> int:
         return self._object_count
 
-    def get_agent(
-        self,
-        agent_id: str,  # TODO - replace with newtype
-    ) -> None:
-        pass
-
     @property
     def observations(self) -> None:
         pass

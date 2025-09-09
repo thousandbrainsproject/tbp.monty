@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import uuid
 from collections import defaultdict
-from typing import List, Tuple
+from typing import TYPE_CHECKING, List, Tuple
 
 import habitat_sim
 import numpy as np
@@ -19,7 +19,14 @@ import quaternion as qt
 from habitat_sim.agent import ActionSpec, ActuationSpec, AgentConfiguration, AgentState
 from typing_extensions import Literal
 
-from .sensors import RGBDSensorConfig, SemanticSensorConfig, SensorConfig
+from tbp.monty.simulators.habitat.sensors import (
+    RGBDSensorConfig,
+    SemanticSensorConfig,
+    SensorConfig,
+)
+
+if TYPE_CHECKING:
+    from tbp.monty.simulators.habitat.simulator import HabitatSim
 
 __all__ = [
     "HabitatAgent",
@@ -330,7 +337,7 @@ class MultiSensorAgent(HabitatAgent):
         )
         return spec
 
-    def initialize(self, simulator):
+    def initialize(self, simulator: HabitatSim):
         """Initialize agent runtime state.
 
         This method must be called by :class:`.HabitatSim` to update the agent
@@ -436,15 +443,15 @@ class SingleSensorAgent(HabitatAgent):
         )
         return spec
 
-    def initialize(self, simulator):
+    def initialize(self, simulator: HabitatSim):
         """Initialize agent runtime state.
 
-        This method must be called by :class:`.HabitatSim` to update the agent
+        This method must be called by :class:`HabitatSim` to update the agent
         and sensors runtime instance. This is necessary because some of the
         configuration attributes requires access to the instanciated scene node.
 
         Args:
-            simulator: Instantiated :class:`.HabitatSim` instance
+            simulator: Instantiated :class:`HabitatSim` instance
         """
         super().initialize(simulator)
 

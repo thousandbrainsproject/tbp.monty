@@ -18,7 +18,7 @@ pytest.importorskip(
 )
 
 import unittest
-from typing import Any
+from typing import Any, cast
 from unittest.mock import Mock, patch
 
 from habitat_sim import ActionSpec, Agent, AgentConfiguration
@@ -48,7 +48,7 @@ from tests.unit.frameworks.actions.fakes.action import FakeAction
 
 class FakeHabitat(HabitatActuator):
     def get_agent(self, agent_id: str) -> Agent:
-        return None
+        return cast(Agent, None)
 
 
 class HabitatAcutatorTest(unittest.TestCase):

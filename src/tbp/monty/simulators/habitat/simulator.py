@@ -44,8 +44,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
 )
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
-
-from .agents import HabitatAgent
+from tbp.monty.simulators.habitat.agents import HabitatAgent
 
 __all__ = [
     "HabitatSim",
@@ -499,7 +498,7 @@ class HabitatSim(HabitatActuator):
         rigid_mgr = self._sim.get_rigid_object_manager()
         return rigid_mgr.get_num_objects()
 
-    def get_agent(self, agent_id):
+    def get_agent(self, agent_id: str) -> habitat_sim.Agent:
         """Return habitat agent instance."""
         agent_index = self._agent_id_to_index[agent_id]
         return self._sim.get_agent(agent_index)
