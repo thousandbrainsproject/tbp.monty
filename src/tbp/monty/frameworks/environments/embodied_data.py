@@ -30,6 +30,7 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.environments.embodied_environment import (
     EmbodiedEnvironment,
     ObjectID,
+    SemanticID,
 )
 from tbp.monty.frameworks.models.motor_policies import (
     GetGoodView,
@@ -314,11 +315,11 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         starting_integer = 1  # Start at 1 so that we can distinguish on-object semantic
         # IDs (>0) from being off object (semantic_id == 0 in Habitat by default)
         self.semantic_id_to_label = {
-            i + starting_integer: label
+            SemanticID(i + starting_integer): label
             for i, label in enumerate(self.source_object_list)
         }
         self.semantic_label_to_id = {
-            label: i + starting_integer
+            label: SemanticID(i + starting_integer)
             for i, label in enumerate(self.source_object_list)
         }
 
