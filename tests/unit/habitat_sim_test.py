@@ -404,7 +404,7 @@ class HabitatSimTest(unittest.TestCase):
                 )
             with HabitatSim(agents=agents, data_path=data_path) as sim:
                 obj_id, semantic_id = sim.add_object("test_obj")
-                self.assertTrue(obj_id)
+                self.assertIsNotNone(obj_id)
                 self.assertIsNone(semantic_id)
 
         # Check valid dataset path
@@ -419,7 +419,7 @@ class HabitatSimTest(unittest.TestCase):
                 )
             with HabitatSim(agents=agents, data_path=data_path) as sim:
                 obj_id, semantic_id = sim.add_object("test_obj")
-                self.assertTrue(obj_id)
+                self.assertIsNotNone(obj_id)
                 self.assertIsNone(semantic_id)
 
         # Check invalid data path (i.e. without any valid habitat json files)

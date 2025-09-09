@@ -73,7 +73,7 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
         return FakeActionSpace(EXPECTED_ACTIONS_DIST)
 
     def add_object(self, *args, **kwargs) -> ObjectID:
-        return ObjectID("fake_object_id")
+        return ObjectID(-1)
 
     def step(self, action):
         self._current_state += 1
@@ -112,7 +112,7 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
         return FakeActionSpace(EXPECTED_ACTIONS_ABS)
 
     def add_object(self, *args, **kwargs) -> ObjectID:
-        return ObjectID("fake_object_id")
+        return ObjectID(-1)
 
     def step(self, action):
         self._current_state += 1

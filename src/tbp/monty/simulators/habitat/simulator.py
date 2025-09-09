@@ -274,7 +274,7 @@ class HabitatSim(HabitatActuator):
 
         # Need to store the reference to the object here so that we can
         # use it in the find_non_colliding_positions function.
-        object_id = ObjectID(str(obj.object_id))
+        object_id = ObjectID(obj.object_id)
         self._objects[object_id] = obj
 
         if primary_target_object is not None:
@@ -469,7 +469,7 @@ class HabitatSim(HabitatActuator):
 
             # Extract updated bounding box of new object being added
             min_corner, max_corner = self._bounding_corners(
-                ObjectID(str(new_object.object_id))
+                ObjectID(new_object.object_id)
             )
 
             # Step the physics simulation to allow objects to settle and compute

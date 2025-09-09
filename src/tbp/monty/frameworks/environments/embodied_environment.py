@@ -23,7 +23,7 @@ __all__ = [
     "QuaternionWXYZ",
 ]
 
-ObjectID = NewType("ObjectID", str)
+ObjectID = NewType("ObjectID", int)
 SemanticID = NewType("SemanticID", int)
 VectorXYZ = Tuple[float, float, float]
 QuaternionWXYZ = Tuple[float, float, float, float]
