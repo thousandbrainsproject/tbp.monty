@@ -100,7 +100,7 @@ echo "export GALLIUM_DRIVER=d3d12" >> ~/.bashrc && exec $SHELL
 ```
 
 > [!WARNING]
-> Don’t install Linux GPU drivers in WSL, you don’t need them, Nvidia even [warns against](https://docs.nvidia.com/cuda/wsl-user-guide/index.html#step-1-install-nvidia-driver-for-gpu-support) installing them.
+> Don’t install Linux GPU drivers in WSL, you don’t need them, NVIDIA even [warns against](https://docs.nvidia.com/cuda/wsl-user-guide/index.html#step-1-install-nvidia-driver-for-gpu-support) installing them.
 
 
 # 5. Download Monty datasets
