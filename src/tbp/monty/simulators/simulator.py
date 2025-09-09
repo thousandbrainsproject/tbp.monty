@@ -109,6 +109,6 @@ class Simulator(Protocol):
         """Reset the simulator."""
         ...
 
-    def close(self):
+    def close(self) -> None:
         """Close any resources used by the simulator."""
         ...

@@ -667,7 +667,7 @@ class HabitatSim(HabitatActuator):
         obs = self.process_observations(obs)
         return obs
 
-    def close(self):
+    def close(self) -> None:
         """Close simulator and release resources."""
         sim = getattr(self, "_sim", None)
         if sim is not None:
