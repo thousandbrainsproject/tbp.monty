@@ -44,7 +44,6 @@ class Simulator(Protocol):
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: int | None = None,
         enable_physics: bool = False,
-        object_to_avoid: bool = False,
         primary_target_object: ObjectID | None = None,
     ) -> tuple[ObjectID, SemanticID | None]:
         """Add new object to simulated environment.
@@ -60,8 +59,6 @@ class Simulator(Protocol):
             semantic_id: Optional override for the object's semantic ID. Defaults to
                 None.
             enable_physics: Whether to enable physics on the object.
-            object_to_avoid: If True, ensure the object is not colliding with
-              other objects.
             primary_target_object: ID of the primary target object. If not None, the
                 added object will be positioned so that it does not obscure the initial
                 view of the primary target object (which avoiding collision alone cannot

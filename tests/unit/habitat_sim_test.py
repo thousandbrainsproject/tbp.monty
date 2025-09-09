@@ -155,7 +155,6 @@ class HabitatSimTest(unittest.TestCase):
             sim.add_object(
                 name="cubeSolid",
                 position=(0.6, 1.0, 0.2),
-                object_to_avoid=True,
                 primary_target_object=object_id,
             )
             num_objs = sim.num_objects

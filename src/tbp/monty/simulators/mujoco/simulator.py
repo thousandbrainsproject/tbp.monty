@@ -68,7 +68,6 @@ class MuJoCoSimulator(Simulator):
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: int | None = None,
         enable_physics: bool = False,
-        object_to_avoid: bool = False,
         primary_target_object: ObjectID | None = None,
     ) -> tuple[ObjectID, SemanticID | None]:
         obj_name = f"{name}_{self._object_count}"

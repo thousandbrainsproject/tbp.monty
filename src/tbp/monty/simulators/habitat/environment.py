@@ -142,7 +142,6 @@ class HabitatEnvironment(EmbodiedEnvironment):
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: int | None = None,
         enable_physics: bool = False,
-        object_to_avoid: bool = False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectID:
         object_id, _ = self._env.add_object(
@@ -152,7 +151,6 @@ class HabitatEnvironment(EmbodiedEnvironment):
             scale,
             semantic_id,
             enable_physics,
-            object_to_avoid,
             primary_target_object,
         )
         return object_id

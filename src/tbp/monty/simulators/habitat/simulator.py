@@ -221,8 +221,6 @@ class HabitatSim(HabitatActuator):
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: int | None = None,
         enable_physics: bool = False,
-        # TODO: Remove object_to_avoid; primary_target_object should be enough
-        object_to_avoid: bool = False,
         primary_target_object: ObjectID | None = None,
     ) -> tuple[ObjectID, SemanticID | None]:
         """Add new object to simulated environment.
@@ -236,9 +234,6 @@ class HabitatSim(HabitatActuator):
             scale: Object scale. Default (1, 1, 1)
             semantic_id: Optional override object semantic ID
             enable_physics: Whether or not to enable physics on this objects
-            object_to_avoid: If True, run collision checks to ensure the object is not
-                colliding with any other objects in the scene, and otherwise move it.
-                Defaults to False.
             primary_target_object: ID of the primary target object. If not None, the
                 added object will be positioned so that it does not obscure the initial
                 view of the primary target object (which avoiding collision alone cannot
@@ -282,7 +277,7 @@ class HabitatSim(HabitatActuator):
         object_id = ObjectID(str(obj.object_id))
         self._objects[object_id] = obj
 
-        if object_to_avoid and primary_target_object is not None:
+        if primary_target_object is not None:
             assert self.sim_enable_physics, (
                 "Sim-level physics must be enabled to support collision detection"
             )
