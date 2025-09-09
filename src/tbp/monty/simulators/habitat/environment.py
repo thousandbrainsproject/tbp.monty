@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 from dataclasses import asdict, dataclass, is_dataclass
 from typing import Dict, List, Optional, Type, Union
@@ -15,6 +16,7 @@ from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
     ActionSpace,
     EmbodiedEnvironment,
+    ObjectID,
     QuaternionWXYZ,
     VectorXYZ,
 )
@@ -140,10 +142,10 @@ class HabitatEnvironment(EmbodiedEnvironment):
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: Optional[str] = None,
-        enable_physics=False,
-        object_to_avoid=False,
-        primary_target_object=None,
-    ):
+        enable_physics: bool = False,
+        object_to_avoid: bool = False,
+        primary_target_object: ObjectID | None = None,
+    ) -> ObjectID:
         primary_target_bb = None
         if primary_target_object is not None:
             # TODO It may be worth memoizing this result. If we are adding multiple

@@ -13,6 +13,7 @@
 See Also:
     https://github.com/facebookresearch/habitat-sim
 """
+from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
@@ -43,7 +44,6 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
 )
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
-from tbp.monty.simulators.habitat.environment_utils import get_bounding_corners
 
 from .agents import HabitatAgent
 
@@ -70,6 +70,40 @@ PRIMITIVE_OBJECT_TYPES = {
     "icosphereSolid": 105,
     "uvSphereSolid": 106,
 }
+
+
+def get_bounding_corners(object_ref) -> tuple[np.ndarray, np.ndarray]:
+    """Determine and return the bounding box of a Habitat object.
+
+    Determines and returns the bounding box (defined by a "max" and "min" corner) of
+    a Habitat object (such as a mug), given in world coordinates.
+
+    Specifically uses the "axis-aligned bounding box" (aabb) available in Habitat; this
+    is a bounding box aligned with the axes of the co-oridante system, which tends to
+    be computationally efficient to retrieve.
+
+    Args:
+        object_ref : the Habitat object instance
+
+    Returns:
+        min_corner and max_corner, the defining corners of the bounding box.
+    """
+    object_aabb = object_ref.collision_shape_aabb
+
+    # The bounding box will be in the coordinate frame of the object, and so needs to be
+    # transformed (rotated and translated) based on the pose of the object in the
+    # environment
+    # The matrix returned by object_ref.transformation can apply this transformation
+    # pointwise to the min and max corner points below
+    object_t_mat = object_ref.transformation
+
+    min_corner = object_aabb.min
+    max_corner = object_aabb.max
+
+    min_corner = np.array(object_t_mat.transform_point(min_corner))
+    max_corner = np.array(object_t_mat.transform_point(max_corner))
+
+    return min_corner, max_corner
 
 
 class HabitatSim(HabitatActuator):
