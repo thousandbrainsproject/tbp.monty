@@ -14,6 +14,8 @@ import collections.abc
 from dataclasses import dataclass
 from typing import Any, Dict, NewType, Sequence, Tuple
 
+from typing_extensions import deprecated
+
 from tbp.monty.frameworks.actions.actions import Action
 
 __all__ = [
@@ -35,7 +37,7 @@ SemanticID = NewType("SemanticID", int)
 VectorXYZ = Tuple[float, float, float]
 QuaternionWXYZ = Tuple[float, float, float, float]
 
-
+@deprecated("Use `ActionSampler` instead.")
 @dataclass
 class ObjectInfo:
     """Contains the identifying information of an object created in the environment."""
@@ -54,12 +56,6 @@ class ActionSpace(collections.abc.Container):
 
 
 class EmbodiedEnvironment(abc.ABC):
-    @property
-    @abc.abstractmethod
-    def action_space(self):
-        """Returns list of all possible actions available in the environment."""
-        pass
-
     @abc.abstractmethod
     def add_object(
         self,

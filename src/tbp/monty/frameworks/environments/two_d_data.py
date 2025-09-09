@@ -94,10 +94,6 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         # Just for compatibility. TODO: find cleaner way to do this.
         self._agents = [type("FakeAgent", (object,), {"action_space_type": "2d"})()]
 
-    @property
-    def action_space(self):
-        return None
-
     def add_object(self, *args, **kwargs) -> ObjectID:
         # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
         #      interface and how the class hierarchy is defined and used.
@@ -319,18 +315,6 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         # Instantiate once and reuse when checking action name in step()
         # TODO Use 2D-specific actions instead of overloading? Habitat actions
         self._valid_actions = ["look_up", "look_down", "turn_left", "turn_right"]
-
-    @property
-    def action_space(self):
-        # TODO: move this to other action space definitions and clean up.
-        return TwoDDataActionSpace(
-            [
-                "look_up",
-                "look_down",
-                "turn_left",
-                "turn_right",
-            ]
-        )
 
     def add_object(self, *args, **kwargs) -> ObjectID:
         # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
