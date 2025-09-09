@@ -181,11 +181,13 @@ class HabitatSimTest(unittest.TestCase):
         sensor_id = agents[0].sensor_id
         with HabitatSim(agents=agents) as sim:
             # Add a couple of objects
-            cylinder = sim.add_object(name="cylinderSolid", position=(-0.2, 1.5, -0.2))
-            cube = sim.add_object(name="cubeSolid", position=(0.6, 1.5, -0.6))
+            _, cylinder = sim.add_object(
+                name="cylinderSolid", position=(-0.2, 1.5, -0.2)
+            )
+            _, cube = sim.add_object(name="cubeSolid", position=(0.6, 1.5, -0.6))
 
             # Check if observations include both objects
-            expected = {cylinder.semantic_id, cube.semantic_id}
+            expected = {cylinder, cube}
             obs = sim.observations
             agent_obs = obs[agent_id]
             sensor_obs = agent_obs[sensor_id]
@@ -198,7 +200,7 @@ class HabitatSimTest(unittest.TestCase):
             turn_left = TurnLeft(agent_id=agent_id, rotation_degrees=rotation_degrees)
             obs = sim.apply_action(turn_left)
             obs = obs[agent_id]
-            expected = {cylinder.semantic_id}
+            expected = {cylinder}
             semantic = np.unique(obs[sensor_id]["semantic"])
             actual = set(semantic[semantic.nonzero()])
             self.assertSetEqual(expected, actual)
@@ -206,7 +208,7 @@ class HabitatSimTest(unittest.TestCase):
             # Reset simulator and now the cylinder and cube should be back into view
             initial_obs = sim.reset()
             obs = initial_obs[agent_id]
-            expected = {cylinder.semantic_id, cube.semantic_id}
+            expected = {cylinder, cube}
             semantic = np.unique(obs[sensor_id]["semantic"])
 
             actual = set(semantic[semantic.nonzero()])

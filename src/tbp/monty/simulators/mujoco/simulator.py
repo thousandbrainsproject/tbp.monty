@@ -6,6 +6,8 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
 from typing import Dict, List, Optional
 
 from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
@@ -62,7 +64,7 @@ class MuJoCoSimulator(Simulator):
         position: VectorXYZ = (0.0, 0.0, 0.0),
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
-        semantic_id: Optional[str] = None,
+        semantic_id: int | None = None,
         enable_physics: bool = False,
         object_to_avoid: bool = False,
         primary_target_bb: Optional[List] = None,

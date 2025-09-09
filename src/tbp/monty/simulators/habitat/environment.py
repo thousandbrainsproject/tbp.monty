@@ -140,14 +140,12 @@ class HabitatEnvironment(EmbodiedEnvironment):
         position: VectorXYZ = (0.0, 0.0, 0.0),
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
-        semantic_id: Optional[str] = None,
+        semantic_id: int | None = None,
         enable_physics: bool = False,
         object_to_avoid: bool = False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectID:
-
-
-        return self._env.add_object(
+        object_id, _ = self._env.add_object(
             name,
             position,
             rotation,
@@ -157,6 +155,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
             object_to_avoid,
             primary_target_object,
         )
+        return object_id
 
     def step(self, action: Action) -> Dict[str, Dict]:
         return self._env.apply_action(action)
