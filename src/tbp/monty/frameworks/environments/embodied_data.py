@@ -27,6 +27,10 @@ from tbp.monty.frameworks.actions.actions import (
     SetAgentPose,
     SetSensorRotation,
 )
+from tbp.monty.frameworks.environments.embodied_environment import (
+    EmbodiedEnvironment,
+    ObjectID,
+)
 from tbp.monty.frameworks.models.motor_policies import (
     GetGoodView,
     InformedPolicy,
@@ -39,8 +43,6 @@ from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
 )
-
-from .embodied_environment import EmbodiedEnvironment
 
 __all__ = [
     "EnvironmentDataset",
@@ -354,6 +356,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         init_params["semantic_id"] = self.semantic_label_to_id[self.object_names[idx]]
 
         # TODO clean this up with its own specific call i.e. Law of Demeter
+        # FIXME: add_object returns **None**, so this needs a different implementation.
         primary_target_obj = self.dataset.env.add_object(
             name=self.object_names[idx], **init_params
         )
@@ -374,13 +377,13 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         logger.info(f"New primary target: {pformat(self.primary_target)}")
 
     def add_distractor_objects(
-        self, primary_target_obj, init_params, primary_target_name
+        self, primary_target_obj: ObjectID, init_params, primary_target_name
     ):
         """Add arbitrarily many "distractor" objects to the environment.
 
         Args:
-            primary_target_obj : the Habitat object which is the primary target in
-                the scene
+            primary_target_obj : The ID of the object which is the primary target in
+                the scene.
             init_params: parameters used to initialize the object, e.g.
                 orientation; for now, these are identical to the primary target
                 except for the object ID

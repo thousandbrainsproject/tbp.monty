@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Protocol
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
+    ObjectID,
     QuaternionWXYZ,
     VectorXYZ,
 )
@@ -42,7 +43,7 @@ class Simulator(Protocol):
         enable_physics: bool = False,
         object_to_avoid: bool = False,
         primary_target_bb: Optional[List] = None,
-    ) -> None:
+    ) -> ObjectID:
         """Add new object to simulated environment.
 
         Adds a new object based on the named object. This assumes that the set of
@@ -60,6 +61,9 @@ class Simulator(Protocol):
             primary_target_bb: If not None, this is a list of the min and
               max corners of a bounding box for the primary object, used to prevent
               obscuring the primary object with the new object.
+
+        Returns:
+            ID of the added object.
         """
         ...
 

@@ -7,15 +7,23 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import abc
 import collections.abc
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, NewType, Optional, Tuple
 
 from tbp.monty.frameworks.actions.actions import Action
 
-__all__ = ["EmbodiedEnvironment", "ActionSpace", "VectorXYZ", "QuaternionWXYZ"]
+__all__ = [
+    "EmbodiedEnvironment",
+    "ActionSpace",
+    "ObjectID",
+    "VectorXYZ",
+    "QuaternionWXYZ",
+]
 
+ObjectID = NewType("ObjectID", str)
 VectorXYZ = Tuple[float, float, float]
 QuaternionWXYZ = Tuple[float, float, float, float]
 
@@ -45,9 +53,9 @@ class EmbodiedEnvironment(abc.ABC):
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: Optional[str] = None,
         enable_physics: Optional[bool] = False,
-        object_to_avoid=False,
-        primary_target_object=None,
-    ):
+        object_to_avoid: bool = False,
+        primary_target_object: ObjectID | None = None,
+    ) -> ObjectID:
         """Add an object to the environment.
 
         Args:
@@ -61,17 +69,13 @@ class EmbodiedEnvironment(abc.ABC):
             object_to_avoid: If True, run collision checks to ensure the object will not
                 collide with any other objects in the scene. If collision is detected,
                 the object will be moved. Defaults to False.
-            primary_target_object: If not None, the added object will be positioned so
-                that it does not obscure the initial view of the primary target object
-                (which avoiding collision alone cannot guarantee). Used when adding
-                multiple objects. Defaults to None.
+            primary_target_object: The ID of the primary target object. If not None, the
+                added object will be positioned so that it does not obscure the initial
+                view of the primary target object (which avoiding collision alone cannot
+                guarantee). Used when adding multiple objects. Defaults to None.
 
         Returns:
-            The newly added object.
-
-        TODO: This add_object interface is elevated from HabitatSim.add_object and is
-              quite specific to HabitatSim implementation. We should consider
-              refactoring this to be more generic.
+            The ID of the added object.
         """
         pass
 

@@ -53,6 +53,7 @@ __all__ = [
 ]
 
 from tbp.monty.frameworks.environments.embodied_environment import (
+    ObjectID,
     QuaternionWXYZ,
     VectorXYZ,
 )
@@ -216,10 +217,10 @@ class HabitatSim(HabitatActuator):
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: Optional[str] = None,
-        enable_physics=False,
-        object_to_avoid=False,
+        enable_physics: bool = False,
+        object_to_avoid: bool = False,
         primary_target_bb=None,
-    ):
+    ) -> ObjectID:
         """Add new object to simulated environment.
 
         Args:
@@ -240,8 +241,9 @@ class HabitatSim(HabitatActuator):
                 by a list of the min and max corners
 
         Returns:
-            RigidObject: The newly added object
+            The ID of the newly added object
         """
+        # TODO: Create map from object ID to object handle and store object there.
         obj_mgr = self._sim.get_object_template_manager()
         rigid_mgr = self._sim.get_rigid_object_manager()
 
