@@ -56,7 +56,6 @@ class EmbodiedEnvironment(abc.ABC):
         rotation: QuaternionWXYZ | None = None,
         scale: VectorXYZ | None = None,
         semantic_id: SemanticID | None = None,
-        enable_physics: bool = False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectID:
         """Add an object to the environment.
@@ -68,7 +67,6 @@ class EmbodiedEnvironment(abc.ABC):
                 None.
             scale: The scale of the object to add. Defaults to None.
             semantic_id: Optional override for the object semantic ID. Defaults to None.
-            enable_physics: Whether to enable physics on the object. Defaults to False.
             primary_target_object: The ID of the primary target object. If not None, the
                 added object will be positioned so that it does not obscure the initial
                 view of the primary target object (which avoiding collision alone cannot

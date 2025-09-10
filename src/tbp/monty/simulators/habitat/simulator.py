@@ -98,7 +98,6 @@ class HabitatSim(HabitatActuator):
             :class:`habitat_sim.utils.environments_download`
         scene_id: Scene to use or None for empty environment.
         seed: Simulator seed to use
-        enable_physics: Whether or not to enable the physics engine. Default False
     """
 
     def __init__(
@@ -107,15 +106,13 @@ class HabitatSim(HabitatActuator):
         data_path: Optional[str] = None,
         scene_id: Optional[str] = None,
         seed: int = 42,
-        enable_physics: bool = True,  # Physics is now standard
     ):
         backend_config = habitat_sim.SimulatorConfiguration()
         backend_config.physics_config_file = DEFAULT_PHYSICS_CONFIG
         # NOTE that currently we do not have gravity, although this can be adjusted in
         # the above config by setting "gravity": [0, -9.8, 0]
 
-        self.sim_enable_physics = enable_physics
-        backend_config.enable_physics = self.sim_enable_physics
+        backend_config.enable_physics = True
         backend_config.scene_id = scene_id or DEFAULT_SCENE
         backend_config.random_seed = seed
 
@@ -219,7 +216,6 @@ class HabitatSim(HabitatActuator):
         rotation: QuaternionWXYZ | None = None,
         scale: VectorXYZ | None = None,
         semantic_id: SemanticID | None = None,
-        enable_physics: bool = False,
         primary_target_object: ObjectID | None = None,
     ) -> tuple[ObjectID, SemanticID | None]:
         """Add new object to simulated environment.
@@ -234,8 +230,6 @@ class HabitatSim(HabitatActuator):
                 QuaternionWXYZ((1.0, 0.0, 0.0, 0.0)).
             scale: Object scale. Defaults to VectorXYZ((1.0, 1.0, 1.0)).
             semantic_id: Optional override object semantic ID. Defaults to None.
-            enable_physics: Whether or not to enable physics on this objects. Defaults
-                to False.
             primary_target_object: ID of the primary target object. If not None, the
                 added object will be positioned so that it does not obscure the initial
                 view of the primary target object (which avoiding collision alone cannot
@@ -284,9 +278,6 @@ class HabitatSim(HabitatActuator):
         self._objects[object_id] = obj
 
         if primary_target_object is not None:
-            assert self.sim_enable_physics, (
-                "Sim-level physics must be enabled to support collision detection"
-            )
             primary_target_bb = self._bounding_corners(primary_target_object)
             # Temporarily enable *object* physics for collision detection
             obj.motion_type = habitat_sim.physics.MotionType.DYNAMIC
@@ -299,7 +290,7 @@ class HabitatSim(HabitatActuator):
 
         # Update object-specific physics
         # This physics setting will persist into the environment e.g. during inference
-        if enable_physics:
+        if primary_target_object is not None:
             obj.motion_type = habitat_sim.physics.MotionType.DYNAMIC
         else:
             # Set the motion-type to kinematic

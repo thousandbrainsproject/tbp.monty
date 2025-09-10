@@ -129,7 +129,6 @@ class HabitatEnvironment(EmbodiedEnvironment):
         rotation: QuaternionWXYZ | None = None,
         scale: VectorXYZ | None = None,
         semantic_id: SemanticID | None = None,
-        enable_physics: bool = False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectID:
         position = position or VectorXYZ((0.0, 0.0, 0.0))
@@ -141,7 +140,6 @@ class HabitatEnvironment(EmbodiedEnvironment):
             rotation,
             scale,
             semantic_id,
-            enable_physics,
             primary_target_object,
         )
         return object_id

@@ -67,7 +67,6 @@ class MuJoCoSimulator(Simulator):
         rotation: QuaternionWXYZ | None = None,
         scale: VectorXYZ | None = None,
         semantic_id: SemanticID | None = None,
-        enable_physics: bool = False,
         primary_target_object: ObjectID | None = None,
     ) -> tuple[ObjectID, SemanticID | None]:
         position = position or VectorXYZ((0.0, 0.0, 0.0))
