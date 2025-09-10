@@ -105,7 +105,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         #      interface and how the class hierarchy is defined and used.
         raise NotImplementedError("OmniglotEnvironment does not support adding objects")
 
-    def step(self, action: Action) -> dict:
+    def step(self, action: Action) -> Observations:
         """Retrieve the next observation.
 
         Since the omniglot dataset includes stroke information (the order in which
@@ -124,7 +124,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             each step.
 
         Returns:
-            The observation.
+            The observations.
         """
         amount = 1
         if hasattr(action, "rotation_degrees"):
@@ -137,21 +137,29 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             self.patch_size,
         )
         depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
-        obs = {
-            "agent_id_0": {
-                "patch": {
-                    "depth": depth,
-                    "semantic": np.array(~patch, dtype=int),
-                    "rgba": np.stack(
-                        [depth, depth, depth], axis=2
-                    ),  # TODO: placeholder
-                },
-                "view_finder": {
-                    "depth": self.current_image,
-                    "semantic": np.array(~patch, dtype=int),
-                },
+        obs = Observations(
+            {
+                AgentID("agent_id_0"): AgentObservations(
+                    {
+                        SensorID("patch"): SensorObservations(
+                            {
+                                Modality("depth"): depth,
+                                Modality("semantic"): np.array(~patch, dtype=int),
+                                Modality("rgba"): np.stack(
+                                    [depth, depth, depth], axis=2
+                                ),
+                            }
+                        ),
+                        SensorID("view_finder"): SensorObservations(
+                            {
+                                Modality("depth"): self.current_image,
+                                Modality("semantic"): np.array(~patch, dtype=int),
+                            }
+                        ),
+                    }
+                )
             }
-        }
+        )
         return obs
 
     def get_state(self):
@@ -332,7 +340,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             "SaccadeOnImageEnvironment does not support adding objects"
         )
 
-    def step(self, action: Action) -> dict:
+    def step(self, action: Action) -> Observations:
         """Retrieve the next observation.
 
         Args:
@@ -361,22 +369,32 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             query_loc,
         )
         self.current_loc = query_loc
-        obs = {
-            "agent_id_0": {
-                "patch": {
-                    "depth": depth_patch,
-                    "rgba": rgb_patch,
-                    "semantic_3d": depth3d_patch,
-                    "sensor_frame_data": sensor_frame_patch,
-                    "world_camera": self.world_camera,
-                    "pixel_loc": query_loc,  # Save pixel loc for plotting
-                },
-                "view_finder": {
-                    "depth": self.current_depth_image,
-                    "rgba": self.current_rgb_image,
-                },
+        obs = Observations(
+            {
+                AgentID("agent_id_0"): AgentObservations(
+                    {
+                        SensorID("patch"): SensorObservations(
+                            {
+                                Modality("depth"): depth_patch,
+                                Modality("rgba"): rgb_patch,
+                                Modality("semantic_3d"): depth3d_patch,
+                                Modality("sensor_frame_data"): sensor_frame_patch,
+                                Modality("world_camera"): self.world_camera,
+                                Modality(
+                                    "pixel_loc"
+                                ): query_loc,  # Save pixel loc for plotting
+                            }
+                        ),
+                        SensorID("view_finder"): SensorObservations(
+                            {
+                                Modality("depth"): self.current_depth_image,
+                                Modality("rgba"): self.current_rgb_image,
+                            }
+                        ),
+                    }
+                )
             }
-        }
+        )
         return obs
 
     def get_state(self):

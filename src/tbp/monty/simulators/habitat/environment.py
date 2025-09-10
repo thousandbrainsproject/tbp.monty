@@ -145,7 +145,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
         )
         return object_id
 
-    def step(self, action: Action) -> Dict[str, Dict]:
+    def step(self, action: Action) -> Observations:
         return self._env.apply_action(action)
 
     def remove_all_objects(self):

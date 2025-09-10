@@ -141,8 +141,8 @@ class MuJoCoSimulator(Simulator):
     def states(self) -> None:
         pass
 
-    def apply_action(self, action: Action) -> Dict[str, Dict]:
-        return {}
+    def apply_action(self, action: Action) -> Observations:
+        return Observations({})
 
     def reset(self) -> Observations:
         return Observations({})

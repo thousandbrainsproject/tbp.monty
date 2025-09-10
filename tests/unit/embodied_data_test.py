@@ -64,13 +64,19 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
     def add_object(self, *args, **kwargs) -> ObjectID:
         return ObjectID(-1)
 
-    def step(self, action):
+    def step(self, action) -> Observations:
         self._current_state += 1
-        obs = {
-            f"{AGENT_ID}": {
-                f"{SENSOR_ID}": {"sensor": EXPECTED_STATES[self._current_state]}
+        obs = Observations(
+            {
+                AgentID(AGENT_ID): AgentObservations(
+                    {
+                        SensorID(SENSOR_ID): SensorObservations(
+                            {Modality("sensor"): EXPECTED_STATES[self._current_state]}
+                        )
+                    }
+                )
             }
-        }
+        )
         return obs
 
     def get_state(self):
@@ -105,13 +111,19 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
     def add_object(self, *args, **kwargs) -> ObjectID:
         return ObjectID(-1)
 
-    def step(self, action):
+    def step(self, action) -> Observations:
         self._current_state += 1
-        obs = {
-            f"{AGENT_ID}": {
-                f"{SENSOR_ID}": {"sensor": EXPECTED_STATES[self._current_state]}
+        obs = Observations(
+            {
+                AgentID(AGENT_ID): AgentObservations(
+                    {
+                        SensorID(SENSOR_ID): SensorObservations(
+                            {Modality("sensor"): EXPECTED_STATES[self._current_state]}
+                        )
+                    }
+                )
             }
-        }
+        )
         return obs
 
     def get_state(self):

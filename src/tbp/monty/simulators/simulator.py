@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Dict, Protocol
+from typing import Protocol
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
@@ -74,6 +74,7 @@ class Simulator(Protocol):
         """Return the number of instantiated objects in the environment."""
         ...
 
+    # TODO: Remove this as it seems to be internal to the simulator implementation
     @property
     def observations(self) -> Observations:
         """Return sensor observations."""
@@ -84,14 +85,14 @@ class Simulator(Protocol):
         """Get agent and sensor states."""
         ...
 
-    def apply_action(self, action: Action) -> Dict[str, Dict]:
+    def apply_action(self, action: Action) -> Observations:
         """Execute the given action in the environment.
 
         Args:
             action: The action to execute.
 
         Returns:
-            A dictionary with the observations grouped by agent_id.
+            The observations from the simulator.
         """
         ...
 

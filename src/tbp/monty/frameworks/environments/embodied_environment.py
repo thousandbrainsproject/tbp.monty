@@ -79,11 +79,12 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def step(self, action: Action) -> Dict[Any, Dict]:
+    def step(self, action: Action) -> Observations:
         """Apply the given action to the environment.
 
-        Return the current observations and other environment information (i.e. sensor
-        pose) after the action is applied.
+        Returns:
+            The current observations and other environment information (i.e. sensor
+            pose) after the action is applied.
         """
         pass
 

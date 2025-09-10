@@ -507,14 +507,14 @@ class HabitatSim(HabitatActuator):
         agent_index = self._agent_id_to_index[agent_id]
         return self._sim.get_agent(agent_index)
 
-    def apply_action(self, action: Action) -> Dict[str, Dict]:
+    def apply_action(self, action: Action) -> Observations:
         """Execute given action in the environment.
 
         Args:
             action: The action to execute
 
         Returns:
-            A dictionary with the observations grouped by agent_id
+            The observations from the simulator.
 
         Raises:
             TypeError: If the action type is invalid
