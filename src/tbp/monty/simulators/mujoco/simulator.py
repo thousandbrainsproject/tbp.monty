@@ -138,7 +138,7 @@ class MuJoCoSimulator(Simulator):
     def states(self) -> ProprioceptiveState:
         return ProprioceptiveState({})
 
-    def apply_action(self, action: Action) -> Observations:
+    def step(self, action: Action) -> Observations:
         return Observations({})
 
     def reset(self) -> Observations:

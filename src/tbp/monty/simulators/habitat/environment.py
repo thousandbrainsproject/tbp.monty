@@ -147,7 +147,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
         return object_id
 
     def step(self, action: Action) -> Observations:
-        return self._env.apply_action(action)
+        return self._env.step(action)
 
     def remove_all_objects(self):
         return self._env.remove_all_objects()

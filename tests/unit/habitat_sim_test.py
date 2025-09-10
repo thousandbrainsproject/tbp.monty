@@ -220,7 +220,7 @@ class HabitatSimTest(unittest.TestCase):
             # Turn the camera 10 degrees to the left.
             # The cube should be out of view
             turn_left = TurnLeft(agent_id=agent_id, rotation_degrees=rotation_degrees)
-            obs = sim.apply_action(turn_left)
+            obs = sim.step(turn_left)
             obs = obs[agent_id]
             expected = {cylinder}
             semantic = np.unique(obs[sensor_id][Modality("semantic")])
@@ -351,7 +351,7 @@ class HabitatSimTest(unittest.TestCase):
 
             # turn agent body left
             turn_left = TurnLeft(agent_id=agent_id, rotation_degrees=rotation_degrees)
-            sim.apply_action(turn_left)
+            sim.step(turn_left)
             states = sim.states
             agent_state = states[AgentID(agent_id)]
             sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
@@ -368,7 +368,7 @@ class HabitatSimTest(unittest.TestCase):
             # Move sensor left
             sim.reset()
             look_up = LookUp(agent_id=agent_id, rotation_degrees=rotation_degrees)
-            sim.apply_action(look_up)
+            sim.step(look_up)
             states = sim.states
             agent_state = states[AgentID(agent_id)]
             sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
@@ -387,7 +387,7 @@ class HabitatSimTest(unittest.TestCase):
             # Move agent forward
             sim.reset()
             move_forward = MoveForward(agent_id=agent_id, distance=translation_distance)
-            sim.apply_action(move_forward)
+            sim.step(move_forward)
             states = sim.states
             agent_state = states[AgentID(agent_id)]
             sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
@@ -457,7 +457,7 @@ class HabitatSimTest(unittest.TestCase):
             for _ in range(5):
                 # Set absolute yaw
                 set_yaw = SetYaw(agent_id=agent_id, rotation_degrees=45.0)
-                sim.apply_action(set_yaw)
+                sim.step(set_yaw)
 
                 # Agent position should stay the same
                 # Sensor position and rotation should stay the same
@@ -491,7 +491,7 @@ class HabitatSimTest(unittest.TestCase):
             for _ in range(5):
                 # Set absolute pitch
                 set_sensor_pitch = SetSensorPitch(agent_id=agent_id, pitch_degrees=45.0)
-                sim.apply_action(set_sensor_pitch)
+                sim.step(set_sensor_pitch)
 
                 # Agent position and rotation should stay the same
                 # Sensor position should stay the same
@@ -525,7 +525,7 @@ class HabitatSimTest(unittest.TestCase):
             for _ in range(5):
                 # Set absolute pitch
                 set_agent_pitch = SetAgentPitch(agent_id=agent_id, pitch_degrees=45.0)
-                sim.apply_action(set_agent_pitch)
+                sim.step(set_agent_pitch)
 
                 # Sensor position and rotation should stay the same
                 # Agent position should stay the same
@@ -565,7 +565,7 @@ class HabitatSimTest(unittest.TestCase):
                 set_sensor_rotation = SetSensorRotation(
                     agent_id=agent_id, rotation_quat=expected_rot
                 )
-                sim.apply_action(set_sensor_rotation)
+                sim.step(set_sensor_rotation)
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
@@ -602,7 +602,7 @@ class HabitatSimTest(unittest.TestCase):
                 set_sensor_pose = SetSensorPose(
                     agent_id=agent_id, location=np.zeros(3), rotation_quat=expected_rot
                 )
-                sim.apply_action(set_sensor_pose)
+                sim.step(set_sensor_pose)
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
@@ -623,7 +623,7 @@ class HabitatSimTest(unittest.TestCase):
                     location=expected_pos,
                     rotation_quat=sensor_rot_initial,
                 )
-                sim.apply_action(set_sensor_pose)
+                sim.step(set_sensor_pose)
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
@@ -646,7 +646,7 @@ class HabitatSimTest(unittest.TestCase):
                     location=expected_pos,
                     rotation_quat=expected_rot,
                 )
-                sim.apply_action(set_sensor_pose)
+                sim.step(set_sensor_pose)
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
@@ -682,7 +682,7 @@ class HabitatSimTest(unittest.TestCase):
                 set_agent_pose = SetAgentPose(
                     agent_id=agent_id, location=np.zeros(3), rotation_quat=expected_rot
                 )
-                sim.apply_action(set_agent_pose)
+                sim.step(set_agent_pose)
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
@@ -705,7 +705,7 @@ class HabitatSimTest(unittest.TestCase):
                     location=expected_pos,
                     rotation_quat=sensor_rot_initial,
                 )
-                sim.apply_action(set_agent_pose)
+                sim.step(set_agent_pose)
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
@@ -728,7 +728,7 @@ class HabitatSimTest(unittest.TestCase):
                     location=expected_pos,
                     rotation_quat=expected_rot,
                 )
-                sim.apply_action(set_agent_pose)
+                sim.step(set_agent_pose)
                 states = sim.states
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]

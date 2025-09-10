@@ -516,7 +516,7 @@ class HabitatSim(HabitatActuator):
         agent_index = self._agent_id_to_index[agent_id]
         return self._sim.get_agent(agent_index)
 
-    def apply_action(self, action: Action) -> Observations:
+    def step(self, action: Action) -> Observations:
         """Execute given action in the environment.
 
         Args:

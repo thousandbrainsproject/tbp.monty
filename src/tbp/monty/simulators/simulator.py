@@ -80,7 +80,7 @@ class Simulator(Protocol):
         """Returns proprioceptive state of the agents and sensors."""
         ...
 
-    def apply_action(self, action: Action) -> Observations:
+    def step(self, action: Action) -> Observations:
         """Execute the given action in the environment.
 
         Args:
