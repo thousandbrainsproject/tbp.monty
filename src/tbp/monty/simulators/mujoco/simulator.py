@@ -21,6 +21,7 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     SemanticID,
     VectorXYZ,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.simulators.simulator import Simulator
 
 
@@ -136,18 +137,14 @@ class MuJoCoSimulator(Simulator):
         return self._object_count
 
     @property
-    def observations(self) -> None:
-        pass
-
-    @property
     def states(self) -> None:
         pass
 
-    def apply_actions(self, actions: Sequence[Action]) -> dict[str, dict]:
-        return {}
+    def apply_actions(self, actions: Sequence[Action]) -> Observations:
+        return Observations({})
 
-    def reset(self) -> None:
-        pass
+    def reset(self) -> Observations:
+        return Observations({})
 
     def close(self) -> None:
         pass
