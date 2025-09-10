@@ -373,17 +373,17 @@ class EmbodiedDataTest(unittest.TestCase):
         initial_state = next(dataloader_rel)
         sensed_data = initial_state[AGENT_ID][sensor_id]
         current_state = dataloader_rel.dataset.env.get_state()
-        prev_loc = (
-            current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
-        )
+        prev_loc = current_state[AGENT_ID]["sensors"][SensorID(sensor_id + ".depth")][
+            "position"
+        ]
         self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
 
         for i, obs in enumerate(dataloader_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             current_state = dataloader_rel.dataset.env.get_state()
-            current_loc = (
-                current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
-            )
+            current_loc = current_state[AGENT_ID]["sensors"][
+                SensorID(sensor_id + ".depth")
+            ]["position"]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
             action = dataloader_rel._action
             action_name = f"{action.agent_id}.{action.name}"
@@ -402,9 +402,9 @@ class EmbodiedDataTest(unittest.TestCase):
         for i, obs in enumerate(dataloader_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             current_state = dataloader_rel.dataset.env.get_state()
-            current_loc = (
-                current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
-            )
+            current_loc = current_state[AGENT_ID]["sensors"][
+                SensorID(sensor_id + ".depth")
+            ]["position"]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
             action = dataloader_rel._action
             action_name = (
@@ -452,17 +452,17 @@ class EmbodiedDataTest(unittest.TestCase):
         initial_state = next(dataloader_rel)
         sensed_data = initial_state[AGENT_ID][sensor_id]
         current_state = dataloader_rel.dataset.env.get_state()
-        prev_loc = (
-            current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
-        )
+        prev_loc = current_state[AGENT_ID]["sensors"][SensorID(sensor_id + ".depth")][
+            "position"
+        ]
         self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
 
         for i, obs in enumerate(dataloader_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             current_state = dataloader_rel.dataset.env.get_state()
-            current_loc = (
-                current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
-            )
+            current_loc = current_state[AGENT_ID]["sensors"][
+                SensorID(sensor_id + ".depth")
+            ]["position"]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
             action = dataloader_rel._action
             action_name = f"{action.agent_id}.{action.name}"
@@ -479,9 +479,9 @@ class EmbodiedDataTest(unittest.TestCase):
         for i, obs in enumerate(dataloader_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             current_state = dataloader_rel.dataset.env.get_state()
-            current_loc = (
-                current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
-            )
+            current_loc = current_state[AGENT_ID]["sensors"][
+                SensorID(sensor_id + ".depth")
+            ]["position"]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
             action = dataloader_rel._action
             action_name = f"{action.agent_id}.{action.name}"
