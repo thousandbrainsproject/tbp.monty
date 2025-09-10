@@ -10,10 +10,12 @@
 
 import uuid
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import Any, List, Tuple, cast
 
 import quaternion as qt
 from habitat_sim.sensor import CameraSensorSpec, SensorSpec, SensorType
+
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorObservations
 
 __all__ = [
     "RGBDSensorConfig",
@@ -49,7 +51,7 @@ class SensorConfig:
         """Returns List of Habitat sensor specs to be passed to `habitat-sim`."""
         return []
 
-    def process_observations(self, sensor_obs) -> dict:
+    def process_observations(self, sensor_obs: Any) -> SensorObservations:
         """Callback used to process habitat raw sensor observations.
 
         Args:
@@ -58,7 +60,7 @@ class SensorConfig:
         Returns:
             The processed observations grouped by agent_id
         """
-        return sensor_obs
+        return cast(SensorObservations, sensor_obs)
 
 
 @dataclass(frozen=True)

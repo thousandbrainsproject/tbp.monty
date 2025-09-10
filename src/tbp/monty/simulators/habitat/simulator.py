@@ -25,7 +25,6 @@ import numpy as np
 from habitat_sim.utils import common as sim_utils
 from importlib_resources import files
 
-from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 import tbp.monty.simulators.resources as resources
 from tbp.monty.frameworks.actions.actions import (
     Action,
@@ -44,6 +43,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import AgentID, Observations
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
 from tbp.monty.simulators.habitat.agents import HabitatAgent
 
@@ -558,22 +558,7 @@ class HabitatSim(HabitatActuator):
         """Return sensor observations.
 
         Returns:
-            A dictionary with all sensor observations grouped by sensor module.
-                For example:
-                    {
-                        "agent1": {
-                            "sensor1": {
-                                "rgba": [....],
-                                "depth": [....],
-                            :
-                        },
-                        "agent2": {
-                            "sensor2":
-                                "rgba": [....],
-                                "depth": [....],
-                            :
-                        }
-                    }
+            All observations.
         """
         agent_indices = range(len(self._agents))
         obs = self._sim.get_sensor_observations(agent_ids=agent_indices)
@@ -592,13 +577,13 @@ class HabitatSim(HabitatActuator):
         Returns:
             Observations grouped by agent_id.
         """
-        processed_obs = defaultdict(dict)
+        obs: Observations = defaultdict(dict)
         for agent_index, agent_obs in habitat_obs.items():
             agent = self._agents[agent_index]
-            agent_id = self._agents[agent_index].agent_id
-            processed_obs[agent_id] = agent.process_observations(agent_obs)
+            agent_id = AgentID(self._agents[agent_index].agent_id)
+            obs[agent_id] = agent.process_observations(agent_obs)
 
-        return processed_obs
+        return obs
 
     @property
     def states(self) -> dict:

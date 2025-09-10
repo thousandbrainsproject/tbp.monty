@@ -19,6 +19,10 @@ import quaternion as qt
 from habitat_sim.agent import ActionSpec, ActuationSpec, AgentConfiguration, AgentState
 from typing_extensions import Literal
 
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    AgentObservations,
+    SensorID,
+)
 from tbp.monty.simulators.habitat.sensors import (
     RGBDSensorConfig,
     SemanticSensorConfig,
@@ -99,7 +103,7 @@ class HabitatAgent:
         agent_state.rotation = rotation
         simulator.initialize_agent(self.agent_id, agent_state)
 
-    def process_observations(self, agent_obs) -> dict:
+    def process_observations(self, agent_obs) -> AgentObservations:
         """Callback processing raw habitat agent observations to Monty-compatible ones.
 
         Args:
@@ -111,14 +115,14 @@ class HabitatAgent:
         # Habitat raw sensor observations are flat where the observation key is
         # composed of the `sensor_id.sensor_type`. The default agent starts by
         # grouping habitat raw observation by sensor_id and sensor_type.
-        obs_by_sensor = defaultdict(dict)
+        obs_by_sensor: AgentObservations = defaultdict(dict)
         for sensor_key, data in agent_obs.items():
             sensor_id, sensor_type = sensor_key.split(".")
-            obs_by_sensor[sensor_id][sensor_type] = data
+            obs_by_sensor[SensorID(sensor_id)][sensor_type] = data
 
         # Call each sensor to postprocess the observation data
         for sensor in self.sensors:
-            sensor_id = sensor.sensor_id
+            sensor_id = SensorID(sensor.sensor_id)
             sensor_obs = obs_by_sensor.get(sensor_id)
             if sensor_obs is not None:
                 obs_by_sensor[sensor_id] = sensor.process_observations(sensor_obs)
