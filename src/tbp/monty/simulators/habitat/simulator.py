@@ -550,8 +550,7 @@ class HabitatSim(HabitatActuator):
 
         action.act(self)
 
-        observations = self.observations
-        return observations
+        return self.observations
 
     @property
     def observations(self) -> Observations:
