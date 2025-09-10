@@ -74,12 +74,6 @@ class Simulator(Protocol):
         """Return the number of instantiated objects in the environment."""
         ...
 
-    # TODO: Remove this as it seems to be internal to the simulator implementation
-    @property
-    def observations(self) -> Observations:
-        """Return sensor observations."""
-        ...
-
     @property
     def states(self):
         """Get agent and sensor states."""

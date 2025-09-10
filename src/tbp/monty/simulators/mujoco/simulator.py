@@ -134,10 +134,6 @@ class MuJoCoSimulator(Simulator):
         return self._object_count
 
     @property
-    def observations(self) -> Observations:
-        return Observations({})
-
-    @property
     def states(self) -> None:
         pass
 

@@ -554,7 +554,7 @@ class HabitatSim(HabitatActuator):
 
     @property
     def observations(self) -> Observations:
-        """Return sensor observations.
+        """Retrieve and process observations from the simulator.
 
         Returns:
             All observations.
