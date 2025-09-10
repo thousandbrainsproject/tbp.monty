@@ -17,6 +17,7 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     SemanticID,
     VectorXYZ,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 
 
 class Simulator(Protocol):
@@ -74,8 +75,8 @@ class Simulator(Protocol):
         ...
 
     @property
-    def observations(self):
-        """Get sensor observations."""
+    def observations(self) -> Observations:
+        """Return sensor observations."""
         ...
 
     @property

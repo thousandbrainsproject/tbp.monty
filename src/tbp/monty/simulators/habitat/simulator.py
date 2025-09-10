@@ -25,6 +25,7 @@ import numpy as np
 from habitat_sim.utils import common as sim_utils
 from importlib_resources import files
 
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 import tbp.monty.simulators.resources as resources
 from tbp.monty.frameworks.actions.actions import (
     Action,
@@ -553,8 +554,8 @@ class HabitatSim(HabitatActuator):
         return observations
 
     @property
-    def observations(self) -> dict:
-        """Get sensor observations.
+    def observations(self) -> Observations:
+        """Return sensor observations.
 
         Returns:
             A dictionary with all sensor observations grouped by sensor module.
@@ -579,20 +580,20 @@ class HabitatSim(HabitatActuator):
         obs = self.process_observations(obs)
         return obs
 
-    def process_observations(self, obs) -> dict:
+    def process_observations(self, habitat_obs: Any) -> Observations:
         """Habitat returns observations grouped by agent_index.
 
         Initially, we group observations by agent_id instead and call all agents
         to further process the observations.
 
         Args:
-            obs: The observations to process
+            habitat_obs: The observations from HabitatSim to process.
 
         Returns:
-            The processed observations grouped by agent_id.
+            Observations grouped by agent_id.
         """
         processed_obs = defaultdict(dict)
-        for agent_index, agent_obs in obs.items():
+        for agent_index, agent_obs in habitat_obs.items():
             agent = self._agents[agent_index]
             agent_id = self._agents[agent_index].agent_id
             processed_obs[agent_id] = agent.process_observations(agent_obs)

@@ -9,6 +9,39 @@
 # https://opensource.org/licenses/MIT.
 
 import abc
+from typing import Dict, NewType
+
+import numpy as np
+import numpy.typing as npt
+from typing_extensions import TypedDict
+
+
+class SensorObservations(TypedDict, total=False):
+    """Observations from a sensor."""
+
+    rgba: npt.NDArray[np.int_]  # TODO: Verify specific type
+    depth: npt.NDArray[np.float64]  # TODO: Verify specific type
+    semantic: npt.NDArray[np.int_]  # TODO: Verify specific type
+
+
+SensorID = NewType("SensorID", str)
+"""Unique identifier for a sensor."""
+
+
+class AgentObservations(Dict[SensorID, SensorObservations]):
+    """Observations from an agent."""
+
+    pass
+
+
+AgentID = NewType("AgentID", str)
+"""Unique identifier for an agent."""
+
+
+class Observations(Dict[AgentID, AgentObservations]):
+    """Observations from the environment."""
+
+    pass
 
 
 class Monty(metaclass=abc.ABCMeta):
