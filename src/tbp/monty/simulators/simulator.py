@@ -77,7 +77,7 @@ class Simulator(Protocol):
 
     @property
     def states(self) -> ProprioceptiveState:
-        """Returns proprioceptive state of the agent and sensors."""
+        """Returns proprioceptive state of the agents and sensors."""
         ...
 
     def apply_action(self, action: Action) -> Observations:

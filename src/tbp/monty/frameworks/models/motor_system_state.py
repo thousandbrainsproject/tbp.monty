@@ -33,6 +33,12 @@ class AgentState:
     """The agent's position relative to some global reference frame."""
     rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
     """The agent's rotation relative to some global reference frame."""
+    motor_only_step: bool = False
+    """Control flow parameter. Processing will bypass the learning module if True.
+
+    TODO: Remove once we refactor Monty main processing loop to no longer need
+    control flow parameters in motor system state.
+    """
 
 
 class ProprioceptiveState(Dict[AgentID, AgentState]):
@@ -51,67 +57,31 @@ class MotorSystemState(Dict[AgentID, AgentState]):
           needs for operation.
     """
 
-    def convert_motor_state(self) -> dict:
+    def convert_motor_state(self) -> Dict[AgentID, Any]:
         """Convert the motor state into something that can be pickled/saved to JSON.
 
         i.e. substitute vector and quaternion objects; note e.g. copy.deepcopy does not
         work.
 
-        TODO ?clean this up with a recursive algorithm, or use BufferEncoder in
-        buffer.py
-
         Returns:
             Copy of the motor state.
         """
-        state_copy = {}
-        for key in self.keys():
-            state_copy[key] = {}
-            for key_inner in self[key].keys():
-                if type(self[key][key_inner]) is dict:
-                    state_copy[key][key_inner] = {}
-                    # We need to go deeper
-                    for key_inner_inner in self[key][key_inner].keys():
-                        state_copy[key][key_inner][key_inner_inner] = {}
-                        if type(self[key][key_inner][key_inner_inner]) is dict:
-                            # We need to go even deeper...
-                            # (**Hans Zimmer music intensifies**)
-                            for key_i_i_i in self[key][key_inner][key_inner_inner]:
-                                state_copy[key][key_inner][key_inner_inner][
-                                    key_i_i_i
-                                ] = {}
-                                try:
-                                    state_copy[key][key_inner][key_inner_inner][
-                                        key_i_i_i
-                                    ] = np.array(
-                                        list(
-                                            self[key][key_inner][key_inner_inner][
-                                                key_i_i_i
-                                            ]
-                                        )
-                                    )
-                                except TypeError:
-                                    # Quaternions
-                                    state_copy[key][key_inner][key_inner_inner][
-                                        key_i_i_i
-                                    ] = [
-                                        self[key][key_inner][key_inner_inner][
-                                            key_i_i_i
-                                        ].real
-                                    ] + list(
-                                        self[key][key_inner][key_inner_inner][
-                                            key_i_i_i
-                                        ].imag
-                                    )
-                elif type(self[key][key_inner]) is bool:
-                    pass
-                else:
-                    try:
-                        state_copy[key][key_inner] = np.array(
-                            list(self[key][key_inner])
-                        )
-                    except TypeError:
-                        # Quaternions
-                        state_copy[key][key_inner] = [self[key][key_inner].real] + list(
-                            self[key][key_inner].imag
-                        )
+        state_copy: Dict[AgentID, Any] = {}
+        for agent_id in self.keys():
+            agent_state = self[agent_id]
+            sensors = {}
+            for sensor_id in agent_state.sensors.keys():
+                sensor_state = agent_state.sensors[sensor_id]
+                sensors[sensor_id] = {
+                    "position": np.array(list(sensor_state.position)),
+                    "rotation": [sensor_state.rotation.real]
+                    + list(sensor_state.rotation.imag),
+                }
+            state_copy[agent_id] = {
+                "position": np.array(list(agent_state.position)),
+                "rotation": [agent_state.rotation.real]
+                + list(agent_state.rotation.imag),
+                "sensors": sensors,
+            }
+
         return state_copy

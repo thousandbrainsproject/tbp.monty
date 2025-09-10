@@ -9,15 +9,17 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from numbers import Number
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Tuple
 
 import numpy as np
 import quaternion as qt
 import scipy
 
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorID
 from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
-from tbp.monty.frameworks.models.states import State
+
+if TYPE_CHECKING:
+    from numbers import Number
 
 __all__ = [
     "AddNoiseToRawDepthImage",
@@ -453,12 +455,12 @@ class DepthTo3DLocations:
             if self.world_coord and state is not None:
                 # Get agent and sensor states from state dictionary
                 agent_state = state[self.agent_id]
-                depth_state = agent_state["sensors"][sensor_id + ".depth"]
-                agent_rotation = agent_state["rotation"]
+                depth_state = agent_state.sensors[SensorID(sensor_id + ".depth")]
+                agent_rotation = agent_state.rotation
                 agent_rotation_matrix = qt.as_rotation_matrix(agent_rotation)
-                agent_position = agent_state["position"]
-                sensor_rotation = depth_state["rotation"]
-                sensor_position = depth_state["position"]
+                agent_position = agent_state.position
+                sensor_rotation = depth_state.rotation
+                sensor_position = depth_state.position
                 # --- Apply camera transformations to get world coordinates ---
                 # Combine body and sensor rotation (since sensor rotation is relative to
                 # the agent this will give us the sensor rotation in world coordinates)

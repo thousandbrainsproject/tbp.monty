@@ -574,21 +574,32 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         """
         agent_id = AgentID("agent_01")
         sensor_id = SensorID("patch_01")
-        obs = {agent_id: AgentObservations( {
-            sensor_id: {"depth": self.current_depth_image}})}
-        rotation = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
-        state = ProprioceptiveState({
-            agent_id: {
-                "sensors": {
-                    sensor_id + ".depth": {
-                        "rotation": rotation,
-                        "position": np.array([0, 0, 0]),
+        obs = Observations(
+            {
+                agent_id: AgentObservations(
+                    {
+                        sensor_id: SensorObservations(
+                            {Modality("depth"): self.current_depth_image}
+                        )
                     }
-                },
-                "rotation": rotation,
-                "position": np.array([0, 0, 0]),
+                )
             }
-        }
+        )
+        rotation = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
+        state = ProprioceptiveState(
+            {
+                agent_id: AgentState(
+                    sensors={
+                        SensorID(sensor_id + ".depth"): SensorState(
+                            rotation=rotation,
+                            position=np.array([0, 0, 0]),
+                        )
+                    },
+                    rotation=rotation,
+                    position=np.array([0, 0, 0]),
+                )
+            }
+        )
 
         transform = DepthTo3DLocations(
             agent_id=agent_id,

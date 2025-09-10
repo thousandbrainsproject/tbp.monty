@@ -25,6 +25,11 @@ import numpy as np
 from habitat_sim.utils import common as sim_utils
 from importlib_resources import files
 
+from tbp.monty.frameworks.models.motor_system_state import (
+    AgentState,
+    ProprioceptiveState,
+    SensorState,
+)
 import tbp.monty.simulators.resources as resources
 from tbp.monty.frameworks.actions.actions import (
     Action,
@@ -43,7 +48,11 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
-from tbp.monty.frameworks.models.abstract_monty_classes import AgentID, Observations
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    AgentID,
+    Observations,
+    SensorID,
+)
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
 from tbp.monty.simulators.habitat.agents import HabitatAgent
 
@@ -585,56 +594,29 @@ class HabitatSim(HabitatActuator):
         return obs
 
     @property
-    def states(self) -> dict:
-        """Get agent and sensor states (position, rotation, etc..).
-
-        Returns:
-            A dictionary with the agent pose in world coordinates and any other
-            agent specific state as well as every sensor pose relative to the agent
-            as well as any sensor specific state that is not returned by
-            :attr:`observations`.
-
-            For example:
-                {
-                    "camera": {
-                        "position": [2.125, 1.5, -5.278],
-                        "rotation": [0.707107, 0.0, 0.0.707107, 0.0],
-                        "sensors" : {
-                            "rgba": {
-                                "position": [0.0, 1.5, 0.0],
-                                "rotation": [1.0, 0.0, 0.0, 0.0],
-                            },
-                            "depth": {
-                                "position": [0.0, 1.5, 0.0],
-                                "rotation": [1.0, 0.0, 0.0, 0.0],
-                            },
-                            :
-                        }
-                    },
-                    :
-                }
-        """
-        result = {}
+    def states(self) -> ProprioceptiveState:
+        """Returns proprioceptive state of the agents and sensors."""
+        result = ProprioceptiveState()
         for agent_index, sim_agent in enumerate(self._sim.agents):
             # Get agent and sensor poses from simulator
             agent_node = sim_agent.scene_node
 
-            sensors = {}
+            sensors: Dict[SensorID, SensorState] = {}
             for sensor_id, sensor in agent_node.node_sensors.items():
                 rotation = sim_utils.quat_from_magnum(sensor.node.rotation)
-                sensors[sensor_id] = {
-                    "position": sensor.node.translation,
-                    "rotation": rotation,
-                }
+                sensors[SensorID(sensor_id)] = SensorState(
+                    position=sensor.node.translation,
+                    rotation=rotation,
+                )
 
             # Update agent/module state
-            agent_id = self._agents[agent_index].agent_id
+            agent_id = AgentID(self._agents[agent_index].agent_id)
             rotation = sim_utils.quat_from_magnum(agent_node.rotation)
-            result[agent_id] = {
-                "position": agent_node.translation,
-                "rotation": rotation,
-                "sensors": sensors,
-            }
+            result[agent_id] = AgentState(
+                position=agent_node.translation,
+                rotation=rotation,
+                sensors=sensors,
+            )
 
         return result
 

@@ -15,7 +15,12 @@ import quaternion
 from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule
+from tbp.monty.frameworks.models.motor_system_state import (
+    AgentState,
+    MotorSystemState,
+    SensorState,
+)
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.sensor_processing import (
     log_sign,
@@ -80,10 +85,14 @@ class DetailedLoggingSM(SensorModule):
             raw_observations=self.raw_observations, sm_properties=self.sm_properties
         )
 
-    def update_state(self, state):
+    def update_state(self, state: AgentState):
         """Update information about the sensors location and rotation."""
-        # TODO: This stores the entire AgentState. Extract sensor-specific state.
-        self.state = state
+        # TODO: This uses Agent position and rotation as SensorState.
+        # Extract sensor-specific state.
+        self.state = SensorState(
+            position=state.position,
+            rotation=state.rotation,
+        )
 
     def step(self, data):
         """Add raw observations to SM buffer."""
@@ -92,28 +101,12 @@ class DetailedLoggingSM(SensorModule):
             # save the sensor state at every step
 
             if self.state is not None:
-                # "position" key available for DetailedLoggingSM, "location" key
-                # for e.g. HabitatDistantPatchSM, which accounts for both agent
-                # and sensory positions; TODO consider making these keys
-                # more consistent
-                if "position" in self.state.keys():
-                    self.sm_properties.append(
-                        dict(
-                            sm_rotation=quaternion.as_float_array(
-                                self.state["rotation"]
-                            ),
-                            sm_location=np.array(self.state["position"]),
-                        )
+                self.sm_properties.append(
+                    dict(
+                        sm_rotation=quaternion.as_float_array(self.state.rotation),
+                        sm_location=np.array(self.state.position),
                     )
-                elif "location" in self.state.keys():
-                    self.sm_properties.append(
-                        dict(
-                            sm_rotation=quaternion.as_float_array(
-                                self.state["rotation"]
-                            ),
-                            sm_location=np.array(self.state["location"]),
-                        )
-                    )
+                )
 
     def pre_episode(self):
         """Reset buffer and is_exploring flag."""
@@ -511,21 +504,20 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
         self.processed_obs = []
         self.states = []
 
-    def update_state(self, state):
+    def update_state(self, agent: AgentState):
         """Update information about the sensors location and rotation."""
-        agent_position = state["position"]
-        sensor_position = state["sensors"][self.sensor_module_id + ".rgba"]["position"]
-        if "motor_only_step" in state.keys():
-            self.motor_only_step = state["motor_only_step"]
-        else:
-            self.motor_only_step = False
+        sensor_position = agent.sensors[
+            SensorID(self.sensor_module_id + ".rgba")
+        ].position
+        self.motor_only_step = agent.motor_only_step
 
-        agent_rotation = state["rotation"]
-        sensor_rotation = state["sensors"][self.sensor_module_id + ".rgba"]["rotation"]
-        self.state = {
-            "location": agent_position + sensor_position,
-            "rotation": agent_rotation * sensor_rotation,
-        }
+        sensor_rotation = agent.sensors[
+            SensorID(self.sensor_module_id + ".rgba")
+        ].rotation
+        self.state = SensorState(
+            position=agent.position + sensor_position,
+            rotation=agent.rotation * sensor_rotation,
+        )
 
     def state_dict(self):
         """Return state_dict."""
