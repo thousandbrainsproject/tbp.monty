@@ -42,6 +42,7 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 )
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 
 AGENT_ID = AgentID("agent_id_0")
 SENSOR_ID = SensorID("sensor_id_0")
@@ -68,9 +69,9 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
         self._current_state += 1
         obs = Observations(
             {
-                AgentID(AGENT_ID): AgentObservations(
+                AGENT_ID: AgentObservations(
                     {
-                        SensorID(SENSOR_ID): SensorObservations(
+                        SENSOR_ID: SensorObservations(
                             {Modality("sensor"): EXPECTED_STATES[self._current_state]}
                         )
                     }
@@ -79,8 +80,8 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
         )
         return obs
 
-    def get_state(self):
-        return None
+    def get_state(self) -> ProprioceptiveState:
+        return ProprioceptiveState({})
 
     def remove_all_objects(self):
         pass
@@ -89,9 +90,9 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
         self._current_state = 0
         obs = Observations(
             {
-                AgentID(AGENT_ID): AgentObservations(
+                AGENT_ID: AgentObservations(
                     {
-                        SensorID(SENSOR_ID): SensorObservations(
+                        SENSOR_ID: SensorObservations(
                             {Modality("sensor"): EXPECTED_STATES[self._current_state]}
                         )
                     }
@@ -115,9 +116,9 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
         self._current_state += 1
         obs = Observations(
             {
-                AgentID(AGENT_ID): AgentObservations(
+                AGENT_ID: AgentObservations(
                     {
-                        SensorID(SENSOR_ID): SensorObservations(
+                        SENSOR_ID: SensorObservations(
                             {Modality("sensor"): EXPECTED_STATES[self._current_state]}
                         )
                     }
@@ -126,19 +127,25 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
         )
         return obs
 
-    def get_state(self):
-        return None
+    def get_state(self) -> ProprioceptiveState:
+        return ProprioceptiveState({})
 
     def remove_all_objects(self):
         pass
 
-    def reset(self):
+    def reset(self) -> Observations:
         self._current_state = 0
-        obs = {
-            f"{AGENT_ID}": {
-                f"{SENSOR_ID}": {"sensor": EXPECTED_STATES[self._current_state]}
+        obs = Observations(
+            {
+                AGENT_ID: AgentObservations(
+                    {
+                        SENSOR_ID: SensorObservations(
+                            {Modality("sensor"): EXPECTED_STATES[self._current_state]}
+                        )
+                    }
+                )
             }
-        }
+        )
         return obs
 
     def close(self):
@@ -165,7 +172,10 @@ class EmbodiedDataTest(unittest.TestCase):
             obs_dist, _ = dataset_dist[motor_system_dist()]
             print(obs_dist)
             self.assertTrue(
-                np.all(obs_dist[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
+                np.all(
+                    obs_dist[AGENT_ID][SENSOR_ID][Modality("sensor")]
+                    == EXPECTED_STATES[i]
+                )
             )
 
         initial_obs, _ = dataset_dist.reset()
@@ -207,7 +217,10 @@ class EmbodiedDataTest(unittest.TestCase):
         for i in range(1, DATASET_LEN):
             obs_abs, _ = dataset_abs[motor_system_abs()]
             self.assertTrue(
-                np.all(obs_abs[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
+                np.all(
+                    obs_abs[AGENT_ID][SENSOR_ID][Modality("sensor")]
+                    == EXPECTED_STATES[i]
+                )
             )
 
         initial_state, _ = dataset_abs.reset()
@@ -252,7 +265,9 @@ class EmbodiedDataTest(unittest.TestCase):
         )
         for i, item in enumerate(dataloader_dist):
             self.assertTrue(
-                np.all(item[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
+                np.all(
+                    item[AGENT_ID][SENSOR_ID][Modality("sensor")] == EXPECTED_STATES[i]
+                )
             )
             if i >= DATASET_LEN - 1:
                 break
@@ -277,7 +292,9 @@ class EmbodiedDataTest(unittest.TestCase):
         dataloader_abs = EnvironmentDataLoader(dataset_abs, motor_system_abs, rng)
         for i, item in enumerate(dataloader_abs):
             self.assertTrue(
-                np.all(item[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
+                np.all(
+                    item[AGENT_ID][SENSOR_ID][Modality("sensor")] == EXPECTED_STATES[i]
+                )
             )
             if i >= DATASET_LEN - 1:
                 break
@@ -320,7 +337,7 @@ class EmbodiedDataTest(unittest.TestCase):
 
     def test_saccade_on_image_dataloader(self):
         rng = np.random.RandomState(42)
-        sensor_id = "patch"
+        sensor_id = SensorID("patch")
         patch_size = 48
         expected_keys = ["depth", "rgba", "pixel_loc"]
 
@@ -356,15 +373,17 @@ class EmbodiedDataTest(unittest.TestCase):
         initial_state = next(dataloader_rel)
         sensed_data = initial_state[AGENT_ID][sensor_id]
         current_state = dataloader_rel.dataset.env.get_state()
-        prev_loc = current_state[AGENT_ID]["sensors"][sensor_id + ".depth"]["position"]
+        prev_loc = (
+            current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
+        )
         self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
 
         for i, obs in enumerate(dataloader_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             current_state = dataloader_rel.dataset.env.get_state()
-            current_loc = current_state[AGENT_ID]["sensors"][sensor_id + ".depth"][
-                "position"
-            ]
+            current_loc = (
+                current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
+            )
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
             action = dataloader_rel._action
             action_name = f"{action.agent_id}.{action.name}"
@@ -383,9 +402,9 @@ class EmbodiedDataTest(unittest.TestCase):
         for i, obs in enumerate(dataloader_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             current_state = dataloader_rel.dataset.env.get_state()
-            current_loc = current_state[AGENT_ID]["sensors"][sensor_id + ".depth"][
-                "position"
-            ]
+            current_loc = (
+                current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
+            )
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
             action = dataloader_rel._action
             action_name = (
@@ -398,7 +417,7 @@ class EmbodiedDataTest(unittest.TestCase):
 
     def test_saccade_on_image_stream_dataloader(self):
         rng = np.random.RandomState(42)
-        sensor_id = "patch"
+        sensor_id = SensorID("patch")
         patch_size = 48
         expected_keys = ["depth", "rgba", "pixel_loc"]
 
@@ -433,15 +452,17 @@ class EmbodiedDataTest(unittest.TestCase):
         initial_state = next(dataloader_rel)
         sensed_data = initial_state[AGENT_ID][sensor_id]
         current_state = dataloader_rel.dataset.env.get_state()
-        prev_loc = current_state[AGENT_ID]["sensors"][sensor_id + ".depth"]["position"]
+        prev_loc = (
+            current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
+        )
         self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
 
         for i, obs in enumerate(dataloader_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             current_state = dataloader_rel.dataset.env.get_state()
-            current_loc = current_state[AGENT_ID]["sensors"][sensor_id + ".depth"][
-                "position"
-            ]
+            current_loc = (
+                current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
+            )
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
             action = dataloader_rel._action
             action_name = f"{action.agent_id}.{action.name}"
@@ -458,9 +479,9 @@ class EmbodiedDataTest(unittest.TestCase):
         for i, obs in enumerate(dataloader_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             current_state = dataloader_rel.dataset.env.get_state()
-            current_loc = current_state[AGENT_ID]["sensors"][sensor_id + ".depth"][
-                "position"
-            ]
+            current_loc = (
+                current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
+            )
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
             action = dataloader_rel._action
             action_name = f"{action.agent_id}.{action.name}"

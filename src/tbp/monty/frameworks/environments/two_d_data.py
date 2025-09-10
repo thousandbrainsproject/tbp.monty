@@ -33,6 +33,11 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     SensorID,
     SensorObservations,
 )
+from tbp.monty.frameworks.models.motor_system_state import (
+    AgentState,
+    ProprioceptiveState,
+    SensorState,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -162,25 +167,33 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         )
         return obs
 
-    def get_state(self):
+    def get_state(self) -> ProprioceptiveState:
         loc = self.locations[self.step_num % self.max_steps]
         sensor_position = np.array([loc[0], loc[1], 0])
-        state = {
-            "agent_id_0": {
-                "sensors": {
-                    "patch" + ".depth": {
+        state = ProprioceptiveState(
+            {
+                AgentID("agent_id_0"): AgentState(
+                    {
+                        "sensors": {
+                            SensorID("patch" + ".depth"): SensorState(
+                                {
+                                    "rotation": self.rotation,
+                                    "position": sensor_position,
+                                }
+                            ),
+                            SensorID("patch" + ".rgba"): SensorState(
+                                {
+                                    "rotation": self.rotation,
+                                    "position": sensor_position,
+                                }
+                            ),
+                        },
                         "rotation": self.rotation,
-                        "position": sensor_position,
-                    },
-                    "patch" + ".rgba": {
-                        "rotation": self.rotation,
-                        "position": sensor_position,
-                    },
-                },
-                "rotation": self.rotation,
-                "position": np.array([0, 0, 0]),
+                        "position": np.array([0, 0, 0]),
+                    }
+                )
             }
-        }
+        )
         return state
 
     def switch_to_object(self, alphabet_id, character_id, version_id):
@@ -397,34 +410,37 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         )
         return obs
 
-    def get_state(self):
-        """Get agent state.
-
-        Returns:
-            The agent state.
-        """
+    def get_state(self) -> ProprioceptiveState:
         loc = self.current_loc
         # Provide LM w/ sensor position in 3D, body-centric coordinates
         # instead of pixel indices
         sensor_position = self.get_3d_coordinates_from_pixel_indices(loc[:2])
 
         # NOTE: This is super hacky and only works for 1 agent with 1 sensor
-        state = {
-            "agent_id_0": {
-                "sensors": {
-                    "patch" + ".depth": {
+        state = ProprioceptiveState(
+            {
+                AgentID("agent_id_0"): AgentState(
+                    {
+                        "sensors": {
+                            SensorID("patch" + ".depth"): SensorState(
+                                {
+                                    "rotation": self.rotation,
+                                    "position": sensor_position,
+                                }
+                            ),
+                            SensorID("patch" + ".rgba"): SensorState(
+                                {
+                                    "rotation": self.rotation,
+                                    "position": sensor_position,
+                                }
+                            ),
+                        },
                         "rotation": self.rotation,
-                        "position": sensor_position,
-                    },
-                    "patch" + ".rgba": {
-                        "rotation": self.rotation,
-                        "position": sensor_position,
-                    },
-                },
-                "rotation": self.rotation,
-                "position": np.array([0, 0, 0]),
+                        "position": np.array([0, 0, 0]),
+                    }
+                )
             }
-        }
+        )
         return state
 
     def switch_to_object(self, scene_id, scene_version_id):

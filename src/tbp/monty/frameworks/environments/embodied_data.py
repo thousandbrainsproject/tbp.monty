@@ -36,6 +36,7 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     ObjectID,
     SemanticID,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.models.motor_policies import (
     GetGoodView,
     InformedPolicy,
@@ -102,12 +103,14 @@ class EnvironmentDataset(Dataset):
 
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-        return observation, ProprioceptiveState(state) if state else None
+        return observation, state if state else None
 
     def close(self):
         self.env.close()
 
-    def apply_transform(self, transform, observation, state):
+    def apply_transform(
+        self, transform, observation: Observations, state: ProprioceptiveState
+    ) -> Observations:
         if isinstance(transform, list):
             for t in transform:
                 observation = t(observation, state)
@@ -120,7 +123,7 @@ class EnvironmentDataset(Dataset):
         state = self.env.get_state()
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
-        return observation, ProprioceptiveState(state) if state else None
+        return observation, state if state else None
 
     def __len__(self):
         return math.inf
