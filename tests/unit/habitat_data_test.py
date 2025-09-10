@@ -10,6 +10,12 @@
 
 import pytest
 
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    AgentID,
+    Modality,
+    SensorID,
+)
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -36,9 +42,9 @@ from tbp.monty.simulators.habitat.environment import AgentConfig, HabitatEnviron
 
 DATASET_LEN = 10
 DEFAULT_ACTUATION_AMOUNT = 0.25
-AGENT_ID = "camera"
-SENSOR_ID = "sensor_id_0"
-SENSORS = ["depth"]
+AGENT_ID = AgentID("camera")
+SENSOR_ID = SensorID("sensor_id_0")
+SENSORS = [Modality("depth")]
 EXPECTED_STATES = np.random.rand(DATASET_LEN, 64, 64, 1)
 
 class HabitatDataTest(unittest.TestCase):

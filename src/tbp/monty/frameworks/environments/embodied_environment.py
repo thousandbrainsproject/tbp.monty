@@ -16,6 +16,7 @@ from typing import Any, Dict, NewType, Tuple
 from typing_extensions import deprecated
 
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 
 __all__ = [
     "ActionSpace",
@@ -102,10 +103,11 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def reset(self):
+    def reset(self) -> Observations:
         """Reset enviroment to its initial state.
 
-        Return the environment's initial observations.
+        Returns:
+            The environment's initial observations.
         """
         pass
 

@@ -12,6 +12,11 @@ from __future__ import annotations
 import pytest
 
 from tbp.monty.frameworks.environments.embodied_environment import SemanticID, VectorXYZ
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    AgentID,
+    Modality,
+    SensorID,
+)
 
 pytest.importorskip(
     "habitat_sim",
@@ -72,8 +77,8 @@ def create_agents(
     agents = []
     for i in range(num_agents):
         cam = SingleSensorAgent(
-            agent_id=f"{i}",
-            sensor_id="0",
+            agent_id=f"{i}",  # TODO: AgentID
+            sensor_id="0",  # TODO: SensorID
             resolution=resolution,
             semantic=semantic,
             translation_step=translation_step,
@@ -192,8 +197,8 @@ class HabitatSimTest(unittest.TestCase):
         agents = create_agents(
             num_agents=1, semantic=True, rotation_step=rotation_degrees
         )
-        agent_id = agents[0].agent_id
-        sensor_id = agents[0].sensor_id
+        agent_id = AgentID(agents[0].agent_id)
+        sensor_id = SensorID(agents[0].sensor_id)
         with HabitatSim(agents=agents) as sim:
             # Add a couple of objects
             _, cylinder = sim.add_object(
@@ -208,7 +213,7 @@ class HabitatSimTest(unittest.TestCase):
             obs = sim.observations
             agent_obs = obs[agent_id]
             sensor_obs = agent_obs[sensor_id]
-            semantic = sensor_obs["semantic"]
+            semantic = sensor_obs[Modality("semantic")]
             actual = {SemanticID(s) for s in set(semantic[semantic.nonzero()])}
             self.assertSetEqual(expected, actual)
 
@@ -226,7 +231,7 @@ class HabitatSimTest(unittest.TestCase):
             initial_obs = sim.reset()
             obs = initial_obs[agent_id]
             expected = {cylinder, cube}
-            semantic = np.unique(obs[sensor_id]["semantic"])
+            semantic = np.unique(obs[sensor_id][Modality("semantic")])
 
             actual = {SemanticID(s) for s in set(semantic[semantic.nonzero()])}
             self.assertSetEqual(expected, actual)

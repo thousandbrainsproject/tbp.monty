@@ -27,9 +27,11 @@ from tbp.monty.frameworks.environments.embodied_environment import (
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import (
     AgentID,
+    AgentObservations,
     Modality,
     Observations,
     SensorID,
+    SensorObservations,
 )
 
 logger = logging.getLogger(__name__)
@@ -194,17 +196,25 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
         obs = Observations(
             {
-                AgentID("agent_id_0"): {
-                    SensorID("patch"): {
-                        Modality("depth"): depth,
-                        Modality("semantic"): np.array(~patch, dtype=int),
-                        Modality("rgba"): np.stack([depth, depth, depth], axis=2),
-                    },
-                    SensorID("view_finder"): {
-                        Modality("depth"): self.current_image,
-                        Modality("semantic"): np.array(~patch, dtype=int),
-                    },
-                }
+                AgentID("agent_id_0"): AgentObservations(
+                    {
+                        SensorID("patch"): SensorObservations(
+                            {
+                                Modality("depth"): depth,
+                                Modality("semantic"): np.array(~patch, dtype=int),
+                                Modality("rgba"): np.stack(
+                                    [depth, depth, depth], axis=2
+                                ),
+                            }
+                        ),
+                        SensorID("view_finder"): SensorObservations(
+                            {
+                                Modality("depth"): self.current_image,
+                                Modality("semantic"): np.array(~patch, dtype=int),
+                            }
+                        ),
+                    }
+                )
             }
         )
         return obs
@@ -441,20 +451,26 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         )
         obs = Observations(
             {
-                AgentID("agent_id_0"): {
-                    SensorID("patch"): {
-                        Modality("depth"): depth_patch,
-                        Modality("rgba"): rgb_patch,
-                        Modality("semantic_3d"): depth3d_patch,
-                        Modality("sensor_frame_data"): sensor_frame_patch,
-                        Modality("world_camera"): self.world_camera,
-                        Modality("pixel_loc"): self.current_loc,
-                    },
-                    SensorID("view_finder"): {
-                        Modality("depth"): self.current_depth_image,
-                        Modality("rgba"): self.current_rgb_image,
-                    },
-                }
+                AgentID("agent_id_0"): AgentObservations(
+                    {
+                        SensorID("patch"): SensorObservations(
+                            {
+                                Modality("depth"): depth_patch,
+                                Modality("rgba"): rgb_patch,
+                                Modality("semantic_3d"): depth3d_patch,
+                                Modality("sensor_frame_data"): sensor_frame_patch,
+                                Modality("world_camera"): self.world_camera,
+                                Modality("pixel_loc"): np.array(self.current_loc),
+                            }
+                        ),
+                        SensorID("view_finder"): SensorObservations(
+                            {
+                                Modality("depth"): self.current_depth_image,
+                                Modality("rgba"): self.current_rgb_image,
+                            }
+                        ),
+                    }
+                )
             }
         )
         return obs

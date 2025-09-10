@@ -135,7 +135,7 @@ class MuJoCoSimulator(Simulator):
 
     @property
     def observations(self) -> Observations:
-        pass
+        return Observations({})
 
     @property
     def states(self) -> None:
@@ -145,7 +145,7 @@ class MuJoCoSimulator(Simulator):
         return {}
 
     def reset(self) -> Observations:
-        pass
+        return Observations({})
 
     def close(self) -> None:
         pass
