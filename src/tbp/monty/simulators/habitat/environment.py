@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Dict, List, Optional, Type, Union
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.config_utils.make_dataset_configs import ObjectParams
@@ -78,8 +77,8 @@ MultiSensorAgentArgs.__module__ = __name__
 class AgentConfig:
     """Agent configuration used by :class:`HabitatEnvironment`."""
 
-    agent_type: Type[HabitatAgent]
-    agent_args: Union[dict, Type[HabitatAgentArgs]]
+    agent_type: type[HabitatAgent]
+    agent_args: dict | type[HabitatAgentArgs]
 
 
 class HabitatEnvironment(EmbodiedEnvironment):
@@ -95,11 +94,11 @@ class HabitatEnvironment(EmbodiedEnvironment):
 
     def __init__(
         self,
-        agents: List[Union[dict, AgentConfig]],
+        agents: list[dict | AgentConfig],
         objects: list[ObjectParams] | None = None,
-        scene_id: Optional[str] = None,
+        scene_id: str | None = None,
         seed: int = 42,
-        data_path: Optional[str] = None,
+        data_path: str | None = None,
     ):
         super().__init__()
         self._agents = []
@@ -146,7 +145,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
         )
         return object_id
 
-    def step(self, action: Action) -> Observations:
+    def step(self, action: Action) -> tuple[Observations, ProprioceptiveState]:
         return self._env.step(action)
 
     def remove_all_objects(self):

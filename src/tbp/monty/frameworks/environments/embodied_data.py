@@ -118,8 +118,7 @@ class EnvironmentDataset(Dataset):
         return observation
 
     def __getitem__(self, action: Action):
-        observation = self.env.step(action)
-        state = self.env.get_state()
+        observation, state = self.env.step(action)
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
         return observation, state if state else None

@@ -80,12 +80,11 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def step(self, action: Action) -> Observations:
+    def step(self, action: Action) -> tuple[Observations, ProprioceptiveState]:
         """Apply the given action to the environment.
 
         Returns:
-            The current observations and other environment information (i.e. sensor
-            pose) after the action is applied.
+            The current observations and proprioceptive state.
         """
         pass
 

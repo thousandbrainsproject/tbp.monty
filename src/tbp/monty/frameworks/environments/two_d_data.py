@@ -111,7 +111,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         #      interface and how the class hierarchy is defined and used.
         raise NotImplementedError("OmniglotEnvironment does not support adding objects")
 
-    def step(self, action: Action) -> Observations:
+    def step(self, action: Action) -> tuple[Observations, ProprioceptiveState]:
         """Retrieve the next observation.
 
         Since the omniglot dataset includes stroke information (the order in which
@@ -130,7 +130,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             each step.
 
         Returns:
-            The observations.
+            The observations and proprioceptive state.
         """
         amount = 1
         if hasattr(action, "rotation_degrees"):
@@ -166,7 +166,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
                 )
             }
         )
-        return obs
+        return obs, self.get_state()
 
     def get_state(self) -> ProprioceptiveState:
         loc = self.locations[self.step_num % self.max_steps]
@@ -348,7 +348,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             "SaccadeOnImageEnvironment does not support adding objects"
         )
 
-    def step(self, action: Action) -> Observations:
+    def step(self, action: Action) -> tuple[Observations, ProprioceptiveState]:
         """Retrieve the next observation.
 
         Args:
@@ -356,7 +356,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             amount: Amount of pixels to move at once.
 
         Returns:
-            The observation.
+            The observation and proprioceptive state.
         """
         if action.name in self._valid_actions:
             amount = action.rotation_degrees
@@ -403,7 +403,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
                 )
             }
         )
-        return obs
+        return obs, self.get_state()
 
     def get_state(self) -> ProprioceptiveState:
         loc = self.current_loc

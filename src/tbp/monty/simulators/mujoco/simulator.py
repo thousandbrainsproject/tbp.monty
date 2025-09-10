@@ -8,8 +8,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Dict, List, Optional
-
 from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
 
 from tbp.monty.frameworks.actions.actions import Action
@@ -138,8 +136,8 @@ class MuJoCoSimulator(Simulator):
     def states(self) -> ProprioceptiveState:
         return ProprioceptiveState({})
 
-    def step(self, action: Action) -> Observations:
-        return Observations({})
+    def step(self, action: Action) -> tuple[Observations, ProprioceptiveState]:
+        return Observations({}), ProprioceptiveState({})
 
     def reset(self) -> tuple[Observations, ProprioceptiveState]:
         return Observations({}), ProprioceptiveState({})

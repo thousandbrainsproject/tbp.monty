@@ -220,7 +220,7 @@ class HabitatSimTest(unittest.TestCase):
             # Turn the camera 10 degrees to the left.
             # The cube should be out of view
             turn_left = TurnLeft(agent_id=agent_id, rotation_degrees=rotation_degrees)
-            obs = sim.step(turn_left)
+            obs, _ = sim.step(turn_left)
             obs = obs[agent_id]
             expected = {cylinder}
             semantic = np.unique(obs[sensor_id][Modality("semantic")])

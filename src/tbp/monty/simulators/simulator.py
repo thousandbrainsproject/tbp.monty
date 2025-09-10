@@ -80,14 +80,14 @@ class Simulator(Protocol):
         """Returns proprioceptive state of the agents and sensors."""
         ...
 
-    def step(self, action: Action) -> Observations:
+    def step(self, action: Action) -> tuple[Observations, ProprioceptiveState]:
         """Execute the given action in the environment.
 
         Args:
             action: The action to execute.
 
         Returns:
-            The observations from the simulator.
+            The observations from the simulator and proprioceptive state.
         """
         ...
 

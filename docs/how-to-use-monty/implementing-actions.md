@@ -142,7 +142,7 @@ SomeSimulatorAction = Union[Jump, Tumble] # Actions the simulator can actuate
 
 class SomeSimulator:
 
-    def step(self, action: SomeSimulatorAction) -> Observations
+    def step(self, action: SomeSimulatorAction) -> tuple[Observations, ProprioceptiveState]
         # ...
         action.act(self.actuator)
         # ...
@@ -153,7 +153,7 @@ You could implement the actuator as a Mixin, in that case it would look more lik
 ```python
 class SomeSimulator(MyActuator):
 
-    def step(self, action: SomeSimulatorAction) -> Observations
+    def step(self, action: SomeSimulatorAction) -> tuple[Observations, ProprioceptiveState]
         # ...
         action.act(self)
         # ...

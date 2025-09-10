@@ -516,14 +516,14 @@ class HabitatSim(HabitatActuator):
         agent_index = self._agent_id_to_index[agent_id]
         return self._sim.get_agent(agent_index)
 
-    def step(self, action: Action) -> Observations:
+    def step(self, action: Action) -> tuple[Observations, ProprioceptiveState]:
         """Execute given action in the environment.
 
         Args:
             action: The action to execute
 
         Returns:
-            The observations from the simulator.
+            The observations and proprioceptive state.
 
         Raises:
             TypeError: If the action type is invalid
@@ -559,7 +559,7 @@ class HabitatSim(HabitatActuator):
 
         action.act(self)
 
-        return self.observations
+        return self.observations, self.states
 
     @property
     def observations(self) -> Observations:

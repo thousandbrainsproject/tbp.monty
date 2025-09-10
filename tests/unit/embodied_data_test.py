@@ -66,7 +66,7 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
     def add_object(self, *args, **kwargs) -> ObjectID:
         return ObjectID(-1)
 
-    def step(self, action) -> Observations:
+    def step(self, action) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
         obs = Observations(
             {
@@ -79,7 +79,7 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
                 )
             }
         )
-        return obs
+        return obs, ProprioceptiveState({})
 
     def get_state(self) -> ProprioceptiveState:
         return ProprioceptiveState({})
@@ -113,7 +113,7 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
     def add_object(self, *args, **kwargs) -> ObjectID:
         return ObjectID(-1)
 
-    def step(self, action) -> Observations:
+    def step(self, action) -> tuple[Observations, ProprioceptiveState]:
         self._current_state += 1
         obs = Observations(
             {
@@ -126,7 +126,7 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
                 )
             }
         )
-        return obs
+        return obs, ProprioceptiveState({})
 
     def get_state(self) -> ProprioceptiveState:
         return ProprioceptiveState({})
