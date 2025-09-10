@@ -620,12 +620,12 @@ class HabitatSim(HabitatActuator):
 
         return result
 
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         # All agents managed by this simulator
         agent_indices = range(len(self._agents))
         obs = self._sim.reset(agent_ids=agent_indices)
         obs = self.process_observations(obs)
-        return obs
+        return obs, self.states
 
     def close(self) -> None:
         """Close simulator and release resources."""

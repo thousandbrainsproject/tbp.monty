@@ -141,8 +141,8 @@ class MuJoCoSimulator(Simulator):
     def step(self, action: Action) -> Observations:
         return Observations({})
 
-    def reset(self) -> Observations:
-        return Observations({})
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
+        return Observations({}), ProprioceptiveState({})
 
     def close(self) -> None:
         pass

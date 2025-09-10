@@ -98,8 +98,7 @@ class EnvironmentDataset(Dataset):
         self.env = env
 
     def reset(self):
-        observation = self.env.reset()
-        state = self.env.get_state()
+        observation, state = self.env.reset()
 
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)

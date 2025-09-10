@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import os
 import unittest
@@ -86,7 +87,7 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
     def remove_all_objects(self):
         pass
 
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self._current_state = 0
         obs = Observations(
             {
@@ -99,7 +100,7 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
                 )
             }
         )
-        return obs
+        return obs, ProprioceptiveState({})
 
     def close(self):
         self._current_state = None
@@ -133,7 +134,7 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
     def remove_all_objects(self):
         pass
 
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self._current_state = 0
         obs = Observations(
             {
@@ -146,7 +147,7 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
                 )
             }
         )
-        return obs
+        return obs, ProprioceptiveState({})
 
     def close(self):
         self._current_state = None

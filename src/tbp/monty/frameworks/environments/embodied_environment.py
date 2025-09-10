@@ -105,11 +105,11 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         """Reset enviroment to its initial state.
 
         Returns:
-            The environment's initial observations.
+            The environment's initial observations and proprioceptive state.
         """
         pass
 

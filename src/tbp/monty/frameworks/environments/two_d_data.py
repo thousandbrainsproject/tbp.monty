@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
 import os
@@ -203,7 +204,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             "OmniglotEnvironment does not support removing all objects"
         )
 
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         self.step_num = 0
         patch = self.get_image_patch(
             self.current_image, self.locations[self.step_num], self.patch_size
@@ -232,7 +233,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
                 )
             }
         )
-        return obs
+        return obs, self.get_state()
 
     def load_new_character_data(self):
         img_char_dir = os.path.join(
@@ -452,7 +453,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             "SaccadeOnImageEnvironment does not support removing all objects"
         )
 
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         """Reset environment and extract image patch.
 
         TODO: clean up. Do we need this? No reset required in this dataloader, maybe
@@ -493,7 +494,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
                 )
             }
         )
-        return obs
+        return obs, self.get_state()
 
     def load_new_scene_data(self):
         """Load depth and rgb data for next scene environment.

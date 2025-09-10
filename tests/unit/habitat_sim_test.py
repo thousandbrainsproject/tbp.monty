@@ -228,7 +228,7 @@ class HabitatSimTest(unittest.TestCase):
             self.assertSetEqual(expected, actual)
 
             # Reset simulator and now the cylinder and cube should be back into view
-            initial_obs = sim.reset()
+            initial_obs, _ = sim.reset()
             obs = initial_obs[agent_id]
             expected = {cylinder, cube}
             semantic = np.unique(obs[sensor_id][Modality("semantic")])

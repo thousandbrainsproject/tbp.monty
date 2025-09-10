@@ -152,7 +152,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
     def remove_all_objects(self):
         return self._env.remove_all_objects()
 
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         return self._env.reset()
 
     def close(self):

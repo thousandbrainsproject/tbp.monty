@@ -91,11 +91,11 @@ class Simulator(Protocol):
         """
         ...
 
-    def reset(self) -> Observations:
+    def reset(self) -> tuple[Observations, ProprioceptiveState]:
         """Reset the simulator.
 
         Returns:
-            The initial observations from the simulator.
+            The initial observations from the simulator and proprioceptive state.
         """
         ...
 
