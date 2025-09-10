@@ -173,24 +173,18 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         state = ProprioceptiveState(
             {
                 AgentID("agent_id_0"): AgentState(
-                    {
-                        "sensors": {
-                            SensorID("patch" + ".depth"): SensorState(
-                                {
-                                    "rotation": self.rotation,
-                                    "position": sensor_position,
-                                }
-                            ),
-                            SensorID("patch" + ".rgba"): SensorState(
-                                {
-                                    "rotation": self.rotation,
-                                    "position": sensor_position,
-                                }
-                            ),
-                        },
-                        "rotation": self.rotation,
-                        "position": np.array([0, 0, 0]),
-                    }
+                    sensors={
+                        SensorID("patch" + ".depth"): SensorState(
+                            rotation=self.rotation,
+                            position=sensor_position,
+                        ),
+                        SensorID("patch" + ".rgba"): SensorState(
+                            rotation=self.rotation,
+                            position=sensor_position,
+                        ),
+                    },
+                    rotation=self.rotation,
+                    position=np.array([0, 0, 0]),
                 )
             }
         )
@@ -420,24 +414,16 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         state = ProprioceptiveState(
             {
                 AgentID("agent_id_0"): AgentState(
-                    {
-                        "sensors": {
-                            SensorID("patch" + ".depth"): SensorState(
-                                {
-                                    "rotation": self.rotation,
-                                    "position": sensor_position,
-                                }
-                            ),
-                            SensorID("patch" + ".rgba"): SensorState(
-                                {
-                                    "rotation": self.rotation,
-                                    "position": sensor_position,
-                                }
-                            ),
-                        },
-                        "rotation": self.rotation,
-                        "position": np.array([0, 0, 0]),
-                    }
+                    sensors={
+                        SensorID("patch" + ".depth"): SensorState(
+                            rotation=self.rotation, position=sensor_position
+                        ),
+                        SensorID("patch" + ".rgba"): SensorState(
+                            rotation=self.rotation, position=sensor_position
+                        ),
+                    },
+                    rotation=self.rotation,
+                    position=np.array([0, 0, 0]),
                 )
             }
         )
@@ -586,11 +572,12 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             current_scene_point_cloud: The 3D scene point cloud.
             current_sf_scene_point_cloud: The 3D scene point cloud in sensor frame.
         """
-        agent_id = "agent_01"
-        sensor_id = "patch_01"
-        obs = {agent_id: {sensor_id: {"depth": self.current_depth_image}}}
+        agent_id = AgentID("agent_01")
+        sensor_id = SensorID("patch_01")
+        obs = {agent_id: AgentObservations( {
+            sensor_id: {"depth": self.current_depth_image}})}
         rotation = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
-        state = {
+        state = ProprioceptiveState({
             agent_id: {
                 "sensors": {
                     sensor_id + ".depth": {
@@ -603,18 +590,13 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             }
         }
 
-        # Apply gaussian smoothing transform to depth image
-        # Uncomment line below and add import, if needed
-        # transform = GaussianSmoothing(agent_id=agent_id, sigma=2, kernel_width=3)
-        # obs = transform(obs, state=state)
-
         transform = DepthTo3DLocations(
             agent_id=agent_id,
             sensor_ids=[sensor_id],
             resolutions=[self.current_depth_image.shape],
             world_coord=True,
             zooms=1,
-            # hfov of iPad front camera from
+            # hfov of iPad front camera frome
             # https://developer.apple.com/library/archive/documentation/DeviceInformation/Reference/iOSDeviceCompatibility/Cameras/Cameras.html
             # TODO: determine dynamically from which device is sending data
             hfov=54.201,

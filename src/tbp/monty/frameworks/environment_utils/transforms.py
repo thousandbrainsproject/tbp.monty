@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 from numbers import Number
 from typing import Optional, Tuple
@@ -15,6 +16,7 @@ import numpy as np
 import quaternion as qt
 import scipy
 
+from tbp.monty.frameworks.models.motor_system_state import ProprioceptiveState
 from tbp.monty.frameworks.models.states import State
 
 __all__ = [
@@ -314,7 +316,9 @@ class DepthTo3DLocations:
         self.clip_value = clip_value
         self.depth_clip_sensors = depth_clip_sensors
 
-    def __call__(self, observations: dict, state: Optional[State] = None) -> dict:
+    def __call__(
+        self, observations: dict, state: ProprioceptiveState | None = None
+    ) -> dict:
         """Apply the depth-to-3D-locations transform to sensor observations.
 
         Applies spatial transforms to the observations and generates a mask used
