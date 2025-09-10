@@ -215,9 +215,9 @@ class HabitatSim(HabitatActuator):
     def add_object(
         self,
         name: str,
-        position: VectorXYZ = VectorXYZ((0.0, 0.0, 0.0)),  # noqa: B008
-        rotation: QuaternionWXYZ = QuaternionWXYZ((1.0, 0.0, 0.0, 0.0)),  # noqa: B008
-        scale: VectorXYZ = VectorXYZ((1.0, 1.0, 1.0)),  # noqa: B008
+        position: VectorXYZ | None = None,
+        rotation: QuaternionWXYZ | None = None,
+        scale: VectorXYZ | None = None,
         semantic_id: SemanticID | None = None,
         enable_physics: bool = False,
         primary_target_object: ObjectID | None = None,
@@ -228,9 +228,11 @@ class HabitatSim(HabitatActuator):
             name: Registered object name. It could be any of habitat-sim primitive
                 objects or any configured habitat object. For a list of primitive
                 objects see :const:`PRIMITIVE_OBJECT_TYPES`
-            position: Object initial absolute position. Defaults to (0,0,0).
-            rotation: Object rotation quaternion. Defaults to (1, 0, 0, 0).
-            scale: Object scale. Defaults to (1, 1, 1).
+            position: Object initial absolute position. Defaults to
+                VectorXYZ((0.0, 0.0, 0.0)).
+            rotation: Object rotation quaternion. Defaults to
+                QuaternionWXYZ((1.0, 0.0, 0.0, 0.0)).
+            scale: Object scale. Defaults to VectorXYZ((1.0, 1.0, 1.0)).
             semantic_id: Optional override object semantic ID. Defaults to None.
             enable_physics: Whether or not to enable physics on this objects. Defaults
                 to False.
@@ -243,6 +245,9 @@ class HabitatSim(HabitatActuator):
             The ID of the newly added object and optionally, the semantic ID of the
             object.
         """
+        position = position or VectorXYZ((0.0, 0.0, 0.0))
+        rotation = rotation or QuaternionWXYZ((1.0, 0.0, 0.0, 0.0))
+        scale = scale or VectorXYZ((1.0, 1.0, 1.0))
         # TODO: Create map from object ID to object handle and store object there.
         obj_mgr = self._sim.get_object_template_manager()
         rigid_mgr = self._sim.get_rigid_object_manager()

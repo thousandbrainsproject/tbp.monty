@@ -52,9 +52,9 @@ class EmbodiedEnvironment(abc.ABC):
     def add_object(
         self,
         name: str,
-        position: VectorXYZ = VectorXYZ((0.0, 0.0, 0.0)),
-        rotation: QuaternionWXYZ = QuaternionWXYZ((1.0, 0.0, 0.0, 0.0)),
-        scale: VectorXYZ = VectorXYZ((1.0, 1.0, 1.0)),
+        position: VectorXYZ | None = None,
+        rotation: QuaternionWXYZ | None = None,
+        scale: VectorXYZ | None = None,
         semantic_id: SemanticID | None = None,
         enable_physics: bool = False,
         primary_target_object: ObjectID | None = None,
@@ -63,11 +63,10 @@ class EmbodiedEnvironment(abc.ABC):
 
         Args:
             name: The name of the object to add.
-            position: The initial absolute position of the object. Defaults to
-                VectorXYZ((0,0,0)).
+            position: The initial absolute position of the object. Defaults to None.
             rotation: The initial rotation WXYZ quaternion of the object. Defaults to
-                QuaternionWXYZ((1,0,0,0)).
-            scale: The scale of the object to add. Defaults to VectorXYZ((1,1,1)).
+                None.
+            scale: The scale of the object to add. Defaults to None.
             semantic_id: Optional override for the object semantic ID. Defaults to None.
             enable_physics: Whether to enable physics on the object. Defaults to False.
             primary_target_object: The ID of the primary target object. If not None, the
