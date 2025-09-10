@@ -6,30 +6,26 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-from typing import Any, Dict, TypedDict
+from dataclasses import dataclass
+from typing import Any, Dict
 
 import numpy as np
 
 from tbp.monty.frameworks.models.abstract_monty_classes import AgentID, SensorID
 
 
-class SensorState(TypedDict):
-    """The proprioceptive state of a sensor.
-
-    TODO: Change into dataclass
-    """
+@dataclass
+class SensorState:
+    """The proprioceptive state of a sensor."""
 
     position: Any  # TODO: Stop using magnum.Vector3 and decide on Monty standard
     """The sensor's position relative to the agent."""
     rotation: Any  # TODO: Stop using quaternion.quaternion and decide on Monty standard
     """The sensor's rotation relative to the agent."""
 
-
-class AgentState(TypedDict):
-    """The proprioceptive state of an agent.
-
-    TODO: Change into dataclass
-    """
+@dataclass
+class AgentState:
+    """The proprioceptive state of an agent."""
 
     sensors: Dict[SensorID, SensorState]
     """The proprioceptive state of the agent's sensors."""
