@@ -507,6 +507,11 @@ class HabitatSim(HabitatActuator):
         rigid_mgr = self._sim.get_rigid_object_manager()
         return rigid_mgr.get_num_objects()
 
+    @property
+    def action_space(self) -> set[str]:
+        """Return the action space."""
+        return self._action_space
+
     def get_agent(self, agent_id: AgentID):
         """Return habitat agent instance."""
         agent_index = self._agent_id_to_index[agent_id]

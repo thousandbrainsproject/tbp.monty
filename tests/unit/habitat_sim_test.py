@@ -112,7 +112,7 @@ class HabitatSimTest(unittest.TestCase):
 
             # Check default action space
             expected_actions = set(agent_config.action_space.keys())
-            self.assertSetEqual(expected_actions, sim._action_space)
+            self.assertSetEqual(expected_actions, sim.action_space)
 
             # Make sure there are no objects
             num_objs = sim.num_objects
