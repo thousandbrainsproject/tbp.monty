@@ -18,7 +18,6 @@ from skimage.color import rgb2hsv
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorID, SensorModule
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
-    MotorSystemState,
     SensorState,
 )
 from tbp.monty.frameworks.models.states import State
