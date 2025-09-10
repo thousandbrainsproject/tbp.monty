@@ -129,9 +129,12 @@ Voting can help to **recognize objects faster** as it helps integrate informatio
 
 At each step, after an LM has updated its evidence given the current observation, the LM sends out a vote to all its connected LMs. This **vote contains its pose hypotheses and the current evidence for each hypothesis**. The evidence values are **scaled to [-1, 1]** where -1 is the currently lowest evidence and 1 is the highest. This makes sure that LMs that received more observations than others do not outweigh them. We can also only transmit part of the votes by setting the `vote_evidence_threshold` parameter. For instance if this value is set to 0.8, only votes with a scaled evidence above 0.8 are being send out. This can dramatically reduce runtime.
 
-The votes get **transformed using the displacement between the sensed input poses**. We assume that the models in both LMs were learned at the same time and are therefore in the same reference frame. If this does not hold, the reference transform between the models would also have to be applied here.
+The votes get **transformed using the displacement between the sensed input poses**. This displacement also needs to be rotated by the pose hypothesis to be in the model's reference frame. We assume that the models in both LMs were learned at the same time and are therefore in the same reference frame. If this does not hold, the reference transform between the models would also have to be applied here.
 
 Once the votes are in the receiving LMs reference frame, the receiving LM updates its evidence values. To do this, it again looks at the nearest neighbor to each hypothesis location, but this time the **nearest neighbors in the votes**. The distance-weighted average of votes in the search radius (between -1 and 1) is added to the hypothesis evidence.
+
+> [!NOTE]
+> See our docs on more details about [reference frame transformation in Monty](../monty/reference-frame-transformations.md).
 
 # Terminal Condition
 
