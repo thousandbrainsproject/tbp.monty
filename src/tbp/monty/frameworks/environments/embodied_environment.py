@@ -11,27 +11,31 @@ from __future__ import annotations
 
 import abc
 import collections.abc
-from typing import Any, Dict, NewType, Optional, Tuple
+from typing import Any, Dict, NewType, Tuple
 
 from typing_extensions import deprecated
 
 from tbp.monty.frameworks.actions.actions import Action
 
 __all__ = [
-    "EmbodiedEnvironment",
     "ActionSpace",
+    "EmbodiedEnvironment",
+    "EulerAnglesXYZ",
     "ObjectID",
+    "QuaternionWXYZ",
+    "QuaternionXYZW",
     "SemanticID",
     "VectorXYZ",
-    "QuaternionWXYZ",
 ]
 
 ObjectID = NewType("ObjectID", int)
 """Unique identifier for an object in the environment."""
 SemanticID = NewType("SemanticID", int)
 """Unique identifier for an object's semantic class."""
-VectorXYZ = Tuple[float, float, float]
-QuaternionWXYZ = Tuple[float, float, float, float]
+EulerAnglesXYZ = NewType("EulerAnglesXYZ", Tuple[float, float, float])
+VectorXYZ = NewType("VectorXYZ", Tuple[float, float, float])
+QuaternionWXYZ = NewType("QuaternionWXYZ", Tuple[float, float, float, float])
+QuaternionXYZW = NewType("QuaternionXYZW", Tuple[float, float, float, float])
 
 @deprecated("Use `ActionSampler` instead.")
 class ActionSpace(collections.abc.Container):
@@ -48,22 +52,23 @@ class EmbodiedEnvironment(abc.ABC):
     def add_object(
         self,
         name: str,
-        position: VectorXYZ = (0.0, 0.0, 0.0),
-        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
-        scale: VectorXYZ = (1.0, 1.0, 1.0),
+        position: VectorXYZ = VectorXYZ((0.0, 0.0, 0.0)),
+        rotation: QuaternionWXYZ = QuaternionWXYZ((1.0, 0.0, 0.0, 0.0)),
+        scale: VectorXYZ = VectorXYZ((1.0, 1.0, 1.0)),
         semantic_id: SemanticID | None = None,
-        enable_physics: Optional[bool] = False,
+        enable_physics: bool = False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectID:
         """Add an object to the environment.
 
         Args:
             name: The name of the object to add.
-            position: The initial absolute position of the object.
+            position: The initial absolute position of the object. Defaults to
+                VectorXYZ((0,0,0)).
             rotation: The initial rotation WXYZ quaternion of the object. Defaults to
-                (1,0,0,0).
-            scale: The scale of the object to add. Defaults to (1,1,1).
-            semantic_id: Optional override for the object semantic ID.
+                QuaternionWXYZ((1,0,0,0)).
+            scale: The scale of the object to add. Defaults to VectorXYZ((1,1,1)).
+            semantic_id: Optional override for the object semantic ID. Defaults to None.
             enable_physics: Whether to enable physics on the object. Defaults to False.
             primary_target_object: The ID of the primary target object. If not None, the
                 added object will be positioned so that it does not obscure the initial

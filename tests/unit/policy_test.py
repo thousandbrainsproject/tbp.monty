@@ -10,6 +10,11 @@
 
 import pytest
 
+from tbp.monty.frameworks.environments.embodied_environment import (
+    EulerAnglesXYZ,
+    VectorXYZ,
+)
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -293,7 +298,9 @@ class PolicyTest(unittest.TestCase):
             train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=["cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
-                    positions=[[0.0, 1.5, -0.2]]  # Object is farther away than typical
+                    positions=[
+                        VectorXYZ((0.0, 1.5, -0.2))
+                    ]  # Object is farther away than typical
                 ),
             ),
             monty_config=PatchAndViewMontyConfig(
@@ -355,8 +362,9 @@ class PolicyTest(unittest.TestCase):
                     num_distractors=10,
                 ),
                 object_init_sampler=PredefinedObjectInitializer(
-                    positions=[[0.2, 1.5, -0.2]]  # Object is farther away *and* to
-                    # the right
+                    positions=[
+                        VectorXYZ((0.2, 1.5, -0.2))
+                    ]  # Object is farther away *and* to the right
                 ),
             ),
             monty_config=PatchAndViewMontyConfig(
@@ -384,8 +392,8 @@ class PolicyTest(unittest.TestCase):
             train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=["cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
-                    positions=[[-0.1, 1.5, -0.2]],
-                    rotations=[[45, 45, 45]],
+                    positions=[VectorXYZ((-0.1, 1.5, -0.2))],
+                    rotations=[EulerAnglesXYZ((45, 45, 45))],
                 ),
             ),
             monty_config=SurfaceAndViewMontyConfig(

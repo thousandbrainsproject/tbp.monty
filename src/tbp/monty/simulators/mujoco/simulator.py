@@ -63,9 +63,9 @@ class MuJoCoSimulator(Simulator):
     def add_object(
         self,
         name: str,
-        position: VectorXYZ = (0.0, 0.0, 0.0),
-        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
-        scale: VectorXYZ = (1.0, 1.0, 1.0),
+        position: VectorXYZ = VectorXYZ((0.0, 0.0, 0.0)),  # noqa: B008
+        rotation: QuaternionWXYZ = QuaternionWXYZ((1.0, 0.0, 0.0, 0.0)),  # noqa: B008
+        scale: VectorXYZ = VectorXYZ((1.0, 1.0, 1.0)),  # noqa: B008
         semantic_id: SemanticID | None = None,
         enable_physics: bool = False,
         primary_target_object: ObjectID | None = None,

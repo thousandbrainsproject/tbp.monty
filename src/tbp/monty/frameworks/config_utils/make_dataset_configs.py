@@ -7,18 +7,36 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
-from numbers import Number
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union
+from dataclasses import asdict, dataclass, field
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
 
 import numpy as np
 from numpy.typing import ArrayLike
 from scipy.spatial.transform import Rotation
+from typing_extensions import Protocol
 
 from tbp.monty.frameworks.environment_utils.transforms import (
     DepthTo3DLocations,
+)
+from tbp.monty.frameworks.environments.embodied_environment import (
+    EulerAnglesXYZ,
+    QuaternionWXYZ,
+    QuaternionXYZW,
+    SemanticID,
+    VectorXYZ,
 )
 from tbp.monty.frameworks.environments.two_d_data import (
     OmniglotEnvironment,
@@ -27,6 +45,9 @@ from tbp.monty.frameworks.environments.two_d_data import (
 )
 from tbp.monty.frameworks.environments.ycb import SHUFFLED_YCB_OBJECTS
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
+
+if TYPE_CHECKING:
+    from numbers import Number
 
 # ---------
 # run / training / eval args
@@ -195,45 +216,76 @@ class NotYCBEvalObjectList:
         ]
     )
 
+@dataclass
+class ObjectParams:
+    name: str | None = None
+    rotation: QuaternionWXYZ | None = None
+    euler_rotation: EulerAnglesXYZ | None = None
+    quat_rotation: QuaternionXYZW | None = None
+    position: VectorXYZ | None = None
+    scale: VectorXYZ | None = None
+    semantic_id: SemanticID | None = None
 
-class DefaultObjectInitializer:
-    def __call__(self):
+    def as_dict(
+        self,
+    ) -> dict[str, Any]:
+        """Return a dictionary of the object params with None values removed."""
+        return {k: v for k, v in asdict(self).items() if v is not None}
+
+
+class ObjectInitializer(Protocol):
+    def __call__(self) -> ObjectParams: ...
+    def post_epoch(self) -> None: ...
+    def post_episode(self) -> None: ...
+    def __eq__(self, other: object) -> bool: ...
+
+
+class DefaultObjectInitializer(ObjectInitializer):
+    def __call__(self) -> ObjectParams:
         euler_rotation = self.rng.uniform(0, 360, 3)
         q = Rotation.from_euler("xyz", euler_rotation, degrees=True).as_quat()
         quat_rotation = scipy_to_numpy_quat(q)
-        return dict(
-            rotation=quat_rotation,
-            euler_rotation=euler_rotation,
-            position=(self.rng.uniform(-0.5, 0.5), 0.0, 0.0),
-            scale=[1.0, 1.0, 1.0],
+        return ObjectParams(
+            rotation=QuaternionWXYZ(quat_rotation),
+            euler_rotation=EulerAnglesXYZ(euler_rotation),
+            quat_rotation=QuaternionXYZW((q[0], q[1], q[2], q[3])),
+            position=VectorXYZ((self.rng.uniform(-0.5, 0.5), 0.0, 0.0)),
+            scale=VectorXYZ((1.0, 1.0, 1.0)),
         )
 
-    def post_epoch(self):
+    def post_epoch(self) -> None:
         pass
 
-    def post_episode(self):
+    def post_episode(self) -> None:
         pass
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         return self.__dict__ == other.__dict__
 
 
 class PredefinedObjectInitializer(DefaultObjectInitializer):
     def __init__(
-        self, positions=None, rotations=None, scales=None, change_every_episode=None
+        self,
+        positions: list[VectorXYZ] | None = None,
+        rotations: list[EulerAnglesXYZ] | None = None,
+        scales: list[VectorXYZ] | None = None,
+        change_every_episode=None,
     ):
         # NOTE: added param change_every_episode. This is so if I want to run an
         # experiment and specify an exact list of objects, with specific poses per
         # object, I can set this to True. Otherwise I have to loop over all objects
         # for every pose specified.
-        self.positions = positions or [[0.0, 1.5, 0.0]]
-        self.rotations = rotations or [[0.0, 0.0, 0.0], [45.0, 0.0, 0.0]]
-        self.scales = scales or [[1.0, 1.0, 1.0]]
+        self.positions = positions or [VectorXYZ((0.0, 1.5, 0.0))]
+        self.rotations = rotations or [
+            EulerAnglesXYZ((0.0, 0.0, 0.0)),
+            EulerAnglesXYZ((45.0, 0.0, 0.0)),
+        ]
+        self.scales = scales or [VectorXYZ((1.0, 1.0, 1.0))]
         self.current_epoch = 0
         self.current_episode = 0
         self.change_every_episode = change_every_episode
 
-    def __call__(self):
+    def __call__(self) -> ObjectParams:
         mod_counter = (
             self.current_episode if self.change_every_episode else self.current_epoch
         )
@@ -243,12 +295,14 @@ class PredefinedObjectInitializer(DefaultObjectInitializer):
             degrees=True,
         ).as_quat()
         quat_rotation = scipy_to_numpy_quat(q)
-        return dict(
-            rotation=quat_rotation,
-            euler_rotation=self.rotations[mod_counter % len(self.rotations)],
-            quat_rotation=q,
-            position=self.positions[mod_counter % len(self.positions)],
-            scale=self.scales[mod_counter % len(self.scales)],
+        return ObjectParams(
+            rotation=QuaternionWXYZ(quat_rotation),
+            euler_rotation=EulerAnglesXYZ(
+                self.rotations[mod_counter % len(self.rotations)]
+            ),
+            quat_rotation=QuaternionXYZW((q[0], q[1], q[2], q[3])),
+            position=VectorXYZ(self.positions[mod_counter % len(self.positions)]),
+            scale=VectorXYZ(self.scales[mod_counter % len(self.scales)]),
         )
 
     def __repr__(self):
@@ -261,10 +315,10 @@ class PredefinedObjectInitializer(DefaultObjectInitializer):
     def __len__(self):
         return len(self.all_combinations_of_params())
 
-    def post_epoch(self):
+    def post_epoch(self) -> None:
         self.current_epoch += 1
 
-    def post_episode(self):
+    def post_episode(self) -> None:
         self.current_episode += 1
 
     def all_combinations_of_params(self):
@@ -282,24 +336,26 @@ class PredefinedObjectInitializer(DefaultObjectInitializer):
 
 
 class RandomRotationObjectInitializer(DefaultObjectInitializer):
-    def __init__(self, position=None, scale=None):
+    def __init__(
+        self, position: VectorXYZ | None = None, scale: VectorXYZ | None = None
+    ):
         if position is not None:
             self.position = position
         else:
-            self.position = [0.0, 1.5, 0.0]
+            self.position = VectorXYZ((0.0, 1.5, 0.0))
         if scale is not None:
             self.scale = scale
         else:
-            self.scale = [1.0, 1.0, 1.0]
+            self.scale = VectorXYZ((1.0, 1.0, 1.0))
 
-    def __call__(self):
+    def __call__(self) -> ObjectParams:
         euler_rotation = self.rng.uniform(0, 360, 3)
         q = Rotation.from_euler("xyz", euler_rotation, degrees=True).as_quat()
         quat_rotation = scipy_to_numpy_quat(q)
-        return dict(
-            rotation=quat_rotation,
-            euler_rotation=euler_rotation,
-            quat_rotation=q,
+        return ObjectParams(
+            rotation=QuaternionWXYZ(quat_rotation),
+            euler_rotation=EulerAnglesXYZ(euler_rotation),
+            quat_rotation=QuaternionXYZW((q[0], q[1], q[2], q[3])),
             position=self.position,
             scale=self.scale,
         )
@@ -308,19 +364,23 @@ class RandomRotationObjectInitializer(DefaultObjectInitializer):
 @dataclass
 class EnvironmentDataloaderPerObjectArgs:
     object_names: List
-    object_init_sampler: Callable
+    object_init_sampler: ObjectInitializer
 
 
 @dataclass
 class EnvironmentDataLoaderPerObjectTrainArgs(EnvironmentDataloaderPerObjectArgs):
     object_names: List = field(default_factory=lambda: DefaultTrainObjectList().objects)
-    object_init_sampler: Callable = field(default_factory=DefaultObjectInitializer)
+    object_init_sampler: ObjectInitializer = field(
+        default_factory=DefaultObjectInitializer
+    )
 
 
 @dataclass
 class EnvironmentDataLoaderPerObjectEvalArgs(EnvironmentDataloaderPerObjectArgs):
     object_names: List = field(default_factory=lambda: DefaultTrainObjectList().objects)
-    object_init_sampler: Callable = field(default_factory=DefaultObjectInitializer)
+    object_init_sampler: ObjectInitializer = field(
+        default_factory=DefaultObjectInitializer
+    )
 
 
 @dataclass
@@ -328,7 +388,7 @@ class FixedRotationEnvironmentDataLoaderPerObjectTrainArgs(
     EnvironmentDataloaderPerObjectArgs
 ):
     object_names: List = field(default_factory=lambda: DefaultTrainObjectList().objects)
-    object_init_sampler: Callable = field(
+    object_init_sampler: ObjectInitializer = field(
         default_factory=lambda: PredefinedObjectInitializer()
     )
 
@@ -338,7 +398,7 @@ class FixedRotationEnvironmentDataLoaderPerObjectEvalArgs(
     EnvironmentDataloaderPerObjectArgs
 ):
     object_names: List = field(default_factory=lambda: DefaultTrainObjectList().objects)
-    object_init_sampler: Callable = field(
+    object_init_sampler: ObjectInitializer = field(
         default_factory=lambda: PredefinedObjectInitializer()
     )
 
@@ -346,7 +406,7 @@ class FixedRotationEnvironmentDataLoaderPerObjectEvalArgs(
 @dataclass
 class EnvironmentDataloaderMultiObjectArgs:
     object_names: Dict  # Note Dict and not List
-    object_init_sampler: Callable
+    object_init_sampler: ObjectInitializer
 
 
 def get_object_names_by_idx(

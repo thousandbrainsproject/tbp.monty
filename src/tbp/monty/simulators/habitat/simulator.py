@@ -215,9 +215,9 @@ class HabitatSim(HabitatActuator):
     def add_object(
         self,
         name: str,
-        position: VectorXYZ = (0.0, 0.0, 0.0),
-        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
-        scale: VectorXYZ = (1.0, 1.0, 1.0),
+        position: VectorXYZ = VectorXYZ((0.0, 0.0, 0.0)),  # noqa: B008
+        rotation: QuaternionWXYZ = QuaternionWXYZ((1.0, 0.0, 0.0, 0.0)),  # noqa: B008
+        scale: VectorXYZ = VectorXYZ((1.0, 1.0, 1.0)),  # noqa: B008
         semantic_id: SemanticID | None = None,
         enable_physics: bool = False,
         primary_target_object: ObjectID | None = None,
@@ -228,18 +228,20 @@ class HabitatSim(HabitatActuator):
             name: Registered object name. It could be any of habitat-sim primitive
                 objects or any configured habitat object. For a list of primitive
                 objects see :const:`PRIMITIVE_OBJECT_TYPES`
-            position: Object initial absolute position
-            rotation: Object rotation quaternion. Default (1, 0, 0, 0)
-            scale: Object scale. Default (1, 1, 1)
-            semantic_id: Optional override object semantic ID
-            enable_physics: Whether or not to enable physics on this objects
+            position: Object initial absolute position. Defaults to (0,0,0).
+            rotation: Object rotation quaternion. Defaults to (1, 0, 0, 0).
+            scale: Object scale. Defaults to (1, 1, 1).
+            semantic_id: Optional override object semantic ID. Defaults to None.
+            enable_physics: Whether or not to enable physics on this objects. Defaults
+                to False.
             primary_target_object: ID of the primary target object. If not None, the
                 added object will be positioned so that it does not obscure the initial
                 view of the primary target object (which avoiding collision alone cannot
                 guarantee). Used when adding multiple objects. Defaults to None.
 
         Returns:
-            The ID of the newly added object
+            The ID of the newly added object and optionally, the semantic ID of the
+            object.
         """
         # TODO: Create map from object ID to object handle and store object there.
         obj_mgr = self._sim.get_object_template_manager()

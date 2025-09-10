@@ -15,6 +15,7 @@ import pytest
 from mujoco import MjSpec
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
+from tbp.monty.frameworks.environments.embodied_environment import VectorXYZ
 from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
 
 # Parameters for add primitive object tests
@@ -80,7 +81,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
 
     def test_primitive_object_positioning(self) -> None:
         sim = MuJoCoSimulator()
-        sim.add_object("box", position=(1.0, 1.0, 2.0))
+        sim.add_object("box", position=VectorXYZ((1.0, 1.0, 2.0)))
 
         assert np.allclose(sim.model.geom("box_0").pos, np.array([1.0, 1.0, 2.0]))
         geom_elems = self.parse_spec_geoms(sim.spec)
@@ -88,7 +89,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
 
     def test_primitive_box_scaling(self) -> None:
         sim = MuJoCoSimulator()
-        sim.add_object("box", scale=(3.0, 3.0, 3.0))
+        sim.add_object("box", scale=VectorXYZ((3.0, 3.0, 3.0)))
 
         assert np.allclose(sim.model.geom("box_0").size, np.array([3.0, 3.0, 3.0]))
         geom_elems = self.parse_spec_geoms(sim.spec)
@@ -97,7 +98,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
     def test_primitive_sphere_scaling(self) -> None:
         """Test that scaling works correctly on a sphere."""
         sim = MuJoCoSimulator()
-        sim.add_object("sphere", scale=(3.0, 3.0, 3.0))
+        sim.add_object("sphere", scale=VectorXYZ((3.0, 3.0, 3.0)))
 
         assert np.allclose(sim.model.geom("sphere_0").size, np.array([3.0, 3.0, 3.0]))
         geom_elems = self.parse_spec_geoms(sim.spec)

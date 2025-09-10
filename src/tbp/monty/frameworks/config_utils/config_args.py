@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import copy
 import os
@@ -38,6 +39,7 @@ from tbp.monty.frameworks.config_utils.policy_setup_utils import (
     make_naive_scan_policy_config,
     make_surface_policy_config,
 )
+from tbp.monty.frameworks.environments.embodied_environment import EulerAnglesXYZ
 from tbp.monty.frameworks.loggers.monty_handlers import (
     BasicCSVStatsHandler,
     DetailedJSONHandler,
@@ -1361,7 +1363,7 @@ def get_possible_3d_rotations(
     return unique_poses
 
 
-def get_cube_face_and_corner_views_rotations() -> List[np.ndarray]:
+def get_cube_face_and_corner_views_rotations() -> list[EulerAnglesXYZ]:
     """Get 14 rotations that correspond to the 6 cube faces and 8 cube corners.
 
     If we imagine an object enclosed in an invisible cube, then we can form 6 unique
@@ -1370,21 +1372,21 @@ def get_cube_face_and_corner_views_rotations() -> List[np.ndarray]:
     rotations returned here rotate the object 14 ways to obtain such views.
 
     Returns:
-        List of 3d rotations.
+        List of 3d Euler Angle rotations.
     """
     return [
-        np.array([0, 0, 0]),
-        np.array([0, 90, 0]),
-        np.array([0, 180, 0]),
-        np.array([0, 270, 0]),
-        np.array([90, 0, 0]),
-        np.array([90, 180, 0]),
-        np.array([35, 45, 0]),
-        np.array([325, 45, 0]),
-        np.array([35, 315, 0]),
-        np.array([325, 315, 0]),
-        np.array([35, 135, 0]),
-        np.array([325, 135, 0]),
-        np.array([35, 225, 0]),
-        np.array([325, 225, 0]),
+        EulerAnglesXYZ((0, 0, 0)),
+        EulerAnglesXYZ((0, 90, 0)),
+        EulerAnglesXYZ((0, 180, 0)),
+        EulerAnglesXYZ((0, 270, 0)),
+        EulerAnglesXYZ((90, 0, 0)),
+        EulerAnglesXYZ((90, 180, 0)),
+        EulerAnglesXYZ((35, 45, 0)),
+        EulerAnglesXYZ((325, 45, 0)),
+        EulerAnglesXYZ((35, 315, 0)),
+        EulerAnglesXYZ((325, 315, 0)),
+        EulerAnglesXYZ((35, 135, 0)),
+        EulerAnglesXYZ((325, 135, 0)),
+        EulerAnglesXYZ((35, 225, 0)),
+        EulerAnglesXYZ((325, 225, 0)),
     ]

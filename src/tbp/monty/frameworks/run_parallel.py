@@ -23,6 +23,7 @@ import wandb
 
 from tbp.monty.frameworks.config_utils.cmd_parser import create_cmd_parser_parallel
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+    ObjectParams,
     PredefinedObjectInitializer,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
@@ -128,11 +129,11 @@ def get_overall_stats(stats):
     return overall_stats
 
 
-def sample_params_to_init_args(params):
+def sample_params_to_init_args(params: ObjectParams):
     new_params = {}
-    new_params["positions"] = [params["position"]]
-    new_params["scales"] = [params["scale"]]
-    new_params["rotations"] = [params["euler_rotation"]]
+    new_params["positions"] = [params.position]
+    new_params["scales"] = [params.scale]
+    new_params["rotations"] = [params.euler_rotation]
 
     return new_params
 

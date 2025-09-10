@@ -17,6 +17,10 @@ import torch
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     PredefinedObjectInitializer,
 )
+from tbp.monty.frameworks.environments.embodied_environment import (
+    EulerAnglesXYZ,
+    VectorXYZ,
+)
 from tbp.monty.frameworks.loggers.monty_handlers import DetailedJSONHandler
 from tbp.monty.frameworks.loggers.wandb_handlers import DetailedWandbMarkedObsHandler
 from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
@@ -113,8 +117,10 @@ def create_eval_episode_config(
     ]
     new_config["eval_dataloader_args"]["object_init_sampler"] = (
         PredefinedObjectInitializer(
-            positions=[target_data["primary_target_position"]],
-            rotations=[target_data["primary_target_rotation_euler"]],
+            positions=[VectorXYZ(tuple(target_data["primary_target_position"]))],
+            rotations=[
+                EulerAnglesXYZ(tuple(target_data["primary_target_rotation_euler"]))
+            ],
             # FIXME: target_scale is a float, need an array of floats for this
         )
     )
@@ -225,8 +231,10 @@ def create_eval_config_multiple_episodes(
     new_config["eval_dataloader_args"]["object_names"] = target_objects
     new_config["eval_dataloader_args"]["object_init_sampler"] = (
         PredefinedObjectInitializer(
-            positions=target_positions,
-            rotations=target_rotations,
+            positions=[VectorXYZ(tuple(position)) for position in target_positions],
+            rotations=[
+                EulerAnglesXYZ(tuple(rotation)) for rotation in target_rotations
+            ],
             change_every_episode=True,
         )
     )

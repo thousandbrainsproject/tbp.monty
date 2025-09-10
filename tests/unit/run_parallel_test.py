@@ -10,6 +10,8 @@
 
 import pytest
 
+from tbp.monty.frameworks.environments.embodied_environment import EulerAnglesXYZ
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -55,8 +57,16 @@ from tests.unit.graph_learning_test import MotorSystemConfigFixed
 class RunParallelTest(unittest.TestCase):
     def setUp(self):
         self.output_dir = tempfile.mkdtemp()
-        self.train_rotations = [[0.0, 0.0, 0.0], [0.0, 45.0, 0.0], [0.0, 135.0, 0.0]]
-        self.eval_rotations = [[0.0, 30.0, 0.0], [0.0, 60.0, 0.0], [0.0, 90.0, 0.0]]
+        self.train_rotations = [
+            EulerAnglesXYZ((0.0, 0.0, 0.0)),
+            EulerAnglesXYZ((0.0, 45.0, 0.0)),
+            EulerAnglesXYZ((0.0, 135.0, 0.0)),
+        ]
+        self.eval_rotations = [
+            EulerAnglesXYZ((0.0, 30.0, 0.0)),
+            EulerAnglesXYZ((0.0, 60.0, 0.0)),
+            EulerAnglesXYZ((0.0, 90.0, 0.0)),
+        ]
         self.supervised_pre_training = dict(
             experiment_class=MontySupervisedObjectPretrainingExperiment,
             experiment_args=ExperimentArgs(

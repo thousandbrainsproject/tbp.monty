@@ -39,9 +39,9 @@ class Simulator(Protocol):
     def add_object(
         self,
         name: str,
-        position: VectorXYZ = (0.0, 0.0, 0.0),
-        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
-        scale: VectorXYZ = (1.0, 1.0, 1.0),
+        position: VectorXYZ = VectorXYZ((0.0, 0.0, 0.0)),  # noqa: B008
+        rotation: QuaternionWXYZ = QuaternionWXYZ((1.0, 0.0, 0.0, 0.0)),  # noqa: B008
+        scale: VectorXYZ = VectorXYZ((1.0, 1.0, 1.0)),  # noqa: B008
         semantic_id: SemanticID | None = None,
         enable_physics: bool = False,
         primary_target_object: ObjectID | None = None,
@@ -53,12 +53,14 @@ class Simulator(Protocol):
 
         Args:
             name: Registered object name.
-            position: Initial absolute position of the object.
-            rotation: Initial orientation of the object.
-            scale: Initial object scale.
+            position: Initial absolute position of the object. Defaults to
+                VectorXYZ((0,0,0)).
+            rotation: Initial orientation of the object. Defaults to
+                QuaternionWXYZ((1,0,0,0)).
+            scale: Initial object scale. Defaults to VectorXYZ((1,1,1)).
             semantic_id: Optional override for the object's semantic ID. Defaults to
                 None.
-            enable_physics: Whether to enable physics on the object.
+            enable_physics: Whether to enable physics on the object. Defaults to False.
             primary_target_object: ID of the primary target object. If not None, the
                 added object will be positioned so that it does not obscure the initial
                 view of the primary target object (which avoiding collision alone cannot
@@ -97,7 +99,11 @@ class Simulator(Protocol):
         ...
 
     def reset(self):
-        """Reset the simulator."""
+        """Reset the simulator.
+
+        Returns:
+            The initial observations from the simulator.
+        """
         ...
 
     def close(self) -> None:

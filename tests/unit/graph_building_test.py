@@ -10,6 +10,8 @@
 
 import pytest
 
+from tbp.monty.frameworks.environments.embodied_environment import EulerAnglesXYZ
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -58,7 +60,10 @@ class GraphLearningTest(unittest.TestCase):
         self.habitat_save_path = tempfile.mkdtemp()
         self.mesh_save_path = tempfile.mkdtemp()
 
-        self.habitat_learned_rotations = [[0.0, 0.0, 0.0], [0.0, 45.0, 0.0]]
+        self.habitat_learned_rotations = [
+            EulerAnglesXYZ((0.0, 0.0, 0.0)),
+            EulerAnglesXYZ((0.0, 45.0, 0.0)),
+        ]
         self.supervised_pre_training_in_habitat = dict(
             experiment_class=MontySupervisedObjectPretrainingExperiment,
             experiment_args=ExperimentArgs(

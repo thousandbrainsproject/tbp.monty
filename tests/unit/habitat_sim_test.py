@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from tbp.monty.frameworks.environments.embodied_environment import SemanticID
+from tbp.monty.frameworks.environments.embodied_environment import SemanticID, VectorXYZ
 
 pytest.importorskip(
     "habitat_sim",
@@ -141,19 +141,21 @@ class HabitatSimTest(unittest.TestCase):
             self.assertEqual(num_objs, 0)
 
             # Add single object
-            sim.add_object(name="cylinder", position=(0.0, 1.0, 0.2))
+            sim.add_object(name="cylinder", position=VectorXYZ((0.0, 1.0, 0.2)))
             num_objs = sim.num_objects
             self.assertEqual(num_objs, 1)
 
             # Add another object
-            object_id, _ = sim.add_object(name="cubeSolid", position=(0.5, 1.0, 0.2))
+            object_id, _ = sim.add_object(
+                name="cubeSolid", position=VectorXYZ((0.5, 1.0, 0.2))
+            )
             num_objs = sim.num_objects
             self.assertEqual(num_objs, 2)
 
             # And another
             sim.add_object(
                 name="cubeSolid",
-                position=(0.6, 1.0, 0.2),
+                position=VectorXYZ((0.6, 1.0, 0.2)),
                 primary_target_object=object_id,
             )
             num_objs = sim.num_objects
@@ -172,7 +174,9 @@ class HabitatSimTest(unittest.TestCase):
         with HabitatSim(agents=agents) as sim:
             for obj_name, expected_obj_id in PRIMITIVE_OBJECT_TYPES.items():
                 sim.remove_all_objects()
-                _, semantic_id = sim.add_object(obj_name, position=(0.0, 1.5, -0.2))
+                _, semantic_id = sim.add_object(
+                    obj_name, position=VectorXYZ((0.0, 1.5, -0.2))
+                )
                 obs = sim.observations
                 agent_obs = obs[agent_id]
                 sensor_obs = agent_obs[sensor_id]
@@ -193,9 +197,11 @@ class HabitatSimTest(unittest.TestCase):
         with HabitatSim(agents=agents) as sim:
             # Add a couple of objects
             _, cylinder = sim.add_object(
-                name="cylinderSolid", position=(-0.2, 1.5, -0.2)
+                name="cylinderSolid", position=VectorXYZ((-0.2, 1.5, -0.2))
             )
-            _, cube = sim.add_object(name="cubeSolid", position=(0.6, 1.5, -0.6))
+            _, cube = sim.add_object(
+                name="cubeSolid", position=VectorXYZ((0.6, 1.5, -0.6))
+            )
 
             # Check if observations include both objects
             expected = {cylinder, cube}
@@ -272,7 +278,11 @@ class HabitatSimTest(unittest.TestCase):
             camera = agent._sensors[f"{sensor_id}.semantic"]
 
             # Place cube 0.5 meters away from camera
-            sim.add_object(name="cube", position=(0.0, 1.5, -0.5), semantic_id=1)
+            sim.add_object(
+                name="cube",
+                position=VectorXYZ((0.0, 1.5, -0.5)),
+                semantic_id=SemanticID(1),
+            )
 
             # Check initial cube observations before zoom
             obs = sim.observations
@@ -802,7 +812,9 @@ class HabitatSimTest(unittest.TestCase):
         with HabitatSim(agents=agents) as sim:
             # Place cube 0.5 meters away from camera
             sim.add_object(
-                name="cube", position=(0.0, 1.5, -0.5), semantic_id=SemanticID(1)
+                name="cube",
+                position=VectorXYZ((0.0, 1.5, -0.5)),
+                semantic_id=SemanticID(1),
             )
 
             # Check original cube observations without scale
@@ -816,8 +828,8 @@ class HabitatSimTest(unittest.TestCase):
             # On the first time, the scaled object is added to habitat
             sim.add_object(
                 name="cube",
-                position=(0.0, 1.5, -0.5),
-                scale=(2.0, 2.0, 2.0),
+                position=VectorXYZ((0.0, 1.5, -0.5)),
+                scale=VectorXYZ((2.0, 2.0, 2.0)),
                 semantic_id=SemanticID(1),
             )
             obs = sim.observations
@@ -828,8 +840,8 @@ class HabitatSimTest(unittest.TestCase):
             sim.remove_all_objects()
             sim.add_object(
                 name="cube",
-                position=(0.0, 1.5, -0.5),
-                scale=(2.0, 2.0, 2.0),
+                position=VectorXYZ((0.0, 1.5, -0.5)),
+                scale=VectorXYZ((2.0, 2.0, 2.0)),
                 semantic_id=SemanticID(1),
             )
             obs = sim.observations

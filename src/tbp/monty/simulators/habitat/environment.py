@@ -13,6 +13,7 @@ from dataclasses import asdict, dataclass, is_dataclass
 from typing import Dict, List, Optional, Type, Union
 
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.config_utils.make_dataset_configs import ObjectParams
 from tbp.monty.frameworks.environments.embodied_environment import (
     EmbodiedEnvironment,
     ObjectID,
@@ -84,7 +85,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
 
     Attributes:
         agents: List of :class:`AgentConfig` to place in the scene.
-        objects: Optional list of :class:`ObjectConfig` to place in the scene.
+        objects: Optional list of :class:`ObjectParams` to place in the scene.
         scene_id: Scene to use or None for empty environment.
         seed: Simulator seed to use
         data_path: Path to the dataset.
@@ -93,7 +94,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
     def __init__(
         self,
         agents: List[Union[dict, AgentConfig]],
-        objects: Optional[List[dict | ObjectConfig]] = None,
+        objects: list[ObjectParams] | None = None,
         scene_id: Optional[str] = None,
         seed: int = 42,
         data_path: Optional[str] = None,
@@ -124,9 +125,9 @@ class HabitatEnvironment(EmbodiedEnvironment):
     def add_object(
         self,
         name: str,
-        position: VectorXYZ = (0.0, 0.0, 0.0),
-        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
-        scale: VectorXYZ = (1.0, 1.0, 1.0),
+        position: VectorXYZ = VectorXYZ((0.0, 0.0, 0.0)),  # noqa: B008
+        rotation: QuaternionWXYZ = QuaternionWXYZ((1.0, 0.0, 0.0, 0.0)),  # noqa: B008
+        scale: VectorXYZ = VectorXYZ((1.0, 1.0, 1.0)),  # noqa: B008
         semantic_id: SemanticID | None = None,
         enable_physics: bool = False,
         primary_target_object: ObjectID | None = None,

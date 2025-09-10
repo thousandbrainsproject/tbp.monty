@@ -8,7 +8,7 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import copy
+import dataclasses
 import logging
 import math
 from pprint import pformat
@@ -26,6 +26,10 @@ from tbp.monty.frameworks.actions.actions import (
     OrientVertical,
     SetAgentPose,
     SetSensorRotation,
+)
+from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+    ObjectInitializer,
+    ObjectParams,
 )
 from tbp.monty.frameworks.environments.embodied_environment import (
     EmbodiedEnvironment,
@@ -220,7 +224,13 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
     sampled from the same object list, can be added.
     """
 
-    def __init__(self, object_names, object_init_sampler, *args, **kwargs):
+    def __init__(
+        self,
+        object_names,
+        object_init_sampler: ObjectInitializer,
+        *args,
+        **kwargs,
+    ):
         """Initialize dataloader.
 
         Args:
@@ -232,9 +242,10 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
                     target objects were sampled; used to sample distractor objects
                 num_distractors : the number of distractor objects to add to the
                     environment
-            object_init_sampler: Function that returns dict with position, rotation,
-                and scale of objects when re-initializing. To keep configs
-                serializable, default is set to :class:`DefaultObjectInitializer`.
+            object_init_sampler: ObjectInitializer that returns ObjectParams with
+                position, rotation, and scale of objects when re-initializing. To keep
+                configs serializable, default is set to
+                :class:`DefaultObjectInitializer`.
             *args: ?
             **kwargs: ?
 
@@ -346,15 +357,16 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         self.dataset.env.remove_all_objects()
 
         # Specify config for the primary target object and then add it
-        init_params = self.object_params.copy()
-        init_params.pop("euler_rotation")
-        if "quat_rotation" in init_params.keys():
-            init_params.pop("quat_rotation")
-        init_params["semantic_id"] = self.semantic_label_to_id[self.object_names[idx]]
+        init_params = dataclasses.replace(
+            self.object_params,
+            euler_rotation=None,
+            quat_rotation=None,
+            semantic_id=self.semantic_label_to_id[self.object_names[idx]],
+        )
 
         # TODO clean this up with its own specific call i.e. Law of Demeter
         primary_target_obj = self.dataset.env.add_object(
-            name=self.object_names[idx], **init_params
+            name=self.object_names[idx], **init_params.as_dict()
         )
 
         if self.num_distractors > 0:
@@ -368,12 +380,15 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         self.primary_target = {
             "object": self.object_names[idx],
             "semantic_id": self.semantic_label_to_id[self.object_names[idx]],
-            **self.object_params,
+            **self.object_params.as_dict(),
         }
         logger.info(f"New primary target: {pformat(self.primary_target)}")
 
     def add_distractor_objects(
-        self, primary_target_obj: ObjectID, init_params, primary_target_name
+        self,
+        primary_target_obj: ObjectID,
+        init_params: ObjectParams,
+        primary_target_name,
     ):
         """Add arbitrarily many "distractor" objects to the environment.
 
@@ -394,14 +409,14 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         ]
 
         for __ in range(self.num_distractors):
-            new_init_params = copy.deepcopy(init_params)
-
             new_obj_label = self.rng.choice(sampling_list)
-            new_init_params["semantic_id"] = self.semantic_label_to_id[new_obj_label]
+            new_init_params = dataclasses.replace(
+                init_params, semantic_id=self.semantic_label_to_id[new_obj_label]
+            )
             # TODO clean up the **unpacking used
             self.dataset.env.add_object(
                 name=new_obj_label,
-                **new_init_params,
+                **new_init_params.as_dict(),
                 primary_target_object=primary_target_obj,
             )
 

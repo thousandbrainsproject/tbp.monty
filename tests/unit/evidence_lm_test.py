@@ -10,6 +10,8 @@
 
 import pytest
 
+from tbp.monty.frameworks.environments.embodied_environment import EulerAnglesXYZ
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -221,7 +223,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=["capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
-                    rotations=[[0, 0, 0]],
+                    rotations=[EulerAnglesXYZ((0, 0, 0))],
                 ),
             ),
         )
