@@ -95,7 +95,7 @@ class Simulator(Protocol):
         """
         ...
 
-    def reset(self):
+    def reset(self) -> Observations:
         """Reset the simulator.
 
         Returns:

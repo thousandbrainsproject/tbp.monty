@@ -639,7 +639,7 @@ class HabitatSim(HabitatActuator):
 
         return result
 
-    def reset(self):
+    def reset(self) -> Observations:
         # All agents managed by this simulator
         agent_indices = range(len(self._agents))
         obs = self._sim.reset(agent_ids=agent_indices)

@@ -21,6 +21,7 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     SemanticID,
     VectorXYZ,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.frameworks.utils.dataclass_utils import (
     create_dataclass_args,
     is_dataclass_instance,
@@ -150,7 +151,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
     def remove_all_objects(self):
         return self._env.remove_all_objects()
 
-    def reset(self):
+    def reset(self) -> Observations:
         return self._env.reset()
 
     def close(self):

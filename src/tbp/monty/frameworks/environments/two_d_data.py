@@ -25,6 +25,12 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     EmbodiedEnvironment,
     ObjectID,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    AgentID,
+    Modality,
+    Observations,
+    SensorID,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -180,27 +186,27 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             "OmniglotEnvironment does not support removing all objects"
         )
 
-    def reset(self):
+    def reset(self) -> Observations:
         self.step_num = 0
         patch = self.get_image_patch(
             self.current_image, self.locations[self.step_num], self.patch_size
         )
         depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
-        obs = {
-            "agent_id_0": {
-                "patch": {
-                    "depth": depth,
-                    "semantic": np.array(~patch, dtype=int),
-                    "rgba": np.stack(
-                        [depth, depth, depth], axis=2
-                    ),  # TODO: placeholder
-                },
-                "view_finder": {
-                    "depth": self.current_image,
-                    "semantic": np.array(~patch, dtype=int),
-                },
+        obs = Observations(
+            {
+                AgentID("agent_id_0"): {
+                    SensorID("patch"): {
+                        Modality("depth"): depth,
+                        Modality("semantic"): np.array(~patch, dtype=int),
+                        Modality("rgba"): np.stack([depth, depth, depth], axis=2),
+                    },
+                    SensorID("view_finder"): {
+                        Modality("depth"): self.current_image,
+                        Modality("semantic"): np.array(~patch, dtype=int),
+                    },
+                }
             }
-        }
+        )
         return obs
 
     def load_new_character_data(self):
@@ -416,7 +422,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             "SaccadeOnImageEnvironment does not support removing all objects"
         )
 
-    def reset(self):
+    def reset(self) -> Observations:
         """Reset environment and extract image patch.
 
         TODO: clean up. Do we need this? No reset required in this dataloader, maybe
@@ -433,22 +439,24 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         ) = self.get_image_patch(
             self.current_loc,
         )
-        obs = {
-            "agent_id_0": {
-                "patch": {
-                    "depth": depth_patch,
-                    "rgba": rgb_patch,
-                    "semantic_3d": depth3d_patch,
-                    "sensor_frame_data": sensor_frame_patch,
-                    "world_camera": self.world_camera,
-                    "pixel_loc": self.current_loc,
-                },
-                "view_finder": {
-                    "depth": self.current_depth_image,
-                    "rgba": self.current_rgb_image,
-                },
+        obs = Observations(
+            {
+                AgentID("agent_id_0"): {
+                    SensorID("patch"): {
+                        Modality("depth"): depth_patch,
+                        Modality("rgba"): rgb_patch,
+                        Modality("semantic_3d"): depth3d_patch,
+                        Modality("sensor_frame_data"): sensor_frame_patch,
+                        Modality("world_camera"): self.world_camera,
+                        Modality("pixel_loc"): self.current_loc,
+                    },
+                    SensorID("view_finder"): {
+                        Modality("depth"): self.current_depth_image,
+                        Modality("rgba"): self.current_rgb_image,
+                    },
+                }
             }
-        }
+        )
         return obs
 
     def load_new_scene_data(self):
