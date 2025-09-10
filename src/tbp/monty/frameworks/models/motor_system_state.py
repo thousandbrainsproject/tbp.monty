@@ -10,6 +10,8 @@ from typing import Any, Dict, TypedDict
 
 import numpy as np
 
+from tbp.monty.frameworks.models.abstract_monty_classes import AgentID, SensorID
+
 
 class SensorState(TypedDict):
     """The proprioceptive state of a sensor.
@@ -29,7 +31,7 @@ class AgentState(TypedDict):
     TODO: Change into dataclass
     """
 
-    sensors: Dict[str, SensorState]
+    sensors: Dict[SensorID, SensorState]
     """The proprioceptive state of the agent's sensors."""
     position: Any  # TODO: Stop using magnum.Vector3 and decide on Monty standard
     """The agent's position relative to some global reference frame."""
@@ -37,20 +39,20 @@ class AgentState(TypedDict):
     """The agent's rotation relative to some global reference frame."""
 
 
-class ProprioceptiveState(Dict[str, AgentState]):
-    """The proprioceptive state of the motor system.
-
-    TODO: Change into dataclass
-    """
+class ProprioceptiveState(Dict[AgentID, AgentState]):
+    """The proprioceptive state of the motor system."""
 
 
-class MotorSystemState(Dict[str, Any]):
+class MotorSystemState(Dict[AgentID, AgentState]):
     """The state of the motor system.
 
     TODO: Currently, ProprioceptiveState can be cast to MotorSystemState since
           MotorSystemState is a generic dictionary. In the future, make
           ProprioceptiveState a param on MotorSystemState to more clearly distinguish
-          between the two.
+          between the two. These are separate from each other because
+          ProprioceptiveState is the information returned from the environment, while
+          MotorSystemState is that, as well as any state that the motor system
+          needs for operation.
     """
 
     def convert_motor_state(self) -> dict:
