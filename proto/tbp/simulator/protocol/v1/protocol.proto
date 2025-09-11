@@ -7,49 +7,76 @@ message RemoveAllObjectsRequest {
 message RemoveAllObjectsResponse {
 }
 
-// Placeholder for application type 'VectorXYZOptional'. Flesh out fields later.
-message VectorXYZOptional {
+message VectorXYZ {
+  double x = 1;
+  double y = 2;
+  double z = 3;
 }
 
-// Placeholder for application type 'QuaternionWXYZOptional'. Flesh out fields later.
-message QuaternionWXYZOptional {
-}
-
-// Placeholder for application type 'SemanticIDOptional'. Flesh out fields later.
-message SemanticIDOptional {
-}
-
-// Placeholder for application type 'ObjectIDOptional'. Flesh out fields later.
-message ObjectIDOptional {
+message QuaternionWXYZ {
+  double w = 1;
+  double x = 2;
+  double y = 3;
+  double z = 4;
 }
 
 message AddObjectRequest {
   string name = 1;
-  VectorXYZOptional position = 2;
-  QuaternionWXYZOptional rotation = 3;
-  VectorXYZOptional scale = 4;
-  SemanticIDOptional semantic_id = 5;
-  ObjectIDOptional primary_target_object = 6;
+  VectorXYZ position = 2;
+  QuaternionWXYZ rotation = 3;
+  VectorXYZ scale = 4;
+  int64 semantic_id = 5;
+  int64 primary_target_object = 6;
 }
 
-// Placeholder for application type 'TupleObjectIDSemanticIDOptional'. Flesh out fields later.
-message TupleObjectIDSemanticIDOptional {
+message TupleObjectIDSemanticID {
+  int64 object_id = 3;
+  int64 semantic_id = 4;
 }
 
 message AddObjectResponse {
-  TupleObjectIDSemanticIDOptional result = 1;
+  TupleObjectIDSemanticID result = 1;
 }
 
-// Placeholder for application type 'Action'. Flesh out fields later.
 message Action {
+  string agent_id = 1;
 }
 
 message StepRequest {
   Action action = 1;
 }
 
-// Placeholder for application type 'TupleObservationsProprioceptiveState'. Flesh out fields later.
+message SensorObservations {
+  bytes data = 1;
+}
+
+message AgentObservations {
+  bytes data = 1;
+}
+
+message Observations {
+  bytes data = 1;
+}
+
+message SensorState {
+  bytes position = 1;
+  bytes rotation = 2;
+}
+
+message AgentState {
+  bytes position = 2;
+  bytes rotation = 3;
+  optional bool motor_only_step = 4;
+  map<string, SensorState> sensors = 5;
+}
+
+message ProprioceptiveState {
+  bytes data = 1;
+}
+
 message TupleObservationsProprioceptiveState {
+  Observations observations = 3;
+  ProprioceptiveState proprioceptive_state = 4;
 }
 
 message StepResponse {

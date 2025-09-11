@@ -19,6 +19,7 @@ Usage:
 
 from __future__ import annotations
 
+import ast
 import dataclasses
 import datetime
 import enum
@@ -333,9 +334,26 @@ class ProtoBuilder:
             # Check if this is a built-in scalar type
             if t in _SCALAR_NAME_MAP:
                 return _SCALAR_NAME_MAP[t]
+
+            # Strip union part before trying to resolve (e.g., "VectorXYZ | None" -> "VectorXYZ")
+            base_type_name = re.sub(r"\s*\|\s*None\s*", "", t).strip()
+
+            # Try to resolve the base type by loading it
+            resolved_type = self._resolve_string_type(base_type_name)
+            if resolved_type is not None:
+                return self.type_to_proto(resolved_type)
+
+            # Handle special cases for generic type expressions
+            if re.match(r"tuple\[", base_type_name, re.IGNORECASE):
+                # Parse tuple expression like "tuple[A, B]" and create simplified message
+                clean_name = self._make_valid_proto_name(base_type_name)
+                self._create_tuple_message(base_type_name, clean_name)
+                self._seen_types[t] = clean_name
+                return clean_name
+
             # Clean up the string to make it a valid protobuf identifier
-            clean_name = self._make_valid_proto_name(t)
-            self._emit_placeholder_message(clean_name)
+            clean_name = self._make_valid_proto_name(base_type_name)
+            self._introspect_and_emit_message(resolved_type, clean_name)
             self._seen_types[t] = clean_name
             return clean_name
 
@@ -356,6 +374,10 @@ class ProtoBuilder:
         if t is datetime.datetime:
             self._need_timestamp = True
             return "google.protobuf.Timestamp"
+
+        # Handle numpy arrays and other numpy types as bytes
+        if hasattr(t, "__module__") and t.__module__ and "numpy" in t.__module__:
+            return "bytes"
 
         origin = get_origin(t)
 
@@ -384,14 +406,23 @@ class ProtoBuilder:
 
         # Handle NewType instances by extracting the underlying type
         if hasattr(t, "__supertype__"):
-            # This is a NewType - use the underlying type but keep the name
-            name = getattr(t, "__name__", str(t))
+            # This is a NewType - check if it's a simple scalar wrapper
             underlying = t.__supertype__
-            underlying_proto = self.type_to_proto(underlying)
-            self._seen_types[t] = underlying_proto
-            return underlying_proto
+            if underlying in _SCALAR_MAP:
+                # Simple scalar NewType (like ObjectID = NewType("ObjectID", int))
+                proto_type = _SCALAR_MAP[underlying]
+                self._seen_types[t] = proto_type
+                return proto_type
+            else:
+                # Complex NewType - create a message for the NewType itself
+                # (e.g., VectorXYZ = NewType("VectorXYZ", Tuple[float, float, float]))
+                name = self._make_valid_proto_name(getattr(t, "__name__", str(t)))
+                if name not in self.messages:
+                    self._introspect_and_emit_message(t, name)
+                self._seen_types[t] = name
+                return name
 
-        # Message (placeholder for unknown app-specific type)
+        # Message (introspect app-specific types)
         if inspect.isclass(t):
             # Don't create placeholder messages for built-in Python types
             if t.__name__ in _SCALAR_NAME_MAP:
@@ -399,9 +430,13 @@ class ProtoBuilder:
 
             name = self._make_valid_proto_name(t.__name__)
             if name not in self.messages:
-                self._emit_placeholder_message(name)
+                self._introspect_and_emit_message(t, name)
             self._seen_types[t] = name
             return name
+
+        # Handle typing.Any as bytes (catch-all for complex types)
+        if t is Any:
+            return "bytes"
 
         # Fallback with better error info
         msg = f"Unsupported type in Protocol → proto mapping: {t!r} (type: {type(t)})"
@@ -420,13 +455,23 @@ class ProtoBuilder:
         lines.append("}\n")
         self.enums[e.__name__] = "".join(lines)
 
+    def _type_name_to_field_name(self, type_name: str) -> str:
+        """Convert a type name to a snake_case field name."""
+        # Convert PascalCase to snake_case
+        # e.g., "ProprioceptiveState" -> "proprioceptive_state"
+        # e.g., "ObjectID" -> "object_id"
+        name = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", type_name)
+        name = re.sub(r"([a-z\d])([A-Z])", r"\1_\2", name)
+        return name.lower()
+
     def _make_valid_proto_name(self, name: str) -> str:
         """Convert a Python type name to a valid protobuf identifier."""
         # Handle common Python type syntax and convert to clean names
         clean_name = name
 
-        # Handle optional types: "Type | None" -> "TypeOptional"
-        clean_name = re.sub(r'\s*\|\s*None\s*', 'Optional', clean_name)
+        # Extract base type name from union types (strip " | None" part)
+        # Union types should be handled at field level, not type level
+        clean_name = re.sub(r"\s*\|\s*None\s*", "", clean_name)
 
         # Handle generic types: "tuple[A, B]" -> "TupleAB"
         def replace_generic(match):
@@ -463,8 +508,242 @@ class ProtoBuilder:
 
         return clean_name or "UnknownType"
 
+    def _resolve_string_type(self, type_name: str) -> Any:
+        """Try to resolve a string type name to an actual Python type."""
+        # Don't try to resolve generic type expressions like 'tuple[A, B]'
+        if re.match(r"(tuple|list|dict)\[", type_name, re.IGNORECASE):
+            return None
+
+        # Try to import from the simulator module's namespace and its imports
+        try:
+            simulator = _load_symbol(SIMULATOR_SYMBOL)
+            # Get the module where the simulator is defined
+            simulator_module = sys.modules[simulator.__module__]
+
+            # Look for the type in the module's namespace first
+            if hasattr(simulator_module, type_name):
+                return getattr(simulator_module, type_name)
+
+            # Try to find it in the module's imports by parsing the source
+            try:
+                source = inspect.getsource(simulator_module)
+                tree = ast.parse(source)
+
+                # Find import statements and try to resolve the type
+                for node in ast.walk(tree):
+                    if isinstance(node, ast.ImportFrom) and node.module:
+                        if hasattr(node, "names"):
+                            for alias in node.names:
+                                imported_name = alias.name
+                                local_name = (
+                                    alias.asname if alias.asname else alias.name
+                                )
+
+                                if local_name == type_name:
+                                    # Found the import, try to load it
+                                    try:
+                                        mod = importlib.import_module(node.module)
+                                        resolved_type = getattr(
+                                            mod, imported_name, None
+                                        )
+                                        if resolved_type is not None:
+                                            return resolved_type
+                                    except (ImportError, AttributeError):
+                                        continue
+            except (OSError, SyntaxError):
+                pass
+
+            # Also try common modules where these types might be defined
+            common_modules = [
+                "tbp.monty.frameworks.environments.embodied_environment",
+                "tbp.monty.frameworks.actions.actions",
+                "tbp.monty.frameworks.models.abstract_monty_classes",
+                "tbp.monty.frameworks.models.motor_system_state",
+            ]
+
+            for module_name in common_modules:
+                try:
+                    mod = importlib.import_module(module_name)
+                    if hasattr(mod, type_name):
+                        return getattr(mod, type_name)
+                except ImportError:
+                    continue
+
+        except Exception:
+            pass
+
+        return None
+
+    def _create_tuple_message(self, tuple_expr: str, message_name: str) -> None:
+        """Create a message for tuple expressions like 'tuple[A, B]'."""
+        if message_name in self._declared_placeholders:
+            return
+
+        # Extract types from tuple expression: "tuple[A, B]" -> ["A", "B"]
+        match = re.match(r"tuple\[([^\]]+)\]", tuple_expr, re.IGNORECASE)
+        if not match:
+            # Fallback to empty message
+            body = textwrap.dedent(f"""\
+            // Auto-generated message for tuple '{tuple_expr}' (could not parse).
+            message {message_name} {{
+            }}
+            """)
+            self.messages[message_name] = body
+            self._declared_placeholders.add(message_name)
+            return
+
+        # Parse the inner types
+        inner_types = [t.strip() for t in match.group(1).split(",")]
+
+        fields = []
+        for i, type_name in enumerate(inner_types, 1):
+            # Clean up type names (strip union parts like "| None")
+            clean_type = re.sub(r"\s*\|\s*None\s*", "", type_name).strip()
+
+            # Create meaningful field name from type name
+            field_name = self._type_name_to_field_name(clean_type)
+
+            # Try to resolve and use the type, fallback to bytes for truly unknown types
+            resolved = self._resolve_string_type(clean_type)
+            if resolved is not None:
+                # Use the resolved type - let normal introspection handle it
+                proto_type = self.type_to_proto(resolved)
+                fields.append(FieldSpec(field_name, resolved, optional=False))
+            else:
+                # Only fallback to bytes for types we genuinely can't resolve
+                fields.append(FieldSpec(field_name, bytes, optional=False))
+
+        if fields:
+            self.emit_message(message_name, fields)
+        else:
+            # Fallback to empty message
+            body = textwrap.dedent(f"""\
+            // Auto-generated message for tuple '{tuple_expr}' (no fields generated).
+            message {message_name} {{
+            }}
+            """)
+            self.messages[message_name] = body
+
+        self._declared_placeholders.add(message_name)
+
+    def _introspect_and_emit_message(self, t: Any, name: str) -> None:
+        """Introspect a Python type and generate a proper protobuf message."""
+        # Avoid redefining messages
+        if name in self._declared_placeholders:
+            return
+
+        fields = []
+        if t is not None:
+            fields = self._introspect_type_fields(t)
+
+        if fields:
+            self.emit_message(name, fields)
+        else:
+            # Fallback to empty message
+            body = textwrap.dedent(f"""\
+            // Auto-generated message for '{name}' (no fields detected).
+            message {name} {{
+            }}
+            """)
+            self.messages[name] = body
+        self._declared_placeholders.add(name)
+
+    def _introspect_type_fields(self, t: Any) -> List[FieldSpec]:
+        """Introspect a Python type and extract its fields for protobuf."""
+        fields: List[FieldSpec] = []
+
+        # Handle NewType wrappers
+        if hasattr(t, "__supertype__"):
+            underlying = t.__supertype__
+            return self._introspect_type_fields(underlying)
+
+        # Handle basic tuple types (like VectorXYZ, QuaternionWXYZ)
+        origin = get_origin(t)
+        if origin in (tuple, Tuple):
+            args = get_args(t)
+            if args == (float, float, float):
+                # VectorXYZ-like
+                return [
+                    FieldSpec("x", float, optional=False),
+                    FieldSpec("y", float, optional=False),
+                    FieldSpec("z", float, optional=False),
+                ]
+            elif args == (float, float, float, float):
+                # QuaternionWXYZ-like
+                return [
+                    FieldSpec("w", float, optional=False),
+                    FieldSpec("x", float, optional=False),
+                    FieldSpec("y", float, optional=False),
+                    FieldSpec("z", float, optional=False),
+                ]
+
+        # Handle Protocol classes
+        if getattr(t, "_is_protocol", False):
+            # Get annotations from the Protocol
+            annotations = getattr(t, "__annotations__", {})
+            for field_name, field_type in annotations.items():
+                # Skip methods and special attributes
+                if field_name.startswith("_") or callable(getattr(t, field_name, None)):
+                    continue
+
+                is_opt, inner_type = _is_optional(field_type)
+                fields.append(
+                    FieldSpec(name=field_name, py_type=inner_type, optional=is_opt)
+                )
+            return fields
+
+        # Handle dataclasses
+        if dataclasses.is_dataclass(t):
+            for field in dataclasses.fields(t):
+                is_opt, inner_type = _is_optional(field.type)
+
+                # Check if this is a dict field for map handling
+                origin = get_origin(inner_type)
+                is_map_field = origin in (dict, Dict)
+
+                fields.append(
+                    FieldSpec(
+                        name=field.name,
+                        py_type=inner_type,
+                        optional=is_opt or field.default != dataclasses.MISSING,
+                        is_map=is_map_field,
+                    )
+                )
+            return fields
+
+        # Handle classes that inherit from Dict[K, V] (like Observations, ProprioceptiveState)
+        # Check __orig_bases__ which preserves generic type information
+        if hasattr(t, "__orig_bases__"):
+            for base in t.__orig_bases__:
+                # Check for generic Dict inheritance
+                origin = get_origin(base)
+                if origin is dict:
+                    # This is a class inheriting from Dict[K, V]
+                    args = get_args(base)
+                    if len(args) == 2:
+                        key_type, value_type = args
+                        # Ensure referenced types get processed and added to proto
+                        # even though we're representing this Dict as bytes
+                        self.type_to_proto(key_type)  # Process key type
+                        self.type_to_proto(value_type)  # Process value type
+
+                    # For complex Dict types with nested structures, use bytes for simplicity
+                    # These types are too complex to represent properly in protobuf
+                    return [
+                        FieldSpec(
+                            name="data",
+                            py_type=bytes,
+                            optional=False,
+                        )
+                    ]
+
+        # Let all types go through normal introspection - no hardcoded special cases
+
+        # If we can't introspect, return empty (will create empty message)
+        return []
+
     def _emit_placeholder_message(self, name: str) -> None:
-        # Avoid redefining placeholders
+        # This should now rarely be called since we have introspection
         if name in self._declared_placeholders:
             return
         body = textwrap.dedent(f"""\
