@@ -2,10 +2,6 @@ syntax = "proto3";
 package tbp.simulator.protocol.v1;
 import "google/protobuf/empty.proto";
 
-// Placeholder for application type 'str'. Flesh out fields later.
-message str {
-}
-
 // Placeholder for application type 'VectorXYZOptional'. Flesh out fields later.
 message VectorXYZOptional {
 }
@@ -23,7 +19,7 @@ message ObjectIDOptional {
 }
 
 message AddObjectRequest {
-  str name = 1;
+  string name = 1;
   VectorXYZOptional position = 2;
   QuaternionWXYZOptional rotation = 3;
   VectorXYZOptional scale = 4;
@@ -31,12 +27,12 @@ message AddObjectRequest {
   ObjectIDOptional primary_target_object = 6;
 }
 
-// Placeholder for application type 'Tuple_ObjectID_SemanticIDOptional'. Flesh out fields later.
-message Tuple_ObjectID_SemanticIDOptional {
+// Placeholder for application type 'tupleObjectIDSemanticIDOptional'. Flesh out fields later.
+message tupleObjectIDSemanticIDOptional {
 }
 
 message AddObjectResponse {
-  Tuple_ObjectID_SemanticIDOptional result = 1;
+  tupleObjectIDSemanticIDOptional result = 1;
 }
 
 // Placeholder for application type 'Action'. Flesh out fields later.
@@ -47,16 +43,16 @@ message StepRequest {
   Action action = 1;
 }
 
-// Placeholder for application type 'Tuple_Observations_ProprioceptiveState'. Flesh out fields later.
-message Tuple_Observations_ProprioceptiveState {
+// Placeholder for application type 'tupleObservationsProprioceptiveState'. Flesh out fields later.
+message tupleObservationsProprioceptiveState {
 }
 
 message StepResponse {
-  Tuple_Observations_ProprioceptiveState result = 1;
+  tupleObservationsProprioceptiveState result = 1;
 }
 
 message ResetResponse {
-  Tuple_Observations_ProprioceptiveState result = 1;
+  tupleObservationsProprioceptiveState result = 1;
 }
 
 service Simulator {

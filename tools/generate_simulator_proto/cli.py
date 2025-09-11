@@ -79,6 +79,15 @@ _SCALAR_MAP = {
     bytes: "bytes",
 }
 
+# String name to scalar type mapping for string annotations
+_SCALAR_NAME_MAP = {
+    "str": "string",
+    "int": "int64",
+    "float": "double",
+    "bool": "bool",
+    "bytes": "bytes",
+}
+
 _EMPTY_IMPORT = 'import "google/protobuf/empty.proto";'
 _TIMESTAMP_IMPORT = 'import "google/protobuf/timestamp.proto";'
 
@@ -325,6 +334,9 @@ class ProtoBuilder:
                     "This suggests an issue with type resolution."
                 )
                 raise TypeError(msg)
+            # Check if this is a built-in scalar type
+            if t in _SCALAR_NAME_MAP:
+                return _SCALAR_NAME_MAP[t]
             # Clean up the string to make it a valid protobuf identifier
             clean_name = self._make_valid_proto_name(t)
             self._emit_placeholder_message(clean_name)
@@ -385,6 +397,10 @@ class ProtoBuilder:
 
         # Message (placeholder for unknown app-specific type)
         if inspect.isclass(t):
+            # Don't create placeholder messages for built-in Python types
+            if t.__name__ in _SCALAR_NAME_MAP:
+                return _SCALAR_NAME_MAP[t.__name__]
+
             name = self._make_valid_proto_name(t.__name__)
             if name not in self.messages:
                 self._emit_placeholder_message(name)
@@ -410,22 +426,41 @@ class ProtoBuilder:
 
     def _make_valid_proto_name(self, name: str) -> str:
         """Convert a Python type name to a valid protobuf identifier."""
-        # Remove invalid characters and replace with underscore
-        # Replace common Python type syntax with valid identifiers
+        # Handle common Python type syntax and convert to clean names
         clean_name = name
+
+        # Handle optional types: "Type | None" -> "TypeOptional"
         clean_name = re.sub(r'\s*\|\s*None\s*', 'Optional', clean_name)
-        clean_name = re.sub(r'tuple\[([^\]]+)\]', r'Tuple_\1', clean_name)
-        clean_name = re.sub(r'list\[([^\]]+)\]', r'List_\1', clean_name)
-        clean_name = re.sub(r'dict\[([^\]]+)\]', r'Dict_\1', clean_name)
-        # Remove all non-alphanumeric characters except underscore
-        clean_name = re.sub(r'[^a-zA-Z0-9_]', '_', clean_name)
-        # Ensure it starts with a letter
-        if clean_name and clean_name[0].isdigit():
-            clean_name = f"Type_{clean_name}"
-        # Remove multiple consecutive underscores
-        clean_name = re.sub(r'_{2,}', '_', clean_name)
-        # Remove trailing/leading underscores
-        clean_name = clean_name.strip('_')
+
+        # Handle generic types: "tuple[A, B]" -> "TupleAB"
+        def replace_generic(match):
+            prefix = match.group(1)
+            contents = match.group(2)
+            # Split on comma and clean each part
+            parts = [part.strip() for part in contents.split(",")]
+            # Convert each part to PascalCase and join
+            clean_parts = []
+            for part in parts:
+                # Remove spaces and convert to PascalCase
+                part_clean = re.sub(r"[^a-zA-Z0-9]", "", part)
+                if part_clean:
+                    clean_parts.append(part_clean)
+            return prefix + "".join(clean_parts)
+
+        clean_name = re.sub(
+            r"(tuple|list|dict)\[([^\]]+)\]",
+            replace_generic,
+            clean_name,
+            flags=re.IGNORECASE,
+        )
+
+        # Remove all non-alphanumeric characters
+        clean_name = re.sub(r"[^a-zA-Z0-9]", "", clean_name)
+
+        # Ensure it starts with a letter and is non-empty
+        if not clean_name or clean_name[0].isdigit():
+            clean_name = f"Type{clean_name}"
+
         return clean_name or "UnknownType"
 
     def _emit_placeholder_message(self, name: str) -> None:
