@@ -88,7 +88,6 @@ _SCALAR_NAME_MAP = {
     "bytes": "bytes",
 }
 
-_EMPTY_IMPORT = 'import "google/protobuf/empty.proto";'
 _TIMESTAMP_IMPORT = 'import "google/protobuf/timestamp.proto";'
 
 
@@ -188,7 +187,6 @@ class ProtoBuilder:
         self.messages: Dict[str, str] = {}
         self.services: Dict[str, str] = {}
         self._seen_types: Dict[Any, str] = {}  # cache: py type -> proto type name
-        self._need_empty = False
         self._need_timestamp = False
         self._declared_placeholders: set[str] = set()
         # Field number persistence
@@ -304,8 +302,6 @@ class ProtoBuilder:
         lines.append('syntax = "proto3";\n')
         if self.package:
             lines.append(f"package {self.package};\n")
-        if self._need_empty:
-            lines.append(_EMPTY_IMPORT + "\n")
         if self._need_timestamp:
             lines.append(_TIMESTAMP_IMPORT + "\n")
         lines.append("\n")
@@ -461,6 +457,10 @@ class ProtoBuilder:
         if not clean_name or clean_name[0].isdigit():
             clean_name = f"Type{clean_name}"
 
+        # Ensure PascalCase (first letter uppercase)
+        if clean_name and clean_name[0].islower():
+            clean_name = clean_name[0].upper() + clean_name[1:]
+
         return clean_name or "UnknownType"
 
     def _emit_placeholder_message(self, name: str) -> None:
@@ -585,45 +585,38 @@ def _fields_from_parameters(params: List[inspect.Parameter]) -> List[FieldSpec]:
     return fields
 
 
-def _fields_from_return(
-    builder: ProtoBuilder, ret: Any, method_name: str
-) -> Tuple[Optional[str], Optional[List[FieldSpec]]]:
+def _fields_from_return(ret: Any, method_name: str) -> Tuple[str, List[FieldSpec]]:
     """Convert return annotation to response message fields.
 
-    Returns (response_message_name, fields) or (None, None) to indicate
-    google.protobuf.Empty.
-    - Treats no annotation OR explicit `-> None` as Empty.
+    Always returns a specific response message type (never Empty).
+    - Treats no annotation OR explicit `-> None` as empty message.
     - For Tuple[...] returns, each element becomes a field:
         * Optional[T] -> optional T
         * literal None -> optional bytes (placeholder to avoid crashes)
 
     Args:
-        builder: Proto builder instance
         ret: Return type annotation
         method_name: Name of the method
 
     Returns:
-        Tuple of (message_name, fields) or (None, None) for Empty
+        Tuple of (message_name, fields)
     """
-    # No return or explicit None -> Empty
+    # No return or explicit None -> empty response message
     if ret is inspect._empty or ret is None or ret is type(None):
-        builder._need_empty = True
-        return None, None
+        return f"{method_name}Response", []
 
     # Handle string type annotations
     if isinstance(ret, str):
         if ret == "None":
-            builder._need_empty = True
-            return None, None
+            return f"{method_name}Response", []
         # For other strings, treat as a single field
         fields = [FieldSpec(name="result", py_type=ret, optional=False)]
         return f"{method_name}Response", fields
 
-    # Optional[...] -> unwrap; Optional[None] -> Empty
+    # Optional[...] -> unwrap; Optional[None] -> empty message
     is_opt, inner = _is_optional(ret)
     if is_opt and inner is type(None):
-        builder._need_empty = True
-        return None, None
+        return f"{method_name}Response", []
     ret = inner
 
     origin = get_origin(ret)
@@ -707,31 +700,21 @@ def generate_from_simulator_protocol() -> str:
     for method_name, sig in _iter_method_signatures(simulator):
         # Convert method name to PascalCase for protobuf conventions
         pascal_method_name = _snake_to_pascal(method_name)
-        # Request
+        # Request - always create specific request type
         req_fields = _fields_from_parameters(list(sig.parameters.values()))
-        if req_fields:
-            req_msg = f"{pascal_method_name}Request"
-            builder.emit_message(req_msg, req_fields)
-        else:
-            # No-arg request -> Empty
-            builder._need_empty = True
-            req_msg = "google.protobuf.Empty"
+        req_msg = f"{pascal_method_name}Request"
+        builder.emit_message(req_msg, req_fields)
 
-        # Response (by return annotation)
+        # Response - always create specific response type
         ret_ann = sig.return_annotation
-        resp_msg_name, resp_fields = _fields_from_return(
-            builder, ret_ann, pascal_method_name
-        )
-        if resp_msg_name is None:
-            resp = "google.protobuf.Empty"
-        else:
-            builder.emit_message(resp_msg_name, resp_fields or [])
-            resp = resp_msg_name
+        resp_msg_name, resp_fields = _fields_from_return(ret_ann, pascal_method_name)
+        builder.emit_message(resp_msg_name, resp_fields)
+        resp = resp_msg_name
 
         rpcs.append((pascal_method_name, req_msg, resp))
 
     # Emit the service
-    builder.emit_service("Simulator", rpcs)
+    builder.emit_service("SimulatorService", rpcs)
 
     # Done
     return builder.render_file()

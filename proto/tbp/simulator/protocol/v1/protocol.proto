@@ -1,6 +1,11 @@
 syntax = "proto3";
 package tbp.simulator.protocol.v1;
-import "google/protobuf/empty.proto";
+
+message RemoveAllObjectsRequest {
+}
+
+message RemoveAllObjectsResponse {
+}
 
 // Placeholder for application type 'VectorXYZOptional'. Flesh out fields later.
 message VectorXYZOptional {
@@ -27,12 +32,12 @@ message AddObjectRequest {
   ObjectIDOptional primary_target_object = 6;
 }
 
-// Placeholder for application type 'tupleObjectIDSemanticIDOptional'. Flesh out fields later.
-message tupleObjectIDSemanticIDOptional {
+// Placeholder for application type 'TupleObjectIDSemanticIDOptional'. Flesh out fields later.
+message TupleObjectIDSemanticIDOptional {
 }
 
 message AddObjectResponse {
-  tupleObjectIDSemanticIDOptional result = 1;
+  TupleObjectIDSemanticIDOptional result = 1;
 }
 
 // Placeholder for application type 'Action'. Flesh out fields later.
@@ -43,23 +48,32 @@ message StepRequest {
   Action action = 1;
 }
 
-// Placeholder for application type 'tupleObservationsProprioceptiveState'. Flesh out fields later.
-message tupleObservationsProprioceptiveState {
+// Placeholder for application type 'TupleObservationsProprioceptiveState'. Flesh out fields later.
+message TupleObservationsProprioceptiveState {
 }
 
 message StepResponse {
-  tupleObservationsProprioceptiveState result = 1;
+  TupleObservationsProprioceptiveState result = 1;
+}
+
+message ResetRequest {
 }
 
 message ResetResponse {
-  tupleObservationsProprioceptiveState result = 1;
+  TupleObservationsProprioceptiveState result = 1;
 }
 
-service Simulator {
-  rpc RemoveAllObjects (google.protobuf.Empty) returns (google.protobuf.Empty);
+message CloseRequest {
+}
+
+message CloseResponse {
+}
+
+service SimulatorService {
+  rpc RemoveAllObjects (RemoveAllObjectsRequest) returns (RemoveAllObjectsResponse);
   rpc AddObject (AddObjectRequest) returns (AddObjectResponse);
   rpc Step (StepRequest) returns (StepResponse);
-  rpc Reset (google.protobuf.Empty) returns (ResetResponse);
-  rpc Close (google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc Reset (ResetRequest) returns (ResetResponse);
+  rpc Close (CloseRequest) returns (CloseResponse);
 }
 
