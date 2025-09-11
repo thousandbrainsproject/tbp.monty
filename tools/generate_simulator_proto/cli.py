@@ -20,24 +20,21 @@ Usage:
 from __future__ import annotations
 
 import dataclasses
+import datetime
 import enum
 import importlib
 import inspect
 import os
+import re
+import subprocess
 import sys
+import tempfile
 import textwrap
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-# ---- Python 3.8 compatibility: prefer stdlib, fall back to typing_extensions
-try:
-    from typing import Annotated, get_args, get_origin
-except ImportError:  # Python 3.8 may not have all of these in typing
-    from typing_extensions import (  # type: ignore[import-untyped]
-        Annotated,
-        get_args,
-        get_origin,
-    )
+from google.protobuf import descriptor_pb2
+from typing_extensions import Annotated, get_args, get_origin
 
 # ---------------- Configuration (edit if you move things) ---------------------
 
@@ -140,19 +137,6 @@ def _is_optional(t: Any) -> Tuple[bool, Any]:
             any(a is type(None) for a in args)):
             return True, non_none[0]
 
-    # Handle Python 3.10+ union syntax (e.g., T | None)
-    try:
-        import types
-        if hasattr(types, "UnionType") and isinstance(t, types.UnionType):
-            args = tuple(t.__args__)
-            non_none = tuple(a for a in args if a is not type(None))
-            if (len(non_none) == 1 and len(args) == 2 and
-                any(a is type(None) for a in args)):
-                return True, non_none[0]
-    except (ImportError, AttributeError):
-        # Python < 3.10 doesn't have types.UnionType
-        pass
-
     return False, t
 
 
@@ -207,19 +191,6 @@ class ProtoBuilder:
 
     def _parse_existing_proto(self, proto_path: Path) -> None:
         """Parse existing proto file to extract field numbers for persistence."""
-        try:
-            import subprocess
-            import tempfile
-
-            from google.protobuf import descriptor_pb2
-        except ImportError:
-            print(
-                "Warning: google.protobuf not available. "
-                "Install with: pip install protobuf"
-            )
-            self._field_numbers = {}
-            return
-
         try:
             # Use protoc to compile the proto file to a descriptor
             with tempfile.NamedTemporaryFile(suffix=".desc", delete=False) as desc_file:
@@ -374,13 +345,9 @@ class ProtoBuilder:
             return _SCALAR_MAP[t]
 
         # special-case datetime -> Timestamp
-        try:
-            import datetime
-            if t is datetime.datetime:
-                self._need_timestamp = True
-                return "google.protobuf.Timestamp"
-        except ImportError:
-            pass
+        if t is datetime.datetime:
+            self._need_timestamp = True
+            return "google.protobuf.Timestamp"
 
         origin = get_origin(t)
 
@@ -444,7 +411,6 @@ class ProtoBuilder:
     def _make_valid_proto_name(self, name: str) -> str:
         """Convert a Python type name to a valid protobuf identifier."""
         # Remove invalid characters and replace with underscore
-        import re
         # Replace common Python type syntax with valid identifiers
         clean_name = name
         clean_name = re.sub(r'\s*\|\s*None\s*', 'Optional', clean_name)
