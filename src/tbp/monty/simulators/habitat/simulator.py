@@ -559,7 +559,7 @@ class HabitatSim(HabitatActuator):
 
         action.act(self)
 
-        return self.observations, self.states
+        return self.observations, self.state
 
     @property
     def observations(self) -> Observations:
@@ -594,7 +594,7 @@ class HabitatSim(HabitatActuator):
         return obs
 
     @property
-    def states(self) -> ProprioceptiveState:
+    def state(self) -> ProprioceptiveState:
         """Returns proprioceptive state of the agents and sensors."""
         result = ProprioceptiveState()
         for agent_index, sim_agent in enumerate(self._sim.agents):
@@ -625,7 +625,7 @@ class HabitatSim(HabitatActuator):
         agent_indices = range(len(self._agents))
         obs = self._sim.reset(agent_ids=agent_indices)
         obs = self.process_observations(obs)
-        return obs, self.states
+        return obs, self.state
 
     def close(self) -> None:
         """Close simulator and release resources."""

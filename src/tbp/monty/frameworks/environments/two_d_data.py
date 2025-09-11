@@ -166,9 +166,9 @@ class OmniglotEnvironment(EmbodiedEnvironment):
                 )
             }
         )
-        return obs, self.get_state()
+        return obs, self._state()
 
-    def get_state(self) -> ProprioceptiveState:
+    def _state(self) -> ProprioceptiveState:
         loc = self.locations[self.step_num % self.max_steps]
         sensor_position = np.array([loc[0], loc[1], 0])
         state = ProprioceptiveState(
@@ -233,7 +233,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
                 )
             }
         )
-        return obs, self.get_state()
+        return obs, self._state()
 
     def load_new_character_data(self):
         img_char_dir = os.path.join(
@@ -403,9 +403,9 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
                 )
             }
         )
-        return obs, self.get_state()
+        return obs, self._state()
 
-    def get_state(self) -> ProprioceptiveState:
+    def _state(self) -> ProprioceptiveState:
         loc = self.current_loc
         # Provide LM w/ sensor position in 3D, body-centric coordinates
         # instead of pixel indices
@@ -494,7 +494,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
                 )
             }
         )
-        return obs, self.get_state()
+        return obs, self._state()
 
     def load_new_scene_data(self):
         """Load depth and rgb data for next scene environment.

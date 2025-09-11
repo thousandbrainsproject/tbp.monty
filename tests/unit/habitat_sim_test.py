@@ -341,7 +341,7 @@ class HabitatSimTest(unittest.TestCase):
             sim.initialize_agent(agent_id, agent_state)
 
             # Check initial state
-            states = sim.states
+            states = sim.state
             agent_state = states[AgentID(agent_id)]
             sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
             self.assertEqual(agent_state.position, agent_pos)
@@ -352,7 +352,7 @@ class HabitatSimTest(unittest.TestCase):
             # turn agent body left
             turn_left = TurnLeft(agent_id=agent_id, rotation_degrees=rotation_degrees)
             sim.step(turn_left)
-            states = sim.states
+            states = sim.state
             agent_state = states[AgentID(agent_id)]
             sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
             expected_rot = agent_rot * turn_left_quat
@@ -369,7 +369,7 @@ class HabitatSimTest(unittest.TestCase):
             sim.reset()
             look_up = LookUp(agent_id=agent_id, rotation_degrees=rotation_degrees)
             sim.step(look_up)
-            states = sim.states
+            states = sim.state
             agent_state = states[AgentID(agent_id)]
             sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
             expected_rot = agent_rot * turn_left_quat
@@ -388,7 +388,7 @@ class HabitatSimTest(unittest.TestCase):
             sim.reset()
             move_forward = MoveForward(agent_id=agent_id, distance=translation_distance)
             sim.step(move_forward)
-            states = sim.states
+            states = sim.state
             agent_state = states[AgentID(agent_id)]
             sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
 
@@ -463,7 +463,7 @@ class HabitatSimTest(unittest.TestCase):
                 # Sensor position and rotation should stay the same
                 # Agent Z rotation should be 45 deg
                 expected = qt.from_rotation_vector([0.0, 0.0, np.deg2rad(45)])
-                states = sim.states
+                states = sim.state
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
                 self.assertEqual(agent_state.position, agent_pos)
@@ -497,7 +497,7 @@ class HabitatSimTest(unittest.TestCase):
                 # Sensor position should stay the same
                 # Sensot Y rotation should be 45 deg
                 expected = qt.from_rotation_vector([0.0, np.deg2rad(45), 0.0])
-                states = sim.states
+                states = sim.state
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
                 self.assertEqual(agent_state.position, agent_pos)
@@ -531,7 +531,7 @@ class HabitatSimTest(unittest.TestCase):
                 # Agent position should stay the same
                 # Agent Y rotation should be 45 deg
                 expected = qt.from_rotation_vector([0.0, np.deg2rad(45), 0.0])
-                states = sim.states
+                states = sim.state
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
                 self.assertEqual(agent_state.position, agent_pos)
@@ -566,7 +566,7 @@ class HabitatSimTest(unittest.TestCase):
                     agent_id=agent_id, rotation_quat=expected_rot
                 )
                 sim.step(set_sensor_rotation)
-                states = sim.states
+                states = sim.state
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
                 self.assertEqual(agent_state.position, agent_pos)
@@ -603,7 +603,7 @@ class HabitatSimTest(unittest.TestCase):
                     agent_id=agent_id, location=np.zeros(3), rotation_quat=expected_rot
                 )
                 sim.step(set_sensor_pose)
-                states = sim.states
+                states = sim.state
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
                 self.assertEqual(agent_state.position, agent_pos)
@@ -624,7 +624,7 @@ class HabitatSimTest(unittest.TestCase):
                     rotation_quat=sensor_rot_initial,
                 )
                 sim.step(set_sensor_pose)
-                states = sim.states
+                states = sim.state
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
                 self.assertEqual(agent_state.position, agent_pos)
@@ -647,7 +647,7 @@ class HabitatSimTest(unittest.TestCase):
                     rotation_quat=expected_rot,
                 )
                 sim.step(set_sensor_pose)
-                states = sim.states
+                states = sim.state
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
                 self.assertEqual(agent_state.position, agent_pos)
@@ -683,7 +683,7 @@ class HabitatSimTest(unittest.TestCase):
                     agent_id=agent_id, location=np.zeros(3), rotation_quat=expected_rot
                 )
                 sim.step(set_agent_pose)
-                states = sim.states
+                states = sim.state
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
                 self.assertEqual(agent_state.position, agent_pos)
@@ -706,7 +706,7 @@ class HabitatSimTest(unittest.TestCase):
                     rotation_quat=sensor_rot_initial,
                 )
                 sim.step(set_agent_pose)
-                states = sim.states
+                states = sim.state
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
                 self.assertEqual(agent_state.position, expected_pos)
@@ -729,7 +729,7 @@ class HabitatSimTest(unittest.TestCase):
                     rotation_quat=expected_rot,
                 )
                 sim.step(set_agent_pose)
-                states = sim.states
+                states = sim.state
                 agent_state = states[AgentID(agent_id)]
                 sensor_state = agent_state.sensors[SensorID(f"{sensor_id}.rgba")]
                 self.assertEqual(agent_state.position, expected_pos)
@@ -746,7 +746,7 @@ class HabitatSimTest(unittest.TestCase):
             agent_id="camera", sensor_id="0", agent_position=[0.0, 0.0, 0.0], height=0.0
         )
         with HabitatSim(agents=[agent]) as sim:
-            states = sim.states
+            states = sim.state
             agent_state = states[AgentID(agent.agent_id)]
             actual_height = agent_state.position[1]
             self.assertEqual(actual_height, 0.0)

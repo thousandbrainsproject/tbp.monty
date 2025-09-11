@@ -75,11 +75,6 @@ class Simulator(Protocol):
         """Return the number of instantiated objects in the environment."""
         ...
 
-    @property
-    def states(self) -> ProprioceptiveState:
-        """Returns proprioceptive state of the agents and sensors."""
-        ...
-
     def step(self, action: Action) -> tuple[Observations, ProprioceptiveState]:
         """Execute the given action in the environment.
 

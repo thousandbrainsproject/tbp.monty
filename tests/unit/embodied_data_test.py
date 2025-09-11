@@ -81,9 +81,6 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
         )
         return obs, ProprioceptiveState({})
 
-    def get_state(self) -> ProprioceptiveState:
-        return ProprioceptiveState({})
-
     def remove_all_objects(self):
         pass
 
@@ -127,9 +124,6 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
             }
         )
         return obs, ProprioceptiveState({})
-
-    def get_state(self) -> ProprioceptiveState:
-        return ProprioceptiveState({})
 
     def remove_all_objects(self):
         pass
@@ -373,7 +367,8 @@ class EmbodiedDataTest(unittest.TestCase):
         dataloader_rel.pre_episode()
         initial_state = next(dataloader_rel)
         sensed_data = initial_state[AGENT_ID][sensor_id]
-        current_state = dataloader_rel.dataset.env.get_state()
+        # _state works because env is SaccadeOnImageEnvironment
+        current_state = dataloader_rel.dataset.env._state()
         prev_loc = (
             current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
         )
@@ -381,7 +376,8 @@ class EmbodiedDataTest(unittest.TestCase):
 
         for i, obs in enumerate(dataloader_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
-            current_state = dataloader_rel.dataset.env.get_state()
+            # _state works because env is SaccadeOnImageEnvironment
+            current_state = dataloader_rel.dataset.env._state()
             current_loc = (
                 current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
             )
@@ -402,7 +398,8 @@ class EmbodiedDataTest(unittest.TestCase):
         dataloader_rel.pre_episode()
         for i, obs in enumerate(dataloader_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
-            current_state = dataloader_rel.dataset.env.get_state()
+            # _state works because env is SaccadeOnImageEnvironment
+            current_state = dataloader_rel.dataset.env._state()
             current_loc = (
                 current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
             )
@@ -452,7 +449,8 @@ class EmbodiedDataTest(unittest.TestCase):
         dataloader_rel.pre_episode()
         initial_state = next(dataloader_rel)
         sensed_data = initial_state[AGENT_ID][sensor_id]
-        current_state = dataloader_rel.dataset.env.get_state()
+        # _state works because env is SaccadeOnImageFromStreamEnvironment
+        current_state = dataloader_rel.dataset.env._state()
         prev_loc = (
             current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
         )
@@ -460,7 +458,8 @@ class EmbodiedDataTest(unittest.TestCase):
 
         for i, obs in enumerate(dataloader_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
-            current_state = dataloader_rel.dataset.env.get_state()
+            # _state works because env is SaccadeOnImageFromStreamEnvironment
+            current_state = dataloader_rel.dataset.env._state()
             current_loc = (
                 current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
             )
@@ -479,7 +478,8 @@ class EmbodiedDataTest(unittest.TestCase):
         )
         for i, obs in enumerate(dataloader_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
-            current_state = dataloader_rel.dataset.env.get_state()
+            # _state works because env is SaccadeOnImageFromStreamEnvironment
+            current_state = dataloader_rel.dataset.env._state()
             current_loc = (
                 current_state[AGENT_ID].sensors[SensorID(sensor_id + ".depth")].position
             )

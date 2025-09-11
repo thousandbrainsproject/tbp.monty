@@ -132,10 +132,6 @@ class MuJoCoSimulator(Simulator):
     def num_objects(self) -> int:
         return self._object_count
 
-    @property
-    def states(self) -> ProprioceptiveState:
-        return ProprioceptiveState({})
-
     def step(self, action: Action) -> tuple[Observations, ProprioceptiveState]:
         return Observations({}), ProprioceptiveState({})
 
