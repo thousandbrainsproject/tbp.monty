@@ -32,7 +32,7 @@ It is best practice (and required if you ever want to contribute code) first to 
 
 Next, you need to **clone the repository onto the system**. To do that, enter the following command in the Ubuntu terminal, adjusting `YOUR_GITHUB_USERNAME` accordingly:
 
-```
+```shell
 git clone https://github.com/YOUR_GITHUB_USERNAME/tbp.monty ~/tbp
 ```
 
@@ -47,7 +47,8 @@ To make sure your fork is up to date with our repository you need to click on `S
 ![](../../figures/how-to-use-monty/update_branch.png)
 
 You can also update your code using the terminal by calling `git fetch upstream; git merge upstream/main`. If you have not linked the upstream repository yet, you may first need to call:
-```
+
+```shell
 git -C ~/tbp remote add upstream https://github.com/thousandbrainsproject/tbp.monty.git
 ```
 
@@ -56,7 +57,7 @@ git -C ~/tbp remote add upstream https://github.com/thousandbrainsproject/tbp.mo
 
 Next, set up the conda environment for Monty. In the Ubuntu terminal, enter this:
 
-```
+```shell
 cd ~/tbp
 conda tos accept && conda env create && conda init && \
 conda activate tbp.monty
@@ -67,25 +68,25 @@ This might take a few minutes or more to run, depending on your download speed.
 > [!NOTE]
 > By default, Conda will activate the base environment when you open a new terminal. If you'd prefer to have the Monty environment active by default, enter this:
 > 
-> ```
+> ```shell
 > conda config --set default_activation_env tbp.monty
 > ```
 > 
 > Also, if you want the `~/tbp` folder active by default when opening the Ubuntu terminal, enter this:
 > 
-> ```
+> ```shell
 > echo '[ "$PWD" = "$HOME" ] && cd tbp' >> ~/.bashrc
 > ```
 
 Next, install libopengl0 to allow running Habitat-Sim:
 
-```
+```shell
 sudo apt -y install libopengl0
 ```
 
 Then, configure Linux to directly use Windows GPU drivers:
 
-```
+```shell
 echo "export GALLIUM_DRIVER=d3d12" >> ~/.bashrc && exec $SHELL
 ```
 
@@ -95,26 +96,27 @@ echo "export GALLIUM_DRIVER=d3d12" >> ~/.bashrc && exec $SHELL
 
 # 5. Download Monty datasets
 
-A lot of our current experiments are based on the [YCB dataset](https://thousandbrainsproject.readme.io/docs/getting-started#41-download-the-ycb-dataset) which is a dataset of 77 3D objects that we render in habitat. To download the dataset, enter this:
+A lot of our current experiments are based on the [YCB dataset](../getting-started.md#41-download-the-ycb-dataset) which is a dataset of 77 3D objects that we render in habitat. To download the dataset, enter this:
 
 ```
 python -m habitat_sim.utils.datasets_download --uids ycb --data-path ~/tbp/data/habitat
 ```
 
-You can also get the [Pretrained Models](https://thousandbrainsproject.readme.io/docs/getting-started#42-download-pretrained-models) for [inference](https://thousandbrainsproject.readme.io/docs/running-inference-with-a-pretrained-model) testing:
+You can also get the [Pretrained Models](../getting-started.md#42-download-pretrained-models) for [inference](../tutorials/running-inference-with-a-pretrained-model.md) testing:
 
-```
+```shell
 mkdir -p ~/tbp/results/monty/pretrained_models/ && cd "$_"
 curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.tgz | tar -xzf -
 ```
 
 Optionally, you can get the [Monty-Meets-World datasets](../../overview/benchmark-experiments.md#monty-meets-world) for [real-world testing](../../community/project-showcase.md#monty-for-object-detection-with-the-ipad-camera):
 
-```
+```shell
 mkdir -p ~/tbp/data/ && cd "$_"
 curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab.tgz | tar -xzf -
 curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.tgz | tar -xzf -
 ```
+
 
 ## 5.1. [Optional] Set Environment Variables
 
@@ -126,7 +128,7 @@ If you did not save the pre-trained models in the `~/tbp/results/monty/pretraine
 export MONTY_MODELS=/path/to/your/pretrained/models/dir
 ```
 
-This path should point to the `pretrained_models` folder that contains the`pretrained_ycb_v10`folders.
+This path should point to the `pretrained_models` folder that contains the `pretrained_ycb_v10` folders.
 
 ### MONTY_DATA
 
@@ -165,13 +167,13 @@ Install the Python extension: https://marketplace.visualstudio.com/items?itemNam
 
 From Ubuntu, initialize the settings file for the repo:
 
-```
+```shell
 mkdir -p ~/tbp/.vscode/ && echo '{ "python.defaultInterpreterPath": "~/miniconda3/envs/tbp.monty/bin/python", "python.testing.pytestEnabled": true, "python.testing.pytestArgs": ["tests"] }' > ~/tbp/.vscode/settings.json
 ```
 
 Still from Ubuntu, enter this to launch VS Code with Monty:
 
-```
+```shell
 cd ~/tbp && code .
 ```
 
@@ -188,7 +190,7 @@ This will take some time, about 10 minutes on an 8-core i7-11700K for example:
 
 Finally, let’s run a benchmark. You can do this in either the Ubuntu terminal or directly in the VS Code terminal. In the VS Code top menu, select Terminal > Open Terminal, then enter:
 
-```
+```shell
 python benchmarks/run.py -e base_config_10distinctobj_dist_agent
 ```
 
