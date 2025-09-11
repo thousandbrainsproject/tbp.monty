@@ -61,12 +61,12 @@ message SensorObservations {
   bytes raw = 8;
 }
 
-// Auto-generated message for 'AgentObservations' (no fields detected).
 message AgentObservations {
+  map<uint64, SensorObservations> entries = 1;
 }
 
-// Auto-generated message for 'Observations' (no fields detected).
 message Observations {
+  map<uint64, AgentObservations> entries = 1;
 }
 
 message SensorState {
@@ -81,8 +81,8 @@ message AgentState {
   optional bool motor_only_step = 4;
 }
 
-// Auto-generated message for 'ProprioceptiveState' (no fields detected).
 message ProprioceptiveState {
+  map<uint64, AgentState> entries = 1;
 }
 
 message StepResponse {

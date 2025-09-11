@@ -482,6 +482,30 @@ class ProtoBuilder:
             if t.__name__ in _SCALAR_NAME_MAP:
                 return _SCALAR_NAME_MAP[t.__name__]
 
+            # Check if this is a pure Dict type (like AgentObservations, Observations, ProprioceptiveState)
+            if self._is_pure_dict_type(t):
+                dict_info = self._get_dict_inheritance_info(t)
+                if dict_info:
+                    # Always create a message for pure Dict types to avoid nested map syntax
+                    wrapper_name = t.__name__
+                    if wrapper_name not in self.messages:
+                        key_type, value_type = dict_info
+                        # Create a message that wraps the map
+                        wrapper_fields = [
+                            FieldSpec(
+                                name="entries",
+                                py_type=value_type,
+                                optional=False,
+                                is_map=True,
+                                # Store the key type for proper map rendering
+                            )
+                        ]
+                        # Add key type info for the map field
+                        wrapper_fields[0].key_type = key_type
+                        self.emit_message(wrapper_name, wrapper_fields)
+                    self._seen_types[t] = wrapper_name
+                    return wrapper_name
+
             name = self._make_valid_proto_name(t.__name__)
             if name not in self.messages:
                 self._introspect_and_emit_message(t, name)
@@ -508,6 +532,38 @@ class ProtoBuilder:
             lines.append(f"  {m.name} = {int(m.value)};\n")
         lines.append("}\n")
         self.enums[e.__name__] = "".join(lines)
+
+    def _is_pure_dict_type(self, t: Any) -> bool:
+        """Check if a type is a pure Dict type (inherits from Dict but has no additional attributes)."""
+        if not inspect.isclass(t):
+            return False
+
+        # Check if it inherits from Dict
+        if not hasattr(t, "__orig_bases__"):
+            return False
+
+        for base in t.__orig_bases__:
+            origin = get_origin(base)
+            if origin is dict:
+                # Check if this class has its own annotated attributes
+                return not hasattr(t, "__annotations__") or not any(
+                    not field_name.startswith("_")
+                    for field_name in t.__annotations__.keys()
+                )
+        return False
+
+    def _get_dict_inheritance_info(self, t: Any) -> Optional[Tuple[Any, Any]]:
+        """Get the key and value types for a Dict inheritance."""
+        if not hasattr(t, "__orig_bases__"):
+            return None
+
+        for base in t.__orig_bases__:
+            origin = get_origin(base)
+            if origin is dict:
+                args = get_args(base)
+                if len(args) == 2:
+                    return args[0], args[1]
+        return None
 
     def _smart_type_for_any_field(self, field_name: str) -> str:
         """Return intelligent type mapping for Any fields based on field name."""
@@ -891,25 +947,35 @@ class ProtoBuilder:
         
         for field_number, f, ptype in field_assignments:
             if f.is_map:
-                # For map fields, we need to determine key and value types
-                origin = get_origin(f.py_type)
-                if origin in (dict, Dict):
-                    args = get_args(f.py_type)
-                    if len(args) == 2:
-                        key_type, value_type = args
-                        key_proto = self.type_to_proto(key_type)
-                        value_proto = self.type_to_proto(value_type)
-                        lines.append(
-                            f"  map<{key_proto}, {value_proto}> {f.name} = {field_number};\n"
-                        )
+                # Check if we have stored key type info
+                if hasattr(f, "key_type") and f.key_type:
+                    key_proto = self.type_to_proto(f.key_type)
+                    value_proto = self.type_to_proto(f.py_type)
+                    lines.append(
+                        f"  map<{key_proto}, {value_proto}> {f.name} = {field_number};\n"
+                    )
+                else:
+                    # For map fields, we need to determine key and value types
+                    origin = get_origin(f.py_type)
+                    if origin in (dict, Dict):
+                        args = get_args(f.py_type)
+                        if len(args) == 2:
+                            key_type, value_type = args
+                            key_proto = self.type_to_proto(key_type)
+                            value_proto = self.type_to_proto(value_type)
+                            lines.append(
+                                f"  map<{key_proto}, {value_proto}> {f.name} = {field_number};\n"
+                            )
+                        else:
+                            # Fallback
+                            lines.append(
+                                f"  map<string, {ptype}> {f.name} = {field_number};\n"
+                            )
                     else:
-                        # Fallback
+                        # Fallback for non-dict map fields
                         lines.append(
                             f"  map<string, {ptype}> {f.name} = {field_number};\n"
                         )
-                else:
-                    # Fallback for non-dict map fields
-                    lines.append(f"  map<string, {ptype}> {f.name} = {field_number};\n")
             else:
                 repeated_prefix = "repeated " if f.repeated else ""
                 optional_prefix = (
