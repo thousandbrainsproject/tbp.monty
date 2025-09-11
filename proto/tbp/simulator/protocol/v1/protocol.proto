@@ -1,6 +1,14 @@
 syntax = "proto3";
 package tbp.simulator.protocol.v1;
 
+option go_package = "tbp/simulator/protocol/v1;protocolv1";
+option java_package = "org.thousandbrains.simulator.v1";
+option csharp_namespace = "ThousandBrains.Simulator.V1";
+
+// All linear units in meters, angles in radians.
+// Right-handed coordinate system.
+// Quaternions use w,x,y,z (scalar-first) ordering.
+
 message RemoveAllObjectsRequest {
 }
 
@@ -22,20 +30,16 @@ message QuaternionWXYZ {
 
 message AddObjectRequest {
   string name = 1;
-  VectorXYZ position = 2;
-  QuaternionWXYZ rotation = 3;
-  VectorXYZ scale = 4;
-  int64 semantic_id = 5;
-  int64 primary_target_object = 6;
-}
-
-message TupleObjectIDSemanticID {
-  int64 object_id = 3;
-  int64 semantic_id = 4;
+  optional VectorXYZ position = 2;
+  optional QuaternionWXYZ rotation = 3;
+  optional VectorXYZ scale = 4;
+  optional uint64 semantic_id = 5;
+  optional uint64 primary_target_object = 6;
 }
 
 message AddObjectResponse {
-  TupleObjectIDSemanticID result = 1;
+  uint64 object_id = 1;
+  optional uint64 semantic_id = 2;
 }
 
 message Action {
@@ -47,47 +51,51 @@ message StepRequest {
 }
 
 message SensorObservations {
-  bytes data = 1;
+  bytes rgba = 1;
+  bytes depth = 2;
+  bytes semantic = 3;
+  bytes semantic_3d = 4;
+  bytes sensor_frame_data = 5;
+  bytes world_camera = 6;
+  bytes pixel_loc = 7;
+  bytes raw = 8;
 }
 
+// Auto-generated message for 'AgentObservations' (no fields detected).
 message AgentObservations {
-  bytes data = 1;
 }
 
+// Auto-generated message for 'Observations' (no fields detected).
 message Observations {
-  bytes data = 1;
 }
 
 message SensorState {
-  bytes position = 1;
-  bytes rotation = 2;
+  VectorXYZ position = 1;
+  QuaternionWXYZ rotation = 2;
 }
 
 message AgentState {
-  bytes position = 2;
-  bytes rotation = 3;
+  map<uint64, SensorState> sensors = 1;
+  VectorXYZ position = 2;
+  QuaternionWXYZ rotation = 3;
   optional bool motor_only_step = 4;
-  map<string, SensorState> sensors = 5;
 }
 
+// Auto-generated message for 'ProprioceptiveState' (no fields detected).
 message ProprioceptiveState {
-  bytes data = 1;
-}
-
-message TupleObservationsProprioceptiveState {
-  Observations observations = 3;
-  ProprioceptiveState proprioceptive_state = 4;
 }
 
 message StepResponse {
-  TupleObservationsProprioceptiveState result = 1;
+  Observations observations = 1;
+  ProprioceptiveState proprioceptive_state = 2;
 }
 
 message ResetRequest {
 }
 
 message ResetResponse {
-  TupleObservationsProprioceptiveState result = 1;
+  Observations observations = 1;
+  ProprioceptiveState proprioceptive_state = 2;
 }
 
 message CloseRequest {

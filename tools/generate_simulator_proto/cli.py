@@ -123,6 +123,16 @@ def _load_symbol(qualified: str) -> Any:
     return getattr(mod, sym_name)
 
 
+def _type_name_to_field_name_standalone(type_name: str) -> str:
+    """Convert a type name to a snake_case field name."""
+    # Convert PascalCase to snake_case
+    # e.g., "ProprioceptiveState" -> "proprioceptive_state"
+    # e.g., "ObjectID" -> "object_id"
+    name = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", type_name)
+    name = re.sub(r"([a-z\d])([A-Z])", r"\1_\2", name)
+    return name.lower()
+
+
 def _snake_to_pascal(snake_str: str) -> str:
     """Convert snake_case string to PascalCase.
 
@@ -137,7 +147,17 @@ def _snake_to_pascal(snake_str: str) -> str:
 
 
 def _is_optional(t: Any) -> Tuple[bool, Any]:
+    # Handle string type annotations (forward references) with union syntax
+    if isinstance(t, str):
+        # Check for " | None" or "| None" patterns in string annotations
+        if " | None" in t or "|None" in t:
+            # Extract the non-None type from the string
+            clean_type = re.sub(r"\s*\|\s*None\s*", "", t).strip()
+            return True, clean_type
+        return False, t
+
     origin = get_origin(t)
+
     # Handle typing.Union (e.g., Union[T, None])
     if origin is Union:
         args = tuple(get_args(t))
@@ -145,6 +165,19 @@ def _is_optional(t: Any) -> Tuple[bool, Any]:
         if (len(non_none) == 1 and len(args) == 2 and
             any(a is type(None) for a in args)):
             return True, non_none[0]
+
+    # Handle Python 3.10+ union syntax (e.g., T | None)
+    # Check if this is a union with None
+    if hasattr(t, "__class__") and "UnionType" in str(type(t)):
+        args = get_args(t)
+        if args:
+            non_none = tuple(a for a in args if a is not type(None))
+            if (
+                len(non_none) == 1
+                and len(args) == 2
+                and any(a is type(None) for a in args)
+            ):
+                return True, non_none[0]
 
     return False, t
 
@@ -303,8 +336,21 @@ class ProtoBuilder:
         lines.append('syntax = "proto3";\n')
         if self.package:
             lines.append(f"package {self.package};\n")
+
+        # Add language-specific package options
+        lines.append("\n")
+        lines.append('option go_package = "tbp/simulator/protocol/v1;protocolv1";\n')
+        lines.append('option java_package = "org.thousandbrains.simulator.v1";\n')
+        lines.append('option csharp_namespace = "ThousandBrains.Simulator.V1";\n')
+
         if self._need_timestamp:
             lines.append(_TIMESTAMP_IMPORT + "\n")
+
+        # Add documentation comments
+        lines.append("\n")
+        lines.append("// All linear units in meters, angles in radians.\n")
+        lines.append("// Right-handed coordinate system.\n")
+        lines.append("// Quaternions use w,x,y,z (scalar-first) ordering.\n")
         lines.append("\n")
 
         # enums, messages, services
@@ -334,6 +380,10 @@ class ProtoBuilder:
             # Check if this is a built-in scalar type
             if t in _SCALAR_NAME_MAP:
                 return _SCALAR_NAME_MAP[t]
+
+            # Handle ID types as strings
+            if t.endswith("ID"):
+                return "uint64"
 
             # Strip union part before trying to resolve (e.g., "VectorXYZ | None" -> "VectorXYZ")
             base_type_name = re.sub(r"\s*\|\s*None\s*", "", t).strip()
@@ -370,12 +420,16 @@ class ProtoBuilder:
         if t in _SCALAR_MAP:
             return _SCALAR_MAP[t]
 
+        # Handle ID types - convert int-based IDs to uint64
+        if hasattr(t, "__name__") and t.__name__.endswith("ID"):
+            return "uint64"
+
         # special-case datetime -> Timestamp
         if t is datetime.datetime:
             self._need_timestamp = True
             return "google.protobuf.Timestamp"
 
-        # Handle numpy arrays and other numpy types as bytes
+        # Handle numpy arrays as bytes (standard protobuf type)
         if hasattr(t, "__module__") and t.__module__ and "numpy" in t.__module__:
             return "bytes"
 
@@ -434,9 +488,9 @@ class ProtoBuilder:
             self._seen_types[t] = name
             return name
 
-        # Handle typing.Any as bytes (catch-all for complex types)
+        # Handle typing.Any with smart field name detection
         if t is Any:
-            return "bytes"
+            return "bytes"  # Default fallback
 
         # Fallback with better error info
         msg = f"Unsupported type in Protocol → proto mapping: {t!r} (type: {type(t)})"
@@ -455,14 +509,28 @@ class ProtoBuilder:
         lines.append("}\n")
         self.enums[e.__name__] = "".join(lines)
 
+    def _smart_type_for_any_field(self, field_name: str) -> str:
+        """Return intelligent type mapping for Any fields based on field name."""
+        field_lower = field_name.lower()
+
+        # Position fields -> VectorXYZ
+        if field_lower in ["position", "pos", "location", "loc", "translation"]:
+            return "VectorXYZ"
+
+        # Rotation fields -> QuaternionWXYZ
+        if field_lower in ["rotation", "rot", "orientation", "quat", "quaternion"]:
+            return "QuaternionWXYZ"
+
+        # Scale fields -> VectorXYZ
+        if field_lower in ["scale", "scaling", "size"]:
+            return "VectorXYZ"
+
+        # Default fallback
+        return "bytes"
+
     def _type_name_to_field_name(self, type_name: str) -> str:
         """Convert a type name to a snake_case field name."""
-        # Convert PascalCase to snake_case
-        # e.g., "ProprioceptiveState" -> "proprioceptive_state"
-        # e.g., "ObjectID" -> "object_id"
-        name = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", type_name)
-        name = re.sub(r"([a-z\d])([A-Z])", r"\1_\2", name)
-        return name.lower()
+        return _type_name_to_field_name_standalone(type_name)
 
     def _make_valid_proto_name(self, name: str) -> str:
         """Convert a Python type name to a valid protobuf identifier."""
@@ -614,6 +682,10 @@ class ProtoBuilder:
                 fields.append(FieldSpec(field_name, bytes, optional=False))
 
         if fields:
+            # For auto-generated tuple messages, ensure field numbering starts from 1
+            # by clearing any existing field numbers for this message
+            if message_name in self._field_numbers:
+                del self._field_numbers[message_name]
             self.emit_message(message_name, fields)
         else:
             # Fallback to empty message
@@ -701,10 +773,27 @@ class ProtoBuilder:
                 origin = get_origin(inner_type)
                 is_map_field = origin in (dict, Dict)
 
+                # Smart type detection for Any fields based on field name
+                field_type = inner_type
+                if inner_type is Any:
+                    smart_type_name = self._smart_type_for_any_field(field.name)
+                    if smart_type_name != "bytes":
+                        # Use the smart type name as a string (will be resolved later)
+                        field_type = smart_type_name
+
+                # Improve field naming for ID types
+                field_name = field.name
+                if (
+                    hasattr(inner_type, "__name__")
+                    and inner_type.__name__.endswith("ID")
+                    and not field.name.endswith("_id")
+                ):
+                    field_name = f"{field.name}_id"
+
                 fields.append(
                     FieldSpec(
-                        name=field.name,
-                        py_type=inner_type,
+                        name=field_name,
+                        py_type=field_type,
                         optional=is_opt or field.default != dataclasses.MISSING,
                         is_map=is_map_field,
                     )
@@ -720,22 +809,30 @@ class ProtoBuilder:
                 if origin is dict:
                     # This is a class inheriting from Dict[K, V]
                     args = get_args(base)
+
+                    # Check if this class has its own annotated attributes
+                    class_fields = []
+                    if hasattr(t, "__annotations__"):
+                        for field_name, field_type in t.__annotations__.items():
+                            if not field_name.startswith("_"):  # Skip private fields
+                                is_opt, inner_type = _is_optional(field_type)
+                                class_fields.append(
+                                    FieldSpec(
+                                        name=field_name,
+                                        py_type=inner_type,
+                                        optional=is_opt,
+                                    )
+                                )
+
+                    # Ensure referenced types get processed
                     if len(args) == 2:
                         key_type, value_type = args
-                        # Ensure referenced types get processed and added to proto
-                        # even though we're representing this Dict as bytes
-                        self.type_to_proto(key_type)  # Process key type
-                        self.type_to_proto(value_type)  # Process value type
+                        self.type_to_proto(key_type)
+                        self.type_to_proto(value_type)
 
-                    # For complex Dict types with nested structures, use bytes for simplicity
-                    # These types are too complex to represent properly in protobuf
-                    return [
-                        FieldSpec(
-                            name="data",
-                            py_type=bytes,
-                            optional=False,
-                        )
-                    ]
+                    # If this class has its own fields, return them (treat as a regular message)
+                    # If it has no fields, it's a pure Dict - let the parent handle it as a map
+                    return class_fields if class_fields else []
 
         # Let all types go through normal introspection - no hardcoded special cases
 
@@ -794,7 +891,25 @@ class ProtoBuilder:
         
         for field_number, f, ptype in field_assignments:
             if f.is_map:
-                lines.append(f"  map<string, {ptype}> {f.name} = {field_number};\n")
+                # For map fields, we need to determine key and value types
+                origin = get_origin(f.py_type)
+                if origin in (dict, Dict):
+                    args = get_args(f.py_type)
+                    if len(args) == 2:
+                        key_type, value_type = args
+                        key_proto = self.type_to_proto(key_type)
+                        value_proto = self.type_to_proto(value_type)
+                        lines.append(
+                            f"  map<{key_proto}, {value_proto}> {f.name} = {field_number};\n"
+                        )
+                    else:
+                        # Fallback
+                        lines.append(
+                            f"  map<string, {ptype}> {f.name} = {field_number};\n"
+                        )
+                else:
+                    # Fallback for non-dict map fields
+                    lines.append(f"  map<string, {ptype}> {f.name} = {field_number};\n")
             else:
                 repeated_prefix = "repeated " if f.repeated else ""
                 optional_prefix = (
@@ -845,6 +960,9 @@ def _fields_from_parameters(params: List[inspect.Parameter]) -> List[FieldSpec]:
         )
         # Optional?
         is_opt, inner = _is_optional(t)
+        print(
+            f"Debug: Parameter {p.name}, type={t}, is_optional={is_opt}, inner={inner}"
+        )
         origin = get_origin(inner)
         repeated = origin in (list, List, set, tuple)
         is_map = origin in (dict, Dict)
@@ -888,6 +1006,36 @@ def _fields_from_return(ret: Any, method_name: str) -> Tuple[str, List[FieldSpec
     if isinstance(ret, str):
         if ret == "None":
             return f"{method_name}Response", []
+
+        # Check if this is a tuple string like "tuple[A, B]"
+        if ret.startswith("tuple[") and ret.endswith("]"):
+            # Parse tuple expression: "tuple[A, B]" -> ["A", "B"]
+            inner = ret[6:-1]  # Remove "tuple[" and "]"
+            type_parts = [t.strip() for t in inner.split(",")]
+
+            fields = []
+            for i, type_str in enumerate(type_parts, 1):
+                # Clean up type names (strip union parts like "| None")
+                clean_type = re.sub(r"\s*\|\s*None\s*", "", type_str).strip()
+                is_optional = "| None" in type_str or " | None" in type_str
+
+                # Generate meaningful field name from type
+                field_name = _type_name_to_field_name_standalone(clean_type)
+
+                # Improve field naming for ID types
+                if clean_type.endswith("ID") and not field_name.endswith("_id"):
+                    field_name = f"{field_name}_id"
+
+                fields.append(
+                    FieldSpec(
+                        name=field_name,
+                        py_type=clean_type,
+                        optional=is_optional,
+                    )
+                )
+
+            return f"{method_name}Response", fields
+
         # For other strings, treat as a single field
         fields = [FieldSpec(name="result", py_type=ret, optional=False)]
         return f"{method_name}Response", fields
@@ -953,11 +1101,21 @@ def _fields_from_return(ret: Any, method_name: str) -> Tuple[str, List[FieldSpec
                 ))
                 continue
 
-            fields.append(FieldSpec(
-                name=f"result_{i}",
-                py_type=inner_i,
-                optional=is_opt_i,
-            ))
+            # Generate meaningful field name from type
+            if hasattr(inner_i, "__name__"):
+                field_name = _type_name_to_field_name_standalone(inner_i.__name__)
+            elif isinstance(inner_i, str):
+                field_name = _type_name_to_field_name_standalone(inner_i)
+            else:
+                field_name = f"result_{i}"
+
+            fields.append(
+                FieldSpec(
+                    name=field_name,
+                    py_type=inner_i,
+                    optional=is_opt_i,
+                )
+            )
         return f"{method_name}Response", fields
 
     # Plain type -> single-field message
