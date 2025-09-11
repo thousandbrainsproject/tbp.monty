@@ -115,7 +115,7 @@ You can also get the [Pretrained Models](https://thousandbrainsproject.readme.io
 
 ```
 mkdir -p ~/tbp/results/monty/pretrained_models/ && cd "$_"
-curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.tgz | tar --warning=no-unknown-keyword -xzf -
+curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.tgz | tar -xzf -
 ```
 
 Optionally, you can get the [Monty-Meets-World datasets](https://thousandbrainsproject.readme.io/docs/benchmark-experiments#monty-meets-world) for [real-world testing](https://thousandbrainsproject.readme.io/docs/project-showcase#monty-for-object-detection-with-the-ipad-camera):
