@@ -51,9 +51,6 @@ class MuJoCoSimulator(Simulator):
         """Recompile the MuJoCo model while retaining any state data."""
         self.model, self.data = self.spec.recompile(self.model, self.data)
 
-    def initialize_agent(self, agent_id, agent_state) -> None:
-        pass
-
     def remove_all_objects(self) -> None:
         self.spec = MjSpec()
         self._recompile()
