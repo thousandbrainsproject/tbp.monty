@@ -1,0 +1,69 @@
+syntax = "proto3";
+package tbp.simulator.protocol.v1;
+import "google/protobuf/empty.proto";
+
+// Placeholder for application type 'str'. Flesh out fields later.
+message str {
+}
+
+// Placeholder for application type 'VectorXYZOptional'. Flesh out fields later.
+message VectorXYZOptional {
+}
+
+// Placeholder for application type 'QuaternionWXYZOptional'. Flesh out fields later.
+message QuaternionWXYZOptional {
+}
+
+// Placeholder for application type 'SemanticIDOptional'. Flesh out fields later.
+message SemanticIDOptional {
+}
+
+// Placeholder for application type 'ObjectIDOptional'. Flesh out fields later.
+message ObjectIDOptional {
+}
+
+message AddObjectRequest {
+  str name = 1;
+  VectorXYZOptional position = 2;
+  QuaternionWXYZOptional rotation = 3;
+  VectorXYZOptional scale = 4;
+  SemanticIDOptional semantic_id = 5;
+  ObjectIDOptional primary_target_object = 6;
+}
+
+// Placeholder for application type 'Tuple_ObjectID_SemanticIDOptional'. Flesh out fields later.
+message Tuple_ObjectID_SemanticIDOptional {
+}
+
+message AddObjectResponse {
+  Tuple_ObjectID_SemanticIDOptional result = 1;
+}
+
+// Placeholder for application type 'Action'. Flesh out fields later.
+message Action {
+}
+
+message StepRequest {
+  Action action = 1;
+}
+
+// Placeholder for application type 'Tuple_Observations_ProprioceptiveState'. Flesh out fields later.
+message Tuple_Observations_ProprioceptiveState {
+}
+
+message StepResponse {
+  Tuple_Observations_ProprioceptiveState result = 1;
+}
+
+message ResetResponse {
+  Tuple_Observations_ProprioceptiveState result = 1;
+}
+
+service Simulator {
+  rpc RemoveAllObjects (google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc AddObject (AddObjectRequest) returns (AddObjectResponse);
+  rpc Step (StepRequest) returns (StepResponse);
+  rpc Reset (google.protobuf.Empty) returns (ResetResponse);
+  rpc Close (google.protobuf.Empty) returns (google.protobuf.Empty);
+}
+

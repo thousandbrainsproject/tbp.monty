@@ -87,6 +87,9 @@ generate_api_docs_tool = [
     'pydata_sphinx_theme',
     'snowballstemmer<3'
 ]
+generate_simulator_proto_tool = [
+    'protobuf'
+]
 github_readme_sync_tool = [
     'requests',
     'pyyaml',
