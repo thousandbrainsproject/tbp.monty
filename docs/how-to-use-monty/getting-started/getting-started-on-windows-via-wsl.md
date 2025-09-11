@@ -3,7 +3,7 @@ title: Getting Started on Windows via WSL
 description: How to get the code running using Windows Subsystem for Linux and Visual Studio Code
 ---
 > [!NOTE]
-> This guide is based off the main [Getting Started](getting-started) guide for macOS and Linux, which you may refer to as needed.
+> This guide is based off the main [Getting Started](../getting-started.md) guide for macOS and Linux, which you may refer to as needed.
 
 > [!WARNING]
 > While the repository contains a `uv.lock` file, this is currently experimental and not supported. In the future this will change, but for now, avoid trying to use `uv` with this project.
@@ -118,12 +118,12 @@ mkdir -p ~/tbp/results/monty/pretrained_models/ && cd "$_"
 curl -L https://tbp-pretrained-models-public-c9c24aef2e49b897.s3.us-east-2.amazonaws.com/tbp.monty/pretrained_ycb_v10.tgz | tar -xzf -
 ```
 
-Optionally, you can get the [Monty-Meets-World datasets](https://thousandbrainsproject.readme.io/docs/benchmark-experiments#monty-meets-world) for [real-world testing](https://thousandbrainsproject.readme.io/docs/project-showcase#monty-for-object-detection-with-the-ipad-camera):
+Optionally, you can get the [Monty-Meets-World datasets](../../overview/benchmark-experiments.md#monty-meets-world) for [real-world testing](../../community/project-showcase.md#monty-for-object-detection-with-the-ipad-camera):
 
 ```
 mkdir -p ~/tbp/data/ && cd "$_"
-curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab.tgz | tar --warning=no-unknown-keyword -xzf -
-curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.tgz | tar --warning=no-unknown-keyword -xzf -
+curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/numenta_lab.tgz | tar -xzf -
+curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/worldimages.tgz | tar -xzf -
 ```
 
 ## 5.1. [Optional] Set Environment Variables
