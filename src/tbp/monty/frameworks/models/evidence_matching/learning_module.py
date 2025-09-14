@@ -829,8 +829,10 @@ class EvidenceGraphLM(GraphLM):
                 current_mean_evidence = np.mean(self.evidence[graph_id])
                 new_evidence = new_evidence + current_mean_evidence
 
-            # Add a mapper channel to be updated with the new data
-            mapper.add_channel(new_hypotheses.input_channel, len(new_evidence))
+            # Add a mapper channel to be updated with the new data. The mapper will
+            # be later resized to `len(new_evidence)` after we update the hypothesis
+            # space.
+            mapper.add_channel(new_hypotheses.input_channel, 0)
 
         # The mapper update function calls below automatically resize the
         # arrays they update. Afterward, we must update the channel indices
