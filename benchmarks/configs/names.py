@@ -88,7 +88,7 @@ class UnsupervisedInferenceExperiments:
 @dataclass
 class MyExperiments:
     # Add your experiment names here
-    pass
+    base_77obj_surf_agent_hyp1_rerun: dict
 
 
 current_module = sys.modules[__name__]

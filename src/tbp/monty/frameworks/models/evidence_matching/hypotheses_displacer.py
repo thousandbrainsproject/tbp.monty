@@ -261,7 +261,8 @@ class DefaultHypothesesDisplacer:
             node_distance_weights,
         )
         # Set the evidences which are too far away to -1
-        radius_evidence[mask] = -100
+        radius_evidence[mask] = -1
+        print("Penalizing -1")
         # If a node is too far away, weight the negative evidence fully (*1). This
         # only comes into play if there are no nearby nodes in the radius, then we
         # want an evidence of -1 for this hypothesis.
