@@ -37,9 +37,9 @@ class CustomDetailedJSONLoggingConfig(DetailedEvidenceLMLoggingConfig):
     episodes_to_save: List[int] = field(default_factory=list)
 
 
-base_77obj_surf_agent_hyp1_rerun = copy.deepcopy(base_77obj_surf_agent)
-base_77obj_surf_agent_hyp1_rerun["logging_config"].run_name = "base_77obj_surf_agent_hyp1_rerun"
-base_77obj_surf_agent_hyp1_rerun["logging_config"] = CustomDetailedJSONLoggingConfig(
+base_77obj_surf_agent_hyp100_rerun = copy.deepcopy(base_77obj_surf_agent)
+base_77obj_surf_agent_hyp100_rerun["logging_config"].run_name = "base_77obj_surf_agent_hyp100_rerun"
+base_77obj_surf_agent_hyp100_rerun["logging_config"] = CustomDetailedJSONLoggingConfig(
     episodes_to_save=[85,89,139,162,227],
 )
 
@@ -48,6 +48,6 @@ experiments = MyExperiments(
     # For each experiment name in MyExperiments, add its corresponding
     # configuration here.
     # e.g.: my_experiment=my_experiment_config
-    base_77obj_surf_agent_hyp1_rerun=base_77obj_surf_agent_hyp1_rerun,
+    base_77obj_surf_agent_hyp100_rerun=base_77obj_surf_agent_hyp100_rerun,
 )
 CONFIGS = asdict(experiments)
