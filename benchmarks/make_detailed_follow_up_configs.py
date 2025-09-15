@@ -77,7 +77,9 @@ if __name__ == "__main__":
                 "this script."
             )
         eval_stats = pd.read_csv(eval_stats_file)
-        rerun_episodes = eval_stats.index[eval_stats["performance"] != "correct"]
+        rerun_episodes = eval_stats.index[
+            eval_stats["primary_performance"] != "correct"
+        ]
         if len(rerun_episodes) == 0:
             raise ValueError(
                 f"No episodes with incorrect results found in {eval_stats_file}"

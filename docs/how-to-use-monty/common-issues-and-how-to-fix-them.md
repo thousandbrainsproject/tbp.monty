@@ -17,6 +17,8 @@ Note that in Habitat (and therefore the Monty code-base), the "z" direction is p
 
 Note that the rotation that learning modules store in their Most-Likely Hypothesis (MLH) is the rotation required to transform a feature (such as a surface normal) to match the feature on the object in the environment. As such, it is the _inverse_ of the actual orientation of the object in the environment.
 
+For more details, see our documentation on [reference frame transformations in Monty](../how-monty-works/monty/reference-frame-transformations.md).
+
 ## Sensor Updates in Habitat
 
 Note that sensor-based actions (such as set_sensor_pose), update \_all_ the sensors associated with that agent. For example, if the view-finder and main patch sensor associated with an agent were at different locations relative to one another, but set-sensor-pose sets a new absolute location (e.g. 0, 0, 0), both sensors will now have this location, and they will lose the relative offset they had before. While the effect will depend on whether the action is in relative or absolute coordinates, the modification of all sensors associated with an agent is an inherent property of Habitat.

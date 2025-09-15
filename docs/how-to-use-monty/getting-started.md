@@ -10,8 +10,10 @@ description: How to get the code running.
 > [!WARNING]
 > This guide will not work on Windows or non-`x86_64/amd64` Linux.
 >
+> A guide for Windows Subsystem for Linux is available here: [Getting Started on Windows via WSL](getting-started/getting-started-on-windows-via-wsl.md)
+>
 > You can follow these GitHub issues for updates:
-> - [Windows](https://github.com/thousandbrainsproject/tbp.monty/issues/52)
+> - [Windows native](https://github.com/thousandbrainsproject/tbp.monty/issues/52)
 > - [Raspberry Pi](https://github.com/thousandbrainsproject/tbp.monty/issues/85)
 >
 > If you run into problems, please let us know by [opening a GitHub issue](https://github.com/thousandbrainsproject/tbp.monty/issues/new/choose) or [posting in the Monty Code section of our forum](https://thousandbrains.discourse.group/c/monty-code/6).
@@ -43,7 +45,7 @@ To make sure your fork is up to date with our repository you need to click on `S
 ![](../figures/how-to-use-monty/update_branch.png)
 
 
-You can also update your code using the terminal by calling `git fetch upstream; git merge upstream/main` in the terminal. If you have not linked the upstream repository yet, you may first need to call `git remote add upstream upstream_repository_path.git`
+You can also update your code using the terminal by calling `git fetch upstream; git merge upstream/main`. If you have not linked the upstream repository yet, you may first need to call `git remote add upstream upstream_repository_path.git`
 
 # 2. Set up Your Environment
 
@@ -170,7 +172,7 @@ If you did not save the pre-trained models in the `~/tbp/results/monty/pretraine
 export MONTY_MODELS=/path/to/your/pretrained/models/dir
 ```
 
-This path should point to the `pretrained_models` folder that contains the`pretrained_ycb_v10`folders.
+This path should point to the `pretrained_models` folder that contains the `pretrained_ycb_v10` folders.
 
 
 ### MONTY_DATA
