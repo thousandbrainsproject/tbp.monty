@@ -45,7 +45,10 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 )
 
 from .hypothesis_oorf_visualizer_utils.data_models import ObjectModelForVisualization
-from .hypothesis_oorf_visualizer_utils.episode_loader import EpisodeDataLoader, get_model_path
+from .hypothesis_oorf_visualizer_utils.episode_loader import (
+    EpisodeDataLoader,
+    get_model_path,
+)
 
 if TYPE_CHECKING:
     import argparse
