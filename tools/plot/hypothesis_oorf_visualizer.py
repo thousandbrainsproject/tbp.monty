@@ -44,8 +44,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     rotate_pose_dependent_features,
 )
 
-from .data_models import ObjectModelForVisualization
-from .episode_loader import EpisodeDataLoader, get_model_path
+from .hypothesis_oorf_visualizer.data_models import ObjectModelForVisualization
+from .hypothesis_oorf_visualizer.episode_loader import EpisodeDataLoader, get_model_path
 
 if TYPE_CHECKING:
     import argparse
@@ -145,6 +145,46 @@ def compute_reference_frame_analysis(
 
 class HypothesesOORFVisualizer:
     """Interactive visualizer for hypotheses that are out of object's reference frame.
+
+    This visualizer provides a comprehensive 3D interactive view for analyzing hypothesis
+    validity based on reference frame constraints. It displays how hypotheses are classified
+    as inside or outside the object's reference frame using a custom distance metric that
+    incorporates surface curvature.
+
+    Features:
+        - **Object Pointcloud**: Gray points showing the ground truth object model
+        - **Hypothesis Points**: Color-coded by reference frame status:
+            * Blue: Inside reference frame (larger points)
+            * Pink: Outside reference frame (smaller points)
+        - **Interactive Ellipsoids**: Curvature-aware ellipsoids showing valid regions:
+            * Semi-transparent ellipsoids around selected hypotheses
+            * Shape accounts for surface curvature stretching in normal direction
+        - **Pose Vector Arrows**: Transformed sensed orientation vectors:
+            * Purple: PC1 direction (maximally convex direction)
+            * Green: PC2 direction (secondary principal curvature)
+            * Yellow: Surface normal direction
+        - **Highest Evidence Hypothesis (HEH)**: Black cube marking the hypothesis with
+          highest evidence score for the target object
+        - **Nearest Neighbors**: Yellow points showing k-nearest object model points
+          used for reference frame analysis
+        - **Sensor Locations**: Colored spheres showing sensor positions:
+            * Green: SM_0 (patch sensor)
+            * Yellow: SM_1 (view finder sensor)
+        - **Sensor Images**: Live RGB images from both sensors in corner overlays
+        - **Interactive Controls**:
+            * Timestep slider for temporal navigation
+            * "Resample Hypothesis" button to select different random hypothesis
+            * "Show/Hide Pose Vectors" toggle for object surface normals
+        - **Summary Panel**: Real-time statistics including:
+            * Object name and ground truth pose
+            * Current LM/SM step information
+            * Sensed curvature values
+            * Hypothesis counts (inside/outside reference frame)
+            * Current Most Likely Hypothesis (MLH) ID
+
+    The visualization helps understand why certain hypotheses are rejected based on
+    the custom distance metric that considers both spatial proximity and surface
+    curvature compatibility.
 
     Args:
         json_path: Path to the detailed_run_stats.json file containing episode data.
@@ -600,7 +640,14 @@ class HypothesesOORFVisualizer:
         hypothesis_rotation: np.ndarray,
         is_heh: bool = False,
     ) -> None:
-        """Add arrows showing transformed sensed tangent and normal directions."""
+        """Add arrows showing transformed sensed tangent and normal directions.
+        
+        Note: The PC1 direction (purple arrow) represents the maximally convex 
+        direction, not the maximum absolute curvature direction. This distinction 
+        is important for interpretation - the purple arrow points in the direction 
+        of maximum convexity, which may not always align with the direction of 
+        maximum absolute curvature magnitude.
+        """
         arrow_length = 0.02
 
         surface_normal, tangent1, tangent2 = (
@@ -685,19 +732,21 @@ class HypothesesOORFVisualizer:
     def _add_sensor_images(self) -> None:
         """Add sensor_0 (patch) and sensor_1 (view_finder) RGB images."""
         rgba_patch = self.current_sm0_rgba
-        rgb_patch = rgba_patch[:, :, :3]
+        if rgba_patch is not None:
+            rgb_patch = rgba_patch[:, :, :3]
 
-        self.sm0_image = Image(rgb_patch)
-        self.plotter.at(self.sm0_renderer_ix).add(self.sm0_image)
+            self.sm0_image = Image(rgb_patch)
+            self.plotter.at(self.sm0_renderer_ix).add(self.sm0_image)
 
         self.sm0_label = Text2D("SM_0", pos="top-center", c="black", font="Calco")
         self.plotter.at(self.sm0_renderer_ix).add(self.sm0_label)
 
         rgba_patch = self.current_sm1_rgba
-        rgb_patch = rgba_patch[:, :, :3]
+        if rgba_patch is not None:
+            rgb_patch = rgba_patch[:, :, :3]
 
-        self.sm1_image = Image(rgb_patch)
-        self.plotter.at(self.sm1_renderer_ix).add(self.sm1_image)
+            self.sm1_image = Image(rgb_patch)
+            self.plotter.at(self.sm1_renderer_ix).add(self.sm1_image)
 
         self.sm1_label = Text2D("SM_1", pos="top-center", c="black", font="Calco")
         self.plotter.at(self.sm1_renderer_ix).add(self.sm1_label)
@@ -841,7 +890,7 @@ def add_subparser(
         parent_parser: Optional parent parser for shared arguments.
     """
     parser = subparsers.add_parser(
-        "hypothesis_oorf",
+        "hypothesis_oorf_visualizer",
         help="Interactive tool to visualize hypotheses' locations and rotations.",
         parents=[parent_parser] if parent_parser else [],
     )
