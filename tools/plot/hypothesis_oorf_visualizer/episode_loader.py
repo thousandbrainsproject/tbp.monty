@@ -17,10 +17,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 import torch
 
-
-class TimestepMappingError(ValueError):
-    """Raised when LM and SM timesteps cannot be properly mapped."""
-
 from tbp.monty.frameworks.utils.graph_matching_utils import get_relevant_curvature
 from tbp.monty.frameworks.utils.logging_utils import deserialize_json_chunks
 
@@ -29,6 +25,11 @@ from .data_models import (
     transform_locations_model_to_world,
     transform_orientations_model_to_world,
 )
+
+
+class TimestepMappingError(ValueError):
+    """Raised when LM and SM timesteps cannot be properly mapped."""
+
 
 if TYPE_CHECKING:
     from pathlib import Path

@@ -146,10 +146,10 @@ def compute_reference_frame_analysis(
 class HypothesesOORFVisualizer:
     """Interactive visualizer for hypotheses that are out of object's reference frame.
 
-    This visualizer provides a comprehensive 3D interactive view for analyzing hypothesis
-    validity based on reference frame constraints. It displays how hypotheses are classified
-    as inside or outside the object's reference frame using a custom distance metric that
-    incorporates surface curvature.
+    This visualizer provides a comprehensive 3D interactive view for analyzing
+    hypothesis validity based on reference frame constraints. It displays how hypotheses
+    are classified as inside or outside the object's reference frame using a custom
+    distance metric that incorporates surface curvature.
 
     Features:
         - **Object Pointcloud**: Gray points showing the ground truth object model
@@ -641,11 +641,11 @@ class HypothesesOORFVisualizer:
         is_heh: bool = False,
     ) -> None:
         """Add arrows showing transformed sensed tangent and normal directions.
-        
-        Note: The PC1 direction (purple arrow) represents the maximally convex 
-        direction, not the maximum absolute curvature direction. This distinction 
-        is important for interpretation - the purple arrow points in the direction 
-        of maximum convexity, which may not always align with the direction of 
+
+        Note: The PC1 direction (purple arrow) represents the maximally convex
+        direction, not the maximum absolute curvature direction. This distinction
+        is important for interpretation - the purple arrow points in the direction
+        of maximum convexity, which may not always align with the direction of
         maximum absolute curvature magnitude.
         """
         arrow_length = 0.02

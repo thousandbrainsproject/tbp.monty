@@ -167,11 +167,12 @@ def transform_orientations_model_to_world(
         target_rotation_wrt_world: Target orientation represented as Euler angles
             (xyz, degrees) using scipy.spatial.transform.Rotation.
         orientations_in_row_vector_format: Whether the orientations_wrt_model
-            parameter uses row vector format. This only affects how orientations_wrt_model
-            is interpreted, not target_rotation_wrt_world. True for pose_vectors stored
-            in ObjectModel, which is a 3x3 matrix of stacked [surface_normal, pc1, pc2]
-            row vectors for each point. False for hypothesized object orientations,
-            which are regular 3x3 rotation matrices following column-vector convention.
+            parameter uses row vector format. This only affects how
+            orientations_wrt_model is interpreted, not target_rotation_wrt_world.
+            True for pose_vectors stored in ObjectModel, which is a 3x3 matrix of
+            stacked [surface_normal, pc1, pc2] row vectors for each point.
+            False for hypothesized object orientations, which are regular 3x3 rotation
+            matrices following column-vector convention.
 
     Returns:
         Transformed orientations in world frame.
