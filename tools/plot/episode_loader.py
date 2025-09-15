@@ -18,7 +18,7 @@ import numpy as np
 import torch
 
 
-class TimestepMappingError(Exception):
+class TimestepMappingError(ValueError):
     """Raised when LM and SM timesteps cannot be properly mapped."""
 
 from tbp.monty.frameworks.utils.graph_matching_utils import get_relevant_curvature
