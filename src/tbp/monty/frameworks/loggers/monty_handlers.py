@@ -55,8 +55,25 @@ class MontyHandler(metaclass=abc.ABCMeta):
 class DetailedJSONHandler(MontyHandler):
     """Grab any logs at the DETAILED level and append to a json file."""
 
-    def __init__(self):
+    def __init__(
+        self, save_per_episode=True, save_consolidated=False, episodes_to_save=None
+    ):
+        """Initialize the DetailedJSONHandler.
+
+        Args:
+            save_per_episode (bool): If True, save each episode as a separate file
+                in an 'episodes/' subdirectory. Defaults to True.
+            save_consolidated (bool): If True, also maintain the original behavior
+                of appending to a single consolidated file. Defaults to False.
+            episodes_to_save (list or None): List of episode numbers to save. If None,
+                all episodes are saved. If empty list, no episodes are saved.
+                Episode numbers correspond to the global episode number (total).
+                Examples: [1, 5, 10] or list(range(1, 11)). Defaults to None.
+        """
         self.report_count = 0
+        self.save_per_episode = save_per_episode
+        self.save_consolidated = save_consolidated
+        self.episodes_to_save = episodes_to_save
 
     @classmethod
     def log_level(cls):
@@ -77,17 +94,35 @@ class DetailedJSONHandler(MontyHandler):
             total = kwargs["eval_episodes_to_total"][episode]
             stats = data["BASIC"]["eval_stats"][episode]
 
+        if self.episodes_to_save is not None and total not in self.episodes_to_save:
+            print(f"Skipping save for episode {total} (not in episodes_to_save list)")
+            self.report_count += 1
+            return
+
         output_data[total] = copy.deepcopy(stats)
         output_data[total].update(data["DETAILED"][total])
 
-        save_stats_path = os.path.join(output_dir, "detailed_run_stats.json")
-        maybe_rename_existing_file(save_stats_path, ".json", self.report_count)
+        # Per-episode saving
+        if self.save_per_episode:
+            episodes_dir = os.path.join(output_dir, "episodes")
+            os.makedirs(episodes_dir, exist_ok=True)
 
-        with open(save_stats_path, "a") as f:
-            json.dump({total: output_data[total]}, f, cls=BufferEncoder)
-            f.write(os.linesep)
+            episode_file = os.path.join(episodes_dir, f"episode_{total:06d}.json")
+            with open(episode_file, "w") as f:
+                json.dump({total: output_data[total]}, f, cls=BufferEncoder, indent=2)
 
-        print("Stats appended to " + save_stats_path)
+            print(f"Episode {total} saved to {episode_file}")
+
+        # Consolidated saving
+        if self.save_consolidated:
+            save_stats_path = os.path.join(output_dir, "detailed_run_stats.json")
+            maybe_rename_existing_file(save_stats_path, ".json", self.report_count)
+
+            with open(save_stats_path, "a") as f:
+                json.dump({total: output_data[total]}, f, cls=BufferEncoder)
+                f.write(os.linesep)
+
+            print("Stats appended to " + save_stats_path)
         self.report_count += 1
 
     def close(self):
