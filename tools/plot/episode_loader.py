@@ -196,12 +196,6 @@ class EpisodeDataLoader:
             )  # not timestep dependent
             hyp_evidences = self.lm_data["evidences"][lm_step][self.target_name]
 
-            highest_evidence_index = np.argmax(hyp_evidences)
-            highest_evidence_rotation = hyp_object_orientations_wrt_model[
-                highest_evidence_index
-            ]
-            highest_evidence_location = hyp_locations_wrt_model[highest_evidence_index]
-
             hyp_locations = transform_locations_model_to_world(
                 hyp_locations_wrt_model,
                 self.object_model.model_origin_wrt_world,
@@ -216,6 +210,7 @@ class EpisodeDataLoader:
             self.all_hyp_locations.append(hyp_locations)
             self.all_hyp_object_orientations.append(hyp_object_orientations)
 
+            highest_evidence_index = np.argmax(hyp_evidences)
             highest_evidence_location = hyp_locations[highest_evidence_index]
             highest_evidence_orientation = hyp_object_orientations[
                 highest_evidence_index
@@ -244,8 +239,8 @@ class EpisodeDataLoader:
         as it jump from SM Timestep 1 to SM Timestep 6 (but only one LM step).
 
         Raises:
-            TimestepMappingError: If the number of SM timesteps with use_state=True does not
-                match the number of LM timesteps.
+            TimestepMappingError: If the number of SM timesteps with use_state=True does
+                not match the number of LM timesteps.
         """
         logger.info("Finding LM to SM timestep mapping")
 
@@ -332,14 +327,17 @@ class EpisodeDataLoader:
         self.all_sm0_rgba = []
         self.all_sm1_rgba = []
 
-        raw_obs = self.sm0_data["raw_observations"]
+        raw_obs = None
+        if self.sm0_data["raw_observations"] is not None:
+            raw_obs = self.sm0_data["raw_observations"]
 
         for lm_timestep in range(self.num_lm_steps):
             sm_timestep = self.lm_to_sm_mapping[lm_timestep]
             rgba = np.array(raw_obs[sm_timestep]["rgba"])
             self.all_sm0_rgba.append(rgba)
 
-        raw_obs = self.sm1_data["raw_observations"]
+        if self.sm1_data["raw_observations"] is not None:
+            raw_obs = self.sm1_data["raw_observations"]
 
         for lm_timestep in range(self.num_lm_steps):
             sm_timestep = self.lm_to_sm_mapping[lm_timestep]
