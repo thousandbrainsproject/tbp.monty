@@ -38,10 +38,17 @@ class CustomDetailedJSONLoggingConfig(DetailedEvidenceLMLoggingConfig):
 
 
 base_77obj_surf_agent_hyp100_rerun = copy.deepcopy(base_77obj_surf_agent)
-base_77obj_surf_agent_hyp100_rerun["logging_config"].run_name = "base_77obj_surf_agent_hyp100_rerun"
+base_77obj_surf_agent_hyp100_rerun[
+    "logging_config"
+].run_name = "base_77obj_surf_agent_hyp100_rerun"
 base_77obj_surf_agent_hyp100_rerun["logging_config"] = CustomDetailedJSONLoggingConfig(
-    episodes_to_save=[85,89,139,162,227],
+    episodes_to_save=[85, 89, 139, 162, 227],
 )
+# Set save_raw_obs to True for all sensor modules
+monty_config = base_77obj_surf_agent_hyp100_rerun["monty_config"]
+for sm_config in monty_config.sensor_module_configs.values():
+    sm_config["sensor_module_args"]["save_raw_obs"] = True
+base_77obj_surf_agent_hyp100_rerun["monty_config"] = monty_config
 
 
 experiments = MyExperiments(

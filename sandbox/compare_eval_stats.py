@@ -48,6 +48,7 @@ def get_misclassified_episodes(stats: pd.DataFrame) -> pd.DataFrame:
     ]
     return subset[columns]
 
+
 def get_accuracy(stats: pd.DataFrame) -> float:
     """Get the accuracy of the stats dataframe.
 
@@ -55,7 +56,9 @@ def get_accuracy(stats: pd.DataFrame) -> float:
         stats: The stats dataframe.
     """
 
-    return len(stats[stats["primary_performance"].isin(["correct", "correct_mlh"])]) / len(stats)
+    return len(
+        stats[stats["primary_performance"].isin(["correct", "correct_mlh"])]
+    ) / len(stats)
 
 
 if __name__ == "__main__":
