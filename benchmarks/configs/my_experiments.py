@@ -37,24 +37,24 @@ class CustomDetailedJSONLoggingConfig(DetailedEvidenceLMLoggingConfig):
     episodes_to_save: List[int] = field(default_factory=list)
 
 
-base_77obj_surf_agent_hyp100_rerun = copy.deepcopy(base_77obj_surf_agent)
-base_77obj_surf_agent_hyp100_rerun[
+base_77obj_surf_agent_hyp1_rerun = copy.deepcopy(base_77obj_surf_agent)
+base_77obj_surf_agent_hyp1_rerun[
     "logging_config"
-].run_name = "base_77obj_surf_agent_hyp100_rerun"
-base_77obj_surf_agent_hyp100_rerun["logging_config"] = CustomDetailedJSONLoggingConfig(
+].run_name = "base_77obj_surf_agent_hyp1_rerun"
+base_77obj_surf_agent_hyp1_rerun["logging_config"] = CustomDetailedJSONLoggingConfig(
     episodes_to_save=[85, 89, 139, 162, 227],
 )
 # Set save_raw_obs to True for all sensor modules
-monty_config = base_77obj_surf_agent_hyp100_rerun["monty_config"]
+monty_config = base_77obj_surf_agent_hyp1_rerun["monty_config"]
 for sm_config in monty_config.sensor_module_configs.values():
     sm_config["sensor_module_args"]["save_raw_obs"] = True
-base_77obj_surf_agent_hyp100_rerun["monty_config"] = monty_config
+base_77obj_surf_agent_hyp1_rerun["monty_config"] = monty_config
 
 
 experiments = MyExperiments(
     # For each experiment name in MyExperiments, add its corresponding
     # configuration here.
     # e.g.: my_experiment=my_experiment_config
-    base_77obj_surf_agent_hyp100_rerun=base_77obj_surf_agent_hyp100_rerun,
+    base_77obj_surf_agent_hyp1_rerun=base_77obj_surf_agent_hyp1_rerun,
 )
 CONFIGS = asdict(experiments)
