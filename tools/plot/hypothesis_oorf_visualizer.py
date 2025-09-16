@@ -10,8 +10,9 @@
 """Interactive tool for visualizing hypotheses that are out of object's reference frame.
 
 This visualizer requires that experiments have been run with detailed logging
-enabled to generate detailed_run_stats.json files. To enable detailed logging,
-use DetailedEvidenceLMLoggingConfig in your experiment configuration.
+enabled to generate detailed_run_stats.json files and for save_raw_obs to be True.
+To enable detailed logging, use DetailedEvidenceLMLoggingConfig in your
+experiment configuration.
 
 Usage:
     python tools/plot/cli.py hypothesis_oorf <experiment_log_dir>
@@ -735,21 +736,19 @@ class HypothesesOORFVisualizer:
     def _add_sensor_images(self) -> None:
         """Add sensor_0 (patch) and sensor_1 (view_finder) RGB images."""
         rgba_patch = self.current_sm0_rgba
-        if rgba_patch is not None:
-            rgb_patch = rgba_patch[:, :, :3]
+        rgb_patch = rgba_patch[:, :, :3]
 
-            self.sm0_image = Image(rgb_patch)
-            self.plotter.at(self.sm0_renderer_ix).add(self.sm0_image)
+        self.sm0_image = Image(rgb_patch)
+        self.plotter.at(self.sm0_renderer_ix).add(self.sm0_image)
 
         self.sm0_label = Text2D("SM_0", pos="top-center", c="black", font="Calco")
         self.plotter.at(self.sm0_renderer_ix).add(self.sm0_label)
 
         rgba_patch = self.current_sm1_rgba
-        if rgba_patch is not None:
-            rgb_patch = rgba_patch[:, :, :3]
+        rgb_patch = rgba_patch[:, :, :3]
 
-            self.sm1_image = Image(rgb_patch)
-            self.plotter.at(self.sm1_renderer_ix).add(self.sm1_image)
+        self.sm1_image = Image(rgb_patch)
+        self.plotter.at(self.sm1_renderer_ix).add(self.sm1_image)
 
         self.sm1_label = Text2D("SM_1", pos="top-center", c="black", font="Calco")
         self.plotter.at(self.sm1_renderer_ix).add(self.sm1_label)
