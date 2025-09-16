@@ -12,6 +12,7 @@ misclassified episodes compared to the "hyp-1" experiment.
 
 from pathlib import Path
 import pandas as pd
+import numpy as np
 
 RESULTS_DIR = Path("~/tbp/results/monty/projects/evidence_eval_runs/logs").expanduser()
 
@@ -60,10 +61,25 @@ def get_accuracy(stats: pd.DataFrame) -> float:
         stats[stats["primary_performance"].isin(["correct", "correct_mlh"])]
     ) / len(stats)
 
+def get_average_monty_steps(stats: pd.DataFrame) -> float:
+    """Get the average monty steps of the stats dataframe.
+
+    Args:
+        stats: The stats dataframe.
+    """
+    return np.mean(stats["monty_steps"])
+
+def get_average_monty_matching_steps(stats: pd.DataFrame) -> float:
+    """Get the average monty matching steps of the stats dataframe.
+
+    Args:
+        stats: The stats dataframe.
+    """
+    return np.mean(stats["monty_matching_steps"])
 
 if __name__ == "__main__":
-    exp_1_dir = RESULTS_DIR / "77_base_surf_agent" / "base_77obj_surf_agent_hyp_-1"
-    exp_2_dir = RESULTS_DIR / "77_base_surf_agent" / "base_77obj_surf_agent_hyp-100"
+    exp_1_dir = RESULTS_DIR / "77_base_surf_agent" / "base_77obj_surf_agent_hyp1_rerun"
+    exp_2_dir = RESULTS_DIR / "77_base_surf_agent" / "base_77obj_surf_agent_hyp100_rerun"
 
     exp_1_stats = pd.read_csv(exp_1_dir / "eval_stats.csv")
     exp_2_stats = pd.read_csv(exp_2_dir / "eval_stats.csv")
@@ -72,16 +88,24 @@ if __name__ == "__main__":
     exp_2_misclassified = get_misclassified_episodes(exp_2_stats)
     exp_1_accuracy = get_accuracy(exp_1_stats)
     exp_2_accuracy = get_accuracy(exp_2_stats)
+    exp_1_average_monty_steps = get_average_monty_steps(exp_1_stats)
+    exp_2_average_monty_steps = get_average_monty_steps(exp_2_stats)
+    exp_1_average_monty_matching_steps = get_average_monty_matching_steps(exp_1_stats)
+    exp_2_average_monty_matching_steps = get_average_monty_matching_steps(exp_2_stats)
 
     print("------------------------------------------------------")
-    print("Misclassified episodes for base_77obj_surf_agent_hyp-1:")
+    print("Misclassified episodes for base_77obj_surf_agent_hyp1_rerun:")
     print("------------------------------------------------------")
-    print(f"Accuracy: {exp_1_accuracy}")
+    print(f"Accuracy: {exp_1_accuracy * 100:.2f}%")
+    print(f"Average monty steps: {exp_1_average_monty_steps:.2f}")
+    print(f"Average monty matching steps: {exp_1_average_monty_matching_steps:.2f}")
     print(exp_1_misclassified)
 
     print("\n")
     print("-------------------------------------------------------")
-    print("Misclassified episodes for base_77obj_surf_agent_hyp-100:")
+    print("Misclassified episodes for base_77obj_surf_agent_hyp100_rerun:")
     print("-------------------------------------------------------")
-    print(f"Accuracy: {exp_2_accuracy}")
+    print(f"Accuracy: {exp_2_accuracy * 100:.2f}%")
+    print(f"Average monty steps: {exp_2_average_monty_steps:.2f}")
+    print(f"Average monty matching steps: {exp_2_average_monty_matching_steps:.2f}")
     print(exp_2_misclassified)
