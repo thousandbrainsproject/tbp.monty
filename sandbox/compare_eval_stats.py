@@ -78,9 +78,12 @@ def get_average_monty_matching_steps(stats: pd.DataFrame) -> float:
     return np.mean(stats["monty_matching_steps"])
 
 if __name__ == "__main__":
-    exp_1_dir = RESULTS_DIR / "77_base_surf_agent" / "base_77obj_surf_agent_hyp1_rerun"
-    exp_2_dir = RESULTS_DIR / "77_base_surf_agent" / "base_77obj_surf_agent_hyp100_rerun"
+    # exp_1_dir = RESULTS_DIR / "77_base_surf_agent" / "base_77obj_surf_agent_hyp1_rerun"
+    # exp_2_dir = RESULTS_DIR / "77_base_surf_agent" / "base_77obj_surf_agent_hyp100_rerun"
 
+    exp_1_dir = RESULTS_DIR / "77_randrot_noise_surf_agent" / "randrot_noise_77obj_surf_agent_hyp-1"
+    exp_2_dir = RESULTS_DIR / "77_randrot_noise_surf_agent" / "randrot_noise_77obj_surf_agent_hyp-100"
+    
     exp_1_stats = pd.read_csv(exp_1_dir / "eval_stats.csv")
     exp_2_stats = pd.read_csv(exp_2_dir / "eval_stats.csv")
 
