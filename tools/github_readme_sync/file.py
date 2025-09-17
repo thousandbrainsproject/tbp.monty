@@ -7,10 +7,11 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import os
+import pathlib
 from pathlib import Path
-from typing import List, Optional
 
 DEFAULT_IGNORE_DIRS = ["figures", "snippets"]
 DEFAULT_IGNORE_FILES = ["hierarchy.md"]
@@ -26,9 +27,9 @@ def get_folders(file_path: str) -> list:
 
 def find_markdown_files(
     folder: str,
-    ignore_dirs: Optional[List[str]] = None,
-    ignore_files: Optional[List[str]] = None,
-) -> List[str]:
+    ignore_dirs: list[str] | None = None,
+    ignore_files: list[str] | None = None,
+) -> list[str]:
     """Find all markdown files in a directory, excluding specified dirs and files.
 
     Args:
@@ -39,7 +40,7 @@ def find_markdown_files(
     Returns:
         List of full paths to markdown files
     """
-    ignore_dirs = ignore_dirs or DEFAULT_IGNORE_DIRS
+    ignore_dirs = DEFAULT_IGNORE_DIRS if ignore_dirs is None else ignore_dirs
     ignore_files = ignore_files or DEFAULT_IGNORE_FILES
 
     md_files = []
@@ -51,7 +52,7 @@ def find_markdown_files(
             continue
 
         md_files.extend(
-            os.path.join(root, file)
+            Path(root).joinpath(file)
             for file in files
             if file.endswith(".md") and file not in ignore_files
         )
