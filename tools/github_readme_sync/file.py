@@ -12,7 +12,7 @@ import os
 from pathlib import Path
 from typing import List, Optional
 
-DEFAULT_IGNORE_DIRS = [".pytest_cache", ".github", ".git", "figures", "snippets"]
+DEFAULT_IGNORE_DIRS = ["figures", "snippets"]
 DEFAULT_IGNORE_FILES = ["hierarchy.md"]
 
 
@@ -44,7 +44,10 @@ def find_markdown_files(
 
     md_files = []
     for root, _, files in os.walk(folder):
-        if any(ignore_dir in root for ignore_dir in ignore_dirs):
+        path_parts = Path(root).parts
+        if any(part.startswith(".") for part in path_parts):
+            continue
+        if any(ignore_dir in path_parts for ignore_dir in ignore_dirs):
             continue
 
         md_files.extend(
