@@ -28,6 +28,7 @@ from tools.github_readme_sync.hierarchy import (  # noqa: E402
     check_hierarchy_file,
     create_hierarchy_file,
 )
+from tools.github_readme_sync.index import generate_index  # noqa: E402
 from tools.github_readme_sync.readme import ReadMe  # noqa: E402
 from tools.github_readme_sync.upload import upload  # noqa: E402
 
