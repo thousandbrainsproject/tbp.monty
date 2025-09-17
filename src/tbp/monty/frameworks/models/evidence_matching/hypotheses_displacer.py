@@ -360,6 +360,10 @@ class DefaultHypothesesDisplacer:
             cd1_weight = 0
             # Only calculate curv dir angle if sensed curv dirs are meaningful
             cd1_evidence = np.zeros(pn_error.shape)
+            # TODO: Test whether we should double the SN evidence if no
+            # curvatures are sensed and pose_fully_defined == False at node.
+            # i.e. move use_cd from else block and set
+            # pn_evidence[np.logical_not(use_cd)] *= 2 (see PR#446)
         else:
             cd1_weight = self.feature_weights[input_channel]["pose_vectors"][1]
             # Also check if curv dirs stored at node are meaningful
@@ -381,7 +385,6 @@ class DefaultHypothesesDisplacer:
             # nodes where pc1==pc2 receive no cd evidence but twice the pn evidence
             # -> overall evidence can be in range [-1, 1]
             cd1_evidence = cd1_evidence * use_cd
-            pn_evidence[np.logical_not(use_cd)] * 2
         # weight angle errors by feature weights
         # if sensed pc1==pc2 cd1_weight==0 and overall evidence is in [-0.5, 0.5]
         # otherwise it is in [-1, 1].
