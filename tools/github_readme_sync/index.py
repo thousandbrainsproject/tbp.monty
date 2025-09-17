@@ -20,6 +20,12 @@ from tools.github_readme_sync.colors import CYAN, GREEN, RESET, YELLOW
 from tools.github_readme_sync.file import find_markdown_files, read_file_content
 from tools.github_readme_sync.md import parse_frontmatter, process_markdown
 
+logger = logging.getLogger(__name__)
+
+
+def _is_empty(value: str) -> bool:
+    return not value or not value.strip()
+
 
 def generate_index(docs_dir: str, output_file_path: str) -> str:
     """Generate index.json file from docs directory.
@@ -30,20 +36,27 @@ def generate_index(docs_dir: str, output_file_path: str) -> str:
 
     Returns:
         Path to the generated output file.
+
+    Raises:
+        ValueError: If docs_dir or output_file_path is empty.
     """
-    output_file = output_file_path
-    logging.info(f"Scanning docs directory: {CYAN}{docs_dir}{RESET}")
+    if _is_empty(docs_dir):
+        raise ValueError("docs_dir cannot be empty")
+    if _is_empty(output_file_path):
+        raise ValueError("output_file_path cannot be empty")
+
+    logger.info(f"Scanning docs directory: {CYAN}{docs_dir}{RESET}")
 
     entries = process_markdown_files(docs_dir)
 
-    os.makedirs(os.path.dirname(output_file), exist_ok=True)
-    with open(output_file, "w", encoding="utf-8") as f:
+    os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
+    with open(output_file_path, "w", encoding="utf-8") as f:
         json.dump(entries, f, indent=2, ensure_ascii=False)
 
-    logging.info(
-        f"{GREEN}Generated index with {len(entries)} entries: {output_file}{RESET}"
+    logger.info(
+        f"{GREEN}Generated index with {len(entries)} entries: {output_file_path}{RESET}"
     )
-    return output_file
+    return output_file_path
 
 
 def process_markdown_files(docs_dir: str) -> List[Dict]:
@@ -60,26 +73,29 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
     Raises:
         ValueError: If directory doesn't exist.
     """
-    if not os.path.exists(docs_dir):
+    if _is_empty(docs_dir):
+        raise ValueError("docs_dir cannot be empty")
+
+    docs_path = Path(docs_dir)
+    if not docs_path.exists():
         raise ValueError(f"Directory {docs_dir} does not exist")
 
     entries = []
-    docs_path = Path(docs_dir)
-    folder_name = os.path.basename(docs_dir)
+    folder_name = docs_path.name
 
     for md_file_path in find_markdown_files(docs_dir):
         md_file = Path(md_file_path)
-        logging.info(f"Processing: {CYAN}{md_file.relative_to(docs_path)}{RESET}")
+        logger.info(f"Processing: {CYAN}{md_file.relative_to(docs_path)}{RESET}")
 
         try:
             content = read_file_content(md_file_path)
             frontmatter = parse_frontmatter(content)
         except (OSError, UnicodeDecodeError):
-            logging.exception(f"Error reading {md_file_path}")
+            logger.exception(f"Error reading {md_file_path}")
             continue
 
         if not frontmatter:
-            logging.warning(f"{YELLOW}No front-matter found in {md_file}{RESET}")
+            logger.warning(f"{YELLOW}No front-matter found in {md_file}{RESET}")
             continue
 
         processed_doc = process_markdown(content, slugify(md_file.stem))

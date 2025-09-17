@@ -82,9 +82,9 @@ class TestGenerateIndex(unittest.TestCase):
     def test_generate_index_invalid_parameters(self):
         """Test various invalid parameter combinations."""
         test_cases = [
-            ("None docs_dir", None, "valid_output.json", TypeError),
+            ("None docs_dir", None, "valid_output.json", ValueError),
             ("empty docs_dir", "", "valid_output.json", ValueError),
-            ("None output_file", "valid_dir", None, TypeError),
+            ("None output_file", "valid_dir", None, ValueError),
             ("empty output_file", "valid_dir", "", (ValueError, OSError)),
         ]
 
