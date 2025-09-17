@@ -81,9 +81,12 @@ if __name__ == "__main__":
     # exp_1_dir = RESULTS_DIR / "77_base_surf_agent" / "base_77obj_surf_agent_hyp1_rerun"
     # exp_2_dir = RESULTS_DIR / "77_base_surf_agent" / "base_77obj_surf_agent_hyp100_rerun"
 
-    exp_1_dir = RESULTS_DIR / "77_randrot_noise_surf_agent" / "randrot_noise_77obj_surf_agent_hyp-1"
-    exp_2_dir = RESULTS_DIR / "77_randrot_noise_surf_agent" / "randrot_noise_77obj_surf_agent_hyp-100"
+    # exp_1_dir = RESULTS_DIR / "77_randrot_noise_surf_agent" / "randrot_noise_77obj_surf_agent_hyp-1"
+    # exp_2_dir = RESULTS_DIR / "77_randrot_noise_surf_agent" / "randrot_noise_77obj_surf_agent_hyp-100"
     
+    exp_1_dir = RESULTS_DIR / "77_base_surf_agent" / "base_77obj_surf_agent_hyp1_nogsg"
+    exp_2_dir = RESULTS_DIR / "77_base_surf_agent" / "base_77obj_surf_agent_hyp100_nogsg"
+
     exp_1_stats = pd.read_csv(exp_1_dir / "eval_stats.csv")
     exp_2_stats = pd.read_csv(exp_2_dir / "eval_stats.csv")
 
@@ -97,7 +100,7 @@ if __name__ == "__main__":
     exp_2_average_monty_matching_steps = get_average_monty_matching_steps(exp_2_stats)
 
     print("------------------------------------------------------")
-    print("Misclassified episodes for base_77obj_surf_agent_hyp1_rerun:")
+    print("Misclassified episodes for base_77obj_surf_agent_hyp1_nogsg:")
     print("------------------------------------------------------")
     print(f"Accuracy: {exp_1_accuracy * 100:.2f}%")
     print(f"Average monty steps: {exp_1_average_monty_steps:.2f}")
@@ -106,7 +109,7 @@ if __name__ == "__main__":
 
     print("\n")
     print("-------------------------------------------------------")
-    print("Misclassified episodes for base_77obj_surf_agent_hyp100_rerun:")
+    print("Misclassified episodes for base_77obj_surf_agent_hyp100_nogsg:")
     print("-------------------------------------------------------")
     print(f"Accuracy: {exp_2_accuracy * 100:.2f}%")
     print(f"Average monty steps: {exp_2_average_monty_steps:.2f}")
