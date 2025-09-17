@@ -91,7 +91,7 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
             content = read_file_content(md_file_path)
             frontmatter = parse_frontmatter(content)
         except (OSError, UnicodeDecodeError):
-            logger.exception(f"Error reading {md_file_path}")
+            logger.exception("Error reading %s", md_file_path)
             continue
 
         if not frontmatter:
