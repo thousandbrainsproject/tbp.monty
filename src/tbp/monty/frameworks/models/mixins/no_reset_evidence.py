@@ -7,14 +7,53 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from typing import Any, Dict
+from __future__ import annotations
 
+from dataclasses import asdict, dataclass
+from typing import Any, Dict, cast
+
+import numpy as np
+import numpy.typing as npt
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.models.buffer import BufferEncoder
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
-from tbp.monty.frameworks.utils.logging_utils import compute_pose_error
+from tbp.monty.frameworks.utils.logging_utils import (
+    compute_pose_error,
+    compute_pose_errors,
+)
+
+
+@dataclass
+class HypothesesUpdaterChannelTelemetry:
+    """Telemetry from HypothesesUpdater for a single input channel."""
+
+    hypotheses_updater: dict[str, Any]
+    """Any telemetry from the hypotheses updater."""
+    evidence: npt.NDArray[np.float64]
+    """The hypotheses evidence scores."""
+    rotations: npt.NDArray[np.float64]
+    """Rotations of the hypotheses.
+
+    Note that the buffer encoder will encode those as euler "xyz" rotations in degrees.
+    """
+    pose_errors: npt.NDArray[np.float64]
+    """Rotation errors relative to the target pose."""
+
+
+BufferEncoder.register(
+    HypothesesUpdaterChannelTelemetry,
+    lambda telemetry: asdict(telemetry),
+)
+
+
+HypothesesUpdaterGraphTelemetry = Dict[str, HypothesesUpdaterChannelTelemetry]
+"""HypothesesUpdaterChannelTelemetry indexed by input channel."""
+
+HypothesesUpdaterTelemetry = Dict[str, HypothesesUpdaterGraphTelemetry]
+"""HypothesesUpdaterGraphTelemetry indexed by graph ID."""
 
 
 class TheoreticalLimitLMLoggingMixin:
@@ -64,7 +103,53 @@ class TheoreticalLimitLMLoggingMixin:
             self._theoretical_limit_target_object_pose_error()
         )
         stats["target_object_pose_error"] = self._mlh_target_object_pose_error()
+        hypotheses_updater_telemetry = self._hypotheses_updater_telemetry()
+        if hypotheses_updater_telemetry:
+            stats["hypotheses_updater_telemetry"] = hypotheses_updater_telemetry
         return stats
+
+    def _hypotheses_updater_telemetry(self) -> HypothesesUpdaterTelemetry:
+        """Returns HypothesesUpdaterTelemetry for all objects and input channels."""
+        stats: HypothesesUpdaterTelemetry = {}
+        for graph_id, graph_telemetry in self.hypotheses_updater_telemetry.items():
+            stats[graph_id] = {
+                input_channel: self._channel_telemetry(
+                    graph_id, input_channel, channel_telemetry
+                )
+                for input_channel, channel_telemetry in graph_telemetry.items()
+            }
+        return stats
+
+    def _channel_telemetry(
+        self, graph_id: str, input_channel: str, channel_telemetry: dict[str, Any]
+    ) -> HypothesesUpdaterChannelTelemetry:
+        """Assemble channel telemetry for specific graph ID and input channel.
+
+        Args:
+            graph_id: The graph ID.
+            input_channel: The input channel.
+            channel_telemetry: Telemetry for the specific input channel.
+
+        Returns:
+            HypothesesUpdaterChannelTelemetry for the given graph ID and input channel.
+        """
+        mapper = self.channel_hypothesis_mapping[graph_id]
+        channel_rotations = mapper.extract(self.possible_poses[graph_id], input_channel)
+        channel_rotations_inv = Rotation.from_matrix(channel_rotations).inv()
+        channel_evidence = mapper.extract(self.evidence[graph_id], input_channel)
+
+        return HypothesesUpdaterChannelTelemetry(
+            hypotheses_updater=channel_telemetry.copy(),
+            evidence=channel_evidence,
+            rotations=channel_rotations_inv,
+            pose_errors=cast(
+                npt.NDArray[np.float64],
+                compute_pose_errors(
+                    channel_rotations_inv,
+                    Rotation.from_quat(self.primary_target_rotation_quat),
+                ),
+            ),
+        )
 
     def _theoretical_limit_target_object_pose_error(self) -> float:
         """Compute the theoretical minimum rotation error on the target object.

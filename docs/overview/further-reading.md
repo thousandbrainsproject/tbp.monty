@@ -279,7 +279,13 @@ Clay, V., Leadholm, N., & Hawkins, J. (2024). **The Thousand Brains Project: A N
 
 Leadholm, N., Clay, V., Knudstrup, S., Lee, H., Hawkins, J. (2025) **Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference** arXiv. <https://arxiv.org/abs/2507.04494>
 
+> [!NOTE]
+> You can read the [Thousand-Brains Systems Plain Language Explainer](https://thousandbrains.org/thousand-brain-systems-sensorimotor-intelligence-for-rapid-robust-learning-and-inference-a-plain-language-explainer/) for a less technical overview of the concepts in the above paper.
+
 Hawkins, J., Leadholm, N., Clay, V. (2025) **Hierarchy or Heterarchy? A Theory of Long-Range Connections for the Sensorimotor Brain** arXiv. <https://arxiv.org/abs/2507.05888>
+
+> [!NOTE]
+> You can read the [Hierarchy or Heterarchy Plain Language Explainer](https://thousandbrains.org/hierarchy-or-heterarchy-a-theory-of-long-range-connections-for-the-sensorimotor-brain-a-plain-language-explainer/) for a less technical overview of the concepts in the above paper.
 
 # Other Resources
 ## Videos

@@ -333,6 +333,14 @@ class EvidenceSlopeTracker:
             )
             self.hyp_age[channel] = np.concatenate((self.hyp_age[channel], new_age))
 
+    def hyp_ages(self, channel: str) -> npt.NDArray[np.int_]:
+        """Returns the ages of hypotheses in a channel.
+
+        Args:
+            channel: Name of the input channel.
+        """
+        return self.hyp_age[channel]
+
     def update(self, values: npt.NDArray[np.float64], channel: str) -> None:
         """Updates all hypotheses in a channel with new evidence values.
 
@@ -361,7 +369,7 @@ class EvidenceSlopeTracker:
         # Increment age
         self.hyp_age[channel] += 1
 
-    def _calculate_slopes(self, channel: str) -> npt.NDArray[np.float64]:
+    def calculate_slopes(self, channel: str) -> npt.NDArray[np.float64]:
         """Computes the average slope of hypotheses in a channel.
 
         This method calculates the slope of the evidence signal for each hypothesis by
@@ -442,7 +450,7 @@ class EvidenceSlopeTracker:
 
         # Retrieve valid slopes and sort them
         removable_mask = self.removable_indices_mask(channel)
-        slopes = self._calculate_slopes(channel)
+        slopes = self.calculate_slopes(channel)
         removable_slopes = slopes[removable_mask]
         removable_ids = total_ids[removable_mask]
         sorted_indices = np.argsort(removable_slopes)
