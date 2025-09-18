@@ -183,7 +183,19 @@ class EpisodeDataLoader:
         )
 
     def _initialize_hypotheses_data(self) -> None:
-        """Extract and transform hypotheses into world frame.
+        """Extract and transform hypotheses for visualization.
+
+        The hypotheses are visualized as hypothesized locations superimposed in the
+        internal reference frame, which itself is superimposed in world space. This
+        enables us to both:
+        1. Visualize where the actual object is in the world and where the sensor is
+           actually present relative to the object
+        2. Show what the hypothesis space looks like in the internal reference frame
+
+        Note that hypothesized rotations are NOT reflected by rotating multiple copies
+        of the model and showing these in world coordinates. Instead, the movement in
+        the internal reference frame that is visualized is influenced by the
+        hypothesized rotation of the object.
 
         Additionally identify hypotheses with highest evidence for the target object.
         This may be different from MLH, which considers hypotheses across all objects.
