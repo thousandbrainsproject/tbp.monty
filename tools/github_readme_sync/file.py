@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import os
-import pathlib
 from pathlib import Path
 
 DEFAULT_IGNORE_DIRS = ["figures", "snippets"]
@@ -29,7 +28,7 @@ def find_markdown_files(
     folder: str,
     ignore_dirs: list[str] | None = None,
     ignore_files: list[str] | None = None,
-) -> list[str]:
+) -> list[Path]:
     """Find all markdown files in a directory, excluding specified dirs and files.
 
     Args:
@@ -38,7 +37,7 @@ def find_markdown_files(
         ignore_files: List of file names to exclude (uses defaults if None)
 
     Returns:
-        List of full paths to markdown files
+        List of Path objects to markdown files
     """
     ignore_dirs = DEFAULT_IGNORE_DIRS if ignore_dirs is None else ignore_dirs
     ignore_files = ignore_files or DEFAULT_IGNORE_FILES

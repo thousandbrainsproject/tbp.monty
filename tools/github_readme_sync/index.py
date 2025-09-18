@@ -83,15 +83,14 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
     entries = []
     folder_name = docs_path.name
 
-    for md_file_path in find_markdown_files(docs_dir):
-        md_file = Path(md_file_path)
+    for md_file in find_markdown_files(docs_dir):
         logger.info(f"Processing: {CYAN}{md_file.relative_to(docs_path)}{RESET}")
 
         try:
-            content = read_file_content(md_file_path)
+            content = read_file_content(md_file)
             frontmatter = parse_frontmatter(content)
         except (OSError, UnicodeDecodeError):
-            logger.exception("Error reading %s", md_file_path)
+            logger.exception("Error reading %s", md_file)
             continue
 
         if not frontmatter:
