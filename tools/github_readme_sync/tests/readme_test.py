@@ -408,14 +408,28 @@ This is a test document.""",
     @patch.dict(os.environ, {"IMAGE_PATH": "user/repo"})
     def test_correct_file_locations_markdown(self):
         """Test file location correction for Markdown file paths."""
-        base_expected = f"[File 1](/docs/slug#sub-heading)"
+        base_expected = (
+            "[File 1](/docs/slug#sub-heading) and [File 2](/docs/slug2#sub-heading)"
+        )
 
         # Test cases for Markdown file paths
         markdown_paths_with_deep_link = [
-            "[File 1](slug.md#sub-heading)",
-            "[File 1](contibuting/slug.md#sub-heading)",
-            "[File 1](../contibuting/slug.md#sub-heading)",
-            "[File 1](../../contibuting/slug.md#sub-heading)",
+            (
+                "[File 1](slug.md#sub-heading) and "  # fmt: skip
+                "[File 2](slug2.md#sub-heading)"
+            ),
+            (
+                "[File 1](contibuting/slug.md#sub-heading) and "
+                "[File 2](contibuting/slug2.md#sub-heading)"
+            ),
+            (
+                "[File 1](../contibuting/slug.md#sub-heading) and "
+                "[File 2](../contibuting/slug2.md#sub-heading)"
+            ),
+            (
+                "[File 1](../../contibuting/slug.md#sub-heading) and "
+                "[File 2](../../contibuting/slug2.md#sub-heading)"
+            ),
         ]
 
         markdown_paths_without_deep_link = [
