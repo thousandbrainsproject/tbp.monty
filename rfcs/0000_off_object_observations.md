@@ -15,7 +15,7 @@ The goal of the RFC is to layout current state of Monty and implementation plan 
 
 This RFC proposes extending Monty's sensory processing pipeline to handle off-object observations (when a sensor has moved to a location in the environment where no features are sensed). Currently, these observations are filtered out and not passed to Learning Modules (LMs), limiting our ability to leverage prediction errors for penalizing hypotheses' evidence. By defining "null features" to represent the absence of morphological features, modifying the `FeatureChangeSM` to forward these observations, and updating the Learning Module to process off-object observations, we can enable more intelligent hypothesis management when sensors transition from on-object to off-object status. This enhancement will improve Monty's ability to recognize when it has moved off an object and reduce evidence for hypotheses that predict the sensor should still be detecting object features. 
 
-<img src="0000_off_object_observations/off_object_observation.png" alt="Off-object observation" />
+![Off-object observation](0000_off_object_observations/off_object_observation.png)
 
 _Figure 1_: Illustration of an off-object observation sensed by the Sensor Module (right). In this RFC, we will utilize this to penalize the evidence of hypotheses that incorrectly think they are still within the object's reference frame (left).
 
