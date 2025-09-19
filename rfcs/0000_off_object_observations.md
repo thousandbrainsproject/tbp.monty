@@ -44,35 +44,6 @@ if not observed_features.get_on_object():
 
 This means that when a sensor moves off an object into empty space, the resulting off-object observation, which could provide valuable prediction error signals, is discarded before reaching the LM. Consequently, the LM's `step()` method is never called for these off-object observations, preventing any processing or learning from this information.
 
-### Current Data Representation for Off-Object Observations
-
-When sensors move off objects, the current implementation creates empty feature dictionaries:
-
-```python
-if obs_3d[center_id][3] or (
-    not on_object_only and features["object_coverage"] > 0
-):
-    (
-        features,
-        morphological_features,
-        invalid_signals,
-    ) = self.extract_and_add_features(
-        features,
-        obs_3d,
-        rgba_feat,
-        depth_feat,
-        center_id,
-        center_row_col,
-        sensor_frame_data,
-        world_camera,
-    )
-else:
-    invalid_signals = True
-    morphological_features = {}  # Empty dictionary
-```
-[Source for `sensor_modules.py` lines 267-286](https://github.com/thousandbrainsproject/tbp.monty/blob/9677cc918adeca9ae21233d957c0401e84f482ab/src/tbp/monty/frameworks/models/sensor_modules.py#L267-286)
-
-This empty dictionary approach prevents meaningful comparison with predicted features, as the data structure becomes inconsistent between on-object and off-object states.
 
 ### Sensor Modality Considerations
 
