@@ -13,45 +13,45 @@ When this RFC is merged, the intent is to transfer most of its contents into an 
 
 # Definitions
 
-- *Research Prototype (RP)*: A rapidly implemented feature intended to evaluate a research idea. This can establish or refute the hypothesized benefits of the idea, as well as enable measuring other qualities associated with it.
-- *Implementation Project (IP)*: The process of refactoring a Research Prototype (as well as potentially `tbp.monty` itself) in order to merge a feature that was proven useful by an RP into the platform code-base (`thousandbrainsproject/tbp.monty`).
+- *Prototype*: A rapidly implemented feature intended to evaluate a research idea. This can establish or refute the hypothesized benefits of the idea, as well as enable measuring other qualities associated with it.
+- *Implementation Project (IP)*: The process of refactoring a Prototype (as well as potentially `tbp.monty` itself) in order to merge a feature that was proven useful by a Prototype into the platform code-base (`thousandbrainsproject/tbp.monty`).
 
 # Guidance on Research Workflows
 
 As earlier noted, the following guidance is designed to complement [RFC 14 Conducting Research While Building a Stable Platform](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0014_conducting_research_while_building_a_stable_platform.md). Please refer to that RFC first if you are not familiar with its contents.
 
-## Workflow for TBP Researchers: from Research Prototype to Implementation Project
+## Workflow for TBP Researchers: from Prototype to Implementation Project
 
 Below is a recommended workflow for researchers; however, it is guidance only, and can be revisited if we find certain elements are not working.
 
 ### Setup
-1. Begin a new Research Prototype by creating a fork of [tbp.monty](https://github.com/thousandbrainsproject/tbp.monty/):
+1. Begin a new Prototype by creating a fork of [tbp.monty](https://github.com/thousandbrainsproject/tbp.monty/):
 
 
 When creating the fork, the owner should be set to the `thousandbrainsproject` organization:
 
-<img src="0000_code_guidance_for_researchers_and_community/create_new_RP_fork.png" alt="Create New Research Prototype Fork" width="500">
+<img src="0000_code_guidance_for_researchers_and_community/create_new_Prototype_fork.png" alt="Create New Prototype Fork" width="500">
 
-Give your fork a name like `feat.description_of_prototype` (for other examples of prefixes we use, see [RFC 10 - Conventional Commits](0010_conventional_commits.md); most RPs would best be described as `feat` or `perf` changes):
+Give your fork a name like `feat.description_of_prototype` (for other examples of prefixes we use, see [RFC 10 - Conventional Commits](0010_conventional_commits.md); most Prototypes would best be described as `feat` or `perf` changes):
 
-<img src="0000_code_guidance_for_researchers_and_community/RP_fork_name.png" alt="Naming your Fork" width="500">
+<img src="0000_code_guidance_for_researchers_and_community/Prototype_fork_name.png" alt="Naming your Fork" width="500">
 
-If your RP is related to a particular [RFC](https://thousandbrainsproject.readme.io/docs/request-for-comments-rfc), it can be helpful to link to this RFC in the fork description, which will appear under the About heading.
+If your Prototype is related to a particular [RFC](https://thousandbrainsproject.readme.io/docs/request-for-comments-rfc), it can be helpful to link to this RFC in the fork description, which will appear under the About heading.
 
 2. Clone the new fork, and then create a new development branch that is appropriately named.
     - Your fork should now have a `main` branch, and a feature branch or branches where you will carry out active work.
 
 ### Workflow
-- The aim is to progressively implement the Research Prototype via a series of PRs into the `main` branch of your RP fork.
+- The aim is to progressively implement the Prototype via a series of PRs into the `main` branch of your Prototype fork.
     - Please try to formulate PRs into the main branch as _atomic_ PRs for review by other researchers.
     - Note that _atomic_ does not always mean small, although it is a common finding that PRs (especially by researchers!) are too large. Rather, atomic means that the PR represents a full, minimally self-contained change. The PR should not depend on code that will be added in the future, although context can be provided where helpful re. future changes.
 - When you open a PR into your fork's `main` branch, it is generally recommended that you tag at least one other TBP researcher for review.
-    - The aim is that RP work should be regularly reviewed and discussed with other researchers; getting reviews early, particularly for complex or conceptually important changes, reduces the chance that significant effort will be spent on a change that might be in a suboptimal direction.
+    - The aim is that Prototype work should be regularly reviewed and discussed with other researchers; getting reviews early, particularly for complex or conceptually important changes, reduces the chance that significant effort will be spent on a change that might be in a suboptimal direction.
     - However, researchers should use their own judgement to weigh the benefits of reviews on every atomic change against the benefit of quick iteration and experimentation.
-- During your work, it is recommended that you regularly update your fork and its branches with any upstream changes to `thousandbrainsproject/tbp.monty`. This will reduce the chance that a longer RP-project is associated with significant merge conflicts when you later wish to merge it into the primary Monty code-base.
+- During your work, it is recommended that you regularly update your fork and its branches with any upstream changes to `thousandbrainsproject/tbp.monty`. This will reduce the chance that a longer Prototype-project is associated with significant merge conflicts when you later wish to merge it into the primary Monty code-base.
     - NOTE: if pulling from upstream ever introduces breaking changes, then rather than try to resolve them at that time, the recommendation is to revert to the pre-merge commit. Any breaking merge conflicts can then be dealt with later during the IP. Recall however that regularly pulling from upstream can often avoid getting into this situation, as it is less likely that you end up working on a piece of code at the same time as someone else.
-- When a research prototype has been fully implemented and its merits established through evaluations and visualizations, the `main` branch is ready to form the basis of an Implementation Project.
-- The Implementation Project (IP) involves any necessary refactoring of the Research Prototype to ensure it adheres to the [guidelines of the platform](https://thousandbrainsproject.readme.io/docs/code-style-guide) before merging into `tbp.monty`. For more information, see [the description of the IP process in RFC 14 Conducting Research While Building a Stable Platform](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0014_conducting_research_while_building_a_stable_platform.md#implementation-project).
+- When a Prototype has been fully implemented and its merits established through evaluations and visualizations, the `main` branch is ready to form the basis of an Implementation Project.
+- The Implementation Project (IP) involves any necessary refactoring of the Prototype to ensure it adheres to the [guidelines of the platform](https://thousandbrainsproject.readme.io/docs/code-style-guide) before merging into `tbp.monty`. For more information, see [the description of the IP process in RFC 14 Conducting Research While Building a Stable Platform](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0014_conducting_research_while_building_a_stable_platform.md#implementation-project).
 - As a brief summary of the IP process, please see the below extract:
 
 > The implementation project is a project because it may require major refactoring of the prototype or of Monty in order to integrate the new capability. It may be a single pull request, or it may be a long running effort as we reorganize all of Monty. The working prototype is helpful as it becomes a working specification of what needs to be implemented.
@@ -66,14 +66,14 @@ The workflow is shown in the below diagram:
 
 Green arrows indicate pulling from upstream, blue arrows indicate PRs. Above the blue arrows, a suggestion is provided for whether a researcher or engineer would more suitable to review the PR. If you are contributing as a non-Maintainer, it will be the responsibility of the Maintainer you tag to determine who is most suitable to review the PR. NOTE that when implementing the IP, a researcher will pair with an engineer (i.e. it is not solely the responsibility of engineers to handle the IP process from start to finish).
 
-Below shows the potential follow-up workflow. In the example shown, the first RP (RP "A") did not demonstrate significant benefit, and the fork is archived without ever going through the IP process. A new fork is made to work on a new RP / feature.
+Below shows the potential follow-up workflow. In the example shown, the first Prototype (Prototype "A") did not demonstrate significant benefit, and the fork is archived without ever going through the IP process. A new fork is made to work on a new Prototype / feature.
 
 <img src="0000_code_guidance_for_researchers_and_community/follow_up_workflow.png" alt="Follow-up Workflow with a Second Fork" width="900">
 
 
 ### Regarding Code Quality Specified in Other Guideline
-- When writing code for the RP, you may choose to follow the [official guidance for the platform](https://thousandbrainsproject.readme.io/docs/code-style-guide). 
-- The advantage of doing so while working on the RP is that it can reduce the amount of work required for the IP stage.
+- When writing code for the Prototype, you may choose to follow the [official guidance for the platform](https://thousandbrainsproject.readme.io/docs/code-style-guide). 
+- The advantage of doing so while working on the Prototype is that it can reduce the amount of work required for the IP stage.
 - However, adhering to these guidelines is often not possible without first carrying out a significant refactor of the code, or through a time-consuming design process.
 - As such, researchers should not follow these guidelines if it will introduce significant delays. Rather, the guidance they provide (e.g., being mindful of how state is added or accessed in code) can provide general tips for writing high-quality code from the beginning.
 
@@ -94,9 +94,9 @@ Below shows the potential follow-up workflow. In the example shown, the first RP
 - This approach is less well suited when significant parts of the existing code need to be altered in-place. While still doable, it can be challenging with this approach and a standard `diff` to see what is genuinely new.
 
 #### Feature Branches (Not Feature Forks)
-- Another possibility is using branches within existing personal forks as a way of managing Research Prototypes.
-- In this case, a new pair of branches is made in your personal fork whenever starting work on a Research Prototype.
-- We have decided that for internal use-cases, this risks becoming overwhelming with the number of RPs/features that we explore, so is generally best avoided.
+- Another possibility is using branches within existing personal forks as a way of managing Prototypes.
+- In this case, a new pair of branches is made in your personal fork whenever starting work on a Prototype.
+- We have decided that for internal use-cases, this risks becoming overwhelming with the number of Prototypes/features that we explore, so is generally best avoided.
 - However, if you are a member of the community doing research and you are unable to create multiple forks on your profile, this can be a good approach to adopt.
 
 This approach is shown diagrammatically below:
@@ -104,22 +104,22 @@ This approach is shown diagrammatically below:
 <img src="0000_code_guidance_for_researchers_and_community/single_fork_workflow.png" alt="Workflow with a Single Fork" width="900">
 
 
-### Discontinued Research Prototypes
-- Sometimes a research idea will not bear fruit. This is fine, indeed we expect this to happen from time to time, and it is the primary reason we expect the proposed workflow to be faster than merging all changes into `tbp.monty`. When an RP does not demonstrate a fundamental improvement, you should archive the fork in question.
-- When this happens, please consider adding some documentation to the README of the prototype explaining why the prototype failed, so that we can refer to this in the future.
+### Discontinued Prototypes
+- Sometimes a research idea will not bear fruit. This is fine, indeed we expect this to happen from time to time, and it is the primary reason we expect the proposed workflow to be faster than merging all changes into `tbp.monty`. When a Prototype does not demonstrate a fundamental improvement, you should archive the fork in question.
+- When this happens, please consider adding some documentation to the README of the Prototype explaining why the Prototype failed, so that we can refer to this in the future.
 
 ### Non-Prototype PRs from Researchers
 - Researchers may also open PRs directly into `thousandbrainsproject/tbp.monty`, such as a refactor that is useful for them or other researchers, and which is not specific to their current feature project.
-- This will often be desirable if it constrains the complexity of a Research Prototype, and improves the quality of the platform. 
-- However, such PRs should be of general benefit if they are to be opened in this way. In other words, even if a Research Prototype is ultimately abandoned and archived, PRs directly into `tbp.monty` should still have been useful on their own merits.
+- This will often be desirable if it constrains the complexity of a Prototype, and improves the quality of the platform. 
+- However, such PRs should be of general benefit if they are to be opened in this way. In other words, even if a Prototype is ultimately abandoned and archived, PRs directly into `tbp.monty` should still have been useful on their own merits.
 - When contemplating such PRs, it is important to consider when a change is suitable for a researcher to work on, vs. when it would benefit from an engineer's expertise. For example, major refactors, or features that are primarily about infrastructure tooling, are likely to be a poorer fit for a TBP researcher's focus.
 
 ### PRs without RFCs
 - Researchers are reminded that not all research work requires an [RFC](https://thousandbrainsproject.readme.io/docs/request-for-comments-rfc) before it can be carried out. For example, a significant idea might require a single line of code to evaluate, in which case it is quicker to simply make the change and report the results, rather than begin with the RFC process.
 
-### Multiple Researchers Working on a Single Research Prototype
-- From time-to-time, two or more researchers may be working on ideas that could be considered elements of a single, over-arching Research Prototype. In this case, it is perfectly acceptable for them to use a shared RP fork.
-- As with typical Research Prototypes, this work should still regularly be synced with the upstream `tbp.monty`. The main difference is that the collaborating researchers can submit PRs into this shared fork.
+### Multiple Researchers Working on a Single Prototype
+- From time-to-time, two or more researchers may be working on ideas that could be considered elements of a single, over-arching Prototype. In this case, it is perfectly acceptable for them to use a shared Prototype fork.
+- As with typical Prototypes, this work should still regularly be synced with the upstream `tbp.monty`. The main difference is that the collaborating researchers can submit PRs into this shared fork.
 - This enables them to each pull changes from this shared fork, minimizing the chance of merge conflicts if they are working on similar parts of the code.
 - When adopting this approach, it is advised that all researchers working on this shared fork adopt a collaborative workflow. The two main strategies for this are:
     - Pair programming: this can be an excellent way to make progress together on a complex feature that requires multiple perspectives, or is addressing shared objectives. If pair programming, it is also NOT necessary to have an additional PR review before merging code into you shared fork.
@@ -140,8 +140,8 @@ Following the above guidance will ensure you do not spend a large amount of time
 
 ### Workflow for Contributing Code
 
-If you are a member of the community working on a research idea, then we would recommend you also follow the above guidance under [Workflow for TBP Researchers: from Research Prototype to Implementation Project](#workflow-for-tbp-researchers-from-research-prototype-to-implementation-project). The main additional points to highlight are:
+If you are a member of the community working on a research idea, then we would recommend you also follow the above guidance under [Workflow for TBP Researchers: from Prototype to Implementation Project](#workflow-for-tbp-researchers-from-research-prototype-to-implementation-project). The main additional points to highlight are:
 - When creating the fork, you should set yourself as the owner (it will not be possible to set the Thousand Brains Project as the owner).
 - Unless you have a paid account, you will only be able to have a single personal fork of `tbp.monty`. If this is the case, you can follow the workflow described under [Feature Branches (Not Feature Forks)](#feature-branches-not-feature-forks).
 - We recommend that you tag a Maintainer of the TBP (i.e. using the `@` feature on GitHub) when making PRs into your feature branch. This will help get involvement from a Maintainer (including TBP research team members) at an early stage of your work. Once you have tagged a Maintainer, we will triage and determine the most appropriate member of the team to review the PR. In some instances, the Maintainer may abstain from reviewing these PRs.
-- Similarly, if you believe an RP is suitable to become an IP, you are welcome to tag one of the Maintainers to discuss this.
+- Similarly, if you believe a Prototype is suitable to become an IP, you are welcome to tag one of the Maintainers to discuss this.
