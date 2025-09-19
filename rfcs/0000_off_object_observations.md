@@ -87,9 +87,9 @@ Taking this into consideration, we define "null features" as the absence of **mo
 
 The following implementation addresses the limitations identified above by enabling off-object observations to flow through the sensory processing pipeline and be used for hypothesis elimination. The approach involves two main steps: modifying the sensor module's filtering behavior and extending learning modules to process off-object observations.
 
-### Step 1: Update `FeatureChangeSM` to Send Null Features
+### Step 1: Update `sensor_modules.py` to Send Null Features
 
-The `FeatureChangeSM` class requires modifications to enable off-object observation processing. We need to replace the current empty dictionary approach with consistent null feature representation:
+The `sensor_modules.py` file requires modifications to enable off-object observation processing. We need to replace the current empty dictionary approach with consistent null feature representation:
 
 ```python
 NULL_MORPHOLOGICAL_FEATURES = {
