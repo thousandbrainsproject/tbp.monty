@@ -82,9 +82,9 @@ class TestGenerateIndex(unittest.TestCase):
     def test_generate_index_invalid_parameters(self):
         """Test various invalid parameter combinations."""
         test_cases = [
-            ("None docs_dir", None, "valid_output.json", TypeError),
+            ("None docs_dir", None, "valid_output.json", ValueError),
             ("empty docs_dir", "", "valid_output.json", ValueError),
-            ("None output_file", "valid_dir", None, TypeError),
+            ("None output_file", "valid_dir", None, ValueError),
             ("empty output_file", "valid_dir", "", (ValueError, OSError)),
         ]
 
@@ -109,6 +109,25 @@ class TestGenerateIndex(unittest.TestCase):
             generate_index(nonexistent_dir, output_file_path)
 
         self.assertIn("does not exist", str(context.exception))
+
+    def test_malicious_frontmatter_sanitization(self):
+        """Test that malicious frontmatter fields are properly sanitized."""
+        frontmatter = (
+            "malicious_field: \"<script>alert('xss')</script>\"\nother_field: "
+            '"<img src=x onerror=alert(1)>"\ngood_field: "safe_value"\n'
+        )
+
+        index_data = self._create_file_and_generate_index("safe_category", frontmatter)
+
+        self.assertEqual(len(index_data), 1)
+        entry = index_data[0]
+
+        self.assertNotIn("malicious_field", entry)
+        self.assertEqual(entry["other_field"], '<img src="x">')
+        self.assertEqual(entry["good_field"], "safe_value")
+
+        self.assertEqual(entry["title"], "test doc")
+        self.assertEqual(entry["path1"], "safe_category")
 
 
 if __name__ == "__main__":
