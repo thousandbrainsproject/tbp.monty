@@ -16,7 +16,7 @@ import os
 import re
 from collections import OrderedDict
 from copy import deepcopy
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 from urllib.parse import parse_qs
 
 import nh3
@@ -111,7 +111,7 @@ class ReadMe:
 
         return front_matter_str + doc_body
 
-    def get_doc_id(self, slug: str) -> str:
+    def get_doc_id(self, slug: str) -> Optional[str]:
         response = get(f"{PREFIX}/docs/{slug}", {"x-readme-version": self.version})
         if response:
             return response["_id"]
@@ -300,6 +300,7 @@ class ReadMe:
                 raise ValueError(f"Failed to create doc {doc['title']}")
             doc_id = json.loads(response)["_id"]
 
+        assert doc_id is not None  # doc_id is guaranteed to be set by this point
         return doc_id, created
 
     def process_markdown(self, body: str, file_path: str, slug: str) -> str:

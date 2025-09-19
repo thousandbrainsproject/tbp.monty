@@ -1,5 +1,5 @@
 ---
-title: Model-Based Policy to Recognize an Object Before Moving onto a New Object
+title: Model-Based Policy to Recognize an Object Before Moving on to a New Object
 ---
 
 When there are multiple objects in the world (including different parts of a compositional object), it is beneficial to recognize the object currently observed (i.e. converge to high confidence) before moving onto a new object.
