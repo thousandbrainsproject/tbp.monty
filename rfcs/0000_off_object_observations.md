@@ -42,7 +42,7 @@ if not observed_features.get_on_object():
     return False
 ```
 
-This means that when a sensor moves off an object into empty space, the resulting off-object observation, which could provide valuable prediction error signals, is discarded before reaching the LM.
+This means that when a sensor moves off an object into empty space, the resulting off-object observation, which could provide valuable prediction error signals, is discarded before reaching the LM. Consequently, the LM's `step()` method is never called for these off-object observations, preventing any processing or learning from this information.
 
 ### Current Data Representation for Off-Object Observations
 
