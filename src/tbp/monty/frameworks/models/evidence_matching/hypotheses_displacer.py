@@ -344,7 +344,7 @@ class DefaultHypothesesDisplacer:
         # Currently we skip the third since the second curv dir is always 90 degree
         # from the first.
         # Get angles between three pose features
-        pn_error = get_angles_for_all_hypotheses(
+        surface_normal_error = get_angles_for_all_hypotheses(
             # shape of node_features[input_channel]["pose_vectors"]: (nH, knn, 9)
             node_features["pose_vectors"][:, :, :3],
             query_features["pose_vectors"][:, 0],  # shape (nH, 3)
@@ -352,18 +352,18 @@ class DefaultHypothesesDisplacer:
         # Divide error by 2 so it is in range [0, pi/2]
         # Apply sin -> [0, 1]. Subtract 0.5 -> [-0.5, 0.5]
         # Negate the error to get evidence (lower error is higher evidence)
-        pn_evidence = -(np.sin(pn_error / 2) - 0.5)
-        pn_weight = self.feature_weights[input_channel]["pose_vectors"][0]
+        surface_normal_evidence = -(np.sin(surface_normal_error / 2) - 0.5)
+        surface_normal_weight = self.feature_weights[input_channel]["pose_vectors"][0]
         # If curvatures are same the directions are meaningless
         #  -> set curvature angle error to zero.
         if not query_features["pose_fully_defined"]:
             cd1_weight = 0
             # Only calculate curv dir angle if sensed curv dirs are meaningful
-            cd1_evidence = np.zeros(pn_error.shape)
+            cd1_evidence = np.zeros(surface_normal_error.shape)
             # TODO: Test whether we should double the SN evidence if no
             # curvatures are sensed and pose_fully_defined == False at node.
             # i.e. move use_cd from else block and set
-            # pn_evidence[np.logical_not(use_cd)] *= 2 (see PR#446)
+            # surface_normal_evidence[np.logical_not(use_cd)] *= 2 (see PR#446)
         else:
             cd1_weight = self.feature_weights[input_channel]["pose_vectors"][1]
             # Also check if curv dirs stored at node are meaningful
@@ -379,14 +379,18 @@ class DefaultHypothesesDisplacer:
             # error to be largest when the angle is pi/2 (90 deg) and angles 0 and
             # pi are equal. This means the angle error will be between 0 and pi/2.
             cd1_error = np.pi / 2 - np.abs(cd1_angle - np.pi / 2)
-            # We then apply the same operations as on pn error to get cd1_evidence
+            # We then apply the same operations as on surface_normal error to get
+            # cd1_evidence
             # in range [-0.5, 0.5]
             cd1_evidence = -(np.sin(cd1_error) - 0.5)
-            # nodes where pc1==pc2 receive no cd evidence but twice the pn evidence
+            # nodes where pc1==pc2 receive no cd evidence but twice the surface_normal
+            # evidence
             # -> overall evidence can be in range [-1, 1]
             cd1_evidence = cd1_evidence * use_cd
         # weight angle errors by feature weights
         # if sensed pc1==pc2 cd1_weight==0 and overall evidence is in [-0.5, 0.5]
         # otherwise it is in [-1, 1].
-        pose_evidence_weighted += pn_evidence * pn_weight + cd1_evidence * cd1_weight
+        pose_evidence_weighted += (
+            surface_normal_evidence * surface_normal_weight + cd1_evidence * cd1_weight
+        )
         return pose_evidence_weighted

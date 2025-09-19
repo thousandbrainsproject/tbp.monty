@@ -241,15 +241,17 @@ def surface_normal_total_least_squares(
         except np.linalg.LinAlgError:
             n_dir = np.array([0.0, 0.0, 1.0])
             valid_sn = False
-            logger.debug("Warning : Non-diagonalizable matrix for PN estimation!")
+            logger.debug(
+                "Warning : Non-diagonalizable matrix for surface normal estimation!"
+            )
 
     # Patch center does not lie on an object
     else:
         n_dir = np.array([0.0, 0.0, 1.0])
-        valid_sn = False
+        valid_surface_normal = False
         logger.debug("Warning : Patch center does not lie on an object!")
 
-    return n_dir, valid_sn
+    return n_dir, valid_surface_normal
 
 
 # Old implementation for principal curvature extraction. Refer to

@@ -682,7 +682,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
         Graph utils
         - [!] Build graph from repeated observations and check that similar ones are
-          removed (also if location is similar but pn is not)
+          removed (also if location is similar but surface normal is not)
         - Test check_orthonormal function
         - [!] Test get center surface normal under different off object conditions
         - [!] already_in_list with using all features for graph building
