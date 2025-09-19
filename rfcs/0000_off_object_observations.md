@@ -62,6 +62,8 @@ The following implementation addresses the limitations identified above by enabl
 
 The `sensor_modules.py` file requires modifications to enable off-object observation processing. Currently, when off object, morphological_features are represented as an empty dictionary in `sensor_modules.py`. Depending on the implementation, this may be updated to `None`. 
 
+### Step 2: Update `use_state` variable
+
 In addition, the `use_state` variable will need to account for the four transitions are happening:
 
 1. **On-object --> On-object**: Existing delta threshold feature comparison logic 
@@ -69,43 +71,7 @@ In addition, the `use_state` variable will need to account for the four transiti
 3. **Off-object --> On-object**: Treated as significant change; LM receives actual features for new processing
 4. **Off-object --> Off-object**: No change detected; observation filtered out
 
-#### A. Transition-Aware Logic in `check_feature_change()`
-
-Transform the current "filter-out" approach (lines 680-684) to a "transition-aware" approach:
-
-```python
-def check_feature_change(self, observed_features):
-    """Check for significant changes including on/off-object transitions."""
-    
-    if self.last_features is None:  # First observation
-        return True
-    
-    current_on_object = observed_features.get_on_object()
-    previous_on_object = self.last_features.get_on_object()
-    
-    if not current_on_object and not previous_on_object:
-        # Off-object to Off-object: no change
-        return False
-    elif not current_on_object and previous_on_object:
-        # On-object to Off-object: significant change (prediction error signal)
-        logger.debug("Transition from on-object to off-object detected")
-        return True
-    elif current_on_object and not previous_on_object:
-        # Off-object to On-object: significant change (new features detected)
-        logger.debug("Transition from off-object to on-object detected")
-        return True
-    else:
-        # On-object to On-object: use existing feature comparison logic
-        return self._check_on_object_feature_changes(observed_features)
-
-def _check_on_object_feature_changes(self, observed_features):
-    """Extract existing delta threshold comparison logic (lines 686-740)."""
-    # Move existing feature comparison code here
-    for feature in self.delta_thresholds.keys():
-        # ... existing comparison logic unchanged ...
-```
-
-### Step 2: Update Learning Module to Process Null Features
+### Step 3: Update Learning Module to Process Null Features
 
 The Learning Module requires some modifications to handle off-object observations for hypothesis elimination. The main changes will be in two places:
 
