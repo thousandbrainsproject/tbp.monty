@@ -89,44 +89,9 @@ The following implementation addresses the limitations identified above by enabl
 
 ### Step 1: Update `sensor_modules.py` to Send Null Features
 
-The `sensor_modules.py` file requires modifications to enable off-object observation processing. We need to replace the current empty dictionary approach with consistent null feature representation:
+The `sensor_modules.py` file requires modifications to enable off-object observation processing. Currently, when off object, morphological_features are represented as an empty dictionary in `sensor_modules.py`. Depending on the implementation, this may be updated to `None`. 
 
-```python
-NULL_MORPHOLOGICAL_FEATURES = {
-    "pose_vectors": np.array([
-        [np.nan, np.nan, np.nan],  
-        [np.nan, np.nan, np.nan],  
-        [np.nan, np.nan, np.nan],  
-    ]),
-    "pose_fully_defined": False,
-    "principal_curvatures": np.array[[np.nan, np.nan]]
-    "gaussian_curvature": np.nan
-    "mean_curvature": np.nan
-    ...
-}
-
-# Existing code...
-# Proposed update in line 286 of sensor_modules.py
-else: 
-    morphological_features = NULL_MORPHOLOGICAL_FEATURES
-```
-
-We may also consider removing the use of `invalid_signals`, which is currently used to determine `use_state` in line 305 of `sensor_modules.py` (see code below). The current logic sets `invalid_signals` to `True` if surface normal or principal curvature directions are not defined (see `extract_and_add_features()` method in `sensor_modules.py`), but this check becomes less relevant when we process `NULL_MORPHOLOGICAL_FEATURES` for off-object observations. 
-
-```python
-# current implementation around line 305 of sensor_modules.py
-observed_state = State(
-    location=np.array([x, y, z]),
-    morphological_features=morphological_features,
-    non_morphological_features=features,
-    confidence=1.0,
-    use_state=bool(morphological_features["on_object"]) and not invalid_signals, # line 305
-    sender_id=self.sensor_module_id,
-    sender_type="SM",
-)
-```
-
-Instead, the `use_state` will depend on which of the four transitions are happening:
+In addition, the `use_state` variable will need to account for the four transitions are happening:
 
 1. **On-object --> On-object**: Existing delta threshold feature comparison logic 
 2. **On-object --> Off-object**: Treated as significant change; LM receives null features for hypothesis elimination
