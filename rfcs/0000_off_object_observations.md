@@ -52,7 +52,7 @@ The challenge of representing off-object observations varies by sensor type:
 - **Touch sensors**: Naturally detect "nothing" when not in contact with surface.
 - **Vision sensors**: Always detect something (even if just background), making the definition of "off-object" more complex and context-dependent.
 
-Taking this into consideration, we treat "null features" as the absence of morphological information tied to the tracked object only when the center pixel’s semantic ID is zero (i.e. no object at that location).
+Taking this into consideration, we treat "null features" as the absence of morphological information tied to the tracked object only when the center pixel’s semantic ID is zero (i.e. no object at that location). If the sensor lands on another object (semantic ID > 0), morphological pose and curvature are still computed for that surface and `on_object` remains 1, even though the appearance cues may change.
 
 ## Proposed Implementation
 
@@ -73,58 +73,11 @@ In addition, the `use_state` variable will need to account for the four transiti
 
 ### Step 3: Update Learning Module to Process Null Features
 
-The Learning Module requires some modifications to handle off-object observations for hypothesis elimination. The main changes will be in two places:
+Once off-object observations reach the learning system, we need logic that distinguishes between hypotheses that correctly predicted the sensor would leave the object and those that insisted we would still be on surface. The updates fall into three design elements:
 
-#### `DefaultHypothesesDisplacer.displace_hypotheses_and_compute_evidence()` 
-```python
-def displace_hypotheses_and_compute_evidence(
-        self,
-        channel_displacement: np.ndarray,
-        channel_features: dict,
-        evidence_update_threshold: float,
-        graph_id: str,
-        possible_hypotheses: ChannelHypotheses,
-        total_hypotheses_count: int,
-    ) -> ChannelHypotheses:
-    # Check if this is an off-object obesrvation with null features
-    is_off_object = ...
-
-    # For off-object observation, apply evidence penalty 
-    if is_off_object:
-        evidence_penality = ... # may need to be an argument/parameter
-        new_evidence = possible_hypotheses.evidence - evidence_penalty
-        return ChannelHypotheses(
-            input_channel==possible_hypotheses.input_channel,
-            evidence=new_evidence,
-            locations=possible_hypotheses.locations, # No location update
-            poses=possible_hypotheses.poses
-        )
-
-    # Normal processing continues for on-object observations...
-    rotated_displacements = possible_hypotheses.poses.dot(channel_displacement)
-    search_locations = possible_hypotheses.locations + rotated_displacements
-```
-
-#### `DefaultFeatureEvidenceCalculator.calculate()`
-```python
-@staticmethod
-def calculate(
-    channel_feature_array: np.ndarray,
-    channel_feature_order: list[str],
-    channel_feature_weights: dict,
-    channel_query_features: dict,
-    channel_tolerances: dict,
-    input_channel: str,  # noqa: ARG004
-) -> np.ndarray:
-    # Check if this is an off-object observation with null features 
-    is_off_object = ...
-
-    # For off-object observations, return zero evidence for all nodes
-    if if_off_object:
-        return np.zeros(channel_feature_array.shape[0])
-    
-    # Existing code...
-```
+- **Propagate the on/off-object signal**: the CMP message already carries `on_object`. We should keep that flag available when assembling the inputs for the hypothesis displacer (e.g. by ensuring `channel_features["on_object"]` survives any feature-selection step). That gives every downstream component an explicit indicator that no surface geometry was sensed.
+- **Short-circuit feature comparisons when nothing was sensed**: if `on_object == 0`, the feature matcher should skip the call to `feature_evidence_calculator.calculate`. There are no normals or curvatures to compare, so forcing that calculation would only inject artificial zeros and make it look as if every stored node mismatched equally.
+- **Adjust hypothesis evidence selectively**: `_calculate_evidence_for_new_locations` already builds a distance-based mask showing which hypotheses remained near stored nodes (`mask == False`) versus those that routed the sensor outside the object's reference frame (`mask == True`). During an off-object step we should penalize only the former group (since their predictions were wrong) and possibly reward the latter group (for correctly predicting "off-object observation"). 
 
 ## Benchmarking
 
