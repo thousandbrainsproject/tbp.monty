@@ -8,18 +8,18 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-"""
-Experiment configurations for testing unsupervised object ID association learning.
+"""Experiment configurations for testing unsupervised object ID association learning.
 
 This module provides experiment configurations that demonstrate and test the
 unsupervised association learning capabilities between different learning modules.
 """
-import os
 
+import os
+from dataclasses import asdict
+
+from benchmarks.configs.names import UnsupervisedAssociationExperiments
 from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
-from tbp.monty.frameworks.config_utils.config_args import (
-    MontyArgs,
-)
+from tbp.monty.frameworks.config_utils.config_args import MontyArgs
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
     EvalExperimentArgs,
@@ -49,9 +49,7 @@ from tbp.monty.frameworks.models.evidence_matching.unsupervised_model import (
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
 from tbp.monty.frameworks.models.motor_policies import InformedPolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
-from tbp.monty.frameworks.models.sensor_modules import (
-    FeatureChangeSM,
-)
+from tbp.monty.frameworks.models.sensor_modules import FeatureChangeSM
 from tbp.monty.simulators.habitat.configs import (
     TwoLMStackedDistantMountHabitatDatasetArgs,
 )
@@ -147,7 +145,7 @@ base_motor_system = {
             action_space_type="distant_agent",
             action_sampler_class=ConstantSampler,
             action_sampler_args={"action": [0, 0, 0, 0, 1]},
-        )
+        ),
     },
 }
 
@@ -162,7 +160,11 @@ base_dataloader_args = EnvironmentDataloaderPerObjectArgs(
 
 
 def create_experiment_config(monty_config, logging_config=None):
-    """Create a standard experiment configuration with the given monty_config and logging_config."""
+    """Create a standard experiment configuration.
+
+    Returns:
+        dict: Experiment configuration dictionary.
+    """
     if logging_config is None:
         logging_config = {
             "python_log_level": "INFO",
@@ -194,12 +196,16 @@ def create_experiment_config(monty_config, logging_config=None):
 
 
 def create_single_modality_balanced_config():
-    """Create a simple single-modality (two patches) experiment with balanced params."""
+    """Create a simple single-modality (two patches) experiment with balanced params.
+
+    Returns:
+        dict: Experiment configuration dictionary.
+    """
     lm_configs = create_cross_modal_lm_configs(
         base_learning_module,
         num_lms=2,
-        modality_names=['visual_0', 'visual_1'],
-        association_params=get_association_params_preset('balanced'),
+        modality_names=["visual_0", "visual_1"],
+        association_params=get_association_params_preset("balanced"),
     )
 
     monty_config = create_unsupervised_association_monty_config(
@@ -212,8 +218,10 @@ def create_single_modality_balanced_config():
                 max_total_steps=2000,
             ),
             "sensor_module_configs": {
-                "sensor_module_0": patch_0_sensor_module,   # patch_0
-                "sensor_module_1": patch_1_sensor_module,  # patch_1
+                # patch_0
+                "sensor_module_0": patch_0_sensor_module,
+                # patch_1
+                "sensor_module_1": patch_1_sensor_module,
             },
             "learning_module_configs": lm_configs,
             "motor_system_config": base_motor_system,
@@ -231,13 +239,17 @@ def create_single_modality_balanced_config():
 
 
 def create_single_modality_aggressive_config():
-    """Create a single-modality (two patches) experiment with aggressive params."""
+    """Create a single-modality (two patches) experiment with aggressive params.
+
+    Returns:
+        dict: Experiment configuration dictionary.
+    """
     # Create two learning modules representing the same modality (two patches)
     lm_configs = create_cross_modal_lm_configs(
         base_learning_module,
         num_lms=2,
-        modality_names=['visual_0', 'visual_1'],
-        association_params=get_association_params_preset('aggressive'),
+        modality_names=["visual_0", "visual_1"],
+        association_params=get_association_params_preset("aggressive"),
     )
 
     # Create Monty configuration with full cross-voting
@@ -251,12 +263,15 @@ def create_single_modality_aggressive_config():
                 max_total_steps=4000,
             ),
             "sensor_module_configs": {
-                "sensor_module_0": patch_0_sensor_module,    # patch_0
-                "sensor_module_1": patch_1_sensor_module,  # patch_1
+                # patch_0
+                "sensor_module_0": patch_0_sensor_module,
+                # patch_1
+                "sensor_module_1": patch_1_sensor_module,
             },
             "learning_module_configs": lm_configs,
             "motor_system_config": base_motor_system,
-            "sm_to_agent_dict": {"patch_0": "agent_id_0", "patch_1": "agent_id_0"},  # Both sensors on same agent
+            # Both sensors on same agent
+            "sm_to_agent_dict": {"patch_0": "agent_id_0", "patch_1": "agent_id_0"},
             "sm_to_lm_matrix": [[0], [1]],  # Each patch sensor to different LM
             "lm_to_lm_matrix": [[], []],  # No hierarchical connections
             "lm_to_lm_vote_matrix": [[1], [0]],  # Cross-voting between LMs
@@ -273,12 +288,16 @@ def create_single_modality_aggressive_config():
 
 
 def create_single_modality_conservative_config():
-    """Create a single-modality (two patches) experiment with conservative params."""
+    """Create a single-modality (two patches) experiment with conservative params.
+
+    Returns:
+        dict: Experiment configuration dictionary.
+    """
     lm_configs = create_cross_modal_lm_configs(
         base_learning_module,
         num_lms=2,
-        modality_names=['visual_0', 'visual_1'],
-        association_params=get_association_params_preset('conservative'),
+        modality_names=["visual_0", "visual_1"],
+        association_params=get_association_params_preset("conservative"),
     )
 
     monty_config = create_unsupervised_association_monty_config(
@@ -322,7 +341,11 @@ def create_single_modality_conservative_config():
 
 
 def create_association_strategy_comparison_config():
-    """Create configuration for comparing different association strategies."""
+    """Create configuration for comparing different association strategies.
+
+    Returns:
+        dict: Experiment configuration dictionary.
+    """
     # Reuse top-level base configs to avoid duplicated code
 
     # Create multiple LM configs with different association parameters
@@ -330,27 +353,33 @@ def create_association_strategy_comparison_config():
 
     # Strategy 1: Balanced weights
     balanced_params = get_association_params_preset("balanced")
-    lm_configs.append(create_cross_modal_lm_configs(
-        base_learning_module,
-        num_lms=2,
-        association_params=balanced_params
-    ))
+    lm_configs.append(
+        create_cross_modal_lm_configs(
+            base_learning_module,
+            num_lms=2,
+            association_params=balanced_params,
+        )
+    )
 
     # Strategy 2: Conservative (spatial-focused)
     conservative_params = get_association_params_preset("conservative")
-    lm_configs.append(create_cross_modal_lm_configs(
-        base_learning_module,
-        num_lms=2,
-        association_params=conservative_params
-    ))
+    lm_configs.append(
+        create_cross_modal_lm_configs(
+            base_learning_module,
+            num_lms=2,
+            association_params=conservative_params,
+        )
+    )
 
     # Strategy 3: Aggressive (co-occurrence-focused)
     aggressive_params = get_association_params_preset("aggressive")
-    lm_configs.append(create_cross_modal_lm_configs(
-        base_learning_module,
-        num_lms=2,
-        association_params=aggressive_params
-    ))
+    lm_configs.append(
+        create_cross_modal_lm_configs(
+            base_learning_module,
+            num_lms=2,
+            association_params=aggressive_params,
+        )
+    )
 
     # Create base monty config for comparison
     base_monty_config = {
@@ -365,7 +394,8 @@ def create_association_strategy_comparison_config():
             "sensor_module_0": patch_0_sensor_module,
             "sensor_module_1": patch_1_sensor_module,
         },
-        "learning_module_configs": lm_configs[0],  # Use balanced as base
+        # Use balanced as base
+        "learning_module_configs": lm_configs[0],
         "motor_system_config": base_motor_system,
         "sm_to_agent_dict": {"patch_0": "agent_id_0", "patch_1": "agent_id_0"},
         "sm_to_lm_matrix": [[0], [1]],
@@ -388,7 +418,9 @@ def create_association_strategy_comparison_config():
         "python_log_to_stdout": True,
         "python_log_to_stderr": False,  # Add missing key
         "log_parallel_wandb": False,  # Add missing key
-        "output_dir": os.getenv("MONTY_LOGS", "~/tbp/results/monty/") + "association_comparison",
+        "output_dir": (
+            os.getenv("MONTY_LOGS", "~/tbp/results/monty/") + "association_comparison"
+        ),
         "run_name": "association_comparison",
         "wandb_handlers": [],
         "monty_handlers": [],
@@ -399,14 +431,23 @@ def create_association_strategy_comparison_config():
 
 
 def create_5lm_77obj_benchmark_config():
-    """
-    Create a 5-LM unsupervised association learning experiment that trains from scratch.
+    """Create a 5-LM unsupervised association learning experiment.
 
-    This experiment trains 5 learning modules with unsupervised association capabilities
-    from scratch (no pretrained models) to learn object representations and associations
-    through cross-modal coordination. After training, it evaluates on 77 YCB objects.
+    This experiment trains 5 learning modules with unsupervised association
+    capabilities from scratch (no pretrained models) to learn object
+    representations and associations through cross-modal coordination. After
+    training, it evaluates on 77 YCB objects.
+
+    Returns:
+        Dict[str, Any]: Complete experiment configuration for the 5-LM/77-obj
+        benchmark.
     """
     import numpy as np
+
+    from benchmarks.configs.ycb_experiments import (
+        default_5sm_config,
+        min_eval_steps,
+    )
     from tbp.monty.frameworks.config_utils.config_args import (
         MontyArgs,
     )
@@ -421,10 +462,6 @@ def create_5lm_77obj_benchmark_config():
         InformedEnvironmentDataLoader,
     )
     from tbp.monty.simulators.habitat.configs import FiveLMMountHabitatDatasetArgs
-    from benchmarks.configs.ycb_experiments import (
-        default_5sm_config,
-        min_eval_steps,
-    )
 
     # Create 5 LMs with unsupervised association capabilities
     # These will learn object representations and associations from scratch
@@ -458,7 +495,7 @@ def create_5lm_77obj_benchmark_config():
                         "pose": 30,
                     },
                 },
-                **balanced_params
+                **balanced_params,
             },
         }
 
@@ -473,7 +510,7 @@ def create_5lm_77obj_benchmark_config():
             do_train=True,  # Enable training for unsupervised association learning
             do_eval=True,  # Evaluate the learned associations
             max_train_steps=1000,  # Allow sufficient training for association learning
-            max_eval_steps=500,   # Same as baseline for fair comparison
+            max_eval_steps=500,  # Same as baseline for fair comparison
         ),
         "dataset_class": EnvironmentDataset,
         "train_dataloader_class": InformedEnvironmentDataLoader,
@@ -485,7 +522,10 @@ def create_5lm_77obj_benchmark_config():
             "python_log_to_stdout": True,
             "python_log_to_stderr": False,
             "log_parallel_wandb": False,
-            "output_dir": os.getenv("MONTY_LOGS", "~/tbp/results/monty/") + "unsupervised_5lm_from_scratch",
+            "output_dir": (
+                os.getenv("MONTY_LOGS", "~/tbp/results/monty/")
+                + "unsupervised_5lm_from_scratch"
+            ),
             "run_name": "unsupervised_5lm_from_scratch_benchmark",
             "wandb_handlers": [],
             "monty_handlers": [
@@ -520,15 +560,27 @@ def create_5lm_77obj_benchmark_config():
             },
             "sm_to_lm_matrix": [[0], [1], [2], [3], [4]],
             "lm_to_lm_matrix": [[], [], [], [], []],
-            "lm_to_lm_vote_matrix": [[1, 2, 3, 4], [0, 2, 3, 4], [0, 1, 3, 4], [0, 1, 2, 4], [0, 1, 2, 3]],
+            "lm_to_lm_vote_matrix": [
+                [1, 2, 3, 4],
+                [0, 2, 3, 4],
+                [0, 1, 3, 4],
+                [0, 1, 2, 4],
+                [0, 1, 2, 3],
+            ],
         },
         "dataset_args": FiveLMMountHabitatDatasetArgs(),
         "train_dataloader_args": EnvironmentDataloaderPerObjectArgs(
-            object_names=get_object_names_by_idx(0, 30),  # Use 30 objects for association learning
+            object_names=get_object_names_by_idx(
+                0,
+                30,
+            ),  # Use 30 objects for association learning
             object_init_sampler=RandomRotationObjectInitializer(),
         ),
         "eval_dataloader_args": EnvironmentDataloaderPerObjectArgs(
-            object_names=get_object_names_by_idx(0, 77),  # Use all 77 objects like baseline
+            object_names=get_object_names_by_idx(
+                0,
+                77,
+            ),  # Use all 77 objects like baseline
             object_init_sampler=RandomRotationObjectInitializer(),
         ),
     }
@@ -536,10 +588,7 @@ def create_5lm_77obj_benchmark_config():
     return experiment_config
 
 
-
 # Export experiment configurations following Monty patterns
-from benchmarks.configs.names import UnsupervisedAssociationExperiments
-from dataclasses import asdict
 
 # Create the experiments dataclass instance
 experiments = UnsupervisedAssociationExperiments(

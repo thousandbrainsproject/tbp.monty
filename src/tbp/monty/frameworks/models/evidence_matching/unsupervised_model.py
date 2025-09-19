@@ -8,23 +8,25 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-"""
-Monty model with unsupervised object ID association capabilities.
+"""Monty model with unsupervised object ID association capabilities.
 
 This module provides a Monty model that supports learning associations between
 object IDs across different learning modules without requiring predefined labels.
 """
 
 import logging
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
-from tbp.monty.frameworks.models.evidence_matching.model import MontyForEvidenceGraphMatching
+from tbp.monty.frameworks.models.evidence_matching.model import (
+    MontyForEvidenceGraphMatching,
+)
 
 logger = logging.getLogger(__name__)
 
 
 def _pairwise_mean_distance(locations: List[Any]) -> float:
     import numpy as np
+
     if len(locations) < 2:
         return 0.0
     locations = np.array(locations)
@@ -44,7 +46,7 @@ def _extract_locations_from_object_votes(object_votes):
     _locations = []
     if isinstance(object_votes, list):
         for state in object_votes:
-            if hasattr(state, 'location') and state.location is not None:
+            if hasattr(state, "location") and state.location is not None:
                 _locations.append(state.location)
     return _locations
 
@@ -53,13 +55,17 @@ def _extract_confidences_from_object_votes(object_votes):
     _confidences = []
     if isinstance(object_votes, list):
         for state in object_votes:
-            if hasattr(state, 'confidence'):
+            if hasattr(state, "confidence"):
                 _confidences.append(state.confidence)
     return _confidences
 
 
 def _extract_locations(votes_per_lm: List[Any], active_lms: List[int]) -> List[Any]:
-    """Helper to extract all locations from votes."""
+    """Helper to extract all locations from votes.
+
+    Returns:
+        List[Any]: List of location arrays extracted from votes.
+    """
 
     def extract_from_vote(_vote):
         _locations = []
@@ -75,22 +81,36 @@ def _extract_locations(votes_per_lm: List[Any], active_lms: List[int]) -> List[A
     return locations
 
 
-def _calculate_spatial_consistency(votes_per_lm: List[Any], active_lms: List[int]) -> float:
-    """Calculate spatial consistency across learning modules."""
+def _calculate_spatial_consistency(
+    votes_per_lm: List[Any], active_lms: List[int]
+) -> float:
+    """Calculate spatial consistency across learning modules.
+
+    Returns:
+        float: Spatial consistency in [0, 1].
+    """
     locations = _extract_locations(votes_per_lm, active_lms)
     mean_distance = _pairwise_mean_distance(locations)
     consistency = 1.0 / (1.0 + mean_distance)
     return float(consistency)
 
 
-def _extract_max_confidences(votes_per_lm: List[Any], active_lms: List[int]) -> List[float]:
-    """Helper to extract max confidence per LM."""
+def _extract_max_confidences(
+    votes_per_lm: List[Any], active_lms: List[int]
+) -> List[float]:
+    """Helper to extract max confidence per LM.
+
+    Returns:
+        List[float]: Maximum confidence per active LM.
+    """
 
     def extract_confidences_from_vote(_vote):
         _lm_confidences = []
         if isinstance(_vote, dict):
             for _object_votes in _vote.values():
-                _lm_confidences.extend(_extract_confidences_from_object_votes(_object_votes))
+                _lm_confidences.extend(
+                    _extract_confidences_from_object_votes(_object_votes)
+                )
         return _lm_confidences
 
     confidences = []
@@ -102,12 +122,19 @@ def _extract_max_confidences(votes_per_lm: List[Any], active_lms: List[int]) -> 
     return confidences
 
 
-def _calculate_confidence_correlation(votes_per_lm: List[Any], active_lms: List[int]) -> float:
-    """Calculate confidence correlation across learning modules."""
+def _calculate_confidence_correlation(
+    votes_per_lm: List[Any], active_lms: List[int]
+) -> float:
+    """Calculate confidence correlation across learning modules.
+
+    Returns:
+        float: Confidence correlation proxy in [0, 1].
+    """
     confidences = _extract_max_confidences(votes_per_lm, active_lms)
     if len(confidences) < 2:
         return 0.0
     import numpy as np
+
     if np.std(confidences) == 0:
         return 1.0
     variance = float(np.var(confidences))
@@ -116,9 +143,8 @@ def _calculate_confidence_correlation(votes_per_lm: List[Any], active_lms: List[
 
 
 class MontyForUnsupervisedAssociation(MontyForEvidenceGraphMatching):
-    """
-    Monty model with enhanced voting that supports unsupervised object ID association.
-    
+    """Monty model with enhanced voting for unsupervised object ID association.
+
     This class extends MontyForEvidenceGraphMatching to enable learning modules
     to discover correspondences between their object representations without
     requiring predefined object labels.
@@ -127,21 +153,28 @@ class MontyForUnsupervisedAssociation(MontyForEvidenceGraphMatching):
     def __init__(self, *args, **kwargs):
         """Initialize the unsupervised association Monty model."""
         # Extract association-specific parameters
-        self.enable_association_analysis = kwargs.pop('enable_association_analysis', True)
-        self.log_association_details = kwargs.pop('log_association_details', False)
+        self.enable_association_analysis = kwargs.pop(
+            "enable_association_analysis",
+            True,
+        )
+        self.log_association_details = kwargs.pop(
+            "log_association_details",
+            False,
+        )
 
         super().__init__(*args, **kwargs)
 
         # Track cross-LM association statistics
         self.association_history = []
 
-        logger.info(f"Initialized MontyForUnsupervisedAssociation with "
-                    f"{len(self.learning_modules)} learning modules")
+        logger.info(
+            f"Initialized MontyForUnsupervisedAssociation with "
+            f"{len(self.learning_modules)} learning modules"
+        )
 
     def _vote(self):
-        """
-        Enhanced voting mechanism that supports unsupervised object ID association.
-        
+        """Enhanced voting mechanism that supports unsupervised object ID association.
+
         This method extends the parent's voting to collect and analyze association
         information across learning modules.
         """
@@ -175,9 +208,8 @@ class MontyForUnsupervisedAssociation(MontyForEvidenceGraphMatching):
             self._log_association_details()
 
     def _analyze_cross_lm_associations(self, votes_per_lm: List[Any]):
-        """
-        Analyze associations between learning modules based on their votes.
-        
+        """Analyze associations between learning modules based on their votes.
+
         This method collects statistics about how well learning modules are
         associating their object representations.
         """
@@ -197,15 +229,18 @@ class MontyForUnsupervisedAssociation(MontyForEvidenceGraphMatching):
         spatial_consistency = _calculate_spatial_consistency(votes_per_lm, active_lms)
 
         # Analyze confidence correlation across LMs
-        confidence_correlation = _calculate_confidence_correlation(votes_per_lm, active_lms)
+        confidence_correlation = _calculate_confidence_correlation(
+            votes_per_lm,
+            active_lms,
+        )
 
         # Store association analysis results
         association_data = {
-            'step': self.episode_steps,
-            'active_lms': active_lms,
-            'spatial_consistency': spatial_consistency,
-            'confidence_correlation': confidence_correlation,
-            'num_associations': self._count_total_associations(),
+            "step": self.episode_steps,
+            "active_lms": active_lms,
+            "spatial_consistency": spatial_consistency,
+            "confidence_correlation": confidence_correlation,
+            "num_associations": self._count_total_associations(),
         }
 
         self.association_history.append(association_data)
@@ -215,13 +250,17 @@ class MontyForUnsupervisedAssociation(MontyForEvidenceGraphMatching):
             self.association_history = self.association_history[-1000:]
 
     def _count_total_associations(self) -> int:
-        """Count the total number of learned associations across all LMs."""
+        """Count the total number of learned associations across all LMs.
+
+        Returns:
+            int: Total number of associations across all LMs.
+        """
         total_associations = 0
 
         for lm in self.learning_modules:
-            if hasattr(lm, 'get_association_statistics'):
+            if hasattr(lm, "get_association_statistics"):
                 stats = lm.get_association_statistics()
-                total_associations += stats.get('total_associations', 0)
+                total_associations += stats.get("total_associations", 0)
 
         return total_associations
 
@@ -230,47 +269,55 @@ class MontyForUnsupervisedAssociation(MontyForEvidenceGraphMatching):
         if not logger.isEnabledFor(logging.DEBUG):
             return
 
-        logger.debug(f"=== Association Details (Step {self.episode_steps}) ===")
+        logger.debug("=== Association Details (Step %d) ===", self.episode_steps)
 
         for i, lm in enumerate(self.learning_modules):
-            if hasattr(lm, 'get_association_statistics'):
+            if hasattr(lm, "get_association_statistics"):
                 stats = lm.get_association_statistics()
-                logger.debug(f"LM {i}: {stats}")
+                logger.debug("LM %d: %s", i, stats)
 
         if self.association_history:
             latest = self.association_history[-1]
-            logger.debug(f"Cross-LM analysis: spatial_consistency={latest['spatial_consistency']:.3f}, "
-                         f"confidence_correlation={latest['confidence_correlation']:.3f}")
+            logger.debug(
+                "Cross-LM analysis: spatial_consistency=%.3f,\n"
+                "confidence_correlation=%.3f",
+                latest["spatial_consistency"],
+                latest["confidence_correlation"],
+            )
 
     def get_association_summary(self) -> Dict:
-        """Get a summary of association learning across all LMs."""
+        """Get a summary of association learning across all LMs.
+
+        Returns:
+            Dict: Summary containing LM stats and cross-LM analysis.
+        """
         summary = {
-            'total_lms': len(self.learning_modules),
-            'lm_statistics': [],
-            'cross_lm_analysis': {
-                'history_length': len(self.association_history),
-                'recent_spatial_consistency': 0.0,
-                'recent_confidence_correlation': 0.0,
-            }
+            "total_lms": len(self.learning_modules),
+            "lm_statistics": [],
+            "cross_lm_analysis": {
+                "history_length": len(self.association_history),
+                "recent_spatial_consistency": 0.0,
+                "recent_confidence_correlation": 0.0,
+            },
         }
 
         # Collect statistics from each LM
         for i, lm in enumerate(self.learning_modules):
-            if hasattr(lm, 'get_association_statistics'):
+            if hasattr(lm, "get_association_statistics"):
                 lm_stats = lm.get_association_statistics()
-                lm_stats['lm_id'] = i
-                summary['lm_statistics'].append(lm_stats)
+                lm_stats["lm_id"] = i
+                summary["lm_statistics"].append(lm_stats)
 
         # Add recent cross-LM analysis
         if self.association_history:
             recent_data = self.association_history[-10:]  # Last 10 steps
             if recent_data:
-                summary['cross_lm_analysis']['recent_spatial_consistency'] = (
-                        sum(d['spatial_consistency'] for d in recent_data) / len(recent_data)
-                )
-                summary['cross_lm_analysis']['recent_confidence_correlation'] = (
-                        sum(d['confidence_correlation'] for d in recent_data) / len(recent_data)
-                )
+                summary["cross_lm_analysis"]["recent_spatial_consistency"] = sum(
+                    d["spatial_consistency"] for d in recent_data
+                ) / len(recent_data)
+                summary["cross_lm_analysis"]["recent_confidence_correlation"] = sum(
+                    d["confidence_correlation"] for d in recent_data
+                ) / len(recent_data)
 
         return summary
 
@@ -280,7 +327,7 @@ class MontyForUnsupervisedAssociation(MontyForEvidenceGraphMatching):
 
         # Also reset associations in individual LMs
         for lm in self.learning_modules:
-            if hasattr(lm, 'reset_associations'):
+            if hasattr(lm, "reset_associations"):
                 lm.reset_associations()
 
         logger.info("Reset association history for all learning modules")

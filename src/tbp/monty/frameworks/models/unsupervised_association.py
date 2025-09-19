@@ -8,8 +8,7 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-"""
-Unsupervised object ID association mechanisms for cross-modal learning.
+"""Unsupervised object ID association mechanisms for cross-modal learning.
 
 This module implements the core functionality for learning associations between
 object IDs across different learning modules without requiring predefined labels.
@@ -18,7 +17,7 @@ object IDs across different learning modules without requiring predefined labels
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any, TYPE_CHECKING, Protocol
+from typing import Any, Dict, List, Optional, Protocol, Tuple
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -43,6 +42,7 @@ class LearningModuleProtocol(Protocol):
 @dataclass
 class AssociationData:
     """Data structure for storing object ID association information."""
+
     co_occurrence_count: int = 0
     spatial_consistency_score: float = 0.0
     temporal_context: List[int] = field(default_factory=list)
@@ -59,48 +59,70 @@ class AssociationData:
             self.confidence_history = self.confidence_history[-100:]
 
     def get_average_confidence(self, decay_factor: float = 0.95) -> float:
-        """Calculate time-weighted average confidence."""
+        """Calculate time-weighted average confidence.
+
+        Returns:
+            float: Time-weighted average of the confidence history.
+        """
         if not self.confidence_history:
             return 0.0
 
-        weights = [decay_factor ** i for i in range(len(self.confidence_history))]
+        weights = [decay_factor**i for i in range(len(self.confidence_history))]
         weights.reverse()  # Most recent gets the highest weight
 
-        weighted_sum = sum(conf * weight for conf, weight in
-                           zip(self.confidence_history, weights))
+        weighted_sum = sum(
+            conf * weight for conf, weight in zip(self.confidence_history, weights)
+        )
         weight_sum = sum(weights)
 
         return weighted_sum / weight_sum if weight_sum > 0 else 0.0
 
 
 def _extract_evidence_from_vote(vote_info: Any) -> float:
-    """Extract evidence value from vote information (CMP-compliant)."""
+    """Extract evidence value from vote information (CMP-compliant).
+
+    Returns:
+        float: Evidence strength derived from the vote.
+    """
     if isinstance(vote_info, dict):
-        return vote_info.get('confidence', vote_info.get('evidence', 0.0))
+        return vote_info.get("confidence", vote_info.get("evidence", 0.0))
     elif isinstance(vote_info, (list, tuple)) and len(vote_info) > 0:
         # Handle a list of vote objects
-        return max(getattr(vote, 'confidence', 0.0) for vote in vote_info)
-    elif hasattr(vote_info, 'non_morphological_features') and vote_info.non_morphological_features:
+        return max(getattr(vote, "confidence", 0.0) for vote in vote_info)
+    elif (
+        hasattr(vote_info, "non_morphological_features")
+        and vote_info.non_morphological_features
+    ):
         # Extract from CMP-compliant vote - prioritize evidence_strength
-        return vote_info.non_morphological_features.get('evidence_strength', vote_info.confidence)
-    elif hasattr(vote_info, 'confidence'):
+        nmf = vote_info.non_morphological_features
+        return nmf.get("evidence_strength", vote_info.confidence)
+    elif hasattr(vote_info, "confidence"):
         return vote_info.confidence
     else:
         return 0.0
 
 
 def _create_weighted_vote(vote_info: Any, weight: float) -> Any:
-    """Create a weighted version of a vote."""
+    """Create a weighted version of a vote.
+
+    Args:
+        vote_info: Vote object or dictionary (CMP-compliant or similar)
+        weight: Weight multiplier to apply to the vote's confidence/evidence
+
+    Returns:
+        Any: A copy of the input with updated confidence/evidence fields if present.
+    """
     if isinstance(vote_info, dict):
         weighted_vote = vote_info.copy()
-        if 'confidence' in weighted_vote:
-            weighted_vote['confidence'] *= weight
-        elif 'evidence' in weighted_vote:
-            weighted_vote['evidence'] *= weight
+        if "confidence" in weighted_vote:
+            weighted_vote["confidence"] *= weight
+        elif "evidence" in weighted_vote:
+            weighted_vote["evidence"] *= weight
         return weighted_vote
-    elif hasattr(vote_info, 'confidence'):
+    elif hasattr(vote_info, "confidence"):
         # Create a copy and modify confidence
         import copy
+
         weighted_vote = copy.deepcopy(vote_info)
         weighted_vote.confidence *= weight
         return weighted_vote
@@ -109,23 +131,39 @@ def _create_weighted_vote(vote_info: Any, weight: float) -> Any:
 
 
 def _extract_spatial_info_from_vote(vote_info: Any) -> Tuple[Any, Any]:
-    """Extract location and pose information from vote data (CMP-compliant)."""
+    """Extract location and pose information from vote data (CMP-compliant).
+
+    Returns:
+        Tuple[Any, Any]: (location, pose) extracted from the vote. If not
+        available, returns (None, None).
+    """
     if isinstance(vote_info, dict):
-        return vote_info.get('location'), vote_info.get('pose_vectors')
-    elif hasattr(vote_info, 'location'):
+        return vote_info.get("location"), vote_info.get("pose_vectors")
+    elif hasattr(vote_info, "location"):
         # Extract pose from morphological_features (CMP standard)
         other_pose = None
-        if hasattr(vote_info, 'morphological_features') and vote_info.morphological_features:
-            other_pose = vote_info.morphological_features.get('pose_vectors')
+        if (
+            hasattr(vote_info, "morphological_features")
+            and vote_info.morphological_features
+        ):
+            other_pose = vote_info.morphological_features.get("pose_vectors")
         return vote_info.location, other_pose
     return None, None
 
 
 def _calculate_location_similarity(my_location: Any, other_location: Any) -> float:
-    """Calculate similarity between two locations (legacy method)."""
+    """Calculate similarity between two locations (legacy method).
+
+    Returns:
+        float: Location similarity in [0, 1].
+    """
     # Handle both numpy arrays and lists
-    my_loc = list(my_location) if hasattr(my_location, '__iter__') else [my_location]
-    other_loc = list(other_location) if hasattr(other_location, '__iter__') else [other_location]
+    my_loc = list(my_location) if hasattr(my_location, "__iter__") else [my_location]
+    other_loc = (
+        list(other_location)
+        if hasattr(other_location, "__iter__")
+        else [other_location]
+    )
 
     # Simple distance calculation
     distance = sum((a - b) ** 2 for a, b in zip(my_loc, other_loc)) ** 0.5
@@ -133,36 +171,40 @@ def _calculate_location_similarity(my_location: Any, other_location: Any) -> flo
 
 
 def _calculate_pose_similarity(my_pose: Any, other_pose: Any) -> float:
-    """Calculate similarity between two poses using actual rotation comparison."""
+    """Calculate similarity between two poses using actual rotation comparison.
+
+    Returns:
+        float: Pose similarity in [0, 1].
+    """
     if my_pose is None or other_pose is None:
         return 0.5  # Neutral similarity when pose unavailable
 
     try:
         # Ensure both poses are scipy Rotation objects
-        if hasattr(my_pose, 'as_matrix') and hasattr(other_pose, 'as_matrix'):
+        if hasattr(my_pose, "as_matrix") and hasattr(other_pose, "as_matrix"):
             # Use existing pose error calculation from logging_utils
             angular_error = compute_pose_error(my_pose, other_pose)
             # Convert angular error to similarity score (0 error = 1.0 similarity)
             # Normalize by π radians (maximum possible angular difference)
             similarity = np.exp(-angular_error / np.pi)
             return float(similarity)
-        elif hasattr(my_pose, 'as_matrix'):
+        elif hasattr(my_pose, "as_matrix"):
             # Try to convert other_pose to Rotation if it's a matrix
-            if hasattr(other_pose, 'shape') and other_pose.shape == (3, 3):
+            if hasattr(other_pose, "shape") and other_pose.shape == (3, 3):
                 other_rotation = Rotation.from_matrix(other_pose)
                 angular_error = compute_pose_error(my_pose, other_rotation)
                 similarity = np.exp(-angular_error / np.pi)
                 return float(similarity)
-        elif hasattr(other_pose, 'as_matrix'):
+        elif hasattr(other_pose, "as_matrix"):
             # Try to convert my_pose to Rotation if it's a matrix
-            if hasattr(my_pose, 'shape') and my_pose.shape == (3, 3):
+            if hasattr(my_pose, "shape") and my_pose.shape == (3, 3):
                 my_rotation = Rotation.from_matrix(my_pose)
                 angular_error = compute_pose_error(my_rotation, other_pose)
                 similarity = np.exp(-angular_error / np.pi)
                 return float(similarity)
     except (AttributeError, ValueError, TypeError) as e:
         # Handle any conversion or calculation errors gracefully
-        logger.debug(f"Error calculating pose similarity: {e}")
+        logger.debug("Error calculating pose similarity: %s", e)
         return 0.5  # Return neutral similarity on error
 
     # Fallback for unsupported pose formats
@@ -170,7 +212,11 @@ def _calculate_pose_similarity(my_pose: Any, other_pose: Any) -> float:
 
 
 def _detect_periodicity(temporal_context: Any) -> float:
-    """Detect periodic patterns in temporal context."""
+    """Detect periodic patterns in temporal context.
+
+    Returns:
+        float: Periodicity score in [0, 1].
+    """
     if len(temporal_context) < 3:
         return 0.0
 
@@ -188,17 +234,22 @@ def _detect_periodicity(temporal_context: Any) -> float:
         # Lower coefficient of variation indicates more regular pattern
         coefficient_of_variation = interval_std / interval_mean
         import math
+
         periodicity_score = math.exp(-float(coefficient_of_variation))
 
         return float(periodicity_score)
 
-    except Exception as e:
-        logger.debug(f"Error detecting periodicity: {e}")
+    except (ValueError, TypeError, FloatingPointError, RuntimeError) as e:
+        logger.debug("Error detecting periodicity: %s", e)
         return 0.0
 
 
 def _calculate_temporal_clustering(temporal_context: Any) -> float:
-    """Calculate how clustered the temporal associations are."""
+    """Calculate how clustered the temporal associations are.
+
+    Returns:
+        float: Clustering score in [0, 1].
+    """
     if len(temporal_context) < 2:
         return 0.0
 
@@ -219,14 +270,13 @@ def _calculate_temporal_clustering(temporal_context: Any) -> float:
 
         return float(clustering_score)
 
-    except Exception as e:
-        logger.debug(f"Error calculating temporal clustering: {e}")
+    except (ValueError, TypeError, FloatingPointError, RuntimeError) as e:
+        logger.debug("Error calculating temporal clustering: %s", e)
         return 0.0
 
 
 class UnsupervisedAssociator:
-    """
-    Handles unsupervised object ID association learning for learning modules.
+    """Handles unsupervised object ID association learning for learning modules.
 
     This class enables learning modules to discover correspondences between
     their internal object representations and those of other learning modules
@@ -245,48 +295,51 @@ class UnsupervisedAssociator:
                 )
     """
 
-    def __init__(self,
-                 learning_module_id: str,
-                 association_threshold: float = 0.1,
-                 min_association_threshold: float = 0.3,
-                 spatial_consistency_weight: float = 0.3,
-                 temporal_consistency_weight: float = 0.2,
-                 co_occurrence_weight: float = 0.5,
-                 max_association_memory_size: int = 1000,
-                 location_weight: float = 0.7,
-                 pose_weight: float = 0.3,
-                 temporal_recency_weight: float = 0.1,
-                 distance_tolerance: float = 1.0,
-                 sensor_scale_estimate: float = 1.0,
-                 temporal_decay_factor: float = 0.99,
-                 periodicity_weight: float = 0.3,
-                 clustering_weight: float = 0.2,
-                 recency_weight: float = 0.5,
-                 association_learning_enabled: bool = True):
+    def __init__(
+        self,
+        learning_module_id: str,
+        association_threshold: float = 0.1,
+        min_association_threshold: float = 0.3,
+        spatial_consistency_weight: float = 0.3,
+        temporal_consistency_weight: float = 0.2,
+        co_occurrence_weight: float = 0.5,
+        max_association_memory_size: int = 1000,
+        location_weight: float = 0.7,
+        pose_weight: float = 0.3,
+        temporal_recency_weight: float = 0.1,
+        distance_tolerance: float = 1.0,
+        sensor_scale_estimate: float = 1.0,
+        temporal_decay_factor: float = 0.99,
+        periodicity_weight: float = 0.3,
+        clustering_weight: float = 0.2,
+        recency_weight: float = 0.5,
+        association_learning_enabled: bool = True,
+    ) -> None:
         """Initialize association capabilities.
 
         Args:
-            learning_module_id: Identifier for the learning module using this associator
-            association_threshold: Minimum evidence threshold for recording associations
-            min_association_threshold: Minimum strength threshold for using associations
-            spatial_consistency_weight: Weight for spatial consistency in association strength
-            temporal_consistency_weight: Weight for temporal consistency in association strength
-            co_occurrence_weight: Weight for co-occurrence count in association strength
-            max_association_memory_size: Maximum number of associations to keep in memory
-            location_weight: Weight for location similarity in spatial consistency
-            pose_weight: Weight for pose similarity in spatial consistency
-            temporal_recency_weight: Weight for temporal recency in association strength
-            distance_tolerance: Tolerance for location similarity calculations
-            sensor_scale_estimate: Scale estimate for sensor measurements
-            temporal_decay_factor: Decay factor for temporal analysis
-            periodicity_weight: Weight for periodicity in temporal analysis
-            clustering_weight: Weight for clustering in temporal analysis
-            recency_weight: Weight for recency in temporal analysis
-            association_learning_enabled: Whether association learning is enabled
+            learning_module_id: ID of the learning module using this associator.
+            association_threshold: Minimum evidence to record associations.
+            min_association_threshold: Min strength to use associations.
+            spatial_consistency_weight: Weight for spatial consistency.
+            temporal_consistency_weight: Weight for temporal consistency.
+            co_occurrence_weight: Weight for co-occurrence count.
+            max_association_memory_size: Max number of associations to keep.
+            location_weight: Weight for location similarity.
+            pose_weight: Weight for pose similarity.
+            temporal_recency_weight: Weight for recency of associations.
+            distance_tolerance: Location similarity tolerance.
+            sensor_scale_estimate: Sensor measurement scale estimate.
+            temporal_decay_factor: Decay factor for temporal analysis.
+            periodicity_weight: Weight for periodicity.
+            clustering_weight: Weight for clustering.
+            recency_weight: Weight for recency.
+            association_learning_enabled: Whether learning is enabled.
         """
         self.learning_module_id = learning_module_id
 
-        # Association memory: {my_object_id: {other_lm_id: {other_object_id: AssociationData}}}
+        # Association memory:
+        # {my_object_id: {other_lm_id: {other_object_id: AssociationData}}}
         self.association_memory = defaultdict(
             lambda: defaultdict(lambda: defaultdict(AssociationData))
         )
@@ -320,12 +373,15 @@ class UnsupervisedAssociator:
 
         logger.info(f"Initialized UnsupervisedAssociator for LM {learning_module_id}")
 
-    def update_associations(self, vote_data: Dict, current_step: int,
-                           learning_module_evidence: Dict[str, Any],
-                           learning_module_threshold: float,
-                           current_mlh: Dict[str, Any]):
-        """
-        Update object ID associations based on co-occurrence with other LMs.
+    def update_associations(
+        self,
+        vote_data: Dict,
+        current_step: int,
+        learning_module_evidence: Dict[str, Any],
+        learning_module_threshold: float,
+        current_mlh: Dict[str, Any],
+    ):
+        """Update object ID associations based on co-occurrence with other LMs.
 
         Args:
             vote_data: Dictionary of votes from other learning modules
@@ -346,7 +402,7 @@ class UnsupervisedAssociator:
             return
 
         for other_lm_id, other_votes in vote_data.items():
-            if not other_votes or not hasattr(other_votes, 'items'):
+            if not other_votes or not hasattr(other_votes, "items"):
                 continue
 
             for other_object_id, vote_info in other_votes.items():
@@ -359,14 +415,15 @@ class UnsupervisedAssociator:
                         other_object_id,
                         other_evidence,
                         vote_info,
-                        current_mlh
+                        current_mlh,
                     )
 
         # Prune old associations to manage memory
         self._prune_association_memory()
 
-    def _get_current_high_evidence_hypotheses(self, evidence: Dict[str, Any],
-                                             threshold: float) -> List[str]:
+    def _get_current_high_evidence_hypotheses(
+        self, evidence: Dict[str, Any], threshold: float
+    ) -> List[str]:
         """Get object IDs with evidence above threshold.
 
         Args:
@@ -381,7 +438,9 @@ class UnsupervisedAssociator:
         try:
             for object_id, evidence_values in evidence.items():
                 # Handle both numpy arrays and lists
-                if hasattr(evidence_values, '__iter__') and not isinstance(evidence_values, str):
+                if hasattr(evidence_values, "__iter__") and not isinstance(
+                    evidence_values, str
+                ):
                     max_evidence = float(max(evidence_values))
                 else:
                     max_evidence = float(evidence_values)
@@ -394,11 +453,15 @@ class UnsupervisedAssociator:
 
         return high_evidence_objects
 
-
-
-    def _record_co_occurrence(self, my_objects: List[str], other_lm_id: str,
-                              other_object_id: str, other_evidence: float, vote_info: Any,
-                              current_mlh: Dict[str, Any]):
+    def _record_co_occurrence(
+        self,
+        my_objects: List[str],
+        other_lm_id: str,
+        other_object_id: str,
+        other_evidence: float,
+        vote_info: Any,
+        current_mlh: Dict[str, Any],
+    ):
         """Record co-occurrence between my objects and another LM's object.
 
         Args:
@@ -410,7 +473,9 @@ class UnsupervisedAssociator:
             current_mlh: Current most likely hypothesis from the learning module
         """
         for my_object_id in my_objects:
-            association_data = self.association_memory[my_object_id][other_lm_id][other_object_id]
+            association_data = self.association_memory[my_object_id][other_lm_id][
+                other_object_id
+            ]
 
             # Update co-occurrence count
             association_data.co_occurrence_count += 1
@@ -419,22 +484,36 @@ class UnsupervisedAssociator:
             association_data.update_confidence(other_evidence, self.current_step)
 
             # Update spatial consistency if spatial information is available
-            spatial_score = self._calculate_spatial_consistency(vote_info, my_object_id, current_mlh)
+            spatial_score = self._calculate_spatial_consistency(
+                vote_info,
+                my_object_id,
+                current_mlh,
+            )
             if spatial_score is not None:
                 association_data.spatial_consistency_score = (
-                        0.9 * association_data.spatial_consistency_score + 0.1 * spatial_score
+                    0.9 * association_data.spatial_consistency_score
+                    + 0.1 * spatial_score
                 )
 
             # Update temporal context
             association_data.temporal_context.append(self.current_step)
             if len(association_data.temporal_context) > 50:  # Keep recent history
-                association_data.temporal_context = association_data.temporal_context[-50:]
+                association_data.temporal_context = association_data.temporal_context[
+                    -50:
+                ]
 
-            logger.debug(f"Recorded co-occurrence: {my_object_id} <-> {other_lm_id}:{other_object_id} "
-                         f"(count: {association_data.co_occurrence_count}, "
-                         f"confidence: {association_data.get_average_confidence():.3f})")
+            logger.debug(
+                "Recorded co-occurrence: %s <-> %s:%s (count: %d, confidence: %.3f)",
+                my_object_id,
+                other_lm_id,
+                other_object_id,
+                association_data.co_occurrence_count,
+                association_data.get_average_confidence(),
+            )
 
-    def _get_my_spatial_info(self, my_object_id: str, current_mlh: Dict[str, Any]) -> Tuple[Any, Any]:
+    def _get_my_spatial_info(
+        self, my_object_id: str, current_mlh: Dict[str, Any]
+    ) -> Tuple[Any, Any]:
         """Get my object's current spatial information.
 
         Args:
@@ -444,13 +523,14 @@ class UnsupervisedAssociator:
         Returns:
             Tuple of (location, rotation) or (None, None) if not available
         """
-        if not current_mlh or current_mlh.get('graph_id') != my_object_id:
+        if not current_mlh or current_mlh.get("graph_id") != my_object_id:
             return None, None
 
-        return current_mlh.get('location'), current_mlh.get('rotation')
+        return current_mlh.get("location"), current_mlh.get("rotation")
 
-    def _calculate_spatial_consistency(self, vote_info: Any, my_object_id: str,
-                                     current_mlh: Dict[str, Any]) -> Optional[float]:
+    def _calculate_spatial_consistency(
+        self, vote_info: Any, my_object_id: str, current_mlh: Dict[str, Any]
+    ) -> Optional[float]:
         """Calculate spatial consistency between my object and another LM's vote.
 
         Args:
@@ -473,28 +553,52 @@ class UnsupervisedAssociator:
                 return None
 
             # Calculate location similarity with improved method
-            location_similarity = self._calculate_location_similarity_improved(my_location, other_location)
+            location_similarity = self._calculate_location_similarity_improved(
+                my_location,
+                other_location,
+            )
 
             # Calculate pose similarity
             pose_similarity = _calculate_pose_similarity(my_pose, other_pose)
 
             # Combine location and pose similarities using configurable weights
-            return self.location_weight * location_similarity + self.pose_weight * pose_similarity
+            return (
+                self.location_weight * location_similarity
+                + self.pose_weight * pose_similarity
+            )
 
-        except Exception as e:
-            logger.debug(f"Error calculating spatial consistency: {e}")
+        except (ValueError, TypeError, FloatingPointError, RuntimeError) as e:
+            logger.debug("Error calculating spatial consistency: %s", e)
             return None
 
-    def _calculate_location_similarity_improved(self, my_location: Any, other_location: Any) -> float:
-        """Calculate improved location similarity with better normalization and scaling."""
+    def _calculate_location_similarity_improved(
+        self, my_location: Any, other_location: Any
+    ) -> float:
+        """Calculate improved location similarity with normalization and scaling.
+
+        Returns:
+            float: Location similarity in [0, 1].
+        """
         try:
             # Convert to numpy arrays for consistent handling
-            my_loc = np.array(my_location) if hasattr(my_location, '__iter__') else np.array([my_location])
-            other_loc = np.array(other_location) if hasattr(other_location, '__iter__') else np.array([other_location])
+            my_loc = (
+                np.array(my_location)
+                if hasattr(my_location, "__iter__")
+                else np.array([my_location])
+            )
+            other_loc = (
+                np.array(other_location)
+                if hasattr(other_location, "__iter__")
+                else np.array([other_location])
+            )
 
             # Ensure same dimensionality
             if len(my_loc) != len(other_loc):
-                logger.debug(f"Location dimension mismatch: {len(my_loc)} vs {len(other_loc)}")
+                logger.debug(
+                    "Location dimension mismatch: %d vs %d",
+                    len(my_loc),
+                    len(other_loc),
+                )
                 return 0.5  # Neutral similarity for dimension mismatch
 
             # Normalize by sensor scale estimates to handle different sensor ranges
@@ -502,18 +606,21 @@ class UnsupervisedAssociator:
             other_loc_normalized = other_loc / self.sensor_scale_estimate
 
             # Check if we have previous locations for movement pattern analysis
-            if (hasattr(self, '_previous_my_locations') and
-                    hasattr(self, '_previous_other_locations') and
-                    len(self._previous_my_locations) > 0 and
-                    len(self._previous_other_locations) > 0):
-
+            if (
+                hasattr(self, "_previous_my_locations")
+                and hasattr(self, "_previous_other_locations")
+                and len(self._previous_my_locations) > 0
+                and len(self._previous_other_locations) > 0
+            ):
                 # Calculate movement deltas
                 my_delta = my_loc_normalized - self._previous_my_locations[-1]
                 other_delta = other_loc_normalized - self._previous_other_locations[-1]
 
                 # Compare movement patterns (more robust than absolute positions)
                 movement_distance = np.linalg.norm(my_delta - other_delta)
-                movement_similarity = float(np.exp(-movement_distance / self.distance_tolerance))
+                movement_similarity = float(
+                    np.exp(-movement_distance / self.distance_tolerance)
+                )
 
                 # Store current locations for next comparison
                 self._previous_my_locations.append(my_loc_normalized)
@@ -522,12 +629,14 @@ class UnsupervisedAssociator:
                 # Keep only recent history
                 if len(self._previous_my_locations) > 10:
                     self._previous_my_locations = self._previous_my_locations[-10:]
-                    self._previous_other_locations = self._previous_other_locations[-10:]
+                    self._previous_other_locations = self._previous_other_locations[
+                        -10:
+                    ]
 
                 return float(movement_similarity)
             else:
                 # Initialize movement tracking
-                if not hasattr(self, '_previous_my_locations'):
+                if not hasattr(self, "_previous_my_locations"):
                     self._previous_my_locations = []
                     self._previous_other_locations = []
 
@@ -539,15 +648,18 @@ class UnsupervisedAssociator:
                 similarity = float(np.exp(-distance / self.distance_tolerance))
                 return similarity
 
-        except Exception as e:
-            logger.debug(f"Error in improved location similarity calculation: {e}")
+        except (ValueError, TypeError, FloatingPointError, RuntimeError) as e:
+            logger.debug(
+                "Error in improved location similarity calculation: %s",
+                e,
+            )
             # Fallback to original method
             return _calculate_location_similarity(my_location, other_location)
 
-    def get_association_strength(self, my_object_id: str, other_lm_id: str,
-                                 other_object_id: str) -> float:
-        """
-        Calculate the strength of association between my object ID and another LM's object ID.
+    def get_association_strength(
+        self, my_object_id: str, other_lm_id: str, other_object_id: str
+    ) -> float:
+        """Calculate association strength for my object vs. another LM's object.
 
         Args:
             my_object_id: My object ID
@@ -557,19 +669,26 @@ class UnsupervisedAssociator:
         Returns:
             Association strength between 0.0 and 1.0
         """
-        if (my_object_id not in self.association_memory or
-                other_lm_id not in self.association_memory[my_object_id] or
-                other_object_id not in self.association_memory[my_object_id][other_lm_id]):
+        if (
+            my_object_id not in self.association_memory
+            or other_lm_id not in self.association_memory[my_object_id]
+            or other_object_id not in self.association_memory[my_object_id][other_lm_id]
+        ):
             return 0.0
 
-        association_data = self.association_memory[my_object_id][other_lm_id][other_object_id]
+        association_data = self.association_memory[my_object_id][other_lm_id][
+            other_object_id
+        ]
 
         # Calculate components of association strength
 
         # 1. Co-occurrence frequency
         total_observations = self._get_total_observations(my_object_id)
-        co_occurrence_strength = (association_data.co_occurrence_count /
-                                  max(total_observations, 1)) if total_observations > 0 else 0.0
+        co_occurrence_strength = (
+            association_data.co_occurrence_count / max(total_observations, 1)
+            if total_observations > 0
+            else 0.0
+        )
 
         # 2. Average confidence
         confidence_strength = association_data.get_average_confidence()
@@ -582,30 +701,38 @@ class UnsupervisedAssociator:
 
         # Combine all factors using configurable weights
         total_strength = (
-                self.co_occurrence_weight * co_occurrence_strength +
-                self.temporal_consistency_weight * confidence_strength +
-                self.spatial_consistency_weight * spatial_strength +
-                self.temporal_recency_weight * temporal_strength
+            self.co_occurrence_weight * co_occurrence_strength
+            + self.temporal_consistency_weight * confidence_strength
+            + self.spatial_consistency_weight * spatial_strength
+            + self.temporal_recency_weight * temporal_strength
         )
 
         return min(total_strength, 1.0)
 
     def _get_total_observations(self, object_id: str) -> int:
-        """Get the total number of observations for an object."""
-        if not hasattr(self, 'evidence'):
+        """Get the total number of observations for an object.
+
+        Returns:
+            int: Number of evidence entries for the given object.
+        """
+        if not hasattr(self, "evidence"):
             return 1  # Default to avoid division by zero
 
-        evidence = getattr(self, 'evidence', {})
+        evidence = getattr(self, "evidence", {})
         if object_id not in evidence:
             return 1
 
         evidence_values = evidence[object_id]
-        if hasattr(evidence_values, '__len__'):
+        if hasattr(evidence_values, "__len__"):
             return len(evidence_values)
         return 1
 
     def _calculate_temporal_strength(self, association_data: AssociationData) -> float:
-        """Calculate temporal strength based on recency of associations (legacy method)."""
+        """Calculate temporal strength based on recency (legacy).
+
+        Returns:
+            float: Temporal strength in [0, 1].
+        """
         if not association_data.temporal_context:
             return 0.0
 
@@ -613,10 +740,16 @@ class UnsupervisedAssociator:
         steps_since_last = self.current_step - association_data.last_updated_step
         decay_factor = self.temporal_decay_factor
 
-        return decay_factor ** steps_since_last
+        return decay_factor**steps_since_last
 
-    def _calculate_temporal_strength_improved(self, association_data: AssociationData) -> float:
-        """Calculate enhanced temporal strength with multiple factors."""
+    def _calculate_temporal_strength_improved(
+        self, association_data: AssociationData
+    ) -> float:
+        """Calculate enhanced temporal strength with multiple factors.
+
+        Returns:
+            float: Temporal strength in [0, 1].
+        """
         if not association_data.temporal_context:
             return 0.0
 
@@ -634,27 +767,34 @@ class UnsupervisedAssociator:
 
             # Combine all temporal factors using configurable weights
             total_temporal_strength = (
-                    self.recency_weight * recency_score +
-                    self.periodicity_weight * periodicity_score +
-                    self.clustering_weight * clustering_score
+                self.recency_weight * recency_score
+                + self.periodicity_weight * periodicity_score
+                + self.clustering_weight * clustering_score
             )
 
             return min(total_temporal_strength, 1.0)
 
-        except Exception as e:
+        except (ValueError, TypeError, FloatingPointError, RuntimeError) as e:
             logger.debug(f"Error in improved temporal strength calculation: {e}")
             # Fallback to original method
             return self._calculate_temporal_strength(association_data)
 
     def _calculate_recency_score(self, association_data: AssociationData) -> float:
-        """Calculate recency score with adaptive decay."""
-        steps_since_last = self.current_step - association_data.last_updated_step
-        return self.temporal_decay_factor ** steps_since_last
+        """Calculate recency score with adaptive decay.
 
-    def get_associated_object_ids(self, my_object_id: str, other_lm_id: str,
-                                  min_strength: Optional[float] = None) -> List[Tuple[str, float]]:
+        Returns:
+            float: Recency score in [0, 1].
         """
-        Get object IDs from another LM that are associated with my object ID.
+        steps_since_last = self.current_step - association_data.last_updated_step
+        return self.temporal_decay_factor**steps_since_last
+
+    def get_associated_object_ids(
+        self,
+        my_object_id: str,
+        other_lm_id: str,
+        min_strength: Optional[float] = None,
+    ) -> List[Tuple[str, float]]:
+        """Get object IDs from another LM that are associated with my object ID.
 
         Args:
             my_object_id: My object ID
@@ -669,11 +809,16 @@ class UnsupervisedAssociator:
 
         associated_objects = []
 
-        if (my_object_id in self.association_memory and
-                other_lm_id in self.association_memory[my_object_id]):
-
+        if (
+            my_object_id in self.association_memory
+            and other_lm_id in self.association_memory[my_object_id]
+        ):
             for other_object_id in self.association_memory[my_object_id][other_lm_id]:
-                strength = self.get_association_strength(my_object_id, other_lm_id, other_object_id)
+                strength = self.get_association_strength(
+                    my_object_id,
+                    other_lm_id,
+                    other_object_id,
+                )
                 if strength >= min_strength:
                     associated_objects.append((other_object_id, strength))
 
@@ -682,27 +827,37 @@ class UnsupervisedAssociator:
         return associated_objects
 
     def _map_votes_for_object(self, my_object_id, vote_data):
-        """
-        Helper to map votes for a single object ID.
+        """Map votes for a single object ID.
+
+        Returns:
+            list: Weighted vote objects mapped to this object ID.
         """
         mapped = []
         for other_lm_id, other_votes in vote_data.items():
-            if not other_votes or not hasattr(other_votes, 'items'):
+            if not other_votes or not hasattr(other_votes, "items"):
                 continue
             for other_object_id, vote_info in other_votes.items():
                 association_strength = self.get_association_strength(
                     my_object_id, other_lm_id, other_object_id
                 )
                 if association_strength > self.min_association_threshold:
-                    weighted_vote = _create_weighted_vote(vote_info, association_strength)
+                    weighted_vote = _create_weighted_vote(
+                        vote_info, association_strength
+                    )
                     mapped.append(weighted_vote)
-                    logger.debug(f"Mapped vote: {other_lm_id}:{other_object_id} -> {my_object_id} "
-                                 f"(strength: {association_strength:.3f})")
+                    logger.debug(
+                        "Mapped vote: %s:%s -> %s (strength: %.3f)",
+                        other_lm_id,
+                        other_object_id,
+                        my_object_id,
+                        association_strength,
+                    )
         return mapped
 
-    def map_votes_to_my_objects(self, vote_data: Dict, known_object_ids: List[str]) -> Dict:
-        """
-        Map incoming votes to my object IDs using learned associations.
+    def map_votes_to_my_objects(
+        self, vote_data: Dict, known_object_ids: List[str]
+    ) -> Dict:
+        """Map incoming votes to my object IDs using learned associations.
 
         Args:
             vote_data: Dictionary of votes from other learning modules
@@ -718,7 +873,9 @@ class UnsupervisedAssociator:
             return vote_data
 
         for my_object_id in known_object_ids:
-            mapped_votes[my_object_id] = self._map_votes_for_object(my_object_id, vote_data)
+            mapped_votes[my_object_id] = self._map_votes_for_object(
+                my_object_id, vote_data
+            )
 
         return mapped_votes
 
@@ -739,47 +896,66 @@ class UnsupervisedAssociator:
         for my_obj_id in self.association_memory:
             for other_lm_id in self.association_memory[my_obj_id]:
                 for other_obj_id in self.association_memory[my_obj_id][other_lm_id]:
-                    strength = self.get_association_strength(my_obj_id, other_lm_id, other_obj_id)
-                    all_associations.append((my_obj_id, other_lm_id, other_obj_id, strength))
+                    strength = self.get_association_strength(
+                        my_obj_id,
+                        other_lm_id,
+                        other_obj_id,
+                    )
+                    all_associations.append(
+                        (my_obj_id, other_lm_id, other_obj_id, strength)
+                    )
 
         # Sort by strength and keep only the strongest associations
         all_associations.sort(key=lambda x: x[3], reverse=True)
-        associations_to_keep = all_associations[:self.max_association_memory_size]
+        associations_to_keep = all_associations[: self.max_association_memory_size]
 
         # Rebuild association memory with only strong associations
-        new_memory = defaultdict(lambda: defaultdict(lambda: defaultdict(AssociationData)))
+        new_memory = defaultdict(
+            lambda: defaultdict(lambda: defaultdict(AssociationData))
+        )
         for my_obj_id, other_lm_id, other_obj_id, _ in associations_to_keep:
-            new_memory[my_obj_id][other_lm_id][other_obj_id] = (
-                self.association_memory[my_obj_id][other_lm_id][other_obj_id]
-            )
+            new_memory[my_obj_id][other_lm_id][other_obj_id] = self.association_memory[
+                my_obj_id
+            ][other_lm_id][other_obj_id]
 
         self.association_memory = new_memory
-        logger.info(f"Pruned association memory to {len(associations_to_keep)} associations")
+        logger.info(
+            "Pruned association memory to %d associations",
+            len(associations_to_keep),
+        )
 
     def get_association_statistics(self) -> Dict:
-        """Get statistics about current associations for debugging/analysis."""
+        """Get statistics about current associations for debugging/analysis.
+
+        Returns:
+            Dict: Summary with totals, per-LM counts, average, and strong counts.
+        """
         stats = {
-            'total_associations': 0,
-            'associations_by_lm': defaultdict(int),
-            'average_strength': 0.0,
-            'strong_associations': 0,  # Above min_association_threshold
+            "total_associations": 0,
+            "associations_by_lm": defaultdict(int),
+            "average_strength": 0.0,
+            "strong_associations": 0,  # Above min_association_threshold
         }
 
         total_strength = 0.0
         for my_obj_id in self.association_memory:
             for other_lm_id in self.association_memory[my_obj_id]:
                 for other_obj_id in self.association_memory[my_obj_id][other_lm_id]:
-                    stats['total_associations'] += 1
-                    stats['associations_by_lm'][other_lm_id] += 1
+                    stats["total_associations"] += 1
+                    stats["associations_by_lm"][other_lm_id] += 1
 
-                    strength = self.get_association_strength(my_obj_id, other_lm_id, other_obj_id)
+                    strength = self.get_association_strength(
+                        my_obj_id,
+                        other_lm_id,
+                        other_obj_id,
+                    )
                     total_strength += strength
 
                     if strength > self.min_association_threshold:
-                        stats['strong_associations'] += 1
+                        stats["strong_associations"] += 1
 
-        if stats['total_associations'] > 0:
-            stats['average_strength'] = total_strength / stats['total_associations']
+        if stats["total_associations"] > 0:
+            stats["average_strength"] = total_strength / stats["total_associations"]
 
         return dict(stats)
 

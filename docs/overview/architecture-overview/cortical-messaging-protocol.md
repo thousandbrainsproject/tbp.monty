@@ -34,7 +34,7 @@ For unsupervised learning scenarios, the CMP has been extended to support object
 In association-enabled learning modules, votes include:
 
 - **Object ID**: The sender's unique object identifier (`object_id`)
-- **Sender Context**: Learning module identifier (`sender_lm_id`)
+- **Sender Identification**: Use the standard CMP `State.sender_id` to identify the sending LM
 - **Evidence Strength**: Explicit confidence values (`evidence_strength`)
 - **Association Metadata**: Temporal and spatial context for association learning
 
@@ -42,7 +42,6 @@ In association-enabled learning modules, votes include:
 # Example association-enhanced vote
 non_morphological_features={
     "object_id": "visual_object_1",
-    "sender_lm_id": "visual_lm",
     "evidence_strength": 0.85,
     "association_metadata": {
         "temporal_context": 15,

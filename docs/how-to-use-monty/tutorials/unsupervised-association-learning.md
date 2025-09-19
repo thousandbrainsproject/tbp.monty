@@ -110,7 +110,6 @@ vote = State(
     },
     non_morphological_features={
         "object_id": "visual_object_1",        # LM-specific object ID
-        "sender_lm_id": "visual_lm",           # Sending LM identifier
         "evidence_strength": 0.85,             # Evidence for this object
         "association_metadata": {              # Additional context
             "temporal_context": 15,
@@ -130,7 +129,7 @@ vote = State(
 
 1. **Object ID Transmission**: Each vote now includes the sender's unique object ID in `non_morphological_features["object_id"]`
 
-2. **Sender LM Context**: The `sender_lm_id` field enables proper association tracking across learning modules
+2. **Sender Identification**: Use the standard CMP `State.sender_id` field to identify the source LM (no extra field in `non_morphological_features` is needed)
 
 3. **Evidence Strength**: Explicit evidence values help with association confidence calculations
 
@@ -147,13 +146,13 @@ def receive_votes(self, vote_data):
             for state in states:
                 # Extract from CMP structure
                 other_object_id = state.non_morphological_features["object_id"]
-                sender_lm_id = state.non_morphological_features["sender_lm_id"]
+                sender_id = state.sender_id
                 evidence = state.non_morphological_features["evidence_strength"]
 
                 # Learn associations based on co-occurrence
                 if evidence > self.association_threshold:
                     self._record_co_occurrence(
-                        my_objects, sender_lm_id, other_object_id, evidence, state
+                        my_objects, sender_id, other_object_id, evidence, state
                     )
 ```
 
