@@ -17,7 +17,7 @@ This RFC proposes extending Monty's sensory processing pipeline to handle off-ob
 
 <img src="0000_off_object_observations/off_object_observation.png" alt="Off-object observation" />
 
-_Figure 1_: Illustration of an off-object observation sensed by the Sensor Module. In this RFC, we will utilize this to penalize the evidence of hypotheses that incorrectly think they are still within the object's reference frame.
+_Figure 1_: Illustration of an off-object observation sensed by the Sensor Module (right). In this RFC, we will utilize this to penalize the evidence of hypotheses that incorrectly think they are still within the object's reference frame (left).
 
 ## Motivation
 
