@@ -89,7 +89,7 @@ Below shows the potential follow-up workflow. In the example shown, the first RP
 <img src="0000_code_guidance_for_researchers_and_community/dev_workflow.png" alt="Using a `dev` Branch" width="450">
 
 #### `tbp.monty` as a Dependency
-- Another alternative is to have `tbp.monty` as a dependency, and simply subclass or overwrite any functions that need to be altered.
+- Another alternative is to have `tbp.monty` as a dependency, and simply subclass or overwrite any functions that need to be altered. See the [tbp.monty_project_template repository](https://github.com/thousandbrainsproject/tbp.monty_project_template) for an example of how to quickly set this up.
 - This can clearly demarcate what parts of the code have changed, and might be particularly suitable when creating a new child-class, or an entirely new function. Examples of this might be implementing a new data-loader for a particular dataset, or a new type of sensor module.
 - This approach is less well suited when significant parts of the existing code need to be altered in-place. While still doable, it can be challenging with this approach and a standard `diff` to see what is genuinely new.
 
@@ -97,7 +97,6 @@ Below shows the potential follow-up workflow. In the example shown, the first RP
 - Another possibility is using branches within existing personal forks as a way of managing Research Prototypes.
 - In this case, a new pair of branches is made in your personal fork whenever starting work on a Research Prototype.
 - We have decided that for internal use-cases, this risks becoming overwhelming with the number of RPs/features that we explore, so is generally best avoided.
-- It also does not provide the same visibility to the community about existing prototypes that are reaching a mature stage of development, as these forks are often private.
 - However, if you are a member of the community doing research and you are unable to create multiple forks on your profile, this can be a good approach to adopt.
 
 This approach is shown diagrammatically below:
@@ -107,6 +106,7 @@ This approach is shown diagrammatically below:
 
 ### Discontinued Research Prototypes
 - Sometimes a research idea will not bear fruit. This is fine, indeed we expect this to happen from time to time, and it is the primary reason we expect the proposed workflow to be faster than merging all changes into `tbp.monty`. When an RP does not demonstrate a fundamental improvement, you should archive the fork in question.
+- When this happens, please consider adding some documentation to the README of the prototype explaining why the prototype failed, so that we can refer to this in the future.
 
 ### Non-Prototype PRs from Researchers
 - Researchers may also open PRs directly into `thousandbrainsproject/tbp.monty`, such as a refactor that is useful for them or other researchers, and which is not specific to their current feature project.
