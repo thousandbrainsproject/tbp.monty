@@ -8,12 +8,15 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import json
 import logging
 import os
 from pathlib import Path
 from typing import Dict, List
 
+import nh3
 from slugify import slugify
 
 from tools.github_readme_sync.colors import CYAN, GREEN, RESET, YELLOW
@@ -25,6 +28,58 @@ logger = logging.getLogger(__name__)
 
 def _is_empty(value: str) -> bool:
     return not value or not value.strip()
+
+
+def _check_and_sanitize(
+    key: str,
+    value: str,
+    max_key_length: int = 100,
+    max_value_length: int = 10000,
+) -> tuple[str, str] | None:
+    """Sanitize and validate a key-value pair for length and injection attacks.
+
+    Args:
+        key: The key to sanitize and validate
+        value: The value to sanitize and validate
+        max_key_length: Maximum allowed length for keys
+        max_value_length: Maximum allowed length for values
+
+    Returns:
+        Tuple of (sanitized_key, sanitized_value) if valid, None if invalid
+    """
+    if not isinstance(key, str) or not isinstance(value, str):
+        return None
+
+    if len(key) > max_key_length:
+        logger.warning(
+            f"Key '{key[:50]}...' exceeds maximum length of "
+            f"{max_key_length} characters (actual: {len(key)})"
+        )
+        return None
+
+    if len(value) > max_value_length:
+        logger.warning(
+            f"Value for key '{key}' exceeds maximum length of "
+            f"{max_value_length} characters (actual: {len(value)})"
+        )
+        return None
+
+    sanitized_key = nh3.clean(key).strip()
+    sanitized_value = nh3.clean(str(value)).strip()
+
+    if not sanitized_key or not sanitized_value:
+        return None
+
+    if sanitized_key != key:
+        logger.info(f"Key sanitized: '{key}' -> '{sanitized_key}'")
+
+    if sanitized_value != value:
+        logger.info(
+            f"Value for key '{key}' sanitized: '{value[:100]}...' -> "
+            f"'{sanitized_value[:100]}...'"
+        )
+
+    return sanitized_key, sanitized_value
 
 
 def generate_index(docs_dir: str, output_file_path: str) -> str:
@@ -108,15 +163,19 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
             "text": body_content.strip(),
         }
 
-        entry.update(
-            {
-                field: value
-                for field, value in frontmatter.items()
-                if field != "title" and value is not None
-            }
-        )
+        path_components = generate_path_components(md_file, docs_path)
+        sources_to_sanitize = [
+            (frontmatter, lambda k, v: k != "title" and v is not None),
+            (path_components, lambda _k, _v: True),
+        ]
 
-        entry.update(generate_path_components(md_file, docs_path))
+        for source_dict, filter_func in sources_to_sanitize:
+            for key, value in source_dict.items():
+                if filter_func(key, value):
+                    sanitized_entry = _check_and_sanitize(key, str(value))
+                    if sanitized_entry:
+                        sanitized_key, sanitized_value = sanitized_entry
+                        entry[sanitized_key] = sanitized_value
         entries.append(entry)
 
     return entries
