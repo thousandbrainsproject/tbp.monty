@@ -128,20 +128,20 @@ This approach is shown diagrammatically below:
 
 ## Workflow for Community Members Conducting Research
 
-(note to TBP reviewers of this RFC: the below includes a bit of repetition of [our existing guidance in the Future Work section](https://thousandbrainsproject.readme.io/docs/project-roadmap), and [on making PRs](https://thousandbrainsproject.readme.io/docs/pull-requests), but the aim will be to make this guidance a bit clearer, including the motivation)
+(note to reviewers of this RFC: the below includes a bit of repetition of [our existing guidance in the Future Work section](https://thousandbrainsproject.readme.io/docs/project-roadmap), and [on making PRs](https://thousandbrainsproject.readme.io/docs/pull-requests), but the aim will be to make this guidance a bit clearer, including the motivation)
 
 ### Before Starting Any Code Work
 
-We're very excited to have contributions from the community to `tbp.monty`. Before you begin any significant work on code that is of a research nature, we first ask that you follow the below guidelines:
-- Please contact us (for example, by creating a post [on the Discourse forums](https://thousandbrains.discourse.group/)) if you have identified one of our existing [Future Work](https://thousandbrainsproject.readme.io/docs/project-roadmap) items that you would like to work on. Reaching out to us directly is a great way to begin the discussion about possible approaches you are considering. This can also help save time in case a Future Work item is no longer relevant, or has changed in nature since the Readme.com documentation was last updated.
-- The next step for any major code change is to then propose your idea in the form of [the RFC process](https://thousandbrainsproject.readme.io/docs/request-for-comments-rfc).
+We're very excited to have contributions from the community to `tbp.monty`. Before you begin any significant work on code that is of a research nature, we suggest that you start things off with the below steps:
+1. Contact us (for example, by creating a post [on the Discourse forums](https://thousandbrains.discourse.group/)) if you have identified one of our existing [Future Work](https://thousandbrainsproject.readme.io/docs/project-roadmap) items that you would like to work on. Reaching out to us directly is a great way to begin the discussion about possible approaches you are considering. This can also help save time in case a Future Work item is no longer relevant, or has changed in nature since the Readme.com documentation was last updated.
+2. Propose your idea in the form of [the RFC process](https://thousandbrainsproject.readme.io/docs/request-for-comments-rfc).
 
-Following the above guidance will ensure you do not spend a large amount of time on a code implementation that is never utilized.
+Following the above guidance will help prevent a situation where you spend a significant amount of time on code that is never utilized.
 
 ### Workflow for Contributing Code
 
-If you are a member of the community working on a research idea, then we would recommend you also follow the above guidance under [Workflow for TBP Researchers: from Prototype to Implementation Project](#workflow-for-tbp-researchers-from-research-prototype-to-implementation-project). The main additional points to highlight are:
+If you are a member of the community working on a research idea, then you may also find the above guidance under [Workflow for TBP Researchers: from Prototype to Implementation Project](#workflow-for-tbp-researchers-from-research-prototype-to-implementation-project) helpful. The main differences to highlight are:
 - When creating the fork, you should set yourself as the owner (it will not be possible to set the Thousand Brains Project as the owner).
-- Unless you have a paid account, you will only be able to have a single personal fork of `tbp.monty`. If this is the case, you can follow the workflow described under [Feature Branches (Not Feature Forks)](#feature-branches-not-feature-forks).
-- We recommend that you tag a Maintainer of the TBP (i.e. using the `@` feature on GitHub) when making PRs into your feature branch. This will help get involvement from a Maintainer (including TBP research team members) at an early stage of your work. Once you have tagged a Maintainer, we will triage and determine the most appropriate member of the team to review the PR. In some instances, the Maintainer may abstain from reviewing these PRs.
-- Similarly, if you believe a Prototype is suitable to become an IP, you are welcome to tag one of the Maintainers to discuss this.
+- Unless you have a paid GitHub account, you will only be able to have a single personal fork of `tbp.monty`. If this is the case, you can follow the workflow described under [Feature Branches (Not Feature Forks)](#feature-branches-not-feature-forks).
+- You can tag a Maintainer of the TBP (i.e. using the `@` feature on GitHub) when making PRs into your feature branch. This will help get involvement from a Maintainer (including TBP research team members) at an early stage of your work. Once you have tagged a Maintainer, we will triage and determine the most appropriate member of the team to review the PR. In some instances, the Maintainer may abstain from reviewing these PRs.
+- Similarly, if you believe a Prototype is suitable to become an Implementation Project, you are welcome to tag one of the Maintainers to discuss this.
