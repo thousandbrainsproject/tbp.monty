@@ -87,7 +87,7 @@ def displace_hypotheses_and_compute_evidence(
         total_hypotheses_count: int,
     ) -> ChannelHypotheses:
     # Check if this is an off-object obesrvation with null features
-    if_off_object = ...
+    is_off_object = ...
 
     # For off-object observation, apply evidence penalty 
     if is_off_object:
