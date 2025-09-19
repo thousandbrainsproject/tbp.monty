@@ -13,7 +13,7 @@ The goal of the RFC is to layout current state of Monty and implementation plan 
 
 ## Summary
 
-This RFC proposes extending Monty's sensory processing pipeline to handle off-object observations (when a sensor has moved to a location in the environment where no features are sensed). Currently, these observations are filtered out and not passed to Learning Modules (LMs), limiting our ability to leverage prediction errors for penalizing hypotheses' evidence. By defining "null features" to represent the absence of morphological features, modifying the `FeatureChangeSM` to forward these observations, and updating the Learning Module to process off-object observations, we can enable more intelligent hypothesis management when sensors transition from on-object to off-object status. This enhancement will improve Monty's ability to recognize when it has moved off an object and reduce evidence for hypotheses that predict the sensor should still be detecting object features. 
+This RFC proposes extending Monty's sensory processing pipeline to handle off-object observations (when a sensor has moved to a location in the environment where no features are sensed). Currently, these observations are filtered out and not passed to Learning Modules (LMs), limiting our ability to leverage prediction errors for penalizing hypotheses' evidence. By defining "null features" to represent the absence of morphological features, modifying the Sensor Module (SM) to forward these observations, and updating the LM to process off-object observations, we can enable more intelligent hypothesis management when sensors transition from on-object to off-object status.
 
 ![Off-object observation](0000_off_object_observations/off_object_observation.png)
 
@@ -52,19 +52,25 @@ The challenge of representing off-object observations varies by sensor type:
 - **Touch sensors**: Naturally detect "nothing" when not in contact with surface.
 - **Vision sensors**: Always detect something (even if just background), making the definition of "off-object" more complex and context-dependent.
 
-Taking this into consideration, we treat "null features" as the absence of morphological information tied to the tracked object only when the center pixel’s semantic ID is zero (i.e. no object at that location). If the sensor lands on another object (semantic ID > 0), morphological pose and curvature are still computed for that surface and `on_object` remains 1, even though the appearance cues may change.
+Taking this into consideration, we treat "null features" as the absence of morphological information tied to the tracked object only when the center pixel's semantic ID is zero (i.e. no object at that location). Note that if the sensor lands on another object in the background (semantic ID > 0), morphological pose and curvature will still be computed for that surface and `on_object` will remains 1.
 
 ## Proposed Implementation
 
-The following implementation addresses the limitations identified above by enabling off-object observations to flow through the sensory processing pipeline and be used for hypothesis elimination. The approach involves two main steps: modifying the sensor module's filtering behavior and extending learning modules to process off-object observations.
+The following implementation addresses the limitations identified above by enabling off-object observations to flow through the sensory processing pipeline and be used for hypothesis elimination. The work breaks down into roughly three steps:
 
-### Step 1: Update `sensor_modules.py` to Send Null Features
+### Step 1: Standardize Sensor Output for Off-Object Observations
 
-The `sensor_modules.py` file requires modifications to enable off-object observation processing. Currently, when off object, morphological_features are represented as an empty dictionary in `sensor_modules.py`. Depending on the implementation, this may be updated to `None`. 
+First, we want the sensor module to tell us explicitly when it has nothing morphological to report. In practice that may means:
 
-### Step 2: Update `use_state` variable
+- Keep emitting full `State` objects even when `on_object == 0`.
+- Potentially replace empty dictionary with an explicit sentinel (e.g. `morphological_features = None`).
+- Potentially retain non-morphological features since modalities like vision may still see useful context even while off-object.
 
-In addition, the `use_state` variable will need to account for the four transitions are happening:
+Updates to the `State` class should it clear to the downstream to know exactly how to interpret "null" features.
+
+### Step 2: Treat On/Off Transitions as Significant Change
+
+The goal of this step is to make sure `use_state` variable can account for four transition possiblities:
 
 1. **On-object --> On-object**: Existing delta threshold feature comparison logic 
 2. **On-object --> Off-object**: Treated as significant change; LM receives null features for hypothesis elimination
@@ -73,11 +79,13 @@ In addition, the `use_state` variable will need to account for the four transiti
 
 ### Step 3: Update Learning Module to Process Null Features
 
-Once off-object observations reach the learning system, we need logic that distinguishes between hypotheses that correctly predicted the sensor would leave the object and those that insisted we would still be on surface. The updates fall into three design elements:
+Once off-object observations reach the learning system, we need to distinguishes between hypotheses that correctly predicted the sensor would leave the object and those that insisted we would still be on surface. There are three high-level pieces to cover:
 
-- **Propagate the on/off-object signal**: the CMP message already carries `on_object`. We should keep that flag available when assembling the inputs for the hypothesis displacer (e.g. by ensuring `channel_features["on_object"]` survives any feature-selection step). That gives every downstream component an explicit indicator that no surface geometry was sensed.
-- **Short-circuit feature comparisons when nothing was sensed**: if `on_object == 0`, the feature matcher should skip the call to `feature_evidence_calculator.calculate`. There are no normals or curvatures to compare, so forcing that calculation would only inject artificial zeros and make it look as if every stored node mismatched equally.
-- **Adjust hypothesis evidence selectively**: `_calculate_evidence_for_new_locations` already builds a distance-based mask showing which hypotheses remained near stored nodes (`mask == False`) versus those that routed the sensor outside the object's reference frame (`mask == True`). During an off-object step we should penalize only the former group (since their predictions were wrong) and possibly reward the latter group (for correctly predicting "off-object observation"). 
+- **Propagate the on/off-object signal**: The CMP message already carries `on_object`. We should keep that flag available when assembling the inputs for the hypothesis displacer (e.g. by ensuring `channel_features["on_object"]` survives any feature-selection step). That gives every downstream component an explicit indicator that no surface geometry was sensed.
+- **Short-circuit feature comparisons when nothing was sensed**: If `on_object == 0`, then we should skip the call to `feature_evidence_calculator.calculate`.
+- **Adjust hypothesis evidence selectively**: The `_calculate_evidence_for_new_locations` method already builds a distance-based mask showing which hypotheses remained near stored nodes (`mask == False`) versus those that routed the sensor outside the object's reference frame (`mask == True`). During an off-object step we could penalize only the former group (since their predictions were wrong) and reward the latter group (for correctly predicting "off-object observation"). 
+
+Together, these updates to the LM should enable it to use off-object signals to either decrease the evidence values for hypotheses that think they are on_object and increase evidence values for hypotheses that correctly predicted to be out of object's reference frame. 
 
 ## Benchmarking
 
