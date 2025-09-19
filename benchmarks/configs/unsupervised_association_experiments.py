@@ -20,10 +20,6 @@ from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
 from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
 )
-from tbp.monty.frameworks.loggers.monty_handlers import (
-    BasicCSVStatsHandler,
-    ReproduceEpisodeHandler,
-)
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
     EvalExperimentArgs,
@@ -40,6 +36,10 @@ from tbp.monty.frameworks.config_utils.unsupervised_association_configs import (
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
+from tbp.monty.frameworks.loggers.monty_handlers import (
+    BasicCSVStatsHandler,
+    ReproduceEpisodeHandler,
+)
 from tbp.monty.frameworks.models.evidence_matching.unsupervised_evidence_lm import (
     UnsupervisedEvidenceGraphLM,
 )
@@ -53,17 +53,17 @@ from tbp.monty.frameworks.models.sensor_modules import (
     FeatureChangeSM,
 )
 from tbp.monty.simulators.habitat.configs import (
-    PatchViewFinderMountHabitatDatasetArgs,
+    TwoLMStackedDistantMountHabitatDatasetArgs,
 )
 
 # Default objects for testing
 test_objects = get_object_names_by_idx(0, 5)  # First 5 YCB objects
 
-# Base sensor module configuration for patch sensor
-base_sensor_module_patch = {
+# Sensor module configuration for first patch sensor (patch_0)
+patch_0_sensor_module = {
     "sensor_module_class": FeatureChangeSM,
     "sensor_module_args": {
-        "sensor_module_id": "patch",
+        "sensor_module_id": "patch_0",
         "features": [
             "on_object",
             "object_coverage",
@@ -80,32 +80,11 @@ base_sensor_module_patch = {
     },
 }
 
-# Base sensor module configuration for view_finder sensor
-base_sensor_module_view_finder = {
+# Sensor module configuration for second patch sensor (patch_1)
+patch_1_sensor_module = {
     "sensor_module_class": FeatureChangeSM,
     "sensor_module_args": {
-        "sensor_module_id": "view_finder",
-        "features": [
-            "on_object",
-            "object_coverage",
-            "rgba",
-            "hsv",
-            "pose_vectors",
-            "principal_curvatures_log",
-        ],
-        "save_raw_obs": False,
-        "delta_thresholds": {
-            "on_object": 0,
-            "distance": 0.01,
-        },
-    },
-}
-
-# Base sensor module configuration for third sensor
-base_sensor_module_2 = {
-    "sensor_module_class": FeatureChangeSM,
-    "sensor_module_args": {
-        "sensor_module_id": "patch_2",
+        "sensor_module_id": "patch_1",
         "features": [
             "on_object",
             "object_coverage",
@@ -128,38 +107,29 @@ base_learning_module = {
     "learning_module_args": {
         "max_match_distance": 0.01,
         "tolerances": {
-            "patch": {
+            # Single-modality (two patches)
+            "patch_0": {
                 "hsv": [0.1, 0.2, 0.2],
                 "principal_curvatures_log": [1.0, 1.0],
                 "pose_vectors": [0.1, 0.1, 0.1],
             },
-            "view_finder": {
+            "patch_1": {
                 "hsv": [0.1, 0.2, 0.2],
                 "principal_curvatures_log": [1.0, 1.0],
                 "pose_vectors": [0.1, 0.1, 0.1],
             },
-            "patch_2": {
-                "hsv": [0.1, 0.2, 0.2],
-                "principal_curvatures_log": [1.0, 1.0],
-                "pose_vectors": [0.1, 0.1, 0.1],
-            }
         },
         "feature_weights": {
-            "patch": {
+            "patch_0": {
                 "hsv": [1, 0.5, 0.5],
                 "principal_curvatures_log": [1, 1],
                 "pose_vectors": [1, 1, 1],
             },
-            "view_finder": {
+            "patch_1": {
                 "hsv": [1, 0.5, 0.5],
                 "principal_curvatures_log": [1, 1],
                 "pose_vectors": [1, 1, 1],
             },
-            "patch_2": {
-                "hsv": [1, 0.5, 0.5],
-                "principal_curvatures_log": [1, 1],
-                "pose_vectors": [1, 1, 1],
-            }
         },
         "object_evidence_threshold": 1.0,
         "x_percent_threshold": 10,
@@ -181,26 +151,8 @@ base_motor_system = {
     },
 }
 
-# Base dataset configuration - use default which includes proper RGBD sensors
-base_dataset_args = PatchViewFinderMountHabitatDatasetArgs()
-
-# We need to update the transform to use our sensor IDs
-from tbp.monty.frameworks.environment_utils.transforms import MissingToMaxDepth, DepthTo3DLocations
-
-# Override the transform to use our sensor module IDs
-agent_args = base_dataset_args.env_init_args["agents"][0].agent_args
-base_dataset_args.transform = [
-    MissingToMaxDepth(agent_id=agent_args["agent_id"], max_depth=1),
-    DepthTo3DLocations(
-        agent_id=agent_args["agent_id"],
-        sensor_ids=["patch", "view_finder"],  # Use default sensor IDs from the agent
-        resolutions=agent_args["resolutions"],
-        world_coord=True,
-        zooms=agent_args["zooms"],
-        get_all_points=True,
-        use_semantic_sensor=False,
-    ),
-]
+# Base dataset configuration - two patch sensors on distant agent mount
+base_dataset_args = TwoLMStackedDistantMountHabitatDatasetArgs()
 
 # Base dataloader configuration
 base_dataloader_args = EnvironmentDataloaderPerObjectArgs(
@@ -241,17 +193,15 @@ def create_experiment_config(monty_config, logging_config=None):
     }
 
 
-def create_simple_cross_modal_config():
-    """Create a simple cross-modal experiment configuration."""
-    # Create two learning modules with different modality IDs
+def create_single_modality_balanced_config():
+    """Create a simple single-modality (two patches) experiment with balanced params."""
     lm_configs = create_cross_modal_lm_configs(
         base_learning_module,
         num_lms=2,
-        modality_names=['visual', 'touch'],
+        modality_names=['visual_0', 'visual_1'],
         association_params=get_association_params_preset('balanced'),
     )
 
-    # Create Monty configuration with association capabilities
     monty_config = create_unsupervised_association_monty_config(
         base_monty_config={
             "monty_class": MontyForUnsupervisedAssociation,
@@ -262,13 +212,13 @@ def create_simple_cross_modal_config():
                 max_total_steps=2000,
             ),
             "sensor_module_configs": {
-                "sensor_module_0": base_sensor_module_patch,
-                "sensor_module_1": base_sensor_module_view_finder,
+                "sensor_module_0": patch_0_sensor_module,   # patch_0
+                "sensor_module_1": patch_1_sensor_module,  # patch_1
             },
             "learning_module_configs": lm_configs,
             "motor_system_config": base_motor_system,
-            "sm_to_agent_dict": {"patch": "agent_id_0", "view_finder": "agent_id_0"},  # Both sensors on same agent
-            "sm_to_lm_matrix": [[0], [1]],  # Each sensor to different LM (patch->visual, view_finder->touch)
+            "sm_to_agent_dict": {"patch_0": "agent_id_0", "patch_1": "agent_id_0"},
+            "sm_to_lm_matrix": [[0], [1]],  # Each patch to different LM
             "lm_to_lm_matrix": [[], []],  # No hierarchical connections
             "lm_to_lm_vote_matrix": [[1], [0]],  # Cross-voting between LMs
         },
@@ -280,14 +230,13 @@ def create_simple_cross_modal_config():
     return create_experiment_config(monty_config)
 
 
-def create_multi_modal_config():
-    """Create a multi-modal experiment configuration with 2 learning modules using different sensors."""
-    # Create two learning modules representing different modalities
-    # Use patch sensor for visual LM and view_finder for touch LM
+def create_single_modality_aggressive_config():
+    """Create a single-modality (two patches) experiment with aggressive params."""
+    # Create two learning modules representing the same modality (two patches)
     lm_configs = create_cross_modal_lm_configs(
         base_learning_module,
         num_lms=2,
-        modality_names=['visual', 'touch'],
+        modality_names=['visual_0', 'visual_1'],
         association_params=get_association_params_preset('aggressive'),
     )
 
@@ -302,13 +251,13 @@ def create_multi_modal_config():
                 max_total_steps=4000,
             ),
             "sensor_module_configs": {
-                "sensor_module_0": base_sensor_module_patch,
-                "sensor_module_1": base_sensor_module_view_finder,
+                "sensor_module_0": patch_0_sensor_module,    # patch_0
+                "sensor_module_1": patch_1_sensor_module,  # patch_1
             },
             "learning_module_configs": lm_configs,
             "motor_system_config": base_motor_system,
-            "sm_to_agent_dict": {"patch": "agent_id_0", "view_finder": "agent_id_0"},  # Both sensors on same agent
-            "sm_to_lm_matrix": [[0], [1]],  # Each sensor to different LM (patch->visual, view_finder->touch)
+            "sm_to_agent_dict": {"patch_0": "agent_id_0", "patch_1": "agent_id_0"},  # Both sensors on same agent
+            "sm_to_lm_matrix": [[0], [1]],  # Each patch sensor to different LM
             "lm_to_lm_matrix": [[], []],  # No hierarchical connections
             "lm_to_lm_vote_matrix": [[1], [0]],  # Cross-voting between LMs
         },
@@ -317,15 +266,18 @@ def create_multi_modal_config():
         log_association_details=True,
     )
 
-    return create_experiment_config(monty_config)
+    exp = create_experiment_config(monty_config)
+    # Override dataset to a mount that provides patch_0 and patch_1
+    exp["dataset_args"] = TwoLMStackedDistantMountHabitatDatasetArgs()
+    return exp
 
 
-def create_conservative_association_config():
-    """Create a configuration with conservative association parameters."""
+def create_single_modality_conservative_config():
+    """Create a single-modality (two patches) experiment with conservative params."""
     lm_configs = create_cross_modal_lm_configs(
         base_learning_module,
         num_lms=2,
-        modality_names=['visual', 'touch'],
+        modality_names=['visual_0', 'visual_1'],
         association_params=get_association_params_preset('conservative'),
     )
 
@@ -339,12 +291,12 @@ def create_conservative_association_config():
                 max_total_steps=4000,
             ),
             "sensor_module_configs": {
-                "sensor_module_0": base_sensor_module_patch,
-                "sensor_module_1": base_sensor_module_view_finder,
+                "sensor_module_0": patch_0_sensor_module,
+                "sensor_module_1": patch_1_sensor_module,
             },
             "learning_module_configs": lm_configs,
             "motor_system_config": base_motor_system,
-            "sm_to_agent_dict": {"patch": "agent_id_0", "view_finder": "agent_id_0"},
+            "sm_to_agent_dict": {"patch_0": "agent_id_0", "patch_1": "agent_id_0"},
             "sm_to_lm_matrix": [[0], [1]],
             "lm_to_lm_matrix": [[], []],
             "lm_to_lm_vote_matrix": [[1], [0]],
@@ -371,57 +323,7 @@ def create_conservative_association_config():
 
 def create_association_strategy_comparison_config():
     """Create configuration for comparing different association strategies."""
-    # Define base components needed for the experiment
-    base_sensor_module_local_patch = {
-        "sensor_module_class": FeatureChangeSM,
-        "sensor_module_args": {
-            "sensor_module_id": "patch",
-            "features": [
-                "on_object",
-                "object_coverage",
-                "rgba",
-                "hsv",
-                "pose_vectors",
-                "principal_curvatures_log",
-            ],
-            "save_raw_obs": False,
-            "delta_thresholds": {
-                "on_object": 0,
-                "distance": 0.01,
-            },
-        },
-    }
-
-    base_sensor_module_local_view_finder = {
-        "sensor_module_class": FeatureChangeSM,
-        "sensor_module_args": {
-            "sensor_module_id": "view_finder",
-            "features": [
-                "on_object",
-                "object_coverage",
-                "rgba",
-                "hsv",
-                "pose_vectors",
-                "principal_curvatures_log",
-            ],
-            "save_raw_obs": False,
-            "delta_thresholds": {
-                "on_object": 0,
-                "distance": 0.01,
-            },
-        },
-    }
-
-    base_motor_system_local = {
-        "motor_system_class": MotorSystem,
-        "motor_system_args": {
-            "policy_class": InformedPolicy,
-            "policy_args": make_informed_policy_config(
-                action_space_type="distant_agent",
-                action_sampler_class=ConstantSampler,
-            ),
-        },
-    }
+    # Reuse top-level base configs to avoid duplicated code
 
     # Create multiple LM configs with different association parameters
     lm_configs = []
@@ -460,12 +362,12 @@ def create_association_strategy_comparison_config():
             max_total_steps=4000,
         ),
         "sensor_module_configs": {
-            "sensor_module_0": base_sensor_module_local_patch,
-            "sensor_module_1": base_sensor_module_local_view_finder,
+            "sensor_module_0": patch_0_sensor_module,
+            "sensor_module_1": patch_1_sensor_module,
         },
         "learning_module_configs": lm_configs[0],  # Use balanced as base
-        "motor_system_config": base_motor_system_local,
-        "sm_to_agent_dict": {"patch": "agent_id_0", "view_finder": "agent_id_0"},
+        "motor_system_config": base_motor_system,
+        "sm_to_agent_dict": {"patch_0": "agent_id_0", "patch_1": "agent_id_0"},
         "sm_to_lm_matrix": [[0], [1]],
         "lm_to_lm_matrix": [[], []],
         "lm_to_lm_vote_matrix": [[1], [0]],
@@ -506,7 +408,6 @@ def create_5lm_77obj_benchmark_config():
     """
     import numpy as np
     from tbp.monty.frameworks.config_utils.config_args import (
-        FiveLMMontySOTAConfig,
         MontyArgs,
     )
     from tbp.monty.frameworks.config_utils.make_dataset_configs import (
@@ -523,7 +424,6 @@ def create_5lm_77obj_benchmark_config():
     from benchmarks.configs.ycb_experiments import (
         default_5sm_config,
         min_eval_steps,
-        model_path_5lms_77obj,
     )
 
     # Create 5 LMs with unsupervised association capabilities
@@ -643,8 +543,9 @@ from dataclasses import asdict
 
 # Create the experiments dataclass instance
 experiments = UnsupervisedAssociationExperiments(
-    simple_cross_modal_association=create_simple_cross_modal_config(),
-    multi_modal_association=create_multi_modal_config(),
+    simple_single_modality_association=create_single_modality_balanced_config(),
+    single_modality_aggressive=create_single_modality_aggressive_config(),
+    single_modality_conservative=create_single_modality_conservative_config(),
     association_strategy_comparison=create_association_strategy_comparison_config(),
     unsupervised_5lm_77obj_benchmark=create_5lm_77obj_benchmark_config(),
 )
