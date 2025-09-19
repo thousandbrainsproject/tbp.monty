@@ -86,6 +86,18 @@ class UnsupervisedInferenceExperiments:
 
 
 @dataclass
+class UnsupervisedAssociationExperiments:
+    simple_single_modality_association: dict
+    single_modality_aggressive: dict
+    single_modality_conservative: dict
+    association_strategy_comparison: dict
+    unsupervised_5lm_77obj_benchmark: dict
+
+
+NAMES.extend(field.name for field in fields(UnsupervisedAssociationExperiments))
+
+
+@dataclass
 class MyExperiments:
     # Add your experiment names here
     pass
