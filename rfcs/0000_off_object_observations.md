@@ -29,7 +29,7 @@ The core idea is to leverage the mismatch between predicted and observed feature
 
 ### Overview of Current Sensory Processing Pipeline
 
-Monty's sensory processing pipeline uses `FeatureChangeSM` as a gatekeeper to determine which observations reach Learning Modules (LMs). Currently, this filtering excludes off-object observations entirely.
+Monty's sensory processing pipeline filters observations in `HabitatDistantPatchSM` by marking off-object states as `use_state=False`, and `FeatureChangeSM` (when enabled) adds a further gating layer on top of that change-detection logic. Currently, this filtering excludes off-object observations entirely.
 
 ### The Off-Object Filtering Problem
 
