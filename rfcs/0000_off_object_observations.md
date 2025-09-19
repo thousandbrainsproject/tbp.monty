@@ -52,7 +52,7 @@ The challenge of representing off-object observations varies by sensor type:
 - **Touch sensors**: Naturally detect "nothing" when not in contact with surface.
 - **Vision sensors**: Always detect something (even if just background), making the definition of "off-object" more complex and context-dependent.
 
-Taking this into consideration, we define "null features" as the absence of **morphological** features (surface normal and principal curvatures), since depending on the sensing modality, some **non-morphological features** may be present (e.g. background color) even when sensor is off-object.
+Taking this into consideration, we treat "null features" as the absence of morphological information tied to the tracked object only when the center pixel’s semantic ID is zero (i.e. no object at that location).
 
 ## Proposed Implementation
 
