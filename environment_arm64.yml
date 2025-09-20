@@ -45,8 +45,7 @@ dependencies:
   - pyg::pyg=2.1.0
   - pyg::pytorch-scatter=2.0.9
   - pyg::pytorch-sparse=0.6.15
-  - pytorch::pytorch=1.11.0
-  - pytorch::torchvision
+  - pytorch::pytorch=1.13.1
 
   - pip
   - pip:
