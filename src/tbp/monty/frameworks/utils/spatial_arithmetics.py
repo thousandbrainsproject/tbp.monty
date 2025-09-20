@@ -231,11 +231,11 @@ def align_multiple_orthonormal_vectors(ms1, ms2, as_scipy=True):
         return rot_mats
 
 
-def get_right_hand_angle(v1, v2, pn):
+def get_right_hand_angle(v1, v2, surface_normal):
     # some numpy bug (https://github.com/microsoft/pylance-release/issues/3277)
     # cp = lambda v1, v2: np.cross(v1, v2)
-    # a = np.dot(cp(v1, v2), pn)
-    a = np.dot(np.cross(v1, v2), pn)
+    # a = np.dot(cp(v1, v2), surface_normal)
+    a = np.dot(np.cross(v1, v2), surface_normal)
     b = np.dot(v1, v2)
     rha = np.arctan2(a, b)
     return rha

@@ -318,11 +318,11 @@ def plot_detection_animation(
 
         colors = np.zeros(num_points)
         if i == 0:
-            for pn, p in enumerate(path_matches[i][model_name]):
-                colors[int(p)] = pn / (i + 1) + 0.5
+            for surface_normal, p in enumerate(path_matches[i][model_name]):
+                colors[int(p)] = surface_normal / (i + 1) + 0.5
         elif len(path_matches[i][model_name]) > 0:
-            for pn, p in enumerate(path_matches[i][model_name][0]):
-                colors[int(p)] = pn / (i + 1) + 0.5
+            for surface_normal, p in enumerate(path_matches[i][model_name][0]):
+                colors[int(p)] = surface_normal / (i + 1) + 0.5
         else:
             pass
         p2.set_array(colors)
@@ -880,7 +880,7 @@ def show_one_step(
     displacement = stats[str(episode)][lm_id]["displacement"][step + 1]
     qcurve = stats[str(episode)][lm_id]["principal_curvatures"][step + 1]
     print(f"query curvature: {qcurve}")
-    observed_pn = stats[str(episode)][lm_id]["pose_vectors"][step + 1][:3]
+    observed_surface_normal = stats[str(episode)][lm_id]["pose_vectors"][step + 1][:3]
 
     num_possible_paths = len(
         stats[str(episode)][lm_id]["possible_poses"][step][object_to_inspect]
@@ -920,9 +920,9 @@ def show_one_step(
             on_same_surface_side = False
             while not on_same_surface_side:
                 closest_node_id = node_distances.argmin()
-                graph_pn = model_normals[closest_node_id].copy()
-                graph_pn = ref_frame_rot.apply(graph_pn)
-                angle = get_angle(graph_pn, observed_pn)
+                graph_surface_normal = model_normals[closest_node_id].copy()
+                graph_surface_normal = ref_frame_rot.apply(graph_surface_normal)
+                angle = get_angle(graph_surface_normal, observed_surface_normal)
                 angle = (angle - np.pi) % np.pi
                 on_same_surface_side = angle < np.pi / 2
                 if not on_same_surface_side:
@@ -965,14 +965,16 @@ def show_one_step(
                 # print("norm at closest node (black): " + str(norm))
                 # print(
                 #     "rotated norm (pink): "
-                #     + str(graph_pn)
+                #     + str(graph_surface_normal)
                 #     + " for pose "
                 #     + str(pose)
                 # )
-                # print("observed norm: " + str(observed_pn))
+                # print("observed norm: " + str(observed_surface_normal))
                 # print("angle between rotated and observed: " + str(angle))
                 plot_normal(ax, closest_node_position, norm, norm_len, "black")
-                plot_normal(ax, closest_node_position, graph_pn, norm_len, "pink")
+                plot_normal(
+                    ax, closest_node_position, graph_surface_normal, norm_len, "pink"
+                )
 
         search_positions = np.array(search_positions)
         plot_search_displacements(ax, search_positions, start_node)
@@ -1928,7 +1930,7 @@ def plot_graph_mismatch(
     top_mlh_graph,
     second_mlh_graph,
     displaced_point,
-    current_pn,
+    current_surface_normal,
     save_path,
     plot_name,
     gt_graph=None,
@@ -1996,7 +1998,7 @@ def plot_graph_mismatch(
     #         top_mlh_graph,
     #         second_mlh_graph,
     #         displaced_point,
-    #         current_pn,
+    #         current_surface_normal,
     #         save_path,
     #         plot_name,
     #         gt_graph=gt_graph,
@@ -2065,15 +2067,15 @@ def plot_graph_mismatch(
     # Note that surface normal is in global environmental coordinates, not
     # the environmental coordinates in which the second object was learned,
     # therefore transform by inverse
-    second_pn = second_mlh["rotation"].inv().apply(current_pn)
+    second_surface_normal = second_mlh["rotation"].inv().apply(current_surface_normal)
     ax.plot(
-        [base_point[0], base_point[0] + second_pn[0] * 0.02],
-        [base_point[2], base_point[2] + second_pn[2] * 0.02],
-        [base_point[1], base_point[1] + second_pn[1] * 0.02],
+        [base_point[0], base_point[0] + second_surface_normal[0] * 0.02],
+        [base_point[2], base_point[2] + second_surface_normal[2] * 0.02],
+        [base_point[1], base_point[1] + second_surface_normal[1] * 0.02],
         c="pink",
         alpha=0.9,
         linewidth=5,
-        label="top_mlh_pn",
+        label="top_mlh_surface_normal",
     )
 
     view = [45, -80]

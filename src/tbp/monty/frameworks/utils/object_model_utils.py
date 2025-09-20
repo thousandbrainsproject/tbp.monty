@@ -320,22 +320,25 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
     """
     # Check the angle between all surface normals relative to the first curvature
     # directions. Then look at how many are positive vs. negative and use the ones
-    # that make up the majority. So if 5 pns point one way and 10 in the opposite,
-    # we will use the 10 and discard the rest. This avoids averaging over sns that
-    # are from opposite sides of an objects surface.
+    # that make up the majority. So if 5 surface normals point one way and 10 in the
+    # opposite, we will use the 10 and discard the rest. This avoids averaging over sns
+    # that are from opposite sides of an objects surface.
     valid_pose_vecs = np.where(np.any(pose_vecs, axis=1))[0]
     if len(valid_pose_vecs) == 0:
         logger.debug(f"no valid pose vecs: {pose_vecs}")
         return None, False
     # TODO: more generic names
-    pns = pose_vecs[valid_pose_vecs, :3]
+    surface_normals = pose_vecs[valid_pose_vecs, :3]
     cds1 = pose_vecs[valid_pose_vecs, 3:6]
     cds2 = pose_vecs[valid_pose_vecs, 6:9]
-    pns_to_use = get_right_hand_angle(pns, cds1[0], cds2[0]) > 0
-    if (sum(pns_to_use) < len(pns_to_use) // 2) or (sum(pns_to_use) == 0):
-        pns_to_use = np.logical_not(pns_to_use)
-    # Take the mean of all pns pointing in the same half sphere spanned by the cds.
-    norm_mean = np.mean(pns[pns_to_use], axis=0)
+    surface_normals_to_use = get_right_hand_angle(surface_normals, cds1[0], cds2[0]) > 0
+    if (sum(surface_normals_to_use) < len(surface_normals_to_use) // 2) or (
+        sum(surface_normals_to_use) == 0
+    ):
+        surface_normals_to_use = np.logical_not(surface_normals_to_use)
+    # Take the mean of all surface normals pointing in the same half sphere spanned by
+    # the cds.
+    norm_mean = np.mean(surface_normals[surface_normals_to_use], axis=0)
     # Make sure the mean vector still has unit length.
     normed_norm_mean = norm_mean / np.linalg.norm(norm_mean)
 
@@ -355,7 +358,7 @@ def pose_vector_mean(pose_vecs, pose_fully_defined):
         cds1[cd1_dirs] = -cds1[cd1_dirs]
         cd1_mean = np.mean(cds1, axis=0)
         normed_cd1_mean = cd1_mean / np.linalg.norm(cd1_mean)
-        # Get the second cd by calculating a vector orthogonal to cd1 and pn.
+        # Get the second cd by calculating a vector orthogonal to cd1 and surface normal
         cd2_mean = np.cross(normed_norm_mean, normed_cd1_mean)
         normed_cd2_mean = cd2_mean / np.linalg.norm(cd2_mean)
         if get_right_hand_angle(normed_cd1_mean, cd2_mean, normed_norm_mean) < 0:
