@@ -57,7 +57,7 @@ class HypothesesUpdater(Protocol):
         graph_id: str,
         mapper: ChannelMapper,
         evidence_update_threshold: float,
-    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
+    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry, float]:
         """Update hypotheses based on sensor displacement and sensed features.
 
         Args:
@@ -75,7 +75,7 @@ class HypothesesUpdater(Protocol):
         ...
 
 
-class DefaultHypothesesUpdater:
+class DefaultHypothesesUpdater(HypothesesUpdater):
     def __init__(
         self,
         feature_weights: dict,
@@ -172,7 +172,7 @@ class DefaultHypothesesUpdater:
         graph_id: str,
         mapper: ChannelMapper,
         evidence_update_threshold: float,
-    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry]:
+    ) -> tuple[list[ChannelHypotheses], HypothesesUpdateTelemetry, float]:
         """Update hypotheses based on sensor displacement and sensed features.
 
         Updates existing hypothesis space or initializes a new hypothesis space
@@ -209,6 +209,7 @@ class DefaultHypothesesUpdater:
             return []
 
         hypotheses_updates = []
+        mlh_prediction_error = None
 
         for input_channel in input_channels_to_use:
             # Determine if the hypothesis space exists
@@ -233,7 +234,7 @@ class DefaultHypothesesUpdater:
                 # We only displace existing hypotheses since the newly sampled
                 # hypotheses should not be affected by the displacement from the last
                 # sensory input.
-                channel_possible_hypotheses = (
+                channel_possible_hypotheses, mlh_prediction_error = (
                     self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
                         channel_displacement=displacements[input_channel],
                         channel_features=features[input_channel],
@@ -246,7 +247,7 @@ class DefaultHypothesesUpdater:
 
             hypotheses_updates.append(channel_possible_hypotheses)
 
-        return hypotheses_updates, None
+        return hypotheses_updates, None, mlh_prediction_error
 
     def _get_all_informed_possible_poses(
         self, graph_id: str, sensed_channel_features: dict, input_channel: str

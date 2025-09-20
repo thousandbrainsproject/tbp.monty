@@ -85,8 +85,11 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             num_time_out=0,
             num_patch_off_object=0,
             num_no_label=0,
+            num_consistent_child_obj=0,
+            num_correct_child_or_parent=0,
             num_correct_per_lm=0,
             num_correct_mlh_per_lm=0,
+            num_consistent_child_obj_per_lm=0,
             num_no_match_per_lm=0,
             num_confused_per_lm=0,
             num_confused_mlh_per_lm=0,
@@ -101,6 +104,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             episode_confused_mlh=0,
             episode_pose_time_out=0,
             episode_time_out=0,
+            episode_avg_prediction_error=[],
             episode_lm_performances=[],
             # Total number of steps performed during the episode,
             # including steps where no sensory data was passed to the learning-modules:
@@ -141,6 +145,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             "no_label",
             "pose_time_out",
             "time_out",
+            "consistent_child_obj",
             "confused_mlh",
             "correct_mlh",
             "no_match",
@@ -255,6 +260,14 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             )
             stats["monty_steps"].append(episode_steps)
             stats["monty_matching_steps"].append(monty_matching_steps)
+            stats["episode_avg_prediction_error"].append(
+                episode_stats["episode_avg_prediction_error"]
+            )
+            stats["num_correct_child_or_parent"] += (
+                int(performance == "consistent_child_obj")
+                or int(performance == "correct")
+                or int(performance == "correct_mlh")
+            )
 
             stats["goal_states_attempted"] = episode_stats["goal_states_attempted"]
 
@@ -394,6 +407,20 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                 if len(stats["monty_matching_steps"]) > 0
                 else np.nan
             ),
+            "overall/avg_prediction_error": (
+                np.mean(stats["episode_avg_prediction_error"])
+                if len(stats["episode_avg_prediction_error"]) > 0
+                else np.nan
+            ),
+            "overall/percent_consistent_child_obj": (
+                stats["num_consistent_child_obj"] / (stats["num_episodes"])
+            )
+            * 100,
+            "overall/percent_correct_child_or_parent": (
+                stats["num_correct_child_or_parent"]
+                / (stats["num_episodes"] * len(self.lms))
+            )
+            * 100,
             "overall/run_time": np.sum(stats["run_times"]) / len(self.lms),
             # NOTE: does not take into account different runtimes with multiple LMs
             "overall/avg_episode_run_time": (
@@ -435,6 +462,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             ),
             "episode/goal_states_attempted": stats["goal_states_attempted"],
             "episode/goal_state_success_rate": stats["goal_state_success_rate"],
+            "episode/avg_prediction_error": stats["episode_avg_prediction_error"],
         }
         for lm in self.lms:
             lm_stats = self.data["BASIC"][f"{mode}_stats"][episode][lm]
@@ -444,11 +472,22 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             overall_stats[f"{lm}/episode/individual_ts_rotation_error"] = lm_stats[
                 "individual_ts_rotation_error"
             ]
+            overall_stats[f"{lm}/episode/avg_prediction_error"] = lm_stats[
+                "episode_avg_prediction_error"
+            ]
+
+        for p in self.performance_options:
+            overall_stats[f"overall/percent_{p}_per_lm"] = (
+                stats[f"num_{p}_per_lm"] / (stats["num_episodes"] * len(self.lms))
+            ) * 100
 
         if len(self.lms) > 1:  # add histograms when running multiple LMs
             overall_stats["episode/rotation_error_per_lm"] = wandb.Histogram(episode_re)
             overall_stats["episode/steps_per_lm"] = wandb.Histogram(
                 stats["episode_lm_steps"][-len(self.lms) :]
+            )
+            overall_stats["episode/avg_prediction_error"] = wandb.Histogram(
+                stats["episode_avg_prediction_error"][-len(self.lms) :]
             )
             overall_stats["episode/steps_per_lm_indv_ts"] = wandb.Histogram(
                 episode_individual_ts_steps
