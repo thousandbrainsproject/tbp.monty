@@ -301,8 +301,8 @@ def get_custom_distances(nearest_node_locs, search_locs, search_sns, search_curv
     # magnitudes of the dot product means they are further away from that plane
     # (-> should have larger distance).
     dot_products = np.einsum("ijk,ik->ij", differences, search_sns)
-    # Calculate the eucledian distances. shape=(num_hyp, max_nneighbors)
-    eucledian_dists = np.linalg.norm(differences, axis=2)
+    # Calculate the euclidean distances. shape=(num_hyp, max_nneighbors)
+    euclidean_dists = np.linalg.norm(differences, axis=2)
     # Calculate the total distances by adding the absolute dot product to the
     # euclidean distances. We multiply the dot product by 1/curvature to modulate
     # the flatness of the search sphere. If the curvature is large we want to be
@@ -311,7 +311,7 @@ def get_custom_distances(nearest_node_locs, search_locs, search_sns, search_curv
     # To have a minimum wiggle room above and below the plane, even if we have 0
     # curvature (and to avoid division by 0) we add 0.5 to the denominator.
     # shape=(num_hyp, max_nneighbors).
-    custom_nearest_node_dists = eucledian_dists + np.abs(dot_products) * (
+    custom_nearest_node_dists = euclidean_dists + np.abs(dot_products) * (
         1 / (np.abs(search_curvature) + 0.5)
     )
     return custom_nearest_node_dists

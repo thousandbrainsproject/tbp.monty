@@ -38,7 +38,7 @@ regex_images = re.compile(r"!\[(.*?)\]\((.*?)\)")
 regex_image_path = re.compile(
     r"(\.\./){1,5}figures/((.+)\.(png|jpg|jpeg|gif|svg|webp))"
 )
-regex_markdown_path = re.compile(r"\(([\./]*)([\w\-/]+)\.md(#.*)?\)")
+regex_markdown_path = re.compile(r"\(([\./]*)([\w\-/]+)\.md(#.*?)?\)")
 regex_cloudinary_video = re.compile(
     r"\[(.*?)\]\((https://res\.cloudinary\.com/([^/]+)/video/upload/v(\d+)/([^/]+\.mp4))\)",
     re.IGNORECASE,
