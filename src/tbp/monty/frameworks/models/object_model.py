@@ -446,7 +446,7 @@ class GridObjectModel(GraphObjectModel):
         (distances, nearest_node_ids) = self._location_tree.query(
             search_locations,
             k=num_neighbors,
-            p=2,  # eucledian distance
+            p=2,  # euclidean distance
             workers=1,  # using more than 1 worker slows down run on lambda.
         )
         # else:
