@@ -44,6 +44,8 @@ from tbp.monty.simulators.habitat.configs import (
 from tests.unit.frameworks.config_utils.fakes.config_args import (
     FakeSingleCameraMontyConfig,
 )
+from benchmarks.configs.load import load_external_configs
+
 
 DATASET_LEN = 1000
 TRAIN_EPOCHS = 2
@@ -78,6 +80,11 @@ class MontyRunTest(unittest.TestCase):
     def setUp(self):
         """Code that gets executed before every test."""
         self.output_dir = tempfile.mkdtemp()
+        # Setup for external config test
+        self.external_dir = tempfile.mkdtemp()
+        self.external_config_path = os.path.join(self.external_dir, "external_config.py")
+        with open(self.external_config_path, "w") as f:
+            f.write("CONFIGS = {'external_test': {'value': 123}}\n")
         agent_patch = mock.patch("habitat_sim.Agent", autospec=True)
         sim_patch = mock.patch("habitat_sim.Simulator", autospec=True)
         self.addCleanup(agent_patch.stop)
@@ -152,6 +159,12 @@ class MontyRunTest(unittest.TestCase):
     def tearDown(self):
         """Code that gets executed after every test."""
         shutil.rmtree(self.output_dir)
+        shutil.rmtree(self.external_dir)
+
+    def test_load_external_experiments(self):
+        configs = load_external_configs(self.external_dir)
+        self.assertIn('external_test', configs)
+        self.assertEqual(configs['external_test']['value'], 123)
 
     def test_main_without_experiment(self):
         sys.argv = ["monty", "-e", "test_1"]
@@ -215,6 +228,8 @@ class MontyRunTest(unittest.TestCase):
         exp_dir = os.path.join(str(base_dir), "benchmarks")
         sys.path.append(exp_dir)
         import configs  # noqa: F401
+
+    
 
 
 if __name__ == "__main__":

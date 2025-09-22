@@ -46,6 +46,12 @@ def create_cmd_parser(experiments: list[str]):
         action="store_true",
         help="Don't run an experiment; just print out the config for visual inspection",
     )
+    parser.add_argument(
+        "-d",
+        "--experiments_dir",
+        help="Set a directory for external experiments to be loaded from",
+        default=None,
+    )
 
     return parser
 

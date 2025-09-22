@@ -20,7 +20,7 @@ sys.path.insert(
 )
 
 
-from benchmarks.configs.load import load_configs
+from benchmarks.configs.load import load_configs, load_external_configs
 from benchmarks.configs.names import NAMES
 from tbp.monty.frameworks.config_utils.cmd_parser import create_cmd_parser
 from tbp.monty.frameworks.run_env import setup_env
@@ -39,6 +39,16 @@ if __name__ == "__main__":
         os.environ["MAGNUM_LOG"] = "quiet"
         os.environ["HABITAT_SIM_LOG"] = "quiet"
 
-    CONFIGS = load_configs(experiments)
+    if experiments:
+        CONFIGS = load_configs(experiments)
+        main(all_configs=CONFIGS, experiments=cmd_args.experiments)
+    elif cmd_args.experiments_dir:
+        print(f"Loading external experiments from {cmd_args.experiments_dir}")
 
-    main(all_configs=CONFIGS, experiments=cmd_args.experiments)
+        CONFIGS = load_external_configs(cmd_args.experiments_dir)
+        
+        print(f"Loaded experiments: {list(CONFIGS.keys())}")
+
+        main(all_configs=CONFIGS, experiments=CONFIGS.keys())
+
+    

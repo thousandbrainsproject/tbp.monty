@@ -40,6 +40,35 @@ def load_configs(experiments: list[str]) -> dict:
 
     return configs
 
+def load_external_configs(experiments_dir: str | None) -> dict:
+    """Load external configuration groups from a specified directory.
+
+    Args:
+        experiments_dir: The directory to load external experiments from.
+
+    Returns:
+        The imported configuration groups from the specified directory.
+    """
+    if experiments_dir is None:
+        return {}
+
+    import importlib.util
+    import sys
+    from pathlib import Path
+
+    configs = {}
+    experiments_path = Path(experiments_dir)
+    for py_file in experiments_path.glob("*.py"):
+        module_name = py_file.stem
+        spec = importlib.util.spec_from_file_location(module_name, str(py_file))
+        if spec and spec.loader:
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module
+            spec.loader.exec_module(module)
+            if hasattr(module, "CONFIGS"):
+                configs.update(getattr(module, "CONFIGS"))
+    return configs
+
 
 def load_config(experiment: str) -> dict:
     """Load the configuration group for the given experiment.
