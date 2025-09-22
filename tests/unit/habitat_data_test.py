@@ -127,9 +127,10 @@ class HabitatDataTest(unittest.TestCase):
         )
 
         # Create habitat env datasets with distant-agent action space
+        env_init_args = dict(agents=[self.camera_dist_config])
+        env = HabitatEnvironment(**env_init_args)
         env_interface_dist = EnvironmentDataLoader(
-            env_init_func=HabitatEnvironment,
-            env_init_args=dict(agents=[self.camera_dist_config]),
+            env,
             rng=rng,
             motor_system=motor_system_dist
         )
@@ -163,9 +164,12 @@ class HabitatDataTest(unittest.TestCase):
             np.all(camera_obs_dist[SENSORS[0]] == initial_camera_obs_dist[SENSORS[0]])
         )
 
-        env_interface_dist.close()
-        with self.assertRaises(Exception):  # noqa: B017
-            _ = env_interface_dist.__getitem__(action_space_dist.sample())
+        # TODO: move this check to a test of monty_experiment, which is now responsible
+        # for init'ing and closing the env. key point is to ensure the env interface
+        # can't get an item if the env isn't present
+        # env_interface_dist.close()
+        # with self.assertRaises(Exception):
+        # _ = env_interface_dist.__getitem__(action_space_dist.sample())
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
@@ -195,9 +199,10 @@ class HabitatDataTest(unittest.TestCase):
         )
 
         # Create habitat env datasets with absolute action space
+        env_init_args = dict(agents=[self.camera_abs_config])
+        env = HabitatEnvironment(**env_init_args)
         env_interface_abs = EnvironmentDataLoader(
-            env_init_func=HabitatEnvironment,
-            env_init_args=dict(agents=[self.camera_abs_config]),
+            env,
             rng=rng,
             motor_system=motor_system_abs,
         )
@@ -231,9 +236,12 @@ class HabitatDataTest(unittest.TestCase):
             np.all(camera_obs_abs[SENSORS[0]] == initial_camera_obs_abs[SENSORS[0]])
         )
 
-        env_interface_abs.close()
-        with self.assertRaises(Exception):  # noqa: B017
-            _ = env_interface_abs.__getitem__(action_space_abs.sample())
+        # TODO: move this check to a test of monty_experiment, which is now responsible
+        # for init'ing and closing the env. key point is to ensure the env interface
+        # can't get an item if the env isn't present
+        # env_interface_abs.close()
+        # with self.assertRaises(Exception):
+        # _ = env_interface_abs.__getitem__(action_space_abs.sample())
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
@@ -264,9 +272,10 @@ class HabitatDataTest(unittest.TestCase):
         )
 
         # Create habitat env datasets with distant-agent action space
+        env_init_args = dict(agents=[self.camera_surf_config])
+        env = HabitatEnvironment(**env_init_args)
         env_interface_surf = EnvironmentDataLoader(
-            env_init_func=HabitatEnvironment,
-            env_init_args=dict(agents=[self.camera_surf_config]),
+            env,
             rng=rng,
             motor_system=motor_system_surf
         )
@@ -301,9 +310,12 @@ class HabitatDataTest(unittest.TestCase):
             np.all(camera_obs_surf[SENSORS[0]] == initial_camera_obs_surf[SENSORS[0]])
         )
 
-        env_interface_surf.close()
-        with self.assertRaises(Exception):  # noqa: B017
-            _ = env_interface_surf.__getitem__(action_space_surf.sample())
+        # TODO: move this check to a test of monty_experiment, which is now responsible
+        # for init'ing and closing the env. key point is to ensure the env interface
+        # can't get an item if the env isn't present
+        # env_interface_surf.close()
+        # with self.assertRaises(Exception):
+        #  _ = env_interface_surf.__getitem__(action_space_surf.sample())
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
@@ -332,9 +344,11 @@ class HabitatDataTest(unittest.TestCase):
         motor_system_dist = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_config_dist.__dict__)
         )
+
+        env_init_args = dict(agents=[self.camera_dist_config])
+        env = HabitatEnvironment(**env_init_args)
         dataloader_dist = EnvironmentDataLoader(
-            env_init_func=HabitatEnvironment,
-            env_init_args=dict(agents=[self.camera_dist_config]),
+            env,
             motor_system=motor_system_dist,
             rng=rng
         )
@@ -372,9 +386,10 @@ class HabitatDataTest(unittest.TestCase):
         motor_system_abs = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_config_abs.__dict__)
         )
+        env_init_args = dict(agents=[self.camera_abs_config])
+        env = HabitatEnvironment(**env_init_args)
         dataloader_abs = EnvironmentDataLoader(
-            env_init_func=HabitatEnvironment,
-            env_init_args=dict(agents=[self.camera_abs_config]),
+            env,
             motor_system=motor_system_abs,
             rng=rng
         )
@@ -414,9 +429,10 @@ class HabitatDataTest(unittest.TestCase):
             policy=BasePolicy(rng=rng, **base_policy_config_surf.__dict__)
         )
 
+        env_init_args = dict(agents=[self.camera_surf_config])
+        env = HabitatEnvironment(**env_init_args)
         dataloader_surf = EnvironmentDataLoader(
-            env_init_func=HabitatEnvironment,
-            env_init_args=dict(agents=[self.camera_surf_config]),
+            env,
             motor_system=motor_system_surf,
             rng=rng
         )

@@ -205,15 +205,13 @@ class MontyExperiment:
         return model
 
     def init_env(self, env_init_func, env_init_args):
-        env = env_init_func(**env_init_args)
-        assert isinstance(env, EmbodiedEnvironment)
-
-        return env
+        self.env = env_init_func(**env_init_args)
+        assert isinstance(self.env, EmbodiedEnvironment)
 
     def load_dataloaders(self, config):
         # Initialize everything needed for dataloader
         env_interface_args = config["dataset_args"]
-        env = self.init_env(
+        self.init_env(
             env_interface_args["env_init_func"], env_interface_args["env_init_args"]
         )
 
@@ -221,7 +219,7 @@ class MontyExperiment:
         if config["experiment_args"]["do_train"]:
             train_dataloader_class = config["train_dataloader_class"]
             train_dataloader_args = dict(
-                env=env,
+                env=self.env,
                 transform=env_interface_args["transform"],
                 **config["train_dataloader_args"],
             )
@@ -236,7 +234,7 @@ class MontyExperiment:
         if config["experiment_args"]["do_eval"]:
             eval_dataloader_class = config["eval_dataloader_class"]
             eval_dataloader_args = dict(
-                env=env,
+                env=self.env,
                 transform=env_interface_args["transform"],
                 **config["eval_dataloader_args"],
             )
@@ -627,8 +625,12 @@ class MontyExperiment:
         if dataloader is not None and isinstance(
             self.dataloader, EnvironmentDataLoader
         ):
-            self.dataloader.close()
             self.dataloader = None
+
+        env = getattr(self, "env", None)
+        if env is not None:
+            env.close()
+            self.env = None
 
         # Close monty logging
         self.logger_handler.close(self.logger_args)
