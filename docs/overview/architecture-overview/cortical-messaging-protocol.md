@@ -25,6 +25,40 @@ The inputs and outputs of the system (raw sensory input to the SM and motor comm
 
 The lateral votes between learning modules communicate unions of possible poses and objects. They do not contain any information about "features" from the perspective of that learning module's level of hierarchical processing. In other words, while an LM's object ID might be a feature at higher levels of processing, lateral votes do not send information about the features which that learning module itself has received. We further note that the vote output from one LM can also include multiple CMP message packages, representing multiple possible hypotheses.
 
+## Unsupervised Association Learning Extensions
+
+For unsupervised learning scenarios, the CMP has been extended to support object ID association learning without requiring predefined object labels. This extension uses the existing `non_morphological_features` field in the `State` class to transmit additional metadata:
+
+### Enhanced Vote Messages
+
+In association-enabled learning modules, votes include:
+
+- **Object ID**: The sender's unique object identifier (`object_id`)
+- **Sender Identification**: Use the standard CMP `State.sender_id` to identify the sending LM
+- **Evidence Strength**: Explicit confidence values (`evidence_strength`)
+- **Association Metadata**: Temporal and spatial context for association learning
+
+```python
+# Example association-enhanced vote
+non_morphological_features={
+    "object_id": "visual_object_1",
+    "evidence_strength": 0.85,
+    "association_metadata": {
+        "temporal_context": 15,
+        "num_observations": 10
+    }
+}
+```
+
+This enables learning modules to discover that different object IDs (e.g., `visual_object_1` and `touch_object_3`) refer to the same physical object through co-occurrence patterns, spatial consistency, and temporal relationships.
+
+### Backward Compatibility
+
+These CMP extensions maintain full compatibility with existing learning modules:
+- Standard modules ignore the additional `non_morphological_features` content
+- Association-enabled modules extract the extra information when available
+- No changes to the core `State` class structure are required
+
 At no point do we communicate structural model information between learning modules. What happens within a learning module does not get communicated to any other modules and we never share the models stored in an LMs memory.
 
 Communication between components (SMs, LMs, and motor systems) happens in a common reference frame (e.g., relative to the body). This makes it possible for all components to meaningfully interpret the pose information they receive. Internally, LMs then calculate displacements between consecutive poses and map them into the model's reference frame. This makes it possible to detect objects independently of their pose.
