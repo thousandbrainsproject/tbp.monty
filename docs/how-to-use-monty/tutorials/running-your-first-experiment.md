@@ -14,7 +14,7 @@ In this tutorial we will introduce the basic mechanics of Monty experiment confi
 
 > [!NOTE]
 >
-> Below intructions assume you'll be running an experiment within the checked out `tbp.monty` repository. This is the recommended way to start. Once you are familiar with Monty, if you'd rather setup your experiment in your own repository, then take a look at [Running An Experiment From A Different Repository](./running-an-experiment-from-a-different-repo.md).
+> Below instructions assume you'll be running an experiment within the checked out `tbp.monty` repository. This is the recommended way to start. Once you are familiar with Monty, if you'd rather setup your experiment in your own repository, then take a look at [Running An Experiment From A Different Repository](./running-an-experiment-from-a-different-repo.md).
 
 To follow along, copy this code into the `benchmarks/configs/my_experiments.py` file.
 
