@@ -22,7 +22,7 @@ from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
 from tbp.monty.frameworks.config_utils.config_args import MontyArgs
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
-    EvalExperimentArgs,
+    ExperimentArgs,
     RandomRotationObjectInitializer,
     get_object_names_by_idx,
 )
@@ -175,12 +175,12 @@ def create_experiment_config(monty_config, logging_config=None):
             "run_name": "test_run",
             "output_dir": os.getenv("MONTY_LOGS", "~/tbp/results/monty/"),
             "wandb_handlers": [],
-            "monty_handlers": [],
+            "monty_handlers": [BasicCSVStatsHandler],
         }
 
     return {
         "experiment_class": MontyObjectRecognitionExperiment,
-        "experiment_args": EvalExperimentArgs(
+        "experiment_args": ExperimentArgs(
             n_eval_epochs=1,
             max_eval_steps=len(test_objects),
         ),

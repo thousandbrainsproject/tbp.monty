@@ -736,6 +736,18 @@ def get_stats_per_lm(model, target):
         else:
             lm_stats = add_pose_lm_episode_stats(lm, lm_stats)
         lm_stats = add_policy_episode_stats(lm, lm_stats)
+
+        # Include association learning statistics if available
+        if hasattr(lm, "get_association_statistics"):
+            try:
+                assoc = lm.get_association_statistics()
+                # Simple, CSV-friendly columns
+                lm_stats["assoc_total"] = assoc.get("total_associations", 0)
+                lm_stats["assoc_strong"] = assoc.get("strong_associations", 0)
+                lm_stats["assoc_avg_strength"] = assoc.get("average_strength", 0.0)
+            except (KeyError, AttributeError, TypeError, ValueError) as e:
+                logger.debug(f"Error collecting association stats for LM_{i}: {e}")
+
         lm_stats["monty_steps"] = model.episode_steps
         lm_stats["monty_matching_steps"] = model.matching_steps
         performance_dict[f"LM_{i}"] = lm_stats

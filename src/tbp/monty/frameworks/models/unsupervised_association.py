@@ -217,27 +217,48 @@ def _detect_periodicity(temporal_context: Any) -> float:
     Returns:
         float: Periodicity score in [0, 1].
     """
-    if len(temporal_context) < 3:
+    # Need enough timestamps to estimate periodicity
+    try:
+        arr = np.asarray(temporal_context, dtype=float).ravel()
+    except (ValueError, TypeError, RuntimeError, FloatingPointError) as e:
+        logger.debug(
+            "Error converting temporal_context to array for periodicity: %s", e
+        )
+        return 0.0
+
+    if arr.size < 3:
         return 0.0
 
     try:
+        # Sort to ensure non-negative intervals even if input is unordered
+        arr = np.sort(arr)
+
         # Calculate intervals between consecutive associations
-        intervals = np.diff(temporal_context)
-        if len(intervals) < 2:
+        intervals = np.diff(arr)
+        if intervals.size < 2:
             return 0.0
-        interval_std = float(np.std(intervals))
+
+        # Filter out any non-finite values defensively
+        intervals = intervals[np.isfinite(intervals)]
+        if intervals.size < 2:
+            return 0.0
+
         interval_mean = float(np.mean(intervals))
-
-        if interval_mean == 0:
+        if abs(interval_mean) < 1e-12:
+            # Mean near zero -> unstable CV; treat as no periodicity
             return 0.0
 
-        # Lower coefficient of variation indicates more regular pattern
-        coefficient_of_variation = interval_std / interval_mean
-        import math
+        interval_std = float(np.std(intervals))
 
-        periodicity_score = math.exp(-float(coefficient_of_variation))
+        # Coefficient of variation should be non-negative; use |mean|
+        cv = interval_std / abs(interval_mean)
+        if not np.isfinite(cv):
+            return 0.0
 
-        return float(periodicity_score)
+        # Map lower CV (more regular) to higher score in (0, 1]
+        periodicity_score = float(np.exp(-cv))
+        # Clamp to [0, 1]
+        return float(np.clip(periodicity_score, 0.0, 1.0))
 
     except (ValueError, TypeError, FloatingPointError, RuntimeError) as e:
         logger.debug("Error detecting periodicity: %s", e)

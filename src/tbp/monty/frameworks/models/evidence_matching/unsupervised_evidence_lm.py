@@ -262,21 +262,72 @@ class UnsupervisedEvidenceGraphLM(EvidenceGraphLM):
         return 0
 
     def _extract_association_data_from_votes(self, vote_data):
-        """Extract association data from CMP-compliant votes.
+        """Extract association data from votes for association learning.
 
-        Converts from the new CMP format (with object IDs in non_morphological_features)
-        to the format expected by the association learning system.
-
-        Args:
-            vote_data: List of votes from other learning modules (CMP format)
+        Accepts both formats:
+        - CMP-style nested structures (list/dict of State) with object IDs in
+          non_morphological_features → flattened via _flatten_votes_for_association
+        - Dict format produced by _combine_votes: {object_id: [State, ...]}
 
         Returns:
             Dictionary in format expected by association learning:
             {sender_id: {object_id: vote_info}}
         """
-        if not isinstance(vote_data, list):
-            return {}
-        return self._flatten_votes_for_association(vote_data)
+        # Handle dict formats
+        if isinstance(vote_data, dict):
+            # Case A: nested dict keyed by sender, e.g.
+            # {"lm_1": {object_id: [State, ...]}, ...}
+            # Produced by unsupervised_model.py when distributing votes.
+            if all(isinstance(v, dict) for v in vote_data.values()):
+                # Normalize inner values to be list or single State;
+                # keep structure as expected
+                normalized: Dict = {}
+                for sender_id, obj_votes in vote_data.items():
+                    if not isinstance(obj_votes, dict):
+                        continue
+                    normalized[sender_id] = {}
+                    for object_id, votes in obj_votes.items():
+                        if votes is None:
+                            continue
+                        normalized[sender_id][object_id] = (
+                            votes if isinstance(votes, list) else [votes]
+                        )
+                return normalized
+
+            # Case B: dict from _combine_votes → {object_id: [State, ...]}
+            association_data: Dict = {}
+            for object_id, votes in vote_data.items():
+                if votes is None:
+                    continue
+                votes_list = votes if isinstance(votes, list) else [votes]
+                for v in votes_list:
+                    # Try to get sender_id from the State
+                    sender_id = getattr(v, "sender_id", None)
+                    if sender_id is None:
+                        nmf = getattr(v, "non_morphological_features", None)
+                        if isinstance(nmf, dict):
+                            sender_id = nmf.get("sender_id")
+                    if sender_id is None:
+                        # Skip entries without identifiable sender
+                        continue
+
+                    sender_bucket = association_data.setdefault(sender_id, {})
+                    if object_id in sender_bucket:
+                        existing = sender_bucket[object_id]
+                        if isinstance(existing, list):
+                            existing.append(v)
+                        else:
+                            sender_bucket[object_id] = [existing, v]
+                    else:
+                        # Start as list to keep shape consistent for downstream
+                        sender_bucket[object_id] = [v]
+            return association_data
+
+        # Handle CMP-style list input by flattening
+        if isinstance(vote_data, list):
+            return self._flatten_votes_for_association(vote_data)
+
+        return {}
 
     @staticmethod
     def _flatten_votes_for_association(vote_data) -> Dict:

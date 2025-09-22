@@ -65,6 +65,7 @@ The experiments track several key metrics:
 - **Average Strength**: Mean association strength across all pairs
 - **Spatial Consistency**: How well spatial relationships align across modalities
 - **Temporal Patterns**: Regularity and clustering of association events
+- **Confidence Score**: Time-weighted evidence for a candidate association, derived from CMP votes. We prioritize `non_morphological_features["evidence_strength"]`; if missing, we fall back to the vote’s `confidence` field. These scores gate co-occurrence logging (via `association_threshold`), accumulate with temporal decay, and contribute as one component to the final association strength (alongside co-occurrence, spatial consistency, and temporal recency). They are not the same as the final association strength.
 
 ### Log Analysis
 

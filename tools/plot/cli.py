@@ -15,7 +15,8 @@ from pathlib import Path
 monty_root = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(monty_root))
 
-from tools.plot import objects_evidence_over_time, pose_error_over_time  # noqa: E402
+# The sys.path modification above is needed to allow running the tool as a script.
+
 
 
 def main():
@@ -27,6 +28,13 @@ def main():
         dest="debug",
     )
 
+    # Import after path adjustment to satisfy E402 and keep import local to CLI runtime
+    from tools.plot import (
+        association_metrics,
+        objects_evidence_over_time,
+        pose_error_over_time,
+    )
+
     parser = argparse.ArgumentParser(
         description="Plot a figure", parents=[parent_parser]
     )
@@ -34,6 +42,7 @@ def main():
 
     objects_evidence_over_time.add_subparser(subparsers, parent_parser)
     pose_error_over_time.add_subparser(subparsers, parent_parser)
+    association_metrics.add_subparser(subparsers, parent_parser)
 
     args = parser.parse_args()
 
