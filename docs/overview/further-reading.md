@@ -304,3 +304,47 @@ Below is a great introductory video of Jeff Hawkins presenting an overview of ou
   "typeOfEmbed": "youtube"
 }
 [/block]
+
+
+## Community Content
+
+This section contains a list of articles, blogs and videos produced by the community.  Click the "Make a Contribution" button at the bottom of the page to open a PR to add your own content here.
+
+### Blogs
+
+**Active Learning Machines: What Thousand Brains Theory and Piaget Reveal About True Intelligence**, By Greg Robinson
+<https://gregrobison.medium.com/active-learning-machines-what-thousand-brains-theory-and-piaget-reveal-about-true-intelligence-304b5c9aa82e>
+
+**Mapping Reality: From Ancient Navigation to AI’s Spatial Innovation**, By Greg Robinson
+<https://gregrobison.medium.com/mapping-reality-from-ancient-navigation-to-ais-spatial-innovation-da1d2d2a8659>
+
+**Learning to Forget: Why Catastrophic Memory Loss Is AI’s Most Expensive Problem**, By Greg Robinson
+<https://gregrobison.medium.com/learning-to-forget-why-catastrophic-memory-loss-is-ais-most-expensive-problem-d764f5ee36b7>
+
+**Hands-On Intelligence: Why the Future of AI Moves Like a Curious Toddler, Not a Supercomputer**, By Greg Robinson
+<https://gregrobison.medium.com/hands-on-intelligence-why-the-future-of-ai-moves-like-a-curious-toddler-not-a-supercomputer-8a48b67d0eb6>
+
+**Sensorimotor Intelligence: The Thousand Brains Pathway to More Human-Like AI**, By Greg Robinson
+<https://gregrobison.medium.com/sensorimotor-intelligence-the-thousand-brains-pathway-to-more-human-like-ai-a4887320100a>
+
+**Neural Anarchy: What Happens When Psychedelics Hack Your Brain’s Democratic Process**, By Greg Robinson
+<https://gregrobison.medium.com/neural-anarchy-what-happens-when-psychedelics-hack-your-brains-democratic-process-4ce3060199c2>
+
+
+### Videos
+
+**Cortical Columns**, By Artem Kirsanov
+
+[block:embed]
+{
+  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2FowRC8sLSb64%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DowRC8sLSb64&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2FowRC8sLSb64%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
+  "url": "https://www.youtube.com/watch?v=owRC8sLSb64",
+  "title": "2025/02 - Cortical Circuit Overview",
+  "favicon": "https://www.youtube.com/favicon.ico",
+  "image": "https://i.ytimg.com/vi/owRC8sLSb64/hqdefault.jpg",
+  "provider": "https://www.youtube.com/",
+  "href": "https://www.youtube.com/watch?v=owRC8sLSb64",
+  "typeOfEmbed": "youtube"
+}
+[/block]
+
