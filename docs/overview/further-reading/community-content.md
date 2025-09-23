@@ -1,6 +1,5 @@
 ---
 title: Community Content
-description: Here we put a list of articles, blogs and videos that have been produced by the community.
 ---
 
 This section contains a list of articles, blogs and videos produced by the community.  Click the "Make a Contribution" button at the bottom of the page to open a PR to add your own content here.
