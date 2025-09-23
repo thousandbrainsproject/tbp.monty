@@ -18,6 +18,7 @@
 - [faq-thousand-brains-project](overview/faq-thousand-brains-project.md)
 - [glossary](overview/glossary.md)
 - [further-reading](overview/further-reading.md)
+  - [community-content](overview/further-reading/community-content.md)
 
 # how-to-use-monty: How to Use Monty
 - [getting-started](how-to-use-monty/getting-started.md)
