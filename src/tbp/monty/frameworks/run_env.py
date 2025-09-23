@@ -12,9 +12,11 @@ import os
 from pathlib import Path
 
 
-def setup_env(monty_logs_dir_default: str = "~/tbp/results/monty/",
-              monty_models_dir_default: str = "~/tbp/results/monty/",
-              monty_data_dir_default: str = "~/tbp/data"):
+def setup_env(
+    monty_logs_dir_default: str = "~/tbp/results/monty/",
+    monty_models_dir_default: str = "~/tbp/results/monty/",
+    monty_data_dir_default: str = "~/tbp/data",
+):
     """Setup environment variables for Monty.
 
     Args:
