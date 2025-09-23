@@ -1,8 +1,8 @@
 ---
-title: Community Content
+title: Community and Coverage
 ---
 
-This section contains a list of articles, blogs and videos produced by the community.  Click the "Make a Contribution" button at the bottom of the page to open a PR to add your own content here.
+This section contains a list of articles, blogs and videos related to or about the Thousand Brains Project.  Click the "Make a Contribution" button at the bottom of the page to open a PR to add your own content here.
 
 # Blogs
 
