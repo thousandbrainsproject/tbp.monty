@@ -337,13 +337,13 @@ This section contains a list of articles, blogs and videos produced by the commu
 
 [block:embed]
 {
-  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2FowRC8sLSb64%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DowRC8sLSb64&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2FowRC8sLSb64%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
-  "url": "https://www.youtube.com/watch?v=owRC8sLSb64",
+  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2FDykkubb-Qus%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DDykkubb-Qus&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2FDykkubb-Qus%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
+  "url": "https://www.youtube.com/watch?v=Dykkubb-Qus",
   "title": "2025/02 - Cortical Circuit Overview",
   "favicon": "https://www.youtube.com/favicon.ico",
-  "image": "https://i.ytimg.com/vi/owRC8sLSb64/hqdefault.jpg",
+  "image": "https://i.ytimg.com/vi/Dykkubb-Qus/hqdefault.jpg",
   "provider": "https://www.youtube.com/",
-  "href": "https://www.youtube.com/watch?v=owRC8sLSb64",
+  "href": "https://www.youtube.com/watch?v=Dykkubb-Qus",
   "typeOfEmbed": "youtube"
 }
 [/block]
