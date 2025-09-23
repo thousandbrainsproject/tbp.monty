@@ -130,9 +130,7 @@ class HabitatDataTest(unittest.TestCase):
         env_init_args = dict(agents=[self.camera_dist_config])
         env = HabitatEnvironment(**env_init_args)
         env_interface_dist = EnvironmentDataLoader(
-            env,
-            rng=rng,
-            motor_system=motor_system_dist
+            env, rng=rng, motor_system=motor_system_dist
         )
 
         # Check distant-agent action space
@@ -275,9 +273,7 @@ class HabitatDataTest(unittest.TestCase):
         env_init_args = dict(agents=[self.camera_surf_config])
         env = HabitatEnvironment(**env_init_args)
         env_interface_surf = EnvironmentDataLoader(
-            env,
-            rng=rng,
-            motor_system=motor_system_surf
+            env, rng=rng, motor_system=motor_system_surf
         )
 
         # Check surface-agent action space
@@ -286,7 +282,6 @@ class HabitatDataTest(unittest.TestCase):
         self.assertIsInstance(action_space_surf, ActionSpace)
         self.assertCountEqual(action_space_surf, EXPECTED_ACTIONS_SURF)
         self.assertIn(action_space_surf.sample(), EXPECTED_ACTIONS_SURF)
-
 
         # Check if datasets are getting observations from simulator
         mock_sim_surf.get_sensor_observations.side_effect = self.mock_observations
@@ -348,9 +343,7 @@ class HabitatDataTest(unittest.TestCase):
         env_init_args = dict(agents=[self.camera_dist_config])
         env = HabitatEnvironment(**env_init_args)
         dataloader_dist = EnvironmentDataLoader(
-            env,
-            motor_system=motor_system_dist,
-            rng=rng
+            env, motor_system=motor_system_dist, rng=rng
         )
 
         for i, item in enumerate(dataloader_dist):
@@ -389,9 +382,7 @@ class HabitatDataTest(unittest.TestCase):
         env_init_args = dict(agents=[self.camera_abs_config])
         env = HabitatEnvironment(**env_init_args)
         dataloader_abs = EnvironmentDataLoader(
-            env,
-            motor_system=motor_system_abs,
-            rng=rng
+            env, motor_system=motor_system_abs, rng=rng
         )
         for i, item in enumerate(dataloader_abs):
             camera_obs_abs = item[AGENT_ID][SENSOR_ID]
@@ -432,9 +423,7 @@ class HabitatDataTest(unittest.TestCase):
         env_init_args = dict(agents=[self.camera_surf_config])
         env = HabitatEnvironment(**env_init_args)
         dataloader_surf = EnvironmentDataLoader(
-            env,
-            motor_system=motor_system_surf,
-            rng=rng
+            env, motor_system=motor_system_surf, rng=rng
         )
         for i, item in enumerate(dataloader_surf):
             camera_obs_surf = item[AGENT_ID][SENSOR_ID]
