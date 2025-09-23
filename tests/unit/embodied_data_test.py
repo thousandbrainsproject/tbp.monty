@@ -140,11 +140,11 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
     def close(self):
         self._current_state = None
 
+
 class FakeOmniglotEnvironment(FakeEnvironmentAbs):
     def __init__(self):
-        self.alphabet_names = [
-            "name_one", "name_two", "name_three"
-        ]
+        self.alphabet_names = ["name_one", "name_two", "name_three"]
+
 
 class EmbodiedDataTest(unittest.TestCase):
     def test_embodied_dataset_dist(self):
@@ -193,7 +193,7 @@ class EmbodiedDataTest(unittest.TestCase):
         # can't get an item if the env isn't present
         # env_interface_dist.close()
         # with self.assertRaises(Exception):
-            # obs_dist, _ = env_interface_dist.__getitem__(motor_system_dist())
+        # obs_dist, _ = env_interface_dist.__getitem__(motor_system_dist())
 
     def test_embodied_dataset_abs(self):
         rng = np.random.RandomState(42)
@@ -255,9 +255,7 @@ class EmbodiedDataTest(unittest.TestCase):
         )
         env = FakeEnvironmentRel()
         env_interface_dist = EnvironmentDataLoader(
-            env=env,
-            rng=rng,
-            motor_system=motor_system_dist
+            env=env, rng=rng, motor_system=motor_system_dist
         )
 
         for i, item in enumerate(env_interface_dist):
@@ -280,9 +278,7 @@ class EmbodiedDataTest(unittest.TestCase):
         )
         env = FakeEnvironmentAbs()
         env_interface_abs = EnvironmentDataLoader(
-            env=env,
-            rng=rng,
-            motor_system=motor_system_abs
+            env=env, rng=rng, motor_system=motor_system_abs
         )
 
         for i, item in enumerate(env_interface_abs):
@@ -391,7 +387,7 @@ class EmbodiedDataTest(unittest.TestCase):
             rng=rng,
             motor_system=motor_system_rel,
             scenes=[0, 0],
-            versions=[0, 1]
+            versions=[0, 1],
         )
         dataloader_rel.pre_episode()
         initial_state = next(dataloader_rel)
@@ -462,9 +458,7 @@ class EmbodiedDataTest(unittest.TestCase):
         env_init_args = {"patch_size": patch_size, "data_path": data_path}
         env = SaccadeOnImageFromStreamEnvironment(**env_init_args)
         dataloader_rel = SaccadeOnImageFromStreamDataLoader(
-            env=env,
-            rng=rng,
-            motor_system=motor_system_rel
+            env=env, rng=rng, motor_system=motor_system_rel
         )
         dataloader_rel.pre_episode()
         initial_state = next(dataloader_rel)
