@@ -40,6 +40,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         config = config_to_dict(config)
         output_dir = config["logging_config"]["output_dir"]
         config["logging_config"]["output_dir"] = os.path.join(output_dir, "pretrained")
+        self.first_epoch_object_location = {}
         super().__init__(config)
 
     def setup_experiment(self, config):
@@ -73,7 +74,9 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         for lm in self.model.learning_modules:
             lm.detected_object = target["object"]
             lm.buffer.stats["possible_matches"] = [target["object"]]
-            lm.buffer.stats["detected_location_on_model"] = np.array(target["position"])
+            lm.buffer.stats["detected_location_on_model"] = (
+                self.first_epoch_object_location[target["object"]]
+            )
             lm.buffer.stats["detected_location_rel_body"] = np.array(target["position"])
             lm.buffer.stats["detected_rotation"] = target["euler_rotation"]
             lm.detected_rotation_r = Rotation.from_quat(target["quat_rotation"]).inv()
@@ -115,12 +118,23 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
         self.logger_handler.pre_episode(self.logger_args)
 
+        # if it's the first time this object is shown, save it's location. This is
+        # needed to provide the correct offset from the learned model when supervising.
+        current_object = self.dataloader.primary_target["object"]
+        if current_object not in self.first_epoch_object_location:
+            self.first_epoch_object_location[current_object] = (
+                self.dataloader.primary_target["position"]
+            )
+
     def post_epoch(self):
         """Post epoch without saving state_dict."""
         self.logger_handler.post_epoch(self.logger_args)
 
         self.train_epochs += 1
         self.train_dataloader.post_epoch()
+
+    def pre_epoch(self):
+        super().pre_epoch()
 
     def train(self):
         """Save state_dict at the end of training."""
