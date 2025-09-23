@@ -40,7 +40,7 @@ def find_markdown_files(
         List of Path objects to markdown files
     """
     ignore_dirs = DEFAULT_IGNORE_DIRS if ignore_dirs is None else ignore_dirs
-    ignore_files = ignore_files or DEFAULT_IGNORE_FILES
+    ignore_files = DEFAULT_IGNORE_FILES if ignore_files is None else ignore_files
 
     md_files = []
     for root, _, files in os.walk(folder):
