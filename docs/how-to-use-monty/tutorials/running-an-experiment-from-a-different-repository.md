@@ -6,7 +6,7 @@ If you have your own repository and want to run your own experiment or a benchma
 
 > ![NOTE]
 >
-> We have a [tbp.monty_project_template](https://github.com/thousandbrainsproject/tbp.monty_project_template) template repository you can use to quickly use [tbp.monty](https://github.com/thousandbrainsproject/tbp.monty) for your project, prototype, or paper.
+> We have a [tbp.monty_project_template](https://github.com/thousandbrainsproject/tbp.monty_project_template) template repository, so that you can quickly use [tbp.monty](https://github.com/thousandbrainsproject/tbp.monty) for your project, prototype, or paper.
 
 You have the option of running everything from a single script file. The general setup is:
 
