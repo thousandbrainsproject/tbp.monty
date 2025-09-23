@@ -4,7 +4,7 @@ title: Running An Experiment From A Different Repository
 
 If you have your own repository and want to run your own experiment or a benchmark, you do not need to replicate the `tbp.monty` benchmarks setup.
 
-> ![NOTE]
+> [!NOTE]
 >
 > We have a [tbp.monty_project_template](https://github.com/thousandbrainsproject/tbp.monty_project_template) template repository, so that you can quickly use [tbp.monty](https://github.com/thousandbrainsproject/tbp.monty) for your project, prototype, or paper.
 
