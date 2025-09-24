@@ -29,19 +29,19 @@ This limitation contradicts the goal of unsupervised learning and prevents Monty
 ### Phase 2: Modified Voting Protocol
 
 1. **Enhanced Vote Messages**
-   - Include sender LM ID, confidence scores, spatial context
-   - Send association metadata alongside traditional vote data
+   - Reuse existing CMP vote fields for sender LM ID, confidence/evidence, and spatial pose data
+   - Optionally attach `association_metadata` that mirrors those fields for the associator; no new CMP primitives are introduced
 
-2. **Probabilistic Vote Mapping**
-   - Map incoming votes to local object IDs using learned associations
-   - Weight votes by association confidence
-   - Handle uncertainty in associations gracefully
+2. **Weighted Vote Mapping**
+   - Map incoming votes to local object IDs using learned association strengths
+   - Reweight votes by those strengths before combining them with local evidence
+   - Handle uncertainty gracefully via decayed confidence histories, temporal/spatial consistency checks, and minimum-strength thresholds
 
 ### Phase 3: Consensus Building
 
-1. **Multi-Modal Hypothesis Clustering**
-   - Group hypotheses from different LMs based on spatial/temporal consistency
-   - Use clustering to identify likely same-object hypotheses
+1. **Hypothesis Grouping**
+   - Rank hypotheses from different LMs using association strength plus spatial/temporal consistency heuristics
+   - Identify likely same-object hypotheses by ranking them with association strength plus spatial/temporal heuristics, while keeping learning modules’ internal voting code unchanged
 
 2. **Dynamic Association Updates**
    - Continuously refine associations as more evidence is gathered
@@ -60,9 +60,9 @@ This limitation contradicts the goal of unsupervised learning and prevents Monty
 - Add association learning logic
 
 ### Step 3: Enhanced Voting Protocol
-- Modify vote data structures
-- Implement probabilistic vote mapping
-- Add association confidence calculations
+- Ensure vote data structures expose existing CMP spatial fields and association metadata helper
+- Implement weighted vote mapping based on association strengths
+- Add association confidence calculations (co-occurrence, spatial, temporal weighting)
 
 ### Step 4: Experimental Validation
 - Create test scenarios for cross-modal learning
@@ -96,7 +96,7 @@ This limitation contradicts the goal of unsupervised learning and prevents Monty
 1. **Hierarchical Associations**: Part-whole relationships across modalities
 2. **Temporal Sequence Learning**: Dynamic object and scene understanding
 3. **Language Grounding**: Associate learned words with grounded objects
-4. **Advanced Clustering**: More sophisticated hypothesis grouping algorithms
+4. **Richer Hypothesis Grouping**: Explore graph-based or probabilistic grouping atop the learned association strengths once the foundational pipeline is validated
 
 ## Conclusion
 
