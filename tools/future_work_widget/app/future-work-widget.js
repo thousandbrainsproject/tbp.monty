@@ -1,23 +1,12 @@
 
-const CONSTANTS = {
-  URLs: {
-    DOCS_BASE: 'https://thousandbrainsproject.readme.io/docs/',
-    GITHUB_EDIT_BASE: 'https://github.com/thousandbrainsproject/tbp.monty/edit/main/',
-    GITHUB_AVATAR: 'https://github.com'
-  },
-  ICONS: {
-    EXTERNAL_LINK: 'fa-external-link-alt',
-    EDIT: 'fa-pencil-alt'
-  },
-  CSS_CLASSES: {
-    BADGE: 'badge',
-    BADGE_SKILLS: 'badge-skills',
-    WRAP_TEXT: 'wrap-text'
-  },
-  STATUS: {
-    IN_PROGRESS: 'in-progress'
-  }
-};
+const DOCS_BASE_URL = 'https://thousandbrainsproject.readme.io/docs/';
+const GITHUB_EDIT_BASE_URL = 'https://github.com/thousandbrainsproject/tbp.monty/edit/main/';
+const GITHUB_AVATAR_URL = 'https://github.com';
+const EXTERNAL_LINK_ICON = 'fa-external-link-alt';
+const EDIT_ICON = 'fa-pencil-alt';
+const BADGE_CLASS = 'badge';
+const BADGE_SKILLS_CLASS = 'badge-skills';
+const IN_PROGRESS_STATUS = 'in-progress';
 
 
 const SearchManager = {
@@ -50,23 +39,23 @@ const ColumnFormatters = {
       .map(item => `<span class="${cssClass}" onclick="SearchManager.addToSearch('${item.replace(/'/g, "\\'")}')">${item}</span>`)
       .join(' ');
   },
-  formatLinkColumn(cell, icon = CONSTANTS.ICONS.EXTERNAL_LINK, urlPrefix = '') {
+  formatLinkColumn(cell, icon = EXTERNAL_LINK_ICON, urlPrefix = '') {
     const value = cell.getValue();
     if (!value) return '';
 
     const url = urlPrefix ? `${urlPrefix}${value}` : value;
     return `<a href="${url}" target="_blank" rel="noopener noreferrer" title="${url}"><i class="${icon}"></i></a>`;
   },
-  formatTagsColumn: (cell) => ColumnFormatters.formatArrayOrStringColumn(cell.getValue(), CONSTANTS.CSS_CLASSES.BADGE),
-  formatSkillsColumn: (cell) => ColumnFormatters.formatArrayOrStringColumn(cell.getValue(), CONSTANTS.CSS_CLASSES.BADGE_SKILLS),
+  formatTagsColumn: (cell) => ColumnFormatters.formatArrayOrStringColumn(cell.getValue(), BADGE_CLASS),
+  formatSkillsColumn: (cell) => ColumnFormatters.formatArrayOrStringColumn(cell.getValue(), BADGE_SKILLS_CLASS),
   formatSizeColumn(cell) {
     const value = (cell.getValue() || '').trim().toLowerCase();
     return value
       ? `<span class="badge badge-size-${value}" onclick="SearchManager.addToSearch('${value}')">${value}</span>`
       : '';
   },
-  formatSlugLinkColumn: (cell) => ColumnFormatters.formatLinkColumn(cell, CONSTANTS.ICONS.EXTERNAL_LINK, CONSTANTS.URLs.DOCS_BASE),
-  formatEditLinkColumn: (cell) => ColumnFormatters.formatLinkColumn(cell, CONSTANTS.ICONS.EDIT, CONSTANTS.URLs.GITHUB_EDIT_BASE),
+  formatSlugLinkColumn: (cell) => ColumnFormatters.formatLinkColumn(cell, EXTERNAL_LINK_ICON, DOCS_BASE_URL),
+  formatEditLinkColumn: (cell) => ColumnFormatters.formatLinkColumn(cell, EDIT_ICON, GITHUB_EDIT_BASE_URL),
   formatTitleWithLinksColumn(cell) {
     const rowData = cell.getRow().getData();
     const title = cell.getValue() || '';
@@ -76,13 +65,13 @@ const ColumnFormatters = {
     let result = title;
 
     if (slug) {
-      const docsUrl = `${CONSTANTS.URLs.DOCS_BASE}${slug}`;
+      const docsUrl = `${DOCS_BASE_URL}${slug}`;
       result = `<a href="${docsUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: inherit;">${title}</a>`;
     }
 
     if (path) {
-      const editUrl = `${CONSTANTS.URLs.GITHUB_EDIT_BASE}${path}`;
-      result = `<a href="${editUrl}" style="margin-right:5px;" target="_blank" rel="noopener noreferrer" title="Edit on GitHub"><i class="fas ${CONSTANTS.ICONS.EDIT}"></i></a>${result}`;
+      const editUrl = `${GITHUB_EDIT_BASE_URL}${path}`;
+      result = `<a href="${editUrl}" style="margin-right:5px;" target="_blank" rel="noopener noreferrer" title="Edit on GitHub"><i class="fas ${EDIT_ICON}"></i></a>${result}`;
     }
 
     return `<div style="margin-right: 10px;">${result}</div>`;
@@ -99,13 +88,13 @@ const ColumnFormatters = {
       : owner.split(',').map(u => u.trim()).filter(Boolean);
 
     const avatars = usernames
-      .map(username => `<img src="${CONSTANTS.URLs.GITHUB_AVATAR}/${encodeURIComponent(username)}.png"
+      .map(username => `<img src="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}.png"
                              width="16" height="16"
                              style="vertical-align:middle;border-radius:2px;margin-left:5px;"
                              alt="${username}"/>`)
       .join(' ');
 
-    return status.toLowerCase() === CONSTANTS.STATUS.IN_PROGRESS
+    return status.toLowerCase() === IN_PROGRESS_STATUS
       ? avatars
       : status + avatars;
   },
@@ -115,7 +104,7 @@ const ColumnFormatters = {
 
     const isHttpUrl = /^https?:/.test(value.trim());
     return isHttpUrl
-      ? `<a href="${value}" target="_blank" rel="noopener noreferrer">RFC <i class="fas ${CONSTANTS.ICONS.EXTERNAL_LINK}"></i></a>`
+      ? `<a href="${value}" target="_blank" rel="noopener noreferrer">RFC <i class="fas ${EXTERNAL_LINK_ICON}"></i></a>`
       : value;
   }
 };
@@ -139,8 +128,8 @@ const TableConfig = {
       { title: 'Estimated Scope', field: 'estimated-scope', formatter: ColumnFormatters.formatSizeColumn },
       { title: 'RFC', field: 'rfc', formatter: ColumnFormatters.formatRfcColumn },
       { title: 'Status', field: 'status', formatter: ColumnFormatters.formatStatusColumn },
-      { title: 'Tags', field: 'tags', formatter: ColumnFormatters.formatTagsColumn, widthGrow: 2, cssClass: CONSTANTS.CSS_CLASSES.WRAP_TEXT },
-      { title: 'Skills', field: 'skills', formatter: ColumnFormatters.formatSkillsColumn, widthGrow: 2, cssClass: CONSTANTS.CSS_CLASSES.WRAP_TEXT }
+      { title: 'Tags', field: 'tags', formatter: ColumnFormatters.formatTagsColumn, widthGrow: 2, cssClass: 'wrap-text' },
+      { title: 'Skills', field: 'skills', formatter: ColumnFormatters.formatSkillsColumn, widthGrow: 2, cssClass: 'wrap-text' }
     ];
   },
 
