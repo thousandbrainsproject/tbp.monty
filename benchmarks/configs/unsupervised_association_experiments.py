@@ -556,7 +556,6 @@ def create_5lm_77obj_benchmark_config():
                 "patch_2": "agent_id_0",
                 "patch_3": "agent_id_0",
                 "patch_4": "agent_id_0",
-                "view_finder": "agent_id_0",
             },
             "sm_to_lm_matrix": [[0], [1], [2], [3], [4]],
             "lm_to_lm_matrix": [[], [], [], [], []],

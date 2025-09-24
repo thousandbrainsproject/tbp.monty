@@ -26,7 +26,7 @@ For more details, we also encourage checking out our [Future Work Roadmap](../fu
 - How do we know the scale of an object?
 
 ## Learning
-- How does it work that I can learn an object using vision but then recognize it using touch? (in Monty the Sensor Module can simply be switched out but how would it work in the brain? Or how would it work in a multimodal Monty system without rewiring the SM to LM connections or explicitly copying models?)
+- How does it work that I can learn an object using vision but then recognize it using touch? (In Monty the Sensor Module can simply be switched out, but how would it work in the brain? Or how would it work in a multimodal Monty system without rewiring the SM to LM connections or explicitly copying models? Note: a multimodal LM setup is a future exploration and is not currently supported.)
 - Should there be some form of memory consolidation?
 - How do we learn where an object begins and where it ends? What defines a sub-component of an object?
 

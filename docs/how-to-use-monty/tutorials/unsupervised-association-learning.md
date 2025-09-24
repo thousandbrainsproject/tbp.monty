@@ -4,46 +4,30 @@ This tutorial demonstrates how to run and analyze unsupervised object ID associa
 
 ## Overview
 
-Unsupervised association learning addresses a fundamental challenge in cross-modal learning: how can different learning modules (e.g., visual and tactile) learn to associate their internal object representations when they use different object IDs for the same physical object?
+Unsupervised association learning addresses a fundamental challenge in distributed learning: how can multiple learning modules that observe overlapping parts of the same scene learn to associate their internal object representations when they use different object IDs for the same physical object?
 
-For example:
-- Visual LM might call a cup `visual_object_1`
-- Touch LM might call the same cup `touch_object_2`
-- Audio LM might call it `audio_object_5`
-
-The association learning system enables these modules to discover that these different IDs refer to the same physical object through co-occurrence patterns, spatial consistency, and temporal relationships.
+In the current Monty implementation we focus on *single-modality* association. Multiple visual patch learning modules (LMs) observe different regions of the same object through narrow retinal-like sensors. Even though they belong to the same modality, each LM still develops its own set of object IDs. The association learning system enables these LMs to discover that their different IDs refer to the same physical object through co-occurrence patterns, spatial consistency, and temporal relationships.
 
 ## Available Experiments
 
-### 1. Simple Cross-Modal Association
+**Note:** Multi-modal (e.g., visual + touch) association experiments are not currently supported in Monty. The previously documented `multi_modal_association` experiment has been removed until the learning module infrastructure supports it.
 
-Tests basic association learning between two learning modules (e.g., visual and tactile).
+### 1. Dual Patch Association
+
+Tests basic association learning between two visual patch learning modules that observe different regions of the same objects.
 
 ```bash
 python benchmarks/run.py -e simple_cross_modal_association
 ```
 
 **What it tests:**
-- Co-occurrence detection between different sensory modalities
+- Co-occurrence detection between distinct visual patches of the same modality
 - Basic spatial and temporal consistency learning
 - Association strength calculation
 
-### 2. Multi-Modal Association
+### 2. Association Strategy Comparison
 
-Tests association learning across multiple learning modules simultaneously.
-
-```bash
-python benchmarks/run.py -e multi_modal_association
-```
-
-**What it tests:**
-- Complex multi-way associations between 3+ learning modules
-- Handling of conflicting association signals
-- Scalability of the association learning system
-
-### 3. Association Strategy Comparison
-
-Compares different association learning strategies and parameter settings.
+Compares different association learning strategies and parameter settings for dual patch setups.
 
 ```bash
 python benchmarks/run.py -e association_strategy_comparison
@@ -63,7 +47,7 @@ The experiments track several key metrics:
 - **Total Associations**: Number of object ID pairs that have been associated
 - **Strong Associations**: Associations above a confidence threshold
 - **Average Strength**: Mean association strength across all pairs
-- **Spatial Consistency**: How well spatial relationships align across modalities
+- **Spatial Consistency**: How well spatial relationships align across visual patches
 - **Temporal Patterns**: Regularity and clustering of association events
 - **Confidence Score**: Time-weighted evidence for a candidate association, derived from CMP votes. We prioritize `non_morphological_features["evidence_strength"]`; if missing, we fall back to the vote’s `confidence` field. These scores gate co-occurrence logging (via `association_threshold`), accumulate with temporal decay, and contribute as one component to the final association strength (alongside co-occurrence, spatial consistency, and temporal recency). They are not the same as the final association strength.
 
@@ -72,9 +56,9 @@ The experiments track several key metrics:
 During experiments, you'll see logs like:
 
 ```
-INFO - Recorded co-occurrence: visual_object_1 <-> touch_lm:touch_object_3 (count: 15, confidence: 0.892)
-INFO - Association strength: visual_object_1 -> touch_lm:touch_object_3 = 0.847
-INFO - LM visual_lm: 23 total associations, 18 strong, avg strength: 0.756
+INFO - Recorded co-occurrence: visual_object_1 <-> patch_1_lm:visual_object_3 (count: 15, confidence: 0.892)
+INFO - Association strength: visual_object_1 -> patch_1_lm:visual_object_3 = 0.847
+INFO - LM patch_0_lm: 23 total associations, 18 strong, avg strength: 0.756
 ```
 
 ## CMP Message Structure for Association Learning
@@ -191,9 +175,9 @@ Monty's built-in logging infrastructure automatically captures detailed associat
 During experiments, monitor the logs for messages like:
 
 ```
-INFO - Recorded co-occurrence: visual_object_1 <-> touch_lm:touch_object_3 (count: 15, confidence: 0.892)
-INFO - Association strength: visual_object_1 -> touch_lm:touch_object_3 = 0.847
-INFO - LM visual_lm: 23 total associations, 18 strong, avg strength: 0.756
+INFO - Recorded co-occurrence: visual_object_1 <-> patch_1_lm:visual_object_3 (count: 15, confidence: 0.892)
+INFO - Association strength: visual_object_1 -> patch_1_lm:visual_object_3 = 0.847
+INFO - LM patch_0_lm: 23 total associations, 18 strong, avg strength: 0.756
 ```
 
 ### Key Analysis Questions
@@ -210,7 +194,7 @@ When analyzing results, consider:
 If wandb logging is enabled in your experiment configuration, you can view rich visualizations and metrics in the wandb dashboard:
 
 - Association strength trends over time
-- Cross-modal consistency metrics
+- Cross-patch consistency metrics
 - Spatial and temporal pattern analysis
 - Comparative performance across different strategies
 
@@ -252,7 +236,7 @@ To test new association strategies:
 **Slow Convergence**:
 - Increase the number of training steps
 - Adjust association thresholds
-- Check for conflicting signals between modalities
+- Check for conflicting signals between visual patches
 
 **Memory Issues**:
 - Reduce `max_association_memory_size` parameter
@@ -261,7 +245,7 @@ To test new association strategies:
 
 ## Next Steps
 
-- Experiment with different sensor modalities
+- Experiment with different pairs of visual patches (e.g., varying field-of-view overlap)
 - Test on more complex multi-object scenarios  
 - Integrate with hierarchical learning architectures
 - Explore temporal sequence learning extensions
