@@ -2,8 +2,7 @@
 
 A tool that
 
-1. processes an index.json that is produced by the github_readme_sync tool and makes it consumable by the widget
-2. uploads that data file and the widget HTML to an S3 bucket.
+1. processes an index.json that is produced by the github_readme_sync tool and converts it into a format consumable by the widget
 
 ## Setup
 
@@ -18,12 +17,12 @@ pip install -e '.[dev,github_readme_sync_tool,future_work_widget]'
 ## Usage
 
 ### Setup environment variables
+
 In your shell:
 
 
 ```
 > python -m tools.future_work_widget.cli /tmp/index.json
-
 
 ```
 

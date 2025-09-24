@@ -1,3 +1,13 @@
+/*
+ * Copyright 2025 Thousand Brains Project
+ *
+ * Copyright may exist in Contributors' modifications
+ * and/or contributions to the work.
+ *
+ * Use of this source code is governed by the MIT license
+ * that can be found in the LICENSE file or at
+ * https://opensource.org/licenses/MIT.
+ */
 
 const DOCS_BASE_URL = 'https://thousandbrainsproject.readme.io/docs/';
 const GITHUB_EDIT_BASE_URL = 'https://github.com/thousandbrainsproject/tbp.monty/edit/main/';
@@ -6,7 +16,6 @@ const EXTERNAL_LINK_ICON = 'fa-external-link-alt';
 const EDIT_ICON = 'fa-pencil-alt';
 const BADGE_CLASS = 'badge';
 const BADGE_SKILLS_CLASS = 'badge-skills';
-const IN_PROGRESS_STATUS = 'in-progress';
 
 
 const SearchManager = {
@@ -94,9 +103,7 @@ const ColumnFormatters = {
                              alt="${username}"/>`)
       .join(' ');
 
-    return status.toLowerCase() === IN_PROGRESS_STATUS
-      ? avatars
-      : status + avatars;
+    return status + avatars;
   },
   formatRfcColumn(cell) {
     const value = cell.getValue();
@@ -157,7 +164,7 @@ const FutureWorkWidget = {
       this.setupSearch(table);
     } catch (error) {
       console.error('Failed to initialize Future Work Widget:', error);
-      this.showError('Failed to load data. Please refresh the page.');
+      this.showError('Failed to load data - see the console for more details or refresh the page to try again.');
     }
   },
 
@@ -165,21 +172,14 @@ const FutureWorkWidget = {
   async loadData() {
     const response = await fetch('data.json');
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}, body: ${await response.text()}`);
     }
     const data = await response.json();
     return Array.isArray(data)
-      ? data.slice().sort((a, b) => {
-          const pathA = (a.path2 || '').toLowerCase();
-          const pathB = (b.path2 || '').toLowerCase();
-          if (pathA < pathB) return -1;
-          if (pathA > pathB) return 1;
-          const titleA = (a.title || '').toLowerCase();
-          const titleB = (b.title || '').toLowerCase();
-          if (titleA < titleB) return -1;
-          if (titleA > titleB) return 1;
-          return 0;
-        })
+      ? data.slice().sort((a, b) => 
+          (a.path2 || '').localeCompare(b.path2 || '', undefined, { sensitivity: 'base' }) ||
+          (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' })
+        )
       : data;
   },
 
