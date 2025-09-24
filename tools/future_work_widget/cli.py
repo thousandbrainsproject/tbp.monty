@@ -54,6 +54,32 @@ def main():
     if args.command == "build":
         docs_snippets_dir = args.docs_snippets_dir
 
+        snippets_path = Path(docs_snippets_dir)
+        if not snippets_path.exists():
+            error_msg = f"Docs snippets directory not found: {docs_snippets_dir}"
+            if args.json:
+                result = {
+                    "success": False,
+                    "processed_items": 0,
+                    "total_items": 0,
+                    "errors": [
+                        {
+                            "message": error_msg,
+                            "file": "cli",
+                            "line": 1,
+                            "field": None,
+                            "level": "error",
+                            "title": "DirectoryNotFoundError",
+                            "annotation_level": "failure",
+                        }
+                    ],
+                    "error_message": error_msg,
+                }
+                print(json.dumps(result, indent=2))
+            else:
+                print(f"{RED}Error: {error_msg}{RESET}", file=sys.stderr)
+            sys.exit(1)
+
         if args.json:
             logging.getLogger().setLevel(logging.CRITICAL)
 
