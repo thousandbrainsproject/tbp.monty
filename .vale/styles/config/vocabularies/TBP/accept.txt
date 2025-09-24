@@ -5,6 +5,8 @@
 \b[a-zA-Z.]+(_[a-zA-Z.]+)+\b
 \b[aA]llocentric\b
 \b[aA]rXiv\b
+\mArtem\b
+\bKirsanov\b
 \b[aA]gentic\b
 \b[Cc]allouts\b
 \b[cC]onda\b

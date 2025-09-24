@@ -18,6 +18,7 @@
 - [faq-thousand-brains-project](overview/faq-thousand-brains-project.md)
 - [glossary](overview/glossary.md)
 - [further-reading](overview/further-reading.md)
+  - [community-and-media-coverage](overview/further-reading/community-and-media-coverage.md)
 
 # how-to-use-monty: How to Use Monty
 - [getting-started](how-to-use-monty/getting-started.md)
@@ -35,6 +36,7 @@
   - [multiple-learning-modules](how-to-use-monty/tutorials/multiple-learning-modules.md)
   - [using-monty-in-a-custom-application](how-to-use-monty/tutorials/using-monty-in-a-custom-application.md)
   - [using-monty-for-robotics](how-to-use-monty/tutorials/using-monty-for-robotics.md)
+  - [running-an-experiment-from-a-different-repository](how-to-use-monty/tutorials/running-an-experiment-from-a-different-repository.md)
 - [common-issues-and-how-to-fix-them](how-to-use-monty/common-issues-and-how-to-fix-them.md)
 
 # how-monty-works: How Monty Works

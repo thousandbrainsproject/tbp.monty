@@ -79,7 +79,7 @@ class TestFindMarkdownFiles(unittest.TestCase):
 
         result = find_markdown_files(self.temp_dir)
 
-        result_basenames = [os.path.basename(path) for path in result]
+        result_basenames = [Path(path).name for path in result]
 
         self.assertIn("readme.md", result_basenames)
         self.assertIn("guide.md", result_basenames)
