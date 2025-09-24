@@ -147,8 +147,7 @@ const TableConfig = {
 
     return columnsToShow
       ? allColumns.filter(col =>
-          columnsToShow.includes(col.field.toLowerCase()) ||
-          columnsToShow.includes(col.title.toLowerCase())
+          columnsToShow.includes(col.field.toLowerCase())
         )
       : allColumns;
   }
