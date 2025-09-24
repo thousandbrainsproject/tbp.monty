@@ -34,7 +34,9 @@ class TestGenerateIndex(unittest.TestCase):
         with open(md_file_path, "w", encoding="utf-8") as f:
             f.write(content)
 
-        index_file_path = generate_index(self.temp_dir, f"{self.temp_dir}/index.json")
+        index_file_path = generate_index(
+            self.temp_dir, str(Path(self.temp_dir) / "index.json")
+        )
 
         self.assertTrue(Path(index_file_path).exists())
 
@@ -99,8 +101,8 @@ class TestGenerateIndex(unittest.TestCase):
                     generate_index(actual_docs_dir, actual_output_file)
 
     def test_generate_index_nonexistent_docs_folder(self):
-        nonexistent_dir = f"{self.temp_dir}/nonexistent"
-        output_file_path = f"{self.temp_dir}/index.json"
+        nonexistent_dir = str(Path(self.temp_dir) / "nonexistent")
+        output_file_path = str(Path(self.temp_dir) / "index.json")
 
         with self.assertRaises(ValueError) as context:
             generate_index(nonexistent_dir, output_file_path)
