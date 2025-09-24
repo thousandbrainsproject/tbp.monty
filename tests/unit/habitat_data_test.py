@@ -162,13 +162,6 @@ class HabitatDataTest(unittest.TestCase):
             np.all(camera_obs_dist[SENSORS[0]] == initial_camera_obs_dist[SENSORS[0]])
         )
 
-        # TODO: move this check to a test of monty_experiment, which is now responsible
-        # for init'ing and closing the env. key point is to ensure the env interface
-        # can't get an item if the env isn't present
-        # env_interface_dist.close()
-        # with self.assertRaises(Exception):
-        # _ = env_interface_dist.__getitem__(action_space_dist.sample())
-
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
     def test_env_interface_abs(self, mock_simulator_class, mock_agent_class):
@@ -234,13 +227,6 @@ class HabitatDataTest(unittest.TestCase):
             np.all(camera_obs_abs[SENSORS[0]] == initial_camera_obs_abs[SENSORS[0]])
         )
 
-        # TODO: move this check to a test of monty_experiment, which is now responsible
-        # for init'ing and closing the env. key point is to ensure the env interface
-        # can't get an item if the env isn't present
-        # env_interface_abs.close()
-        # with self.assertRaises(Exception):
-        # _ = env_interface_abs.__getitem__(action_space_abs.sample())
-
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
     def test_env_interface_surf(self, mock_simulator_class, mock_agent_class):
@@ -304,13 +290,6 @@ class HabitatDataTest(unittest.TestCase):
         self.assertFalse(
             np.all(camera_obs_surf[SENSORS[0]] == initial_camera_obs_surf[SENSORS[0]])
         )
-
-        # TODO: move this check to a test of monty_experiment, which is now responsible
-        # for init'ing and closing the env. key point is to ensure the env interface
-        # can't get an item if the env isn't present
-        # env_interface_surf.close()
-        # with self.assertRaises(Exception):
-        #  _ = env_interface_surf.__getitem__(action_space_surf.sample())
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
