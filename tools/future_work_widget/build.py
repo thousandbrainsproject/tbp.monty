@@ -45,19 +45,6 @@ def build(
         if not index_path.exists():
             return {
                 "success": False,
-                "processed_items": 0,
-                "total_items": 0,
-                "errors": [
-                    {
-                        "message": f"Index file not found: {index_file}",
-                        "file": index_file,
-                        "line": 1,
-                        "field": None,
-                        "level": "error",
-                        "title": "FileNotFoundError",
-                        "annotation_level": "failure",
-                    }
-                ],
                 "error_message": f"Index file not found: {index_file}",
             }
 
@@ -67,19 +54,6 @@ def build(
         if not isinstance(data, list):
             return {
                 "success": False,
-                "processed_items": 0,
-                "total_items": 0,
-                "errors": [
-                    {
-                        "message": "Index file must contain a JSON array",
-                        "file": index_file,
-                        "line": 1,
-                        "field": None,
-                        "level": "error",
-                        "title": "TypeError",
-                        "annotation_level": "failure",
-                    }
-                ],
                 "error_message": "Index file must contain a JSON array",
             }
 
@@ -138,21 +112,18 @@ def build(
             "errors": [],
         }
 
-    except Exception as e:
+    except (OSError, PermissionError) as e:
         return {
             "success": False,
-            "processed_items": 0,
-            "total_items": 0,
-            "errors": [
-                {
-                    "message": str(e),
-                    "file": "unknown",
-                    "line": 1,
-                    "field": None,
-                    "level": "error",
-                    "title": f"Build Error: {type(e).__name__}",
-                    "annotation_level": "failure",
-                }
-            ],
-            "error_message": f"Unexpected error: {e}",
+            "error_message": f"File system error: {e}",
+        }
+    except json.JSONDecodeError as e:
+        return {
+            "success": False,
+            "error_message": f"Invalid JSON in index file: {e}",
+        }
+    except TypeError as e:
+        return {
+            "success": False,
+            "error_message": f"Data serialization error: {e}",
         }

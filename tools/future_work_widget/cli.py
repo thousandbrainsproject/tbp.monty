@@ -15,11 +15,17 @@ from pathlib import Path
 
 from .build import build
 
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-from github_readme_sync.colors import RED, RESET
 
-monty_root = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(monty_root))
+def _validate_docs_snippets_dir(docs_snippets_dir: str) -> None:
+    snippets_path = Path(docs_snippets_dir)
+    if not snippets_path.exists():
+        error_msg = f"Docs snippets directory not found: {docs_snippets_dir}"
+        result = {
+            "success": False,
+            "error_message": error_msg,
+        }
+        print(json.dumps(result, indent=2))
+        sys.exit(1)
 
 
 def main():
@@ -41,11 +47,6 @@ def main():
         help="Path to docs/snippets directory for validation files",
         default="docs/snippets",
     )
-    build_parser.add_argument(
-        "--json",
-        action="store_true",
-        help="Output validation results in JSON format for CI/CD integration",
-    )
 
     args = parser.parse_args()
 
@@ -54,57 +55,13 @@ def main():
     if args.command == "build":
         docs_snippets_dir = args.docs_snippets_dir
 
-        snippets_path = Path(docs_snippets_dir)
-        if not snippets_path.exists():
-            error_msg = f"Docs snippets directory not found: {docs_snippets_dir}"
-            if args.json:
-                result = {
-                    "success": False,
-                    "processed_items": 0,
-                    "total_items": 0,
-                    "errors": [
-                        {
-                            "message": error_msg,
-                            "file": "cli",
-                            "line": 1,
-                            "field": None,
-                            "level": "error",
-                            "title": "DirectoryNotFoundError",
-                            "annotation_level": "failure",
-                        }
-                    ],
-                    "error_message": error_msg,
-                }
-                print(json.dumps(result, indent=2))
-            else:
-                print(f"{RED}Error: {error_msg}{RESET}", file=sys.stderr)
-            sys.exit(1)
+        logging.getLogger().setLevel(logging.CRITICAL)
 
-        if args.json:
-            logging.getLogger().setLevel(logging.CRITICAL)
+        _validate_docs_snippets_dir(docs_snippets_dir)
 
         result = build(args.index_file, args.output_dir, docs_snippets_dir)
 
-        if args.json:
-            print(json.dumps(result, indent=2))
-        elif not result["success"]:
-            error_count = len(result["errors"])
-            print(
-                f"{RED}Error: Validation failed with {error_count} error(s):{RESET}",
-                file=sys.stderr,
-            )
-            print(file=sys.stderr)
-
-            for i, error in enumerate(result["errors"], 1):
-                file_path = error["file"]
-                line = error["line"]
-                message = error["message"]
-
-                print(f"{file_path}:{line}", file=sys.stderr)
-                print(f"{message}", file=sys.stderr)
-                if i < error_count:
-                    print(file=sys.stderr)
-
+        print(json.dumps(result, indent=2))
         sys.exit(0 if result["success"] else 1)
 
 
