@@ -188,13 +188,6 @@ class EmbodiedDataTest(unittest.TestCase):
             )
         )
 
-        # TODO: move this check to a test of monty_experiment, which is now responsible
-        # for init'ing and closing the env. key point is to ensure the env interface
-        # can't get an item if the env isn't present
-        # env_interface_dist.close()
-        # with self.assertRaises(Exception):
-        # obs_dist, _ = env_interface_dist.__getitem__(motor_system_dist())
-
     def test_embodied_dataset_abs(self):
         rng = np.random.RandomState(42)
 
@@ -235,13 +228,6 @@ class EmbodiedDataTest(unittest.TestCase):
                 == initial_state[AGENT_ID][SENSOR_ID]["sensor"]
             )
         )
-
-        # TODO: move this check to a test of monty_experiment, which is now responsible
-        # for init'ing and closing the env. key point is to ensure the env interface
-        # can't get an item if the env isn't present
-        # env_interface_abs.close()
-        # with self.assertRaises(Exception):
-        # obs_abs, _ = env_interface_abs.__getitem__(motor_system_abs())
 
     def test_embodied_dataloader_dist(self):
         rng = np.random.RandomState(42)

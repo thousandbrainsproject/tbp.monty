@@ -217,30 +217,30 @@ class MontyExperiment:
 
         # Initialize train dataloaders if needed
         if config["experiment_args"]["do_train"]:
-            train_dataloader_class = config["train_dataloader_class"]
-            train_dataloader_args = dict(
+            dataloader_class = config["train_dataloader_class"]
+            dataloader_args = dict(
                 env=self.env,
                 transform=env_interface_args["transform"],
                 **config["train_dataloader_args"],
             )
 
             self.train_dataloader = self.create_data_loader(
-                train_dataloader_class, train_dataloader_args
+                dataloader_class, dataloader_args
             )
         else:
             self.train_dataloader = None
 
         # Initialize eval dataloaders if needed
         if config["experiment_args"]["do_eval"]:
-            eval_dataloader_class = config["eval_dataloader_class"]
-            eval_dataloader_args = dict(
+            dataloader_class = config["eval_dataloader_class"]
+            dataloader_args = dict(
                 env=self.env,
                 transform=env_interface_args["transform"],
                 **config["eval_dataloader_args"],
             )
 
             self.eval_dataloader = self.create_data_loader(
-                eval_dataloader_class, eval_dataloader_args
+                dataloader_class, dataloader_args
             )
         else:
             self.eval_dataloader = None
@@ -260,7 +260,7 @@ class MontyExperiment:
                 `EnvironmentDataLoader`
         """
         # lump dataset and motor system into dataloader args
-        # assume fixed dataset, training and validation are just different loaders
+        # training and validation are just different loaders
         if not issubclass(dataloader_class, EnvironmentDataLoader):
             raise TypeError("dataloader class must be EnvironmentDataLoader (for now)")
 
