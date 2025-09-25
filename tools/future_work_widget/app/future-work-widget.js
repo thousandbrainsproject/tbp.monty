@@ -18,6 +18,12 @@ const BADGE_CLASS = 'badge';
 const BADGE_SKILLS_CLASS = 'badge-skills';
 
 
+function escapeHtml(unsafe) {
+  if (unsafe == null) return '';
+  return he.encode(String(unsafe));
+}
+
+
 function addToSearch(value) {
   const input = document.getElementById('searchInput');
   const currentValue = input.value.trim();
@@ -41,7 +47,7 @@ const ColumnFormatters = {
       : (value || '').split(',').map(item => item.trim()).filter(Boolean);
 
     return items
-      .map(item => `<span class="${cssClass}" data-search-value="${item}" style="cursor: pointer;">${item}</span>`)
+      .map(item => `<span class="${escapeHtml(cssClass)}" data-search-value="${escapeHtml(item)}" style="cursor: pointer;">${escapeHtml(item)}</span>`)
       .join(' ');
   },
   formatLinkColumn(cell, icon = EXTERNAL_LINK_ICON, urlPrefix = '') {
@@ -49,14 +55,14 @@ const ColumnFormatters = {
     if (!value) return '';
 
     const url = urlPrefix ? `${urlPrefix}${value}` : value;
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer" title="${url}"><i class="${icon}"></i></a>`;
+    return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(url)}"><i class="${escapeHtml(icon)}"></i></a>`;
   },
   formatTagsColumn: (cell) => ColumnFormatters.formatArrayOrStringColumn(cell.getValue(), BADGE_CLASS),
   formatSkillsColumn: (cell) => ColumnFormatters.formatArrayOrStringColumn(cell.getValue(), BADGE_SKILLS_CLASS),
   formatSizeColumn(cell) {
     const value = (cell.getValue() || '').trim().toLowerCase();
     return value
-      ? `<span class="badge badge-size-${value}" data-search-value="${value}" style="cursor: pointer;">${value}</span>`
+      ? `<span class="badge badge-size-${escapeHtml(value)}" data-search-value="${escapeHtml(value)}" style="cursor: pointer;">${escapeHtml(value)}</span>`
       : '';
   },
   formatSlugLinkColumn: (cell) => ColumnFormatters.formatLinkColumn(cell, EXTERNAL_LINK_ICON, DOCS_BASE_URL),
@@ -67,16 +73,16 @@ const ColumnFormatters = {
     const slug = rowData.slug || '';
     const path = rowData.path || '';
 
-    let result = title;
+    let result = escapeHtml(title);
 
     if (slug) {
       const docsUrl = `${DOCS_BASE_URL}${slug}`;
-      result = `<a href="${docsUrl}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: inherit;">${title}</a>`;
+      result = `<a href="${escapeHtml(docsUrl)}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: inherit;">${escapeHtml(title)}</a>`;
     }
 
     if (path) {
       const editUrl = `${GITHUB_EDIT_BASE_URL}${path}`;
-      result = `<a href="${editUrl}" style="margin-right:5px;" target="_blank" rel="noopener noreferrer" title="Edit on GitHub"><i class="fas ${EDIT_ICON}"></i></a>${result}`;
+      result = `<a href="${escapeHtml(editUrl)}" style="margin-right:5px;" target="_blank" rel="noopener noreferrer" title="Edit on GitHub"><i class="fas ${escapeHtml(EDIT_ICON)}"></i></a>${result}`;
     }
 
     return `<div style="margin-right: 10px;">${result}</div>`;
@@ -86,20 +92,20 @@ const ColumnFormatters = {
     const status = cell.getValue() || '';
     const owner = rowData.owner || '';
 
-    if (!owner) return status;
+    if (!owner) return escapeHtml(status);
 
     const usernames = Array.isArray(owner)
       ? owner
       : owner.split(',').map(u => u.trim()).filter(Boolean);
 
     const avatars = usernames
-      .map(username => `<img src="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}.png"
+      .map(username => `<img src="${escapeHtml(GITHUB_AVATAR_URL)}/${encodeURIComponent(username)}.png"
                              width="16" height="16"
                              style="vertical-align:middle;border-radius:2px;margin-left:5px;"
-                             alt="${username}"/>`)
+                             alt="${escapeHtml(username)}"/>`)
       .join(' ');
 
-    return status + avatars;
+    return escapeHtml(status) + avatars;
   },
   formatRfcColumn(cell) {
     const value = cell.getValue();
@@ -107,8 +113,8 @@ const ColumnFormatters = {
 
     const isHttpUrl = /^https?:/.test(value.trim());
     return isHttpUrl
-      ? `<a href="${value}" target="_blank" rel="noopener noreferrer">RFC <i class="fas ${EXTERNAL_LINK_ICON}"></i></a>`
-      : value;
+      ? `<a href="${escapeHtml(value)}" target="_blank" rel="noopener noreferrer">RFC <i class="fas ${escapeHtml(EXTERNAL_LINK_ICON)}"></i></a>`
+      : escapeHtml(value);
   }
 };
 
