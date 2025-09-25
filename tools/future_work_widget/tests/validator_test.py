@@ -19,11 +19,10 @@ from tools.future_work_widget.validator import RecordValidator
 
 class TestRecordValidator(unittest.TestCase):
     def setUp(self):
-        self.temp_dir = tempfile.mkdtemp()
-        self.temp_path = Path(self.temp_dir)
+        self.temp_path = Path(tempfile.mkdtemp())
 
     def tearDown(self):
-        shutil.rmtree(self.temp_dir)
+        shutil.rmtree(self.temp_path)
 
     def test_validation_files_loading(self):
         snippets_dir = self.temp_path / "snippets"

@@ -45,19 +45,20 @@ def main():
     args = parser.parse_args()
 
     if args.command == "build":
-        _validate_docs_snippets_dir(args.docs_snippets_dir)
+        index_file = Path(args.index_file)
+        output_dir = Path(args.output_dir)
+        docs_snippets_dir = Path(args.docs_snippets_dir)
 
-        result = build(
-            Path(args.index_file), Path(args.output_dir), Path(args.docs_snippets_dir)
-        )
+        _validate_docs_snippets_dir(docs_snippets_dir)
+
+        result = build(index_file, output_dir, docs_snippets_dir)
 
         _log_result(result)
         sys.exit(0 if result["success"] else 1)
 
 
-def _validate_docs_snippets_dir(docs_snippets_dir: str) -> None:
-    snippets_path = Path(docs_snippets_dir)
-    if not snippets_path.exists():
+def _validate_docs_snippets_dir(docs_snippets_dir: Path) -> None:
+    if not docs_snippets_dir.exists():
         result = {
             "success": False,
             "error_message": f"Docs snippets directory not found: {docs_snippets_dir}",
