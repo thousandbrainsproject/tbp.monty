@@ -20,16 +20,15 @@ const BADGE_SKILLS_CLASS = 'badge-skills';
 
 function addToSearch(value) {
   const input = document.getElementById('searchInput');
-  const words = input.value.trim().split(/\s+/).filter(Boolean);
-  const index = words.indexOf(value);
+  const currentValue = input.value.trim();
+  const searchTerm = value.trim();
 
-  if (index !== -1) {
-    words.splice(index, 1);
+  if (currentValue.includes(searchTerm)) {
+    input.value = currentValue.replace(searchTerm, '').replace(/\s+/g, ' ').trim();
   } else {
-    words.push(value);
+    input.value = currentValue ? `${currentValue} ${searchTerm}` : searchTerm;
   }
 
-  input.value = words.join(' ');
   input.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
