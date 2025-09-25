@@ -158,29 +158,29 @@ class EmbodiedDataTest(unittest.TestCase):
             policy=BasePolicy(rng=rng, **base_policy_config_dist.__dict__)
         )
         env = FakeEnvironmentRel()
-        env_interface_dist = EnvironmentDataLoader(
+        dataloader_dist = EnvironmentDataLoader(
             env,
             rng=rng,
             motor_system=motor_system_dist,
         )
 
-        action_space_dist = env_interface_dist.action_space
+        action_space_dist = dataloader_dist.action_space
         self.assertIsInstance(action_space_dist, ActionSpace)
         self.assertSequenceEqual(action_space_dist, EXPECTED_ACTIONS_DIST)
         self.assertIn(action_space_dist.sample(), EXPECTED_ACTIONS_DIST)
 
         for i in range(1, DATASET_LEN):
-            obs_dist, _ = env_interface_dist.__getitem__(motor_system_dist())
+            obs_dist, _ = dataloader_dist.__getitem__(motor_system_dist())
             print(obs_dist)
             self.assertTrue(
                 np.all(obs_dist[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
             )
 
-        initial_state, _ = env_interface_dist.reset()
+        initial_state, _ = dataloader_dist.reset()
         self.assertTrue(
             np.all(initial_state[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[0])
         )
-        obs_dist, _ = env_interface_dist.__getitem__(motor_system_dist())
+        obs_dist, _ = dataloader_dist.__getitem__(motor_system_dist())
         self.assertFalse(
             np.all(
                 obs_dist[AGENT_ID][SENSOR_ID]["sensor"]
@@ -200,28 +200,28 @@ class EmbodiedDataTest(unittest.TestCase):
             policy=BasePolicy(rng=rng, **base_policy_config_abs.__dict__)
         )
         env = FakeEnvironmentAbs()
-        env_interface_abs = EnvironmentDataLoader(
+        dataloader_abs = EnvironmentDataLoader(
             env,
             rng=rng,
             motor_system=motor_system_abs,
         )
 
-        action_space_abs = env_interface_abs.action_space
+        action_space_abs = dataloader_abs.action_space
         self.assertIsInstance(action_space_abs, ActionSpace)
         self.assertSequenceEqual(action_space_abs, EXPECTED_ACTIONS_ABS)
         self.assertIn(action_space_abs.sample(), EXPECTED_ACTIONS_ABS)
 
         for i in range(1, DATASET_LEN):
-            obs_abs, _ = env_interface_abs.__getitem__(motor_system_abs())
+            obs_abs, _ = dataloader_abs.__getitem__(motor_system_abs())
             self.assertTrue(
                 np.all(obs_abs[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
             )
 
-        initial_state, _ = env_interface_abs.reset()
+        initial_state, _ = dataloader_abs.reset()
         self.assertTrue(
             np.all(initial_state[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[0])
         )
-        obs_abs, _ = env_interface_abs.__getitem__(motor_system_abs())
+        obs_abs, _ = dataloader_abs.__getitem__(motor_system_abs())
         self.assertFalse(
             np.all(
                 obs_abs[AGENT_ID][SENSOR_ID]["sensor"]
@@ -229,6 +229,7 @@ class EmbodiedDataTest(unittest.TestCase):
             )
         )
 
+    # @unittest.skip("debugging")
     def test_embodied_dataloader_dist(self):
         rng = np.random.RandomState(42)
         base_policy_config_dist = make_base_policy_config(
@@ -240,17 +241,18 @@ class EmbodiedDataTest(unittest.TestCase):
             policy=BasePolicy(rng=rng, **base_policy_config_dist.__dict__)
         )
         env = FakeEnvironmentRel()
-        env_interface_dist = EnvironmentDataLoader(
+        dataloader_dist = EnvironmentDataLoader(
             env=env, rng=rng, motor_system=motor_system_dist
         )
 
-        for i, item in enumerate(env_interface_dist):
+        for i, item in enumerate(dataloader_dist):
             self.assertTrue(
                 np.all(item[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
             )
             if i >= DATASET_LEN - 1:
                 break
 
+    # @unittest.skip("debugging")
     def test_embodied_dataloader_abs(self):
         rng = np.random.RandomState(42)
 
@@ -263,11 +265,11 @@ class EmbodiedDataTest(unittest.TestCase):
             policy=BasePolicy(rng=rng, **base_policy_config_abs.__dict__)
         )
         env = FakeEnvironmentAbs()
-        env_interface_abs = EnvironmentDataLoader(
+        dataloader_abs = EnvironmentDataLoader(
             env=env, rng=rng, motor_system=motor_system_abs
         )
 
-        for i, item in enumerate(env_interface_abs):
+        for i, item in enumerate(dataloader_abs):
             self.assertTrue(
                 np.all(item[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
             )
