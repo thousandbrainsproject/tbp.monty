@@ -11,7 +11,7 @@ First, ensure you setup Monty. See [Getting Started - 2. Set up Your Environment
 Next, from the root Monty directory, install this tool's dependencies:
 
 ```
-pip install -e '.[dev,github_readme_sync_tool,future_work_widget]'
+pip install -e '.[dev,github_readme_sync_tool,future_work_widget_tool]'
 ```
 
 ## Usage
