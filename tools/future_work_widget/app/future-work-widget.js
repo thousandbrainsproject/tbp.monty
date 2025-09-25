@@ -18,23 +18,20 @@ const BADGE_CLASS = 'badge';
 const BADGE_SKILLS_CLASS = 'badge-skills';
 
 
-const SearchManager = {
+function addToSearch(value) {
+  const input = document.getElementById('searchInput');
+  const words = input.value.trim().split(/\s+/).filter(Boolean);
+  const index = words.indexOf(value);
 
-  addToSearch(value) {
-    const input = document.getElementById('searchInput');
-    const words = input.value.trim().split(/\s+/).filter(Boolean);
-    const index = words.indexOf(value);
-
-    if (index !== -1) {
-      words.splice(index, 1);
-    } else {
-      words.push(value);
-    }
-
-    input.value = words.join(' ');
-    input.dispatchEvent(new Event('input', { bubbles: true }));
+  if (index !== -1) {
+    words.splice(index, 1);
+  } else {
+    words.push(value);
   }
-};
+
+  input.value = words.join(' ');
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
 
 
 const ColumnFormatters = {
@@ -45,7 +42,7 @@ const ColumnFormatters = {
       : (value || '').split(',').map(item => item.trim()).filter(Boolean);
 
     return items
-      .map(item => `<span class="${cssClass}" onclick="SearchManager.addToSearch('${item.replace(/'/g, "\\'")}')">${item}</span>`)
+      .map(item => `<span class="${cssClass}" data-search-value="${item}" style="cursor: pointer;">${item}</span>`)
       .join(' ');
   },
   formatLinkColumn(cell, icon = EXTERNAL_LINK_ICON, urlPrefix = '') {
@@ -60,7 +57,7 @@ const ColumnFormatters = {
   formatSizeColumn(cell) {
     const value = (cell.getValue() || '').trim().toLowerCase();
     return value
-      ? `<span class="badge badge-size-${value}" onclick="SearchManager.addToSearch('${value}')">${value}</span>`
+      ? `<span class="badge badge-size-${value}" data-search-value="${value}" style="cursor: pointer;">${value}</span>`
       : '';
   },
   formatSlugLinkColumn: (cell) => ColumnFormatters.formatLinkColumn(cell, EXTERNAL_LINK_ICON, DOCS_BASE_URL),
@@ -175,7 +172,7 @@ const FutureWorkWidget = {
     }
     const data = await response.json();
     return Array.isArray(data)
-      ? data.slice().sort((a, b) => 
+      ? data.slice().sort((a, b) =>
           (a.path2 || '').localeCompare(b.path2 || '', undefined, { sensitivity: 'base' }) ||
           (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' })
         )
@@ -222,6 +219,13 @@ const FutureWorkWidget = {
           .every(word => searchableText.includes(word));
       });
     });
+
+    document.addEventListener('click', (e) => {
+      const searchValue = e.target.dataset.searchValue;
+      if (searchValue) {
+        addToSearch(searchValue);
+      }
+    });
   },
 
 
@@ -239,7 +243,6 @@ const FutureWorkWidget = {
 };
 
 
-window.SearchManager = SearchManager;
 
 
 document.addEventListener('DOMContentLoaded', () => {
