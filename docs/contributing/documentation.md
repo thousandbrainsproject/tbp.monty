@@ -202,12 +202,12 @@ Is the work completed, or is it in progress? [Edit future-work-status.md](https:
 
 ### RFC
 
-Does this work item required an RFC? [Edit future-work-rfc.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-rfc.md).
+Does this work item required an RFC? (These values are processed in the `validator.py` code) and can be of the form:
 
-!snippet[../snippets/future-work-rfc.md]
+`https://github\.com/thousandbrainsproject/tbp\.monty/.*` `required` `optional` `not-required` `unknown`
 
 ### Owner
 
-The owner field should be GitHub usernames, as these are converted to their avatar inside the table. [Edit future-work-owner.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-owner.md).
+The owner field should be GitHub usernames, as these are converted to their avatar inside the table.(These values are processed in the `validator.py` code) and can be of the form:
 
-!snippet[../snippets/future-work-owner.md]
+`[a-zA-Z0-9][a-zA-Z0-9-]{0,38}`
