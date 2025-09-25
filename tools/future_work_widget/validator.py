@@ -148,7 +148,7 @@ class RecordValidator:
                 unescaped_word = escaped_word.replace("\\-", "-").replace("\\.", ".")
                 readable_values.append(unescaped_word)
             else:
-                readable_values.append(f"pattern: {pattern}")
+                readable_values.append(f"{pattern}")
         return sorted(readable_values)
 
     def _load_validation_files(self, docs_snippets_dir: Path) -> None:
