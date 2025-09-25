@@ -19,6 +19,8 @@ from dotenv import load_dotenv
 monty_root = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(monty_root))
 
+# Note: this tool requires this specific import order so don't remove
+# the noqa: E402 comments
 from tools.github_readme_sync.colors import RED, RESET  # noqa: E402
 from tools.github_readme_sync.export import export  # noqa: E402
 from tools.github_readme_sync.hierarchy import (  # noqa: E402
@@ -26,6 +28,7 @@ from tools.github_readme_sync.hierarchy import (  # noqa: E402
     check_hierarchy_file,
     create_hierarchy_file,
 )
+from tools.github_readme_sync.index import generate_index  # noqa: E402
 from tools.github_readme_sync.readme import ReadMe  # noqa: E402
 from tools.github_readme_sync.upload import upload  # noqa: E402
 
@@ -85,6 +88,15 @@ def main():
     )
     delete_parser.add_argument("version", help="The version to delete")
 
+    # Generate index command
+    index_parser = subparsers.add_parser(
+        "generate-index", help="Generate index.json from docs front-matter"
+    )
+    index_parser.add_argument(
+        "folder", help="The docs directory to scan for markdown files"
+    )
+    index_parser.add_argument("output_file", help="Path to output data file")
+
     args = parser.parse_args()
 
     initialize()
@@ -110,6 +122,9 @@ def main():
         check_readme_api_key()
         rdme = ReadMe(args.version)
         rdme.delete_version()
+
+    elif args.command == "generate-index":
+        generate_index(args.folder, args.output_file)
 
 
 def check_readme_api_key():
