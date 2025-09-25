@@ -10,14 +10,10 @@
 
 import os
 
-import matplotlib.pyplot as plt
 import torch
 from tqdm import tqdm
 
 from .object_recognition_experiments import MontyObjectRecognitionExperiment
-
-# turn interactive plotting off -- call plt.show() to open all figures
-plt.ioff()
 
 
 class DataCollectionExperiment(MontyObjectRecognitionExperiment):
@@ -38,7 +34,10 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
             if step > self.max_steps:
                 break
             if self.show_sensor_output:
-                self.show_observations(observation, step)
+                self.live_plotter.show_observations(
+                    *self.live_plotter.hardcoded_assumptions(observation, self.model),
+                    step,
+                )
             self.pass_features_to_motor_system(observation, step)
         self.post_episode()
 
@@ -73,7 +72,7 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         self.max_steps = self.max_train_steps
         self.logger_handler.pre_episode(self.logger_args)
         if self.show_sensor_output:
-            self.initialize_online_plotting()
+            self.live_plotter.initialize_online_plotting()
 
     def post_episode(self):
         torch.save(

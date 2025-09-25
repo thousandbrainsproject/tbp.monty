@@ -14,7 +14,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.github_readme_sync.file import get_folders
+from tools.github_readme_sync.file import find_markdown_files, get_folders
 
 
 class TestGetFolders(unittest.TestCase):
@@ -37,6 +37,57 @@ class TestGetFolders(unittest.TestCase):
 
         # Assert that the result matches the expected folders
         self.assertEqual(sorted(result), sorted(expected_folders))
+
+
+class TestFindMarkdownFiles(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+
+    def _create_directories(self, dir_paths):
+        """Helper function to create multiple directories.
+
+        Returns:
+            Dictionary mapping directory paths to Path objects.
+        """
+        created_dirs = {}
+        for path in dir_paths:
+            full_path = Path(self.temp_dir) / path
+            full_path.mkdir(parents=True)
+            created_dirs[path] = full_path
+        return created_dirs
+
+    def test_find_markdown_files_ignores_dot_directories(self):
+        """Test that find_markdown_files ignores directories that start with a dot."""
+        dirs = self._create_directories(
+            ["regular_docs", ".git", ".vscode", "regular_docs/.hidden"]
+        )
+        regular_dir = dirs["regular_docs"]
+        dot_git_dir = dirs[".git"]
+        dot_vscode_dir = dirs[".vscode"]
+        nested_dot_dir = dirs["regular_docs/.hidden"]
+
+        (regular_dir / "readme.md").write_text("# Regular readme")
+        (regular_dir / "guide.md").write_text("# Guide")
+        (dot_git_dir / "config.md").write_text("# Git config")
+        (dot_vscode_dir / "settings.md").write_text("# VSCode settings")
+        (nested_dot_dir / "secret.md").write_text("# Secret doc")
+
+        (regular_dir / "regular.txt").write_text("Not a markdown file")
+
+        result = find_markdown_files(self.temp_dir)
+
+        result_basenames = [Path(path).name for path in result]
+
+        self.assertIn("readme.md", result_basenames)
+        self.assertIn("guide.md", result_basenames)
+        self.assertNotIn("config.md", result_basenames)
+        self.assertNotIn("settings.md", result_basenames)
+        self.assertNotIn("secret.md", result_basenames)
+
+        self.assertEqual(len(result), 2)
 
 
 if __name__ == "__main__":
