@@ -932,7 +932,6 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         """Initialize dataloader.
 
         Args:
-            motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
         """
