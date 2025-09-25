@@ -12,8 +12,12 @@ from __future__ import annotations
 import logging
 import re
 import sys
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+import nh3
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +28,7 @@ class ValidationError:
         self,
         message: str,
         file_path: str,
-        field: str | None = None,
+        field: str,
     ):
         self.message = message
         self.file_path = file_path
@@ -36,7 +40,19 @@ class RecordValidator:
 
     COMMA_SEPARATED_FIELDS = ["tags", "owner", "skills"]
     MAX_COMMA_SEPARATED_ITEMS = 10
-    REQUIRED_FIELDS: list[str] = []  # add in rfc and estimated-scope once ready.
+    # add in required values once the future work docs are populated.
+    REQUIRED_FIELDS: list[str] = []
+
+    REGEX_PATTERNS = {
+        "owner": [r"[a-zA-Z0-9][a-zA-Z0-9-]{0,38}"],
+        "rfc": [
+            r"https://github\.com/thousandbrainsproject/tbp\.monty/.*",
+            r"required",
+            r"optional",
+            r"not-required",
+            r"unknown",
+        ],
+    }
 
     def __init__(self, docs_snippets_dir: Path):
         self.validation_sets: dict[str, list[str]] = {}
@@ -60,55 +76,61 @@ class RecordValidator:
         transformed_record = record.copy()
         file_path = record.get("path", "unknown")
 
-        field_errors = []
+        errors = []
         for field in self.COMMA_SEPARATED_FIELDS:
             if field in transformed_record and isinstance(
                 transformed_record[field], str
             ):
                 items = [tag.strip() for tag in transformed_record[field].split(",")]
                 if len(items) > self.MAX_COMMA_SEPARATED_ITEMS:
-                    field_errors.append(
-                        ValidationError(
-                            f"{field} field cannot have more than "
-                            f"{self.MAX_COMMA_SEPARATED_ITEMS} items. "
-                            f"Got {len(items)} items: {', '.join(items)}",
-                            file_path,
-                            field=field,
-                        )
+                    self._add_validation_error(
+                        f"{field} field cannot have more than "
+                        f"{self.MAX_COMMA_SEPARATED_ITEMS} items. "
+                        f"Got {len(items)} items: {', '.join(items)}",
+                        file_path,
+                        field,
+                        errors,
                     )
                 transformed_record[field] = items
-
-        errors = field_errors
-        errors.extend(self._validate_required_fields(transformed_record, file_path))
-        errors.extend(self._validate_field_values(transformed_record, file_path))
+        self._validate_required_fields(transformed_record, file_path, errors)
+        self._validate_field_values(transformed_record, file_path, errors)
 
         return transformed_record, errors
 
     def _validate_required_fields(
-        self, record: dict[str, Any], file_path: str
-    ) -> list[ValidationError]:
-        """Validate that all required fields are present and not empty.
-
-        Returns:
-            List of validation errors found
-        """
-        errors = []
+        self, record: dict[str, Any], file_path: str, errors: list[ValidationError]
+    ) -> None:
+        """Validate that all required fields are present and not empty."""
         for field in self.REQUIRED_FIELDS:
             if field not in record:
-                errors.append(
-                    ValidationError(
-                        f"Required field '{field}' is missing", file_path, field=field
-                    )
+                self._add_validation_error(
+                    f"Required field '{field}' is missing", file_path, field, errors
                 )
-            elif not isinstance(record[field], str) or not record[field].strip():
-                errors.append(
-                    ValidationError(
-                        f"Required field '{field}' cannot be empty",
-                        file_path,
-                        field=field,
-                    )
+                continue
+
+            if not isinstance(record[field], str):
+                self._add_validation_error(
+                    f"Required field '{field}' must be a string, "
+                    f"got {type(record[field]).__name__}",
+                    file_path,
+                    field,
+                    errors,
                 )
-        return errors
+                continue
+
+            if not record[field].strip():
+                self._add_validation_error(
+                    f"Required field '{field}' cannot be empty",
+                    file_path,
+                    field,
+                    errors,
+                )
+
+    def _add_validation_error(
+        self, message: str, file_path: str, field: str, errors: list[ValidationError]
+    ) -> None:
+        """Add a ValidationError to the errors list."""
+        errors.append(ValidationError(message, file_path, field=field))
 
     def _extract_readable_values(self, regex_patterns: list[str]) -> list[str]:
         """Extract human-readable values from regex patterns for error messages.
@@ -140,24 +162,28 @@ class RecordValidator:
         for file_path in future_work_files:
             field_name = file_path.stem.replace("future-work-", "")
 
+            if field_name in self.REGEX_PATTERNS:
+                logger.debug(
+                    f"Skipping {file_path.name} - using hardcoded regex "
+                    f"patterns for '{field_name}'"
+                )
+                continue
+
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read().strip()
 
-                regex_patterns = []
+                simple_values = []
                 for raw_item in content.split("`"):
-                    clean_item = raw_item.strip()
+                    clean_item = nh3.clean(raw_item).strip()
                     if clean_item:
-                        if re.match(r"^[a-zA-Z0-9-]+$", clean_item):
-                            escaped_item = re.escape(clean_item).replace("\\-", "-")
-                            regex_patterns.append(f"\\b{escaped_item}\\b")
-                        else:
-                            regex_patterns.append(clean_item)
+                        escaped_item = re.escape(clean_item).replace("\\-", "-")
+                        simple_values.append(f"\\b{escaped_item}\\b")
 
-                if regex_patterns:
-                    self.validation_sets[field_name] = regex_patterns
+                if simple_values:
+                    self.validation_sets[field_name] = simple_values
                     logger.debug(
-                        f"Loaded {len(regex_patterns)} regex patterns for "
+                        f"Loaded {len(simple_values)} simple text patterns for "
                         f"'{field_name}' from {file_path.name}"
                     )
 
@@ -166,19 +192,20 @@ class RecordValidator:
                 sys.exit(1)
 
     def _validate_field_values(
-        self, record: dict[str, Any], file_path: str
-    ) -> list[ValidationError]:
-        """Validate field values against loaded validation sets.
+        self, record: dict[str, Any], file_path: str, errors: list[ValidationError]
+    ) -> None:
+        """Validate field values against loaded validation sets and hardcoded patterns.
 
         Args:
             record: The record to validate
             file_path: Path to the source file for error reporting
-
-        Returns:
-            List of validation errors found
+            errors: List to append validation errors to
         """
-        errors = []
-        for field_name, regex_patterns in self.validation_sets.items():
+        all_validation_sets = {}
+        all_validation_sets.update(self.validation_sets)
+        all_validation_sets.update(self.REGEX_PATTERNS)
+
+        for field_name, regex_patterns in all_validation_sets.items():
             if field_name in record:
                 record_values = record[field_name]
 
@@ -189,18 +216,18 @@ class RecordValidator:
                 )
 
                 for value in values_to_check:
+                    sanitized_value = nh3.clean(str(value)).strip()
                     if not any(
-                        re.fullmatch(pattern, value) for pattern in regex_patterns
+                        re.fullmatch(pattern, sanitized_value)
+                        for pattern in regex_patterns
                     ):
                         readable_values = self._extract_readable_values(regex_patterns)
                         values_str = ", ".join(readable_values)
 
-                        errors.append(
-                            ValidationError(
-                                f"Invalid {field_name} value '{value}'. "
-                                f"Valid values are: {values_str}",
-                                file_path,
-                                field=field_name,
-                            )
+                        self._add_validation_error(
+                            f"Invalid {field_name} value '{sanitized_value}'. "
+                            f"Valid values are: {values_str}",
+                            file_path,
+                            field_name,
+                            errors,
                         )
-        return errors

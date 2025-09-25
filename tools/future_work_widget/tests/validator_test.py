@@ -89,14 +89,14 @@ class TestRecordValidator(unittest.TestCase):
 
         tags_file = snippets_dir / "future-work-tags.md"
         with open(tags_file, "w", encoding="utf-8") as f:
-            f.write("`simple-word` `complex.pattern` `https://github.com/.*`")
+            f.write("`simple-word` `accuracy` `learning`")
 
         validator = RecordValidator(snippets_dir)
 
         expected_patterns = [
             "\\bsimple-word\\b",
-            "complex.pattern",
-            "https://github.com/.*",
+            "\\baccuracy\\b",
+            "\\blearning\\b",
         ]
 
         self.assertEqual(
