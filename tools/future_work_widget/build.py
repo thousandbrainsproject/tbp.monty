@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import json
-import logging
 from pathlib import Path
 from typing import Any
 
@@ -18,9 +17,9 @@ from .validator import RecordValidator
 
 
 def build(
-    index_file: str,
-    output_dir: str,
-    docs_snippets_dir: str,
+    index_file: Path,
+    output_dir: Path,
+    docs_snippets_dir: Path,
 ) -> dict[str, Any]:
     """Build the future work widget data.
 
@@ -38,16 +37,13 @@ def build(
         - error_message: str summary error message (only if success=False)
     """
     try:
-        logging.info(f"Building widget from {index_file}")
-
-        index_path = Path(index_file)
-        if not index_path.exists():
+        if not index_file.exists():
             return {
                 "success": False,
                 "error_message": f"Index file not found: {index_file}",
             }
 
-        with open(index_path, "r", encoding="utf-8") as f:
+        with open(index_file, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         if not isinstance(data, list):
@@ -88,21 +84,11 @@ def build(
                 "error_message": f"Validation failed with {len(errors)} error(s)",
             }
 
-        logging.info(
-            f"Found {len(future_work_items)} future-work items out of "
-            f"{len(data)} total items"
-        )
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-        output_path = Path(output_dir)
-        output_path.mkdir(parents=True, exist_ok=True)
-
-        data_file = output_path / "data.json"
+        data_file = output_dir / "data.json"
         with open(data_file, "w", encoding="utf-8") as f:
             json.dump(future_work_items, f, indent=2, ensure_ascii=False)
-
-        logging.info(
-            f"Generated data.json with {len(future_work_items)} items in {output_dir}"
-        )
 
         return {
             "success": True,

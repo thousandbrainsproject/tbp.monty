@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import logging
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
+logger = logging.getLogger(__name__)
 
 class ValidationError:
     """Represents a validation error with file context."""
@@ -36,10 +38,9 @@ class RecordValidator:
     MAX_COMMA_SEPARATED_ITEMS = 10
     REQUIRED_FIELDS: list[str] = []  # add in rfc and estimated-scope once ready.
 
-    def __init__(self, docs_snippets_dir: str | None = None):
+    def __init__(self, docs_snippets_dir: Path):
         self.validation_sets: dict[str, list[str]] = {}
-        if docs_snippets_dir:
-            self._load_validation_files(docs_snippets_dir)
+        self._load_validation_files(docs_snippets_dir)
 
     def validate(
         self, record: dict[str, Any]
@@ -128,18 +129,13 @@ class RecordValidator:
                 readable_values.append(f"pattern: {pattern}")
         return sorted(readable_values)
 
-    def _load_validation_files(self, docs_snippets_dir: str) -> None:
+    def _load_validation_files(self, docs_snippets_dir: Path) -> None:
         """Load validation files from docs/snippets directory.
 
         Args:
             docs_snippets_dir: Path to the docs/snippets directory
         """
-        snippets_path = Path(docs_snippets_dir)
-        if not snippets_path.exists():
-            logging.warning(f"Snippets directory not found: {docs_snippets_dir}")
-            return
-
-        future_work_files = list(snippets_path.glob("future-work-*.md"))
+        future_work_files = list(docs_snippets_dir.glob("future-work-*.md"))
 
         for file_path in future_work_files:
             field_name = file_path.stem.replace("future-work-", "")
@@ -160,13 +156,14 @@ class RecordValidator:
 
                 if regex_patterns:
                     self.validation_sets[field_name] = regex_patterns
-                    logging.info(
+                    logger.debug(
                         f"Loaded {len(regex_patterns)} regex patterns for "
                         f"'{field_name}' from {file_path.name}"
                     )
 
             except (OSError, UnicodeDecodeError):
-                logging.exception(f"Failed to load validation file {file_path}")
+                logger.exception(f"Failed to load validation file {file_path}")
+                sys.exit(1)
 
     def _validate_field_values(
         self, record: dict[str, Any], file_path: str

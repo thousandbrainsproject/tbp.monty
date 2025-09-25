@@ -9,11 +9,12 @@
 import argparse
 import json
 import logging
-import os
 import sys
 from pathlib import Path
 
 from .build import build
+
+logger = logging.getLogger(__name__)
 
 
 def _validate_docs_snippets_dir(docs_snippets_dir: str) -> None:
@@ -24,17 +25,17 @@ def _validate_docs_snippets_dir(docs_snippets_dir: str) -> None:
             "success": False,
             "error_message": error_msg,
         }
-        print(json.dumps(result, indent=2))
+        logger.info(json.dumps(result, indent=2))
         sys.exit(1)
 
 
 def main():
+    logging.basicConfig(format="%(message)s", level=logging.INFO)
     parser = argparse.ArgumentParser(
         description="CLI tool to manage future work widget."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    # build
     build_parser = subparsers.add_parser(
         "build", help="Build the data and package the widget"
     )
@@ -50,28 +51,15 @@ def main():
 
     args = parser.parse_args()
 
-    initialize()
-
     if args.command == "build":
-        docs_snippets_dir = args.docs_snippets_dir
+        _validate_docs_snippets_dir(args.docs_snippets_dir)
 
-        logging.getLogger().setLevel(logging.CRITICAL)
+        result = build(
+            Path(args.index_file), Path(args.output_dir), Path(args.docs_snippets_dir)
+        )
 
-        _validate_docs_snippets_dir(docs_snippets_dir)
-
-        result = build(args.index_file, args.output_dir, docs_snippets_dir)
-
-        print(json.dumps(result, indent=2))
+        logger.info(json.dumps(result, indent=2))
         sys.exit(0 if result["success"] else 1)
-
-
-def initialize():
-    env_log_level = os.getenv("LOG_LEVEL")
-
-    if env_log_level is None:
-        logging.basicConfig(level=logging.INFO, format="%(message)s")
-    else:
-        logging.basicConfig(level=env_log_level.upper(), format="%(message)s")
 
 
 if __name__ == "__main__":

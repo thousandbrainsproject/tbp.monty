@@ -22,16 +22,12 @@ from tools.future_work_widget.validator import RecordValidator
 
 class TestBuild(unittest.TestCase):
     def setUp(self):
-        self.temp_dir = tempfile.mkdtemp()
-        self.temp_path = Path(self.temp_dir)
-        self.output_dir = tempfile.mkdtemp()
-        self.output_path = Path(self.output_dir)
+        self.temp_path = Path(tempfile.mkdtemp())
 
     def tearDown(self):
-        shutil.rmtree(self.temp_dir)
-        shutil.rmtree(self.output_dir)
+        shutil.rmtree(self.temp_path)
 
-    def _create_snippets(self, snippet_configs: dict[str, str]) -> str:
+    def _create_snippets(self, snippet_configs: dict[str, str]) -> Path:
         """Create snippet files with given configurations.
 
         Args:
@@ -48,7 +44,7 @@ class TestBuild(unittest.TestCase):
             with open(snippet_file, "w", encoding="utf-8") as f:
                 f.write(content)
 
-        return str(snippets_dir)
+        return snippets_dir
 
     def _run_build_test_with_snippets(
         self, input_data: list[dict[str, Any]], snippets_dir: str
@@ -65,12 +61,12 @@ class TestBuild(unittest.TestCase):
         with open(index_file, "w", encoding="utf-8") as f:
             json.dump(input_data, f)
 
-        result = build(str(index_file), str(self.output_path), snippets_dir)
+        result = build(index_file, self.temp_path, snippets_dir)
 
         if not result["success"]:
             raise ValueError(result["error_message"])
 
-        data_file = self.output_path / "data.json"
+        data_file = self.temp_path / "data.json"
         with open(data_file, "r", encoding="utf-8") as f:
             return json.load(f)
 
@@ -116,12 +112,12 @@ class TestBuild(unittest.TestCase):
         if snippets_dir is None:
             snippets_dir = self._create_snippets({})
 
-        result = build(str(index_file), str(self.output_path), snippets_dir)
+        result = build(index_file, self.temp_path, snippets_dir)
 
         if not result["success"]:
             raise ValueError(result["error_message"])
 
-        data_file = self.output_path / "data.json"
+        data_file = self.temp_path / "data.json"
         with open(data_file, "r", encoding="utf-8") as f:
             return json.load(f)
 
@@ -139,7 +135,7 @@ class TestBuild(unittest.TestCase):
         if snippets_dir is None:
             snippets_dir = self._create_snippets({})
 
-        result = build(str(index_file), str(self.output_path), snippets_dir)
+        result = build(index_file, self.temp_path, snippets_dir)
 
         self.assertFalse(result["success"])
         self.assertIn(expected_error_fragment, result["error_message"])
@@ -230,7 +226,7 @@ class TestBuild(unittest.TestCase):
             json.dump(input_data, f)
 
         snippets_dir = self._create_snippets({})
-        result = build(str(index_file), str(self.output_path), snippets_dir)
+        result = build(index_file, self.temp_path, snippets_dir)
 
         self.assertIsNotNone(result)
         self.assertTrue(result["success"])
@@ -257,7 +253,7 @@ class TestBuild(unittest.TestCase):
         with open(index_file, "w", encoding="utf-8") as f:
             json.dump(input_data, f)
 
-        result = build(str(index_file), str(self.output_path), snippets_dir)
+        result = build(index_file, self.temp_path, snippets_dir)
 
         self.assertIsNotNone(result)
         self.assertFalse(result["success"])
@@ -293,7 +289,7 @@ class TestBuild(unittest.TestCase):
             json.dump(input_data, f)
 
         snippets_dir = self._create_snippets({})
-        result = build(str(index_file), str(self.output_path), snippets_dir)
+        result = build(index_file, self.temp_path, snippets_dir)
 
         self.assertIsNotNone(result)
         self.assertFalse(result["success"])
@@ -368,7 +364,7 @@ class TestBuild(unittest.TestCase):
                 with open(index_file, "w", encoding="utf-8") as f:
                     json.dump([valid_item], f)
 
-                result = build(str(index_file), str(self.output_path), snippets_dir)
+                result = build(index_file, self.temp_path, snippets_dir)
                 self.assertTrue(result["success"])
 
                 invalid_item = self._create_test_item(
@@ -378,7 +374,7 @@ class TestBuild(unittest.TestCase):
                 with open(index_file, "w", encoding="utf-8") as f:
                     json.dump([invalid_item], f)
 
-                result = build(str(index_file), str(self.output_path), snippets_dir)
+                result = build(index_file, self.temp_path, snippets_dir)
                 self.assertFalse(result["success"])
 
                 self.assertEqual(len(result["errors"]), 1)
@@ -416,7 +412,7 @@ class TestBuild(unittest.TestCase):
         with open(index_file, "w", encoding="utf-8") as f:
             json.dump([invalid_item], f)
 
-        result = build(str(index_file), str(self.output_path), snippets_dir)
+        result = build(index_file, self.temp_path, snippets_dir)
         self.assertFalse(result["success"])
 
         self.assertEqual(len(result["errors"]), 1)
@@ -448,7 +444,7 @@ class TestBuild(unittest.TestCase):
         with open(index_file, "w", encoding="utf-8") as f:
             json.dump([invalid_item], f)
 
-        result = build(str(index_file), str(self.output_path), snippets_dir)
+        result = build(index_file, self.temp_path, snippets_dir)
         self.assertFalse(result["success"])
 
         self.assertEqual(len(result["errors"]), 1)

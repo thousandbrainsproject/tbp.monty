@@ -37,7 +37,7 @@ class TestRecordValidator(unittest.TestCase):
         with open(skills_file, "w", encoding="utf-8") as f:
             f.write("`python` `github-actions` `JS` `HTML`")
 
-        validator = RecordValidator(str(snippets_dir))
+        validator = RecordValidator(snippets_dir)
 
         self.assertIn("tags", validator.validation_sets)
         self.assertIn("skills", validator.validation_sets)
@@ -66,7 +66,7 @@ class TestRecordValidator(unittest.TestCase):
         snippets_dir = self.temp_path / "snippets"
         snippets_dir.mkdir()
 
-        validator = RecordValidator(str(snippets_dir))
+        validator = RecordValidator(snippets_dir)
 
         self.assertEqual(len(validator.validation_sets), 0)
         record = {"path1": "future-work", "path2": "test"}
@@ -74,7 +74,7 @@ class TestRecordValidator(unittest.TestCase):
         self.assertEqual(len(errors), 0)
 
     def test_nonexistent_snippets_directory(self):
-        nonexistent_dir = str(self.temp_path / "nonexistent")
+        nonexistent_dir = self.temp_path / "nonexistent"
 
         validator = RecordValidator(nonexistent_dir)
 
@@ -91,7 +91,7 @@ class TestRecordValidator(unittest.TestCase):
         with open(tags_file, "w", encoding="utf-8") as f:
             f.write("`simple-word` `complex.pattern` `https://github.com/.*`")
 
-        validator = RecordValidator(str(snippets_dir))
+        validator = RecordValidator(snippets_dir)
 
         expected_patterns = [
             "\\bsimple-word\\b",
@@ -105,7 +105,7 @@ class TestRecordValidator(unittest.TestCase):
 
     def test_direct_validation_success(self):
         """Test RecordValidator.validate() method directly."""
-        validator = RecordValidator()
+        validator = RecordValidator(Path())
 
         record = {
             "path1": "future-work",
@@ -128,7 +128,7 @@ class TestRecordValidator(unittest.TestCase):
 
     def test_direct_validation_filters_non_future_work(self):
         """Test that non-future-work items are filtered out."""
-        validator = RecordValidator()
+        validator = RecordValidator(Path())
 
         record = {
             "path1": "other-section",
@@ -142,7 +142,7 @@ class TestRecordValidator(unittest.TestCase):
 
     def test_comma_separated_field_limits(self):
         """Test limits on comma-separated fields."""
-        validator = RecordValidator()
+        validator = RecordValidator(Path())
         max_items = RecordValidator.MAX_COMMA_SEPARATED_ITEMS
 
         # Create a record with too many tags
