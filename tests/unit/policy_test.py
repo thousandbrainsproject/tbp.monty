@@ -1363,7 +1363,7 @@ class PolicyTest(unittest.TestCase):
 
         target_info = {
             "target_loc": np.array(target_location_on_object),
-            "target_pn": np.array([0.0, 1.0, 0.0]),
+            "target_surface_normal": np.array([0.0, 1.0, 0.0]),
             "hypothesis_to_test": {
                 "graph_id": "dummy_object",
                 "location": np.array([0.1, 0.1, 0.1]),
