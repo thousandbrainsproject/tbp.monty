@@ -8,6 +8,13 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import pytest
+
+pytest.importorskip(
+    "habitat_sim",
+    reason="Habitat Sim optional dependency not installed.",
+)
+
 import os
 import pathlib
 import pickle
@@ -20,10 +27,7 @@ from unittest import mock
 import magnum as mn
 import numpy as np
 
-from tbp.monty.frameworks.config_utils.config_args import (
-    LoggingConfig,
-    SingleCameraMontyConfig,
-)
+from tbp.monty.frameworks.config_utils.config_args import LoggingConfig
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     ExperimentArgs,
 )
@@ -36,6 +40,9 @@ from tbp.monty.frameworks.run import main, run
 from tbp.monty.simulators.habitat import SingleSensorAgent
 from tbp.monty.simulators.habitat.configs import (
     SinglePTZHabitatDatasetArgs,
+)
+from tests.unit.frameworks.config_utils.fakes.config_args import (
+    FakeSingleCameraMontyConfig,
 )
 
 DATASET_LEN = 1000
@@ -111,7 +118,7 @@ class MontyRunTest(unittest.TestCase):
                     monty_log_level="TEST",
                     monty_handlers=[],
                 ),
-                "monty_config": SingleCameraMontyConfig(),
+                "monty_config": FakeSingleCameraMontyConfig(),
                 "dataset_class": EnvironmentDataset,
                 "dataset_args": SinglePTZHabitatDatasetArgs(),
                 "train_dataloader_class": EnvironmentDataLoader,
@@ -132,7 +139,7 @@ class MontyRunTest(unittest.TestCase):
                     monty_log_level="TEST",
                     monty_handlers=[],
                 ),
-                "monty_config": SingleCameraMontyConfig(),
+                "monty_config": FakeSingleCameraMontyConfig(),
                 "dataset_class": EnvironmentDataset,
                 "dataset_args": SinglePTZHabitatDatasetArgs(),
                 "train_dataloader_class": EnvironmentDataLoader,
@@ -200,11 +207,11 @@ class MontyRunTest(unittest.TestCase):
     def test_importing_existing_configs(self):
         """Test that any changes do not cause errors in existing configs."""
         current_file_path = pathlib.Path(__file__).parent.resolve()
-        base_repo_idx = current_file_path.parts.index("tbp.monty")
-        while current_file_path.parts[base_repo_idx + 1 :].count("tbp.monty") > 0:
-            # We want the _last_ "tbp.monty" index
+        base_repo_idx = current_file_path.parts.index("tests")
+        while current_file_path.parts[base_repo_idx + 1 :].count("tests") > 0:
+            # We want the _last_ "tests" index
             base_repo_idx += 1
-        base_dir = pathlib.Path(*current_file_path.parts[: base_repo_idx + 1])
+        base_dir = pathlib.Path(*current_file_path.parts[:base_repo_idx])
         exp_dir = os.path.join(str(base_dir), "benchmarks")
         sys.path.append(exp_dir)
         import configs  # noqa: F401

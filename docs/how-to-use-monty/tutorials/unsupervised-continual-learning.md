@@ -3,7 +3,7 @@ title: Unsupervised Continual Learning
 ---
 # Introduction
 
-This tutorial demonstrates how to configure and run Monty experiments for [unsupervised continual learning](../../how-monty-works/how-learning-modules-work.md#different-phases-of-learning). In this regime, Monty learns while it explores an object and attempts to identify its identity and pose. If an object has been recognized as a previously seen item, then any knowledge gained during its exploration is added to an existing model and committed to memory. If Monty does not recognize the object, then a new model is generated for the object and stored. In this way, Monty jointly performs unsupervised learning and object/pose recognition. This mode of operation is distinct from those used in our tutorials on [pretraining](pretraining-a-model.md) and [model evaluation](running-inference-with-a-pretrained-model.md) in which learning and inference were performed in separate stages which is useful for more controlled experiments on one of the two. It is closer to the ultimate vision of Monty, where learning and inference are closely intertwined, much as they are in humans.
+This tutorial demonstrates how to configure and run Monty experiments for [unsupervised continual learning](../../how-monty-works/experiment.md#different-phases-of-learning). In this regime, Monty learns while it explores an object and attempts to identify its identity and pose. If an object has been recognized as a previously seen item, then any knowledge gained during its exploration is added to an existing model and committed to memory. If Monty does not recognize the object, then a new model is generated for the object and stored. In this way, Monty jointly performs unsupervised learning and object/pose recognition. This mode of operation is distinct from those used in our tutorials on [pretraining](pretraining-a-model.md) and [model evaluation](running-inference-with-a-pretrained-model.md) in which learning and inference were performed in separate stages which is useful for more controlled experiments on one of the two. It is closer to the ultimate vision of Monty, where learning and inference are closely intertwined, much as they are in humans.
 
 Our model will have one surface agent connected to one sensor module connected to one learning module. Our dataset will be comprised of two objects in the [YCB](https://www.ycbbenchmarks.com/) dataset, and each will be shown at a different random rotation for each episode. Monty will see each object three times in total.
 
@@ -17,9 +17,11 @@ To follow along, open the `benchmarks/configs/my_experiments.py` file and paste 
 
 ```python
 import os
+from dataclasses import asdict
 
 import numpy as np
 
+from benchmarks.configs.names import MyExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     CSVLoggingConfig,
     MontyArgs,
@@ -34,7 +36,9 @@ from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
     MontyObjectRecognitionExperiment,
 )
-from tbp.monty.frameworks.models.evidence_matching import EvidenceGraphLM
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+    EvidenceGraphLM
+)
 from tbp.monty.simulators.habitat.configs import (
     SurfaceViewFinderMountHabitatDatasetArgs,
 )
@@ -97,7 +101,9 @@ learning_module_0 = dict(
         # parameter value partially addresses this, altough we note these are temporary
         # fixes and we intend to implement a more principled approach in the future.
         required_symmetry_evidence=20,
-        max_nneighbors=5,
+        hypotheses_updater_args=dict(
+            max_nneighbors=5
+        )
     ),
 )
 learning_module_configs = dict(learning_module_0=learning_module_0)
@@ -225,6 +231,6 @@ After running this script, you should see a plot with three views of the bowl ob
 
 ![The bowl object model after each epoch](../../figures/how-to-use-monty/unsupervised_bowl_object_models.png)
 
-After Monty's first pass (epoch 0), Monty's internal model of the bowl is somewhat incomplete. As Monty continues to encounter the bowl in subsequent epochs, the model becomes further refined by new observations. In this way, Monty learns about new and existing object continuously without the need for supervision or distinct training periods. To update existing models, the detected pose is used to transform new observations into the existing models reference frame. For more details on how learning modules operate in this mode, see our documentation on [how learning modules work](../../how-monty-works/how-learning-modules-work.md).
+After Monty's first pass (epoch 0), Monty's internal model of the bowl is somewhat incomplete. As Monty continues to encounter the bowl in subsequent epochs, the model becomes further refined by new observations. In this way, Monty learns about new and existing object continuously without the need for supervision or distinct training periods. To update existing models, the detected pose is used to transform new observations into the existing models reference frame. For more details on how learning modules operate in this mode, see our documentation on [how learning modules work](../../how-monty-works/learning-module.md).
 
 Thus far we have demonstrated how to build models that use a single sensor module connected to one learning module. In the [next tutorial](multiple-learning-modules.md), we will demonstrate how to configure multiple sensors and connect them to multiple learning modules to perform faster inference.

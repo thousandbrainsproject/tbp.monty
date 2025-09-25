@@ -40,7 +40,7 @@ If all automated checks pass, **Maintainers** will **Review** the Pull Request. 
 
 # 3. Update Pull Request
 
-If automated checks fail or **Maintainers** **Request Changes**, you are responsible for **Updating the Pull Request**. Once you updated, the Pull Request will again enter **Review**.
+If automated checks fail or **Maintainers** **Request Changes**, you are responsible for **Updating the Pull Request**. Once you have updated it, the Pull Request will again enter **Review**.
 
 # 4. Approve
 
@@ -78,7 +78,7 @@ Once your Pull Request is **Approved**, if you make any unexpected commits that 
 > * `fix`: Fix to a bug in the **src/tbp/monty** codebase. This correlates with `PATCH` in [RFC 7 Monty versioning](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0007_monty_versioning.md).
 > * `feat`: Introduction of a new feature to the **scr/tbp/monty** codebase. This correlates with `MINOR` in [RFC 7 Monty versioning](https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0007_monty_versioning.md).
 > * `build`: Change to the build system or external dependencies.
-> * `ci`: Change to our GitHub Actions confguration files and scripts.
+> * `ci`: Change to our GitHub Actions configuration files and scripts.
 > * `docs`: Documentation only update.
 > * `perf`: Performance improvement.
 > * `refactor`: A **src/tbp/monty** code change that neither fixes a bug nor adds a feature.

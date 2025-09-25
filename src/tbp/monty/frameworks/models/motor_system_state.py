@@ -53,7 +53,7 @@ class MotorSystemState(Dict[str, Any]):
           between the two.
     """
 
-    def convert_motor_state(self):
+    def convert_motor_state(self) -> dict:
         """Convert the motor state into something that can be pickled/saved to JSON.
 
         i.e. substitute vector and quaternion objects; note e.g. copy.deepcopy does not
@@ -63,7 +63,7 @@ class MotorSystemState(Dict[str, Any]):
         buffer.py
 
         Returns:
-            (dict): Copy of the motor state.
+            Copy of the motor state.
         """
         state_copy = {}
         for key in self.keys():

@@ -7,11 +7,12 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import numpy as np
 
 
-def get_bounding_corners(object_ref):
+def get_bounding_corners(object_ref) -> tuple[np.ndarray, np.ndarray]:
     """Determine and return the bounding box of a Habitat object.
 
     Determines and returns the bounding box (defined by a "max" and "min" corner) of
@@ -25,8 +26,7 @@ def get_bounding_corners(object_ref):
         object_ref : the Habitat object instance
 
     Returns:
-        Two np.arrays : min_corner and max_corner, the defining corners of the bounding
-        box
+        min_corner and max_corner, the defining corners of the bounding box.
     """
     object_aabb = object_ref.collision_shape_aabb
 

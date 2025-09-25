@@ -32,8 +32,8 @@ sys.path.insert(0, str(source_path))
 
 project = "tbp.monty"
 year = str(datetime.datetime.now().year)
-copyright = f"{year}, Numenta, Inc"  # noqa: A001
-author = "Numenta, Inc."
+copyright = f"{year}, Thousand Brains Project"  # noqa: A001
+author = "Thousand Brains Project"
 
 # The full version, including alpha/beta/rc tags
 
@@ -57,6 +57,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
+    "sphinx_autodoc_typehints",
     "myst_parser",
 ]
 
@@ -164,6 +165,10 @@ autodoc_mock_imports = [
     "torch_geometric",
     "torchvision",
 ]
+autodoc_default_options = {
+    # Make sphinx generate docs for specific dunder methods
+    "special-members": "__init__",
+}
 # If true, the current module name will be prepended to all description
 # unit titles (such as .. function::).
 add_module_names = False
@@ -196,3 +201,9 @@ todo_link_only = True
 
 # remove the Built with Sphinx message
 html_show_sphinx = False
+
+# -- Options for sphinx_autodoc_typehints extension ----------------------------
+
+always_use_bars_union = True
+typehints_use_signature = True
+typehints_use_signature_return = True

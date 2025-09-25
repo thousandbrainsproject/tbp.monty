@@ -18,6 +18,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_right_hand_angle,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class NumpyGraph:
     """Alternative way to represent graphs without using torch.
@@ -50,7 +52,7 @@ def torch_graph_to_numpy(torch_graph):
 
 def already_in_list(
     existing_points, new_point, features, clean_ids, query_id, graph_delta_thresholds
-):
+) -> bool:
     """Check if a given point is already in a list of points.
 
     Args:
@@ -65,7 +67,7 @@ def already_in_list(
             the graph
 
     Returns:
-        bool: Whether the point is already in the list
+        Whether the point is already in the list
     """
     in_list = False
 
@@ -111,13 +113,13 @@ def already_in_list(
                     )  # Use circular difference to reflect angular nature of hue
 
                     if hue_d > graph_delta_thresholds[feature][0]:
-                        logging.debug(
+                        logger.debug(
                             f"Interesting point because of {feature} : {hue_d}"
                         )
                         redundant_point = False
                         break
                 elif feature == "pose_vectors":
-                    # TODO S: currently just looking at first pose vector (pn)
+                    # TODO S: currently just looking at first pose vector (sn)
                     angle_between = get_angle(
                         features["pose_vectors"][feature_idx][:3],
                         features["pose_vectors"][query_id][:3],
@@ -137,19 +139,17 @@ def already_in_list(
                     if len(delta_change.shape) > 0:
                         for i, dc in enumerate(delta_change):
                             if dc > graph_delta_thresholds[feature][i]:
-                                logging.debug(
+                                logger.debug(
                                     f"Interesting point because of {feature} : {dc}"
                                 )
                                 redundant_point = False
                                 break
-                    else:
-                        if delta_change > graph_delta_thresholds[feature]:
-                            logging.debug(
-                                "Interesting point because of "
-                                f"{feature} : {delta_change}"
-                            )
-                            redundant_point = False
-                            break
+                    elif delta_change > graph_delta_thresholds[feature]:
+                        logger.debug(
+                            f"Interesting point because of {feature} : {delta_change}"
+                        )
+                        redundant_point = False
+                        break
 
         if redundant_point:
             # Considered in the list if all features above (incl. distance) are
@@ -198,7 +198,7 @@ def remove_close_points(point_cloud, features, graph_delta_thresholds, old_graph
         )
     if "pose_vectors" not in graph_delta_thresholds.keys():
         # By default, we will still consider a nearby point as new if the difference
-        # in point-normals suggests it is on the other side of an object
+        # in surface normals suggests it is on the other side of an object
         # NOTE: currently not looking at curvature directions/second pose vector
         graph_delta_thresholds["pose_vectors"] = [np.pi / 2, np.pi * 2, np.pi * 2]
 
@@ -307,25 +307,25 @@ def get_cubic_patches(arr_shape, centers, size):
 def pose_vector_mean(pose_vecs, pose_fully_defined):
     """Calculate mean of pose vectors.
 
-    This takes into account that point normals may contain observations from two
+    This takes into account that surface normals may contain observations from two
     surface sides and curvature directions have an ambiguous direction. It also
     enforces them to stay orthogonal.
 
-    If not pose_fully_defined, the curvature directions are meaningless and we just
-    return the first observation. Theoretically this shouldn't matter but it can save
+    If not pose_fully_defined, the curvature directions are meaningless, and we just
+    return the first observation. Theoretically this shouldn't matter, but it can save
     some computation time.
 
     Returns:
         ?
     """
-    # Check the angle between all point normals relative to the first curvature
+    # Check the angle between all surface normals relative to the first curvature
     # directions. Then look at how many are positive vs. negative and use the ones
     # that make up the majority. So if 5 pns point one way and 10 in the opposite,
-    # we will use the 10 and discard the rest. This avoids averaging over pns that
+    # we will use the 10 and discard the rest. This avoids averaging over sns that
     # are from opposite sides of an objects surface.
     valid_pose_vecs = np.where(np.any(pose_vecs, axis=1))[0]
     if len(valid_pose_vecs) == 0:
-        logging.debug(f"no valid pose vecs: {pose_vecs}")
+        logger.debug(f"no valid pose vecs: {pose_vecs}")
         return None, False
     # TODO: more generic names
     pns = pose_vecs[valid_pose_vecs, :3]

@@ -16,7 +16,7 @@ See Also:
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import habitat_sim
 import magnum as mn
@@ -25,7 +25,23 @@ from habitat_sim.utils import common as sim_utils
 from importlib_resources import files
 
 import tbp.monty.simulators.resources as resources
-from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.actions.actions import (
+    Action,
+    LookDown,
+    LookUp,
+    MoveForward,
+    MoveTangentially,
+    OrientHorizontal,
+    OrientVertical,
+    SetAgentPitch,
+    SetAgentPose,
+    SetSensorPitch,
+    SetSensorPose,
+    SetSensorRotation,
+    SetYaw,
+    TurnLeft,
+    TurnRight,
+)
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
 from tbp.monty.simulators.habitat.environment_utils import get_bounding_corners
 
@@ -35,6 +51,11 @@ __all__ = [
     "HabitatSim",
     "PRIMITIVE_OBJECT_TYPES",
 ]
+
+from tbp.monty.frameworks.environments.embodied_environment import (
+    QuaternionWXYZ,
+    VectorXYZ,
+)
 
 DEFAULT_SCENE = "NONE"
 DEFAULT_PHYSICS_CONFIG = str(files(resources) / "default.physics_config.json")
@@ -48,10 +69,6 @@ PRIMITIVE_OBJECT_TYPES = {
     "icosphereSolid": 105,
     "uvSphereSolid": 106,
 }
-
-
-Vector3 = Tuple[float, float, float]
-Quaternion = Tuple[float, float, float, float]
 
 
 class HabitatSim(HabitatActuator):
@@ -70,7 +87,7 @@ class HabitatSim(HabitatActuator):
         )
         with HabitatSim(agents=[camera]) as sim:
             sim.add_object(name="coneSolid", position=(0.0, 1.5, -0.2))
-            obs = sim.get_observations()
+            obs = sim.observations
 
         plot_image(obs["camera"]["camera_id"]["rgba"])
         plot_image(obs["camera"]["camera_id"]["depth"])
@@ -195,11 +212,11 @@ class HabitatSim(HabitatActuator):
     def add_object(
         self,
         name: str,
-        position: Vector3 = (0.0, 0.0, 0.0),
-        rotation: Quaternion = (1.0, 0.0, 0.0, 0.0),
-        scale: Vector3 = (1.0, 1.0, 1.0),
+        position: VectorXYZ = (0.0, 0.0, 0.0),
+        rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
+        scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: Optional[str] = None,
-        enable_physics: Optional[bool] = False,
+        enable_physics=False,
         object_to_avoid=False,
         primary_target_bb=None,
     ):
@@ -292,24 +309,24 @@ class HabitatSim(HabitatActuator):
         # Compare the intended number of objects added (counter) vs the number
         # instantiated in the Habitat environmnet
         self._object_counter += 1
-        num_objects_added = self.get_num_objects()
+        num_objects_added = self.num_objects
         if isinstance(num_objects_added, int):
             # In some units tests (e.g. MontyRunTest.test_main_with_single_experiment),
-            # a simulator mock object is used, and so self.get_num_objects does not
+            # a simulator mock object is used, and so self.num_objects does not
             # return a meaningful int, but instead another mock object
             # TODO make this test more robust and move to its own unit test
             assert self._object_counter == num_objects_added, "Not all objects added"
 
         return obj
 
-    def non_conflicting_vector(self):
+    def non_conflicting_vector(self) -> np.ndarray:
         """Find a non-conflicting vector.
 
         A non-conflicting vector avoids sampling directions that will be just in front
         of or behind a target object.
 
         Returns:
-            np.array: The non-conflicting vector
+            The non-conflicting vector
         """
         angle_ranges = [
             (0, 30),
@@ -333,7 +350,7 @@ class HabitatSim(HabitatActuator):
         primary_obj_bb,
         new_obj_bb,
         overlap_threshold=0.75,
-    ):
+    ) -> bool:
         """Check if the object being added overlaps in the x-axis with target.
 
         The object overlapping the primary target object risks obstructing the initial
@@ -349,8 +366,8 @@ class HabitatSim(HabitatActuator):
             overlap_threshold: The threshold for overlap. Defaults to 0.75.
 
         Returns:
-            bool: True if the overlap is greater than overlap_threshold; 1.0 corresponds
-                to total overlap (the primary target is potentially not visible)
+            True if the overlap is greater than overlap_threshold; 1.0 corresponds
+            to total overlap (the primary target is potentially not visible)
         """
         primary_start, primary_end = primary_obj_bb[0][0], primary_obj_bb[1][0]
         new_start, new_end = new_obj_bb[0][0], new_obj_bb[1][0]
@@ -433,12 +450,14 @@ class HabitatSim(HabitatActuator):
 
         raise RuntimeError("Failed to find non-colliding positions")
 
-    def get_num_objects(self):
+    @property
+    def num_objects(self):
         """Return the number of instantiated objects."""
         rigid_mgr = self._sim.get_rigid_object_manager()
         return rigid_mgr.get_num_objects()
 
-    def get_action_space(self):
+    @property
+    def action_space(self):
         """Returns a set with all available actions.
 
         All available actions are those registered by all agents in the
@@ -461,22 +480,48 @@ class HabitatSim(HabitatActuator):
             A dictionary with the observations grouped by agent_id
 
         Raises:
+            TypeError: If the action type is invalid
             ValueError: If the action name is invalid
         """
         action_name = self.action_name(action)
         if action_name not in self._action_space:
             raise ValueError(f"Invalid action name: {action_name}")
 
+        # TODO: This is for the purpose of type checking, but would be better handled
+        #       using the action space check above, once those are integrated into the
+        #       type system.
+        if not isinstance(
+            action,
+            (
+                LookDown,
+                LookUp,
+                MoveForward,
+                MoveTangentially,
+                OrientHorizontal,
+                OrientVertical,
+                SetAgentPitch,
+                SetAgentPose,
+                SetSensorPitch,
+                SetSensorPose,
+                SetSensorRotation,
+                SetYaw,
+                TurnLeft,
+                TurnRight,
+            ),
+        ):
+            raise TypeError(f"Invalid action type: {type(action)}")
+
         action.act(self)
 
-        observations = self.get_observations()
+        observations = self.observations
         return observations
 
-    def get_observations(self):
+    @property
+    def observations(self) -> dict:
         """Get sensor observations.
 
         Returns:
-            dict: A dictionary with all sensor observations grouped by sensor module.
+            A dictionary with all sensor observations grouped by sensor module.
                 For example:
                     {
                         "agent1": {
@@ -498,7 +543,7 @@ class HabitatSim(HabitatActuator):
         obs = self.process_observations(obs)
         return obs
 
-    def process_observations(self, obs):
+    def process_observations(self, obs) -> dict:
         """Habitat returns observations grouped by agent_index.
 
         Initially, we group observations by agent_id instead and call all agents
@@ -508,7 +553,7 @@ class HabitatSim(HabitatActuator):
             obs: The observations to process
 
         Returns:
-            dict: The processed observations grouped by agent_id
+            The processed observations grouped by agent_id.
         """
         processed_obs = defaultdict(dict)
         for agent_index, agent_obs in obs.items():
@@ -518,34 +563,35 @@ class HabitatSim(HabitatActuator):
 
         return processed_obs
 
-    def get_states(self):
+    @property
+    def states(self) -> dict:
         """Get agent and sensor states (position, rotation, etc..).
 
         Returns:
-            dict: A dictionary with the agent pose in world coordinates and any other
-                agent specific state as well as every sensor pose relative to the agent
-                as well as any sensor specific state that is not returned by
-                :meth:`get_observations`.
+            A dictionary with the agent pose in world coordinates and any other
+            agent specific state as well as every sensor pose relative to the agent
+            as well as any sensor specific state that is not returned by
+            :attr:`observations`.
 
-                For example:
-                    {
-                        "camera": {
-                            "position": [2.125, 1.5, -5.278],
-                            "rotation": [0.707107, 0.0, 0.0.707107, 0.0],
-                            "sensors" : {
-                                "rgba": {
-                                    "position": [0.0, 1.5, 0.0],
-                                    "rotation": [1.0, 0.0, 0.0, 0.0],
-                                },
-                                "depth": {
-                                    "position": [0.0, 1.5, 0.0],
-                                    "rotation": [1.0, 0.0, 0.0, 0.0],
-                                },
-                                :
-                            }
-                        },
-                        :
-                    }
+            For example:
+                {
+                    "camera": {
+                        "position": [2.125, 1.5, -5.278],
+                        "rotation": [0.707107, 0.0, 0.0.707107, 0.0],
+                        "sensors" : {
+                            "rgba": {
+                                "position": [0.0, 1.5, 0.0],
+                                "rotation": [1.0, 0.0, 0.0, 0.0],
+                            },
+                            "depth": {
+                                "position": [0.0, 1.5, 0.0],
+                                "rotation": [1.0, 0.0, 0.0, 0.0],
+                            },
+                            :
+                        }
+                    },
+                    :
+                }
         """
         result = {}
         for agent_index, sim_agent in enumerate(self._sim.agents):

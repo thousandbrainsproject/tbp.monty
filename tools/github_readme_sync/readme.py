@@ -38,7 +38,7 @@ regex_images = re.compile(r"!\[(.*?)\]\((.*?)\)")
 regex_image_path = re.compile(
     r"(\.\./){1,5}figures/((.+)\.(png|jpg|jpeg|gif|svg|webp))"
 )
-regex_markdown_path = re.compile(r"\(([\./]*)([\w\-/]+)\.md(#.*)?\)")
+regex_markdown_path = re.compile(r"\(([\./]*)([\w\-/]+)\.md(#.*?)?\)")
 regex_cloudinary_video = re.compile(
     r"\[(.*?)\]\((https://res\.cloudinary\.com/([^/]+)/video/upload/v(\d+)/([^/]+\.mp4))\)",
     re.IGNORECASE,
@@ -83,7 +83,7 @@ class ReadMe:
         response = get(f"{PREFIX}/docs/{slug}", {"x-readme-version": self.version})
 
         if not response:
-            raise Exception(f"Failed to fetch document: {response}")
+            raise DocumentNotFound(f"Document {slug} not found")
 
         front_matter = OrderedDict()
         front_matter["title"] = response.get("title")
@@ -195,7 +195,7 @@ class ReadMe:
             file_path: The path to the current document being processed
 
         Returns:
-            str: The document body with CSV tables converted to HTML format
+            The document body with CSV tables converted to HTML format.
         """
 
         def replace_match(match):
@@ -494,7 +494,7 @@ class ReadMe:
             file_path: The path to the current document being processed
 
         Returns:
-            str: The document body with snippets inserted
+            The document body with snippets inserted.
         """
 
         def replace_match(match):
@@ -510,3 +510,9 @@ class ReadMe:
                 return f"[File not found or could not be read: {snippet_path}]"
 
         return regex_markdown_snippet.sub(replace_match, body)
+
+
+class DocumentNotFound(RuntimeError):
+    """Raised when a document is not found."""
+
+    pass

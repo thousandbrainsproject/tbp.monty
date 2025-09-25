@@ -22,6 +22,8 @@ from tbp.monty.frameworks.utils.logging_utils import (
     maybe_rename_existing_file,
 )
 
+logger = logging.getLogger(__name__)
+
 ###
 # Template for MontyHandler
 ###
@@ -113,7 +115,7 @@ class BasicCSVStatsHandler(MontyHandler):
         mode_key = f"{mode}_stats"
         output_file = os.path.join(output_dir, f"{mode}_stats.csv")
         stats = basic_logs.get(mode_key, {})
-        logging.debug(pformat(stats))
+        logger.debug(pformat(stats))
 
         # Remove file if it existed before to avoid appending to previous results file
         if output_file not in self.reports_per_file:

@@ -11,10 +11,13 @@
 import copy
 import logging
 import sys
+from typing import List
 
 import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
+
+logger = logging.getLogger(__name__)
 
 
 def rotations_to_quats(rotations, invert=False):
@@ -71,7 +74,7 @@ def get_angle(vec1, vec2):
     """Get angle between two vectors.
 
     NOTE: for efficiency reasons we assume vec1 and vec2 are already
-    normalized (which is the case for point normals and curvature
+    normalized (which is the case for surface normals and curvature
     directions).
 
     Args:
@@ -133,11 +136,11 @@ def get_angles_for_all_hypotheses(hyp_f, query_f):
     return shape = (num_hyp, num_nn)
 
     Args:
-        hyp_f (num_hyp, num_nn, 3): ?
-        query_f (num_hyp, 3): ?
+        hyp_f: Hypotheses features three pose vectors
+        query_f: Query features three pose vectors
 
     Returns:
-        ?
+        Angles between hypotheses and query pose vectors
     """
     dot_product = np.einsum("ijk,ik->ij", hyp_f, query_f)
     angle = np.arccos(np.clip(dot_product, -1, 1))
@@ -160,13 +163,13 @@ def get_angle_torch(v1, v2):
 def check_orthonormal(matrix):
     is_orthogonal = np.mean(np.abs(np.linalg.inv(matrix) - matrix.T)) < 0.01
     if not is_orthogonal:
-        logging.debug(
+        logger.debug(
             "not orthogonal. Error: "
             f"{np.mean(np.abs(np.linalg.inv(matrix) - matrix.T))}"
         )
     is_normal = np.mean(np.abs(np.linalg.norm(matrix, axis=1) - [1, 1, 1])) < 0.01
     if not is_normal:
-        logging.debug(
+        logger.debug(
             "not normal. Error: "
             f"{np.mean(np.abs(np.linalg.norm(matrix, axis=1) - [1, 1, 1]))}"
         )
@@ -251,10 +254,10 @@ def non_singular_mat(a):
         return False
 
 
-def get_more_directions_in_plane(vecs, n_poses):
+def get_more_directions_in_plane(vecs, n_poses) -> List[np.ndarray]:
     """Get a list of unit vectors, evenly spaced in a plane orthogonal to vecs[0].
 
-    This is used to sample possible poses orthogonal to the point normal when the
+    This is used to sample possible poses orthogonal to the surface normal when the
     curvature directions are undefined (like on a flat surface).
 
     Args:
@@ -262,7 +265,7 @@ def get_more_directions_in_plane(vecs, n_poses):
         n_poses: Number of poses to get
 
     Returns:
-        list: List of vectors evenly spaced in a plane orthogonal to vecs[0]
+        List of vectors evenly spaced in a plane orthogonal to vecs[0]
     """
     new_vecs = [vecs]
     angles = np.linspace(0, 2 * np.pi, n_poses + 1)
@@ -306,14 +309,14 @@ def get_unique_rotations(poses, similarity_th, get_reverse_r=True):
     return euler_poses, r_poses
 
 
-def pose_is_new(all_poses, new_pose, similarity_th):
+def pose_is_new(all_poses, new_pose, similarity_th) -> bool:
     """Check if a pose is different from a list of poses.
 
     Use the magnitude of the difference between quaternions as a measure for
     similarity and check that it is below pose_similarity_threshold.
 
     Returns:
-        bool: True if the pose is new, False otherwise
+        True if the pose is new, False otherwise
     """
     for pose in all_poses:
         d = new_pose * pose.inv()
@@ -322,7 +325,7 @@ def pose_is_new(all_poses, new_pose, similarity_th):
     return True
 
 
-def rotate_pose_dependent_features(features, ref_frame_rots):
+def rotate_pose_dependent_features(features, ref_frame_rots) -> dict:
     """Rotate pose_vectors given a list of rotation matrices.
 
     Args:
@@ -334,9 +337,9 @@ def rotate_pose_dependent_features(features, ref_frame_rots):
             EvidenceGraphLM).
 
     Returns:
-        dict: Original features but with the pose_vectors rotated. If multiple
-            rotations were given, pose_vectors entry will now contain multiple
-            entries of shape (N, 3, 3).
+        Original features but with the pose_vectors rotated. If multiple rotations
+        were given, pose_vectors entry will now contain multiple entries of shape
+        (N, 3, 3).
     """
     pose_transformed_features = copy.deepcopy(features)
     old_pv = pose_transformed_features["pose_vectors"]
@@ -356,8 +359,8 @@ def rotate_pose_dependent_features(features, ref_frame_rots):
     return pose_transformed_features
 
 
-def rotate_multiple_pose_dependent_features(features, ref_frame_rot):
-    """Rotate point normal and curv dirs given a rotation matrix.
+def rotate_multiple_pose_dependent_features(features, ref_frame_rot) -> dict:
+    """Rotate surface normal and curve dirs given a rotation matrix.
 
     Args:
         features: dict of features with pose vectors to rotate.
@@ -365,7 +368,7 @@ def rotate_multiple_pose_dependent_features(features, ref_frame_rot):
         ref_frame_rot: scipy rotation to rotate pose vectors with.
 
     Returns:
-        dict: Features with rotated pose vectors
+        Features with rotated pose vectors
     """
     pose_vecs = features["pose_vectors"]
     num_pose_vecs = pose_vecs.shape[0]

@@ -348,41 +348,32 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                 / (stats["num_episodes"])
             )
             * 100,
-            # % performance for each LM of the Monty model. For instance, some LMs
-            # may have no_match but the overall model still recognized the object.
-            "overall/percent_correct_per_lm": (
-                (stats["num_correct_per_lm"] + stats["num_correct_mlh_per_lm"])
-                / (stats["num_episodes"] * len(self.lms))
-            )
-            * 100,
-            "overall/percent_no_match_per_lm": (
-                stats["num_no_match_per_lm"] / (stats["num_episodes"] * len(self.lms))
-            )
-            * 100,
-            "overall/percent_confused_per_lm": (
-                (stats["num_confused_per_lm"] + stats["num_confused_mlh_per_lm"])
-                / (stats["num_episodes"] * len(self.lms))
-            )
-            * 100,
-            "overall/percent_pose_time_out_per_lm": (
-                stats["num_pose_time_out_per_lm"]
-                / (stats["num_episodes"] * len(self.lms))
-            )
-            * 100,
-            "overall/percent_time_out_per_lm": (
-                stats["num_time_out_per_lm"] / (stats["num_episodes"] * len(self.lms))
-            )
-            * 100,
             # Mean rotation error on all LMs that recognized the object
-            "overall/avg_rotation_error": np.mean(correct_rotation_errors),
-            "overall/avg_num_lm_steps": np.mean(stats["episode_lm_steps"]),
-            "overall/avg_num_monty_steps": np.mean(stats["monty_steps"]),
-            "overall/avg_num_monty_matching_steps": np.mean(
-                stats["monty_matching_steps"]
+            "overall/avg_rotation_error": (
+                np.mean(correct_rotation_errors)
+                if len(correct_rotation_errors) > 0
+                else np.nan
+            ),
+            "overall/avg_num_lm_steps": (
+                np.mean(stats["episode_lm_steps"])
+                if len(stats["episode_lm_steps"]) > 0
+                else np.nan
+            ),
+            "overall/avg_num_monty_steps": (
+                np.mean(stats["monty_steps"])
+                if len(stats["monty_steps"]) > 0
+                else np.nan
+            ),
+            "overall/avg_num_monty_matching_steps": (
+                np.mean(stats["monty_matching_steps"])
+                if len(stats["monty_matching_steps"]) > 0
+                else np.nan
             ),
             "overall/run_time": np.sum(stats["run_times"]) / len(self.lms),
             # NOTE: does not take into account different runtimes with multiple LMs
-            "overall/avg_episode_run_time": np.mean(stats["run_times"]),
+            "overall/avg_episode_run_time": (
+                np.mean(stats["run_times"]) if len(stats["run_times"]) > 0 else np.nan
+            ),
             "overall/num_episodes": stats["num_episodes"],
             # Stats for most recent episode
             # Performance of the overall Monty model
@@ -396,22 +387,52 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             "episode/time_out": stats["episode_time_out"],
             "episode/used_mlh_after_time_out": stats["episode_correct_mlh"]
             or stats["episode_confused_mlh"],
-            "episode/rotation_error": np.mean(episode_re),
+            "episode/rotation_error": (
+                np.mean(episode_re) if len(episode_re) > 0 else np.nan
+            ),
             # steps is the max number of steps of all LMs. Some LMs may have taken
             # less steps because they were not on the object all the time.
             "episode/lm_steps": np.max(stats["episode_lm_steps"][-len(self.lms) :]),
             "episode/monty_steps": stats["monty_steps"][-1],
             "episode/monty_matching_steps": stats["monty_matching_steps"][-1],
-            "episode/mean_lm_steps_to_indv_ts": np.mean(episode_individual_ts_steps),
+            "episode/mean_lm_steps_to_indv_ts": (
+                np.mean(episode_individual_ts_steps)
+                if len(episode_individual_ts_steps) > 0
+                else np.nan
+            ),
             "episode/run_time": np.max(stats["run_times"][-len(self.lms) :]),
             # Mean symmetry evidence with multiple LMs may be > required evidence
             # since one LM reaching its terminal condition doesn't mean all others do.
-            "episode/symmetry_evidence": np.mean(
-                stats["episode_symmetry_evidence"][-len(self.lms) :]
+            "episode/symmetry_evidence": (
+                np.mean(stats["episode_symmetry_evidence"][-len(self.lms) :])
+                if len(stats["episode_symmetry_evidence"][-len(self.lms) :]) > 0
+                else np.nan
             ),
             "episode/goal_states_attempted": stats["goal_states_attempted"],
             "episode/goal_state_success_rate": stats["goal_state_success_rate"],
         }
+
+        for p in self.performance_options:
+            # % performance for each LM of the Monty model. For instance, some LMs
+            # may have no_match but the overall model still recognized the object.
+            if p == "correct":
+                overall_stats["overall/percent_correct_per_lm"] = (
+                    (stats["num_correct_per_lm"] + stats["num_correct_mlh_per_lm"])
+                    / (stats["num_episodes"] * len(self.lms))
+                ) * 100
+            elif p == "confused":
+                overall_stats["overall/percent_confused_per_lm"] = (
+                    (stats["num_confused_per_lm"] + stats["num_confused_mlh_per_lm"])
+                    / (stats["num_episodes"] * len(self.lms))
+                ) * 100
+            elif p == "correct_mlh" or p == "confused_mlh":
+                # skip because they are already included in correct and confused stats
+                pass
+            else:
+                overall_stats[f"overall/percent_{p}_per_lm"] = (
+                    stats[f"num_{p}_per_lm"] / (stats["num_episodes"] * len(self.lms))
+                ) * 100
+
         for lm in self.lms:
             lm_stats = self.data["BASIC"][f"{mode}_stats"][episode][lm]
             overall_stats[f"{lm}/episode/steps_to_individual_ts"] = lm_stats[

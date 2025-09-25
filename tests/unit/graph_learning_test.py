@@ -8,6 +8,13 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import pytest
+
+pytest.importorskip(
+    "habitat_sim",
+    reason="Habitat Sim optional dependency not installed.",
+)
+
 import copy
 import os
 import shutil
@@ -23,7 +30,6 @@ import pandas as pd
 
 from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
 from tbp.monty.frameworks.config_utils.config_args import (
-    Dataclass,
     FiveLMMontyConfig,
     InformedPolicy,
     LoggingConfig,
@@ -48,6 +54,7 @@ from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphL
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
 from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.models.motor_system import MotorSystem
+from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 from tbp.monty.frameworks.utils.follow_up_configs import (
     create_eval_config_multiple_episodes,
     create_eval_episode_config,
@@ -135,7 +142,7 @@ class TrainedGraphLM:
         """Number of observations in the specified episode.
 
         Returns:
-            the number of observations in the episode
+            The number of observations in the episode.
         """
         return len(self.episodes[episode_num].observations)
 

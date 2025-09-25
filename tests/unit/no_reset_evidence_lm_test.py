@@ -7,6 +7,12 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import pytest
+
+pytest.importorskip(
+    "habitat_sim",
+    reason="Habitat Sim optional dependency not installed.",
+)
 
 import copy
 import shutil
@@ -33,8 +39,10 @@ from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 from tbp.monty.frameworks.experiments.pretraining_experiments import (
     MontySupervisedObjectPretrainingExperiment,
 )
-from tbp.monty.frameworks.models.evidence_matching import (
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
+)
+from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
 )
 from tbp.monty.frameworks.models.no_reset_evidence_matching import (
@@ -148,9 +156,9 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         the corresponding NumPy arrays are element-wise equal.
 
         Args:
-            d1 (Dict[Any, np.ndarray]): The first dictionary to compare.
-            d2 (Dict[Any, np.ndarray]): The second dictionary to compare.
-            msg (str): The message to display if the assertion fails.
+            d1: The first dictionary to compare.
+            d2: The second dictionary to compare.
+            msg: The message to display if the assertion fails.
         """
         self.assertEqual(d1.keys(), d2.keys(), msg)
         for key, d1_val in d1.items():

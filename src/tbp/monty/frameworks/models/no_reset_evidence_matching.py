@@ -11,9 +11,14 @@ from typing import List
 
 import numpy as np
 
-from tbp.monty.frameworks.models.evidence_matching import (
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
+)
+from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
+)
+from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater import (  # noqa: E501
+    ResamplingHypothesesUpdater,
 )
 from tbp.monty.frameworks.models.mixins.no_reset_evidence import (
     TheoreticalLimitLMLoggingMixin,
@@ -95,6 +100,9 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
 
 class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
     def __init__(self, *args, **kwargs):
+        # Use ResamplingHypothesesUpdater by default.
+        if not hasattr(kwargs, "hypotheses_updater_class"):
+            kwargs["hypotheses_updater_class"] = ResamplingHypothesesUpdater
         super().__init__(*args, **kwargs)
         self.last_location = {}
 
@@ -119,12 +127,11 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         at the beginning of the first episode when the last location is not set.
 
         Args:
-            obs (List[State]): A list of observations to which displacements will be
+            obs: A list of observations to which displacements will be
                 added.
 
         Returns:
-            obs (List[State]): The list of observations, each updated with a
-                displacement vector.
+            The list of observations, each updated with a displacement vector.
         """
         for o in obs:
             if o.sender_id in self.last_location.keys():
@@ -142,6 +149,6 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         episode only. If a `last_location` exists, then first movement has occurred.
 
         Returns:
-            - Whether the agent has moved since the last reset.
+            Whether the agent has moved since the last reset.
         """
         return len(self.last_location) > 0

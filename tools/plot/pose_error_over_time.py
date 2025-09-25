@@ -7,11 +7,12 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import argparse
+from __future__ import annotations
+
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
@@ -19,6 +20,9 @@ import numpy as np
 import pandas as pd
 
 from tbp.monty.frameworks.utils.logging_utils import load_stats
+
+if TYPE_CHECKING:
+    import argparse
 
 logger = logging.getLogger(__name__)
 
@@ -37,11 +41,10 @@ def plot_pose_error_over_time(exp_path: str) -> int:
     likely hypothesis (MLH).
 
     Args:
-        exp_path (str): Path to the experiment directory containing detailed stats
-            data.
+        exp_path: Path to the experiment directory containing detailed stats data.
 
     Returns:
-        int: Exit code.
+        Exit code.
     """
     if not Path(exp_path).exists():
         logger.error(f"Experiment path not found: {exp_path}")
@@ -170,7 +173,7 @@ def plot_pose_error_over_time(exp_path: str) -> int:
 
 def add_subparser(
     subparsers: argparse._SubParsersAction,
-    parent_parser: Optional[argparse.ArgumentParser] = None,
+    parent_parser: argparse.ArgumentParser | None = None,
 ) -> None:
     """Add the pose_error_over_time subparser to the main parser.
 

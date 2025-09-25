@@ -14,15 +14,12 @@ from dataclasses import dataclass, field
 from itertools import product
 from numbers import Number
 from typing import (
-    Any,
     Callable,
-    ClassVar,
     Dict,
     Iterable,
     List,
     Mapping,
     Optional,
-    Protocol,
     Union,
 )
 
@@ -53,15 +50,10 @@ from tbp.monty.frameworks.loggers.wandb_handlers import (
 )
 from tbp.monty.frameworks.models.abstract_monty_classes import Monty
 from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphLM
-from tbp.monty.frameworks.models.evidence_matching import (
+from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
 )
 from tbp.monty.frameworks.models.graph_matching import MontyForGraphMatching
-from tbp.monty.frameworks.models.monty_base import (
-    LearningModuleBase,
-    MontyBase,
-    SensorModuleBase,
-)
 from tbp.monty.frameworks.models.motor_policies import (
     BasePolicy,
     InformedPolicy,
@@ -76,6 +68,7 @@ from tbp.monty.frameworks.models.sensor_modules import (
     HabitatDistantPatchSM,
     HabitatSurfacePatchSM,
 )
+from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 
 # -- Table of contents --
 # -----------------------
@@ -85,17 +78,6 @@ from tbp.monty.frameworks.models.sensor_modules import (
 # -----------------------
 
 monty_logs_dir = os.getenv("MONTY_LOGS")
-
-
-class Dataclass(Protocol):
-    """A protocol for dataclasses to be used in type hints.
-
-    The reason this exists is because dataclass.dataclass is not a valid type.
-    """
-
-    __dataclass_fields__: ClassVar[Dict[str, Any]]
-    """Checking for presence of __dataclass_fields__ is a hack to check if a class is a
-    dataclass."""
 
 
 @dataclass
@@ -111,7 +93,7 @@ class LoggingConfig:
     wandb_handlers: list = field(default_factory=list)
     python_log_level: str = "INFO"
     python_log_to_file: bool = True
-    python_log_to_stdout: bool = True
+    python_log_to_stderr: bool = True
     output_dir: str = os.path.expanduser(
         os.path.join(monty_logs_dir, "projects/monty_runs/")
     )
@@ -561,80 +543,6 @@ class MontyConfig:
     lm_to_lm_matrix: Dict
     lm_to_lm_vote_matrix: Dict
     monty_args: Union[Dict, MontyArgs]
-
-
-@dataclass
-class SingleCameraMontyConfig(MontyConfig):
-    monty_class: Callable = MontyBase
-    learning_module_configs: Union[dataclass, Dict] = field(
-        default_factory=lambda: dict(
-            learning_module_1=dict(
-                learning_module_class=LearningModuleBase,
-                learning_module_args={},
-            )
-        )
-    )
-    sensor_module_configs: Union[dataclass, Dict] = field(
-        default_factory=lambda: dict(
-            sensor_module_0=dict(
-                sensor_module_class=SensorModuleBase,
-                sensor_module_args=dict(sensor_module_id="sensor_id_0"),
-            ),
-        )
-    )
-    motor_system_config: Union[dataclass, Dict] = field(
-        default_factory=MotorSystemConfig
-    )
-    sm_to_agent_dict: Dict = field(
-        default_factory=lambda: dict(sensor_id_0="agent_id_0")
-    )
-    sm_to_lm_matrix: List = field(default_factory=lambda: [[0]])
-    lm_to_lm_matrix: Optional[List] = None
-    lm_to_lm_vote_matrix: Optional[List] = None
-    monty_args: Union[Dict, MontyArgs] = field(default_factory=MontyArgs)
-
-
-@dataclass
-class BaseMountMontyConfig(MontyConfig):
-    monty_class: Callable = MontyBase
-    learning_module_configs: Union[dataclass, Dict] = field(
-        default_factory=lambda: dict(
-            learning_module_0=dict(
-                learning_module_class=LearningModuleBase,
-                learning_module_args={},
-            ),
-            learning_module_1=dict(
-                learning_module_class=LearningModuleBase,
-                learning_module_args={},
-            ),
-        )
-    )
-    sensor_module_configs: Union[dataclass, Dict] = field(
-        default_factory=lambda: dict(
-            sensor_module_0=dict(
-                sensor_module_class=SensorModuleBase,
-                sensor_module_args=dict(sensor_module_id="sensor_id_0"),
-            ),
-            sensor_module_1=dict(
-                sensor_module_class=SensorModuleBase,
-                sensor_module_args=dict(sensor_module_id="sensor_id_1"),
-            ),
-        )
-    )
-    motor_system_config: Union[dataclass, Dict] = field(
-        default_factory=MotorSystemConfig
-    )
-    sm_to_agent_dict: Dict = field(
-        # TODO: move SAM to config args?
-        default_factory=lambda: dict(
-            sensor_id_0="agent_id_0",
-            sensor_id_1="agent_id_0",
-        )
-    )
-    sm_to_lm_matrix: List = field(default_factory=lambda: [[0], [1]])
-    lm_to_lm_matrix: Optional[List] = None
-    lm_to_lm_vote_matrix: Optional[List] = None
-    monty_args: Union[Dict, MontyArgs] = field(default_factory=MontyArgs)
 
 
 @dataclass
@@ -1248,7 +1156,7 @@ def make_multi_lm_flat_dense_connectivity(n_lms: int) -> Dict:
             including a view finder) is equal to the number of LMs.
 
     Returns:
-        Mapping: A dictionary with keys "sm_to_agent_dict", "sm_to_lm_matrix",
+        A dictionary with keys "sm_to_agent_dict", "sm_to_lm_matrix",
             "lm_to_lm_matrix", and "lm_to_lm_vote_matrix".
     """
     # Create default sm_to_lm_matrix: all sensors are on 'agent_id_0'.
@@ -1323,28 +1231,28 @@ def make_multi_lm_monty_config(
 
 
     Args:
-        n_lms (int): Number of learning modules.
-        monty_class (type): Monty class.
-        learning_module_class (type): Learning module class.
-        learning_module_args (dict, optional): Arguments for learning modules.
-        sensor_module_class (type): Sensor module class.
-        sensor_module_args (dict, optional): Arguments for sensor modules.
-        motor_system_class (type): Motor system class.
-        motor_system_args (Mapping, optional): Arguments for motor system.
-        monty_args (Mapping, MontyArgs, optional): Arguments for monty.
-        connectivity_func (Callable[[int], Mapping], optional): Function that returns a
+        n_lms: Number of learning modules.
+        monty_class: Monty class.
+        learning_module_class: Learning module class.
+        learning_module_args: Arguments for learning modules.
+        sensor_module_class: Sensor module class.
+        sensor_module_args: Arguments for sensor modules.
+        motor_system_class: Motor system class.
+        motor_system_args: Arguments for motor system.
+        monty_args: Arguments for monty.
+        connectivity_func: Function that returns a
             dictionary of connectivity matrices given a number of learning modules.
             In particular, it must return a dictionary with keys "sm_to_agent_dict",
             "sm_to_lm_matrix", "lm_to_lm_matrix", and "lm_to_lm_vote_matrix". Defaults
             to `make_multi_lm_flat_dense_connectivity`.
-        view_finder_config (Mapping, optional): A mapping which contains the items
+        view_finder_config: A mapping which contains the items
             `"sensor_module_class"` and `"sensor_module_args"`. If not specified,
             a config is added using the class `DetailedLoggingSM` with  `"view_finder"`
             as the `sensor_module_id`. `"save_raw_obs"` will default to match the
             value in `sensor_module_args` and `False` if none was provided.
 
     Returns:
-        `MontyConfig`: complete monty config for multi-LM experiment.
+        A complete monty config for multi-LM experiment.
     """
     # Make learning module configs.
     if learning_module_args is None:
@@ -1425,13 +1333,13 @@ def get_possible_3d_rotations(
     """Get list of 24 unique 3d rotations that tile the space. Used for configs.
 
     Args:
-        degrees (Iterable[Number]): Sequence of degrees to sample from.
-        displacement (Number): Additional offset (in degrees) to apply to all rotations;
+        degrees: Sequence of degrees to sample from.
+        displacement: Additional offset (in degrees) to apply to all rotations;
             useful if want to e.g. tile a similar space at training and evaluation, but
             slightly offset between these settings.
 
     Returns:
-        List[np.ndarray]: List of unique 3D rotations in euler angles (degrees).
+        List of unique 3D rotations in euler angles (degrees).
 
     """
     # Generate all possible 3D rotations (non-unique)

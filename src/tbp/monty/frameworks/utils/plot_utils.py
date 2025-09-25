@@ -7,10 +7,10 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import os
-from numbers import Number
-from typing import Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Optional, Sequence, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,6 +20,7 @@ from scipy.spatial.transform import Rotation
 from skimage.transform import resize
 from torch_geometric.data import Data
 
+from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import find_step_on_new_object
 from tbp.monty.frameworks.utils.logging_utils import (
@@ -29,9 +30,12 @@ from tbp.monty.frameworks.utils.logging_utils import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 from tbp.monty.frameworks.utils.transform_utils import numpy_to_scipy_quat
 
+if TYPE_CHECKING:
+    from numbers import Number
+
 
 def plot_graph(
-    graph: Union[Data, GraphObjectModel],
+    graph: Data | GraphObjectModel,
     show_nodes: bool = True,
     show_edges: bool = False,
     show_trisurf: bool = False,
@@ -56,7 +60,7 @@ def plot_graph(
             instance will be created.
 
     Returns:
-        Figure: the figure on which the graph was plotted.
+        The figure on which the graph was plotted.
 
     """
     if ax is None:
@@ -378,7 +382,12 @@ def get_model_id(epoch, mode):
     return model_id
 
 
-def get_action_name(action_stats, step, is_match_step, obs_on_object):
+def get_action_name(
+    action_stats: list[list[Action | dict[str, Any] | None]],
+    step: int,
+    is_match_step: bool,
+    obs_on_object: bool,
+) -> str:
     """Get the name of the action taken at a step.
 
     When the name is derived from an action, the format is:
@@ -397,34 +406,30 @@ def get_action_name(action_stats, step, is_match_step, obs_on_object):
 
 
     Returns:
-        Action name or one of the following sentinel values:
-            "updating possible matches"
-            "patch not on object"
-            "not moved yet"
-            "None"
+        Action name or one of the following sentinel values: "updating possible
+        matches", "patch not on object", "not moved yet", "None"
     """
     if is_match_step:
         if obs_on_object:
             action_name = "updating possible matches"
         else:
             action_name = "patch not on object"
+    elif step == 0:
+        action_name = "not moved yet"
     else:
-        if step == 0:
-            action_name = "not moved yet"
+        action = action_stats[step - 1]
+        if action[0] is not None:
+            a = cast(Action, action[0])
+            d = dict(a)
+            del d["action"]  # don't duplicate action in "params"
+            del d["agent_id"]  # don't duplicate agent_id in "params"
+            params = [
+                f"{k}:{v.tolist()}" if isinstance(v, np.ndarray) else f"{k}:{v}"
+                for k, v in d.items()
+            ]
+            action_name = f"{a.name} - {','.join(params)}"
         else:
-            action = action_stats[step - 1]
-            if action[0] is not None:
-                a = action[0]
-                d = dict(a)
-                del d["action"]  # don't duplicate action in "params"
-                del d["agent_id"]  # don't duplicate agent_id in "params"
-                params = [
-                    f"{k}:{v.tolist()}" if isinstance(v, np.ndarray) else f"{k}:{v}"
-                    for k, v in d.items()
-                ]
-                action_name = f"{a.name} - {','.join(params)}"
-            else:
-                action_name = "None"
+            action_name = "None"
     return action_name
 
 
@@ -736,16 +741,15 @@ def plot_feature_matching_animation(
                                 c="green",
                                 vmin=0,
                             )
-                        else:
-                            if step > 0:
-                                search_positions = get_search_positions(
-                                    start_node,
-                                    possible_poses[:show_num_pos],
-                                    displacement,
-                                )
-                                plot_search_displacements(
-                                    axes[i], search_positions, start_node
-                                )
+                        elif step > 0:
+                            search_positions = get_search_positions(
+                                start_node,
+                                possible_poses[:show_num_pos],
+                                displacement,
+                            )
+                            plot_search_displacements(
+                                axes[i], search_positions, start_node
+                            )
                         # Plot Path
                         if show_path:
                             plot_previous_path(axes[i], current_path, step)
@@ -825,7 +829,7 @@ def show_one_step(
     show_num_pos=None,
     show_full_path=False,
     color_by_curvature=False,
-    show_point_normals=False,
+    show_surface_normals=False,
     norm_len=0.01,
     ax_range=0.05,
 ):
@@ -956,7 +960,7 @@ def show_one_step(
                 c=color,
                 s=size,
             )
-            if show_point_normals:
+            if show_surface_normals:
                 norm = model_normals[closest_node_id]
                 # print("norm at closest node (black): " + str(norm))
                 # print(
@@ -1284,14 +1288,13 @@ def plot_evidence_at_step(
             model_pos = lm_models["pretrained"][0][obj][
                 input_feature_channel
             ].pos  # TODO: test
+        elif str(episode - 1) in lm_models.keys():
+            model_pos = lm_models[str(episode - 1)][lm][obj].pos
         else:
-            if str(episode - 1) in lm_models.keys():
-                model_pos = lm_models[str(episode - 1)][lm][obj].pos
-            else:
-                last_stored_models = np.max(np.array(list(lm_models.keys()), dtype=int))
-                model_pos = lm_models[str(last_stored_models)][lm][obj][
-                    input_feature_channel
-                ].pos
+            last_stored_models = np.max(np.array(list(lm_models.keys()), dtype=int))
+            model_pos = lm_models[str(last_stored_models)][lm][obj][
+                input_feature_channel
+            ].pos
         evidences = np.array(lm_stats["evidences"][step][obj])
         colors = evidences
         sizes = np.array(lm_stats["evidences"][step][obj]) * 10
@@ -1393,8 +1396,8 @@ class PolicyPlot:
         """Plot the core object model.
 
         Note that all coordinates used for plotting are relative to the world
-        coordinates, hence e.g. point normals do not need to be rotated by the object's
-        orientation in the environment; the only rotation that needs to be done
+        coordinates, hence e.g. surface normals do not need to be rotated by the
+        object's orientation in the environment; the only rotation that needs to be done
         therefore is to get the learned object points (in their arbitrary, internal
         reference frame) to align with the actual rotation of the object in the
         environment
@@ -1704,7 +1707,7 @@ class PolicyPlot:
                 )
 
     def add_lm_processing(self, step_iter):
-        """Visualize the point-normal associated with an LM-processed step."""
+        """Visualize the surface normal associated with an LM-processed step."""
         detailed_features = self.detailed_stats[str(self.episode)]["SM_0"][
             "processed_observations"
         ]
@@ -1713,7 +1716,7 @@ class PolicyPlot:
 
         # Compare indices associated with tangential movements and
         # LM processing; when a tangential movement was also
-        # associated with sending data to LM, add a point normal
+        # associated with sending data to LM, add a surface normal
         if (
             np.where(self.tangential_steps_mask)[0][step_iter]
             in np.where(self.lm_steps_mask)[0]
@@ -2006,7 +2009,7 @@ def plot_graph_mismatch(
     # NB how we aim to plot both reference objects in the reference frame of the first
     # object, by correcting the second one
     # Further note the order of indexing the xyz accounts for the y axis being
-    # the vertical axis in Habitat; this is also done for e.g. the point-normal
+    # the vertical axis in Habitat; this is also done for e.g. the surface normal
     ax.scatter(
         top_mlh_graph[:, 0],
         top_mlh_graph[:, 2],
@@ -2059,7 +2062,7 @@ def plot_graph_mismatch(
         s=400,
     )
 
-    # Note that point-normal is in global environmental coordinates, not
+    # Note that surface normal is in global environmental coordinates, not
     # the environmental coordinates in which the second object was learned,
     # therefore transform by inverse
     second_pn = second_mlh["rotation"].inv().apply(current_pn)
@@ -2283,19 +2286,18 @@ def plot_evidence_transitions(
                         s=85,
                         color=detection_cmapping[detection],
                     )
+                elif primary_target != processed_stepwise_targets[ii]:
+                    detection = "false_negative"
+                    ax.scatter(
+                        ii + 1,
+                        this_step_max,
+                        marker="x",
+                        s=85,
+                        color=detection_cmapping[detection],
+                    )
                 else:
-                    if primary_target != processed_stepwise_targets[ii]:
-                        detection = "false_negative"
-                        ax.scatter(
-                            ii + 1,
-                            this_step_max,
-                            marker="x",
-                            s=85,
-                            color=detection_cmapping[detection],
-                        )
-                    else:
-                        detection = "true_negative"
-                        # Not plotted because the "default" result
+                    detection = "true_negative"
+                    # Not plotted because the "default" result
 
                 # Log results
                 # NB these results are only calculated when the current object is the

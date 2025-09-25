@@ -7,12 +7,56 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from typing import Any, Dict
+from __future__ import annotations
 
+from dataclasses import asdict, dataclass
+from typing import Any, Dict, cast
+
+import numpy as np
+import numpy.typing as npt
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.models.evidence_matching import EvidenceGraphLM
-from tbp.monty.frameworks.utils.logging_utils import compute_pose_error
+from tbp.monty.frameworks.models.buffer import BufferEncoder
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+    EvidenceGraphLM,
+)
+from tbp.monty.frameworks.utils.logging_utils import (
+    compute_pose_error,
+    compute_pose_errors,
+)
+
+
+@dataclass
+class HypothesesUpdaterChannelTelemetry:
+    """Telemetry from HypothesesUpdater for a single input channel."""
+
+    hypotheses_updater: dict[str, Any]
+    """Any telemetry from the hypotheses updater."""
+    evidence: npt.NDArray[np.float64]
+    """The hypotheses evidence scores."""
+    rotations: npt.NDArray[np.float64]
+    """Rotations of the hypotheses.
+
+    Note that the buffer encoder will encode those as euler "xyz" rotations in degrees.
+    """
+    locations: npt.NDArray[np.float64]
+    """Locations of the hypotheses."""
+
+    pose_errors: npt.NDArray[np.float64]
+    """Rotation errors relative to the target pose."""
+
+
+BufferEncoder.register(
+    HypothesesUpdaterChannelTelemetry,
+    lambda telemetry: asdict(telemetry),
+)
+
+
+HypothesesUpdaterGraphTelemetry = Dict[str, HypothesesUpdaterChannelTelemetry]
+"""HypothesesUpdaterChannelTelemetry indexed by input channel."""
+
+HypothesesUpdaterTelemetry = Dict[str, HypothesesUpdaterGraphTelemetry]
+"""HypothesesUpdaterGraphTelemetry indexed by graph ID."""
 
 
 class TheoreticalLimitLMLoggingMixin:
@@ -52,17 +96,67 @@ class TheoreticalLimitLMLoggingMixin:
         target object) , and the pose error of the MLH hypothesis on the target object.
 
         Args:
-            stats (Dict[str, Any]): The existing statistics dictionary to augment.
+            stats: The existing statistics dictionary to augment.
 
         Returns:
-            Dict[str, Any]: Updated statistics dictionary.
+            Updated statistics dictionary.
         """
         stats["max_evidence"] = {k: max(v) for k, v in self.evidence.items()}
         stats["target_object_theoretical_limit"] = (
             self._theoretical_limit_target_object_pose_error()
         )
         stats["target_object_pose_error"] = self._mlh_target_object_pose_error()
+        hypotheses_updater_telemetry = self._hypotheses_updater_telemetry()
+        if hypotheses_updater_telemetry:
+            stats["hypotheses_updater_telemetry"] = hypotheses_updater_telemetry
         return stats
+
+    def _hypotheses_updater_telemetry(self) -> HypothesesUpdaterTelemetry:
+        """Returns HypothesesUpdaterTelemetry for all objects and input channels."""
+        stats: HypothesesUpdaterTelemetry = {}
+        for graph_id, graph_telemetry in self.hypotheses_updater_telemetry.items():
+            stats[graph_id] = {
+                input_channel: self._channel_telemetry(
+                    graph_id, input_channel, channel_telemetry
+                )
+                for input_channel, channel_telemetry in graph_telemetry.items()
+            }
+        return stats
+
+    def _channel_telemetry(
+        self, graph_id: str, input_channel: str, channel_telemetry: dict[str, Any]
+    ) -> HypothesesUpdaterChannelTelemetry:
+        """Assemble channel telemetry for specific graph ID and input channel.
+
+        Args:
+            graph_id: The graph ID.
+            input_channel: The input channel.
+            channel_telemetry: Telemetry for the specific input channel.
+
+        Returns:
+            HypothesesUpdaterChannelTelemetry for the given graph ID and input channel.
+        """
+        mapper = self.channel_hypothesis_mapping[graph_id]
+        channel_rotations = mapper.extract(self.possible_poses[graph_id], input_channel)
+        channel_rotations_inv = Rotation.from_matrix(channel_rotations).inv()
+        channel_evidence = mapper.extract(self.evidence[graph_id], input_channel)
+        channel_locations = mapper.extract(
+            self.possible_locations[graph_id], input_channel
+        )
+
+        return HypothesesUpdaterChannelTelemetry(
+            hypotheses_updater=channel_telemetry.copy(),
+            evidence=channel_evidence,
+            rotations=channel_rotations_inv,
+            locations=channel_locations,
+            pose_errors=cast(
+                npt.NDArray[np.float64],
+                compute_pose_errors(
+                    channel_rotations_inv,
+                    Rotation.from_quat(self.primary_target_rotation_quat),
+                ),
+            ),
+        )
 
     def _theoretical_limit_target_object_pose_error(self) -> float:
         """Compute the theoretical minimum rotation error on the target object.
@@ -80,7 +174,7 @@ class TheoreticalLimitLMLoggingMixin:
         of the object.
 
         Returns:
-            float: The minimum achievable rotation error (in radians).
+            The minimum achievable rotation error (in radians).
         """
         hyp_rotations = Rotation.from_matrix(
             self.possible_poses[self.primary_target]
@@ -96,7 +190,7 @@ class TheoreticalLimitLMLoggingMixin:
         object with the ground truth rotation of the target object.
 
         Returns:
-            float: The rotation error (in radians).
+            The rotation error (in radians).
         """
         obj_rotation = self.get_mlh_for_object(self.primary_target)["rotation"].inv()
         target_rotation = Rotation.from_quat(self.primary_target_rotation_quat)

@@ -16,6 +16,8 @@ from tbp.monty.frameworks.models.abstract_monty_classes import GoalStateGenerato
 from tbp.monty.frameworks.models.states import GoalState
 from tbp.monty.frameworks.utils.communication_utils import get_state_from_channel
 
+logger = logging.getLogger(__name__)
+
 
 class GraphGoalStateGenerator(GoalStateGenerator):
     """Generate sub-goal states until the received goal state is achieved.
@@ -133,7 +135,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
     # ------------------- Main Algorithm -----------------------
 
-    def step_gsg(self, observations):
+    def step(self, observations):
         """Step the GSG.
 
         Check whether the GSG's output and driving goal-states are achieved, and
@@ -626,7 +628,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         Returns:
             The index of the point in the model to test.
         """
-        logging.debug("Proposing an evaluation location based on graph mismatch")
+        logger.debug("Proposing an evaluation location based on graph mismatch")
 
         top_id, second_id = self.parent_lm.get_top_two_mlh_ids()
 
@@ -709,7 +711,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         Returns:
             A dictionary containing the hypothesis to test, the target location and
-            point-normal of the target point on the object.
+            surface normal of the target point on the object.
         """
         mlh = self.parent_lm.get_current_mlh()
         mlh_id = mlh["graph_id"]
@@ -764,13 +766,13 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
     def _compute_goal_state_for_target_loc(
         self, observations, target_info, goal_confidence=1.0
-    ):
+    ) -> GoalState:
         """Specify a goal state for the motor-actuator.
 
         Based on a target location (in object-centric coordinates) and the associated
-        point-normal of that location, specify a goal state for the motor-actuator,
+        surface normal of that location, specify a goal state for the motor-actuator,
         such that any sensors associated with the motor-actuator should be pointed down
-        at and observing the target location (i.e. parallel to the point-normal).
+        at and observing the target location (i.e. parallel to the surface normal).
 
         For the movement to have a high probability of arriving at the desired location,
         the current hypothesis of the object ID and pose used to inform the movement
@@ -781,14 +783,14 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         Args:
             observations: The current observations, which should include the sensory
                 input.
-            target_info: A dictionary containing the target location and point-normal of
-                the target point on the object.
+            target_info: A dictionary containing the target location and surface normal
+                of the target point on the object.
             goal_confidence: The confidence of the goal-state, which should be in the
                 range [0, 1]. This is used by receiving modules to weigh the
                 importance of the goal-state relative to other goal-states.
 
         Returns:
-            GoalState: A goal-state for the motor-actuator.
+            A goal-state for the motor-actuator.
         """
         # Determine the displacement, and therefore the environmental target location,
         # that we will use
@@ -812,11 +814,11 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # The target location on the object's surface in global/body-centric coordinates
         proposed_surface_loc = sensory_input.location + rotated_disp
 
-        # Rotate the learned point normal (which was commited to memory assuming a
+        # Rotate the learned surface normal (which was commited to memory assuming a
         # default 0,0,0 orientation of the object)
         target_pn_rotated = object_rot.apply(target_info["target_pn"])
 
-        # Scale the point-normal by the desired distance x1.5 (i.e. so that we start
+        # Scale the surface normal by the desired distance x1.5 (i.e. so that we start
         # a bit further away from the object; we will separately move forward if we
         # are indeed facing it)
         surface_displacement = target_pn_rotated * self.desired_object_distance * 1.5
@@ -976,7 +978,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             # of the way towards being certain about the ID
             # (len(pm_smaller_thresh) == 1), then we sometimes (hence the randomness)
             # focus on pose.
-            logging.debug(
+            logger.debug(
                 "Hypothesis jump indicated: One object more likely, focusing on pose"
             )
             self.focus_on_pose = True
@@ -995,7 +997,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             ]
             != [top_id, second_id]
         ):
-            logging.debug(
+            logger.debug(
                 "Hypothesis jump indicated: change or shuffle in top-two MLH IDs"
             )
             return True
@@ -1010,7 +1012,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             top_mlh["rotation"].as_euler("xyz")
             != self.prev_top_mlhs[0]["rotation"].as_euler("xyz")
         ):
-            logging.debug(
+            logger.debug(
                 "Hypothesis jump indicated: change in most-likely rotation of MLH"
             )
             return True
@@ -1019,7 +1021,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # still perform a jump; note however that this threshold exponentially
         # increases, so that we avoid continuously returning to the same location
         elif num_elapsed_steps % (self.wait_factor * self.elapsed_steps_factor) == 0:
-            logging.debug(
+            logger.debug(
                 "Hypothesis jump indicated: sufficient steps elapsed with no jump"
             )
 

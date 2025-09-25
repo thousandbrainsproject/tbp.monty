@@ -162,13 +162,15 @@ class BaseGraphTestCases:
                 "quat_rotation": [1, 0, 0, 0],
             }
 
-        def string_to_array(self, array_string, get_positive_rotations=False):
+        def string_to_array(
+            self, array_string, get_positive_rotations=False
+        ) -> np.ndarray:
             """Convert string representation of an array into a numpy array.
 
             Is needed since the arrays we read out of the stats csv cells are strings.
 
             Returns:
-                np_array: numpy array
+                The newly created numpy array.
             """
             np_array = np.array([])
             for i in array_string.split("[")[1].split("]")[0].split(" "):
@@ -558,12 +560,11 @@ class BaseGraphTestCases:
                                     self.assertEqual(
                                         step_old[key3][f_idx], step_new[key3][f_idx]
                                     )
+                            elif isinstance(step_old[key3], str):
+                                # sm_id can not be compared as array
+                                self.assertEqual(step_old[key3], step_new[key3])
                             else:
-                                if isinstance(step_old[key3], str):
-                                    # sm_id can not be compared as array
-                                    self.assertEqual(step_old[key3], step_new[key3])
-                                else:
-                                    np_old = np.array(step_old[key3])
-                                    np_new = np.array(step_new[key3])
-                                    np_equal = np.isclose(np_old, np_new, atol=0.00001)
-                                    self.assertEqual(np.sum(np_equal), np_equal.size)
+                                np_old = np.array(step_old[key3])
+                                np_new = np.array(step_new[key3])
+                                np_equal = np.isclose(np_old, np_new, atol=0.00001)
+                                self.assertEqual(np.sum(np_equal), np_equal.size)

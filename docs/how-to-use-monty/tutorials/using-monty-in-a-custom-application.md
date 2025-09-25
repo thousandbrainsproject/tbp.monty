@@ -93,8 +93,8 @@ As one of Monty's strengths is the ability to learn from small amounts of data, 
 Since this is a static dataset, and Monty is a sensorimotor learning system, we first have to define how movement looks on this dataset. A sensor module in Monty always receives a small patch as input and the learning module then integrates the extracted features and locations over time to learn and infer complete objects. So, in this case, we can take a small patch on the character (as shown on the right in the figure below) and move this patch further along the strokes at each step. Following the strokes is easy in this case as the Omniglot dataset also contains the temporal sequence of x,y, and z coordinates in which the characters were drawn (the example image above is colored by the order in which the strokes were drawn but also within each stroke we have access to the temporal sequence in which it was drawn). If this information were unavailable, the patch could be moved arbitrarily or use heuristics such as following the sensed principal curvature directions.
 ![An observation at each step is a small patch on the character.](../../figures/how-to-use-monty/omniglot_obs_exp.png#width=400px)
 
-At each step, the sensor module will extract a location and pose in a common reference frame and send it to the learning module. To define the pose at each location, we extract a [point normal and two principal curvature directions](https://thousandbrainsproject.readme.io/docs/observations-transforms-sensor-modules#point-normals-and-principle-curvatures) from a gaussian smoothed image of the patch. As you can see in the images below, the point normal will always point straight out of the image (as this is a 2D image, not a 3D object surface) and the first principal curvature direction aligns with the stroke direction while the second one is orthogonal to it. The learning module then stores those relative locations and orientations in the model of the respective character and can use them to recognize a character during inference.
-![The learned models store poses at locations relative to each other. Pose is defined by point normal and curvature directions.](../../figures/how-to-use-monty/omniglot_model_exp.png#width=600px)
+At each step, the sensor module will extract a location and pose in a common reference frame and send it to the learning module. To define the pose at each location, we extract a [surface normal and two principal curvature directions](https://thousandbrainsproject.readme.io/docs/observations-transforms-sensor-modules#surface-normals-and-principle-curvatures) from a gaussian smoothed image of the patch. As you can see in the images below, the surface normal will always point straight out of the image (as this is a 2D image, not a 3D object surface) and the first principal curvature direction aligns with the stroke direction while the second one is orthogonal to it. The learning module then stores those relative locations and orientations in the model of the respective character and can use them to recognize a character during inference.
+![The learned models store poses at locations relative to each other. Pose is defined by surface normal and curvature directions.](../../figures/how-to-use-monty/omniglot_model_exp.png#width=600px)
 
 Learning and inference on Omniglot characters can be implemented by writing two custom classes, the [OmniglotEnvironment](https://github.com/thousandbrainsproject/tbp.monty/blob/4bc857580ae6ac015586af1a61b3e292a7827b6f/src/tbp/monty/frameworks/environments/two_d_data.py#L61) and the [OmniglotDataLoader](https://github.com/thousandbrainsproject/tbp.monty/blob/4bc857580ae6ac015586af1a61b3e292a7827b6f/src/tbp/monty/frameworks/environments/embodied_data.py#L920):
 1. `OmniglotEnvironment`:
@@ -143,7 +143,7 @@ omniglot_training = dict(
 ```
 
 And a config for inference on those trained models could look like this:
-```
+```python
 omniglot_inference = dict(
     experiment_class=MontyObjectRecognitionExperiment,
     experiment_args=ExperimentArgs(
@@ -166,14 +166,16 @@ omniglot_inference = dict(
                             "pose_vectors": np.ones(3) * 45,
                         }
                     },
-                    # Point normal always points up, so they are not useful
+                    # Surface normal always points up, so they are not useful
                     feature_weights={
                         "patch": {
                             "pose_vectors": [0, 1, 0],
                         }
                     },
-                    # We assume the letter is presented upright
-                    initial_possible_poses=[[0, 0, 0]],
+                    hypotheses_updater_args=dict(
+                        # We assume the letter is presented upright
+                        initial_possible_poses=[[0, 0, 0]],
+                    )
                 ),
             )
         ),
@@ -194,7 +196,7 @@ omniglot_inference = dict(
 > To run the above experiment, you first need to download the [Omniglot dataset](https://github.com/brendenlake/omniglot). You can do this by running `cd ~/tbp/data` and `git clone https://github.com/brendenlake/omniglot.git`. You will need to unzip the `omniglot/python/images_background.zip` and `omniglot/python/strokes_background.zip` files.
 
 To test this, go ahead and copy the configs above into the `benchmarks/configs/my_experiments.py` file. To complete the configs, you will need to add the following imports, sensor module config and model_path at the top of the file.
-```
+```python
 import os
 from dataclasses import asdict
 
@@ -217,9 +219,11 @@ from tbp.monty.frameworks.experiments import (
 	MontyObjectRecognitionExperiment,
 	MontySupervisedObjectPretrainingExperiment,
 )
-from tbp.monty.frameworks.models.evidence_matching import (
-	EvidenceGraphLM,
-	MontyForEvidenceGraphMatching,
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+	EvidenceGraphLM
+)
+from tbp.monty.frameworks.models.evidence_matching.model import (
+	MontyForEvidenceGraphMatching
 )
 from tbp.monty.frameworks.models.sensor_modules import (
 	DetailedLoggingSM,

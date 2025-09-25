@@ -21,7 +21,9 @@ To follow along, open the `benchmarks/configs/my_experiments.py` file and paste 
 
 ```python
 import os
+from dataclasses import asdict
 
+from benchmarks.configs.names import MyExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     FiveLMMontyConfig,
     MontyArgs,
@@ -178,9 +180,11 @@ from tbp.monty.frameworks.experiments import (
     MontyObjectRecognitionExperiment,
 )
 from tbp.monty.frameworks.loggers.monty_handlers import BasicCSVStatsHandler
-from tbp.monty.frameworks.models.evidence_matching import (
-    EvidenceGraphLM,
-    MontyForEvidenceGraphMatching,
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+    EvidenceGraphLM
+)
+from tbp.monty.frameworks.models.evidence_matching.model import (
+    MontyForEvidenceGraphMatching
 )
 from tbp.monty.frameworks.models.goal_state_generation import (
     EvidenceGoalStateGenerator,
@@ -228,9 +232,8 @@ evidence_lm_config = dict(
                 "hsv": np.array([1, 0.5, 0.5]),
             }
         },
-        max_nneighbors=10,
         # Use this to update all hypotheses > x_percent_threshold (faster)
-        evidence_update_threshold="x_percent_threshold",
+        evidence_threshold_config="x_percent_threshold",
         x_percent_threshold=20,
         gsg_class=EvidenceGoalStateGenerator,
         gsg_args=dict(
@@ -239,6 +242,9 @@ evidence_lm_config = dict(
             ),  # Tolerance(s) when determining goal-state success
             min_post_goal_success_steps=5,  # Number of necessary steps for a hypothesis
         ),
+        hypotheses_updater_args=dict(
+            max_nneighbors=10,
+        )
     ),
 )
 # We'll also reuse these tolerances, so we specify them here.
@@ -321,7 +327,7 @@ python run.py -e dist_agent_5lm_2obj_eval
 Let's have a look at part of the `eval_stats.csv` file located at `~/tbp/results/monty/projects/dist_agent_5lm_2obj/eval/eval_stats.csv`.
 ![](../../figures/how-to-use-monty/multi_lm_eval_stats.png)
 
-Each row corresponds to one learning module during one episode, and so each episode now occupies a 5-row block in the table. On the far right, the **primary_target_object** indicates the object being recognized. On the far left, the **primary_performance** column indicates the learning module's success. In episode 0, all LMs correctly decided that the mug was the object being shown. In episode 1, all LMs terminate with  `correct`  while LM_1 terminated with `correct_mlh` (correct most-likely hypothesis). In short, this means that LM_1 had not yet met its evidence thresholds to make a decision, but the right object was its leading candidate. Had LM_1 been able to continue observing the object, it may well have met the threshold needed to make a final decision. However, the episode was terminated as soon as three learning module met the evidence threshold needed to make a decision. We can require that any number of learning modules meet their evidence thresholds by changing the `min_lms_match` parameter supplied to the `EvalExperimentArgs`. See [here](../../how-monty-works/evidence-based-learning-module.md#terminal-condition) for a more thorough discussion on how learning modules reach terminal conditions and [here](../../how-monty-works/evidence-based-learning-module.md#voting-with-evidence) to learn about how voting works with the evidence LM.
+Each row corresponds to one learning module during one episode, and so each episode now occupies a 5-row block in the table. On the far right, the **primary_target_object** indicates the object being recognized. On the far left, the **primary_performance** column indicates the learning module's success. In episode 0, all LMs correctly decided that the mug was the object being shown. In episode 1, all LMs terminate with  `correct`  while LM_1 terminated with `correct_mlh` (correct most-likely hypothesis). In short, this means that LM_1 had not yet met its evidence thresholds to make a decision, but the right object was its leading candidate. Had LM_1 been able to continue observing the object, it may well have met the threshold needed to make a final decision. However, the episode was terminated as soon as three learning module met the evidence threshold needed to make a decision. We can require that any number of learning modules meet their evidence thresholds by changing the `min_lms_match` parameter supplied to the `EvalExperimentArgs`. See [here](../../how-monty-works/learning-module/evidence-based-learning-module.md#terminal-condition) for a more thorough discussion on how learning modules reach terminal conditions and [here](../../how-monty-works/learning-module/evidence-based-learning-module.md#voting-with-evidence) to learn about how voting works with the evidence LM.
 
 Like in our benchmark experiments, here we have `min_lms_match` set to `3`. Setting this higher requires more steps but reduces the likelihood of incorrect classification. You can try adjusting `min_lms_steps` and see what effect it has on the number of steps required to reach a decision. In all cases, however, Monty should reach a decision quicker with five sensor modules than with one. This ability to reach a quicker decisions through voting is central to Monty. In our benchmark experiments, 5-LM models perform inference in roughly 1/3 of the steps needed for a single-LM distant agent model and with fewer instances of incorrect classification.
 

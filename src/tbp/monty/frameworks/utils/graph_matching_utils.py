@@ -8,12 +8,18 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import logging
 import math
 from itertools import permutations
 
 import numpy as np
 from scipy.spatial.transform import Rotation
+
+from tbp.monty.frameworks.utils.spatial_arithmetics import get_more_directions_in_plane
+
+logger = logging.getLogger(__name__)
 
 
 def get_correct_k_n(k_n, num_datapoints):
@@ -36,9 +42,9 @@ def get_correct_k_n(k_n, num_datapoints):
     if num_datapoints <= k_n:
         if num_datapoints > 2:
             k_n = num_datapoints - 1
-            logging.debug(f"Setting k_n to {k_n}")
+            logger.debug(f"Setting k_n to {k_n}")
         else:
-            logging.error("not enough observations collected to build graph.")
+            logger.error("not enough observations collected to build graph.")
             return None
     return k_n
 
@@ -132,7 +138,7 @@ def get_uniform_initial_possible_poses(n_degrees_sampled=9):
     return unique_poses
 
 
-def get_initial_possible_poses(initial_possible_pose_type):
+def get_initial_possible_poses(initial_possible_pose_type) -> list[Rotation] | None:
     """Initialize initial_possible_poses to test based on initial_possible_pose_type.
 
     Args:
@@ -145,7 +151,8 @@ def get_initial_possible_poses(initial_possible_pose_type):
                 debugging).
 
     Returns:
-        List of initial possible poses to test.
+        List of initial possible poses to test or None if initial_possible_pose_type
+        is "informed".
     """
     if initial_possible_pose_type == "uniform":
         initial_possible_poses = get_uniform_initial_possible_poses()
@@ -160,8 +167,8 @@ def get_initial_possible_poses(initial_possible_pose_type):
     return initial_possible_poses
 
 
-def add_pose_features_to_tolerances(tolerances, default_tolerances=20):
-    """Add point_normal and curvature_direction default tolerances if not set.
+def add_pose_features_to_tolerances(tolerances, default_tolerances=20) -> dict:
+    """Add default `pose_vectors` tolerances if not set.
 
     Returns:
         Tolerances dictionary with added pose_vectors if not set.
@@ -207,7 +214,7 @@ def get_relevant_curvature(features):
     elif "gaussian_curvature_sc" in features.keys():
         curvatures = features["gaussian_curvature_sc"]
     else:
-        logging.error(
+        logger.error(
             f"No curvatures contained in the features {list(features.keys())}."
         )
         # Return large curvature so we use an almost circular search sphere.
@@ -263,19 +270,19 @@ def get_scaled_evidences(evidences, per_object=False):
     return scaled_evidences
 
 
-def get_custom_distances(nearest_node_locs, search_locs, search_pns, search_curvature):
-    """Calculate custom distances modulated by point normal and curvature.
+def get_custom_distances(nearest_node_locs, search_locs, search_sns, search_curvature):
+    """Calculate custom distances modulated by surface normal and curvature.
 
     Args:
         nearest_node_locs: locations of nearest nodes to search_locs.
             shape=(num_hyp, max_nneighbors, 3)
         search_locs: search locations for each hypothesis.
             shape=(num_hyp, 3)
-        search_pns: sensed point normal rotated by hypothesis pose.
+        search_sns: sensed surface normal rotated by hypothesis pose.
             shape=(num_hyp, 3)
         search_curvature: magnitude of sensed curvature (maximum if using
             two principal curvatures). Is used to modulate the search spheres
-            thickness in the direction of the point normal.
+            thickness in the direction of the surface normal.
             shape=1
 
     Returns:
@@ -293,18 +300,18 @@ def get_custom_distances(nearest_node_locs, search_locs, search_pns, search_curv
     # the query normal. Points with dot product 0 are in this plane, higher
     # magnitudes of the dot product means they are further away from that plane
     # (-> should have larger distance).
-    dot_products = np.einsum("ijk,ik->ij", differences, search_pns)
-    # Calculate the eucledian distances. shape=(num_hyp, max_nneighbors)
-    eucledian_dists = np.linalg.norm(differences, axis=2)
+    dot_products = np.einsum("ijk,ik->ij", differences, search_sns)
+    # Calculate the euclidean distances. shape=(num_hyp, max_nneighbors)
+    euclidean_dists = np.linalg.norm(differences, axis=2)
     # Calculate the total distances by adding the absolute dot product to the
-    # eucledian distances. We multiply the dot product by 1/curvature to modulate
+    # euclidean distances. We multiply the dot product by 1/curvature to modulate
     # the flatness of the search sphere. If the curvature is large we want to be
     # able to go further out of the sphere while we want to stay close to the point
     # normal plane if we have a curvature close to 0.
     # To have a minimum wiggle room above and below the plane, even if we have 0
-    # curvature (and to avoide division by 0) we add 0.5 to the denominator.
+    # curvature (and to avoid division by 0) we add 0.5 to the denominator.
     # shape=(num_hyp, max_nneighbors).
-    custom_nearest_node_dists = eucledian_dists + np.abs(dot_products) * (
+    custom_nearest_node_dists = euclidean_dists + np.abs(dot_products) * (
         1 / (np.abs(search_curvature) + 0.5)
     )
     return custom_nearest_node_dists
@@ -462,3 +469,38 @@ def find_step_on_new_object(
         return np.where(conv)[0][0] + n_steps_off_primary_target - 1
     else:
         return None
+
+
+def possible_sensed_directions(
+    sensed_directions: np.ndarray, num_hyps_per_node: int
+) -> np.ndarray:
+    """Returns the possible sensed directions for all nodes.
+
+    This function determines the possible sensed directions for a given set of sensed
+    directions. It relies on two different behaviors depending on the value of
+    num_hyps_per_node.
+        - If num_hyps_per_node equals 2: then pose is well defined (i.e., PC1 != PC2).
+            A well defined pose does not distinguish between mirrored directions of PC1
+            and PC2 (e.g., object can be upside down), therefore we sample both
+            directions.
+        - If num_hyps_per_node is not 2: this function samples additional poses in
+            the plane perpendicular to the sensed surface normal.
+
+    Arguments:
+        sensed_directions: An array of sensed directions.
+        num_hyps_per_node: Number of rotations to get for each node.
+
+    Returns:
+        possible_s_d : Possible sensed direction for all nodes at each rotation
+    """
+    if num_hyps_per_node == 2:
+        possible_s_d = [
+            sensed_directions.copy(),
+            sensed_directions.copy(),
+        ]
+        possible_s_d[1][1:] = possible_s_d[1][1:] * -1
+    else:
+        possible_s_d = get_more_directions_in_plane(
+            sensed_directions, num_hyps_per_node
+        )
+    return possible_s_d

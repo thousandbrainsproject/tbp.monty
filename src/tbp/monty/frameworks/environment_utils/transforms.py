@@ -90,7 +90,7 @@ class AddNoiseToRawDepthImage:
             observation, same as input, with added gaussian noise to depth values.
 
         Raises:
-            Exception: if no depth sensor is present.
+            NoDepthSensorPresent: if no depth sensor is present.
         """
         # loop over sensor modules
         for sm in observation[self.agent_id].keys():
@@ -102,7 +102,9 @@ class AddNoiseToRawDepthImage:
                 )
                 observation[self.agent_id][sm]["depth"] += noise
             else:
-                raise Exception("NO DEPTH SENSOR PRESENT. Don't use this transform")
+                raise NoDepthSensorPresent(
+                    "NO DEPTH SENSOR PRESENT. Don't use this transform"
+                )
         return observation
 
 
@@ -141,7 +143,7 @@ class GaussianSmoothing:
             observation, same as input, with smoothed depth values.
 
         Raises:
-            Exception: if no depth sensor is present.
+            NoDepthSensorPresent: if no depth sensor is present.
         """
         # loop over sensor modules
         for sm in observation[self.agent_id].keys():
@@ -153,7 +155,9 @@ class GaussianSmoothing:
                 )
                 observation[self.agent_id][sm]["depth"] = filtered_img
             else:
-                raise Exception("NO DEPTH SENSOR PRESENT. Don't use this transform")
+                raise NoDepthSensorPresent(
+                    "NO DEPTH SENSOR PRESENT. Don't use this transform"
+                )
         return observation
 
     def create_kernel(self):
@@ -310,7 +314,7 @@ class DepthTo3DLocations:
         self.clip_value = clip_value
         self.depth_clip_sensors = depth_clip_sensors
 
-    def __call__(self, observations: dict, state: Optional[State] = None):
+    def __call__(self, observations: dict, state: Optional[State] = None) -> dict:
         """Apply the depth-to-3D-locations transform to sensor observations.
 
         Applies spatial transforms to the observations and generates a mask used
@@ -324,7 +328,7 @@ class DepthTo3DLocations:
         on-surface arises from the fact that the field of view may contain parts
         of the object that are far away from each other. For example, we may
         be looking at the front lip of a mug, but the back lip of the mug is
-        also in the field of view. When we compute surface point normals or
+        also in the field of view. When we compute surface normals or
         surface curvature for the front lip of the mug, we don't want to include
         pixels from the back lip of the mug.
 
@@ -334,7 +338,7 @@ class DepthTo3DLocations:
         same part of the object (see `get_surface_from_depth` for details). The
         intersection of these two maps forms the on-surface mask (called
         `semantic_obs`) that is embedded into the observation dict and is used
-        later when performing point-normal and curvature estimation.
+        later when performing surface normal and curvature estimation.
 
         How we decide to build these masks is dependent on several factors,
         such as whether we are using a distant agent or a surface agent, and
@@ -365,11 +369,11 @@ class DepthTo3DLocations:
         to the original observations dict.
 
         Args:
-            observations (dict): Observations returned by the data loader.
-            state (State, optional): Optionally supplied CMP-compliant state object.
+            observations: Observations returned by the data loader.
+            state: Optionally supplied CMP-compliant state object.
 
         Returns:
-            dict: The original observations dict with the following possibly added:
+            The original observations dict with the following possibly added:
                 - "semantic_3d": 3D coordinates for each pixel. If `self.world_coord`
                     is `True` (default), then the coordinates are in the world's
                     reference frame and are in the sensor's reference frame otherwise.
@@ -467,8 +471,8 @@ class DepthTo3DLocations:
                 world_camera[0:3, 3] = sensor_translation_rel_world
                 xyz = np.matmul(world_camera, xyz)
 
-                # Add sensor-to-world coordinate frame transform, used for point-normal
-                # extraction. View direction is the third column of the matrix.
+                # Add sensor-to-world coordinate frame transform, used for surface
+                # normal extraction. View direction is the third column of the matrix.
                 observations[self.agent_id][sensor_id]["world_camera"] = world_camera
 
             # Extract 3D coordinates of detected objects (semantic_id != 0)
@@ -479,7 +483,7 @@ class DepthTo3DLocations:
                 sensor_frame_data[:, 3] = semantic[0]
 
                 # Add point-cloud data expressed in sensor coordinate frame. Used for
-                # point-normal extraction
+                # surface normal extraction
                 observations[self.agent_id][sensor_id]["sensor_frame_data"] = (
                     sensor_frame_data
                 )
@@ -585,12 +589,12 @@ class DepthTo3DLocations:
         is centered on". For example, the sensor may be looking directly at the front
         lip of a mug, but the back lip of the mug is also in view. While both parts
         of the mug are on-object, we only want to use the front lip of the mug for
-        later computation (such as point-normal extraction and curvature estimation),
+        later computation (such as surface normal extraction and curvature estimation),
         and so we want to mask out the back lip of the mug.
 
-        Continuing with the the mug front/back lip example, we separate the front
+        Continuing with the mug front/back lip example, we separate the front
         and back lips by their depth data. When we generate a histogram of pixel
-        depths, we should see two distincts peaks of the histogram (or 3 peaks if there
+        depths, we should see two distinct peaks of the histogram (or 3 peaks if there
         is a part of the field of view that is off-object entirely). We would then
         compute which depth threshold separates the two peaks that correspond to the
         two surfaces, and this is performed by `get_on_surface_th`. This function
@@ -599,7 +603,7 @@ class DepthTo3DLocations:
         mask which ensures that off-object observations are also masked out.
 
         Note that we most often don't have multiple surfaces in view. For example,
-        when exploring a mug, we are most often looking direclty at one locally
+        when exploring a mug, we are most often looking directly at one locally
         connected part of the mug, such as a patch on the mug's cylindrical body.
         In this case, we don't attempt to find a surface-separating threshold, and we
         instead use the default threshold `default_on_surface_th`. As with a
@@ -640,3 +644,9 @@ class DepthTo3DLocations:
             surface_patch = depth_patch > th
 
         return surface_patch * semantic_patch
+
+
+class NoDepthSensorPresent(RuntimeError):
+    """Raised when a depth sensor is expected but not found."""
+
+    pass

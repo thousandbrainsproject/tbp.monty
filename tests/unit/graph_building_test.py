@@ -8,6 +8,14 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import pytest
+
+pytest.importorskip(
+    "habitat_sim",
+    reason="Habitat Sim optional dependency not installed.",
+)
+
+
 import copy
 import shutil
 import tempfile
@@ -223,11 +231,13 @@ class GraphLearningTest(unittest.TestCase):
             "node ids not stored in graph",
         )
 
-    def build_and_save_supervised_graph(self):
+    def build_and_save_supervised_graph(
+        self,
+    ) -> MontySupervisedObjectPretrainingExperiment:
         """Builds and saves a supervised graph.
 
         Returns:
-            exp (MontySupervisedObjectPretrainingExperiment): The experiment.
+            The experiment.
         """
         pprint("...parsing experiment...")
         config = self.supervised_pre_training_in_habitat
@@ -238,11 +248,13 @@ class GraphLearningTest(unittest.TestCase):
             exp.train()
         return exp
 
-    def build_and_save_supervised_graph_feat(self):
+    def build_and_save_supervised_graph_feat(
+        self,
+    ) -> MontySupervisedObjectPretrainingExperiment:
         """Builds and saves a supervised graph with feature matching.
 
         Returns:
-            exp (MontySupervisedObjectPretrainingExperiment): The experiment.
+            The experiment.
         """
         pprint("...parsing experiment...")
         with MontySupervisedObjectPretrainingExperiment(self.spth_feat) as exp:

@@ -6,9 +6,9 @@
 
 [![](https://github.com/thousandbrainsproject/tbp.monty/actions/workflows/monty.yml/badge.svg)](https://github.com/thousandbrainsproject/tbp.monty/actions/workflows/monty.yml)
 
-This repository contains the first implementation of a **sensorimotor learning system** from the **Thousand Brains Project at Numenta**. We lovingly call it **Monty** after Vernon Mountcastle, who proposed cortical columns as a repeating functional unit across the neocortex.
+This repository contains the first implementation of a **sensorimotor learning system** from the **Thousand Brains Project**. We lovingly call it **Monty** after Vernon Mountcastle, who proposed cortical columns as a repeating functional unit across the neocortex.
 
-This is an open-source project by Numenta, partially funded by the Gates Foundation.
+This is an open-source project that was initially started at Numenta. The Thousand Brains Project is now an independent non-profit, partially funded by the Gates Foundation.
 
 Please find our [**full documentation** here](https://thousandbrainsproject.readme.io/)
 
@@ -55,18 +55,36 @@ If you would like to receive updates, follow us on [Bluesky](https://bsky.app/pr
 If you have further questions or suggestions for collaborations, don't hesitate to contact us directly at **info@thousandbrains.org**.
 
 # Citing the Project
-If you're writing a publication that references the Thousand Brains Project, please cite our [TBP white paper](https://arxiv.org/abs/2412.18354):
+If you're writing a publication that references the Thousand Brains Project, please cite 
+
+[TBP white paper](https://arxiv.org/abs/2412.18354):
 ```
 @misc{thousandbrainsproject2024,
       title={The Thousand Brains Project: A New Paradigm for Sensorimotor Intelligence},
       author={Viviane Clay and Niels Leadholm and Jeff Hawkins},
       year={2024},
       eprint={2412.18354},
-      archivePrefix={arXiv},
-      primaryClass={cs.AI},
-      url={https://arxiv.org/abs/2412.18354},
 }
 ```
+
+
+If you would like to refer to Monty's capabilities and advantages over deep learning, please cite
+
+[Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference](https://arxiv.org/abs/2507.04494):
+```
+@misc{leadholm2025thousandbrainssystemssensorimotorintelligence,
+      title={Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference}, 
+      author={Niels Leadholm and Viviane Clay and Scott Knudstrup and Hojae Lee and Jeff Hawkins},
+      year={2025},
+      eprint={2507.04494},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2507.04494}, 
+}
+```
+
+If you would like to reference the theory behind this novel AI approach, here you can find a list of [neuroscience theory papers](https://thousandbrainsproject.readme.io/docs/further-reading#our-papers).
+
 
 # License
 

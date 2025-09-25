@@ -7,20 +7,16 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
 
-import numpy as np
-
 from tbp.monty.frameworks.loggers.exp_logger import TestLogger
-from tbp.monty.frameworks.models.abstract_monty_classes import (
-    LearningModule,
-    Monty,
-    SensorModule,
-)
+from tbp.monty.frameworks.models.abstract_monty_classes import Monty
 from tbp.monty.frameworks.models.motor_system import MotorSystem
-from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
+
+logger = logging.getLogger(__name__)
 
 
 class MontyBase(Monty):
@@ -80,9 +76,7 @@ class MontyBase(Monty):
         """
         # Basic instance attributes
         self.sensor_modules = sensor_modules
-        self.sm_ids = [s.sensor_module_id for s in self.sensor_modules]
         self.learning_modules = learning_modules
-        self.n_lms = len(self.learning_modules)
         self.motor_system = motor_system
         self.sm_to_agent_dict = sm_to_agent_dict
         self.sm_to_lm_matrix = sm_to_lm_matrix
@@ -105,8 +99,6 @@ class MontyBase(Monty):
         # Number of steps in which at least 1 LM was updated. Is not the same as each
         # individual LMs number of matching steps
         self.matching_steps = 0
-        self.episodes = 0
-        self.epochs = 0
 
         if self.sm_to_lm_matrix is None:
             raise ValueError("sm_to_lm_matrix must be defined")
@@ -125,8 +117,9 @@ class MontyBase(Monty):
                 "The lengths of learning_modules and lm_to_lm_vote_matrix must match"
             )
 
-        # Validate number of sensor modules and mapping
-        if set(self.sm_ids) != set(sm_to_agent_dict.keys()):
+        # Check that every sensor module is assigned to an agent.
+        sm_ids = [sm.sensor_module_id for sm in self.sensor_modules]
+        if set(sm_ids) != set(self.sm_to_agent_dict.keys()):
             raise ValueError(
                 "sm_to_agent_dict must contain exactly one key for each "
                 "sensor_module id; no more, no less!"
@@ -229,7 +222,7 @@ class MontyBase(Monty):
         )
         return sensory_inputs
 
-    def _combine_inputs(self, inputs_from_sms, inputs_from_lms):
+    def _combine_inputs(self, inputs_from_sms, inputs_from_lms) -> dict | None:
         """Combine all inputs to an LM into one dict.
 
         An LM only receives input from another LM if it also receives input from
@@ -246,10 +239,9 @@ class MontyBase(Monty):
             inputs_from_lms: List of dicts of LM outputs.
 
         Returns:
-            dict of combined features and location from all inputs with
-                interesting features. If there are no inputs or none of them
-                are deemed interesting (i.e. off object or low confidence LM)
-                this returns None.
+            Combined features and location from all inputs with interesting features.
+            If there are no inputs or none of them are deemed interesting (i.e. off
+            object or low confidence LM) this returns None.
         """
         combined_inputs = [
             inputs_from_sms[i]
@@ -310,14 +302,14 @@ class MontyBase(Monty):
         if self.exceeded_min_steps:
             if self.step_type == "exploratory_step":
                 self._is_done = True
-                logging.info(f"finished exploring after {self.exploratory_steps} steps")
+                logger.info(f"finished exploring after {self.exploratory_steps} steps")
 
             elif self.step_type == "matching_step":
                 if self.experiment_mode == "train":
                     self.switch_to_exploratory_step()
                 else:
                     self._is_done = True
-                    logging.info(
+                    logger.info(
                         f"finished evaluating after {self.matching_steps} steps"
                     )
 
@@ -349,7 +341,6 @@ class MontyBase(Monty):
             sm.pre_episode()
 
     def post_episode(self):
-        self.episodes += 1
         for lm in self.learning_modules:
             lm.post_episode()
 
@@ -484,120 +475,16 @@ class MontyBase(Monty):
 
         if self.step_type == "matching_step":
             self.matching_steps += 1
-            logging.info(f"--- Global Matching Step {self.matching_steps} ---")
+            logger.info(f"--- Global Matching Step {self.matching_steps} ---")
         elif self.step_type == "exploratory_step":
             self.exploratory_steps += 1
 
     def switch_to_matching_step(self):
         self.step_type = "matching_step"
         self.is_seeking_match = True
-        logging.debug(f"Going into matching mode after {self.episode_steps} steps")
+        logger.debug(f"Going into matching mode after {self.episode_steps} steps")
 
     def switch_to_exploratory_step(self):
         self.step_type = "exploratory_step"
         self.is_seeking_match = False
-        logging.info(f"Going into exploratory mode after {self.matching_steps} steps")
-
-
-class LearningModuleBase(LearningModule):
-    """Dummy placeholder class used only for tests."""
-
-    def __init__(self):
-        self.test_attr_1 = True
-        self.test_attr_2 = True
-
-    def reset(self):
-        pass
-
-    def matching_step(self, inputs):
-        pass
-
-    def exploratory_step(self, inputs):
-        pass
-
-    def receive_votes(self, inputs):
-        pass
-
-    def send_out_vote(self):
-        pass
-
-    def state_dict(self):
-        return dict(test_attr_1=self.test_attr_1, test_attr_2=self.test_attr_2)
-
-    def load_state_dict(self, state_dict):
-        self.test_attr_1 = state_dict["test_attr_1"]
-        self.test_attr_2 = state_dict["test_attr_2"]
-
-    def pre_episode(self):
-        pass
-
-    def post_episode(self):
-        pass
-
-    def set_experiment_mode(self, inputs):
-        pass
-
-    def propose_goal_state(self):
-        pass
-
-    def get_output(self):
-        pass
-
-
-class SensorModuleBase(SensorModule):
-    def __init__(self, sensor_module_id):
-        self.sensor_module_id = sensor_module_id
-        self.state = None
-
-    def __call__(self, observation):
-        logging.warning(
-            "SensorModuleBase only outputs placeholder values. Use a "
-            "concrete SM implementation to actually extract features from "
-            "the raw sensory data."
-        )
-        return State(
-            location=np.zeros(3),  # Placeholder
-            morphological_features={
-                "pose_vectors": np.eye(3),
-                "pose_fully_defined": True,
-            },  # Placeholder
-            non_morphological_features=observation,
-            confidence=1,
-            use_state=True,
-            sender_id="SM_0",  # Placeholder
-            sender_type="SM",
-        )
-
-    def state_dict(self):
-        pass
-
-    def step(self, data):
-        logging.warning(
-            "SensorModuleBase only outputs placeholder values. Use a "
-            "concrete SM implementation to actually extract features from "
-            "the raw sensory data."
-        )
-        return State(
-            location=np.zeros(3),  # Placeholder
-            morphological_features={
-                "pose_vectors": np.eye(3),
-                "pose_fully_defined": True,
-            },  # Placeholder
-            non_morphological_features=data,
-            confidence=1,
-            use_state=True,
-            sender_id="SM_0",  # Placeholder
-            sender_type="SM",
-        )
-
-    def update_state(self, state):
-        self.state = state
-
-    def pre_episode(self):
-        pass
-
-    def post_episode(self):
-        pass
-
-    def set_experiment_mode(self, mode):
-        self.experiment_mode = mode
+        logger.info(f"Going into exploratory mode after {self.matching_steps} steps")

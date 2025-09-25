@@ -22,6 +22,8 @@ from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import Action, ActionJSONEncoder
 
+logger = logging.getLogger(__name__)
+
 
 class BaseBuffer:
     @abc.abstractclassmethod
@@ -56,6 +58,8 @@ class FeatureAtLocationBuffer(BaseBuffer):
         self.input_states = []
 
         self.displacements = {}
+
+        self.channel_sender_types = {}
 
         self.stats = {
             "detected_path": None,
@@ -119,6 +123,9 @@ class FeatureAtLocationBuffer(BaseBuffer):
         any_obs_on_obj = False
         for state in list_of_data:
             input_channel = state.sender_id
+
+            self.channel_sender_types[input_channel] = state.sender_type
+
             self._add_loc_to_location_buffer(input_channel, state.location)
             if input_channel not in self.features.keys():
                 self.features[input_channel] = {}
@@ -148,11 +155,10 @@ class FeatureAtLocationBuffer(BaseBuffer):
         for stat in stats.keys():
             if stat in self.stats.keys() and append:
                 self.stats[stat].append(copy.deepcopy(stats[stat]))
+            elif init_list:
+                self.stats[stat] = [copy.deepcopy(stats[stat])]
             else:
-                if init_list:
-                    self.stats[stat] = [copy.deepcopy(stats[stat])]
-                else:
-                    self.stats[stat] = copy.deepcopy(stats[stat])
+                self.stats[stat] = copy.deepcopy(stats[stat])
         if update_time:
             self.stats["time"].append(time.time() - self.start_time)
 
@@ -347,7 +353,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
         all_features_on_object = {}
         # Number of steps where at least one input was on the object
         global_on_object_ids = np.where(self.on_object)[0]
-        logging.debug(
+        logger.debug(
             f"Observed {np.array(self.locations).shape} locations, "
             f"{len(global_on_object_ids)} global on object"
         )
@@ -356,7 +362,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             channel_off_object_ids = np.where(
                 self.features[input_channel]["on_object"] is False
             )[0]
-            logging.debug(
+            logger.debug(
                 f"{input_channel} has "
                 f"{len(self.locations) - len(channel_off_object_ids)} "
                 "on object observations"
@@ -374,7 +380,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
                         ),
                         refcheck=False,
                     )
-                logging.debug(
+                logger.debug(
                     f"{input_channel} observations for feature {feature} have "
                     f"shape {np.array(self.features[input_channel][feature]).shape}"
                 )
@@ -455,22 +461,24 @@ class FeatureAtLocationBuffer(BaseBuffer):
             The name of the first sensory (coming from SM) input channel in buffer.
 
         Raises:
-            ValueError: If no sensor channels are found in the buffer
+            ValueError: If no sensory channels are found in the buffer.
         """
-        all_channels = list(self.locations.keys())
-        if len(all_channels) > 0:
-            for channel in all_channels:
-                # TODO: better way of checking this that doesn't rely on naming. Maybe
-                # store sensory_type together with channel when adding state to buffer?
-                if "patch" in channel:
-                    return channel
-            raise ValueError(
-                "No sensor channel found in buffer. "
-                "get_first_sensory_input_channel assumes we have at least one"
-                f" sensor channel but channels are {all_channels}."
-            )
-        else:
+        all_channels = list(self.channel_sender_types.keys())
+        if len(all_channels) == 0:
             return None
+
+        for channel in all_channels:
+            if self.channel_sender_types[channel] == "SM":
+                return channel
+
+        # If we reach here, no sensory channels were found but channels exist
+        # This means we have channels but none are SMs that output CMP-compliant
+        # State observations (e.g., only view_finder, LM)
+        raise ValueError(
+            f"No sensory input channels found in buffer. "
+            f"Available channels: {all_channels}. "
+            f"Channel sender types: {self.channel_sender_types}"
+        )
 
     def set_individual_ts(self, object_id, pose):
         """Update self.stats with the individual LMs terminal state."""
@@ -507,8 +515,8 @@ class FeatureAtLocationBuffer(BaseBuffer):
             # this time step and then add the sensed feature. This makes
             # sure the same index in different feature array corresponds to
             # the same time step and location.
-            self.features[input_channel][attr_name] = (
-                np.empty((len(self.locations), attr_shape)) * np.nan
+            self.features[input_channel][attr_name] = np.full(
+                (len(self.locations), attr_shape), np.nan
             )
         else:
             padded_feat = self._fill_old_values_with_nans(
@@ -546,8 +554,8 @@ class FeatureAtLocationBuffer(BaseBuffer):
         if input_channel not in self.displacements.keys():
             self.displacements[input_channel] = {}
         if disp_name not in self.displacements[input_channel].keys():
-            self.displacements[input_channel][disp_name] = (
-                np.empty((len(self.locations), len(disp_val))) * np.nan
+            self.displacements[input_channel][disp_name] = np.full(
+                (len(self.locations), len(disp_val)), np.nan
             )
 
         padded_vals = self._fill_old_values_with_nans(
@@ -575,7 +583,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             The padded values.
         """
         # create new np array filled with nans of size (current_step, new_val_len)
-        new_vals = np.empty((len(self) + 1, new_val_len)) * np.nan
+        new_vals = np.full((len(self) + 1, new_val_len), np.nan)
         # Replace nans with stored values for this feature.
         # existing_feat has shape (last_stored_step, attr_shape)
         new_vals[: existing_vals.shape[0], : existing_vals.shape[1]] = existing_vals

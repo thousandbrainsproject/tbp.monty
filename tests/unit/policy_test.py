@@ -8,6 +8,13 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import pytest
+
+pytest.importorskip(
+    "habitat_sim",
+    reason="Habitat Sim optional dependency not installed.",
+)
+
 import copy
 import shutil
 import tempfile
@@ -58,8 +65,10 @@ from tbp.monty.frameworks.config_utils.policy_setup_utils import (
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
-from tbp.monty.frameworks.models.evidence_matching import (
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
+)
+from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
 )
 from tbp.monty.frameworks.models.goal_state_generation import (
@@ -87,7 +96,7 @@ from tbp.monty.simulators.habitat.configs import (
 
 
 class PolicyTest(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Code that gets executed before every test."""
         self.output_dir = tempfile.mkdtemp()
 
@@ -450,7 +459,7 @@ class PolicyTest(unittest.TestCase):
         # rotated, this means it is pointing towards/away from the sensor, rather than
         # orthogonal to it; in experiments, PC vectors pointing towards +z in the
         # reference frame of the sensor/agent can happen if the surface agent has failed
-        # to orient such that it is looking down at the point-normal
+        # to orient such that it is looking down at the surface normal
         fo_2_corrupt_z = copy.deepcopy(fo_2)
         fo_2_corrupt_z["morphological_features"]["pose_vectors"] = np.array(
             [[0, 1, 0], [0, 0, 1], [1, 0, 0]]
@@ -510,7 +519,7 @@ class PolicyTest(unittest.TestCase):
             exp.evaluate()
 
     # @unittest.skip("debugging")
-    def test_can_run_curv_informed_policy(self):
+    def test_can_run_curv_informed_policy(self) -> None:
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.curv_informed_config)
         with MontyObjectRecognitionExperiment(config) as exp:
@@ -892,23 +901,127 @@ class PolicyTest(unittest.TestCase):
             for loader_step, observation in enumerate(exp.dataloader):
                 exp.model.step(observation)
 
-                if loader_step == 24:  # Last step we take before getting back onto the
-                    # object
+                #  Step | Action           | Motor-only? | Obs processed? | Source
+                # ------|------------------|-------------|----------------|-------------
+                #  1    | MoveForward      | True        | False          | dynamic_call
+                #  2    | OrientHorizontal | True        | False          | dynamic_call
+                #  3    | OrientVertical   | False       | True           | dynamic_call
+                #  4    | MoveTangentially | True        | False          | dynamic_call
+                #  5    | MoveForward      | True        | False          | dynamic_call
+                #  6    | OrientHorizontal | True        | False          | dynamic_call
+                #  7    | OrientVertical   | False       | True           | dynamic_call
+                #  8    | MoveTangentially | True        | False          | dynamic_call
+                #  9    | MoveForward      | True        | False          | dynamic_call
+                #  10   | OrientHorizontal | True        | False          | dynamic_call
+                #  11   | OrientVertical   | False       | True           | dynamic_call
+                #  12   | MoveTangentially | True        | False          | dynamic_call
+                # falls off object
+                #  13   | OrientHorizontal | True        | False          | touch_object
+                #  14   | OrientHorizontal | True        | False          | touch_object
+                #  15   | OrientHorizontal | True        | False          | touch_object
+                #  16   | OrientHorizontal | True        | False          | touch_object
+                #  17   | OrientHorizontal | True        | False          | touch_object
+                #  18   | OrientHorizontal | True        | False          | touch_object
+                #  19   | OrientHorizontal | True        | False          | touch_object
+                #  20   | OrientHorizontal | True        | False          | touch_object
+                #  21   | OrientHorizontal | True        | False          | touch_object
+                #  22   | OrientHorizontal | True        | False          | touch_object
+                #  23   | OrientHorizontal | True        | False          | touch_object
+                #  24   | OrientHorizontal | True        | False          | touch_object
+                #  25   | OrientVertical   | True        | False          | touch_object
+                #  26   | MoveForward      | True        | False          | touch_object
+                # back on object
+                #  27   | MoveForward      | True        | False          | dynamic_call
+                #  28   | OrientHorizontal | True        | False          | dynamic_call
+                #  29   | OrientVertical   | False       | True           | dynamic_call
+                #  30   | MoveTangentially | True        | False          | dynamic_call
+                # falls off object
+                #  31   | OrientHorizontal | True        | False          | touch_object
+                #  32   | OrientHorizontal | True        | False          | touch_object
+                #  33   | OrientHorizontal | True        | False          | touch_object
+                #  34   | OrientHorizontal | True        | False          | touch_object
+                #  35   | OrientHorizontal | True        | False          | touch_object
+                #  36   | OrientHorizontal | True        | False          | touch_object
+                #  37   | OrientHorizontal | True        | False          | touch_object
+                #  38   | OrientHorizontal | True        | False          | touch_object
+                #  39   | OrientHorizontal | True        | False          | touch_object
+                #  40   | OrientHorizontal | True        | False          | touch_object
+                #  41   | OrientHorizontal | True        | False          | touch_object
+                #  42   | OrientHorizontal | True        | False          | touch_object
+                #  43   | OrientVertical   | True        | False          | touch_object
+                #  44   | MoveForward      | True        | False          | touch_object
+                # back on object
+                #  45   | MoveForward      | True        | False          | dynamic_call
+                #  46   | OrientHorizontal | True        | False          | dynamic_call
+                #  47   | OrientVertical   | False       | True           | dynamic_call
+                #  48   | MoveTangentially | True        | False          | dynamic_call
+                # falls off object
+                #  49   | OrientHorizontal | True        | False          | touch_object
+                #  50   | OrientHorizontal | True        | False          | touch_object
+                #  51   | OrientHorizontal | True        | False          | touch_object
+                #  52   | OrientHorizontal | True        | False          | touch_object
+                #  53   | OrientHorizontal | True        | False          | touch_object
+                #  54   | OrientHorizontal | True        | False          | touch_object
+                #  56   | OrientHorizontal | True        | False          | touch_object
+                #  57   | OrientHorizontal | True        | False          | touch_object
+                #  58   | OrientHorizontal | True        | False          | touch_object
+                #  59   | OrientHorizontal | True        | False          | touch_object
+                #  60   | OrientHorizontal | True        | False          | touch_object
+                #  61   | OrientVertical   | True        | False          | touch_object
+                #  62   | MoveForward      | True        | False          | touch_object
+                # back on object
+                #  63   | MoveForward      | True        | False          | dynamic_call
+                #  64   | OrientHorizontal | True        | False          | dynamic_call
+                #  65   | OrientVertical   | False       | True           | dynamic_call
+                #  66   | MoveTangentially | True        | False          | dynamic_call
+                # falls off object
+                #  67   | OrientHorizontal | True        | False          | touch_object
+
+                # Motor-only touch_object steps
+                if (
+                    13 <= loader_step <= 26
+                    or 31 <= loader_step <= 44
+                    or 49 <= loader_step <= 62
+                    or loader_step == 67
+                ):
                     assert not exp.model.learning_modules[
                         0
-                    ].buffer.get_last_obs_processed(), "Should be off object"
+                    ].buffer.get_last_obs_processed(), (
+                        f"Should be off object, motor-only step: {loader_step}"
+                    )
+                if loader_step == 67:
+                    break  # Finish test
 
-                if loader_step == 25:
+                # First two on-object steps are always MoveForward & OrientHorizontal
+                # motor-only steps
+                if loader_step in [27, 28, 45, 46, 63, 64]:
+                    assert not exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), (
+                        f"Should be on object, motor-only step: {loader_step}"
+                    )
+
+                # Third on-object steps are always OrientVertical that send data to LM
+                if loader_step in [29, 47, 65]:
                     assert exp.model.learning_modules[
                         0
-                    ].buffer.get_last_obs_processed(), "Should be back on object"
-                    break  # Don't go into exploratory mode
+                    ].buffer.get_last_obs_processed(), (
+                        f"Should be on object, sending data to LM: {loader_step}"
+                    )
+
+                # Fourth on-object steps are always MoveTangentially motor-only steps
+                if loader_step in [30, 48, 66]:
+                    assert not exp.model.learning_modules[
+                        0
+                    ].buffer.get_last_obs_processed(), (
+                        f"Should be on object, motor-only step: {loader_step}"
+                    )
 
     def test_surface_policy_orientation(self):
-        """Test ability of surface agent to orient to a point-normal.
+        """Test ability of surface agent to orient to a surface normal.
 
         Test that the surface-agent correctly orients to be pointing down at an
-        observed point-normal.
+        observed surface normal.
 
         Begins the episode by facing a cube whose surface is pointing away from
         the agent at an odd angle.
@@ -929,7 +1042,7 @@ class PolicyTest(unittest.TestCase):
                 if loader_step == 3:  # Surface agent should have re-oriented
                     break
 
-            # Most recently observed point-normal sent to the learning module
+            # Most recently observed surface normal sent to the learning module
             current_pose = exp.model.learning_modules[0].buffer.get_current_pose(
                 input_channel="first"
             )
@@ -952,7 +1065,7 @@ class PolicyTest(unittest.TestCase):
                 np.isclose(
                     current_pose[1], agent_direction * (-1), rtol=1.0e-3, atol=1.0e-2
                 )
-            ), "Agent should be (approximately) looking down on the point-normal"
+            ), "Agent should be (approximately) looking down on the surface normal"
 
     def test_core_following_principal_curvature(self):
         """Test ability of surface agent to follow principal curvature.
@@ -989,7 +1102,7 @@ class PolicyTest(unittest.TestCase):
         motor_system._state["agent_id_0"]["rotation"] = qt.quaternion(1, 0, 0, 0)
 
         # Step 1
-        # fake_obs_pc contains observations including the point-normal and principal
+        # fake_obs_pc contains observations including the surface normal and principal
         # curvature directions in the global/environment reference frame; the movement
         # (specifically tangential translation) that the agent should take is
         # also in environmental coordinates, so we compare these

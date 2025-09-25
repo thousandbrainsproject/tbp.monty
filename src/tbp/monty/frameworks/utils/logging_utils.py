@@ -8,15 +8,19 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import copy
 import json
 import logging
 import os
 from collections import deque
 from itertools import chain
+from pathlib import Path
 from sys import getsizeof
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import quaternion
 import torch
@@ -26,6 +30,8 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_unique_rotations,
     rotations_to_quats,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def load_stats(
@@ -118,8 +124,7 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
     detailed_json = {}
     stop = stop or np.inf
     with open(json_file, "r") as f:
-        line_counter = 0
-        for line in f:
+        for line_counter, line in enumerate(f):
             if should_get_episode(start, stop, episodes, line_counter):
                 # NOTE: json logging is only used at inference time and inference
                 # episodes are independent and order does not matter. This hack fixes a
@@ -132,11 +137,10 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
                 json_key = list(tmp_json.keys())[0]  # has only one key
                 detailed_json[str(line_counter)] = tmp_json[json_key]
                 del tmp_json
-            line_counter += 1
 
     if episodes is not None:
         str_episodes = [str(i) for i in episodes]
-        if not list(detailed_json.keys()) == str_episodes:
+        if list(detailed_json.keys()) != str_episodes:
             print(
                 "WARNING: episode keys did not equal json keys. This can happen if "
                 "json file was not appended to in episode order. To manually load the"
@@ -359,7 +363,7 @@ def check_detection_accuracy_at_step(stats, last_n_step=1):
     return detection_stats
 
 
-def get_time_stats(all_ds, all_conditions):
+def get_time_stats(all_ds, all_conditions) -> pd.DataFrame:
     """Get summary of run times in a dataframe for each condition.
 
     Args:
@@ -367,7 +371,7 @@ def get_time_stats(all_ds, all_conditions):
         all_conditions: name of each condition
 
     Returns:
-        pd.DataFrame with runtime stats
+        Runtime stats.
     """
     time_stats = []
     for i, detailed_stats in enumerate(all_ds):
@@ -388,10 +392,10 @@ def get_time_stats(all_ds, all_conditions):
     return time_stats
 
 
-def compute_pose_error(
+def compute_pose_errors(
     predicted_rotation: Rotation, target_rotation: Rotation
-) -> float:
-    """Computes the minimum angular pose error between predicted and target rotations.
+) -> npt.NDArray[np.float64] | float:
+    """Computes the angular pose errors between predicted and target rotations.
 
     Both inputs must be instances of `scipy.spatial.transform.Rotation`. The
     `predicted_rotation` may contain a single rotation or a list of rotations,
@@ -399,7 +403,7 @@ def compute_pose_error(
 
     The pose error is defined as the geodesic distance on SO(3) — the angle of the
     relative rotation between predicted and target. If `predicted_rotation` contains
-    multiple rotations, this function returns the minimum error among them.
+    multiple rotations, this function returns the errors among them.
 
     Note that the `.inv()` operation in this method is due to how geodesic distance
     between two rotations is calculated, not a side-effect of whether the target
@@ -408,14 +412,35 @@ def compute_pose_error(
     the comparison.
 
     Args:
-        predicted_rotation (Rotation): Predicted rotation(s). Can be a single or list of
+        predicted_rotation: Predicted rotation(s). Can be a single or list of
             rotation.
-        target_rotation (Rotation): Target rotation. Must represent a single rotation.
+        target_rotation: Target rotation. Must represent a single rotation.
 
     Returns:
-        float: The minimum angular error in radians.
+        The angular errors in radians.
     """
-    error = np.min((predicted_rotation * target_rotation.inv()).magnitude())
+    errors: npt.NDArray[np.float64] | float = (
+        predicted_rotation * target_rotation.inv()
+    ).magnitude()
+    return errors
+
+
+def compute_pose_error(
+    predicted_rotation: Rotation, target_rotation: Rotation
+) -> float:
+    """Computes the minimum angular pose error between predicted and target rotations.
+
+    See `compute_pose_errors` for more details.
+
+    Args:
+        predicted_rotation: Predicted rotation(s). Can be a single or list of
+            rotation.
+        target_rotation: Target rotation. Must represent a single rotation.
+
+    Returns:
+        The minimum angular error in radians.
+    """
+    error = np.min(compute_pose_errors(predicted_rotation, target_rotation))
     return error
 
 
@@ -426,7 +451,7 @@ def get_overall_pose_error(stats, lm_id="LM_0"):
         This can now be obtained easier from the .csv stats.
 
     Args:
-        stats (dict): detailed stats
+        stats: detailed stats
         lm_id: id of learning module
 
     Returns:
@@ -813,7 +838,7 @@ def target_data_to_dict(target):
         target: target params
 
     Returns:
-        output_dict: dict with target params
+        dict with target params
     """
     output_dict = {}
     output_dict["primary_target_object"] = target["object"]
@@ -842,7 +867,7 @@ def format_columns_for_wandb(lm_dict):
         lm_dict: dict, part of a larger dict ~ {LM_0: lm_dict, LM_1: lm_dict}
 
     Returns:
-        dict: formatted lm_dict
+        formatted lm_dict
     """
     formatted_dict = copy.deepcopy(lm_dict)
     if "result" in formatted_dict:
@@ -902,35 +927,35 @@ def maybe_rename_existing_file(log_file, extension, report_count):
         old_name = log_file.split(extension)[0]
         new_name = old_name + "_old" + extension
 
-        logging.warning(
+        logger.warning(
             f"Output file {log_file} already exists. This file will be moved"
             f" to {new_name}"
         )
 
         if os.path.exists(new_name):
-            logging.warning(
+            logger.warning(
                 f"Output file {new_name} also already exists. This file will be removed"
                 " before renaming."
             )
             os.remove(new_name)
 
-        os.rename(log_file, new_name)
+        Path(log_file).rename(new_name)
 
 
 def maybe_rename_existing_directory(path, report_count):
     if (report_count == 0) and os.path.exists(path):
         new_path = path + "_old"
-        logging.warning(
+        logger.warning(
             f"Output path {path} already exists. This path will be movedto {new_path}"
         )
 
         if os.path.exists(new_path):
-            logging.warning(
+            logger.warning(
                 f"{new_path} also exists, and will be removed before renaming"
             )
             os.remove(new_path)
 
-        os.rename(path, new_path)
+        Path(path).rename(new_path)
 
 
 def get_rgba_frames_single_sm(observations):

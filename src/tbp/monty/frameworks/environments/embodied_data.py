@@ -16,18 +16,22 @@ from pprint import pformat
 import numpy as np
 import quaternion
 from torch.utils.data import Dataset
+from typing_extensions import Self
 
 from tbp.monty.frameworks.actions.action_samplers import UniformlyDistributedSampler
 from tbp.monty.frameworks.actions.actions import (
     Action,
     LookUp,
     MoveTangentially,
+    OrientVertical,
     SetAgentPose,
     SetSensorRotation,
 )
 from tbp.monty.frameworks.models.motor_policies import (
     GetGoodView,
     InformedPolicy,
+    ObjectNotVisible,
+    PositioningProcedure,
     SurfacePolicy,
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -47,6 +51,8 @@ __all__ = [
     "SaccadeOnImageDataLoader",
     "SaccadeOnImageFromStreamDataLoader",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 class EnvironmentDataset(Dataset):
@@ -151,18 +157,14 @@ class EnvironmentDataLoader:
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
         self._action = None
-        self._amount = None
         self._counter = 0
 
-    def __iter__(self):
-        # Reset the environment before iterating
-        self._observation, proprioceptive_state = self.dataset.reset()
-        self.motor_system._state = (
-            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
-        )
-        self._action = None
-        self._amount = None
-        self._counter = 0
+    def __iter__(self) -> Self:
+        """Implement the iterator protocol.
+
+        Returns:
+            The iterator.
+        """
         return self
 
     def __next__(self):
@@ -182,6 +184,14 @@ class EnvironmentDataLoader:
 
     def pre_episode(self):
         self.motor_system.pre_episode()
+
+        # Reset the dataset and the data loader state.
+        self._observation, proprioceptive_state = self.dataset.reset()
+        self.motor_system._state = (
+            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
+        )
+        self._action = None
+        self._counter = 0
 
     def post_episode(self):
         self.motor_system.post_episode()
@@ -267,7 +277,10 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
 
     def pre_episode(self):
         super().pre_episode()
-        self.reset_agent()
+
+        self.motor_system._state[self.motor_system._policy.agent_id][
+            "motor_only_step"
+        ] = False
 
     def post_episode(self):
         super().post_episode()
@@ -313,7 +326,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         Also add any potential distractor objects.
         """
         next_object = (self.current_object + 1) % self.n_objects
-        logging.info(
+        logger.info(
             f"\n\nGoing from {self.current_object} to {next_object} of {self.n_objects}"
         )
         self.change_object_by_idx(next_object)
@@ -358,7 +371,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             "semantic_id": self.semantic_label_to_id[self.object_names[idx]],
             **self.object_params,
         }
-        logging.info(f"New primary target: {pformat(self.primary_target)}")
+        logger.info(f"New primary target: {pformat(self.primary_target)}")
 
     def add_distractor_objects(
         self, primary_target_obj, init_params, primary_target_name
@@ -368,10 +381,10 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         Args:
             primary_target_obj : the Habitat object which is the primary target in
                 the scene
-            init_params (dict): parameters used to initialize the object, e.g.
+            init_params: parameters used to initialize the object, e.g.
                 orientation; for now, these are identical to the primary target
                 except for the object ID
-            primary_target_name (str): name of the primary target object
+            primary_target_name: name of the primary target object
         """
         # Sample distractor objects from those that are not the primary target; this
         # is so that, for now, we can evaluate how well the model stays on the primary
@@ -393,24 +406,6 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
                 object_to_avoid=True,
                 primary_target_object=primary_target_obj,
             )
-
-    def reset_agent(self):
-        logging.debug("resetting agent------")
-        self._observation, proprioceptive_state = self.dataset.reset()
-        motor_system_state = MotorSystemState(proprioceptive_state)
-        self._counter = 0
-
-        # Make sure to also reset action variables when resetting agent during
-        # pre-episode
-        self._action = None
-        self._amount = None
-        motor_system_state[self.motor_system._policy.agent_id]["motor_only_step"] = (
-            False
-        )
-
-        self.motor_system._state = motor_system_state
-
-        return self._observation
 
 
 class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
@@ -437,28 +432,6 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
     iv) Supports hypothesis-testing "jump" policy
     """
 
-    def __init__(
-        self, use_get_good_view_positioning_procedure: bool = False, *args, **kwargs
-    ):
-        super(InformedEnvironmentDataLoader, self).__init__(*args, **kwargs)
-        self._use_get_good_view_positioning_procedure = (
-            use_get_good_view_positioning_procedure
-        )
-        """Feature flag to use the GetGoodView positioning procedure.
-
-        This is a temporary feature flag to allow for testing the GetGoodView
-        positioning procedure.
-        """
-
-    def __iter__(self):
-        # Overwrite original because we don't want to reset agent at this stage
-        # (already done in pre-episode)
-
-        # TODO look into refactoring the parent __iter__ method so that we don't need
-        # to use this fix
-
-        return self
-
     def __next__(self):
         if self._counter == 0:
             return self.first_step()
@@ -474,49 +447,64 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         # NOTE: terminal conditions are now handled in experiment.run_episode loop
         else:
-            self._action = self.motor_system()
-
-            # If entirely off object, use vision (i.e. view-finder)
-            # TODO refactor so that this check is done in the motor-policy, and we
-            # update the constraint separately/appropriately; i.e. the below
-            # code should be as general as possible
-            if (
-                isinstance(self.motor_system._policy, SurfacePolicy)
-                and self._action is None
-            ):
+            attempting_to_find_object = False
+            try:
+                self._action = self.motor_system()
+            except ObjectNotVisible:
+                # Note: Only SurfacePolicy raises ObjectNotVisible.
+                attempting_to_find_object = True
                 self._action = self.motor_system._policy.touch_object(
                     self._observation,
                     view_sensor_id="view_finder",
                     state=self.motor_system._state,
                 )
+            else:
+                # TODO: Encapsulate this reset inside TouchObject positioning
+                #       procedure once it exists.
+                #       This is a hack to reset the current touch_object
+                #       positioning procedure state so that the next time
+                #       SurfacePolicy falls off the object, it will try to find
+                #       the object using its full repertoire of actions.
+                self.motor_system._policy.touch_search_amount = 0
 
             self._observation, proprioceptive_state = self.dataset[self._action]
             motor_system_state = MotorSystemState(proprioceptive_state)
 
-            # Check whether sensory information is just for feeding back to motor policy
-            # TODO refactor so that the motor policy itself is making this update
-            # when appropriate, not embodied_data
-            if (
-                isinstance(self.motor_system._policy, SurfacePolicy)
-                and self._action.name != "orient_vertical"
-            ):
+            # TODO: Refactor this so that all of this is contained within the
+            #       SurfacePolicy and/or positioning procedure.
+            if isinstance(self.motor_system._policy, SurfacePolicy):
+                # When we are attempting to find the object, we are always performing
+                # a motor-only step.
                 motor_system_state[self.motor_system._policy.agent_id][
                     "motor_only_step"
-                ] = True
-            else:
-                motor_system_state[self.motor_system._policy.agent_id][
-                    "motor_only_step"
-                ] = False
+                ] = attempting_to_find_object
+
+                if (
+                    not attempting_to_find_object
+                    and self._action.name != OrientVertical.action_name()
+                ):
+                    # We are not attempting to find the object, which means that we
+                    # are executing the SurfacePolicy.dynamic_call action cycle.
+                    # Out of the four actions in the
+                    # MoveForward->OrientHorizontal->OrientVertical->MoveTangentially
+                    # "subroutine" defined in SurfacePolicy.dynamic_call, we only
+                    # want to send data to the learning module after taking the
+                    # OrientVertical action. The other three actions in the cycle
+                    # are motor-only to keep the surface agent on the object.
+                    motor_system_state[self.motor_system._policy.agent_id][
+                        "motor_only_step"
+                    ] = True
 
             self.motor_system._state = motor_system_state
 
-            self._counter += 1  # TODO clean up incrementing of counter
+            if not attempting_to_find_object:
+                self._counter += 1
 
             return self._observation
 
     def pre_episode(self):
         super().pre_episode()
-        if not self.dataset.env._agents[0].action_space_type == "surface_agent":
+        if self.dataset.env._agents[0].action_space_type != "surface_agent":
             on_target_object = self.get_good_view_with_patch_refinement()
             if self.num_distractors == 0:
                 # Only perform this check if we aren't doing multi-object experiments.
@@ -557,16 +545,16 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         """Invoke the GetGoodView positioning procedure.
 
         Args:
-            sensor_id (str): The ID of the sensor to use for positioning.
-            allow_translation (bool): Whether to allow movement toward the object via
+            sensor_id: The ID of the sensor to use for positioning.
+            allow_translation: Whether to allow movement toward the object via
                 the motor systems's move_close_enough method. If False, only
                 orientienting movements are performed. Defaults to True.
-            max_orientation_attempts (int): The maximum number of orientation attempts
+            max_orientation_attempts: The maximum number of orientation attempts
                 allowed before giving up and truncating the procedure indicating that
                 the sensor is not on the target object.
 
         Returns:
-            bool: Whether the sensor is on the target object.
+            Whether the sensor is on the target object.
         """
         positioning_procedure = GetGoodView(
             agent_id=self.motor_system._policy.agent_id,
@@ -644,7 +632,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         Returns:
             The observation from the jump attempt.
         """
-        logging.debug(
+        logger.debug(
             "Attempting a 'jump' like movement to evaluate an object hypothesis"
         )
 
@@ -666,7 +654,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         # TODO In general what would be best/cleanest way of routing information,
         # e.g. perhaps the learning module should just pass a *displacement* (in
-        # internal coordinates, and a target point-normal)
+        # internal coordinates, and a target surface normal)
         # Could also consider making use of decide_location_for_movement (or
         # decide_location_for_movement_matching)
 
@@ -697,10 +685,10 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         # Check depth-at-center to see if the object is in front of us
         # As for methods such as touch_object, we use the view-finder
-        depth_at_center = self.motor_system._policy.get_depth_at_center(
-            self._observation,
-            view_sensor_id="view_finder",
-            initial_pose=False,
+        depth_at_center = PositioningProcedure.depth_at_center(
+            agent_id=self.motor_system._policy.agent_id,
+            observation=self._observation,
+            sensor_id="view_finder",
         )
 
         # If depth_at_center < 1.0, there is a visible element within 1 meter of the
@@ -734,7 +722,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         A successful jump is "on-object", i.e. the object is perceived by the sensor.
         """
-        logging.debug(
+        logger.debug(
             "Object visible, maintaining new pose for hypothesis-testing action"
         )
 
@@ -747,7 +735,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             self.motor_system._policy.action = MoveTangentially(
                 agent_id=self.motor_system._policy.agent_id,
                 distance=0.0,
-                direction=[0, 0, 0],
+                direction=(0, 0, 0),
             )
 
             # TODO cleanup where this is performed, and make variable names more general
@@ -768,8 +756,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         A failed jump is "off-object", i.e. the object is not perceived by the sensor.
         """
-        logging.debug("No object visible from hypothesis jump, or inside object!")
-        logging.debug("Returning to previous position")
+        logger.debug("No object visible from hypothesis jump, or inside object!")
+        logger.debug("Returning to previous position")
 
         set_agent_pose = SetAgentPose(
             agent_id=self.motor_system._policy.agent_id,
@@ -828,11 +816,11 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         """Initialize dataloader.
 
         Args:
-            alphabets (List[str]): List of alphabets.
-            characters (List[str]): List of characters.
+            alphabets: List of alphabets.
+            characters: List of characters.
             versions: List of versions.
-            dataset (EnvironmentDataset): The environment dataset.
-            motor_system (MotorSystem): The motor system.
+            dataset: The environment dataset.
+            motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
 
@@ -851,7 +839,6 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
         self._action = None
-        self._amount = None
         self._counter = 0
 
         self.alphabets = alphabets
@@ -880,7 +867,7 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
     def cycle_object(self):
         """Switch to the next character image."""
         next_object = (self.current_object + 1) % self.n_objects
-        logging.info(
+        logger.info(
             f"\n\nGoing from {self.current_object} to {next_object} of {self.n_objects}"
         )
         self.change_object_by_idx(next_object)
@@ -923,8 +910,8 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         Args:
             scenes: List of scenes
             versions: List of versions
-            dataset (EnvironmentDataset): The environment dataset.
-            motor_system (MotorSystem): The motor system.
+            dataset: The environment dataset.
+            motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
 
@@ -943,7 +930,6 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
         self._action = None
-        self._amount = None
         self._counter = 0
 
         self.scenes = scenes
@@ -966,7 +952,7 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
     def cycle_object(self):
         """Switch to the next scene image."""
         next_scene = (self.current_scene_version + 1) % self.n_versions
-        logging.info(
+        logger.info(
             f"\n\nGoing from {self.current_scene_version} to {next_scene} of "
             f"{self.n_versions}"
         )
@@ -979,7 +965,7 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
             idx: Index of the new object and ints parameters in object params
         """
         assert idx <= self.n_versions, "idx must be <= self.n_versions"
-        logging.info(
+        logger.info(
             f"changing to obj {idx} -> scene {self.scenes[idx]}, version "
             f"{self.versions[idx]}"
         )
@@ -998,12 +984,6 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
             "scale": [1.0, 1.0, 1.0],
         }
 
-    def __iter__(self):
-        # Overwrite original because we don't want to reset agent at this stage
-        # (already done in pre-episode)
-
-        return self
-
 
 class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
     """Dataloader for moving over a 2D image with depth channel."""
@@ -1018,8 +998,8 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         """Initialize dataloader.
 
         Args:
-            dataset (EnvironmentDataset): The environment dataset.
-            motor_system (MotorSystem): The motor system.
+            dataset: The environment dataset.
+            motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
 
@@ -1039,7 +1019,6 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
         self._action = None
-        self._amount = None
         self._counter = 0
         self.current_scene = 0
         self.episodes = 0
@@ -1061,7 +1040,7 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
     def cycle_scene(self):
         """Switch to the next scene image."""
         next_scene = self.current_scene + 1
-        logging.info(f"\n\nGoing from {self.current_scene} to {next_scene}")
+        logger.info(f"\n\nGoing from {self.current_scene} to {next_scene}")
         # TODO: Do we need a separate method for this ?
         self.change_scene_by_idx(next_scene)
 
@@ -1071,7 +1050,7 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         Args:
             idx: Index of the new object and ints parameters in object params
         """
-        logging.info(f"changing to scene {idx}")
+        logger.info(f"changing to scene {idx}")
         self.dataset.env.switch_to_scene(idx)
         self.current_scene = idx
         # TODO: Currently not differentiating between different poses/views

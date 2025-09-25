@@ -13,6 +13,7 @@ import copy
 import shutil
 import tempfile
 import unittest
+from typing import List
 
 import numpy as np
 
@@ -358,11 +359,11 @@ class EvidenceSDRIntegrationTest(BaseGraphTestCases.BaseGraphTest):
             sender_type="SM",
         )
 
-    def get_rectangle_obs(self):
+    def get_rectangle_obs(self) -> List[State]:
         """Helper function to create observations for a rectangle object.
 
         Returns:
-            State[]: List of observations
+            List of observations
         """
         fo_0 = copy.deepcopy(self.default_obs_args)
 
@@ -390,11 +391,11 @@ class EvidenceSDRIntegrationTest(BaseGraphTestCases.BaseGraphTest):
             State(**fo_5),
         ]
 
-    def get_rectangle_long_obs(self):
+    def get_rectangle_long_obs(self) -> List[State]:
         """Helper function to create observations for a long rectangle object.
 
         Returns:
-            State[]: List of observations
+            List of observations.
         """
         fo_0 = copy.deepcopy(self.default_obs_args)
 
@@ -430,11 +431,11 @@ class EvidenceSDRIntegrationTest(BaseGraphTestCases.BaseGraphTest):
             State(**fo_7),
         ]
 
-    def get_triangle_obs(self):
+    def get_triangle_obs(self) -> List[State]:
         """Helper function to create observations for a traingle object.
 
         Returns:
-            State[]: List of observations
+            List of observations.
         """
         fo_0 = copy.deepcopy(self.default_obs_args)
 
@@ -448,11 +449,11 @@ class EvidenceSDRIntegrationTest(BaseGraphTestCases.BaseGraphTest):
             State(**fo_2),
         ]
 
-    def get_eslm(self):
+    def get_eslm(self) -> EvidenceSDRGraphLM:
         """Helper function to return an Evidence SDR Learning Module.
 
         Returns:
-            EvidenceSDRGraphLM: Evidence SDR Graph Learning Module
+            Evidence SDR Graph Learning Module.
         """
         return EvidenceSDRGraphLM(
             max_match_distance=0.005,
@@ -469,13 +470,15 @@ class EvidenceSDRIntegrationTest(BaseGraphTestCases.BaseGraphTest):
             },
             # set graph size larger since fake obs displacements are meters
             max_graph_size=10,
-            initial_possible_poses=[[0, 0, 0]],
             gsg_class=EvidenceGoalStateGenerator,
             gsg_args=dict(
                 elapsed_steps_factor=10,
                 min_post_goal_success_steps=5,
                 x_percent_scale_factor=0.75,
                 desired_object_distance=0.03,
+            ),
+            hypotheses_updater_args=dict(
+                initial_possible_poses=[[0, 0, 0]],
             ),
             sdr_args=dict(
                 log_path=None,  # Temporary log path
