@@ -67,7 +67,6 @@ def build(
 
         errors = validator.get_errors()
         if errors:
-            error_details = "; ".join([error.message for error in errors])
             return {
                 "success": False,
                 "processed_items": len(future_work_items),
@@ -84,9 +83,7 @@ def build(
                     }
                     for error in errors
                 ],
-                "error_message": (
-                    f"Validation failed with {len(errors)} error(s): {error_details}"
-                ),
+                "error_message": f"Validation failed with {len(errors)} error(s)",
             }
 
         logging.info(
