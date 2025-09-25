@@ -17,20 +17,8 @@ from .build import build
 logger = logging.getLogger(__name__)
 
 
-def _validate_docs_snippets_dir(docs_snippets_dir: str) -> None:
-    snippets_path = Path(docs_snippets_dir)
-    if not snippets_path.exists():
-        error_msg = f"Docs snippets directory not found: {docs_snippets_dir}"
-        result = {
-            "success": False,
-            "error_message": error_msg,
-        }
-        logger.info(json.dumps(result, indent=2))
-        sys.exit(1)
-
-
 def main():
-    logging.basicConfig(format="%(message)s", level=logging.INFO)
+    logging.basicConfig(format="%(message)s", level=logging.INFO, stream=sys.stdout)
     parser = argparse.ArgumentParser(
         description="CLI tool to manage future work widget."
     )
@@ -39,13 +27,15 @@ def main():
     build_parser = subparsers.add_parser(
         "build", help="Build the data and package the widget"
     )
-    build_parser.add_argument("index_file", help="The index.json file to process")
+    build_parser.add_argument(
+        "index_file", help="The JSON file to validate and transform"
+    )
     build_parser.add_argument(
         "output_dir", help="The output directory to create and save data.json"
     )
     build_parser.add_argument(
         "--docs-snippets-dir",
-        help="Path to docs/snippets directory for validation files",
+        help="Optional path to docs/snippets directory for validation files",
         default="docs/snippets",
     )
 
@@ -58,8 +48,23 @@ def main():
             Path(args.index_file), Path(args.output_dir), Path(args.docs_snippets_dir)
         )
 
-        logger.info(json.dumps(result, indent=2))
+        _log_result(result)
         sys.exit(0 if result["success"] else 1)
+
+
+def _validate_docs_snippets_dir(docs_snippets_dir: str) -> None:
+    snippets_path = Path(docs_snippets_dir)
+    if not snippets_path.exists():
+        result = {
+            "success": False,
+            "error_message": f"Docs snippets directory not found: {docs_snippets_dir}",
+        }
+        _log_result(result)
+        sys.exit(1)
+
+
+def _log_result(result: dict) -> None:
+    logger.info(json.dumps(result, indent=2))
 
 
 if __name__ == "__main__":

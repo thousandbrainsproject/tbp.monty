@@ -97,6 +97,7 @@ github_readme_sync_tool = [
     'nh3'
 ]
 future_work_widget_tool = [
+    'nh3'
 ]
 print_version_tool = [
     'semver'
