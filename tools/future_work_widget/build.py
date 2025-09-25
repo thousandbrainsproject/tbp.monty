@@ -72,7 +72,7 @@ def build(
                         "message": error.message,
                         "file": error.file_path,
                         # Hardcoded to 1 because all validation errors
-                        # occur in frontmatter.
+                        # occur at the top of the file in frontmatter.
                         "line": 1,
                         "field": error.field,
                         "level": "error",
@@ -94,7 +94,6 @@ def build(
             "success": True,
             "processed_items": len(future_work_items),
             "total_items": len(data),
-            "errors": [],
         }
 
     except (OSError, PermissionError) as e:
