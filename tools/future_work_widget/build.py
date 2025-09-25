@@ -75,7 +75,9 @@ def build(
                     {
                         "message": error.message,
                         "file": error.file_path,
-                        "line": error.line_number,
+                        # Hardcoded to 1 because all validation errors
+                        # occur in frontmatter.
+                        "line": 1,
                         "field": error.field,
                         "level": "error",
                         "title": f"Validation Error in {Path(error.file_path).name}",

@@ -22,12 +22,10 @@ class ValidationError:
         self,
         message: str,
         file_path: str,
-        line_number: int = 1,
         field: str | None = None,
     ):
         self.message = message
         self.file_path = file_path
-        self.line_number = line_number
         self.field = field
 
 
