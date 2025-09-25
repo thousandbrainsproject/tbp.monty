@@ -7,6 +7,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import shutil
 import tempfile
 import unittest
@@ -67,7 +69,9 @@ class TestRecordValidator(unittest.TestCase):
         validator = RecordValidator(str(snippets_dir))
 
         self.assertEqual(len(validator.validation_sets), 0)
-        self.assertEqual(len(validator.get_errors()), 0)
+        record = {"path1": "future-work", "path2": "test"}
+        _, errors = validator.validate(record)
+        self.assertEqual(len(errors), 0)
 
     def test_nonexistent_snippets_directory(self):
         nonexistent_dir = str(self.temp_path / "nonexistent")
@@ -75,7 +79,9 @@ class TestRecordValidator(unittest.TestCase):
         validator = RecordValidator(nonexistent_dir)
 
         self.assertEqual(len(validator.validation_sets), 0)
-        self.assertEqual(len(validator.get_errors()), 0)
+        record = {"path1": "future-work", "path2": "test"}
+        _, errors = validator.validate(record)
+        self.assertEqual(len(errors), 0)
 
     def test_word_boundary_wrapping(self):
         snippets_dir = self.temp_path / "snippets"
@@ -110,9 +116,10 @@ class TestRecordValidator(unittest.TestCase):
             "owner": "alice,bob",
         }
 
-        result = validator.validate(record)
+        result, errors = validator.validate(record)
 
         self.assertIsNotNone(result)
+        self.assertEqual(len(errors), 0)
         self.assertEqual(result["path1"], "future-work")
         self.assertEqual(result["path2"], "test-item")
         self.assertEqual(result["tags"], ["accuracy", "learning"])
@@ -129,8 +136,9 @@ class TestRecordValidator(unittest.TestCase):
             "title": "Test item",
         }
 
-        result = validator.validate(record)
+        result, errors = validator.validate(record)
         self.assertIsNone(result)
+        self.assertEqual(len(errors), 0)
 
     def test_comma_separated_field_limits(self):
         """Test limits on comma-separated fields."""
@@ -146,11 +154,9 @@ class TestRecordValidator(unittest.TestCase):
             "tags": too_many_tags,
         }
 
-        result = validator.validate(record)
+        result, errors = validator.validate(record)
 
-        # Should still return the record but with an error
         self.assertIsNotNone(result)
-        errors = validator.get_errors()
         self.assertEqual(len(errors), 1)
         self.assertIn("tags field cannot have more than", errors[0].message)
         self.assertIn(str(max_items), errors[0].message)

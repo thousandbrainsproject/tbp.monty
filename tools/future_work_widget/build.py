@@ -7,10 +7,12 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from .validator import RecordValidator
 
@@ -19,7 +21,7 @@ def build(
     index_file: str,
     output_dir: str,
     docs_snippets_dir: str,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Build the future work widget data.
 
     Args:
@@ -56,13 +58,14 @@ def build(
 
         validator = RecordValidator(docs_snippets_dir)
         future_work_items = []
+        errors = []
 
         for item in data:
-            validated_item = validator.validate(item)
+            validated_item, item_errors = validator.validate(item)
+            errors.extend(item_errors)
             if validated_item is not None:
                 future_work_items.append(validated_item)
 
-        errors = validator.get_errors()
         if errors:
             return {
                 "success": False,

@@ -7,12 +7,14 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import json
 import shutil
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 from tools.future_work_widget.build import build
 from tools.future_work_widget.validator import RecordValidator
@@ -29,7 +31,7 @@ class TestBuild(unittest.TestCase):
         shutil.rmtree(self.temp_dir)
         shutil.rmtree(self.output_dir)
 
-    def _create_snippets(self, snippet_configs: Dict[str, str]) -> str:
+    def _create_snippets(self, snippet_configs: dict[str, str]) -> str:
         """Create snippet files with given configurations.
 
         Args:
@@ -49,8 +51,8 @@ class TestBuild(unittest.TestCase):
         return str(snippets_dir)
 
     def _run_build_test_with_snippets(
-        self, input_data: List[Dict[str, Any]], snippets_dir: str
-    ) -> List[Dict[str, Any]]:
+        self, input_data: list[dict[str, Any]], snippets_dir: str
+    ) -> list[dict[str, Any]]:
         """Helper method to run build with test data and snippets directory.
 
         Returns:
@@ -72,7 +74,7 @@ class TestBuild(unittest.TestCase):
         with open(data_file, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    def _create_test_item(self, **overrides) -> Dict[str, Any]:
+    def _create_test_item(self, **overrides) -> dict[str, Any]:
         """Create a test item with default values, allowing field overrides.
 
         Args:
@@ -92,8 +94,14 @@ class TestBuild(unittest.TestCase):
         base_item.update(overrides)
         return base_item
 
-    def _run_build_test(self, input_data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _run_build_test(
+        self, input_data: list[dict[str, Any]], snippets_dir: str | None = None
+    ) -> list[dict[str, Any]]:
         """Helper method to run build with test data and return results.
+
+        Args:
+            input_data: Test data to process
+            snippets_dir: Optional snippets directory for validation
 
         Returns:
             The processed data from the output JSON file.
@@ -105,7 +113,10 @@ class TestBuild(unittest.TestCase):
         with open(index_file, "w", encoding="utf-8") as f:
             json.dump(input_data, f)
 
-        result = build(str(index_file), str(self.output_path))
+        if snippets_dir is None:
+            snippets_dir = self._create_snippets({})
+
+        result = build(str(index_file), str(self.output_path), snippets_dir)
 
         if not result["success"]:
             raise ValueError(result["error_message"])
@@ -116,15 +127,19 @@ class TestBuild(unittest.TestCase):
 
     def _expect_build_failure(
         self,
-        input_data: List[Dict[str, Any]],
+        input_data: list[dict[str, Any]],
         expected_error_fragment: str = "Validation failed",
+        snippets_dir: str | None = None,
     ):
         """Helper method to test that build fails with expected error."""
         index_file = self.temp_path / "index.json"
         with open(index_file, "w", encoding="utf-8") as f:
             json.dump(input_data, f)
 
-        result = build(str(index_file), str(self.output_path))
+        if snippets_dir is None:
+            snippets_dir = self._create_snippets({})
+
+        result = build(str(index_file), str(self.output_path), snippets_dir)
 
         self.assertFalse(result["success"])
         self.assertIn(expected_error_fragment, result["error_message"])
@@ -214,7 +229,8 @@ class TestBuild(unittest.TestCase):
         with open(index_file, "w", encoding="utf-8") as f:
             json.dump(input_data, f)
 
-        result = build(str(index_file), str(self.output_path))
+        snippets_dir = self._create_snippets({})
+        result = build(str(index_file), str(self.output_path), snippets_dir)
 
         self.assertIsNotNone(result)
         self.assertTrue(result["success"])
@@ -276,7 +292,8 @@ class TestBuild(unittest.TestCase):
         with open(index_file, "w", encoding="utf-8") as f:
             json.dump(input_data, f)
 
-        result = build(str(index_file), str(self.output_path))
+        snippets_dir = self._create_snippets({})
+        result = build(str(index_file), str(self.output_path), snippets_dir)
 
         self.assertIsNotNone(result)
         self.assertFalse(result["success"])
@@ -364,7 +381,8 @@ class TestBuild(unittest.TestCase):
                 result = build(str(index_file), str(self.output_path), snippets_dir)
                 self.assertFalse(result["success"])
 
-                error_message = result["error_message"]
+                self.assertEqual(len(result["errors"]), 1)
+                error_message = result["errors"][0]["message"]
                 for fragment in case["expected_error_fragments"]:
                     self.assertIn(fragment, error_message)
 
@@ -401,7 +419,8 @@ class TestBuild(unittest.TestCase):
         result = build(str(index_file), str(self.output_path), snippets_dir)
         self.assertFalse(result["success"])
 
-        error_message = result["error_message"]
+        self.assertEqual(len(result["errors"]), 1)
+        error_message = result["errors"][0]["message"]
         self.assertIn("Invalid rfc value 'invalid-rfc'", error_message)
         self.assertIn("Valid values are:", error_message)
 
@@ -432,7 +451,8 @@ class TestBuild(unittest.TestCase):
         result = build(str(index_file), str(self.output_path), snippets_dir)
         self.assertFalse(result["success"])
 
-        error_message = result["error_message"]
+        self.assertEqual(len(result["errors"]), 1)
+        error_message = result["errors"][0]["message"]
         self.assertIn("Invalid tags value 'invalid-tag'", error_message)
 
 
