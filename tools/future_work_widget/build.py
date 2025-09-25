@@ -7,8 +7,6 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from __future__ import annotations
-
 import json
 import logging
 from pathlib import Path
@@ -20,15 +18,14 @@ from .validator import RecordValidator
 def build(
     index_file: str,
     output_dir: str,
-    docs_snippets_dir: str | None = None,
+    docs_snippets_dir: str,
 ) -> Dict[str, Any]:
     """Build the future work widget data.
 
     Args:
         index_file: Path to the index.json file to process
         output_dir: Path to the output directory to create and save data.json
-        docs_snippets_dir: Optional path to docs/snippets directory for
-            validation files
+        docs_snippets_dir: Path to docs/snippets directory for validation files
 
     Returns:
         Dict with keys:
