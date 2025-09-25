@@ -213,7 +213,7 @@ const FutureWorkWidget = {
       table.setFilter((data) => {
         const searchableText = [
           data.title, data.tags, data.skills, data.status,
-          data.owner, data['estimated-scope'], data.link, data.path2
+          data.owner, data['estimated-scope'], data.rfc, data.link, data.path2
         ]
           .filter(Boolean)
           .join(' ')
@@ -246,8 +246,6 @@ const FutureWorkWidget = {
     }
   }
 };
-
-
 
 
 document.addEventListener('DOMContentLoaded', () => {
