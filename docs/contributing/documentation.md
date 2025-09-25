@@ -178,36 +178,36 @@ The future work documents have special Frontmatter metadata that is used to powe
 
 ### Tags
 
-Tags is a comma separated list of keywords, useful for filtering the future work items. [edit future-work-tags.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-tags.md).
+Tags is a comma separated list of keywords, useful for filtering the future work items. [Edit future-work-tags.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-tags.md).
 
 !snippet[../snippets/future-work-tags.md]
 
 ### Skills
 
-Skills is a comma separated list of skills that will be needed to complete this. [edit future-work-skills.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-skills.md).
+Skills is a comma separated list of skills that will be needed to complete this. [Edit future-work-skills.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-skills.md).
 
 !snippet[../snippets/future-work-skills.md]
 
 ### Estimated Scope
 
-Very roughly, how big of a chunk of work is this? [edit future-work-estimated-scope.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-estimated-scope.md).
+Very roughly, how big of a chunk of work is this? [Edit future-work-estimated-scope.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-estimated-scope.md).
 
 !snippet[../snippets/future-work-estimated-scope.md]
 
 ### Status
 
-Is the work completed, or is it in progress? [edit future-work-status.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-status.md).
+Is the work completed, or is it in progress? [Edit future-work-status.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-status.md).
 
 !snippet[../snippets/future-work-status.md]
 
 ### RFC
 
-Does this work item required an RFC? [edit future-work-rfc.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-rfc.md).
+Does this work item required an RFC? [Edit future-work-rfc.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-rfc.md).
 
 !snippet[../snippets/future-work-rfc.md]
 
 ### Owner
 
-The owner field should be GitHub usernames, as these are converted to their avatar inside the table. [edit future-work-owner.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-owner.md).
+The owner field should be GitHub usernames, as these are converted to their avatar inside the table. [Edit future-work-owner.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-owner.md).
 
 !snippet[../snippets/future-work-owner.md]
