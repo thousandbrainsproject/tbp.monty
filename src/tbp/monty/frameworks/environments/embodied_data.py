@@ -62,7 +62,7 @@ class EnvironmentDataLoader:
     returned by `motor_system` is applied.
 
     Attributes:
-        env: an instance of a class that implements :class:`.EmbodiedEnvironment`
+        env: an instance of a class that implements :class:`EmbodiedEnvironment`
         motor_system: :class:`MotorSystem`
         transform: A list of callables used to transform the observations returned by
             the environment
@@ -176,10 +176,6 @@ class EnvironmentDataLoader:
 
     def post_epoch(self):
         pass
-
-    def finish(self):
-        self.close()
-
 
 class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
     """Dataloader for testing on environment with one "primary target" object.

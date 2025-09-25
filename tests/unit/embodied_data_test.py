@@ -188,6 +188,7 @@ class EmbodiedDataTest(unittest.TestCase):
             )
         )
 
+    # @unittest.skip("debugging")
     def test_embodied_dataset_abs(self):
         rng = np.random.RandomState(42)
 
