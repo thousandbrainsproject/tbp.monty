@@ -59,7 +59,10 @@ class LivePlotter:
         """
         first_learning_module = model.learning_modules[0]
         first_sensor_module_raw_observations = model.sensor_modules[0].raw_observations
-        patch_depth = observation[model.motor_system._policy.agent_id]["patch"]["depth"]
+        # TODO - C: Get 'patch_0' from the model's sensor_module_configs
+        patch_depth = observation[model.motor_system._policy.agent_id]["patch_0"][
+            "depth"
+        ]
         view_finder_rgba = observation[model.motor_system._policy.agent_id][
             "view_finder"
         ]["rgba"]

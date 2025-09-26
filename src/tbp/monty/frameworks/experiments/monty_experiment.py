@@ -104,6 +104,7 @@ class MontyExperiment:
         self.min_lms_match = experiment_args["min_lms_match"]
         self.rng = np.random.RandomState(experiment_args["seed"])
         self.show_sensor_output = experiment_args["show_sensor_output"]
+        self.supervised_lm_ids = experiment_args["supervised_lm_ids"]
 
     def init_model(self, monty_config, model_path=None):
         """Initialize the Monty model.

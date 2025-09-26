@@ -442,18 +442,20 @@ class EvidenceGraphLM(GraphLM):
             # motor efference copy here.
             # TODO: get motor efference copy here. Need to refactor motor command
             # selection for this.
-            location=self.buffer.get_current_location(
-                input_channel="first"
-            ),  # location rel. body
+            # location rel. body -> same as sensor input to higher LM (assuming they are
+            # colocated) so it is not used.
+            location=self.buffer.get_current_location(input_channel="first"),
             morphological_features={
                 "pose_vectors": pose_features,
                 "pose_fully_defined": not self._enough_symmetry_evidence_accumulated(),
+                # on_object is also same as sensor input to higher LM (assuming they are
+                # colocated) so not used.
                 "on_object": self.buffer.get_currently_on_object(),
             },
             non_morphological_features={
                 "object_id": object_id_features,
                 # TODO H: test if this makes sense to communicate
-                "location_rel_model": mlh["location"],
+                # "location_rel_model": mlh["location"],
             },
             confidence=confidence,
             use_state=use_state,
@@ -754,7 +756,7 @@ class EvidenceGraphLM(GraphLM):
             evidence_all_channels=self.evidence[graph_id],
         )
 
-        hypotheses_updates, hypotheses_update_telemetry = (
+        hypotheses_updates, hypotheses_update_telemetry, mlh_prediction_error = (
             self.hypotheses_updater.update_hypotheses(
                 hypotheses=Hypotheses(
                     evidence=self.evidence[graph_id],
@@ -768,6 +770,13 @@ class EvidenceGraphLM(GraphLM):
                 evidence_update_threshold=update_threshold,
             )
         )
+
+        if graph_id == self.current_mlh["graph_id"]:
+            self.buffer.update_stats(
+                {"mlh_prediction_error": mlh_prediction_error},
+                update_time=False,
+                append=True,
+            )
 
         if hypotheses_update_telemetry is not None:
             self.hypotheses_updater_telemetry[graph_id] = hypotheses_update_telemetry
@@ -821,9 +830,11 @@ class EvidenceGraphLM(GraphLM):
                 self.possible_locations[graph_id] = np.array(new_hypotheses.locations)
                 self.possible_poses[graph_id] = np.array(new_hypotheses.poses)
                 self.evidence[graph_id] = np.array(new_evidence)
-
                 mapper.add_channel(new_hypotheses.input_channel, len(new_evidence))
+
                 return
+            else:
+                mapper.add_channel(new_hypotheses.input_channel, len(new_evidence))
 
             # Add current mean evidence to give the new hypotheses a fighting
             # chance.

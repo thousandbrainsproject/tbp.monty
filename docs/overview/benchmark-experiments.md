@@ -121,6 +121,28 @@ More specifically, these experiments are run purely in evaluation mode (i.e., pr
 
 These experiments are currently run without multiprocessing (using `run.py`).
 
+# Compositional Datasets
+
+## Logos on Objects
+
+The following experiments evaluate Monty's ability to learn and infer compositional objects, where these consist of simple 3D objects (a disk, a cube, a cylinder, a sphere, and a mug) with 2D logos on their surface. The logos are either the [TBP](https://thousandbrains.org/) logo or the [Numenta](https://www.numenta.com/) logo. In the dataset, the logos can be in a standard orientation on the object, or oriented vertically. Finally, there is an instance of the mug with the TBP logo bent half-way along the logo at 45 degrees.
+
+We want to determine the ability of a Monty system with a hierarchy of LMs (here, a single low-level LM sending input to a single high-level LM) to build compositional models of these kinds of objects. To enable learning such models, we provide some amount of supervision to the LMs. The low and high-level LMs begin by learning the 3D objects and logos in isolation, as standalone objects. These are referred to as object "parts" in the configs. We then present Monty the compositional objects, while the low-level LM is set to perform unsupervised inference. Any object IDs it detects to the high level LM. The high level LM continues learning, and is provided with a supervised label for the compositional object (e.g. `024_mug_tbp_horz`).
+
+To measure performance, we introduced two new metrics:
+
+* `consistent_child_obj`, which measures when a learning module detects an object within the set of plausible children objects. For example, the consistent child objects for `mug_tbp_horz` would be `mug` and `tbp_logo`. We use this since the lower level LM doesn't have the compositional model and we have no ability, e.g. a semantic sensor, to know which part it was sensing.
+* `mlh_prediction_error`, which measures how closely the prediction of the most likely hypothesis matches the current input.
+
+### Results
+
+!table[../../benchmarks/results/logos_on_objects.csv]
+
+> [!WARNING]
+>
+> These benchmarks are not currently expected to have good performance and are used to track our research progress for compositional datasets.
+
+
 # Monty-Meets-World
 
 The following experiments evaluate a Monty model on real-world images derived from the RGBD camera of an iPad/iPhone device. The models that the Monty system leverages are based on photogrammetry scans of the same objects in the real world, and Monty learns on these in the simulated Habitat environment; this approach is taken because currently, we cannot track the movements of the iPad through space, and so Monty cannot leverage its typical sensorimotor learning to build the internal models. 

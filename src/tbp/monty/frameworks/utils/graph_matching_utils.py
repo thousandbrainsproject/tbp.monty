@@ -214,9 +214,7 @@ def get_relevant_curvature(features):
     elif "gaussian_curvature_sc" in features.keys():
         curvatures = features["gaussian_curvature_sc"]
     else:
-        logger.error(
-            f"No curvatures contained in the features {list(features.keys())}."
-        )
+        logger.info(f"No curvatures contained in the features {list(features.keys())}.")
         # Return large curvature so we use an almost circular search sphere.
         curvatures = 10
     return curvatures

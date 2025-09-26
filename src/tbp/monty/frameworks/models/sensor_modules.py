@@ -189,6 +189,12 @@ class DetailedLoggingSM(SensorModule):
         if "mean_depth" in self.features:
             features["mean_depth"] = np.mean(depth_feat[obs_3d[:, 3] != 0])
         if "hsv" in self.features:
+            # center_patch_6x6 = rgba_feat[
+            #     center_row_col - 2 : center_row_col + 3,
+            #     center_row_col - 2 : center_row_col + 3,
+            # ]
+            # center_patch_values = center_patch_6x6.reshape(-1, 4)
+            # rgba = np.round(np.mean(center_patch_values, axis=0), 0).astype(np.uint8)
             rgba = rgba_feat[center_row_col, center_row_col]
             hsv = rgb2hsv(rgba[:3])
             features["hsv"] = hsv
