@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.8"
 resolution-markers = [
     "python_full_version == '3.9.*' and platform_machine == 'aarch64' and sys_platform == 'linux'",
@@ -2569,6 +2569,53 @@ wheels = [
 ]
 
 [[package]]
+name = "nvidia-cublas-cu11"
+version = "11.10.3.66"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "setuptools", version = "75.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9' and sys_platform == 'linux'" },
+    { name = "setuptools", version = "80.9.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9' and sys_platform == 'linux'" },
+    { name = "wheel", marker = "sys_platform == 'linux'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ce/41/fdeb62b5437996e841d83d7d2714ca75b886547ee8017ee2fe6ea409d983/nvidia_cublas_cu11-11.10.3.66-py3-none-manylinux1_x86_64.whl", hash = "sha256:d32e4d75f94ddfb93ea0a5dda08389bcc65d8916a25cb9f37ac89edaeed3bded", size = 317097917, upload-time = "2022-08-11T17:32:30.789Z" },
+]
+
+[[package]]
+name = "nvidia-cuda-nvrtc-cu11"
+version = "11.7.99"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ef/25/922c5996aada6611b79b53985af7999fc629aee1d5d001b6a22431e18fec/nvidia_cuda_nvrtc_cu11-11.7.99-2-py3-none-manylinux1_x86_64.whl", hash = "sha256:9f1562822ea264b7e34ed5930567e89242d266448e936b85bc97a3370feabb03", size = 21011023, upload-time = "2022-09-21T23:12:53.384Z" },
+    { url = "https://files.pythonhosted.org/packages/ea/8d/0709ba16c2831c17ec1c2ea1eeb89ada11ffa8d966d773cce0a7463b22bb/nvidia_cuda_nvrtc_cu11-11.7.99-py3-none-manylinux1_x86_64.whl", hash = "sha256:f7d9610d9b7c331fa0da2d1b2858a4a8315e6d49765091d28711c8946e7425e7", size = 21010447, upload-time = "2022-08-03T20:59:13.991Z" },
+]
+
+[[package]]
+name = "nvidia-cuda-runtime-cu11"
+version = "11.7.99"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "setuptools", version = "75.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9' and sys_platform == 'linux'" },
+    { name = "setuptools", version = "80.9.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9' and sys_platform == 'linux'" },
+    { name = "wheel", marker = "sys_platform == 'linux'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/36/92/89cf558b514125d2ebd8344dd2f0533404b416486ff681d5434a5832a019/nvidia_cuda_runtime_cu11-11.7.99-py3-none-manylinux1_x86_64.whl", hash = "sha256:cc768314ae58d2641f07eac350f40f99dcb35719c4faff4bc458a7cd2b119e31", size = 849253, upload-time = "2022-08-03T20:58:27.979Z" },
+]
+
+[[package]]
+name = "nvidia-cudnn-cu11"
+version = "8.5.0.96"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "nvidia-cublas-cu11", marker = "sys_platform == 'linux'" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dc/30/66d4347d6e864334da5bb1c7571305e501dcb11b9155971421bb7bb5315f/nvidia_cudnn_cu11-8.5.0.96-2-py3-none-manylinux1_x86_64.whl", hash = "sha256:402f40adfc6f418f9dae9ab402e773cfed9beae52333f6d86ae3107a1b9527e7", size = 557141533, upload-time = "2022-09-21T21:55:09.845Z" },
+    { url = "https://files.pythonhosted.org/packages/db/69/4d28d4706946f89fffe3f87373a079ae95dc17f9c0fcd840fe570c67e36b/nvidia_cudnn_cu11-8.5.0.96-py3-none-manylinux1_x86_64.whl", hash = "sha256:71f8111eb830879ff2836db3cccf03bbd735df9b0d17cd93761732ac50a8a108", size = 557140881, upload-time = "2022-08-10T00:14:42.613Z" },
+]
+
+[[package]]
 name = "opencv-python"
 version = "4.11.0.86"
 source = { registry = "https://pypi.org/simple" }
@@ -4345,6 +4392,38 @@ wheels = [
 ]
 
 [[package]]
+name = "setuptools"
+version = "75.3.2"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version < '3.9' and platform_machine == 'aarch64' and sys_platform == 'linux'",
+    "python_full_version < '3.9' and platform_machine != 'aarch64' and sys_platform == 'linux'",
+]
+sdist = { url = "https://files.pythonhosted.org/packages/5c/01/771ea46cce201dd42cff043a5eea929d1c030fb3d1c2ee2729d02ca7814c/setuptools-75.3.2.tar.gz", hash = "sha256:3c1383e1038b68556a382c1e8ded8887cd20141b0eb5708a6c8d277de49364f5", size = 1354489, upload-time = "2025-03-12T00:02:19.004Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/15/65/3f0dba35760d902849d39d38c0a72767794b1963227b69a587f8a336d08c/setuptools-75.3.2-py3-none-any.whl", hash = "sha256:90ab613b6583fc02d5369cbca13ea26ea0e182d1df2d943ee9cbe81d4c61add9", size = 1251198, upload-time = "2025-03-12T00:02:17.554Z" },
+]
+
+[[package]]
+name = "setuptools"
+version = "80.9.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version == '3.9.*' and platform_machine == 'aarch64' and sys_platform == 'linux'",
+    "python_full_version == '3.9.*' and platform_machine != 'aarch64' and sys_platform == 'linux'",
+    "python_full_version >= '3.12' and platform_machine == 'aarch64' and sys_platform == 'linux'",
+    "python_full_version >= '3.12' and platform_machine != 'aarch64' and sys_platform == 'linux'",
+    "python_full_version == '3.11.*' and platform_machine == 'aarch64' and sys_platform == 'linux'",
+    "python_full_version == '3.11.*' and platform_machine != 'aarch64' and sys_platform == 'linux'",
+    "python_full_version == '3.10.*' and platform_machine == 'aarch64' and sys_platform == 'linux'",
+    "python_full_version == '3.10.*' and platform_machine != 'aarch64' and sys_platform == 'linux'",
+]
+sdist = { url = "https://files.pythonhosted.org/packages/18/5d/3bf57dcd21979b887f014ea83c24ae194cfcd12b9e0fda66b957c69d1fca/setuptools-80.9.0.tar.gz", hash = "sha256:f36b47402ecde768dbfafc46e8e4207b4360c654f1f3bb84475f0a28628fb19c", size = 1319958, upload-time = "2025-05-27T00:56:51.443Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl", hash = "sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922", size = 1201486, upload-time = "2025-05-27T00:56:49.664Z" },
+]
+
+[[package]]
 name = "six"
 version = "1.17.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4911,7 +4990,6 @@ dependencies = [
     { name = "torch-geometric" },
     { name = "torch-scatter" },
     { name = "torch-sparse" },
-    { name = "torchvision" },
     { name = "tqdm" },
     { name = "typing-extensions", version = "4.13.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "typing-extensions", version = "4.14.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
@@ -5022,11 +5100,10 @@ requires-dist = [
     { name = "sphinx-autobuild", marker = "extra == 'generate-api-docs-tool'" },
     { name = "sphinx-autodoc-typehints", marker = "extra == 'generate-api-docs-tool'" },
     { name = "sympy" },
-    { name = "torch", specifier = "==1.11.0" },
+    { name = "torch", specifier = "==1.13.1" },
     { name = "torch-geometric", specifier = "==2.1.0.post1" },
     { name = "torch-scatter", specifier = "==2.0.9" },
     { name = "torch-sparse", specifier = "==0.6.15" },
-    { name = "torchvision" },
     { name = "tqdm" },
     { name = "trimesh", marker = "extra == 'analysis'" },
     { name = "typing-extensions" },
@@ -5034,7 +5111,7 @@ requires-dist = [
     { name = "vedo", marker = "extra == 'analysis'" },
     { name = "wandb" },
 ]
-provides-extras = ["simulator-habitat", "simulator-mujoco", "analysis", "build", "dev", "generate-api-docs-tool", "github-readme-sync-tool", "print-version-tool", "real-robots"]
+provides-extras = ["analysis", "build", "dev", "generate-api-docs-tool", "github-readme-sync-tool", "print-version-tool", "real-robots", "simulator-habitat", "simulator-mujoco"]
 
 [[package]]
 name = "text-unidecode"
@@ -5180,28 +5257,33 @@ wheels = [
 
 [[package]]
 name = "torch"
-version = "1.11.0"
+version = "1.13.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "nvidia-cublas-cu11", marker = "sys_platform == 'linux'" },
+    { name = "nvidia-cuda-nvrtc-cu11", marker = "sys_platform == 'linux'" },
+    { name = "nvidia-cuda-runtime-cu11", marker = "sys_platform == 'linux'" },
+    { name = "nvidia-cudnn-cu11", marker = "sys_platform == 'linux'" },
     { name = "typing-extensions", version = "4.13.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "typing-extensions", version = "4.14.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/76/96/3fd30662981043ac6fa1dc4f2cf8f5fa5401cc125ff7b7bf1536eae5db28/torch-1.11.0-cp310-cp310-manylinux1_x86_64.whl", hash = "sha256:62052b50fffc29ca7afc0c04ef8206b6f1ca9d10629cb543077e12967e8d0398", size = 750593273, upload-time = "2022-03-10T16:41:49.635Z" },
-    { url = "https://files.pythonhosted.org/packages/b2/11/72b6ba00907441486dbb58df9ab7b667f0f51de75a3904261e70e85a3f06/torch-1.11.0-cp310-cp310-manylinux2014_aarch64.whl", hash = "sha256:866bfba29ac98dec35d893d8e17eaec149d0ac7a53be7baae5c98069897db667", size = 50901403, upload-time = "2022-03-10T16:45:06.214Z" },
-    { url = "https://files.pythonhosted.org/packages/ea/50/f249331269934c911a47846ccd9315f7a63941300b832d887956f60c249b/torch-1.11.0-cp310-cp310-win_amd64.whl", hash = "sha256:951640fb8db308a59d9b510e7d1ad910aff92913323bbe4bc75435347ddd346d", size = 157987904, upload-time = "2022-03-10T16:44:28.282Z" },
-    { url = "https://files.pythonhosted.org/packages/87/ac/31d233b21345c4f713109e5e933a5a99473d31049c03f004ffb6cc24785d/torch-1.11.0-cp310-none-macosx_10_9_x86_64.whl", hash = "sha256:5d77b5ece78fdafa5c7f42995ff9474399d22571cd6b2de21a5d666306a2ff8c", size = 130100765, upload-time = "2022-03-10T16:44:48.084Z" },
-    { url = "https://files.pythonhosted.org/packages/36/0f/91edc4a0342aa2388a1845484a134aa88730a8632cfe4ad6c761f4ff4114/torch-1.11.0-cp310-none-macosx_11_0_arm64.whl", hash = "sha256:b5a38682769b544c875ecc34bcb81fbad5c922139b61319aacffcfd8a32f528c", size = 43134611, upload-time = "2022-03-10T22:38:16.934Z" },
-    { url = "https://files.pythonhosted.org/packages/2b/5c/14f3d5bf876d4db062e20baa933dce98ab7dde6599f462099fa2f69cc7e0/torch-1.11.0-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:4322aa29f50da7f404db06cdf30896ea67b09f673af4a985afc7162bc897864d", size = 750589738, upload-time = "2022-03-10T16:38:35.88Z" },
-    { url = "https://files.pythonhosted.org/packages/8e/14/e995722459b6780817e94b4cc2a7ed71a1ead209e0d4052ba4eea224e4a8/torch-1.11.0-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:e4d2e0ddd652f30e94cff750220324ec45705d4ecc69658f773b3cb1c7a28dd0", size = 50898133, upload-time = "2022-03-10T16:43:34.706Z" },
-    { url = "https://files.pythonhosted.org/packages/fb/1b/cb472a0e2bdb298bb85e1b239883fbd994660f45e50a4c4fba8dc080f47e/torch-1.11.0-cp38-cp38-win_amd64.whl", hash = "sha256:34ce5ea4d8d85da32cdbadb50d4585106901e9f8a3527991daa70c13a09de1f7", size = 158017778, upload-time = "2022-03-10T16:43:22.828Z" },
-    { url = "https://files.pythonhosted.org/packages/79/df/c5ac776569d658eeec99bb8cf908c17ff7e89d15dc5d94ba5ec6df6b3e55/torch-1.11.0-cp38-none-macosx_10_9_x86_64.whl", hash = "sha256:0ccc85cd06227a3edf809e2c795fd5762c3d4e8a38b5c9f744c6e7cf841361bb", size = 129930229, upload-time = "2022-03-10T16:42:58.315Z" },
-    { url = "https://files.pythonhosted.org/packages/7c/bc/c5ada769b0f31ca1b7f05e15575703641d648100ac432a182e350076e64d/torch-1.11.0-cp38-none-macosx_11_0_arm64.whl", hash = "sha256:c1554e49d74f1b2c3e7202d77056ba2dd7465437585bac64062b580f714a44e9", size = 43135555, upload-time = "2022-03-10T16:42:41.885Z" },
-    { url = "https://files.pythonhosted.org/packages/f8/04/ebf936e02d37c185341558de73324c6511d7fb7578cb1c3439411475fd7e/torch-1.11.0-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:58c7814502b1c129a650d7092033bbb0bbd64faf1a7941631aaa1aeaddc37570", size = 750584423, upload-time = "2022-03-10T16:37:26.194Z" },
-    { url = "https://files.pythonhosted.org/packages/cf/9a/8d80deb5d2e9e17933f5dfe717a42a7608dc0e6799f7a7a0de3f7d7093d7/torch-1.11.0-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:831cf588f01dda9409e75576741d2823453990dee2983d670f2584b37a01adf7", size = 50901286, upload-time = "2022-03-10T16:42:34.124Z" },
-    { url = "https://files.pythonhosted.org/packages/c7/56/52a05ec2ad6c58472a768351a6ea4b600c532a3f46dde57fe2aaa14bfbd1/torch-1.11.0-cp39-cp39-win_amd64.whl", hash = "sha256:44a1d02fd20f827f0f36dc26fdcfc45e793806a6ad52769a22260655a77a4369", size = 157942225, upload-time = "2022-03-10T16:42:22.782Z" },
-    { url = "https://files.pythonhosted.org/packages/fe/6f/9d42e62cbd28e69fef578f8c4a1d33a4716d378dbc7ae720d211b28dc81a/torch-1.11.0-cp39-none-macosx_10_9_x86_64.whl", hash = "sha256:50fd9bf85c578c871c28f1cb0ace9dfc6024401c7f399b174fb0f370899f4454", size = 129930327, upload-time = "2022-03-10T16:39:08.77Z" },
-    { url = "https://files.pythonhosted.org/packages/ec/bc/5e2b92f471496da1629e156553c8d92e0df667743f3128dd5e4db287ddb9/torch-1.11.0-cp39-none-macosx_11_0_arm64.whl", hash = "sha256:0e48af66ad755f0f9c5f2664028a414f57c49d6adc37e77e06fe0004da4edb61", size = 43134936, upload-time = "2022-03-10T16:39:18.486Z" },
+    { url = "https://files.pythonhosted.org/packages/81/58/431fd405855553af1a98091848cf97741302416b01462bbf9909d3c422b3/torch-1.13.1-cp310-cp310-manylinux1_x86_64.whl", hash = "sha256:fd12043868a34a8da7d490bf6db66991108b00ffbeecb034228bfcbbd4197143", size = 887450534, upload-time = "2022-12-15T20:15:37.432Z" },
+    { url = "https://files.pythonhosted.org/packages/2c/45/43233d36e8e7ec5588fa802bb098337ae73c314863190c68797287f2fbdd/torch-1.13.1-cp310-cp310-manylinux2014_aarch64.whl", hash = "sha256:d9fe785d375f2e26a5d5eba5de91f89e6a3be5d11efb497e76705fdf93fa3c2e", size = 60541101, upload-time = "2022-12-15T20:18:46.269Z" },
+    { url = "https://files.pythonhosted.org/packages/33/bd/e174e6737daba03f8eaa7c051b9971d361022eb37b86cbe5db0b08cab00e/torch-1.13.1-cp310-cp310-win_amd64.whl", hash = "sha256:98124598cdff4c287dbf50f53fb455f0c1e3a88022b39648102957f3445e9b76", size = 162597315, upload-time = "2022-12-15T20:18:11.05Z" },
+    { url = "https://files.pythonhosted.org/packages/82/d8/0547f8a22a0c8aeb7e7e5e321892f1dcf93ea021829a99f1a25f1f535871/torch-1.13.1-cp310-none-macosx_10_9_x86_64.whl", hash = "sha256:393a6273c832e047581063fb74335ff50b4c566217019cc6ace318cd79eb0566", size = 135290591, upload-time = "2022-12-15T20:18:32.019Z" },
+    { url = "https://files.pythonhosted.org/packages/24/45/61e41ef8a84e1d6200ff10b7cb87e23e211599ab62420396a363295f973c/torch-1.13.1-cp310-none-macosx_11_0_arm64.whl", hash = "sha256:0122806b111b949d21fa1a5f9764d1fd2fcc4a47cb7f8ff914204fd4fc752ed5", size = 53188434, upload-time = "2022-12-15T20:18:56.395Z" },
+    { url = "https://files.pythonhosted.org/packages/bf/47/d52be83b0ce72e83a6691177f27b110b7efefaae4f228f45e404c521e51d/torch-1.13.1-cp311-cp311-manylinux1_x86_64.whl", hash = "sha256:22128502fd8f5b25ac1cd849ecb64a418382ae81dd4ce2b5cebaa09ab15b0d9b", size = 887431784, upload-time = "2022-12-15T20:13:58.914Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/0e/c640bda79e61766896fe16dfe0a3ab12b06ad50cf8814950518896dec0a5/torch-1.13.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:727dbf00e2cf858052364c0e2a496684b9cb5aa01dc8a8bc8bbb7c54502bdcdd", size = 887409458, upload-time = "2022-12-15T20:10:04.433Z" },
+    { url = "https://files.pythonhosted.org/packages/f4/e5/003ac2b5b95cfea3a0a87150ede879daad446d581fdf967a8d7b2d4b6e05/torch-1.13.1-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:df8434b0695e9ceb8cc70650afc1310d8ba949e6db2a0525ddd9c3b2b181e5fe", size = 60546121, upload-time = "2022-12-15T20:17:00.261Z" },
+    { url = "https://files.pythonhosted.org/packages/a6/41/122f37c99422566ea74b9cce90eb9218f5e8fb2582466da220f95842a0a0/torch-1.13.1-cp38-cp38-win_amd64.whl", hash = "sha256:5e1e722a41f52a3f26f0c4fcec227e02c6c42f7c094f32e49d4beef7d1e213ea", size = 162612053, upload-time = "2022-12-15T20:16:48.403Z" },
+    { url = "https://files.pythonhosted.org/packages/13/60/6129b3b0ce696e45774ab9b4b4f1a1bf5d74a2b9b2e81c88fb4620e6cad3/torch-1.13.1-cp38-none-macosx_10_9_x86_64.whl", hash = "sha256:33e67eea526e0bbb9151263e65417a9ef2d8fa53cbe628e87310060c9dcfa312", size = 135379241, upload-time = "2022-12-15T20:16:27.895Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/91/1adb7b73c7dad9fb64ed26bc9d8c060afb9541fca68d71a9c1b48377f332/torch-1.13.1-cp38-none-macosx_11_0_arm64.whl", hash = "sha256:eeeb204d30fd40af6a2d80879b46a7efbe3cf43cdbeb8838dd4f3d126cc90b2b", size = 53185347, upload-time = "2022-12-15T20:16:10.426Z" },
+    { url = "https://files.pythonhosted.org/packages/25/09/184125ce54b2d7e665f3b674a1ac5d96b442f00dd11804490e926231e36b/torch-1.13.1-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:50ff5e76d70074f6653d191fe4f6a42fdbe0cf942fbe2a3af0b75eaa414ac038", size = 887425311, upload-time = "2022-12-15T20:08:28.818Z" },
+    { url = "https://files.pythonhosted.org/packages/86/08/41315a205bcd103a9698fa8afafbb73a234db8791cdb8b96d1efb10243a7/torch-1.13.1-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:2c3581a3fd81eb1f0f22997cddffea569fea53bafa372b2c0471db373b26aafc", size = 60542989, upload-time = "2022-12-15T20:14:26.94Z" },
+    { url = "https://files.pythonhosted.org/packages/56/13/841d298885ca6b48923d502528d51af00a56f93179c152d31ae88d3054cd/torch-1.13.1-cp39-cp39-win_amd64.whl", hash = "sha256:0aa46f0ac95050c604bcf9ef71da9f1172e5037fdf2ebe051962d47b123848e7", size = 162514186, upload-time = "2022-12-15T20:10:42.543Z" },
+    { url = "https://files.pythonhosted.org/packages/ce/52/14eaa44345e444be2e2da749a7fdbdec71c45294cff33023de12ac3a9115/torch-1.13.1-cp39-none-macosx_10_9_x86_64.whl", hash = "sha256:6930791efa8757cb6974af73d4996b6b50c592882a324b8fb0589c6a9ba2ddaf", size = 135287957, upload-time = "2022-12-15T20:10:59.144Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/ab/8210e877debc6e16c5f64345b08abfd667ade733329ef8b38dd06a362513/torch-1.13.1-cp39-none-macosx_11_0_arm64.whl", hash = "sha256:e0df902a7c7dd6c795698532ee5970ce898672625635d885eade9976e5a04949", size = 53185934, upload-time = "2022-12-15T20:11:08.791Z" },
 ]
 
 [[package]]
@@ -5225,71 +5307,31 @@ sdist = { url = "https://files.pythonhosted.org/packages/bd/e3/3913bc65cb23db1dc
 [[package]]
 name = "torch-scatter"
 version = "2.0.9"
-source = { registry = "https://data.pyg.org/whl/torch-1.11.0+cpu.html" }
+source = { registry = "https://data.pyg.org/whl/torch-1.13.1+cpu.html" }
 wheels = [
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-linux_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-macosx_10_14_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-macosx_10_15_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-win_amd64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp39-cp39-linux_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp39-cp39-macosx_10_15_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp39-cp39-win_amd64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp310-cp310-linux_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp310-cp310-macosx_10_15_universal2.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp310-cp310-macosx_10_15_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp310-cp310-win_amd64.whl" },
+    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-linux_x86_64.whl" },
+    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-macosx_10_15_x86_64.whl" },
+    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-win_amd64.whl" },
+    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp39-cp39-linux_x86_64.whl" },
+    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp39-cp39-macosx_10_15_x86_64.whl" },
+    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp39-cp39-win_amd64.whl" },
+    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp310-cp310-linux_x86_64.whl" },
+    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp310-cp310-macosx_10_15_x86_64.whl" },
+    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp310-cp310-win_amd64.whl" },
 ]
 
 [[package]]
 name = "torch-sparse"
 version = "0.6.15"
-source = { registry = "https://data.pyg.org/whl/torch-1.11.0+cpu.html" }
+source = { registry = "https://data.pyg.org/whl/torch-1.13.1+cpu.html" }
 dependencies = [
     { name = "scipy", version = "1.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "scipy", version = "1.13.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
 ]
 wheels = [
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.15-cp38-cp38-linux_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.15-cp38-cp38-macosx_10_15_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.15-cp38-cp38-win_amd64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.15-cp39-cp39-linux_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.15-cp39-cp39-macosx_10_15_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.15-cp39-cp39-win_amd64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.15-cp310-cp310-linux_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.15-cp310-cp310-macosx_10_15_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.15-cp310-cp310-win_amd64.whl" },
-]
-
-[[package]]
-name = "torchvision"
-version = "0.12.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "numpy", version = "1.24.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-    { name = "pillow", version = "10.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "pillow", version = "11.2.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-    { name = "requests" },
-    { name = "torch" },
-    { name = "typing-extensions", version = "4.13.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "typing-extensions", version = "4.14.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/7c/f1/921a657c93a40b026fb77057c514164fc1139b8be53558b966cc0c44a0a7/torchvision-0.12.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:693656e6790b6ab21e4a6e87e81c2982bad9e455b5eb24e14bb672382ec6130f", size = 1285525, upload-time = "2022-03-10T23:36:07.29Z" },
-    { url = "https://files.pythonhosted.org/packages/a7/d7/faea1cbde879685013e42617a6bf904a1f5a113d318da90a4650d3c184d3/torchvision-0.12.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:a0be4501ca0ba1b195644c9243f49a1c49a26e52a7f37924c4239d0bf5ecbd8d", size = 1208831, upload-time = "2022-03-10T22:42:19.124Z" },
-    { url = "https://files.pythonhosted.org/packages/31/16/f41a1eef1dca9f7b5388f742e443e03ee2d3c31ef2427201a10edb864ee1/torchvision-0.12.0-cp310-cp310-manylinux1_x86_64.whl", hash = "sha256:ebfb47adf65bf3926b990b2c4767e291f135e259e03232e0e1a30ecdb05eb087", size = 20985523, upload-time = "2022-03-10T23:30:36.195Z" },
-    { url = "https://files.pythonhosted.org/packages/b8/0a/e69432cb45acb2dcc4d45de89c89db63348377f0470aac1eccf69cea20be/torchvision-0.12.0-cp310-cp310-manylinux2014_aarch64.whl", hash = "sha256:9771231639afb5973cdaea1d449b451e2982e1ef5410ca67bbdc2b465565573a", size = 13709845, upload-time = "2022-03-10T16:45:51.846Z" },
-    { url = "https://files.pythonhosted.org/packages/35/fe/aadb15075d9e613063b336c03a5168ccd2ecf023a958fe7b67bad634e552/torchvision-0.12.0-cp310-cp310-win_amd64.whl", hash = "sha256:894dacdc64b6e35e3f330722db51c76f4de016c7bf7bd79cf02ed2f4c106e625", size = 1016984, upload-time = "2022-03-10T23:36:09.314Z" },
-    { url = "https://files.pythonhosted.org/packages/30/2e/7bef6bb1f62d3cfd98620537858284b5be294ad6c2f917ef86080e2a4a02/torchvision-0.12.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:d1ccb53836ba886320dcda12d00ee8b5f8f38b6c36d7906f141d25778cf74104", size = 1308188, upload-time = "2022-03-10T16:46:19.03Z" },
-    { url = "https://files.pythonhosted.org/packages/74/66/bde17bc5cb9c0e7c261a42a3d97a23b5b2a74e3a04e28a9b8c5512b3fe72/torchvision-0.12.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:9f42420f7f0b29cd3d61776df3157827257a0cf16b2c02776dc16c96abb1256d", size = 1220433, upload-time = "2022-03-10T22:43:34.961Z" },
-    { url = "https://files.pythonhosted.org/packages/18/8b/309116c0bdc90ac7036ca331bfec8dd3e6f7f6d00f869fe6552da096e94a/torchvision-0.12.0-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:9017248c7e526c8cdcaaab8cf41d904a520a409d707398189a06d0757901d235", size = 20984820, upload-time = "2022-03-10T16:45:41.288Z" },
-    { url = "https://files.pythonhosted.org/packages/8a/cb/6070ba8f6105d2e9498800f03363762b769600477e9fece987b475db987e/torchvision-0.12.0-cp38-cp38-manylinux2014_aarch64.whl", hash = "sha256:0744902f2265d4c3e83c44a06b567df312e4a9faf8c92620016c7bed7056b5a7", size = 13710513, upload-time = "2022-03-10T16:46:04.157Z" },
-    { url = "https://files.pythonhosted.org/packages/0c/86/1ca6e41d820dff2c2380857338d97edafdf293279b99329e31908d9f96cd/torchvision-0.12.0-cp38-cp38-win_amd64.whl", hash = "sha256:a91db01496932350bf9c0ee8607ac8ef31c3ebfdaedefe5c5cda0515317f8b8e", size = 1016977, upload-time = "2022-03-10T16:46:16.796Z" },
-    { url = "https://files.pythonhosted.org/packages/11/fc/ad24e5cee710cacc9bd8dbbbc364e6fd63b264319184365be2353ab4823d/torchvision-0.12.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:24d03fcaa28004c64a24124ac4a894c50f5948c8eb290e398d6c76fff2bc678f", size = 1248714, upload-time = "2022-03-10T16:46:09.283Z" },
-    { url = "https://files.pythonhosted.org/packages/43/27/5aefe33caf57d194d6b6009c50772f6bc8a8392a5a8ebb9e502a9d1973ec/torchvision-0.12.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:69d82f47b67bad6ddcbb87833ba5950a6c271ba97baae4c0955610071bf034f5", size = 1169007, upload-time = "2022-03-10T22:43:37.376Z" },
-    { url = "https://files.pythonhosted.org/packages/fc/68/398ce995940b5534fc28ef1c9612005fcf58785c31b03eb26ca183f9fc19/torchvision-0.12.0-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:49ed7886b93b80c9733462edd06a07f8d4c6ea4d5bd2894e7268f7a3774f4f7d", size = 20984419, upload-time = "2022-03-10T16:45:46.488Z" },
-    { url = "https://files.pythonhosted.org/packages/66/5b/bb0e21352e64ee2ed727da00bc44f566caed2afffe4950b86c06b6f9af7f/torchvision-0.12.0-cp39-cp39-manylinux2014_aarch64.whl", hash = "sha256:b93a767f44e3933cb3b01a6fe9727db54590f57b7dac09d5aaf15966c6c151dd", size = 13709797, upload-time = "2022-03-10T16:45:36.301Z" },
-    { url = "https://files.pythonhosted.org/packages/84/e0/7a896f62ffe87d6863961a7d202c461c961c5cab1b78b73fa643994bae57/torchvision-0.12.0-cp39-cp39-win_amd64.whl", hash = "sha256:edab05f7ba9f648c00435b384ffdbd7bde79a3b8ea893813fb50f6ccf28b1e76", size = 1016952, upload-time = "2022-03-10T16:46:07.161Z" },
+    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_sparse-0.6.15-cp38-cp38-macosx_10_15_x86_64.whl" },
+    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_sparse-0.6.15-cp39-cp39-macosx_10_15_x86_64.whl" },
+    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_sparse-0.6.15-cp310-cp310-macosx_10_15_x86_64.whl" },
 ]
 
 [[package]]
@@ -5775,6 +5817,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/04/e4/120ff3180b0872b1fe6637f6f995bcb009fb5c87d597c1fc21456f50c848/websockets-15.0.1-pp39-pypy39_pp73-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4b826973a4a2ae47ba357e4e82fa44a463b8f168e1ca775ac64521442b19e87f", size = 174150, upload-time = "2025-03-05T20:03:35.757Z" },
     { url = "https://files.pythonhosted.org/packages/cb/c3/30e2f9c539b8da8b1d76f64012f3b19253271a63413b2d3adb94b143407f/websockets-15.0.1-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:21c1fa28a6a7e3cbdc171c694398b6df4744613ce9b36b1a498e816787e28123", size = 176877, upload-time = "2025-03-05T20:03:37.199Z" },
     { url = "https://files.pythonhosted.org/packages/fa/a8/5b41e0da817d64113292ab1f8247140aac61cbf6cfd085d6a0fa77f4984f/websockets-15.0.1-py3-none-any.whl", hash = "sha256:f7a866fbc1e97b5c617ee4116daaa09b722101d4a3c170c787450ba409f9736f", size = 169743, upload-time = "2025-03-05T20:03:39.41Z" },
+]
+
+[[package]]
+name = "wheel"
+version = "0.45.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8a/98/2d9906746cdc6a6ef809ae6338005b3f21bb568bea3165cfc6a243fdc25c/wheel-0.45.1.tar.gz", hash = "sha256:661e1abd9198507b1409a20c02106d9670b2576e916d58f520316666abca6729", size = 107545, upload-time = "2024-11-23T00:18:23.513Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0b/2c/87f3254fd8ffd29e4c02732eee68a83a1d3c346ae39bc6822dcbcb697f2b/wheel-0.45.1-py3-none-any.whl", hash = "sha256:708e7481cc80179af0e556bbf0cc00b8444c7321e2700b8d8580231d13017248", size = 72494, upload-time = "2024-11-23T00:18:21.207Z" },
 ]
 
 [[package]]
