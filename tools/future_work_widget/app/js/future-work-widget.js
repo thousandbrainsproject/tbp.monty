@@ -55,7 +55,7 @@ const ColumnFormatters = {
     if (!value) return '';
 
     const url = urlPrefix ? `${urlPrefix}${value}` : value;
-    return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(url)}"><i class="${escapeHtml(icon)}"></i></a>`;
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(url)}"><i class="${icon}"></i></a>`;
   },
   formatTagsColumn: (cell) => ColumnFormatters.formatArrayOrStringColumn(cell.getValue(), BADGE_CLASS),
   formatSkillsColumn: (cell) => ColumnFormatters.formatArrayOrStringColumn(cell.getValue(), BADGE_SKILLS_CLASS),
