@@ -49,7 +49,7 @@ class TestRecordValidator(unittest.TestCase):
         ]
         expected_skills = [
             "\\bpython\\b",
-            "\\bgithub-actions\\b",
+            "\\bgithub\\-actions\\b",
             "\\bJS\\b",
             "\\bHTML\\b",
         ]
@@ -93,7 +93,7 @@ class TestRecordValidator(unittest.TestCase):
         validator = RecordValidator(snippets_dir)
 
         expected_patterns = [
-            "\\bsimple-word\\b",
+            "\\bsimple\\-word\\b",
             "\\baccuracy\\b",
             "\\blearning\\b",
         ]

@@ -91,7 +91,7 @@ class TestBuild(unittest.TestCase):
         base_item.update(overrides)
         return base_item
 
-    def _run_build_test(
+    def _run_build(
         self, input_data: list[dict[str, Any]], snippets_dir: str | None = None
     ) -> list[dict[str, Any]]:
         """Helper method to run build with test data and return results.
@@ -156,7 +156,7 @@ class TestBuild(unittest.TestCase):
             },
         ]
 
-        result_data = self._run_build_test(input_data)
+        result_data = self._run_build(input_data)
 
         self.assertEqual(len(result_data), 1)
         future_work_titles = [item["title"] for item in result_data]
@@ -200,7 +200,7 @@ class TestBuild(unittest.TestCase):
                         [test_item], snippets_dir
                     )
                 else:
-                    result_data = self._run_build_test([test_item])
+                    result_data = self._run_build([test_item])
 
                 self.assertEqual(len(result_data), 1)
                 self.assertEqual(
@@ -213,7 +213,7 @@ class TestBuild(unittest.TestCase):
             self._create_test_item(title="Test item without snippets validation")
         ]
 
-        result_data = self._run_build_test(input_data)
+        result_data = self._run_build(input_data)
         self.assertEqual(len(result_data), 1)
 
     def test_json_output_success(self):
