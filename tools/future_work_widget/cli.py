@@ -41,26 +41,10 @@ def main():
     output_dir = Path(args.output_dir)
     docs_snippets_dir = Path(args.docs_snippets_dir)
 
-    _validate_docs_snippets_dir(docs_snippets_dir)
-
     result = build(index_file, output_dir, docs_snippets_dir)
 
-    _log_result(result)
-    sys.exit(0 if result["success"] else 1)
-
-
-def _validate_docs_snippets_dir(docs_snippets_dir: Path) -> None:
-    if not docs_snippets_dir.exists():
-        result = {
-            "success": False,
-            "error_message": f"Docs snippets directory not found: {docs_snippets_dir}",
-        }
-        _log_result(result)
-        sys.exit(1)
-
-
-def _log_result(result: dict) -> None:
     logger.info(json.dumps(result, indent=2))
+    sys.exit(0 if result["success"] else 1)
 
 
 if __name__ == "__main__":

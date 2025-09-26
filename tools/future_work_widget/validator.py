@@ -55,6 +55,7 @@ class RecordValidator:
         ],
     }
 
+
     def __init__(self, docs_snippets_dir: Path):
         self.validation_sets: dict[str, list[str]] = {}
         self._load_validation_files(docs_snippets_dir)
@@ -182,7 +183,6 @@ class RecordValidator:
 
                 if simple_values:
                     self.validation_sets[field_name] = simple_values
-                    print(field_name, self.validation_sets[field_name])
                     logger.debug(
                         f"Loaded {len(simple_values)} simple text patterns for "
                         f"'{field_name}' from {file_path.name}"

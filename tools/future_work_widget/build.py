@@ -37,11 +37,9 @@ def build(
         - error_message: str summary error message (only if success=False)
     """
     try:
-        if not index_file.exists():
-            return {
-                "success": False,
-                "error_message": f"Index file not found: {index_file}",
-            }
+        validation_error = _validate_params(index_file, output_dir, docs_snippets_dir)
+        if validation_error is not None:
+            return validation_error
 
         with open(index_file, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -84,8 +82,6 @@ def build(
                 "error_message": f"Validation failed with {len(errors)} error(s)",
             }
 
-        output_dir.mkdir(parents=True, exist_ok=True)
-
         data_file = output_dir / "data.json"
         with open(data_file, "w", encoding="utf-8") as f:
             json.dump(future_work_items, f, indent=2, ensure_ascii=False)
@@ -96,18 +92,41 @@ def build(
             "total_items": len(data),
         }
 
+    except Exception as e:  # noqa: BLE001
+        return {
+            "success": False,
+            "error_message": f"Unexpected error during build: {e}",
+        }
+
+
+def _validate_params(
+    index_file: Path,
+    output_dir: Path,
+    docs_snippets_dir: Path,
+) -> dict[str, Any] | None:
+    """Validate input paths and setup output directory.
+
+    Returns:
+        None if all validations pass, otherwise error dict with success=False
+    """
+    if not index_file.exists():
+        return {
+            "success": False,
+            "error_message": f"Index file not found: {index_file}",
+        }
+
+    if not docs_snippets_dir.exists():
+        return {
+            "success": False,
+            "error_message": f"Docs snippets directory not found: {docs_snippets_dir}",
+        }
+
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
     except (OSError, PermissionError) as e:
         return {
             "success": False,
-            "error_message": f"File system error: {e}",
+            "error_message": f"Failed to create output directory {output_dir}: {e}",
         }
-    except json.JSONDecodeError as e:
-        return {
-            "success": False,
-            "error_message": f"Invalid JSON in index file: {e}",
-        }
-    except TypeError as e:
-        return {
-            "success": False,
-            "error_message": f"Data serialization error: {e}",
-        }
+
+    return None
