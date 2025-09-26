@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+
 class ValidationError:
     """Represents a validation error with file context."""
 
@@ -74,7 +75,7 @@ class RecordValidator:
             return None, []
 
         transformed_record = record.copy()
-        file_path = record.get("path", "unknown")
+        file_path = record.get("path")
 
         errors = []
         for field in self.COMMA_SEPARATED_FIELDS:

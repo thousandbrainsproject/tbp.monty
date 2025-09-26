@@ -80,6 +80,7 @@ class TestBuild(unittest.TestCase):
             Dictionary representing a test item
         """
         base_item = {
+            "path": "some-path.md",
             "path1": "future-work",
             "path2": "test-item",
             "title": "Test item",
@@ -232,7 +233,7 @@ class TestBuild(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertEqual(result["processed_items"], 1)
         self.assertEqual(result["total_items"], 1)
-        self.assertEqual(len(result["errors"]), 0)
+        self.assertNotIn("errors", result)
 
     def test_json_output_validation_errors(self):
         """Test JSON output mode with validation errors."""
@@ -376,12 +377,10 @@ class TestBuild(unittest.TestCase):
 
                 result = build(index_file, self.temp_path, snippets_dir)
                 self.assertFalse(result["success"])
-
                 self.assertEqual(len(result["errors"]), 1)
                 error_message = result["errors"][0]["message"]
                 for fragment in case["expected_error_fragments"]:
                     self.assertIn(fragment, error_message)
-
 
 
 if __name__ == "__main__":
