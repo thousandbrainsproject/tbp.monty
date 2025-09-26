@@ -82,7 +82,7 @@ const ColumnFormatters = {
 
     if (path) {
       const editUrl = `${GITHUB_EDIT_BASE_URL}${path}`;
-      result = `<a href="${escapeHtml(editUrl)}" style="margin-right:5px;" target="_blank" rel="noopener noreferrer" title="Edit on GitHub"><i class="fas ${escapeHtml(EDIT_ICON)}"></i></a>${result}`;
+      result = `<a href="${escapeHtml(editUrl)}" style="margin-right:5px;" target="_blank" rel="noopener noreferrer" title="Edit on GitHub"><i class="fas ${EDIT_ICON}"></i></a>${result}`;
     }
 
     return `<div style="margin-right: 10px;">${result}</div>`;
@@ -99,7 +99,7 @@ const ColumnFormatters = {
       : owner.split(',').map(u => u.trim()).filter(Boolean);
 
     const avatars = usernames
-      .map(username => `<img src="${escapeHtml(GITHUB_AVATAR_URL)}/${encodeURIComponent(username)}.png"
+      .map(username => `<img src="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}.png"
                              width="16" height="16"
                              style="vertical-align:middle;border-radius:2px;margin-left:5px;"
                              alt="${escapeHtml(username)}"/>`)
@@ -113,7 +113,7 @@ const ColumnFormatters = {
 
     const isHttpUrl = /^https?:/.test(value.trim());
     return isHttpUrl
-      ? `<a href="${escapeHtml(value)}" target="_blank" rel="noopener noreferrer">RFC <i class="fas ${escapeHtml(EXTERNAL_LINK_ICON)}"></i></a>`
+      ? `<a href="${escapeHtml(value)}" target="_blank" rel="noopener noreferrer">RFC <i class="fas ${EXTERNAL_LINK_ICON}"></i></a>`
       : escapeHtml(value);
   }
 };

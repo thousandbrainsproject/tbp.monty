@@ -178,11 +178,11 @@ class RecordValidator:
                 for raw_item in content.split("`"):
                     clean_item = nh3.clean(raw_item).strip()
                     if clean_item:
-                        escaped_item = re.escape(clean_item).replace("\\-", "-")
-                        simple_values.append(f"\\b{escaped_item}\\b")
+                        simple_values.append(f"\\b{re.escape(clean_item)}\\b")
 
                 if simple_values:
                     self.validation_sets[field_name] = simple_values
+                    print(field_name, self.validation_sets[field_name])
                     logger.debug(
                         f"Loaded {len(simple_values)} simple text patterns for "
                         f"'{field_name}' from {file_path.name}"
