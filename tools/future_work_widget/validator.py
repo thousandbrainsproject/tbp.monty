@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 import re
-import sys
 from typing import TYPE_CHECKING, Any
 
 import nh3
@@ -57,7 +56,7 @@ class RecordValidator:
 
 
     def __init__(self, docs_snippets_dir: Path):
-        self.validation_sets: dict[str, list[str]] = {}
+        self.exact_values: dict[str, list[str]] = {}
         self._load_validation_files(docs_snippets_dir)
 
     def validate(
@@ -134,24 +133,21 @@ class RecordValidator:
         """Add a ValidationError to the errors list."""
         errors.append(ValidationError(message, file_path, field=field))
 
-    def _extract_readable_values(self, regex_patterns: list[str]) -> list[str]:
-        """Extract human-readable values from regex patterns for error messages.
+    def _extract_readable_values(self, field_name: str) -> list[str]:
+        """Extract readable values for error messages.
 
         Args:
-            regex_patterns: List of regex patterns
+            field_name: Name of the field to get readable values for
 
         Returns:
             List of readable values for error messages
         """
-        readable_values = []
-        for pattern in regex_patterns:
-            if pattern.startswith("\\b") and pattern.endswith("\\b"):
-                escaped_word = pattern[2:-2]
-                unescaped_word = escaped_word.replace("\\-", "-").replace("\\.", ".")
-                readable_values.append(unescaped_word)
-            else:
-                readable_values.append(f"{pattern}")
-        return sorted(readable_values)
+        # For exact values, the values themselves are readable
+        if field_name in self.exact_values:
+            return sorted(self.exact_values[field_name])
+
+        # For regex patterns, just return empty list
+        return []
 
     def _load_validation_files(self, docs_snippets_dir: Path) -> None:
         """Load validation files from docs/snippets directory.
@@ -171,42 +167,38 @@ class RecordValidator:
                 )
                 continue
 
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    content = f.read().strip()
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read().strip()
 
-                simple_values = []
-                for raw_item in content.split("`"):
-                    clean_item = nh3.clean(raw_item).strip()
-                    if clean_item:
-                        simple_values.append(f"\\b{re.escape(clean_item)}\\b")
+            simple_values = []
+            for raw_item in content.split("`"):
+                clean_item = nh3.clean(raw_item).strip()
+                if clean_item:
+                    simple_values.append(clean_item)
 
-                if simple_values:
-                    self.validation_sets[field_name] = simple_values
-                    logger.debug(
-                        f"Loaded {len(simple_values)} simple text patterns for "
-                        f"'{field_name}' from {file_path.name}"
-                    )
-
-            except (OSError, UnicodeDecodeError):
-                logger.exception(f"Failed to load validation file {file_path}")
-                sys.exit(1)
+            if simple_values:
+                self.exact_values[field_name] = simple_values
+                logger.debug(
+                    f"Loaded {len(simple_values)} exact match values for "
+                    f"'{field_name}' from {file_path.name}"
+                )
 
     def _validate_field_values(
         self, record: dict[str, Any], file_path: str, errors: list[ValidationError]
     ) -> None:
-        """Validate field values against loaded validation sets and hardcoded patterns.
+        """Validate field values against exact matches and regex patterns.
 
         Args:
             record: The record to validate
             file_path: Path to the source file for error reporting
             errors: List to append validation errors to
         """
-        all_validation_sets = {}
-        all_validation_sets.update(self.validation_sets)
-        all_validation_sets.update(self.REGEX_PATTERNS)
+        # Check all fields that have validation rules
+        exact_keys = set(self.exact_values.keys())
+        regex_keys = set(self.REGEX_PATTERNS.keys())
+        all_field_names = exact_keys | regex_keys
 
-        for field_name, regex_patterns in all_validation_sets.items():
+        for field_name in all_field_names:
             if field_name in record:
                 record_values = record[field_name]
 
@@ -218,17 +210,28 @@ class RecordValidator:
 
                 for value in values_to_check:
                     sanitized_value = nh3.clean(str(value)).strip()
-                    if not any(
-                        re.fullmatch(pattern, sanitized_value)
-                        for pattern in regex_patterns
-                    ):
-                        readable_values = self._extract_readable_values(regex_patterns)
-                        values_str = ", ".join(readable_values)
+                    is_valid = False
+
+                    if field_name in self.exact_values:
+                        is_valid = sanitized_value in self.exact_values[field_name]
+
+                    if not is_valid and field_name in self.REGEX_PATTERNS:
+                        is_valid = any(
+                            re.fullmatch(pattern, sanitized_value)
+                            for pattern in self.REGEX_PATTERNS[field_name]
+                        )
+
+                    if not is_valid:
+                        readable_values = self._extract_readable_values(field_name)
+                        if readable_values:
+                            values_str = ", ".join(readable_values)
+                            message = (
+                                f"Invalid {field_name} value '{sanitized_value}'. "
+                                f"Valid values are: {values_str}"
+                            )
+                        else:
+                            message = f"Invalid {field_name} value '{sanitized_value}'"
 
                         self._add_validation_error(
-                            f"Invalid {field_name} value '{sanitized_value}'. "
-                            f"Valid values are: {values_str}",
-                            file_path,
-                            field_name,
-                            errors,
+                            message, file_path, field_name, errors
                         )

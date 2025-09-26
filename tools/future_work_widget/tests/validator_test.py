@@ -38,27 +38,25 @@ class TestRecordValidator(unittest.TestCase):
 
         validator = RecordValidator(snippets_dir)
 
-        self.assertIn("tags", validator.validation_sets)
-        self.assertIn("skills", validator.validation_sets)
+        self.assertIn("tags", validator.exact_values)
+        self.assertIn("skills", validator.exact_values)
 
         expected_tags = [
-            "\\baccuracy\\b",
-            "\\bpose\\b",
-            "\\blearning\\b",
-            "\\bmultiobj\\b",
+            "accuracy",
+            "pose",
+            "learning",
+            "multiobj",
         ]
         expected_skills = [
-            "\\bpython\\b",
-            "\\bgithub\\-actions\\b",
-            "\\bJS\\b",
-            "\\bHTML\\b",
+            "python",
+            "github-actions",
+            "JS",
+            "HTML",
         ]
 
+        self.assertEqual(sorted(validator.exact_values["tags"]), sorted(expected_tags))
         self.assertEqual(
-            sorted(validator.validation_sets["tags"]), sorted(expected_tags)
-        )
-        self.assertEqual(
-            sorted(validator.validation_sets["skills"]), sorted(expected_skills)
+            sorted(validator.exact_values["skills"]), sorted(expected_skills)
         )
 
     def test_missing_validation_files_graceful(self):
@@ -67,7 +65,7 @@ class TestRecordValidator(unittest.TestCase):
 
         validator = RecordValidator(snippets_dir)
 
-        self.assertEqual(len(validator.validation_sets), 0)
+        self.assertEqual(len(validator.exact_values), 0)
         record = {"path1": "future-work", "path2": "test"}
         _, errors = validator.validate(record)
         self.assertEqual(len(errors), 0)
@@ -77,7 +75,7 @@ class TestRecordValidator(unittest.TestCase):
 
         validator = RecordValidator(nonexistent_dir)
 
-        self.assertEqual(len(validator.validation_sets), 0)
+        self.assertEqual(len(validator.exact_values), 0)
         record = {"path1": "future-work", "path2": "test"}
         _, errors = validator.validate(record)
         self.assertEqual(len(errors), 0)
@@ -92,14 +90,14 @@ class TestRecordValidator(unittest.TestCase):
 
         validator = RecordValidator(snippets_dir)
 
-        expected_patterns = [
-            "\\bsimple\\-word\\b",
-            "\\baccuracy\\b",
-            "\\blearning\\b",
+        expected_values = [
+            "simple-word",
+            "accuracy",
+            "learning",
         ]
 
         self.assertEqual(
-            sorted(validator.validation_sets["tags"]), sorted(expected_patterns)
+            sorted(validator.exact_values["tags"]), sorted(expected_values)
         )
 
     def test_direct_validation_success(self):
