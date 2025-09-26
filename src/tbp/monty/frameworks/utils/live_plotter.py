@@ -34,13 +34,12 @@ class LivePlotter:
         pass
 
     def initialize_online_plotting(self):
-        self.fig, self.ax = plt.subplots(
-            1, 2, figsize=(9, 6), gridspec_kw={"width_ratios": [1, 0.8]}
-        )
+        self.fig, self.ax = plt.subplots(1, 3, figsize=(9, 6))
         self.fig.subplots_adjust(top=1.1)
         # self.colorbar = self.fig.colorbar(None, fraction=0.046, pad=0.04)
         self.setup_camera_ax()
         self.setup_sensor_ax()
+        self.setup_mlh_ax()
 
     def hardcoded_assumptions(self, observation, model):
         """Extract some of the hardcoded assumptions from the observation.
@@ -59,15 +58,31 @@ class LivePlotter:
         """
         first_learning_module = model.learning_modules[0]
         first_sensor_module_raw_observations = model.sensor_modules[0].raw_observations
-        patch_depth = observation[model.motor_system._policy.agent_id]["patch"]["depth"]
+        first_sensor_module_id = model.sensor_modules[0].sensor_module_id
+        patch_depth = observation[model.motor_system._policy.agent_id][
+            first_sensor_module_id
+        ]["depth"]
         view_finder_rgba = observation[model.motor_system._policy.agent_id][
             "view_finder"
         ]["rgba"]
+        if hasattr(first_learning_module, "get_current_mlh"):
+            mlh = first_learning_module.get_current_mlh()
+            if mlh["graph_id"] == "no_observations_yet":
+                mlh_model = None
+            else:
+                mlh_model = first_learning_module.graph_memory.get_graph(
+                    mlh["graph_id"]
+                )[first_sensor_module_id]
+        else:
+            mlh = None
+            mlh_model = None
         return (
             first_learning_module,
             first_sensor_module_raw_observations,
             patch_depth,
             view_finder_rgba,
+            mlh,
+            mlh_model,
         )
 
     def show_observations(
@@ -76,6 +91,8 @@ class LivePlotter:
         first_sensor_module_raw_observations,
         patch_depth,
         view_finder_rgba,
+        mlh,
+        mlh_model,
         step: int,
         is_saccade_on_image_data_loader=False,
     ) -> None:
@@ -88,6 +105,7 @@ class LivePlotter:
             is_saccade_on_image_data_loader,
         )
         self.show_patch(patch_depth)
+        self.show_mlh(mlh, mlh_model)
         plt.pause(0.00001)
 
     def show_view_finder(
@@ -127,11 +145,11 @@ class LivePlotter:
                 ec="white",
             )
             self.ax[0].add_patch(square)
-        if hasattr(first_learning_module.graph_memory, "current_mlh"):
+        if hasattr(first_learning_module, "current_mlh"):
             mlh = first_learning_module.get_current_mlh()
             if mlh is not None:
                 graph_ids, evidences = (
-                    first_learning_module.graph_memory.get_evidence_for_each_graph()
+                    first_learning_module.get_evidence_for_each_graph()
                 )
                 self.add_text(
                     mlh,
@@ -150,6 +168,26 @@ class LivePlotter:
         )
         # self.colorbar.update_normal(self.depth_image)
 
+    def show_mlh(self, mlh, mlh_model):
+        if not mlh_model:
+            self.ax[2].set_title("No MLH")
+            return
+        self.ax[2].cla()
+        self.ax[2].scatter(
+            mlh_model.pos[:, 1],
+            mlh_model.pos[:, 0],
+            mlh_model.pos[:, 2],
+            c="black",
+            s=2,
+        )
+        # add mlh location to the graph
+        self.ax[2].scatter(
+            mlh["location"][1], mlh["location"][0], mlh["location"][2], c="red", s=15
+        )
+        self.ax[2].set_title("MLH")
+        self.ax[2].set_axis_off()
+        self.ax[2].set_aspect("equal")
+
     def add_text(
         self,
         mlh,
@@ -160,7 +198,7 @@ class LivePlotter:
     ):
         if self.text:
             self.text.remove()
-        new_text = r"MLH: "
+        new_text = r"MLH of first LM: "
         mlh_id = mlh["graph_id"].split("_")
         for word in mlh_id:
             new_text += r"$\bf{" + word + "}$ "
@@ -192,3 +230,9 @@ class LivePlotter:
         self.ax[1].set_title("Sensor depth image")
         self.ax[1].set_axis_off()
         self.depth_image = None
+
+    def setup_mlh_ax(self):
+        self.ax[2] = plt.subplot(1, 3, 3, projection="3d")
+        self.ax[2].set_title("MLH")
+        self.ax[2].set_axis_off()
+        self.ax[2].set_aspect("equal")
