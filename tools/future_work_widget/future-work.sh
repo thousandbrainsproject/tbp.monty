@@ -1,13 +1,11 @@
-# DELETE ME
+CMD1="python -m tools.github_readme_sync.cli generate-index docs /tmp/index.json"
+CMD2="python -m tools.future_work_widget.cli /tmp/index.json tools/future_work_widget/app"
+CMD3="http-server tools/future_work_widget/app"
 
-# TODO 
-# Move the docs under documentation/future-work.
-# remove the build command as there is only one command.
+echo "$CMD1"
+eval "$CMD1"
 
-echo "python -m tools.github_readme_sync.cli generate-index docs /tmp/index.json"
-python -m tools.github_readme_sync.cli generate-index docs /tmp/index.json
+echo "$CMD2"
+eval "$CMD2"
 
-echo "python -m tools.future_work_widget.cli build /tmp/index.json tools/future_work_widget/app"
-python -m tools.future_work_widget.cli build /tmp/index.json tools/future_work_widget/app
-
-http-server tools/future_work_widget/app
+eval "$CMD3"

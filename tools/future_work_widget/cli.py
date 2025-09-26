@@ -23,20 +23,13 @@ logger = logging.getLogger(__name__)
 def main():
     logging.basicConfig(format="%(message)s", level=logging.INFO, stream=sys.stdout)
     parser = argparse.ArgumentParser(
-        description="CLI tool to manage future work widget."
+        description="Build the data and package the future work widget."
     )
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    build_parser = subparsers.add_parser(
-        "build", help="Build the data and package the widget"
-    )
-    build_parser.add_argument(
-        "index_file", help="The JSON file to validate and transform"
-    )
-    build_parser.add_argument(
+    parser.add_argument("index_file", help="The JSON file to validate and transform")
+    parser.add_argument(
         "output_dir", help="The output directory to create and save data.json"
     )
-    build_parser.add_argument(
+    parser.add_argument(
         "--docs-snippets-dir",
         help="Optional path to docs/snippets directory for validation files",
         default="docs/snippets",
@@ -44,17 +37,16 @@ def main():
 
     args = parser.parse_args()
 
-    if args.command == "build":
-        index_file = Path(args.index_file)
-        output_dir = Path(args.output_dir)
-        docs_snippets_dir = Path(args.docs_snippets_dir)
+    index_file = Path(args.index_file)
+    output_dir = Path(args.output_dir)
+    docs_snippets_dir = Path(args.docs_snippets_dir)
 
-        _validate_docs_snippets_dir(docs_snippets_dir)
+    _validate_docs_snippets_dir(docs_snippets_dir)
 
-        result = build(index_file, output_dir, docs_snippets_dir)
+    result = build(index_file, output_dir, docs_snippets_dir)
 
-        _log_result(result)
-        sys.exit(0 if result["success"] else 1)
+    _log_result(result)
+    sys.exit(0 if result["success"] else 1)
 
 
 def _validate_docs_snippets_dir(docs_snippets_dir: Path) -> None:
