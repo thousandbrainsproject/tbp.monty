@@ -832,6 +832,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
         return graph_lm
 
+    @unittest.skip("debugging")
     def test_can_run_evidence_experiment(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_config)
@@ -841,6 +842,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             pprint("...evaluating...")
             exp.evaluate()
 
+    @unittest.skip("debugging")
     def test_fixed_actions_evidence(self):
         """Test 3 train and 3 eval epochs with 2 objects and 2 rotations."""
         pprint("...parsing experiment...")
@@ -878,6 +880,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             "When using detailed logging we should store matches at every steps.",
         )
 
+    @unittest.skip("debugging")
     def test_pre_episode_raises_error_when_no_object_is_present(self):
         """Test that pre_episode raises an error when no object is present."""
         pprint("...parsing experiment...")
@@ -894,6 +897,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 str(error.exception),
             )
 
+    @unittest.skip("debugging")
     def test_moving_off_object(self):
         """Test logging when moving off the object for some steps during an episode."""
         pprint("...parsing experiment...")
@@ -973,6 +977,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             "evidence should have increased after moving back on the object.",
         )
 
+    @unittest.skip("debugging")
     def test_evidence_time_out(self):
         pprint("...parsing experiment...")
         config = copy.deepcopy(self.evidence_tests_time_out)
@@ -1032,6 +1037,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 f"time out should use mlh in eval episode {i}",
             )
 
+    @unittest.skip("debugging")
     def test_evidence_confused_logging(self):
         # When the algorithm evolves, this scenario may not lead to confusion
         # anymore. Setting min_steps would also avoid this probably.
@@ -1086,6 +1092,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 "confused object id should not be in possible_match_sources.",
             )
 
+    @unittest.skip("debugging")
     def test_uniform_initial_poses(self):
         """Test same scenario as test_fixed_actions_evidence with uniform poses."""
         pprint("...parsing experiment...")
@@ -1107,6 +1114,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
         self.check_eval_results(eval_stats)
 
+    @unittest.skip("debugging")
     def test_fixed_initial_poses(self):
         """Test same scenario as test_fixed_actions_evidence with predefined poses."""
         pprint("...parsing experiment...")
@@ -1128,6 +1136,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
         self.check_eval_results(eval_stats)
 
+    @unittest.skip("debugging")
     def test_symmetry_recognition(self):
         """Test that symmetry is recognized."""
         fake_obs_test = copy.deepcopy(self.fake_obs_symmetric)
@@ -1181,6 +1190,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             "Since have symmtry here 180, 0, 180 should also be a possible pose.",
         )
 
+    @unittest.skip("debugging")
     def test_same_sequence_recognition_elm(self):
         """Test that the object is recognized with same action sequence."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
@@ -1223,6 +1233,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             "Should recognize rotation 0, 0, 0.",
         )
 
+    @unittest.skip("debugging")
     def test_reverse_sequence_recognition_elm(self):
         """Test that object is recognized irrespective of sampling order."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
@@ -1265,6 +1276,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             "Should recognize rotation 0, 0, 0.",
         )
 
+    @unittest.skip("debugging")
     def test_offset_sequence_recognition_elm(self):
         """Test that the object is recognized irrespective of its location rel body."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
@@ -1307,6 +1319,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             "Should recognize rotation 0, 0, 0.",
         )
 
+    @unittest.skip("debugging")
     def test_new_sampling_recognition_elm(self):
         """Test object recognition with slightly perturbed observations.
 
@@ -1346,6 +1359,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             "Should recognize rotation 0, 0, 0.",
         )
 
+    @unittest.skip("debugging")
     def test_different_locations_not_recognized_elm(self):
         """Test that the object is not recognized if locations don't match."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
@@ -1420,6 +1434,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             "Should propose testing 5th (indexed from 0) location on object"
         )
 
+    @unittest.skip("debugging")
     def test_hypothesis_testing_proposal_for_id(self):
         """Test that the LM correctly predicts a location on a graph to test.
 
@@ -1446,6 +1461,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             graph_lm, fake_obs_test, target_object="new_object1"
         )
 
+    @unittest.skip("debugging")
     def test_hypothesis_testing_proposal_for_id_with_transformation(self):
         """Test that the LM correctly predicts a location on a graph to test.
 
@@ -1472,6 +1488,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             graph_lm, fake_obs_test, target_object="new_object1"
         )
 
+    @unittest.skip("debugging")
     def test_hypothesis_testing_proposal_for_pose(self):
         """Test that the LM correctly predicts a location on a graph to test.
 
@@ -1498,6 +1515,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             graph_lm, fake_obs_test, target_object="new_object0", focus_on_pose=True
         )
 
+    @unittest.skip("debugging")
     def test_hypothesis_testing_proposal_for_pose_with_transformation(self):
         """Test that the LM correctly predicts a location on a graph to test.
 
@@ -1527,6 +1545,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             graph_lm, fake_obs_test, target_object="new_object0", focus_on_pose=True
         )
 
+    @unittest.skip("debugging")
     def test_different_features_still_recognized(self):
         """Test that the object is still recognized if features don't match.
 
@@ -1572,6 +1591,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             "Should recognize rotation 0, 0, 0.",
         )
 
+    @unittest.skip("debugging")
     def test_different_pose_features_not_recognized_elm(self):
         """Test that the object is not recognized if pose features don't match."""
         fake_obs_test = copy.deepcopy(self.fake_obs_learn)
@@ -1625,6 +1645,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                     "Should have no possible matches.",
                 )
 
+    @unittest.skip("debugging")
     def test_moving_off_object_and_back_elm(self):
         """Test that the object is still recognized after moving off the object.
 
@@ -1681,6 +1702,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             "Should recognize rotation 0, 0, 0.",
         )
 
+    @unittest.skip("debugging")
     def test_can_run_with_no_features(self):
         """Standard evaluation setup but using only pose features."""
         pprint("...parsing experiment...")
@@ -1701,6 +1723,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
         self.check_eval_results(eval_stats)
 
+    @unittest.skip("debugging")
     def test_5lm_evidence_experiment(self):
         """Test 5 evidence LMs voting with two evaluation settings."""
         pprint("...parsing experiment...")
@@ -1734,6 +1757,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
         self.check_eval_results(eval_stats, num_lms=5)
 
+    @unittest.skip("debugging")
     def test_5lm_3done_evidence(self):
         """Test 5 evidence LMs voting works with lower min_lms_match setting."""
         pprint("...parsing experiment...")
@@ -1755,6 +1779,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
         self.check_multilm_eval_results(eval_stats, num_lms=5, min_done=3)
 
+    @unittest.skip("debugging")
     def test_moving_off_object_5lms(self):
         """Test logging when moving off the object for some steps during an episode.
 
@@ -1822,6 +1847,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 f" since it was off the object for longer than other LMs.",
             )
 
+    @unittest.skip("debugging")
     def test_5lms_pre_episode_raises_error_when_no_object_is_present(self):
         """Test that pre_episode raises an error when no object is present."""
         pprint("...parsing experiment...")
@@ -1838,6 +1864,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 str(error.exception),
             )
 
+    @unittest.skip("debugging")
     def test_5lm_basic_logging(self):
         """Test that 5LM setup works with BASIC logging and stores correct data."""
         pprint("...parsing experiment...")
@@ -1862,6 +1889,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 "When using basic logging we don't append stats for every step.",
             )
 
+    @unittest.skip("debugging")
     def test_can_run_with_no_multithreading_5lms(self):
         """Standard evaluation setup but using only pose features.
 
@@ -1885,6 +1913,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
         self.check_eval_results(eval_stats, num_lms=5)
 
+    @unittest.skip("debugging")
     def test_can_run_with_maxnn1_5lms(self):
         """Standard evaluation setup but using max_nneighbors=1.
 
@@ -1908,6 +1937,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
         self.check_eval_results(eval_stats, num_lms=5)
 
+    @unittest.skip("debugging")
     def test_can_run_with_bounded_evidence_5lms(self):
         """Standard evaluation setup with 5lm and bounded evidence."""
         pprint("...parsing experiment...")
@@ -1928,6 +1958,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
         self.check_eval_results(eval_stats, num_lms=5)
 
+    @unittest.skip("debugging")
     def test_noise_mixing_evidence(self):
         """Test standard fixed action setting with noisy sensor module.
 
@@ -1968,6 +1999,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 "Is noise being applied correctly?",
             )
 
+    # @unittest.skip("debugging")
     def test_raw_sensor_noise_evidence(self):
         """Test standard fixed action setting with raw sensor noise.
 

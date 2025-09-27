@@ -627,6 +627,7 @@ class HabitatSim(HabitatActuator):
     def close(self):
         """Close simulator and release resources."""
         sim = getattr(self, "_sim", None)
+        breakpoint()
         if sim is not None:
             sim.close()
             self._sim = None

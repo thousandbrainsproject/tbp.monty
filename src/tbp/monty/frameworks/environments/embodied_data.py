@@ -78,28 +78,15 @@ class EnvironmentDataLoader:
     Raises:
         TypeError: If `motor_system` is not an instance of `MotorSystem`.
     """
-
-    def __init__(
-        self,
-        env: EmbodiedEnvironment,
-        rng,
-        motor_system: MotorSystem,
-        transform=None,
-    ):
-        self.rng = rng
-        self.transform = transform
-        if self.transform is not None:
-            for t in self.transform:
-                if t.needs_rng:
-                    t.rng = self.rng
-
-        self.env = env
-
+    def __init__(self, env: EmbodiedEnvironment, motor_system: MotorSystem, rng, transform=None):
         if not isinstance(motor_system, MotorSystem):
             raise TypeError(
                 f"motor_system must be an instance of MotorSystem, got {motor_system}"
             )
+        self.env = env
+        self.transform = transform
         self.motor_system = motor_system
+        self.rng = rng
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
@@ -192,8 +179,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
     After the primary target is added to the environment, other distractor objects,
     sampled from the same object list, can be added.
     """
-
-    def __init__(self, *args, object_names=None, object_init_sampler=None, **kwargs):
+    def __init__(self, object_names, object_init_sampler, *args, **kwargs):
         """Initialize dataloader.
 
         Args:
@@ -220,33 +206,30 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         """
         super(EnvironmentDataLoaderPerObject, self).__init__(*args, **kwargs)
 
-        if object_names is not None:
-            if isinstance(object_names, list):
-                self.object_names = object_names
-                # Return an (ordered) list of unique items:
-                self.source_object_list = list(dict.fromkeys(object_names))
-                self.num_distractors = 0
-            elif isinstance(object_names, dict):
-                # TODO when we want more advanced multi-object experiments, update these
-                # arguments along with the Object Initializers so that we can easily
-                # specify a set of primary targets and distractors, i.e. random sampling
-                # of the distractor objects shouldn't happen here
-                self.object_names = object_names["targets_list"]
-                self.source_object_list = list(
-                    dict.fromkeys(object_names["source_object_list"])
-                )
-                self.num_distractors = object_names["num_distractors"]
-            else:
-                raise TypeError("Object names should be a list or dictionary")
-            self.create_semantic_mapping()
-            self.n_objects = len(self.object_names)
+        if isinstance(object_names, list):
+            self.object_names = object_names
+            # Return an (ordered) list of unique items:
+            self.source_object_list = list(dict.fromkeys(object_names))
+            self.num_distractors = 0
+        elif isinstance(object_names, dict):
+            # TODO when we want more advanced multi-object experiments, update these
+            # arguments along with the Object Initializers so that we can easily
+            # specify a set of primary targets and distractors, i.e. random sampling
+            # of the distractor objects shouldn't happen here
+            self.object_names = object_names["targets_list"]
+            self.source_object_list = list(
+                dict.fromkeys(object_names["source_object_list"])
+            )
+            self.num_distractors = object_names["num_distractors"]
+        else:
+            raise TypeError("Object names should be a list or dictionary")
+        self.create_semantic_mapping()
 
-        if object_init_sampler is not None:
-            self.object_init_sampler = object_init_sampler
-            self.object_init_sampler.rng = self.rng
-            self.object_params = self.object_init_sampler()
-
+        self.object_init_sampler = object_init_sampler
+        self.object_init_sampler.rng = self.rng
+        self.object_params = self.object_init_sampler()
         self.current_object = 0
+        self.n_objects = len(self.object_names)
         self.episodes = 0
         self.epochs = 0
         self.primary_target = None
@@ -784,8 +767,10 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         alphabets,
         characters,
         versions,
+        env: EmbodiedEnvironment,
         motor_system: MotorSystem,
-        *args,
+        transform=None,
+        * args,
         **kwargs,
     ):
         """Initialize dataloader.
@@ -794,19 +779,32 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
             alphabets: List of alphabets.
             characters: List of characters.
             versions: List of versions.
+            env: The embodied environment.
             motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
+
+        Raises:
+            TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
-        super(OmniglotDataLoader, self).__init__(
-            *args, motor_system=motor_system, **kwargs
+        if not isinstance(motor_system, MotorSystem):
+            raise TypeError(
+                f"motor_system must be an instance of MotorSystem, got {motor_system}"
+            )
+        self.env = env
+        self.transform = transform
+        self.motor_system = motor_system
+        self._observation, proprioceptive_state = self.reset()
+        self.motor_system._state = (
+            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
+        self._action = None
+        self._counter = 0
 
         self.alphabets = alphabets
         self.characters = characters
         self.versions = versions
-
-        # Different init values than super class
+        self.current_object = 0
         self.n_objects = len(characters)
         self.object_names = [
             str(self.env.alphabet_names[alphabets[i]]) + "_" + str(self.characters[i])
@@ -855,28 +853,48 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
 
     def __init__(
         self,
-        scenes=None,
-        versions=None,
+        scenes,
+        versions,
+        env: EmbodiedEnvironment,
+        motor_system: MotorSystem,
+        transform=None,
         *args,
         **kwargs,
     ):
         """Initialize dataloader.
 
         Args:
-            scenes: List of scenes
-            versions: List of versions
-            motor_system: The motor system.
-            *args: Additional arguments
-            **kwargs: Additional keyword arguments
-        """
-        super(SaccadeOnImageDataLoader, self).__init__(*args, **kwargs)
-        # Different from super class default
-        self.object_names = self.env.scene_names
+                    scenes: List of scenes
+                    versions: List of versions
+                    motor_system: The motor system.
+                    env: The embodied environment.
+                    *args: Additional arguments
+                    **kwargs: Additional keyword arguments
 
+        Raises:
+                    TypeError: If `motor_system` is not an instance of `MotorSystem`.
+        """
+        if not isinstance(motor_system, MotorSystem):
+            raise TypeError(
+                f"motor_system must be an instance of MotorSystem, got {motor_system}"
+            )
+        self.env = env
+        self.transform = transform
+        self.motor_system = motor_system
+        self._observation, proprioceptive_state = self.reset()
+        self.motor_system._state = (
+            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
+        )
+        self._action = None
+        self._counter = 0
         self.scenes = scenes
         self.versions = versions
+        self.object_names = self.env.scene_names
         self.current_scene_version = 0
-        self.n_versions = len(versions) if versions else 0
+        self.n_versions = len(versions)
+        self.episodes = 0
+        self.epochs = 0
+        self.primary_target = None
 
     def post_episode(self):
         self.motor_system.post_episode()
@@ -927,17 +945,41 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
 
     def __init__(
         self,
+        env: EmbodiedEnvironment,
+        motor_system: MotorSystem,
+        transform=None,
         *args,
         **kwargs,
     ):
         """Initialize dataloader.
 
         Args:
+            env: The embodied environment.
+            motor_system: The motor system.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
+
+        Raises:
+            TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
-        super(SaccadeOnImageFromStreamDataLoader, self).__init__(*args, **kwargs)
+        if not isinstance(motor_system, MotorSystem):
+            raise TypeError(
+                f"motor_system must be an instance of MotorSystem, got {motor_system}"
+            )
+        # TODO: call super init instead of duplication code & generally clean up more
+        self.env = env
+        self.transform = transform
+        self.motor_system = motor_system
+        self._observation, proprioceptive_state = self.reset()
+        self.motor_system._state = (
+            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
+        )
+        self._action = None
+        self._counter = 0
         self.current_scene = 0
+        self.episodes = 0
+        self.epochs = 0
+        self.primary_target = None
 
     def pre_epoch(self):
         # TODO: Could give a start index as parameter
