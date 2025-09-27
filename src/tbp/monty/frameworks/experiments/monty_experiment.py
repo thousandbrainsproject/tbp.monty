@@ -621,12 +621,6 @@ class MontyExperiment:
             setattr(self, k, exp_state_dict[k])
 
     def close(self):
-        dataloader = getattr(self, "dataloader", None)
-        if dataloader is not None and isinstance(
-            self.dataloader, EnvironmentDataLoader
-        ):
-            self.dataloader = None
-
         env = getattr(self, "env", None)
         if env is not None:
             env.close()
