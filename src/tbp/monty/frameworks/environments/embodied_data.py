@@ -78,7 +78,10 @@ class EnvironmentDataLoader:
     Raises:
         TypeError: If `motor_system` is not an instance of `MotorSystem`.
     """
-    def __init__(self, env: EmbodiedEnvironment, motor_system: MotorSystem, rng, transform=None):
+
+    def __init__(
+        self, env: EmbodiedEnvironment, motor_system: MotorSystem, rng, transform=None
+    ):
         if not isinstance(motor_system, MotorSystem):
             raise TypeError(
                 f"motor_system must be an instance of MotorSystem, got {motor_system}"
@@ -179,6 +182,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
     After the primary target is added to the environment, other distractor objects,
     sampled from the same object list, can be added.
     """
+
     def __init__(self, object_names, object_init_sampler, *args, **kwargs):
         """Initialize dataloader.
 
@@ -205,7 +209,6 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             TypeError: If `object_names` is not a list or dictionary
         """
         super(EnvironmentDataLoaderPerObject, self).__init__(*args, **kwargs)
-
         if isinstance(object_names, list):
             self.object_names = object_names
             # Return an (ordered) list of unique items:
@@ -770,7 +773,7 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         env: EmbodiedEnvironment,
         motor_system: MotorSystem,
         transform=None,
-        * args,
+        *args,
         **kwargs,
     ):
         """Initialize dataloader.
@@ -781,6 +784,9 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
             versions: List of versions.
             env: The embodied environment.
             motor_system: The motor system.
+            transform: A list of callables used to transform the observations returned
+                 by the environment
+
             *args: Additional arguments
             **kwargs: Additional keyword arguments
 
@@ -806,6 +812,9 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         self.versions = versions
         self.current_object = 0
         self.n_objects = len(characters)
+        self.episodes = 0
+        self.epochs = 0
+        self.primary_target = None
         self.object_names = [
             str(self.env.alphabet_names[alphabets[i]]) + "_" + str(self.characters[i])
             for i in range(self.n_objects)
@@ -864,15 +873,17 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         """Initialize dataloader.
 
         Args:
-                    scenes: List of scenes
-                    versions: List of versions
-                    motor_system: The motor system.
-                    env: The embodied environment.
-                    *args: Additional arguments
-                    **kwargs: Additional keyword arguments
+            scenes: List of scenes
+            versions: List of versions
+            env: The embodied environment.
+            motor_system: The motor system.
+            transform: A list of callables used to transform the observations returned by
+                the environment
+            *args: Additional arguments
+            **kwargs: Additional keyword arguments
 
         Raises:
-                    TypeError: If `motor_system` is not an instance of `MotorSystem`.
+            TypeError: If `motor_system` is not an instance of `MotorSystem`.
         """
         if not isinstance(motor_system, MotorSystem):
             raise TypeError(
@@ -956,6 +967,8 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         Args:
             env: The embodied environment.
             motor_system: The motor system.
+            transform: A list of callables used to transform the observations returned by
+                the environment
             *args: Additional arguments
             **kwargs: Additional keyword arguments
 
