@@ -62,10 +62,10 @@ class EnvironmentDataLoader:
     returned by `motor_system` is applied.
 
     Attributes:
-        env: an instance of a class that implements :class:`EmbodiedEnvironment`
+        env: An instance of a class that implements :class:`EmbodiedEnvironment`.
         motor_system: :class:`MotorSystem`
-        transform: A list of callables used to transform the observations returned by
-            the environment
+        transform: Callable used to transform the observations returned by
+            the environment.
 
     Note:
         If the amount variable returned by motor_system is None, the amount used by
@@ -782,10 +782,10 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
             alphabets: List of alphabets.
             characters: List of characters.
             versions: List of versions.
-            env: The embodied environment.
+            env: An instance of a class that implements :class:`EmbodiedEnvironment`.
             motor_system: The motor system.
-            transform: A list of callables used to transform the observations returned
-                 by the environment
+            transform: Callable used to transform the observations returned
+                 by the environment.
 
             *args: Additional arguments
             **kwargs: Additional keyword arguments
@@ -875,10 +875,10 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         Args:
             scenes: List of scenes
             versions: List of versions
-            env: The embodied environment.
+            env: An instance of a class that implements :class:`EmbodiedEnvironment`.
             motor_system: The motor system.
-            transform: A list of callables used to transform the observations returned by
-                the environment
+            transform: Callable used to transform the observations returned by
+                the environment.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
 
@@ -898,6 +898,7 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         )
         self._action = None
         self._counter = 0
+
         self.scenes = scenes
         self.versions = versions
         self.object_names = self.env.scene_names
@@ -965,10 +966,10 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         """Initialize dataloader.
 
         Args:
-            env: The embodied environment.
+            env: An instance of a class that implements :class:`EmbodiedEnvironment`.
             motor_system: The motor system.
-            transform: A list of callables used to transform the observations returned by
-                the environment
+            transform: Callable used to transform the observations returned by
+                the environment.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
 
