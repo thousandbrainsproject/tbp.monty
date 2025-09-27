@@ -127,7 +127,7 @@ class EnvironmentDataLoader:
         else:
             action = self.motor_system()
             self._action = action
-            self._observation, proprioceptive_state = self.__getitem__(action)
+            self._observation, proprioceptive_state = self.step(action)
             self.motor_system._state = (
                 MotorSystemState(proprioceptive_state) if proprioceptive_state else None
             )
@@ -150,7 +150,7 @@ class EnvironmentDataLoader:
             observation = transform(observation, state)
         return observation
 
-    def __getitem__(self, action: Action):
+    def step(self, action: Action):
         observation = self.env.step(action)
         state = self.env.get_state()
         if self.transform is not None:
@@ -443,7 +443,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 #       the object using its full repertoire of actions.
                 self.motor_system._policy.touch_search_amount = 0
 
-            self._observation, proprioceptive_state = self.__getitem__(self._action)
+            self._observation, proprioceptive_state = self.step(self._action)
             motor_system_state = MotorSystemState(proprioceptive_state)
 
             # TODO: Refactor this so that all of this is contained within the
@@ -561,7 +561,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         )
         while not result.terminated and not result.truncated:
             for action in result.actions:
-                self._observation, proprio_state = self.__getitem__(action)
+                self._observation, proprio_state = self.step(action)
                 self.motor_system._state = (
                     MotorSystemState(proprio_state) if proprio_state else None
                 )
@@ -653,8 +653,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             agent_id=self.motor_system._policy.agent_id,
             rotation_quat=quaternion.one,
         )
-        _, _ = self.__getitem__(set_agent_pose)
-        self._observation, proprioceptive_state = self.__getitem__(set_sensor_rotation)
+        _, _ = self.step(set_agent_pose)
+        self._observation, proprioceptive_state = self.step(set_sensor_rotation)
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
@@ -746,8 +746,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             agent_id=self.motor_system._policy.agent_id,
             rotation_quat=pre_jump_state["sensors"][first_sensor]["rotation"],
         )
-        _, _ = self.__getitem__(set_agent_pose)
-        self._observation, proprioceptive_state = self.__getitem__(set_sensor_rotation)
+        _, _ = self.step(set_agent_pose)
+        self._observation, proprioceptive_state = self.step(set_sensor_rotation)
 
         assert np.all(
             proprioceptive_state[self.motor_system._policy.agent_id]["position"]

@@ -143,7 +143,7 @@ class HabitatDataTest(unittest.TestCase):
         # Check if env interface is getting observations from simulator
         mock_sim_dist.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, DATASET_LEN):
-            obs_dist, _ = env_interface_dist.__getitem__(motor_system_dist())
+            obs_dist, _ = env_interface_dist.step(motor_system_dist())
             camera_obs_dist = obs_dist[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_dist[SENSORS[0]] == EXPECTED_STATES[i]))
 
@@ -156,7 +156,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if env interface actions affect simulator observations
         mock_sim_dist.get_sensor_observations.side_effect = self.mock_observations
-        obs_dist, _ = env_interface_dist.__getitem__(motor_system_dist())
+        obs_dist, _ = env_interface_dist.step(motor_system_dist())
         camera_obs_dist = obs_dist[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_dist[SENSORS[0]] == initial_camera_obs_dist[SENSORS[0]])
@@ -208,7 +208,7 @@ class HabitatDataTest(unittest.TestCase):
         # Check if datasets are getting observations from simulator
         mock_sim_abs.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, DATASET_LEN):
-            obs_abs, _ = env_interface_abs.__getitem__(motor_system_abs())
+            obs_abs, _ = env_interface_abs.step(motor_system_abs())
             camera_obs_abs = obs_abs[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_abs[SENSORS[0]] == EXPECTED_STATES[i]))
 
@@ -221,7 +221,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if dataset actions affect simulator observations
         mock_sim_abs.get_sensor_observations.side_effect = self.mock_observations
-        obs_abs, _ = env_interface_abs.__getitem__(motor_system_abs())
+        obs_abs, _ = env_interface_abs.step(motor_system_abs())
         camera_obs_abs = obs_abs[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_abs[SENSORS[0]] == initial_camera_obs_abs[SENSORS[0]])
@@ -272,7 +272,7 @@ class HabitatDataTest(unittest.TestCase):
         # Check if datasets are getting observations from simulator
         mock_sim_surf.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, DATASET_LEN):
-            obs_surf, _ = env_interface_surf.__getitem__(motor_system_surf())
+            obs_surf, _ = env_interface_surf.step(motor_system_surf())
             camera_obs_surf = obs_surf[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_surf[SENSORS[0]] == EXPECTED_STATES[i]))
 
@@ -285,7 +285,7 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if dataset actions affect simulator observations
         mock_sim_surf.get_sensor_observations.side_effect = self.mock_observations
-        obs_surf, _ = env_interface_surf.__getitem__(motor_system_surf())
+        obs_surf, _ = env_interface_surf.step(motor_system_surf())
         camera_obs_surf = obs_surf[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_surf[SENSORS[0]] == initial_camera_obs_surf[SENSORS[0]])
