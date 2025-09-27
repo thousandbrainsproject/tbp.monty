@@ -64,6 +64,7 @@ class EnvironmentDataLoader:
     Attributes:
         env: An instance of a class that implements :class:`EmbodiedEnvironment`.
         motor_system: :class:`MotorSystem`
+        rng: Random number generator to use.
         transform: Callable used to transform the observations returned by
             the environment.
 
@@ -87,9 +88,13 @@ class EnvironmentDataLoader:
                 f"motor_system must be an instance of MotorSystem, got {motor_system}"
             )
         self.env = env
-        self.transform = transform
         self.motor_system = motor_system
         self.rng = rng
+        self.transform = transform
+        if self.transform is not None:
+            for t in self.transform:
+                if t.needs_rng:
+                    t.rng = self.rng
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
@@ -772,6 +777,7 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         versions,
         env: EmbodiedEnvironment,
         motor_system: MotorSystem,
+        rng,
         transform=None,
         *args,
         **kwargs,
@@ -784,6 +790,7 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
             versions: List of versions.
             env: An instance of a class that implements :class:`EmbodiedEnvironment`.
             motor_system: The motor system.
+            rng: Random number generator to use.
             transform: Callable used to transform the observations returned
                  by the environment.
 
@@ -798,8 +805,13 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
                 f"motor_system must be an instance of MotorSystem, got {motor_system}"
             )
         self.env = env
-        self.transform = transform
+        self.rng = rng
         self.motor_system = motor_system
+        self.transform = transform
+        if self.transform is not None:
+            for t in self.transform:
+                if t.needs_rng:
+                    t.rng = self.rng
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
@@ -866,6 +878,7 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         versions,
         env: EmbodiedEnvironment,
         motor_system: MotorSystem,
+        rng,
         transform=None,
         *args,
         **kwargs,
@@ -877,6 +890,7 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
             versions: List of versions
             env: An instance of a class that implements :class:`EmbodiedEnvironment`.
             motor_system: The motor system.
+            rng: Random number generator to use.
             transform: Callable used to transform the observations returned by
                 the environment.
             *args: Additional arguments
@@ -890,8 +904,13 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
                 f"motor_system must be an instance of MotorSystem, got {motor_system}"
             )
         self.env = env
-        self.transform = transform
+        self.rng = rng
         self.motor_system = motor_system
+        self.transform = transform
+        if self.transform is not None:
+            for t in self.transform:
+                if t.needs_rng:
+                    t.rng = self.rng
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
@@ -959,6 +978,7 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         self,
         env: EmbodiedEnvironment,
         motor_system: MotorSystem,
+        rng,
         transform=None,
         *args,
         **kwargs,
@@ -968,6 +988,7 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         Args:
             env: An instance of a class that implements :class:`EmbodiedEnvironment`.
             motor_system: The motor system.
+            rng: Random number generator to use.
             transform: Callable used to transform the observations returned by
                 the environment.
             *args: Additional arguments
@@ -982,8 +1003,13 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
             )
         # TODO: call super init instead of duplication code & generally clean up more
         self.env = env
-        self.transform = transform
+        self.rng = rng
         self.motor_system = motor_system
+        self.transform = transform
+        if self.transform is not None:
+            for t in self.transform:
+                if t.needs_rng:
+                    t.rng = self.rng
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
