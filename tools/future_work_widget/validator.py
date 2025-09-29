@@ -38,21 +38,11 @@ class ValidationError:
 class RecordValidator:
     """Validates and transforms records for the future work widget."""
 
-    COMMA_SEPARATED_FIELDS = ["tags", "owner", "skills"]
+    COMMA_SEPARATED_FIELDS = ["tags", "skills"]
+    CUSTOM_VALIDATION_FIELDS = ["rfc", "owner"]
     MAX_COMMA_SEPARATED_ITEMS = 10
     # add in required values once the future work docs are populated.
     REQUIRED_FIELDS: list[str] = []
-
-    REGEX_PATTERNS = {
-        "owner": [r"[a-zA-Z0-9][a-zA-Z0-9-]{0,38}"],
-        "rfc": [
-            r"https://github\.com/thousandbrainsproject/tbp\.monty/.*",
-            r"required",
-            r"optional",
-            r"not-required",
-            r"unknown",
-        ],
-    }
 
 
     def __init__(self, docs_snippets_dir: Path):
@@ -79,8 +69,40 @@ class RecordValidator:
         errors = []
         self._validate_comma_separated_fields(record_copy, file_path, errors)
         self._validate_required_fields(record_copy, file_path, errors)
+        self._validate_custom_fields(record_copy, file_path, errors)
         self._validate_field_values(record_copy, file_path, errors)
         return (None, errors) if errors else (record_copy, errors)
+
+    def _process_comma_separated_field(
+        self,
+        field_name: str,
+        field_value: str,
+        file_path: str,
+        errors: list[ValidationError],
+    ) -> list[str] | None:
+        """Process a comma-separated field and validate its length.
+
+        Args:
+            field_name: Name of the field being processed
+            field_value: The comma-separated string value
+            file_path: Path to the source file for error reporting
+            errors: List to append validation errors to
+
+        Returns:
+            List of processed items, or None if validation failed
+        """
+        items = [item.strip() for item in field_value.split(",")]
+        if len(items) > self.MAX_COMMA_SEPARATED_ITEMS:
+            self._add_validation_error(
+                f"{field_name} field cannot have more than "
+                f"{self.MAX_COMMA_SEPARATED_ITEMS} items. "
+                f"Got {len(items)} items: {', '.join(items)}",
+                file_path,
+                field_name,
+                errors,
+            )
+            return None
+        return items
 
     def _validate_comma_separated_fields(
         self,
@@ -97,17 +119,11 @@ class RecordValidator:
         """
         for field in self.COMMA_SEPARATED_FIELDS:
             if field in record and isinstance(record[field], str):
-                items = [tag.strip() for tag in record[field].split(",")]
-                if len(items) > self.MAX_COMMA_SEPARATED_ITEMS:
-                    self._add_validation_error(
-                        f"{field} field cannot have more than "
-                        f"{self.MAX_COMMA_SEPARATED_ITEMS} items. "
-                        f"Got {len(items)} items: {', '.join(items)}",
-                        file_path,
-                        field,
-                        errors,
-                    )
-                record[field] = items
+                processed_items = self._process_comma_separated_field(
+                    field, record[field], file_path, errors
+                )
+                if processed_items is not None:
+                    record[field] = processed_items
 
     def _validate_required_fields(
         self, record: dict[str, Any], file_path: str, errors: list[ValidationError]
@@ -138,6 +154,100 @@ class RecordValidator:
                     errors,
                 )
                 continue
+
+    def _validate_custom_fields(
+        self, record: dict[str, Any], file_path: str, errors: list[ValidationError]
+    ) -> None:
+        """Validate fields that use custom validation logic."""
+        for field_name in self.CUSTOM_VALIDATION_FIELDS:
+            if field_name not in record:
+                continue
+
+            if field_name == "rfc":
+                self._validate_rfc(record, file_path, errors)
+            elif field_name == "owner":
+                self._validate_owner(record, file_path, errors)
+
+    def _validate_rfc(
+        self, record: dict[str, Any], file_path: str, errors: list[ValidationError]
+    ) -> None:
+        """Validate the rfc field against its specific patterns."""
+        if "rfc" not in record:
+            return
+
+        rfc_value = record["rfc"]
+        if not isinstance(rfc_value, str):
+            self._add_validation_error(
+                f"rfc field must be a string, got {type(rfc_value).__name__}",
+                file_path,
+                "rfc",
+                errors,
+            )
+            return
+
+        sanitized_value = nh3.clean(rfc_value).strip()
+        rfc_patterns = [
+            r"https://github\.com/thousandbrainsproject/tbp\.monty/.*",
+            r"required",
+            r"optional",
+            r"not-required",
+            r"unknown",
+        ]
+
+        if not any(re.fullmatch(pattern, sanitized_value) for pattern in rfc_patterns):
+            valid_options = (
+                "a GitHub URL, 'required', 'optional', 'not-required', or 'unknown'"
+            )
+            self._add_validation_error(
+                f"Invalid rfc value '{sanitized_value}'. Must be {valid_options}",
+                file_path,
+                "rfc",
+                errors,
+            )
+
+    def _validate_owner(
+        self, record: dict[str, Any], file_path: str, errors: list[ValidationError]
+    ) -> None:
+        """Validate and process the owner field as comma-separated GitHub usernames."""
+        if "owner" not in record:
+            return
+
+        owner_value = record["owner"]
+        if not isinstance(owner_value, str):
+            self._add_validation_error(
+                f"owner field must be a string, got {type(owner_value).__name__}",
+                file_path,
+                "owner",
+                errors,
+            )
+            return
+
+        owners = self._process_comma_separated_field(
+            "owner", owner_value, file_path, errors
+        )
+        if owners is None:
+            return
+
+        owner_pattern = r"[a-zA-Z0-9][a-zA-Z0-9-]{0,38}"
+        invalid_owners = []
+
+        for owner in owners:
+            sanitized_owner = nh3.clean(owner).strip()
+            if not re.fullmatch(owner_pattern, sanitized_owner):
+                invalid_owners.append(sanitized_owner)
+
+        if invalid_owners:
+            self._add_validation_error(
+                f"Invalid owner username(s): {', '.join(invalid_owners)}. "
+                f"Must be valid GitHub usernames (1-39 characters, "
+                f"alphanumeric and hyphens, cannot start with hyphen)",
+                file_path,
+                "owner",
+                errors,
+            )
+            return
+
+        record["owner"] = owners
 
     def _add_validation_error(
         self, message: str, file_path: str, field: str, errors: list[ValidationError]
@@ -172,10 +282,10 @@ class RecordValidator:
         for file_path in future_work_files:
             field_name = file_path.stem.replace("future-work-", "")
 
-            if field_name in self.REGEX_PATTERNS:
+            if field_name in self.CUSTOM_VALIDATION_FIELDS:
                 logger.debug(
-                    f"Skipping {file_path.name} - using hardcoded regex "
-                    f"patterns for '{field_name}'"
+                    f"Skipping {file_path.name} - using custom validation "
+                    f"logic for '{field_name}'"
                 )
                 continue
 
@@ -197,8 +307,7 @@ class RecordValidator:
 
     def _get_all_validation_fields(self) -> set[str]:
         exact_keys = set(self.exact_values.keys())
-        regex_keys = set(self.REGEX_PATTERNS.keys())
-        return exact_keys | regex_keys
+        return exact_keys - set(self.CUSTOM_VALIDATION_FIELDS)
 
     def _normalize_values_to_list(self, record_values: Any) -> list[Any]:
         """Convert single values to list format for consistent processing.
@@ -222,14 +331,7 @@ class RecordValidator:
             True if the value is valid, False otherwise
         """
         if field_name in self.exact_values:
-            if sanitized_value in self.exact_values[field_name]:
-                return True
-
-        if field_name in self.REGEX_PATTERNS:
-            return any(
-                re.fullmatch(pattern, sanitized_value)
-                for pattern in self.REGEX_PATTERNS[field_name]
-            )
+            return sanitized_value in self.exact_values[field_name]
 
         return False
 

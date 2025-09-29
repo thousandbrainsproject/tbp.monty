@@ -153,7 +153,7 @@ class TestRecordValidator(unittest.TestCase):
 
         result, errors = validator.validate(record)
 
-        self.assertIsNotNone(result)
+        self.assertIsNone(result)
         self.assertEqual(len(errors), 1)
         self.assertIn("tags field cannot have more than", errors[0].message)
         self.assertIn(str(max_items), errors[0].message)

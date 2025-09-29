@@ -258,7 +258,7 @@ class TestBuild(unittest.TestCase):
 
         self.assertIsNotNone(result)
         self.assertFalse(result["success"])
-        self.assertEqual(result["processed_items"], 1)
+        self.assertEqual(result["processed_items"], 0)
         self.assertEqual(result["total_items"], 1)
         self.assertEqual(len(result["errors"]), 1)
 
@@ -294,7 +294,7 @@ class TestBuild(unittest.TestCase):
 
         self.assertIsNotNone(result)
         self.assertFalse(result["success"])
-        self.assertEqual(result["processed_items"], 1)
+        self.assertEqual(result["processed_items"], 0)
         self.assertEqual(result["total_items"], 1)
         self.assertEqual(len(result["errors"]), 1)
 
