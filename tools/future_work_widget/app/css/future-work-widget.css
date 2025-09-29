@@ -67,7 +67,7 @@ body {
 #searchInput {
   width: 100%;
   padding: 3px 6px;
-  padding-right: 35px;
+  padding-right: 70px;
   font-size: 1rem;
   border: 2px solid #ddd;
   border-radius: 8px;
@@ -111,6 +111,37 @@ body {
 
 .clear-link:active {
   background-color: #e0e0e0;
+}
+
+.copy-url-link {
+  position: absolute;
+  right: 35px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: #999;
+  text-decoration: none;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.copy-url-link:hover {
+  background-color: #f0f0f0;
+  color: #666;
+  text-decoration: none;
+}
+
+.copy-url-link:active {
+  background-color: #e0e0e0;
+}
+
+.copy-url-link.success {
+  color: #4ec04e;
 }
 
 .svg-inline--fa {

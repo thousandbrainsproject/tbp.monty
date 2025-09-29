@@ -269,6 +269,28 @@ const FutureWorkWidget = {
       });
     }
 
+    const copyUrlLink = document.getElementById('copyUrl');
+    if (copyUrlLink) {
+      copyUrlLink.addEventListener('click', async (e) => {
+        e.preventDefault();
+        try {
+          await navigator.clipboard.writeText(window.location.href);
+          copyUrlLink.textContent = '✅';
+          copyUrlLink.classList.add('success');
+          setTimeout(() => {
+            copyUrlLink.textContent = '🔗';
+            copyUrlLink.classList.remove('success');
+          }, 1500);
+        } catch (err) {
+          console.error('Failed to copy URL to clipboard:', err);
+          copyUrlLink.textContent = '❌';
+          setTimeout(() => {
+            copyUrlLink.textContent = '🔗';
+          }, 1500);
+        }
+      });
+    }
+
     document.addEventListener('click', (e) => {
       const searchValue = e.target.dataset.searchValue;
       if (searchValue) {
