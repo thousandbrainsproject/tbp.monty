@@ -109,7 +109,7 @@ html_theme_options = {
         },
         {
             "name": "Bluesky",
-            "url": "https://bsky.app/profile/1000brainsproj.bsky.social",
+            "url": "https://bsky.app/profile/thousandbrains.org",
             "icon": "fa-brands fa-bluesky",
         },
         {
