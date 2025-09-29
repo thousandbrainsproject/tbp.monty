@@ -41,13 +41,13 @@ function addToSearch(value) {
 
 function updateUrlSearchParam(searchTerm) {
   const url = new URL(window.location);
-  
+
   if (searchTerm.trim()) {
     url.searchParams.set('q', searchTerm.trim());
   } else {
     url.searchParams.delete('q');
   }
-  
+
   window.history.replaceState({}, '', url);
 }
 
