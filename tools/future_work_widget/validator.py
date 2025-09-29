@@ -48,7 +48,6 @@ class RecordValidator:
     # add in required values once the future work docs are populated.
     REQUIRED_FIELDS: list[str] = []
 
-
     def __init__(self, docs_snippets_dir: Path):
         self.exact_values: dict[str, list[str]] = {}
         self._load_validation_files(docs_snippets_dir)
