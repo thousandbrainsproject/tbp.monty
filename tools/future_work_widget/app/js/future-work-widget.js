@@ -39,6 +39,25 @@ function addToSearch(value) {
 }
 
 
+function updateUrlSearchParam(searchTerm) {
+  const url = new URL(window.location);
+  
+  if (searchTerm.trim()) {
+    url.searchParams.set('q', searchTerm.trim());
+  } else {
+    url.searchParams.delete('q');
+  }
+  
+  window.history.replaceState({}, '', url);
+}
+
+
+function getInitialSearchTerm() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get('q') || '';
+}
+
+
 const ColumnFormatters = {
 
   formatArrayOrStringColumn(value, cssClass) {
@@ -202,10 +221,15 @@ const FutureWorkWidget = {
       return;
     }
 
-    searchInput.addEventListener('input', (e) => {
-      const searchTerm = e.target.value.toLowerCase().trim();
+    const initialSearchTerm = getInitialSearchTerm();
+    if (initialSearchTerm) {
+      searchInput.value = initialSearchTerm;
+    }
 
-      if (!searchTerm) {
+    const performSearch = (searchTerm) => {
+      const trimmedTerm = searchTerm.toLowerCase().trim();
+
+      if (!trimmedTerm) {
         table.clearFilter();
         return;
       }
@@ -219,11 +243,31 @@ const FutureWorkWidget = {
           .join(' ')
           .toLowerCase();
 
-        return searchTerm
+        return trimmedTerm
           .split(/\s+/)
           .every(word => searchableText.includes(word));
       });
+    };
+
+    if (initialSearchTerm) {
+      performSearch(initialSearchTerm);
+    }
+
+    searchInput.addEventListener('input', (e) => {
+      const searchTerm = e.target.value;
+      updateUrlSearchParam(searchTerm);
+      performSearch(searchTerm);
     });
+
+    const clearLink = document.getElementById('clearSearch');
+    if (clearLink) {
+      clearLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        searchInput.value = '';
+        updateUrlSearchParam('');
+        table.clearFilter();
+      });
+    }
 
     document.addEventListener('click', (e) => {
       const searchValue = e.target.dataset.searchValue;

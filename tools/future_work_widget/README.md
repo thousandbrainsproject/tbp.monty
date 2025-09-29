@@ -74,3 +74,21 @@ Controls which columns are displayed in the table.
 
 **Note:** Column names are case-insensitive and whitespace around commas is ignored.
 
+### `q`
+Sets the initial search term and enables shareable search URLs.
+
+**Usage:** `?q=search+term`
+
+**Behavior:**
+- The search term is automatically populated in the search box when the page loads
+- The table is filtered based on the search term on initial load
+- As you type in the search box, the URL is updated to reflect the current search
+- URLs with search terms can be shared with others
+
+**Examples:**
+- Search for "learning": `?q=learning`
+- Search for multiple terms: `?q=learning+module`
+- Combined with columns: `?columns=title,status&q=performance`
+
+**Note:** The search parameter supports the same multi-word filtering as the search box (all words must be found somewhere in the searchable text).
+
