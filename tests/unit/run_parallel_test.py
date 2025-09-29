@@ -77,7 +77,6 @@ class RunParallelTest(unittest.TestCase):
                     )
                 ),
             ),
-            dataset_class=ED.EnvironmentDataset,
             dataset_args=PatchViewFinderMountHabitatDatasetArgs(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
