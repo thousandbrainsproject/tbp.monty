@@ -10,6 +10,13 @@
 
 import pytest
 
+from tbp.monty.frameworks.experiments.pretraining_experiments import (
+    MontySupervisedObjectPretrainingExperiment,
+)
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+    EvidenceGraphLM,
+)
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -36,7 +43,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
     MontyFeatureGraphArgs,
     PatchAndViewMontyConfig,
+    PretrainLoggingConfig,
     SurfaceAndViewMontyConfig,
+    TwoLMStackedMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataLoaderPerObjectEvalArgs,
@@ -67,9 +76,11 @@ from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsFiveLMMount,
     EnvInitArgsPatchViewMount,
     EnvInitArgsSurfaceViewMount,
+    EnvInitArgsTwoLMDistantStackedMount,
     FiveLMMountHabitatDatasetArgs,
     PatchViewFinderMountHabitatDatasetArgs,
     SurfaceViewFinderMountHabitatDatasetArgs,
+    TwoLMStackedDistantMountHabitatDatasetArgs,
 )
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
@@ -162,6 +173,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         super().setUp()
 
         self.output_dir = tempfile.mkdtemp()
+        self.compositional_save_path = tempfile.mkdtemp()
 
         base = dict(
             experiment_class=MontyObjectRecognitionExperiment,
@@ -554,6 +566,43 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             "patch_4": default_multi_feat_lm_tolerances
         }
 
+        two_stacked_constrained_lms_config = dict(
+            learning_module_0=dict(
+                learning_module_class=EvidenceGraphLM,
+                learning_module_args=dict(
+                    max_match_distance=0.001,
+                    tolerances={
+                        "patch_0": {
+                            "hsv": np.array([0.1, 1, 1]),
+                            "principal_curvatures_log": np.ones(2),
+                        }
+                    },
+                    feature_weights={},
+                    max_graph_size=0.3,
+                    num_model_voxels_per_dim=200,
+                    max_nodes_per_graph=2000,
+                    object_evidence_threshold=20,
+                ),
+            ),
+            learning_module_1=dict(
+                learning_module_class=EvidenceGraphLM,
+                learning_module_args=dict(
+                    max_match_distance=0.001,
+                    tolerances={
+                        "patch_1": {
+                            "hsv": np.array([0.1, 1, 1]),
+                            "principal_curvatures_log": np.ones(2),
+                        },
+                        "learning_module_0": {"object_id": 1},
+                    },
+                    feature_weights={"learning_module_0": {"object_id": 1}},
+                    max_graph_size=0.4,
+                    num_model_voxels_per_dim=200,
+                    max_nodes_per_graph=2000,
+                ),
+            ),
+        )
+
         feature_5lm_config = copy.deepcopy(base)
         feature_5lm_config.update(
             experiment_args=ExperimentArgs(
@@ -582,6 +631,64 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             ),
         )
 
+        two_stacked_lms_config = copy.deepcopy(base)
+        two_stacked_lms_config.update(
+            experiment_args=ExperimentArgs(
+                max_train_steps=30, max_eval_steps=30, max_total_steps=60, do_eval=False
+            ),
+            logging_config=PretrainLoggingConfig(
+                output_dir=self.compositional_save_path,
+                python_log_level="INFO",
+            ),
+            experiment_class=MontySupervisedObjectPretrainingExperiment,
+            monty_config=TwoLMStackedMontyConfig(
+                monty_args=MontyArgs(num_exploratory_steps=50),
+                learning_module_configs=two_stacked_constrained_lms_config,
+            ),
+            dataset_args=TwoLMStackedDistantMountHabitatDatasetArgs(
+                env_init_args=EnvInitArgsTwoLMDistantStackedMount(
+                    data_path=None,
+                ).__dict__,
+            ),
+        )
+
+        two_stacked_semisupervised_lms_config = copy.deepcopy(two_stacked_lms_config)
+        two_stacked_semisupervised_lms_config.update(
+            experiment_args=ExperimentArgs(
+                do_eval=False,
+                supervised_lm_ids=["learning_module_1"],
+                min_lms_match=2,
+                model_name_or_path=self.compositional_save_path + "/pretrained",
+            ),
+            monty_config=TwoLMStackedMontyConfig(
+                # set min_train_steps to 50 to send more observations to LM_1 after LM_0
+                # has recognized the object.
+                monty_args=MontyArgs(min_train_steps=200, num_exploratory_steps=0),
+                learning_module_configs=two_stacked_constrained_lms_config,
+            ),
+        )
+
+        two_stacked_lms_eval_config = copy.deepcopy(two_stacked_lms_config)
+        two_stacked_lms_eval_config.update(
+            experiment_args=ExperimentArgs(
+                do_train=False,
+                min_lms_match=1,
+                model_name_or_path=self.compositional_save_path + "/pretrained",
+            ),
+            logging_config=LoggingConfig(
+                output_dir=self.output_dir,
+                python_log_level="INFO",
+            ),
+            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
+                object_names=["capsule3DSolid"],
+                object_init_sampler=PredefinedObjectInitializer(),
+                parent_to_child_mapping={
+                    "capsule3DSolid": "capsule3DSolid",
+                    "cubeSolid": "cubeSolid",
+                },
+            ),
+        )
+
         self.base_config = base
         self.surface_agent_eval_config = surface_agent_eval_config
         self.ppf_config = ppf_pred_tests
@@ -596,6 +703,11 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         self.feat_test_uniform_initial_poses = feat_test_uniform_initial_poses
         self.ppf_displacement_5lm_config = ppf_displacement_5lm_config
         self.feature_5lm_config = feature_5lm_config
+        self.two_stacked_lms_config = two_stacked_lms_config
+        self.two_stacked_semisupervised_lms_config = (
+            two_stacked_semisupervised_lms_config
+        )
+        self.two_stacked_lms_eval_config = two_stacked_lms_eval_config
 
         pprint("\n\nCONFIG:\n\n")
         for key, val in self.base_config.items():
@@ -1787,6 +1899,82 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             eval_stats, num_lms=5, min_done=3, num_episodes=1
         )
 
+    def test_semisupervised_stacked_lms_experiment(self):
+        """Test two LMs stacked on top of each other with semisupervised learning.
+
+        First, both LMs learn with supervision. Then, we remove the supervision for LM_0
+        and only supervised LM_1 to learn a compositional object.
+        Last, we load the learned models and evaluate on them.
+
+        NOTE: It's not ideal to test compositional scenarios since we don't have access
+        to compositional objects in the unit tests. So we are pretending that the cube
+        and capsule are compositional and extending the graphs with the classification
+        from LM_0 of the same object.
+
+        NOTE: This test also implicitly tests a bunch of other things, such as:
+        - Extending grid object models after loading them
+        - Extending a graph with a new input channel
+        - logging prediction errors
+        - logging performance based on parent-child mappings
+        """
+        pprint("...parsing experiment to train supervised...")
+        config = copy.deepcopy(self.two_stacked_lms_config)
+        with MontySupervisedObjectPretrainingExperiment(config) as exp:
+            exp.model.set_experiment_mode("train")
+
+            pprint("... supervised training...")
+            exp.train()
+            print("done with supervised training, learned:")
+            # ['capsule3DSolid', 'cubeSolid']
+            print(exp.model.learning_modules[0].get_all_known_object_ids())
+
+        pprint("...parsing experiment to train semisupervised...")
+        config = copy.deepcopy(self.two_stacked_semisupervised_lms_config)
+        with MontySupervisedObjectPretrainingExperiment(config) as exp:
+            exp.model.set_experiment_mode("train")
+            print("current graphs in memory:")
+            print(
+                exp.model.learning_modules[0].graph_memory.get_graph(
+                    graph_id="capsule3DSolid"
+                )
+            )
+
+            pprint("... semisupervised training...")
+            exp.train()
+            print("done with supervised training, learned:")
+            print(exp.model.learning_modules[0].get_all_known_object_ids())
+
+        pprint("...parsing experiment to evaluate hierarchical LMs...")
+        config = copy.deepcopy(self.two_stacked_lms_eval_config)
+        with MontyObjectRecognitionExperiment(config) as exp:
+            pprint("... evaluating...")
+            print("graphs in memory after comp learning:")
+            # Check that both patch_1 and learning_module_0 input channels are in the
+            # learned graphs
+            self.assertIn(
+                "patch_1",
+                exp.model.learning_modules[1].graph_memory.get_graph(
+                    graph_id="capsule3DSolid"
+                ),
+            )
+            self.assertIn(
+                "learning_module_0",
+                exp.model.learning_modules[1].graph_memory.get_graph(
+                    graph_id="capsule3DSolid"
+                ),
+            )
+            print(
+                exp.model.learning_modules[1].graph_memory.get_graph(
+                    graph_id="capsule3DSolid"
+                )
+            )
+            exp.evaluate()
+            pprint("... loading and checking eval statistics...")
+            eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+            print(eval_stats)
+            self.check_multilm_eval_results(
+                eval_stats, num_lms=2, min_done=1, num_episodes=1
+            )
 
 if __name__ == "__main__":
     unittest.main()
