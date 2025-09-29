@@ -73,7 +73,6 @@ world_image_on_scanned_model = dict(
         # Take larger steps (move 20 pixels at a time)
         motor_system_config=MotorSystemConfigInformedNoTransStepS20(),
     ),
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=WorldImageDatasetArgs(
         env_init_args=EnvInitArgsMontyWorldStandardScenes()
     ),
