@@ -2,11 +2,12 @@
 
 A tool that
 
-1. processes an index.json that is produced by the github_readme_sync tool and converts it into a format consumable by the widget
+1. Processes a JSON file that is produced by the github_readme_sync tool and converts it into a format consumable by the widget.
+2. Contains a simple single page app that uses that processed JSON file to construct a dynamic filterable HTML table.
 
 ## Setup
 
-First, ensure you setup Monty. See [Getting Started - 2. Set up Your Environment](https://thousandbrainsproject.readme.io/docs/getting-started#2-set-up-your-environment).
+First, ensure you've setup Monty. See [Getting Started - 2. Set up Your Environment](https://thousandbrainsproject.readme.io/docs/getting-started#2-set-up-your-environment).
 
 Next, from the root Monty directory, install this tool's dependencies:
 
@@ -17,8 +18,10 @@ pip install -e '.[future_work_widget_tool]'
 ## Usage
 
 ```
-python -m tools.future_work_widget.cli build /tmp/index.json tools/future_work_widget/app --help
-usage: cli.py build [-h] [--docs-snippets-dir DOCS_SNIPPETS_DIR] index_file output_dir
+python -m tools.future_work_widget.cli --help
+usage: cli.py [-h] [--docs-snippets-dir DOCS_SNIPPETS_DIR] index_file output_dir
+
+Build the data and package the future work widget.
 
 positional arguments:
   index_file            The JSON file to validate and transform
@@ -27,7 +30,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --docs-snippets-dir DOCS_SNIPPETS_DIR
-                        Optional path to docs/snippets directory for validation files
+                        Optional path to a snippets directory for validation files
 ```
 
 
@@ -42,5 +45,10 @@ pytest -n 0 tools/future_work_widget
 To try the tool out simply run the following command from the tbp.monty directory:
 
 ```
-source tools/future_work_widget/run-local.sh
+./tools/future_work_widget/run-local.sh
 ```
+
+And then point you browser to http://localhost:8080
+
+## Widget Configuration
+

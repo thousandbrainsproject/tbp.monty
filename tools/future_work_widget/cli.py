@@ -31,7 +31,7 @@ def main():
     )
     parser.add_argument(
         "--docs-snippets-dir",
-        help="Optional path to docs/snippets directory for validation files",
+        help="Optional path to a snippets directory for validation files",
         default="docs/snippets",
     )
 
