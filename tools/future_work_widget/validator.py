@@ -62,27 +62,42 @@ class RecordValidator:
     def validate(
         self, record: dict[str, Any]
     ) -> tuple[dict[str, Any] | None, list[ValidationError]]:
-        """Validate and transform a record.
+        """Validate a record.
 
         Args:
-            record: The record to validate and transform
+            record: The record to validate
 
         Returns:
-            Tuple of (transformed record if valid or None if invalid,
-            list of validation errors)
+            Tuple of (record or None if there are errors, list of validation errors)
         """
         if record.get("path1") != "future-work" or "path2" not in record:
             return None, []
 
-        transformed_record = record.copy()
+        record_copy = record.copy()
         file_path = record.get("path")
 
         errors = []
+        self._validate_comma_separated_fields(record_copy, file_path, errors)
+        self._validate_required_fields(record_copy, file_path, errors)
+        self._validate_field_values(record_copy, file_path, errors)
+        return (None, errors) if errors else (record_copy, errors)
+
+    def _validate_comma_separated_fields(
+        self,
+        record: dict[str, Any],
+        file_path: str,
+        errors: list[ValidationError],
+    ) -> None:
+        """Process comma-separated fields by validating and transforming them.
+
+        Args:
+            record: The record being transformed (modified in place)
+            file_path: Path to the source file for error reporting
+            errors: List to append validation errors to
+        """
         for field in self.COMMA_SEPARATED_FIELDS:
-            if field in transformed_record and isinstance(
-                transformed_record[field], str
-            ):
-                items = [tag.strip() for tag in transformed_record[field].split(",")]
+            if field in record and isinstance(record[field], str):
+                items = [tag.strip() for tag in record[field].split(",")]
                 if len(items) > self.MAX_COMMA_SEPARATED_ITEMS:
                     self._add_validation_error(
                         f"{field} field cannot have more than "
@@ -92,11 +107,7 @@ class RecordValidator:
                         field,
                         errors,
                     )
-                transformed_record[field] = items
-        self._validate_required_fields(transformed_record, file_path, errors)
-        self._validate_field_values(transformed_record, file_path, errors)
-
-        return transformed_record, errors
+                record[field] = items
 
     def _validate_required_fields(
         self, record: dict[str, Any], file_path: str, errors: list[ValidationError]
@@ -126,6 +137,7 @@ class RecordValidator:
                     field,
                     errors,
                 )
+                continue
 
     def _add_validation_error(
         self, message: str, file_path: str, field: str, errors: list[ValidationError]
@@ -183,6 +195,65 @@ class RecordValidator:
                     f"'{field_name}' from {file_path.name}"
                 )
 
+    def _get_all_validation_fields(self) -> set[str]:
+        exact_keys = set(self.exact_values.keys())
+        regex_keys = set(self.REGEX_PATTERNS.keys())
+        return exact_keys | regex_keys
+
+    def _normalize_values_to_list(self, record_values: Any) -> list[Any]:
+        """Convert single values to list format for consistent processing.
+
+        Args:
+            record_values: The values from the record (single value or list)
+
+        Returns:
+            List of values to validate
+        """
+        return record_values if isinstance(record_values, list) else [record_values]
+
+    def _is_value_valid(self, field_name: str, sanitized_value: str) -> bool:
+        """Check if a value is valid for a given field.
+
+        Args:
+            field_name: The field being validated
+            sanitized_value: The cleaned value to check
+
+        Returns:
+            True if the value is valid, False otherwise
+        """
+        if field_name in self.exact_values:
+            if sanitized_value in self.exact_values[field_name]:
+                return True
+
+        if field_name in self.REGEX_PATTERNS:
+            return any(
+                re.fullmatch(pattern, sanitized_value)
+                for pattern in self.REGEX_PATTERNS[field_name]
+            )
+
+        return False
+
+    def _create_validation_error_message(
+        self, field_name: str, sanitized_value: str
+    ) -> str:
+        """Create an appropriate error message for an invalid field value.
+
+        Args:
+            field_name: The field that failed validation
+            sanitized_value: The invalid value
+
+        Returns:
+            Error message string
+        """
+        readable_values = self._extract_readable_values(field_name)
+        if readable_values:
+            values_str = ", ".join(readable_values)
+            return (
+                f"Invalid {field_name} value '{sanitized_value}'. "
+                f"Valid values are: {values_str}"
+            )
+        return f"Invalid {field_name} value '{sanitized_value}'"
+
     def _validate_field_values(
         self, record: dict[str, Any], file_path: str, errors: list[ValidationError]
     ) -> None:
@@ -193,45 +264,23 @@ class RecordValidator:
             file_path: Path to the source file for error reporting
             errors: List to append validation errors to
         """
-        # Check all fields that have validation rules
-        exact_keys = set(self.exact_values.keys())
-        regex_keys = set(self.REGEX_PATTERNS.keys())
-        all_field_names = exact_keys | regex_keys
+        all_field_names = self._get_all_validation_fields()
 
         for field_name in all_field_names:
-            if field_name in record:
-                record_values = record[field_name]
+            if field_name not in record:
+                continue
 
-                values_to_check = (
-                    record_values
-                    if isinstance(record_values, list)
-                    else [record_values]
-                )
+            values_to_check = (
+                record[field_name]
+                if isinstance(record[field_name], list)
+                else [record[field_name]]
+            )
 
-                for value in values_to_check:
-                    sanitized_value = nh3.clean(str(value)).strip()
-                    is_valid = False
+            for value in values_to_check:
+                sanitized_value = nh3.clean(str(value)).strip()
 
-                    if field_name in self.exact_values:
-                        is_valid = sanitized_value in self.exact_values[field_name]
-
-                    if not is_valid and field_name in self.REGEX_PATTERNS:
-                        is_valid = any(
-                            re.fullmatch(pattern, sanitized_value)
-                            for pattern in self.REGEX_PATTERNS[field_name]
-                        )
-
-                    if not is_valid:
-                        readable_values = self._extract_readable_values(field_name)
-                        if readable_values:
-                            values_str = ", ".join(readable_values)
-                            message = (
-                                f"Invalid {field_name} value '{sanitized_value}'. "
-                                f"Valid values are: {values_str}"
-                            )
-                        else:
-                            message = f"Invalid {field_name} value '{sanitized_value}'"
-
-                        self._add_validation_error(
-                            message, file_path, field_name, errors
-                        )
+                if not self._is_value_valid(field_name, sanitized_value):
+                    message = self._create_validation_error_message(
+                        field_name, sanitized_value
+                    )
+                    self._add_validation_error(message, file_path, field_name, errors)
