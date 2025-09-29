@@ -38,9 +38,13 @@ class ValidationError:
 class RecordValidator:
     """Validates and transforms records for the future work widget."""
 
+    # fields that can have comma separated values in them.
     COMMA_SEPARATED_FIELDS = ["tags", "skills"]
-    CUSTOM_VALIDATION_FIELDS = ["rfc", "owner"]
     MAX_COMMA_SEPARATED_ITEMS = 10
+
+    # these fields have custom logic to process them
+    CUSTOM_VALIDATION_FIELDS = ["rfc", "owner"]
+
     # add in required values once the future work docs are populated.
     REQUIRED_FIELDS: list[str] = []
 
@@ -228,12 +232,12 @@ class RecordValidator:
         if owners is None:
             return
 
-        owner_pattern = r"[a-zA-Z0-9][a-zA-Z0-9-]{0,38}"
+        github_owner_pattern = r"[a-zA-Z0-9][a-zA-Z0-9-]{0,38}"
         invalid_owners = []
 
         for owner in owners:
             sanitized_owner = nh3.clean(owner).strip()
-            if not re.fullmatch(owner_pattern, sanitized_owner):
+            if not re.fullmatch(github_owner_pattern, sanitized_owner):
                 invalid_owners.append(sanitized_owner)
 
         if invalid_owners:
