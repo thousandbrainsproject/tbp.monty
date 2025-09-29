@@ -101,16 +101,13 @@ body {
   justify-content: center;
   border-radius: 50%;
   transition: all 0.2s ease;
+  opacity:0.5;
 }
 
 .clear-link:hover {
-  background-color: #f0f0f0;
+  opacity: 1;
   color: #666;
   text-decoration: none;
-}
-
-.clear-link:active {
-  background-color: #e0e0e0;
 }
 
 .copy-url-link {
@@ -128,16 +125,13 @@ body {
   justify-content: center;
   border-radius: 50%;
   transition: all 0.2s ease;
+  opacity:0.5;
 }
 
 .copy-url-link:hover {
-  background-color: #f0f0f0;
   color: #666;
   text-decoration: none;
-}
-
-.copy-url-link:active {
-  background-color: #e0e0e0;
+  opacity:1;
 }
 
 .copy-url-link.success {

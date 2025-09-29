@@ -278,14 +278,14 @@ const FutureWorkWidget = {
           copyUrlLink.textContent = '✅';
           copyUrlLink.classList.add('success');
           setTimeout(() => {
-            copyUrlLink.textContent = '🔗';
+            copyUrlLink.textContent = '📋';
             copyUrlLink.classList.remove('success');
           }, 1500);
         } catch (err) {
           console.error('Failed to copy URL to clipboard:', err);
           copyUrlLink.textContent = '❌';
           setTimeout(() => {
-            copyUrlLink.textContent = '🔗';
+            copyUrlLink.textContent = '📋';
           }, 1500);
         }
       });
