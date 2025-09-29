@@ -52,3 +52,25 @@ And then point you browser to http://localhost:8080
 
 ## Widget Configuration
 
+The widget supports URL parameters to customize its display:
+
+### `columns`
+Controls which columns are displayed in the table.
+
+**Usage:** `?columns=column1,column2,column3`
+
+**Available columns:**
+- `title` - The title of the future work item with edit/view links
+- `estimated-scope` - Size estimation (small, medium, large)
+- `rfc` - Related RFC link or reference
+- `status` - Current status with owner avatars
+- `tags` - Categorization tags
+- `skills` - Required skills for the work
+
+**Examples:**
+- Show only title and status: `?columns=title,status`
+- Show title, tags, and skills: `?columns=title,tags,skills`
+- Show all columns (default): No parameter needed
+
+**Note:** Column names are case-insensitive and whitespace around commas is ignored.
+
