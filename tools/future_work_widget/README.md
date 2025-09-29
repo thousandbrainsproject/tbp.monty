@@ -36,3 +36,11 @@ optional arguments:
 ```
 pytest -n 0 tools/future_work_widget
 ```
+
+## Running Locally
+
+To try the tool out simply run the following command from the tbp.monty directory:
+
+```
+source tools/future_work_widget/run-local.sh
+```
