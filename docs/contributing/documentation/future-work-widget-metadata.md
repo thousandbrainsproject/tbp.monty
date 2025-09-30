@@ -34,6 +34,12 @@ What type of improvement does this work provide? [Edit future-work-improved-metr
 
 !snippet[../../snippets/future-work-improved-metric.md]
 
+# Output Type
+
+What type of output will this work produce? [Edit future-work-output-type.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-output-type.md).
+
+!snippet[../../snippets/future-work-output-type.md]
+
 # RFC
 
 Does this work item required an RFC? (These values are processed in the `validator.py` code) and can be of the form:
