@@ -44,7 +44,7 @@ from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
-from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater import (
+from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater import (  # noqa: E501
     ResamplingHypothesesUpdater,
 )
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
@@ -250,7 +250,9 @@ infer_comp_lvl1_with_comp_models_and_resampling.update(
     ),
     monty_config=TwoLMStackedMontyConfig(
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
-        learning_module_configs=two_stacked_constrained_lms_inference_config_with_resampling,
+        learning_module_configs=(
+            two_stacked_constrained_lms_inference_config_with_resampling,
+        ),
         motor_system_config=MotorSystemConfigInformedGoalStateDriven(),
     ),
 )

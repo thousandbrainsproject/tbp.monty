@@ -45,7 +45,7 @@ from tbp.monty.frameworks.environments.logos_on_objs import (
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
-from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater import (
+from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater import (  # noqa: E501
     ResamplingHypothesesUpdater,
 )
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
@@ -306,7 +306,9 @@ supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling.update(
                 policy_args=make_informed_policy_config(
                     action_space_type="distant_agent_no_translation",
                     action_sampler_class=ConstantSampler,
-                    rotation_degrees=2.0,  # As learning with random saccades + hypothesis jumps, make saccades smaller
+                    # As learning with random saccades + hypothesis jumps,
+                    # make saccades smaller
+                    rotation_degrees=2.0,
                     use_goal_state_driven_actions=True,
                 ),
             ),
