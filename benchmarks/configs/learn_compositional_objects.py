@@ -15,8 +15,10 @@ import numpy as np
 
 from benchmarks.configs.names import CompositionalLearningExperiments
 from benchmarks.configs.pretraining_experiments import supervised_pre_training_base
+from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
 from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
+    MotorSystemConfigInformedGoalStateDriven,
     MotorSystemConfigNaiveScanSpiral,
     TwoLMStackedMontyConfig,
     get_cube_face_and_corner_views_rotations,
@@ -28,6 +30,7 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     get_object_names_by_idx,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
+    make_informed_policy_config,
     make_naive_scan_policy_config,
 )
 from tbp.monty.frameworks.environments.logos_on_objs import (
@@ -42,7 +45,11 @@ from tbp.monty.frameworks.environments.logos_on_objs import (
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
-from tbp.monty.frameworks.models.motor_policies import NaiveScanPolicy
+from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater import (
+    ResamplingHypothesesUpdater,
+)
+from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
+from tbp.monty.frameworks.models.motor_policies import InformedPolicy, NaiveScanPolicy
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsTwoLMDistantStackedMount,
     TwoLMStackedDistantMountHabitatDatasetArgs,
@@ -73,7 +80,7 @@ two_stacked_constrained_lms_config = dict(
             max_graph_size=0.3,
             num_model_voxels_per_dim=200,
             max_nodes_per_graph=2000,
-            object_evidence_threshold=20,  # TODO - C: is this reasonable?
+            object_evidence_threshold=20,
         ),
     ),
     learning_module_1=dict(
@@ -97,6 +104,34 @@ two_stacked_constrained_lms_config = dict(
             max_nodes_per_graph=2000,
         ),
     ),
+)
+
+two_stacked_constrained_lms_config_with_resampling = copy.deepcopy(
+    two_stacked_constrained_lms_config
+)
+two_stacked_constrained_lms_config_with_resampling["learning_module_0"][
+    "learning_module_args"
+]["hypotheses_updater_class"] = ResamplingHypothesesUpdater
+two_stacked_constrained_lms_config_with_resampling["learning_module_0"][
+    "learning_module_args"
+]["evidence_threshold_config"] = "all"
+two_stacked_constrained_lms_config_with_resampling["learning_module_0"][
+    "learning_module_args"
+]["object_evidence_threshold"] = 1
+two_stacked_constrained_lms_config_with_resampling["learning_module_0"][
+    "learning_module_args"
+]["gsg_class"] = EvidenceGoalStateGenerator
+two_stacked_constrained_lms_config_with_resampling["learning_module_0"][
+    "learning_module_args"
+]["gsg_args"] = dict(
+    goal_tolerances=dict(
+        location=0.015,
+    ),
+    elapsed_steps_factor=10,
+    min_post_goal_success_steps=20,
+    x_percent_scale_factor=0.75,
+    desired_object_distance=0.03,
+    wait_growth_multiplier=1,  # Since learning, enable more frequent jumps
 )
 
 # ====== Learn Child / Part Objects ======
@@ -257,6 +292,28 @@ supervised_pre_training_objects_with_logos_lvl1_comp_models.update(
     ),
 )
 
+supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling = copy.deepcopy(
+    supervised_pre_training_objects_with_logos_lvl1_comp_models
+)
+
+supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling.update(
+    monty_config=TwoLMStackedMontyConfig(
+        monty_args=MontyArgs(num_exploratory_steps=0, min_train_steps=500),
+        learning_module_configs=two_stacked_constrained_lms_config_with_resampling,
+        motor_system_config=MotorSystemConfigInformedGoalStateDriven(
+            motor_system_args=dict(
+                policy_class=InformedPolicy,
+                policy_args=make_informed_policy_config(
+                    action_space_type="distant_agent_no_translation",
+                    action_sampler_class=ConstantSampler,
+                    rotation_degrees=2.0,  # As learning with random saccades + hypothesis jumps, make saccades smaller
+                    use_goal_state_driven_actions=True,
+                ),
+            ),
+        ),
+    ),
+)
+
 MODEL_PATH_WITH_ALL_CHILD_OBJECTS = os.path.join(
     fe_pretrain_dir,
     "supervised_pre_training_curved_objects_after_flat_and_logo/pretrained/",
@@ -321,6 +378,7 @@ experiments = CompositionalLearningExperiments(
     supervised_pre_training_curved_objects_after_flat_and_logo=supervised_pre_training_curved_objects_after_flat_and_logo,
     supervised_pre_training_objects_with_logos_lvl1_monolithic_models=supervised_pre_training_objects_with_logos_lvl1_monolithic_models,
     supervised_pre_training_objects_with_logos_lvl1_comp_models=supervised_pre_training_objects_with_logos_lvl1_comp_models,
+    supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling=supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling,
     supervised_pre_training_objects_with_logos_lvl2_comp_models=supervised_pre_training_objects_with_logos_lvl2_comp_models,
     supervised_pre_training_objects_with_logos_lvl3_comp_models=supervised_pre_training_objects_with_logos_lvl3_comp_models,
     supervised_pre_training_objects_with_logos_lvl4_comp_models=supervised_pre_training_objects_with_logos_lvl4_comp_models,

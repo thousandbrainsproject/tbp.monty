@@ -145,7 +145,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             "no_label",
             "pose_time_out",
             "time_out",
-            "consistent_child_obj",
+            "consistent_child_obj",  # also counted if LM didn't converge
             "confused_mlh",
             "correct_mlh",
             "no_match",

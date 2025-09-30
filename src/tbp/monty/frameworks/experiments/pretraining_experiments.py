@@ -119,8 +119,6 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                 lm.buffer.stats["detected_scale"] = target["scale"]
             else:
                 # wipe LMs hypotheses so we don't update those models
-                # TODO - C: Do we want to do this in general? Or should we allow these
-                # LMs to keep learning even without labels?
                 lm.detected_object = None
                 lm.detected_pose = None
                 lm.detected_rotation_r = None

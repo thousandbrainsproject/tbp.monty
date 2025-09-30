@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Any, Dict, Literal, Optional, Protocol
 
 import numpy as np
@@ -32,6 +33,7 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
 )
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
     DefaultHypothesesDisplacer,
+    HypothesisDisplacerTelemetry,
 )
 from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
 from tbp.monty.frameworks.utils.graph_matching_utils import (
@@ -46,6 +48,11 @@ logger = logging.getLogger(__name__)
 
 HypothesesUpdateTelemetry = Optional[Dict[str, Any]]
 HypothesesUpdaterTelemetry = Dict[str, Any]
+
+
+@dataclass
+class ChannelHypothesesUpdateTelemetry:
+    channel_hypothesis_displacer_telemetry: HypothesisDisplacerTelemetry
 
 
 class HypothesesUpdater(Protocol):
@@ -209,7 +216,10 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             return []
 
         hypotheses_updates = []
-        mlh_prediction_error = None
+        telemetry: dict[str, Any] = {}
+        channel_hypothesis_displacer_telemetry: dict[
+            str, HypothesisDisplacerTelemetry
+        ] = {}
 
         for input_channel in input_channels_to_use:
             # Determine if the hypothesis space exists
@@ -234,7 +244,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 # We only displace existing hypotheses since the newly sampled
                 # hypotheses should not be affected by the displacement from the last
                 # sensory input.
-                channel_possible_hypotheses, mlh_prediction_error = (
+                channel_possible_hypotheses, channel_hypothesis_displacer_telemetry = (
                     self.hypotheses_displacer.displace_hypotheses_and_compute_evidence(
                         channel_displacement=displacements[input_channel],
                         channel_features=features[input_channel],
@@ -246,8 +256,11 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 )
 
             hypotheses_updates.append(channel_possible_hypotheses)
+            telemetry[input_channel] = ChannelHypothesesUpdateTelemetry(
+                channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry
+            )
 
-        return hypotheses_updates, None, mlh_prediction_error
+        return hypotheses_updates, telemetry
 
     def _get_all_informed_possible_poses(
         self, graph_id: str, sensed_channel_features: dict, input_channel: str

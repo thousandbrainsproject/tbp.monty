@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Protocol, Type
 
 import numpy as np
@@ -32,6 +33,11 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class HypothesisDisplacerTelemetry:
+    mlh_prediction_error: float | None
 
 
 class HypothesesDisplacer(Protocol):
@@ -136,7 +142,7 @@ class DefaultHypothesesDisplacer:
         graph_id: str,
         possible_hypotheses: ChannelHypotheses,
         total_hypotheses_count: int,
-    ) -> tuple[ChannelHypotheses, float | None]:
+    ) -> tuple[ChannelHypotheses, HypothesisDisplacerTelemetry]:
         # Have to do this for all hypotheses so we don't loose the path information
         rotated_displacements = possible_hypotheses.poses.dot(channel_displacement)
         search_locations = possible_hypotheses.locations + rotated_displacements
@@ -194,7 +200,7 @@ class DefaultHypothesesDisplacer:
             evidence=evidence,
             locations=search_locations,
             poses=possible_hypotheses.poses,
-        ), mlh_prediction_error
+        ), HypothesisDisplacerTelemetry(mlh_prediction_error=mlh_prediction_error)
 
     def _calculate_evidence_for_new_locations(
         self,
