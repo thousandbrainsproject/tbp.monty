@@ -60,6 +60,7 @@ class CompositionalInferenceExperiments:
     infer_comp_lvl1_with_monolithic_models: dict
     infer_parts_with_part_models: dict
     infer_comp_lvl1_with_comp_models: dict
+    infer_comp_lvl1_with_comp_models_and_resampling: dict
     infer_comp_lvl2_with_comp_models: dict
     infer_comp_lvl3_with_comp_models: dict
     infer_comp_lvl4_with_comp_models: dict
@@ -72,6 +73,7 @@ class CompositionalLearningExperiments:
     supervised_pre_training_curved_objects_after_flat_and_logo: dict
     supervised_pre_training_objects_with_logos_lvl1_monolithic_models: dict
     supervised_pre_training_objects_with_logos_lvl1_comp_models: dict
+    supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling: dict
     supervised_pre_training_objects_with_logos_lvl2_comp_models: dict
     supervised_pre_training_objects_with_logos_lvl3_comp_models: dict
     supervised_pre_training_objects_with_logos_lvl4_comp_models: dict

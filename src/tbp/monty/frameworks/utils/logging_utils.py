@@ -26,7 +26,6 @@ import quaternion
 import torch
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.environments.logos_on_objs import PARENT_TO_CHILD_MAPPING
 from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_unique_rotations,
     rotations_to_quats,
@@ -641,16 +640,6 @@ def get_graph_lm_episode_stats(lm):
                 primary_performance = "pose_time_out"
                 stepwise_performance = "pose_time_out"
 
-        # Only look for consistent child object if the lm has an mlh (only the
-        # EvidenceLM, not older versions).
-        # TODO - C: should we just use lm.detected_object instead?
-        if hasattr(lm, "current_mlh"):
-            if consistent_child_obj(
-                lm.current_mlh["graph_id"], lm.primary_target, PARENT_TO_CHILD_MAPPING
-            ):
-                # TODO - C : provide parent to child mapping
-                primary_performance = "consistent_child_obj"
-
         individual_ts_perf = "time_out"
         # TODO eventually consider adding stepwise stats for the below
         if lm.buffer.stats["individual_ts_reached_at_step"] is not None:
@@ -768,7 +757,9 @@ def get_stats_per_lm(model, target):
     for i, lm in enumerate(model.learning_modules):
         lm_stats = get_graph_lm_episode_stats(lm)
         if hasattr(lm, "evidence"):
-            lm_stats = add_evidence_lm_episode_stats(lm, lm_stats)
+            lm_stats = add_evidence_lm_episode_stats(
+                lm, lm_stats, target["consistent_child_objects"]
+            )
         else:
             lm_stats = add_pose_lm_episode_stats(lm, lm_stats)
         lm_stats = add_policy_episode_stats(lm, lm_stats)
@@ -795,7 +786,7 @@ def add_policy_episode_stats(lm, stats):
     return stats
 
 
-def add_evidence_lm_episode_stats(lm, stats):
+def add_evidence_lm_episode_stats(lm, stats, consistent_child_objects):
     last_mlh = lm.get_current_mlh()
 
     stats["most_likely_object"] = last_mlh["graph_id"]
@@ -819,6 +810,12 @@ def add_evidence_lm_episode_stats(lm, stats):
             ),
             4,
         )
+    if (
+        stats["primary_performance"] not in ["correct_mlh", "correct"]
+        and consistent_child_objects is not None
+    ):
+        if last_mlh["graph_id"] in consistent_child_objects:
+            stats["primary_performance"] = "consistent_child_obj"
     return stats
 
 
@@ -877,26 +874,6 @@ def overall_accuracy(eval_stats):
         * 100
     )
     return acc
-
-
-def consistent_child_obj(detected_obj, target_obj, parent_to_child_mapping):
-    """Check if the detected object is a child object of the target object.
-
-    Args:
-        detected_obj: detected object
-        target_obj: target object
-        parent_to_child_mapping: parent to child mapping
-
-    Returns:
-        True if the detected object is a child object of the target object.
-        False otherwise.
-    """
-    if detected_obj in parent_to_child_mapping:
-        possible_children = parent_to_child_mapping[target_obj]
-        return detected_obj in possible_children
-    else:
-        logger.warning(f"target object {target_obj} not in parent_to_child_mapping")
-        return False
 
 
 def consistent_child_objects_accuracy(eval_stats_for_lm, parent_to_child_mapping):

@@ -33,7 +33,6 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
 )
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentDataLoader,
-    EnvironmentDataset,
 )
 from tbp.monty.frameworks.experiments import MontyExperiment
 from tbp.monty.frameworks.run import main, run
@@ -119,7 +118,6 @@ class MontyRunTest(unittest.TestCase):
                     monty_handlers=[],
                 ),
                 "monty_config": FakeSingleCameraMontyConfig(),
-                "dataset_class": EnvironmentDataset,
                 "dataset_args": SinglePTZHabitatDatasetArgs(),
                 "train_dataloader_class": EnvironmentDataLoader,
                 "train_dataloader_args": {},
@@ -140,7 +138,6 @@ class MontyRunTest(unittest.TestCase):
                     monty_handlers=[],
                 ),
                 "monty_config": FakeSingleCameraMontyConfig(),
-                "dataset_class": EnvironmentDataset,
                 "dataset_args": SinglePTZHabitatDatasetArgs(),
                 "train_dataloader_class": EnvironmentDataLoader,
                 "train_dataloader_args": {},
