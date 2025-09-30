@@ -737,6 +737,7 @@ class GraphLM(LearningModule):
         possible_matches = self.get_possible_matches()
         # no possible matches
         if len(possible_matches) == 0:
+            self.last_possible_hypotheses = None
             self.set_individual_ts("no_match")
             if (
                 self.buffer.get_num_observations_on_object() > 0
@@ -760,6 +761,7 @@ class GraphLM(LearningModule):
                 logger.info(f"{self.learning_module_id} recognized object {object_id}")
         # > 1 possible match
         else:
+            self.last_possible_hypotheses = None
             logger.info(f"{self.learning_module_id} did not recognize an object yet.")
         return self.terminal_state
 
