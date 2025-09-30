@@ -154,6 +154,7 @@ const TableConfig = {
     return [
       { title: 'Title', field: 'title', formatter: ColumnFormatters.formatTitleWithLinksColumn },
       { title: 'Estimated Scope', field: 'estimated-scope', formatter: ColumnFormatters.formatSizeColumn },
+      { title: 'Improved Metric', field: 'improved-metric', formatter: ColumnFormatters.formatTagsColumn },
       { title: 'RFC', field: 'rfc', formatter: ColumnFormatters.formatRfcColumn },
       { title: 'Status', field: 'status', formatter: ColumnFormatters.formatStatusColumn },
       { title: 'Tags', field: 'tags', formatter: ColumnFormatters.formatTagsColumn, widthGrow: 2, cssClass: 'wrap-text' },
@@ -237,7 +238,7 @@ const FutureWorkWidget = {
       table.setFilter((data) => {
         const searchableText = [
           data.title, data.tags, data.skills, data.status,
-          data.contributor, data['estimated-scope'], data.rfc, data.link, data.path2
+          data.contributor, data['estimated-scope'], data['improved-metric'], data.rfc, data.link, data.path2
         ]
           .filter(Boolean)
           .join(' ')

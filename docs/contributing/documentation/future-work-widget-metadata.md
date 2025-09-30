@@ -28,6 +28,12 @@ Is the work completed, or is it in progress? [Edit future-work-status.md](https:
 
 !snippet[../../snippets/future-work-status.md]
 
+# Improved Metric
+
+What type of improvement does this work provide? [Edit future-work-improved-metric.md](https://github.com/thousandbrainsproject/tbp.monty/edit/main/docs/snippets/future-work-improved-metric.md).
+
+!snippet[../../snippets/future-work-improved-metric.md]
+
 # RFC
 
 Does this work item required an RFC? (These values are processed in the `validator.py` code) and can be of the form:
