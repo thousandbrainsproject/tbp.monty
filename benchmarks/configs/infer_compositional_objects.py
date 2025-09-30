@@ -187,7 +187,6 @@ infer_comp_base_config = dict(
         learning_module_configs=two_stacked_constrained_lms_inference_config,
         motor_system_config=MotorSystemConfigInformedGoalStateDriven(),
     ),
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=TwoLMStackedDistantMountHabitatDatasetArgs(
         env_init_args=EnvInitArgsTwoLMDistantStackedMount(
             data_path=os.path.join(os.environ["MONTY_DATA"], "compositional_objects")
