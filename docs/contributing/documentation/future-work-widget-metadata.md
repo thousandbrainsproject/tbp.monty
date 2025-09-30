@@ -2,7 +2,24 @@
 title: Future Work Widget Metadata
 ---
 
-The future work documents have special Frontmatter metadata that is used to power the future-work widget.  The following fields are validated against allow lists defined in snippet files to ensure consistency and quality.
+The future work documents have special Frontmatter metadata that is used to power the future-work widget.
+
+Here is an example of what the Frontmatter fields look like:
+
+```markdown
+---
+title: Future Work Widget
+rfc: https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0015_future_work.md
+estimated-scope: medium
+improved-metric: community-engagement
+output-type: documentation
+skills: github-actions, python, github-readme-sync-tool, S3, JS, HTML, CSS
+contributor: codeallthethingz
+status: in-progress
+---
+```
+
+The following fields are validated against allow lists defined in snippet files to ensure consistency and quality.
 
 # Tags
 
