@@ -996,8 +996,8 @@ class EvidenceGraphLM(GraphLM):
             f" with last ids {self.last_possible_hypotheses}"
         )
         if increment_evidence:
-            previous_hyps = set(possible_object_hypotheses_ids)
-            current_hyps = set(self.last_possible_hypotheses)
+            previous_hyps = set(self.last_possible_hypotheses)
+            current_hyps = set(possible_object_hypotheses_ids)
             hypothesis_overlap = previous_hyps.intersection(current_hyps)
             if len(hypothesis_overlap) / len(current_hyps) > 0.9:
                 # at least 90% of current possible ids were also in previous ids
