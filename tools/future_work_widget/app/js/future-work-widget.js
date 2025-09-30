@@ -192,7 +192,9 @@ const FutureWorkWidget = {
 
 
   async loadData() {
-    const response = await fetch('data.json');
+    const response = await fetch(`data.json?t=${Date.now()}`, {
+      cache: 'no-store'
+    });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}, body: ${await response.text()}`);
     }
