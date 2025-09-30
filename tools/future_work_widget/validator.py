@@ -194,13 +194,10 @@ class RecordValidator:
             r"required",
             r"optional",
             r"not-required",
-            r"unknown",
         ]
 
         if not any(re.fullmatch(pattern, sanitized_value) for pattern in rfc_patterns):
-            valid_options = (
-                "a GitHub URL, 'required', 'optional', 'not-required', or 'unknown'"
-            )
+            valid_options = "a GitHub URL, 'required', 'optional', or 'not-required'"
             self._add_validation_error(
                 f"Invalid rfc value '{sanitized_value}'. Must be {valid_options}",
                 file_path,
@@ -211,14 +208,14 @@ class RecordValidator:
     def _validate_contributor(
         self, record: dict[str, Any], file_path: str, errors: list[ValidationError]
     ) -> None:
-        """Validate and process the contributor field as comma-separated GitHub usernames."""
+        """Validate contributor field as comma-separated GitHub usernames."""
         if "contributor" not in record:
             return
 
         contributor_value = record["contributor"]
         if not isinstance(contributor_value, str):
             self._add_validation_error(
-                f"contributor field must be a string, got {type(contributor_value).__name__}",
+                f"contributor field must be a string",
                 file_path,
                 "contributor",
                 errors,

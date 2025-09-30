@@ -44,7 +44,7 @@ What type of output will this work produce? [Edit future-work-output-type.md](ht
 
 Does this work item required an RFC? (These values are processed in the `validator.py` code) and can be of the form:
 
-`https://github\.com/thousandbrainsproject/tbp\.monty/.*` `required` `optional` `not-required` `unknown`
+`https://github\.com/thousandbrainsproject/tbp\.monty/.*` `required` `optional` `not-required`
 
 # Contributor
 
