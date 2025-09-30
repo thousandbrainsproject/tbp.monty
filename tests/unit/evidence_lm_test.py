@@ -166,7 +166,6 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
-            dataset_class=ED.EnvironmentDataset,
             dataset_args=PatchViewFinderMountHabitatDatasetArgs(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
@@ -887,7 +886,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             pprint("...removing all objects...")
-            exp.dataset.env._env.remove_all_objects()
+            exp.env._env.remove_all_objects()
             with self.assertRaises(ValueError) as error:
                 exp.pre_episode()
             self.assertEqual(
@@ -1831,7 +1830,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             pprint("...removing all objects...")
-            exp.dataset.env._env.remove_all_objects()
+            exp.env._env.remove_all_objects()
             with self.assertRaises(ValueError) as error:
                 exp.pre_episode()
             self.assertEqual(
