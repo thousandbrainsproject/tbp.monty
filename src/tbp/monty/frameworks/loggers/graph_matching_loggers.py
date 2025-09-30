@@ -348,31 +348,6 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                 / (stats["num_episodes"])
             )
             * 100,
-            # % performance for each LM of the Monty model. For instance, some LMs
-            # may have no_match but the overall model still recognized the object.
-            "overall/percent_correct_per_lm": (
-                (stats["num_correct_per_lm"] + stats["num_correct_mlh_per_lm"])
-                / (stats["num_episodes"] * len(self.lms))
-            )
-            * 100,
-            "overall/percent_no_match_per_lm": (
-                stats["num_no_match_per_lm"] / (stats["num_episodes"] * len(self.lms))
-            )
-            * 100,
-            "overall/percent_confused_per_lm": (
-                (stats["num_confused_per_lm"] + stats["num_confused_mlh_per_lm"])
-                / (stats["num_episodes"] * len(self.lms))
-            )
-            * 100,
-            "overall/percent_pose_time_out_per_lm": (
-                stats["num_pose_time_out_per_lm"]
-                / (stats["num_episodes"] * len(self.lms))
-            )
-            * 100,
-            "overall/percent_time_out_per_lm": (
-                stats["num_time_out_per_lm"] / (stats["num_episodes"] * len(self.lms))
-            )
-            * 100,
             # Mean rotation error on all LMs that recognized the object
             "overall/avg_rotation_error": (
                 np.mean(correct_rotation_errors)
@@ -436,6 +411,28 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             "episode/goal_states_attempted": stats["goal_states_attempted"],
             "episode/goal_state_success_rate": stats["goal_state_success_rate"],
         }
+
+        for p in self.performance_options:
+            # % performance for each LM of the Monty model. For instance, some LMs
+            # may have no_match but the overall model still recognized the object.
+            if p == "correct":
+                overall_stats["overall/percent_correct_per_lm"] = (
+                    (stats["num_correct_per_lm"] + stats["num_correct_mlh_per_lm"])
+                    / (stats["num_episodes"] * len(self.lms))
+                ) * 100
+            elif p == "confused":
+                overall_stats["overall/percent_confused_per_lm"] = (
+                    (stats["num_confused_per_lm"] + stats["num_confused_mlh_per_lm"])
+                    / (stats["num_episodes"] * len(self.lms))
+                ) * 100
+            elif p == "correct_mlh" or p == "confused_mlh":
+                # skip because they are already included in correct and confused stats
+                pass
+            else:
+                overall_stats[f"overall/percent_{p}_per_lm"] = (
+                    stats[f"num_{p}_per_lm"] / (stats["num_episodes"] * len(self.lms))
+                ) * 100
+
         for lm in self.lms:
             lm_stats = self.data["BASIC"][f"{mode}_stats"][episode][lm]
             overall_stats[f"{lm}/episode/steps_to_individual_ts"] = lm_stats[

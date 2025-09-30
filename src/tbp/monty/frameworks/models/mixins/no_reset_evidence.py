@@ -39,6 +39,9 @@ class HypothesesUpdaterChannelTelemetry:
 
     Note that the buffer encoder will encode those as euler "xyz" rotations in degrees.
     """
+    locations: npt.NDArray[np.float64]
+    """Locations of the hypotheses."""
+
     pose_errors: npt.NDArray[np.float64]
     """Rotation errors relative to the target pose."""
 
@@ -137,11 +140,15 @@ class TheoreticalLimitLMLoggingMixin:
         channel_rotations = mapper.extract(self.possible_poses[graph_id], input_channel)
         channel_rotations_inv = Rotation.from_matrix(channel_rotations).inv()
         channel_evidence = mapper.extract(self.evidence[graph_id], input_channel)
+        channel_locations = mapper.extract(
+            self.possible_locations[graph_id], input_channel
+        )
 
         return HypothesesUpdaterChannelTelemetry(
             hypotheses_updater=channel_telemetry.copy(),
             evidence=channel_evidence,
             rotations=channel_rotations_inv,
+            locations=channel_locations,
             pose_errors=cast(
                 npt.NDArray[np.float64],
                 compute_pose_errors(
