@@ -1003,7 +1003,7 @@ class EvidenceGraphLM(GraphLM):
                 # at least 90% of current possible ids were also in previous ids
                 logger.info("added symmetry evidence")
                 self.symmetry_evidence += 1
-            else:  # has to be consequtive
+            else:  # has to be consecutive
                 self.symmetry_evidence = 0
 
         if self._enough_symmetry_evidence_accumulated():
