@@ -109,13 +109,13 @@ const ColumnFormatters = {
   formatStatusColumn(cell) {
     const rowData = cell.getRow().getData();
     const status = cell.getValue() || '';
-    const owner = rowData.owner || '';
+    const contributor = rowData.contributor || '';
 
-    if (!owner) return escapeHtml(status);
+    if (!contributor) return escapeHtml(status);
 
-    const usernames = Array.isArray(owner)
-      ? owner
-      : owner.split(',').map(u => u.trim()).filter(Boolean);
+    const usernames = Array.isArray(contributor)
+      ? contributor
+      : contributor.split(',').map(u => u.trim()).filter(Boolean);
 
     const avatars = usernames
       .map(username => `<img src="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}.png"
@@ -237,7 +237,7 @@ const FutureWorkWidget = {
       table.setFilter((data) => {
         const searchableText = [
           data.title, data.tags, data.skills, data.status,
-          data.owner, data['estimated-scope'], data.rfc, data.link, data.path2
+          data.contributor, data['estimated-scope'], data.rfc, data.link, data.path2
         ]
           .filter(Boolean)
           .join(' ')

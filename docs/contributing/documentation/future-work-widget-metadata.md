@@ -34,8 +34,8 @@ Does this work item required an RFC? (These values are processed in the `validat
 
 `https://github\.com/thousandbrainsproject/tbp\.monty/.*` `required` `optional` `not-required` `unknown`
 
-# Owner
+# Contributor
 
-The owner field should be GitHub usernames, as these are converted to their avatar inside the table.(These values are processed in the `validator.py` code) and can be of the form:
+The contributor field should be GitHub usernames, as these are converted to their avatar inside the table.(These values are processed in the `validator.py` code) and can be of the form:
 
 `[a-zA-Z0-9][a-zA-Z0-9-]{0,38}`

@@ -63,7 +63,7 @@ Controls which columns are displayed in the table.
 - `title` - The title of the future work item with edit/view links
 - `estimated-scope` - Size estimation (small, medium, large)
 - `rfc` - Related RFC link or reference
-- `status` - Current status with owner avatars
+- `status` - Current status with contributor avatars
 - `tags` - Categorization tags
 - `skills` - Required skills for the work
 

@@ -43,7 +43,7 @@ class RecordValidator:
     MAX_COMMA_SEPARATED_ITEMS = 10
 
     # these fields have custom logic to process them
-    CUSTOM_VALIDATION_FIELDS = ["rfc", "owner"]
+    CUSTOM_VALIDATION_FIELDS = ["rfc", "contributor"]
 
     # add in required values once the future work docs are populated.
     REQUIRED_FIELDS: list[str] = []
@@ -168,8 +168,8 @@ class RecordValidator:
 
             if field_name == "rfc":
                 self._validate_rfc(record, file_path, errors)
-            elif field_name == "owner":
-                self._validate_owner(record, file_path, errors)
+            elif field_name == "contributor":
+                self._validate_contributor(record, file_path, errors)
 
     def _validate_rfc(
         self, record: dict[str, Any], file_path: str, errors: list[ValidationError]
@@ -208,49 +208,49 @@ class RecordValidator:
                 errors,
             )
 
-    def _validate_owner(
+    def _validate_contributor(
         self, record: dict[str, Any], file_path: str, errors: list[ValidationError]
     ) -> None:
-        """Validate and process the owner field as comma-separated GitHub usernames."""
-        if "owner" not in record:
+        """Validate and process the contributor field as comma-separated GitHub usernames."""
+        if "contributor" not in record:
             return
 
-        owner_value = record["owner"]
-        if not isinstance(owner_value, str):
+        contributor_value = record["contributor"]
+        if not isinstance(contributor_value, str):
             self._add_validation_error(
-                f"owner field must be a string, got {type(owner_value).__name__}",
+                f"contributor field must be a string, got {type(contributor_value).__name__}",
                 file_path,
-                "owner",
+                "contributor",
                 errors,
             )
             return
 
-        owners = self._process_comma_separated_field(
-            "owner", owner_value, file_path, errors
+        contributors = self._process_comma_separated_field(
+            "contributor", contributor_value, file_path, errors
         )
-        if owners is None:
+        if contributors is None:
             return
 
-        github_owner_pattern = r"[a-zA-Z0-9][a-zA-Z0-9-]{0,38}"
-        invalid_owners = []
+        github_contributor_pattern = r"[a-zA-Z0-9][a-zA-Z0-9-]{0,38}"
+        invalid_contributors = []
 
-        for owner in owners:
-            sanitized_owner = nh3.clean(owner).strip()
-            if not re.fullmatch(github_owner_pattern, sanitized_owner):
-                invalid_owners.append(sanitized_owner)
+        for contributor in contributors:
+            sanitized_contributor = nh3.clean(contributor).strip()
+            if not re.fullmatch(github_contributor_pattern, sanitized_contributor):
+                invalid_contributors.append(sanitized_contributor)
 
-        if invalid_owners:
+        if invalid_contributors:
             self._add_validation_error(
-                f"Invalid owner username(s): {', '.join(invalid_owners)}. "
+                f"Invalid contributor username(s): {', '.join(invalid_contributors)}. "
                 f"Must be valid GitHub usernames (1-39 characters, "
                 f"alphanumeric and hyphens, cannot start with hyphen)",
                 file_path,
-                "owner",
+                "contributor",
                 errors,
             )
             return
 
-        record["owner"] = owners
+        record["contributor"] = contributors
 
     def _add_validation_error(
         self, message: str, file_path: str, field: str, errors: list[ValidationError]

@@ -110,7 +110,7 @@ class TestRecordValidator(unittest.TestCase):
             "title": "Test item",
             "tags": "accuracy,learning",
             "skills": "python,javascript",
-            "owner": "alice,bob",
+            "contributor": "alice,bob",
         }
 
         result, errors = validator.validate(record)
@@ -121,7 +121,7 @@ class TestRecordValidator(unittest.TestCase):
         self.assertEqual(result["path2"], "test-item")
         self.assertEqual(result["tags"], ["accuracy", "learning"])
         self.assertEqual(result["skills"], ["python", "javascript"])
-        self.assertEqual(result["owner"], ["alice", "bob"])
+        self.assertEqual(result["contributor"], ["alice", "bob"])
 
     def test_direct_validation_filters_non_future_work(self):
         """Test that non-future-work items are filtered out."""
