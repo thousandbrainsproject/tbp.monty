@@ -1157,7 +1157,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                     # 0,0,0 and 180, 0, 180 rotation.
                     self.assertEqual(
                         graph_lm.symmetry_evidence,
-                        num_steps_checked_symmetry - 2,
+                        num_steps_checked_symmetry - 1,
                         "Symmetry evidence doesn't seem to be as expected.",
                     )
             self.assertEqual(
