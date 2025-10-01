@@ -26,7 +26,7 @@ jobs:
   future_work_widget_deploy:
     name: future-work-widget-deploy
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    # if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     steps:
       - name: Checkout tbp.monty
         uses: actions/checkout@v4
