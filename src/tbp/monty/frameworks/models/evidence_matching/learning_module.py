@@ -243,6 +243,7 @@ class EvidenceGraphLM(GraphLM):
         # either constructed or edited in the constructor, or they are shared with the
         # learning module.
         hypotheses_updater_args.update(
+            evidence_threshold_config=self.evidence_threshold_config,
             feature_evidence_increment=self.feature_evidence_increment,
             feature_weights=self.feature_weights,
             graph_memory=self.graph_memory,
