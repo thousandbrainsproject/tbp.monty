@@ -146,7 +146,7 @@ class LivePlotter:
                 ec="white",
             )
             self.ax[0].add_patch(square)
-        if hasattr(first_learning_module, "current_mlh"):
+        if hasattr(first_learning_module, "get_current_mlh"):
             mlh = first_learning_module.get_current_mlh()
             if mlh is not None and mlh["graph_id"] != "no_observations_yet":
                 graph_ids, evidences = (
