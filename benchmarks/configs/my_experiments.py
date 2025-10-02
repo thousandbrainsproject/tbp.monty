@@ -1,0 +1,93 @@
+# Copyright 2025 Thousand Brains Project
+#
+# Copyright may exist in Contributors' modifications
+# and/or contributions to the work.
+#
+# Use of this source code is governed by the MIT
+# license that can be found in the LICENSE file or at
+# https://opensource.org/licenses/MIT.
+
+import copy
+import os
+from dataclasses import asdict
+
+import numpy as np
+
+from benchmarks.configs.names import MyExperiments
+from benchmarks.configs.pretraining_experiments import supervised_pre_training_base
+from tbp.monty.frameworks.config_utils.config_args import (
+    PatchAndViewMontyConfig,
+    MotorSystemConfigNaiveScanSpiral,
+    get_cube_face_and_corner_views_rotations,
+)
+from tbp.monty.frameworks.config_utils.policy_setup_utils import (
+    make_naive_scan_policy_config,
+)
+from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+    EnvironmentDataloaderPerObjectArgs,
+    ExperimentArgs,
+    PredefinedObjectInitializer,
+    get_object_names_by_idx,
+)
+from tbp.monty.frameworks.environments.logos_on_objs import LOGOS
+from tbp.monty.frameworks.models.evidence_matching.learning_module import (
+    EvidenceGraphLM,
+)
+from tbp.monty.frameworks.models.motor_policies import NaiveScanPolicy
+from tbp.monty.simulators.habitat.configs import (
+    PatchViewFinderMountHabitatDatasetArgs,
+    EnvInitArgsPatchViewMount,
+)
+from tbp.monty.frameworks.run import print_config
+
+# Let's just pretrain on a single view and see how it goes
+train_rotation = get_cube_face_and_corner_views_rotations()[0]
+
+supervised_pretraining_logos_2d_sensor = copy.deepcopy(supervised_pre_training_base)
+print_config(supervised_pretraining_logos_2d_sensor)
+
+# Update the dataset and dataloader to use the logos
+supervised_pretraining_logos_2d_sensor.update(
+    experiment_args=ExperimentArgs(
+        do_eval=False,
+        n_train_epochs=len(train_rotation),
+    ),
+    dataset_args=PatchViewFinderMountHabitatDatasetArgs(
+        env_init_args=EnvInitArgsPatchViewMount(
+            data_path=os.path.join(os.environ["MONTY_DATA"], "compositional_objects")
+        ).__dict__
+    ),
+    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+        object_names=get_object_names_by_idx(0, len(LOGOS), object_list=LOGOS),
+        object_init_sampler=PredefinedObjectInitializer(rotations=[train_rotation]),
+    ),
+)
+
+# Update the motor system to use Naive Scan Policy with step size 1
+supervised_pretraining_logos_2d_sensor.update(
+    monty_config=PatchAndViewMontyConfig(
+        motor_system_config=MotorSystemConfigNaiveScanSpiral(
+            motor_system_args=dict(
+                policy_class=NaiveScanPolicy,
+                policy_args=make_naive_scan_policy_config(step_size=1),
+            ),
+        ),
+    ),
+)
+
+# # Update to use 2D sensor module
+# supervised_pretraining_logos_2d_sensor.update(
+#     monty_config=PatchAndViewMontyConfig(
+#         sensor_module_configs=SensorModuleConfigs(
+#             habitat_surface_patch_sm=HabitatSurfacePatchSM(),
+#         ),
+#     ),
+# )
+
+# Update run name
+supervised_pretraining_logos_2d_sensor["logging_config"].run_name = "supervised_pretraining_logos_2d_sensor"
+
+experiments = MyExperiments(
+    supervised_pretraining_logos_2d_sensor=supervised_pretraining_logos_2d_sensor,
+)
+CONFIGS = asdict(experiments)
