@@ -69,13 +69,13 @@ jobs:
           mkdir -p "${{ runner.temp }}/future-work-widget"
           cp -r tools/future_work_widget/app/* "${{ runner.temp }}/future-work-widget/"
           python -m tools.future_work_widget.cli build "${{ runner.temp }}/index.json" "${{ runner.temp }}/future-work-widget"
-          ls -lR "${{ runner.temp }}"
+          ls -lR "${{ runner.temp }}"/future-work-widget
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_DEFAULT_REGION || 'us-east-1' }}
+          aws-access-key-id: ${{ secrets.FUTURE_WORK_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.FUTURE_WORK_SECRET_ACCESS_KEY }}
+          aws-region: ${{ 'us-east-1' }}
       - name: Upload future work widget to S3
         run: |
-          aws s3 sync "${{ runner.temp }}/future-work-widget/" s3://${{ secrets.S3_BUCKET_NAME }}/future-work-widget/ --delete
+          aws s3 sync "${{ runner.temp }}/future-work-widget/" s3://${{ secrets.FUTURE_WORK_S3_BUCKET_NAME }}/future-work-widget/ --delete
