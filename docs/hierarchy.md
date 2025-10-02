@@ -144,6 +144,12 @@
 - [oss-communication-improvements](future-work/oss-communication-improvements.md)
   - [organize-start-podcast-series](future-work/oss-communication-improvements/organize-start-podcast-series.md)
   - [make-more-condensed-videos-about-the-project-monty](future-work/oss-communication-improvements/make-more-condensed-videos-about-the-project-monty.md)
+- [platform-improvements](future-work/platform-improvements.md)
+  - [injection-9-integrate-a-second-simulator-that-runs-python-gte-38](future-work/platform-improvements/injection-9-integrate-a-second-simulator-that-runs-python-gte-38.md)
+  - [injection-16-integrate-a-second-simulator-that-runs-on-cpu](future-work/platform-improvements/injection-16-integrate-a-second-simulator-that-runs-on-cpu.md)
+  - [injection-17-integrate-a-second-simulator-that-runs-on-windows](future-work/platform-improvements/injection-17-integrate-a-second-simulator-that-runs-on-windows.md)
+  - [injection-19-integrate-a-second-simulator-that-does-not-require-conda](future-work/platform-improvements/injection-19-integrate-a-second-simulator-that-does-not-require-conda.md)
+
 # theory: Neuroscience Theory
 - [theory-overview](theory/theory-overview.md)
 - [recent-progress](theory/recent-progress.md)
