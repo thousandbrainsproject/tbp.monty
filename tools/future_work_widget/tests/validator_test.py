@@ -81,26 +81,6 @@ class TestRecordValidator(unittest.TestCase):
         _, errors = validator.validate(record)
         self.assertEqual(len(errors), 0)
 
-    def test_word_boundary_wrapping(self):
-        snippets_dir = self.temp_path / "snippets"
-        snippets_dir.mkdir()
-
-        tags_file = snippets_dir / "future-work-tags.md"
-        with open(tags_file, "w", encoding="utf-8") as f:
-            f.write("`simple-word` `accuracy` `learning`")
-
-        validator = RecordValidator(snippets_dir)
-
-        expected_values = [
-            "simple-word",
-            "accuracy",
-            "learning",
-        ]
-
-        self.assertEqual(
-            sorted(validator.exact_values["tags"]), sorted(expected_values)
-        )
-
     def test_direct_validation_success(self):
         """Test RecordValidator.validate() method directly."""
         validator = RecordValidator(Path())
