@@ -86,6 +86,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             # LMs
             "matching_step_when_output_goal_set": [],
             "goal_state_achieved": [],
+            "mlh_prediction_error": [],
         }
         self.start_time = time.time()
 

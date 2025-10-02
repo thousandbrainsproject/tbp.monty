@@ -61,7 +61,7 @@ from tbp.monty.simulators.habitat.configs import (
 # FOR SUPERVISED PRETRAINING: 14 unique rotations that give good views of the object.
 train_rotations_all = get_cube_face_and_corner_views_rotations()
 
-monty_models_dir = os.getenv("MONTY_MODELS")
+monty_models_dir = os.getenv("MONTY_MODELS", "")
 
 fe_pretrain_dir = os.path.expanduser(
     os.path.join(monty_models_dir, "pretrained_ycb_v10")
@@ -79,6 +79,7 @@ supervised_pre_training_base = dict(
     ),
     logging_config=PretrainLoggingConfig(
         output_dir=fe_pretrain_dir,
+        python_log_level="INFO",
     ),
     monty_config=PatchAndViewMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=500),

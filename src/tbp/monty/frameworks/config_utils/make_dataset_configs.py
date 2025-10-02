@@ -11,7 +11,17 @@
 import os
 from dataclasses import dataclass, field
 from numbers import Number
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -49,6 +59,7 @@ class ExperimentArgs:
     model_name_or_path: str = ""
     min_lms_match: int = 1
     seed: int = 42
+    supervised_lm_ids: Union[List[str], Literal["all"]] = "all"
 
 
 @dataclass
@@ -309,6 +320,7 @@ class RandomRotationObjectInitializer(DefaultObjectInitializer):
 class EnvironmentDataloaderPerObjectArgs:
     object_names: List
     object_init_sampler: Callable
+    parent_to_child_mapping: Dict = None
 
 
 @dataclass

@@ -105,7 +105,8 @@ class LivePlotter:
             is_saccade_on_image_data_loader,
         )
         self.show_patch(first_sensor_depth)
-        self.show_mlh(mlh, mlh_model)
+        if mlh_model is not None:
+            self.show_mlh(mlh, mlh_model)
         plt.pause(0.00001)
 
     def show_view_finder(
@@ -145,9 +146,9 @@ class LivePlotter:
                 ec="white",
             )
             self.ax[0].add_patch(square)
-        if hasattr(first_learning_module, "current_mlh"):
+        if hasattr(first_learning_module, "get_current_mlh"):
             mlh = first_learning_module.get_current_mlh()
-            if mlh is not None:
+            if mlh is not None and mlh["graph_id"] != "no_observations_yet":
                 graph_ids, evidences = (
                     first_learning_module.get_evidence_for_each_graph()
                 )
@@ -172,6 +173,7 @@ class LivePlotter:
         if not mlh_model:
             self.ax[2].set_title("No MLH")
             return
+
         self.ax[2].cla()
         self.ax[2].scatter(
             mlh_model.pos[:, 1],

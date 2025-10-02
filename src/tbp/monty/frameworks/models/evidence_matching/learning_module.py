@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import copy
 import logging
 import threading
 import time
@@ -236,6 +237,7 @@ class EvidenceGraphLM(GraphLM):
             "scale": 1,
             "evidence": 0,
         }
+        self.previous_mlh = copy.deepcopy(self.current_mlh)
 
         if hypotheses_updater_args is None:
             hypotheses_updater_args = {}
@@ -443,18 +445,20 @@ class EvidenceGraphLM(GraphLM):
             # motor efference copy here.
             # TODO: get motor efference copy here. Need to refactor motor command
             # selection for this.
-            location=self.buffer.get_current_location(
-                input_channel="first"
-            ),  # location rel. body
+            # location rel. body -> same as sensor input to higher LM (assuming they are
+            # colocated) so it is not used.
+            location=self.buffer.get_current_location(input_channel="first"),
             morphological_features={
                 "pose_vectors": pose_features,
                 "pose_fully_defined": not self._enough_symmetry_evidence_accumulated(),
+                # on_object is also same as sensor input to higher LM (assuming they are
+                # colocated) so not used.
                 "on_object": self.buffer.get_currently_on_object(),
             },
             non_morphological_features={
                 "object_id": object_id_features,
                 # TODO H: test if this makes sense to communicate
-                "location_rel_model": mlh["location"],
+                # "location_rel_model": mlh["location"],
             },
             confidence=confidence,
             use_state=use_state,
@@ -685,6 +689,7 @@ class EvidenceGraphLM(GraphLM):
             "possible_matches": self.get_possible_matches(),
             "current_mlh": self.get_current_mlh(),
         }
+        self._append_mlh_prediction_error_to_stats()
         if self.has_detailed_logger:
             stats = self._add_detailed_stats(stats)
         return stats
@@ -716,6 +721,7 @@ class EvidenceGraphLM(GraphLM):
         # NOTE: would not need to do this if we are still voting
         # Call this update in the step method?
         self.possible_matches = self._threshold_possible_matches()
+        self.previous_mlh = copy.deepcopy(self.current_mlh)
         self.current_mlh = self._calculate_most_likely_hypothesis()
 
     def _update_evidence(
@@ -1180,6 +1186,44 @@ class EvidenceGraphLM(GraphLM):
         # Do we want to store this? will probably just clutter.
         # self.buffer.update_stats(vote_data, update_time=False)
         pass
+
+    def _append_mlh_prediction_error_to_stats(self):
+        """Append the MLH prediction error for this step to the buffer stats."""
+        # We need to look at the previous mlh (which is the most likely hypothesis at
+        # the time the prediction error was calculated) since the mlh is updated between
+        # prediction error calculation and stats collection.
+        graph_id = self.previous_mlh["graph_id"]
+
+        if graph_id == "no_observations_yet":
+            return
+        graph_telemetry = self.hypotheses_updater_telemetry[graph_id]
+        prediction_errors = []
+        for input_channel in graph_telemetry:
+            channel_telemetry = graph_telemetry[input_channel]
+            # Check if there is displacer telemetry and if it contains a prediction
+            # error. This would not be the case if there are no existing hypotheses
+            # or if a channel was newly initialized.
+            if hasattr(
+                channel_telemetry,
+                "channel_hypothesis_displacer_telemetry",
+            ) and hasattr(
+                channel_telemetry.channel_hypothesis_displacer_telemetry,
+                "mlh_prediction_error",
+            ):
+                displacer_telemetry = (
+                    channel_telemetry.channel_hypothesis_displacer_telemetry
+                )
+                channel_prediction_error = displacer_telemetry.mlh_prediction_error
+                prediction_errors.append(channel_prediction_error)
+
+        if len(prediction_errors) > 0:
+            # Get the average prediction error over all channels for this step.
+            mlh_prediction_error = np.mean(prediction_errors)
+            self.buffer.update_stats(
+                {"mlh_prediction_error": mlh_prediction_error},
+                update_time=False,
+                append=True,  # append here since we want to average over all steps
+            )
 
     def _add_detailed_stats(self, stats):
         # Save possible poses once since they don't change during episode

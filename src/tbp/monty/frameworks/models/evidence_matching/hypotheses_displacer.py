@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Protocol, Type
 
 import numpy as np
@@ -32,6 +33,11 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class HypothesisDisplacerTelemetry:
+    mlh_prediction_error: float | None
 
 
 class HypothesesDisplacer(Protocol):
@@ -136,7 +142,7 @@ class DefaultHypothesesDisplacer:
         graph_id: str,
         possible_hypotheses: ChannelHypotheses,
         total_hypotheses_count: int,
-    ) -> ChannelHypotheses:
+    ) -> tuple[ChannelHypotheses, HypothesisDisplacerTelemetry]:
         # Have to do this for all hypotheses so we don't loose the path information
         rotated_displacements = possible_hypotheses.poses.dot(channel_displacement)
         search_locations = possible_hypotheses.locations + rotated_displacements
@@ -171,6 +177,12 @@ class DefaultHypothesesDisplacer:
             evidence_to_add = np.ones_like(possible_hypotheses.evidence) * min_update
             evidence_to_add[hyp_ids_to_test] = new_evidence
 
+            mlh_index = np.argmax(possible_hypotheses.evidence)
+            evidence_for_mlh = evidence_to_add[mlh_index]
+            # Mapping evidence values from range [-1, 2] to [0, 3], then dividing by 3
+            # to get a value in range [0, 1].
+            mlh_prediction_error = (-evidence_for_mlh + 2) / 3
+
             # If past and present weight add up to 1, equivalent to
             # np.average and evidence will be bound to [-1, 2]. Otherwise it
             # keeps growing.
@@ -180,13 +192,15 @@ class DefaultHypothesesDisplacer:
             )
         else:
             evidence = possible_hypotheses.evidence
+            # If we haven't moved yet, there is no prediction, and thus no error
+            mlh_prediction_error = None
 
         return ChannelHypotheses(
             input_channel=possible_hypotheses.input_channel,
             evidence=evidence,
             locations=search_locations,
             poses=possible_hypotheses.poses,
-        )
+        ), HypothesisDisplacerTelemetry(mlh_prediction_error=mlh_prediction_error)
 
     def _calculate_evidence_for_new_locations(
         self,
