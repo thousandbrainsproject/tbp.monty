@@ -20,6 +20,18 @@ from tools.future_work_widget.validator import RecordValidator
 class TestRecordValidator(unittest.TestCase):
     def setUp(self):
         self.temp_path = Path(tempfile.mkdtemp())
+        self.expected_tags = [
+            "accuracy",
+            "pose",
+            "learning",
+            "multiobj",
+        ]
+        self.expected_skills = [
+            "python",
+            "github-actions",
+            "JS",
+            "HTML",
+        ]
 
     def tearDown(self):
         shutil.rmtree(self.temp_path)
@@ -30,33 +42,22 @@ class TestRecordValidator(unittest.TestCase):
 
         tags_file = snippets_dir / "future-work-tags.md"
         with open(tags_file, "w", encoding="utf-8") as f:
-            f.write("`accuracy` `pose` `learning` `multiobj`")
+            f.write(" ".join(f"`{tag}`" for tag in self.expected_tags))
 
         skills_file = snippets_dir / "future-work-skills.md"
         with open(skills_file, "w", encoding="utf-8") as f:
-            f.write("`python` `github-actions` `JS` `HTML`")
+            f.write(" ".join(f"`{skill}`" for skill in self.expected_skills))
 
         validator = RecordValidator(snippets_dir)
 
         self.assertIn("tags", validator.exact_values)
         self.assertIn("skills", validator.exact_values)
 
-        expected_tags = [
-            "accuracy",
-            "pose",
-            "learning",
-            "multiobj",
-        ]
-        expected_skills = [
-            "python",
-            "github-actions",
-            "JS",
-            "HTML",
-        ]
-
-        self.assertEqual(sorted(validator.exact_values["tags"]), sorted(expected_tags))
         self.assertEqual(
-            sorted(validator.exact_values["skills"]), sorted(expected_skills)
+            sorted(validator.exact_values["tags"]), sorted(self.expected_tags)
+        )
+        self.assertEqual(
+            sorted(validator.exact_values["skills"]), sorted(self.expected_skills)
         )
 
     def test_missing_validation_files_graceful(self):
