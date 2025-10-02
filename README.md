@@ -50,7 +50,7 @@ If you want to use this code, contribute to it, ask questions or propose ideas, 
 
 [![](docs/figures/overview/discourse_screenshot.png)](https://thousandbrains.discourse.group/)
 
-If you would like to receive updates, follow us on [Bluesky](https://bsky.app/profile/1000brainsproj.bsky.social) or [Twitter](https://x.com/1000brainsproj) or [LinkedIn](https://www.linkedin.com/company/thousand-brains-project/).
+If you would like to receive updates, follow us on [Bluesky](https://bsky.app/profile/thousandbrains.org) or [Twitter](https://x.com/1000brainsproj) or [LinkedIn](https://www.linkedin.com/company/thousand-brains-project/).
 
 If you have further questions or suggestions for collaborations, don't hesitate to contact us directly at **info@thousandbrains.org**.
 

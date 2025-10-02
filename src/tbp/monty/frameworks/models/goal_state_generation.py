@@ -720,13 +720,15 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
         target_graph = target_object[sensor_channel_name]
         target_loc = target_graph.pos[target_loc_id]
-        pn_mapping = target_graph.feature_mapping["pose_vectors"]
-        target_pn = target_graph.x[target_loc_id, pn_mapping[0] : pn_mapping[0] + 3]
+        surface_normal_mapping = target_graph.feature_mapping["pose_vectors"]
+        target_surface_normal = target_graph.x[
+            target_loc_id, surface_normal_mapping[0] : surface_normal_mapping[0] + 3
+        ]
 
         target_info = {
             "hypothesis_to_test": mlh,
             "target_loc": target_loc,
-            "target_pn": target_pn,
+            "target_surface_normal": target_surface_normal,
         }
 
         return target_info
@@ -816,12 +818,16 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         # Rotate the learned surface normal (which was commited to memory assuming a
         # default 0,0,0 orientation of the object)
-        target_pn_rotated = object_rot.apply(target_info["target_pn"])
+        target_surface_normal_rotated = object_rot.apply(
+            target_info["target_surface_normal"]
+        )
 
         # Scale the surface normal by the desired distance x1.5 (i.e. so that we start
         # a bit further away from the object; we will separately move forward if we
         # are indeed facing it)
-        surface_displacement = target_pn_rotated * self.desired_object_distance * 1.5
+        surface_displacement = (
+            target_surface_normal_rotated * self.desired_object_distance * 1.5
+        )
 
         target_loc = proposed_surface_loc + surface_displacement
 
@@ -842,7 +848,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
                 # agent, because this is not relevant to the task
                 "pose_vectors": np.array(
                     [
-                        (-1) * target_pn_rotated,
+                        (-1) * target_surface_normal_rotated,
                         [np.nan, np.nan, np.nan],
                         [np.nan, np.nan, np.nan],
                     ]
@@ -870,7 +876,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         #         # agent, because this is not relevant to the task
         #         "pose_vectors": np.array(
         #             [
-        #                 target_pn_rotated,
+        #                 target_surface_normal_rotated,
         #                 [np.nan, np.nan, np.nan],
         #                 [np.nan, np.nan, np.nan],
         #             ]
