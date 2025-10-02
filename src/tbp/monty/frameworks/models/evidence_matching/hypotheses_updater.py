@@ -343,6 +343,9 @@ class DefaultHypothesesUpdater:
                     )
                     initial_possible_channel_rotations.append(rotation.as_matrix())
 
+            initial_possible_channel_locations = np.array(
+                initial_possible_channel_locations
+            )
             initial_possible_channel_rotations = np.array(
                 initial_possible_channel_rotations
             )
