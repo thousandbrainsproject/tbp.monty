@@ -1,5 +1,7 @@
 # wandb local configs
 wandb/
+# Custom
+results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
