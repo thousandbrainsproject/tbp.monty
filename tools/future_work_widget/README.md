@@ -45,7 +45,7 @@ pytest -n 0 tools/future_work_widget
 To try the tool out simply run the following command from the tbp.monty directory:
 
 ```
-./tools/future_work_widget/run-local.sh
+python tools/future_work_widget/run_local.py
 ```
 
 And then point you browser to http://localhost:8080
