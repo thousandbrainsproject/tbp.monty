@@ -57,7 +57,7 @@ We love seeing how you use Monty. If you created something interesting with it, 
 - **Write a Blog Post**: Share your experience and insights by writing a blog post. Please share your post with the community on our [Discourse server](https://thousandbrains.discourse.group/).
 - **Publish a Paper**: If you use our Monty implementation or ideas from the Thousand Brains Theory in your next publication, we would like to feature you on our [TBP-based papers](../community/tbp-based-papers.md) list and increase the visibility of your research.
 - **Present at Community Events**: We host regular webinars and community meetups. If you are interested in presenting your project or research, please get in touch with us at [info@thousandbrains.org](mailto:info@thousandbrains.org).
-- **Social Media**: Share your creations on social media using the hashtag `#1000brainsproject`. Follow us on [X](https://x.com/1000brainsproj), [Bluesky](https://bsky.app/profile/1000brainsproj.bsky.social) or [LinkedIn](https://www.linkedin.com/company/thousand-brains-project/), and subscribe to our [YouTube Channel](https://www.youtube.com/@thousandbrainsproject), or our [email list](https://thousandbrains.org/#newsletter).
+- **Social Media**: Share your creations on social media using the hashtag `#1000brainsproject`. Follow us on [X](https://x.com/1000brainsproj), [Bluesky](https://bsky.app/profile/thousandbrains.org) or [LinkedIn](https://www.linkedin.com/company/thousand-brains-project/), and subscribe to our [YouTube Channel](https://www.youtube.com/@thousandbrainsproject), or our [email list](https://thousandbrains.org/#newsletter).
 
 # Promote Monty
 

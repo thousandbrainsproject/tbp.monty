@@ -42,6 +42,7 @@ from tbp.monty.frameworks.utils.evidence_matching import (
     ChannelMapper,
     EvidenceSlopeTracker,
     HypothesesSelection,
+    InvalidEvidenceThresholdConfig,
 )
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_initial_possible_poses,
@@ -93,6 +94,7 @@ class ResamplingHypothesesUpdater:
         graph_memory: EvidenceGraphMemory,
         max_match_distance: float,
         tolerances: dict,
+        evidence_threshold_config: Literal["all"],
         feature_evidence_calculator: Type[FeatureEvidenceCalculator] = (
             DefaultFeatureEvidenceCalculator
         ),
@@ -122,6 +124,10 @@ class ResamplingHypothesesUpdater:
                 to be matched.
             tolerances: How much can each observed feature deviate from the
                 stored features to still be considered a match.
+            evidence_threshold_config: How to decide which hypotheses
+                should be updated. In the `ResamplingHypothesesUpdater` we always
+                update 'all' hypotheses. Hypotheses with decreasing evidence are deleted
+                instead of excluded from updating. Must be set to 'all'.
             feature_evidence_calculator: Class to calculate feature evidence for all
                 nodes. Defaults to the default calculator.
             feature_evidence_increment: Feature evidence (between 0 and 1) is
@@ -162,7 +168,16 @@ class ResamplingHypothesesUpdater:
 
         Raises:
             ValueError: If the resampling_multiplier is less than 0
+            InvalidEvidenceThresholdConfig: If `evidence_threshold_config` is not
+                set to "all".
+
         """
+        if evidence_threshold_config != "all":
+            raise InvalidEvidenceThresholdConfig(
+                "evidence_threshold_config must be "
+                "'all' for `ResamplingHypothesesUpdater`"
+            )
+
         self.feature_evidence_calculator = feature_evidence_calculator
         self.feature_evidence_increment = feature_evidence_increment
         self.feature_weights = feature_weights
