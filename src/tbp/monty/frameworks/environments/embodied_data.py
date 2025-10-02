@@ -7,10 +7,12 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import copy
 import logging
 from pprint import pformat
+from typing import Iterable
 
 import numpy as np
 import quaternion
@@ -145,8 +147,13 @@ class EnvironmentDataLoader:
             observation = transform(observation, state)
         return observation
 
-    def step(self, action: Action):
-        observation = self.env.step(action)
+    def step(
+        self,
+        action: Action | Iterable[Action],
+    ) -> tuple[dict, ProprioceptiveState | None]:
+        actions = [action] if isinstance(action, Action) else action
+        for act in actions:
+            observation = self.env.step(act)
         state = self.env.get_state()
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
