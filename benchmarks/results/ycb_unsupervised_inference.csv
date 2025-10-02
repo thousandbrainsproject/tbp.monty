@@ -1,3 +1,3 @@
 Experiment,Correct (%)|align right,Num Match Steps|align right,Run Time (mins)|align right,Episode Run Time (s)|align right
-unsupervised_inference_distinctobj_dist_agent,96.00,100,26,16
-unsupervised_inference_distinctobj_surf_agent,94.00,99,19,11
+unsupervised_inference_distinctobj_dist_agent,98.00,99,25,15
+unsupervised_inference_distinctobj_surf_agent,95.00,100,23,14
