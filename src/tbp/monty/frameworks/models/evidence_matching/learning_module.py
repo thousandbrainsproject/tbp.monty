@@ -245,6 +245,7 @@ class EvidenceGraphLM(GraphLM):
         # either constructed or edited in the constructor, or they are shared with the
         # learning module.
         hypotheses_updater_args.update(
+            evidence_threshold_config=self.evidence_threshold_config,
             feature_evidence_increment=self.feature_evidence_increment,
             feature_weights=self.feature_weights,
             graph_memory=self.graph_memory,
@@ -818,26 +819,27 @@ class EvidenceGraphLM(GraphLM):
         """
         # Extract channel mapper
         mapper = self.channel_hypothesis_mapping[graph_id]
-
         new_evidence = new_hypotheses.evidence
 
-        # Add a new channel to the mapping if the hypotheses space doesn't exist
         if new_hypotheses.input_channel not in mapper.channels:
+            # If there are currently no channels in the mapper, initialize the
+            # space with empty arrays of the correct shapes.
             if len(mapper.channels) == 0:
-                self.possible_locations[graph_id] = np.array(new_hypotheses.locations)
-                self.possible_poses[graph_id] = np.array(new_hypotheses.poses)
-                self.evidence[graph_id] = np.array(new_evidence)
-                mapper.add_channel(new_hypotheses.input_channel, len(new_evidence))
+                self.possible_locations[graph_id] = np.empty((0, 3))
+                self.possible_poses[graph_id] = np.empty((0, 3, 3))
+                self.evidence[graph_id] = np.empty((0,))
 
-                return
-            else:
-                mapper.add_channel(new_hypotheses.input_channel, len(new_evidence))
-
-            # Add current mean evidence to give the new hypotheses a fighting
-            # chance.
+            # If there exists other channels, add current mean evidence to give the
+            # new hypotheses a fighting chance.
             # TODO H: Test mean vs. median here.
-            current_mean_evidence = np.mean(self.evidence[graph_id])
-            new_evidence = new_evidence + current_mean_evidence
+            else:
+                current_mean_evidence = np.mean(self.evidence[graph_id])
+                new_evidence = new_evidence + current_mean_evidence
+
+            # Add a mapper channel to be updated with the new data. The mapper will
+            # be later resized to `len(new_evidence)` after we update the hypothesis
+            # space.
+            mapper.add_channel(new_hypotheses.input_channel, 0)
 
         # The mapper update function calls below automatically resize the
         # arrays they update. Afterward, we must update the channel indices
@@ -1001,14 +1003,14 @@ class EvidenceGraphLM(GraphLM):
             f" with last ids {self.last_possible_hypotheses}"
         )
         if increment_evidence:
-            previous_hyps = set(possible_object_hypotheses_ids)
-            current_hyps = set(self.last_possible_hypotheses)
+            previous_hyps = set(self.last_possible_hypotheses)
+            current_hyps = set(possible_object_hypotheses_ids)
             hypothesis_overlap = previous_hyps.intersection(current_hyps)
             if len(hypothesis_overlap) / len(current_hyps) > 0.9:
                 # at least 90% of current possible ids were also in previous ids
                 logger.info("added symmetry evidence")
                 self.symmetry_evidence += 1
-            else:  # has to be consequtive
+            else:  # has to be consecutive
                 self.symmetry_evidence = 0
 
         if self._enough_symmetry_evidence_accumulated():

@@ -1151,13 +1151,12 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 num_steps_checked_symmetry += 1
                 # On the first step we just store previous hypothesis ids.
                 if num_steps_checked_symmetry > 1:
-                    # On the second step we still narrow down 2 ids in
-                    # this example. Then starting on the third step every step
-                    # will add 1 symmetry evidence because we can't resolve between
+                    # On the second step we will add 1 symmetry evidence
+                    # every step because we can't resolve between
                     # 0,0,0 and 180, 0, 180 rotation.
                     self.assertEqual(
                         graph_lm.symmetry_evidence,
-                        num_steps_checked_symmetry - 2,
+                        num_steps_checked_symmetry - 1,
                         "Symmetry evidence doesn't seem to be as expected.",
                     )
             self.assertEqual(
