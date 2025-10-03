@@ -67,7 +67,7 @@ class TestRecordValidator(unittest.TestCase):
         validator = RecordValidator(snippets_dir)
 
         self.assertEqual(len(validator.exact_values), 0)
-        record = {"path1": "future-work", "path2": "test"}
+        record = {"path1": "future-work", "path2": "test", "path": "test/path.md"}
         _, errors = validator.validate(record)
         self.assertEqual(len(errors), 0)
 
@@ -77,7 +77,7 @@ class TestRecordValidator(unittest.TestCase):
         validator = RecordValidator(nonexistent_dir)
 
         self.assertEqual(len(validator.exact_values), 0)
-        record = {"path1": "future-work", "path2": "test"}
+        record = {"path1": "future-work", "path2": "test", "path": "test/path.md"}
         _, errors = validator.validate(record)
         self.assertEqual(len(errors), 0)
 
@@ -88,6 +88,7 @@ class TestRecordValidator(unittest.TestCase):
         record = {
             "path1": "future-work",
             "path2": "test-item",
+            "path": "future-work/test-item.md",
             "title": "Test item",
             "tags": "accuracy,learning",
             "skills": "python,javascript",
@@ -123,11 +124,11 @@ class TestRecordValidator(unittest.TestCase):
         validator = RecordValidator(Path())
         max_items = RecordValidator.MAX_COMMA_SEPARATED_ITEMS
 
-        # Create a record with too many tags
         too_many_tags = ",".join([f"tag{i}" for i in range(max_items + 1)])
         record = {
             "path1": "future-work",
             "path2": "test-item",
+            "path": "future-work/test-item.md",
             "title": "Test item",
             "tags": too_many_tags,
         }
@@ -153,6 +154,22 @@ class TestRecordValidator(unittest.TestCase):
         self.assertIn("Configuration error", str(context.exception))
         self.assertIn("future-work-rfc.md", str(context.exception))
         self.assertIn("custom validation", str(context.exception))
+
+    def test_missing_path_field_returns_error(self):
+        validator = RecordValidator(Path())
+
+        record = {
+            "path1": "future-work",
+            "path2": "test-item",
+            "title": "Test item",
+        }
+
+        result, errors = validator.validate(record)
+
+        self.assertIsNone(result)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("missing required 'path' field", errors[0].message)
+        self.assertEqual(errors[0].field, "path")
 
 
 if __name__ == "__main__":

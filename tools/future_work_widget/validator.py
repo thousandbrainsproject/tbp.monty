@@ -67,9 +67,19 @@ class RecordValidator:
             return None, []
 
         record_copy = record.copy()
-        file_path = record.get("path")
 
         errors = []
+
+        if "path" not in record:
+            errors.append(
+                ValidationError(
+                    "Record is missing required 'path' field", "unknown", "path"
+                )
+            )
+            return None, errors
+
+        file_path = record["path"]
+
         self._validate_comma_separated_fields(record_copy, file_path, errors)
         self._validate_required_fields(record_copy, file_path, errors)
         self._validate_custom_fields(record_copy, file_path, errors)
