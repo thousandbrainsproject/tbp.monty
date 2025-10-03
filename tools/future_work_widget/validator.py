@@ -276,6 +276,10 @@ class RecordValidator:
 
         Args:
             docs_snippets_dir: Path to the docs/snippets directory
+
+        Raises:
+            ValueError: If a validation file exists for a field that uses
+                custom validation logic
         """
         future_work_files = list(docs_snippets_dir.glob("future-work-*.md"))
 
@@ -283,11 +287,12 @@ class RecordValidator:
             field_name = file_path.stem.replace("future-work-", "")
 
             if field_name in self.CUSTOM_VALIDATION_FIELDS:
-                logger.debug(
-                    f"Skipping {file_path.name} - using custom validation "
-                    f"logic for '{field_name}'"
+                error_msg = (
+                    f"Configuration error: {file_path.name} should not exist. "
+                    f"The '{field_name}' field uses custom validation logic."
                 )
-                continue
+                logger.error(error_msg)
+                raise ValueError(error_msg)
 
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read().strip()

@@ -139,6 +139,21 @@ class TestRecordValidator(unittest.TestCase):
         self.assertIn("tags field cannot have more than", errors[0].message)
         self.assertIn(str(max_items), errors[0].message)
 
+    def test_custom_validation_field_file_raises_error(self):
+        snippets_dir = self.temp_path / "snippets"
+        snippets_dir.mkdir()
+
+        rfc_file = snippets_dir / "future-work-rfc.md"
+        with open(rfc_file, "w", encoding="utf-8") as f:
+            f.write("`rfc-001` `rfc-002`")
+
+        with self.assertRaises(ValueError) as context:
+            RecordValidator(snippets_dir)
+
+        self.assertIn("Configuration error", str(context.exception))
+        self.assertIn("future-work-rfc.md", str(context.exception))
+        self.assertIn("custom validation", str(context.exception))
+
 
 if __name__ == "__main__":
     unittest.main()
