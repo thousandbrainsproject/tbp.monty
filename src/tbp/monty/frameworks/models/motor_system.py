@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 
 
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
@@ -52,7 +52,7 @@ class MotorSystem:
         """
         self._policy.set_experiment_mode(mode)
 
-    def __call__(self) -> Action:
+    def __call__(self) -> List[Action]:
         """Defines the structure for __call__.
 
         Delegates to the motor policy.
@@ -60,5 +60,5 @@ class MotorSystem:
         Returns:
             The action to take.
         """
-        action = self._policy(self._state)
-        return action
+        actions = self._policy(self._state)
+        return actions

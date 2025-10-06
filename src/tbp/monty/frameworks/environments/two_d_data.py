@@ -11,6 +11,7 @@
 import logging
 import os
 import time
+from typing import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -100,7 +101,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         #      interface and how the class hierarchy is defined and used.
         raise NotImplementedError("OmniglotEnvironment does not support adding objects")
 
-    def step(self, action: Action) -> dict:
+    def step(self, actions: Sequence[Action]) -> dict:
         """Retrieve the next observation.
 
         Since the omniglot dataset includes stroke information (the order in which
@@ -114,7 +115,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         different points on the second pass.
 
         Args:
-            action: Not used at the moment since we just follow the draw path. However,
+            actions: Not used at the moment since we just follow the draw path. However,
             we do use the rotation_degrees to determine the amount of pixels to move at
             each step.
 
@@ -122,31 +123,34 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             The observation.
         """
         amount = 1
-        if hasattr(action, "rotation_degrees"):
-            amount = max(action.rotation_degrees, 1)
-        self.step_num += int(amount)
-        query_loc = self.locations[self.step_num % self.max_steps]
-        patch = self.get_image_patch(
-            self.current_image,
-            query_loc,
-            self.patch_size,
-        )
-        depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
-        obs = {
-            "agent_id_0": {
-                "patch": {
-                    "depth": depth,
-                    "semantic": np.array(~patch, dtype=int),
-                    "rgba": np.stack(
-                        [depth, depth, depth], axis=2
-                    ),  # TODO: placeholder
-                },
-                "view_finder": {
-                    "depth": self.current_image,
-                    "semantic": np.array(~patch, dtype=int),
-                },
+        obs = {}
+        for action in actions:
+            if hasattr(action, "rotation_degrees"):
+                amount = max(action.rotation_degrees, 1)
+            self.step_num += int(amount)
+            query_loc = self.locations[self.step_num % self.max_steps]
+            patch = self.get_image_patch(
+                self.current_image,
+                query_loc,
+                self.patch_size,
+            )
+            depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
+            obs = {
+                "agent_id_0": {
+                    "patch": {
+                        "depth": depth,
+                        "semantic": np.array(~patch, dtype=int),
+                        "rgba": np.stack(
+                            [depth, depth, depth], axis=2
+                        ),  # TODO: placeholder
+                    },
+                    "view_finder": {
+                        "depth": self.current_image,
+                        "semantic": np.array(~patch, dtype=int),
+                    },
+                }
             }
-        }
+
         return obs
 
     def get_state(self):
@@ -331,51 +335,53 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             "SaccadeOnImageEnvironment does not support adding objects"
         )
 
-    def step(self, action: Action) -> dict:
+    def step(self, actions: Sequence[Action]) -> dict:
         """Retrieve the next observation.
 
         Args:
-            action: moving up, down, left or right from current location.
-            amount: Amount of pixels to move at once.
+            actions: moving up, down, left or right from current location.
 
         Returns:
             The observation.
         """
-        if action.name in self._valid_actions:
-            amount = action.rotation_degrees
-        else:
-            amount = 0
+        obs = {}
+        for action in actions:
+            if action.name in self._valid_actions:
+                amount = action.rotation_degrees
+            else:
+                amount = 0
 
-        if np.abs(amount) < 1:
-            amount = 1
-        # Make sure amount is int since we are moving using pixel indices
-        amount = int(amount)
-        query_loc = self.get_next_loc(action.name, amount)
-        (
-            depth_patch,
-            rgb_patch,
-            depth3d_patch,
-            sensor_frame_patch,
-        ) = self.get_image_patch(
-            query_loc,
-        )
-        self.current_loc = query_loc
-        obs = {
-            "agent_id_0": {
-                "patch": {
-                    "depth": depth_patch,
-                    "rgba": rgb_patch,
-                    "semantic_3d": depth3d_patch,
-                    "sensor_frame_data": sensor_frame_patch,
-                    "world_camera": self.world_camera,
-                    "pixel_loc": query_loc,  # Save pixel loc for plotting
-                },
-                "view_finder": {
-                    "depth": self.current_depth_image,
-                    "rgba": self.current_rgb_image,
-                },
+            if np.abs(amount) < 1:
+                amount = 1
+            # Make sure amount is int since we are moving using pixel indices
+            amount = int(amount)
+            query_loc = self.get_next_loc(action.name, amount)
+            (
+                depth_patch,
+                rgb_patch,
+                depth3d_patch,
+                sensor_frame_patch,
+            ) = self.get_image_patch(
+                query_loc,
+            )
+            self.current_loc = query_loc
+            obs = {
+                "agent_id_0": {
+                    "patch": {
+                        "depth": depth_patch,
+                        "rgba": rgb_patch,
+                        "semantic_3d": depth3d_patch,
+                        "sensor_frame_data": sensor_frame_patch,
+                        "world_camera": self.world_camera,
+                        "pixel_loc": query_loc,  # Save pixel loc for plotting
+                    },
+                    "view_finder": {
+                        "depth": self.current_depth_image,
+                        "rgba": self.current_rgb_image,
+                    },
+                }
             }
-        }
+
         return obs
 
     def get_state(self):

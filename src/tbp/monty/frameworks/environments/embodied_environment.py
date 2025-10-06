@@ -10,7 +10,7 @@
 
 import abc
 import collections.abc
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 from tbp.monty.frameworks.actions.actions import Action
 
@@ -76,11 +76,11 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def step(self, action: Action) -> Dict[Any, Dict]:
-        """Apply the given action to the environment.
+    def step(self, actions: Sequence[Action]) -> Dict[Any, Dict]:
+        """Apply the given actions to the environment.
 
         Return the current observations and other environment information (i.e. sensor
-        pose) after the action is applied.
+        pose) after the actions are applied.
         """
         pass
 
