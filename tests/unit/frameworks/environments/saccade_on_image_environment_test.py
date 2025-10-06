@@ -24,6 +24,7 @@ from tbp.monty.frameworks.environments.two_d_data import SaccadeOnImageEnvironme
 AGENT_ID = "agent_id_0"
 SENSOR_ID = "patch"
 
+
 class TwoDMovementTest(unittest.TestCase):
     DATA_PATH = (
         Path(__file__).parent.parent.parent / "resources" / "dataloader_test_images"
@@ -31,14 +32,13 @@ class TwoDMovementTest(unittest.TestCase):
 
     def setUp(self):
         self.env = SaccadeOnImageEnvironment(
-            patch_size=48,
-            data_path=str(self.DATA_PATH) + "/"
+            patch_size=48, data_path=str(self.DATA_PATH) + "/"
         )
         self.env.reset()
         self.current_state = self.env.get_state()
-        self.prev_loc = self.current_state[AGENT_ID]["sensors"][
-            SENSOR_ID + ".depth"
-        ]["position"]
+        self.prev_loc = self.current_state[AGENT_ID]["sensors"][SENSOR_ID + ".depth"][
+            "position"
+        ]
 
     def test_move_forward(self):
         action = MoveForward(agent_id=AGENT_ID, distance=1)
