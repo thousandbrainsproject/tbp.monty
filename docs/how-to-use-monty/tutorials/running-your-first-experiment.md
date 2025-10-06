@@ -55,7 +55,6 @@ first_experiment = dict(
     ),
     monty_config=PatchAndViewMontyConfig(),
     # Data{set, loader} config
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=PatchViewFinderMountHabitatDatasetArgs(),
     train_dataloader_class=ED.EnvironmentDataLoaderPerObject,
     train_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=1),

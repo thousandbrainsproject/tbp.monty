@@ -33,7 +33,6 @@ Monty experiments are defined using a nested dictionary. These dictionaries defi
   - `sm_to_lm_matrix`: mapping of which sensor modules connect to which learning modules.
   - `lm_to_lm_matrix`: hierarchical connectivity between learning modules.
   - `lm_to_lm_vote_matrix`: lateral connectivity between learning modules.
-- `dataset_class`: `EnvironmentDataset` Interface to the environment in which actions are executed and observations are collected.
 - `dataset_args`: `dataclass` (specifies data-related args incl. transformations that occur before information reaches a sensor module; e.g. `SurfaceViewFinderMountHabitatDatasetArgs`)
 - `train_dataloader_class`: `EnvironmentDataLoader`
 - `train_dataloader_args`: e.g.`EnvironmentDataloaderPerObjectArgs`
@@ -189,7 +188,6 @@ surf_agent_2obj_train = dict(
         motor_system_config=MotorSystemConfigCurvatureInformedSurface(),
     ),
     # Set up the environment and agent
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(),
     train_dataloader_class=ED.InformedEnvironmentDataLoader,
     train_dataloader_args=EnvironmentDataloaderPerObjectArgs(

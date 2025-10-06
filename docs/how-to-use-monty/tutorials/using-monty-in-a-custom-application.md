@@ -80,7 +80,7 @@ state = {
 Lastly, you need to define what happens when the environment is initialized (`__init__()`), when it is reset (`reset()`, usually at the end of an episode), and when it is closed (`close()`, at the end of an experiment). Resetting could include loading a new scene, resetting the agent position, or changing the arrangement of objects in the environment. It might also reset some of the environment's internal variables, such as step counters. Note that, as customary for RL environments, the `reset()` function is also expected to return an observation.
 
 ### DataLoader
-The `EnvironmentDataLoader` manages retrieving observations from the `EnvironmentDataset` given actions. The EnvironmentDataset, in turn, wraps around the `EmbodiedEnvironment` and applies basic transforms to the raw observations from the environment.
+The `EnvironmentDataLoader` manages retrieving observations from the `EmbodiedEnvironment` given actions. The EmbodiedEnvironment, in turn, applies basic transforms to the raw observations from the environment.
 
 The `EnvironmentDataLoader` should define all the key events at which the environment needs to be accessed or modified. This includes initializing the environment (`__init__()`), retrieving the next observation (`__next__()`), and things that happen at the beginning or end of episodes and epochs (`pre_episode()`, `post_episode()`, `pre_epoch()`, `post_epoch()`). Note that not all of those are relevant to every application.
 
@@ -129,7 +129,6 @@ omniglot_training = dict(
     	motor_system_config=MotorSystemConfigInformedNoTransStepS1(),
     	sensor_module_configs=omniglot_sensor_module_config,
 	),
-	dataset_class=ED.EnvironmentDataset,
 	dataset_args=OmniglotDatasetArgs(),
 	train_dataloader_class=ED.OmniglotDataLoader,
 	# Train on the first version of each character (there are 20 drawings for each
@@ -181,7 +180,6 @@ omniglot_inference = dict(
         ),
         sensor_module_configs=omniglot_sensor_module_config,
     ),
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=OmniglotDatasetArgs(),
     eval_dataloader_class=ED.OmniglotDataLoader,
     # Using version 1 means testing on the same version of the character as trained.
@@ -325,7 +323,6 @@ monty_meets_world_2dimage_inference = dict(
     	# move 20 pixels at a time
     	motor_system_config=MotorSystemConfigInformedNoTransStepS20(),
 	),
-	dataset_class=ED.EnvironmentDataset,
 	dataset_args=WorldImageDatasetArgs(
     	env_init_args=EnvInitArgsMontyWorldStandardScenes()
 	),
