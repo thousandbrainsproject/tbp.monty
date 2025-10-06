@@ -40,7 +40,7 @@ from tbp.monty.frameworks.models.motor_system import MotorSystem
 
 AGENT_ID = AgentID("agent_id_0")
 SENSOR_ID = "sensor_id_0"
-DATASET_LEN = 10
+NUM_STEPS = 10
 POSSIBLE_ACTIONS_DIST = [
     f"{AGENT_ID}.look_down",
     f"{AGENT_ID}.look_up",
@@ -57,7 +57,7 @@ EXPECTED_ACTIONS_ABS = [
     POSSIBLE_ACTIONS_ABS[i]
     for i in np.random.randint(0, len(POSSIBLE_ACTIONS_ABS), 100)
 ]
-EXPECTED_STATES = np.random.rand(DATASET_LEN)
+EXPECTED_STATES = np.random.rand(NUM_STEPS)
 
 
 class FakeActionSpace(tuple, ActionSpace):
@@ -167,7 +167,7 @@ class EmbodiedDataTest(unittest.TestCase):
         self.assertSequenceEqual(action_space_dist, EXPECTED_ACTIONS_DIST)
         self.assertIn(action_space_dist.sample(), EXPECTED_ACTIONS_DIST)
 
-        for i in range(1, DATASET_LEN):
+        for i in range(1, NUM_STEPS):
             obs_dist, _ = env_interface_dist.step(motor_system_dist())
             print(obs_dist)
             self.assertTrue(
@@ -210,7 +210,7 @@ class EmbodiedDataTest(unittest.TestCase):
         self.assertSequenceEqual(action_space_abs, EXPECTED_ACTIONS_ABS)
         self.assertIn(action_space_abs.sample(), EXPECTED_ACTIONS_ABS)
 
-        for i in range(1, DATASET_LEN):
+        for i in range(1, NUM_STEPS):
             obs_abs, _ = env_interface_abs.step(motor_system_abs())
             self.assertTrue(
                 np.all(obs_abs[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
@@ -248,7 +248,7 @@ class EmbodiedDataTest(unittest.TestCase):
             self.assertTrue(
                 np.all(item[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
             )
-            if i >= DATASET_LEN - 1:
+            if i >= NUM_STEPS - 1:
                 break
 
     # @unittest.skip("debugging")
@@ -272,7 +272,7 @@ class EmbodiedDataTest(unittest.TestCase):
             self.assertTrue(
                 np.all(item[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
             )
-            if i >= DATASET_LEN - 1:
+            if i >= NUM_STEPS - 1:
                 break
 
     def check_two_d_patch_obs(self, obs, patch_size, expected_keys):
@@ -370,7 +370,15 @@ class EmbodiedDataTest(unittest.TestCase):
         for i, obs in enumerate(env_interface_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
+<<<<<<< HEAD
             if i >= DATASET_LEN - 1:
+=======
+            action = env_interface_rel._action
+            action_name = f"{action.agent_id}.{action.name}"
+            self.check_two_d_movement(prev_loc, current_loc, action_name)
+            prev_loc = current_loc
+            if i >= NUM_STEPS - 1:
+>>>>>>> b538edf (checkpoint for renaming env dataloader to env interface)
                 break
 
         env_interface_rel.post_episode()
@@ -383,7 +391,17 @@ class EmbodiedDataTest(unittest.TestCase):
         for i, obs in enumerate(env_interface_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
+<<<<<<< HEAD
             if i >= DATASET_LEN - 1:
+=======
+            action = env_interface_rel._action
+            action_name = (
+                f"{action.agent_id}.{action.name}" if action is not None else None
+            )
+            self.check_two_d_movement(prev_loc, current_loc, action_name)
+            prev_loc = current_loc
+            if i >= NUM_STEPS - 1:
+>>>>>>> b538edf (checkpoint for renaming env dataloader to env interface)
                 break
 
     def test_saccade_on_image_stream_env_interface(self):
@@ -421,7 +439,15 @@ class EmbodiedDataTest(unittest.TestCase):
         for i, obs in enumerate(env_interface_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
+<<<<<<< HEAD
             if i >= DATASET_LEN - 1:
+=======
+            action = env_interface_rel._action
+            action_name = f"{action.agent_id}.{action.name}"
+            self.check_two_d_movement(prev_loc, current_loc, action_name)
+            prev_loc = current_loc
+            if i >= NUM_STEPS - 1:
+>>>>>>> b538edf (checkpoint for renaming env dataloader to env interface)
                 break
 
         env_interface_rel.post_episode()
@@ -433,7 +459,15 @@ class EmbodiedDataTest(unittest.TestCase):
         for i, obs in enumerate(env_interface_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
+<<<<<<< HEAD
             if i >= DATASET_LEN - 1:
+=======
+            action = env_interface_rel._action
+            action_name = f"{action.agent_id}.{action.name}"
+            self.check_two_d_movement(prev_loc, current_loc, action_name)
+            prev_loc = current_loc
+            if i >= NUM_STEPS - 1:
+>>>>>>> b538edf (checkpoint for renaming env dataloader to env interface)
                 break
 
 
