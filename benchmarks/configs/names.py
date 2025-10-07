@@ -88,7 +88,7 @@ class UnsupervisedInferenceExperiments:
 @dataclass
 class MyExperiments:
     # Add your experiment names here
-    custom_logging: dict
+    pass
 
 
 current_module = sys.modules[__name__]

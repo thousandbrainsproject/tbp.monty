@@ -109,7 +109,7 @@ and docs/overview/benchmark-experiments.md
 
 # 14 unique rotations that give good views of the object. Same rotations used
 # for supervised pretraining.
-test_rotations_all = get_cube_face_and_corner_views_rotations()[:3]
+test_rotations_all = get_cube_face_and_corner_views_rotations()
 
 # Limited number of rotations to use for quicker evaluation when doing longer
 # runs with all 77 YCB objects.
