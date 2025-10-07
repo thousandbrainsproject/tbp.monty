@@ -198,7 +198,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
         *args,
         **kwargs,
     ):
-        """Initialize dataloader.
+        """Initialize environment interface.
 
         Args:
             object_names: list of objects if doing a simple experiment with primary
