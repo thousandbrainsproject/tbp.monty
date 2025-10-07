@@ -449,6 +449,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
                 if (
                     not attempting_to_find_object
+                    and actions
                     and actions[0].name != OrientVertical.action_name()
                 ):
                     # We are not attempting to find the object, which means that we
