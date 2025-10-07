@@ -483,7 +483,7 @@ class HabitatSim(HabitatActuator):
             TypeError: If the action type is invalid
             ValueError: If the action name is invalid
         """
-        if len(actions) == 0:
+        if not actions:
             return self.observations
 
         for action in actions:

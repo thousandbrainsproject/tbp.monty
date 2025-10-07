@@ -122,7 +122,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         Returns:
             The observation.
         """
-        if len(actions) == 0:
+        if not actions:
             return self._observation()
 
         for action in actions:
@@ -350,7 +350,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         Returns:
             The observation.
         """
-        if len(actions) == 0:
+        if not actions:
             return self._observation()
 
         obs = {}
