@@ -8,6 +8,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import abc
 import copy
 import json
@@ -57,34 +59,24 @@ class DetailedJSONHandler(MontyHandler):
 
     def __init__(
         self,
-        save_per_episode=True,
-        save_consolidated=False,
-        episodes_to_save=None,
-        parallel_episode_index=None,
-    ):
+        episodes_to_save: list[int] | None = None,
+        parallel_episode_index: int | None = None,
+    ) -> None:
         """Initialize the DetailedJSONHandler.
 
         Args:
-            save_per_episode (bool): If True, save each episode as a separate file
-                in an 'episodes/' subdirectory. Defaults to True.
-            save_consolidated (bool): If True, also maintain the original behavior
-                of appending to a single consolidated file. Defaults to False.
-            episodes_to_save (list or None): List of global episode numbers to save. If
-                None, all episodes are saved. Defaults to None.
-            parallel_episode_index (int or None): Global episode number associated with
+            episodes_to_save: List of episodes to save. If None, all episodes are
+                appended to a consolidated file called detailed_run_stats.json.
+            parallel_episode_index: Global episode number associated with
                 this run when generated via parallel configs. Defaults to None.
         """
         self.report_count = 0
-        self.save_per_episode = save_per_episode
-        self.save_consolidated = save_consolidated
-        self.parallel_episode_index = (
-            int(parallel_episode_index) if parallel_episode_index is not None else None
-        )
-        self.episodes_to_save = (
-            None
-            if episodes_to_save is None
-            else {int(ep) for ep in episodes_to_save}
-        )
+        self.parallel_episode_index = parallel_episode_index
+        self.episodes_to_save = episodes_to_save
+        if self.episodes_to_save is not None and len(self.episodes_to_save) == 0:
+            logger.info(
+                "episodes_to_save is empty; no detailed episode files will be written"
+            )
 
     @classmethod
     def log_level(cls):
