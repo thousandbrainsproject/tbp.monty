@@ -56,11 +56,11 @@ class BaseConfigTest(unittest.TestCase):
             dataset_args=SinglePTZHabitatDatasetArgs(
                 env_init_args=EnvInitArgsSinglePTZ(data_path=None).__dict__
             ),
-            train_dataloader_class=ED.EnvironmentDataLoaderPerObject,
+            train_dataloader_class=ED.EnvironmentInterfacePerObject,
             train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
                 object_names=NotYCBTrainObjectList().objects,
             ),
-            eval_dataloader_class=ED.EnvironmentDataLoaderPerObject,
+            eval_dataloader_class=ED.EnvironmentInterfacePerObject,
             eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
                 object_names=NotYCBEvalObjectList().objects,
             ),
@@ -94,7 +94,7 @@ class BaseConfigTest(unittest.TestCase):
         with MontyExperiment(base_config) as exp:
             pprint("...training...")
             exp.model.set_experiment_mode("train")
-            exp.dataloader = exp.train_dataloader
+            exp.env_interface = exp.train_env_interface
             exp.run_episode()
 
     # @unittest.skip("speed")
