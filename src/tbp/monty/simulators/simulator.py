@@ -95,6 +95,9 @@ class Simulator(Protocol):
 
         Returns:
             A dictionary with the observations grouped by agent_id.
+
+        Note:
+            If the actions are an empty sequence, the current observations are returned.
         """
         ...
 

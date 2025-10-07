@@ -79,8 +79,15 @@ class EmbodiedEnvironment(abc.ABC):
     def step(self, actions: Sequence[Action]) -> Dict[Any, Dict]:
         """Apply the given actions to the environment.
 
-        Return the current observations and other environment information (i.e. sensor
-        pose) after the actions are applied.
+        Args:
+            actions: The actions to apply to the environment.
+
+        Returns:
+            The current observations and other environment information (i.e. sensor
+            pose) after the actions are applied.
+
+        Note:
+            If the actions are an empty sequence, the current observations are returned.
         """
         pass
 
