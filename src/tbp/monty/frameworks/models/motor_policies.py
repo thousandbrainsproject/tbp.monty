@@ -128,7 +128,7 @@ class MotorPolicy(abc.ABC):
         """
         pass
 
-    def __call__(self, state: MotorSystemState | None = None) -> List[Action]:
+    def __call__(self, state: MotorSystemState | None = None) -> list[Action]:
         """Select either dynamic or predefined call.
 
         Args:
