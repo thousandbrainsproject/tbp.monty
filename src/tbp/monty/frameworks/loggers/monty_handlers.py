@@ -71,6 +71,7 @@ class DetailedJSONHandler(MontyHandler):
                 this run when generated via parallel configs. Defaults to None.
         """
         self.report_count = 0
+        self.saved_episode_count = 0
         self.parallel_episode_index = parallel_episode_index
         self.episodes_to_save = episodes_to_save
         if self.episodes_to_save is not None and len(self.episodes_to_save) == 0:
@@ -103,36 +104,44 @@ class DetailedJSONHandler(MontyHandler):
             else local_total
         )
 
-        if self.episodes_to_save is not None:
-            if global_total not in self.episodes_to_save:
-                print(f"Skipping save for episode {global_total} (not in episodes_to_save list)")
-                self.report_count += 1
-                return
+        save_individual = self.episodes_to_save is not None
+
+        if save_individual and global_total not in self.episodes_to_save:
+            logger.debug(
+                "Skipping detailed JSON for episode %s (not requested)", global_total
+            )
+            self.report_count += 1
+            return
 
         output_data[global_total] = copy.deepcopy(stats)
         output_data[global_total].update(data["DETAILED"][local_total])
 
-        # Per-episode saving
-        if self.save_per_episode:
+        if save_individual:
             episodes_dir = os.path.join(output_dir, "episodes")
             os.makedirs(episodes_dir, exist_ok=True)
 
             episode_file = os.path.join(episodes_dir, f"episode_{global_total:06d}.json")
+            maybe_rename_existing_file(
+                episode_file, ".json", 0 if self.saved_episode_count == 0 else 1
+            )
             with open(episode_file, "w") as f:
                 json.dump({global_total: output_data[global_total]}, f, cls=BufferEncoder, indent=2)
 
-            print(f"Episode {global_total} saved to {episode_file}")
+            logger.debug("Saved detailed JSON for episode %s to %s", global_total, episode_file)
+            self.saved_episode_count += 1
 
-        # Consolidated saving
-        if self.save_consolidated:
+        else:
             save_stats_path = os.path.join(output_dir, "detailed_run_stats.json")
-            maybe_rename_existing_file(save_stats_path, ".json", self.report_count)
+            maybe_rename_existing_file(
+                save_stats_path, ".json", 0 if self.saved_episode_count == 0 else 1
+            )
 
             with open(save_stats_path, "a") as f:
                 json.dump({global_total: output_data[global_total]}, f, cls=BufferEncoder)
                 f.write(os.linesep)
 
-            print("Stats appended to " + save_stats_path)
+            logger.debug("Appended detailed stats for episode %s to %s", global_total, save_stats_path)
+            self.saved_episode_count += 1
         self.report_count += 1
 
     def close(self):
