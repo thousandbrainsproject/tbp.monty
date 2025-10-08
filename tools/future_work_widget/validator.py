@@ -78,13 +78,13 @@ class RecordValidator:
             )
             return None, errors
 
-        file_path = record["path"]
+        file_path = str(record["path"])
 
         self._validate_comma_separated_fields(record_copy, file_path, errors)
         self._validate_required_fields(record_copy, file_path, errors)
         self._validate_custom_fields(record_copy, file_path, errors)
         self._validate_field_values(record_copy, file_path, errors)
-        return (None, errors) if errors else (record_copy, errors)
+        return (None if errors else record_copy, errors)
 
     def _process_comma_separated_field(
         self,
