@@ -729,7 +729,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         self,
         fake_obs,
         initial_possible_poses="informed",
-        gsg_class=GraphGoalStateGenerator,
+        gsg_class=None,
         gsg_args=None,
     ):
         graph_lm = EvidenceGraphLM(

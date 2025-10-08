@@ -186,8 +186,9 @@ class EvidenceGraphLM(GraphLM):
         )
         if gsg_args is None:
             gsg_args = {}
-        self.gsg = gsg_class(self, **gsg_args)
-        self.gsg.reset()
+        self.gsg = gsg_class(self, **gsg_args) if gsg_class is not None else None
+        if self.gsg is not None:
+            self.gsg.reset()
         # --- Matching Params ---
         self.max_match_distance = max_match_distance
         self.tolerances = tolerances
