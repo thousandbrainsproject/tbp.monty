@@ -61,6 +61,7 @@ class DetailedJSONHandler(MontyHandler):
         self,
         episodes_to_save: list[int] | None = None,
         parallel_episode_index: int | None = None,
+        save_per_episode: bool = False,
     ) -> None:
         """Initialize the DetailedJSONHandler.
 
@@ -74,6 +75,7 @@ class DetailedJSONHandler(MontyHandler):
         self.saved_episode_count = 0
         self.parallel_episode_index = parallel_episode_index
         self.episodes_to_save = episodes_to_save
+        self.save_per_episode = save_per_episode
         if self.episodes_to_save is not None and len(self.episodes_to_save) == 0:
             logger.info(
                 "episodes_to_save is empty; no detailed episode files will be written"
@@ -104,9 +106,11 @@ class DetailedJSONHandler(MontyHandler):
             else local_total
         )
 
-        save_individual = self.episodes_to_save is not None
+        save_individual = self.save_per_episode and (
+            self.episodes_to_save is None or global_total in self.episodes_to_save
+        )
 
-        if save_individual and global_total not in self.episodes_to_save:
+        if self.episodes_to_save is not None and global_total not in self.episodes_to_save:
             logger.debug(
                 "Skipping detailed JSON for episode %s (not requested)", global_total
             )

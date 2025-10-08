@@ -222,7 +222,20 @@ def move_reproducibility_data(base_dir, parallel_dirs):
 def collect_detailed_episode_logs(parallel_dirs, base_dir):
     """Move per-episode detailed logs into a shared episodes directory."""
 
-    episodes_root = Path(base_dir) / "episodes"
+    collected_files = []
+    for pdir in parallel_dirs:
+        src_dir = Path(pdir) / "detailed_run_stats"
+        if not src_dir.is_dir():
+            continue
+
+        run_name = Path(pdir).name
+        for episode_file in sorted(src_dir.glob("*.json")):
+            collected_files.append((run_name, episode_file))
+
+    if len(collected_files) == 0:
+        return
+
+    episodes_root = Path(base_dir) / "detailed_run_stats"
     if episodes_root.exists() and any(episodes_root.iterdir()):
         timestamp = int(time.time())
         backup_dir = episodes_root.with_name(f"{episodes_root.name}_{timestamp}")
@@ -236,27 +249,18 @@ def collect_detailed_episode_logs(parallel_dirs, base_dir):
 
     episodes_root.mkdir(exist_ok=True)
 
-    for pdir in parallel_dirs:
-        src_dir = Path(pdir) / "episodes"
-        if not src_dir.is_dir():
-            continue
+    for run_name, episode_file in collected_files:
+        dest_path = episodes_root / episode_file.name
+        if dest_path.exists():
+            stem = episode_file.stem
+            suffix = episode_file.suffix
+            dest_path = episodes_root / f"{run_name}_{stem}{suffix}"
+            counter = 1
+            while dest_path.exists():
+                dest_path = episodes_root / f"{run_name}_{stem}_{counter:02d}{suffix}"
+                counter += 1
 
-        run_name = Path(pdir).name
-        for episode_file in sorted(src_dir.glob("*.json")):
-            dest_path = episodes_root / episode_file.name
-            if dest_path.exists():
-                stem = episode_file.stem
-                suffix = episode_file.suffix
-                dest_path = episodes_root / f"{run_name}_{stem}{suffix}"
-                counter = 1
-                while dest_path.exists():
-                    dest_path = (
-                        episodes_root
-                        / f"{run_name}_{stem}_{counter:02d}{suffix}"
-                    )
-                    counter += 1
-
-            shutil.move(str(episode_file), dest_path)
+        shutil.move(str(episode_file), dest_path)
 
 
 def post_parallel_eval(configs: List[Mapping], base_dir: str) -> None:
@@ -272,18 +276,16 @@ def post_parallel_eval(configs: List[Mapping], base_dir: str) -> None:
     parallel_dirs = [cfg["logging_config"]["output_dir"] for cfg in configs]
 
     logging_config = configs[0]["logging_config"]
-    save_per_episode = logging_config.get("save_per_episode", True)
-    save_consolidated = logging_config.get("save_consolidated", False)
-    collected_episode_logs = False
+    episodes_to_save = logging_config.get("episodes_to_save")
+    collect_per_episode = episodes_to_save is not None
 
     # Loop over types of loggers, figure out how to clean up each one
     for handler in logging_config["monty_handlers"]:
         if issubclass(handler, DetailedJSONHandler):
-            if save_per_episode and not collected_episode_logs:
+            if collect_per_episode:
                 collect_detailed_episode_logs(parallel_dirs, base_dir)
-                collected_episode_logs = True
 
-            if save_consolidated:
+            if not collect_per_episode:
                 filename = "detailed_run_stats.json"
                 filenames = [os.path.join(pdir, filename) for pdir in parallel_dirs]
                 outfile = os.path.join(base_dir, filename)
