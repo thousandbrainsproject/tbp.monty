@@ -68,7 +68,7 @@ class RecordValidator:
 
         record_copy = record.copy()
 
-        errors = []
+        errors: list[ValidationError] = []
 
         if "path" not in record:
             errors.append(
@@ -131,9 +131,11 @@ class RecordValidator:
             errors: List to append validation errors to
         """
         for field in self.COMMA_SEPARATED_FIELDS:
-            if field in record and isinstance(record[field], str):
+            if field in record:
+                field_value = str(record[field])
+
                 processed_items = self._process_comma_separated_field(
-                    field, record[field], file_path, errors
+                    field, field_value, file_path, errors
                 )
                 if processed_items is not None:
                     record[field] = processed_items
