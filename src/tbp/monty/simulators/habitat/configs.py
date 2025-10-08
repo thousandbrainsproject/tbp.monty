@@ -49,23 +49,23 @@ __all__ = [
     "EnvInitArgsSurfaceViewMount",
     "EnvInitArgsTwoLMDistantStackedMount",
     "EnvInitArgsTwoLMSurfaceStackedMount",
-    "FiveLMMountHabitatDatasetArgs",
-    "MultiLMMountHabitatDatasetArgs",
-    "NoisyPatchViewFinderMountHabitatDatasetArgs",
-    "NoisySurfaceViewFinderMountHabitatDatasetArgs",
+    "FiveLMMountHabitatEnvironmentArgs",
+    "MultiLMMountHabitatEnvironmentArgs",
+    "NoisyPatchViewFinderMountHabitatEnvironmentArgs",
+    "NoisySurfaceViewFinderMountHabitatEnvironmentArgs",
     "ObjectConfig",
-    "PatchViewFinderLowResMountHabitatDatasetArgs",
-    "PatchViewFinderMontyWorldMountHabitatDatasetArgs",
-    "PatchViewFinderMountHabitatDatasetArgs",
-    "PatchViewFinderMultiObjectMountHabitatDatasetArgs",
-    "PatchViewFinderShapenetMountHabitatDatasetArgs",
-    "SimpleMountHabitatDatasetArgs",
-    "SinglePTZHabitatDatasetArgs",
-    "SurfaceViewFinderMontyWorldMountHabitatDatasetArgs",
-    "SurfaceViewFinderMountHabitatDatasetArgs",
-    "TwoLMStackedDistantMountHabitatDatasetArgs",
-    "TwoLMStackedSurfaceMountHabitatDatasetArgs",
-    "make_multi_sensor_habitat_dataset_args",
+    "PatchViewFinderLowResMountHabitatEnvironmentArgs",
+    "PatchViewFinderMontyWorldMountHabitatEnvironmentArgs",
+    "PatchViewFinderMountHabitatEnvironmentArgs",
+    "PatchViewFinderMultiObjectMountHabitatEnvironmentArgs",
+    "PatchViewFinderShapenetMountHabitatEnvironmentArgs",
+    "SimpleMountHabitatEnvironmentArgs",
+    "SinglePTZHabitatEnvironmentArgs",
+    "SurfaceViewFinderMontyWorldMountHabitatEnvironmentArgs",
+    "SurfaceViewFinderMountHabitatEnvironmentArgs",
+    "TwoLMStackedDistantMountHabitatEnvironmentArgs",
+    "TwoLMStackedSurfaceMountHabitatEnvironmentArgs",
+    "make_multi_sensor_habitat_environment_args",
 ]
 
 
@@ -155,10 +155,10 @@ class EnvInitArgsPatchViewMountLowRes(EnvInitArgs):
 
 
 @dataclass
-class SinglePTZHabitatDatasetArgs:
-    """Define a dataset with a single cone and a single PTZCameraAgent.
+class SinglePTZHabitatEnvironmentArgs:
+    """Define an environment with a single cone and a single PTZCameraAgent.
 
-    Use this to make a :class:`EnvironmentDataset` with an env with a single cone and
+    Use this to make a :class:`EnvironmentInterface` with an env with a single cone and
     a single PTZCameraAgent.
     """
 
@@ -170,10 +170,10 @@ class SinglePTZHabitatDatasetArgs:
 
 
 @dataclass
-class SimpleMountHabitatDatasetArgs:
-    """Define a dataset with a single cone and a single mount agent with two cameras.
+class SimpleMountHabitatEnvironmentArgs:
+    """Define an environment with a single cone and a single mount agent with two cameras.
 
-    Use this to make a :class:`EnvironmentDataset` with an env with a single cone and
+    Use this to make a :class:`EnvironmentInterface` with an env with a single cone and
     a single mount agent with two cameras.
     """
 
@@ -185,7 +185,7 @@ class SimpleMountHabitatDatasetArgs:
 
 
 @dataclass
-class PatchViewFinderMountHabitatDatasetArgs:
+class PatchViewFinderMountHabitatEnvironmentArgs:
     env_init_func: Callable = field(default=HabitatEnvironment)
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsPatchViewMount().__dict__
@@ -210,7 +210,7 @@ class PatchViewFinderMountHabitatDatasetArgs:
 
 
 @dataclass
-class NoisyPatchViewFinderMountHabitatDatasetArgs:
+class NoisyPatchViewFinderMountHabitatEnvironmentArgs:
     env_init_func: Callable = field(default=HabitatEnvironment)
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsPatchViewMount().__dict__
@@ -245,8 +245,8 @@ class EnvInitArgsShapenetPatchViewMount(EnvInitArgsPatchViewMount):
 
 
 @dataclass
-class PatchViewFinderLowResMountHabitatDatasetArgs(
-    PatchViewFinderMountHabitatDatasetArgs
+class PatchViewFinderLowResMountHabitatEnvironmentArgs(
+    PatchViewFinderMountHabitatEnvironmentArgs
 ):
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsPatchViewMountLowRes().__dict__
@@ -254,8 +254,8 @@ class PatchViewFinderLowResMountHabitatDatasetArgs(
 
 
 @dataclass
-class PatchViewFinderShapenetMountHabitatDatasetArgs(
-    PatchViewFinderMountHabitatDatasetArgs
+class PatchViewFinderShapenetMountHabitatEnvironmentArgs(
+    PatchViewFinderMountHabitatEnvironmentArgs
 ):
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsShapenetPatchViewMount().__dict__
@@ -263,8 +263,8 @@ class PatchViewFinderShapenetMountHabitatDatasetArgs(
 
 
 @dataclass
-class PatchViewFinderMontyWorldMountHabitatDatasetArgs(
-    PatchViewFinderMountHabitatDatasetArgs
+class PatchViewFinderMontyWorldMountHabitatEnvironmentArgs(
+    PatchViewFinderMountHabitatEnvironmentArgs
 ):
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsMontyWorldPatchViewMount().__dict__
@@ -272,7 +272,7 @@ class PatchViewFinderMontyWorldMountHabitatDatasetArgs(
 
 
 @dataclass
-class SurfaceViewFinderMountHabitatDatasetArgs(PatchViewFinderMountHabitatDatasetArgs):
+class SurfaceViewFinderMountHabitatEnvironmentArgs(PatchViewFinderMountHabitatEnvironmentArgs):
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsSurfaceViewMount().__dict__
     )
@@ -296,8 +296,8 @@ class SurfaceViewFinderMountHabitatDatasetArgs(PatchViewFinderMountHabitatDatase
 
 
 @dataclass
-class SurfaceViewFinderMontyWorldMountHabitatDatasetArgs(
-    SurfaceViewFinderMountHabitatDatasetArgs
+class SurfaceViewFinderMontyWorldMountHabitatEnvironmentArgs(
+    SurfaceViewFinderMountHabitatEnvironmentArgs
 ):
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsMontyWorldSurfaceViewMount().__dict__
@@ -305,8 +305,8 @@ class SurfaceViewFinderMontyWorldMountHabitatDatasetArgs(
 
 
 @dataclass
-class NoisySurfaceViewFinderMountHabitatDatasetArgs(
-    PatchViewFinderMountHabitatDatasetArgs
+class NoisySurfaceViewFinderMountHabitatEnvironmentArgs(
+    PatchViewFinderMountHabitatEnvironmentArgs
 ):
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsSurfaceViewMount().__dict__
@@ -346,7 +346,7 @@ class EnvInitArgsMultiLMMount(EnvInitArgs):
 
 
 @dataclass
-class MultiLMMountHabitatDatasetArgs:
+class MultiLMMountHabitatEnvironmentArgs:
     env_init_func: Callable = field(default=HabitatEnvironment)
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsMultiLMMount().__dict__
@@ -379,7 +379,7 @@ class EnvInitArgsTwoLMDistantStackedMount(EnvInitArgs):
 
 
 @dataclass
-class TwoLMStackedDistantMountHabitatDatasetArgs(MultiLMMountHabitatDatasetArgs):
+class TwoLMStackedDistantMountHabitatEnvironmentArgs(MultiLMMountHabitatEnvironmentArgs):
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsTwoLMDistantStackedMount().__dict__
     )
@@ -395,7 +395,7 @@ class EnvInitArgsTwoLMSurfaceStackedMount(EnvInitArgs):
 
 
 @dataclass
-class TwoLMStackedSurfaceMountHabitatDatasetArgs(MultiLMMountHabitatDatasetArgs):
+class TwoLMStackedSurfaceMountHabitatEnvironmentArgs(MultiLMMountHabitatEnvironmentArgs):
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsTwoLMSurfaceStackedMount().__dict__
     )
@@ -411,7 +411,7 @@ class EnvInitArgsFiveLMMount(EnvInitArgs):
 
 
 @dataclass
-class FiveLMMountHabitatDatasetArgs(MultiLMMountHabitatDatasetArgs):
+class FiveLMMountHabitatEnvironmentArgs(MultiLMMountHabitatEnvironmentArgs):
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsFiveLMMount().__dict__
     )
@@ -429,7 +429,7 @@ class EnvInitArgsPatchViewFinderMultiObjectMount(EnvInitArgs):
 
 
 @dataclass
-class PatchViewFinderMultiObjectMountHabitatDatasetArgs:
+class PatchViewFinderMultiObjectMountHabitatEnvironmentArgs:
     env_init_func: Callable = field(default=HabitatEnvironment)
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsPatchViewFinderMultiObjectMount().__dict__
@@ -453,13 +453,13 @@ class PatchViewFinderMultiObjectMountHabitatDatasetArgs:
         ]
 
 
-def make_multi_sensor_habitat_dataset_args(
+def make_multi_sensor_habitat_environment_args(
     n_sensors: int,
     **mount_kwargs: Mapping,
-) -> MultiLMMountHabitatDatasetArgs:
-    """Generate a dataset configs for a multi-LM experiment config.
+) -> MultiLMMountHabitatEnvironmentArgs:
+    """Generate environment configs for a multi-LM experiment config.
 
-    This function is useful for creating habitat dataset args for multi-LM
+    This function is useful for creating habitat environment args for multi-LM
     experiments. The default arguments will place sensors on a grid, with
     sensors spreading out from the center and with 1 cm spacing between sensors,
     64 x 64 resolution, and 10x zoom (except for the view finder which has a zoom of
@@ -484,5 +484,5 @@ def make_multi_sensor_habitat_dataset_args(
     env_init_args = EnvInitArgsMultiLMMount()
     env_init_args.agents = [AgentConfig(MultiSensorAgent, mount_config)]
     env_init_args = env_init_args.__dict__
-    dataset_args = MultiLMMountHabitatDatasetArgs(env_init_args=env_init_args)
-    return dataset_args
+    environment_args = MultiLMMountHabitatEnvironmentArgs(env_init_args=env_init_args)
+    return environment_args
