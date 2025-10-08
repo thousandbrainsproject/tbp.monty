@@ -9,7 +9,7 @@
 # https://opensource.org/licenses/MIT.
 
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Dict, List, Optional, Type, Union
+from typing import Dict, List, Optional, Sequence, Type, Union
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
@@ -163,8 +163,8 @@ class HabitatEnvironment(EmbodiedEnvironment):
             primary_target_bb=primary_target_bb,
         )
 
-    def step(self, action: Action) -> Dict[str, Dict]:
-        return self._env.apply_action(action)
+    def step(self, actions: Sequence[Action]) -> Dict[str, Dict]:
+        return self._env.apply_actions(actions)
 
     def remove_all_objects(self):
         return self._env.remove_all_objects()

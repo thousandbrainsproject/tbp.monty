@@ -128,7 +128,7 @@ class MotorPolicy(abc.ABC):
         """
         pass
 
-    def __call__(self, state: MotorSystemState | None = None) -> Action | None:
+    def __call__(self, state: MotorSystemState | None = None) -> list[Action]:
         """Select either dynamic or predefined call.
 
         Args:
@@ -136,14 +136,14 @@ class MotorPolicy(abc.ABC):
                 Defaults to None.
 
         Returns:
-            The action to take.
+            The actions to take.
         """
         if self.is_predefined:
             action: Action | None = self.predefined_call()
         else:
             action = self.dynamic_call(state)
         self.post_action(action, state)
-        return action
+        return [action] if action else []
 
 
 class BasePolicy(MotorPolicy):

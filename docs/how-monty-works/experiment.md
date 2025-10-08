@@ -11,7 +11,7 @@ In reality an agent interacts continuously with the world and time is not explic
 
 <br />
 
-- **Step:** taking one action and receiving one observation. There are different types of steps that track more specifically whether learning module updates were performed either individually for each LM or more globally for the Monty class.
+- **Step:** taking zero, one, or more actions and receiving one observation. There are different types of steps that track more specifically whether learning module updates were performed either individually for each LM or more globally for the Monty class.
 
   - **monty_step** (model.episode_steps total_steps): number of observations sent to the Monty model. This includes observations that were not interesting enough to be sent to an LM such as off-object observations. It includes both matching and exploratory steps.
 
