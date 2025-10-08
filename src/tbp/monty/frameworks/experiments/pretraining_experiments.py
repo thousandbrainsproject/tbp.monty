@@ -14,7 +14,7 @@ import os
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.environments.embodied_data import SaccadeOnImageDataLoader
+from tbp.monty.frameworks.environments.embodied_data import SaccadeOnImageEnvironmentInterface
 from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
 
 from .monty_experiment import MontyExperiment
@@ -78,13 +78,13 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         for observation in self.dataloader:
             num_steps += 1
             if self.show_sensor_output:
-                is_saccade_on_image_data_loader = isinstance(
-                    self.dataloader, SaccadeOnImageDataLoader
+                is_saccade_on_image_env_interface = isinstance(
+                    self.dataloader, SaccadeOnImageEnvironmentInterface
                 )
                 self.live_plotter.show_observations(
                     *self.live_plotter.hardcoded_assumptions(observation, self.model),
                     num_steps,
-                    is_saccade_on_image_data_loader,
+                    is_saccade_on_image_env_interface,
                 )
             self.model.step(observation)
             if self.model.is_done:
@@ -144,7 +144,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
     def pre_episode(self):
         """Pre episode where we pass target object to the model for logging."""
-        self.model.pre_episode(self.dataloader.primary_target)
+        self.model.pre_episode(self.env_interface.primary_target)
         self.dataloader.pre_episode()
 
         self.max_steps = self.max_train_steps  # no eval mode here
