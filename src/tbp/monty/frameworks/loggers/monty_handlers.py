@@ -70,6 +70,9 @@ class DetailedJSONHandler(MontyHandler):
                 appended to a consolidated file called detailed_run_stats.json.
             parallel_episode_index: Global episode number associated with
                 this run when generated via parallel configs. Defaults to None.
+            save_per_episode: Whether to save individual episode files or
+                consolidate into a single detailed_run_stats.json file.
+                Defaults to False.
         """
         self.report_count = 0
         self.saved_episode_count = 0
@@ -110,7 +113,10 @@ class DetailedJSONHandler(MontyHandler):
             self.episodes_to_save is None or global_total in self.episodes_to_save
         )
 
-        if self.episodes_to_save is not None and global_total not in self.episodes_to_save:
+        if (
+            self.episodes_to_save is not None
+            and global_total not in self.episodes_to_save
+        ):
             logger.debug(
                 "Skipping detailed JSON for episode %s (not requested)", global_total
             )
@@ -121,17 +127,26 @@ class DetailedJSONHandler(MontyHandler):
         output_data[global_total].update(data["DETAILED"][local_total])
 
         if save_individual:
-            episodes_dir = os.path.join(output_dir, "episodes")
+            episodes_dir = os.path.join(output_dir, "detailed_run_stats")
             os.makedirs(episodes_dir, exist_ok=True)
 
-            episode_file = os.path.join(episodes_dir, f"episode_{global_total:06d}.json")
+            episode_file = os.path.join(
+                episodes_dir, f"episode_{global_total:06d}.json"
+            )
             maybe_rename_existing_file(
                 episode_file, ".json", 0 if self.saved_episode_count == 0 else 1
             )
             with open(episode_file, "w") as f:
-                json.dump({global_total: output_data[global_total]}, f, cls=BufferEncoder, indent=2)
+                json.dump(
+                    {global_total: output_data[global_total]},
+                    f,
+                    cls=BufferEncoder,
+                    indent=2,
+                )
 
-            logger.debug("Saved detailed JSON for episode %s to %s", global_total, episode_file)
+            logger.debug(
+                "Saved detailed JSON for episode %s to %s", global_total, episode_file
+            )
             self.saved_episode_count += 1
 
         else:
@@ -141,15 +156,22 @@ class DetailedJSONHandler(MontyHandler):
             )
 
             with open(save_stats_path, "a") as f:
-                json.dump({global_total: output_data[global_total]}, f, cls=BufferEncoder)
+                json.dump(
+                    {global_total: output_data[global_total]}, f, cls=BufferEncoder
+                )
                 f.write(os.linesep)
 
-            logger.debug("Appended detailed stats for episode %s to %s", global_total, save_stats_path)
+            logger.debug(
+                "Appended detailed stats for episode %s to %s",
+                global_total,
+                save_stats_path,
+            )
             self.saved_episode_count += 1
         self.report_count += 1
 
     def close(self):
         pass
+
 
 class BasicCSVStatsHandler(MontyHandler):
     """Grab any logs at the BASIC level and append to train or eval CSV files."""

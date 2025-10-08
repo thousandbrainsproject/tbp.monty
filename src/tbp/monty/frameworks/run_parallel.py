@@ -221,7 +221,6 @@ def move_reproducibility_data(base_dir, parallel_dirs):
 
 def collect_detailed_episode_logs(parallel_dirs, base_dir):
     """Move per-episode detailed logs into a shared episodes directory."""
-
     collected_files = []
     for pdir in parallel_dirs:
         src_dir = Path(pdir) / "detailed_run_stats"
