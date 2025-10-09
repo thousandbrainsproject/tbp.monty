@@ -34,23 +34,25 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
 from tbp.monty.frameworks.models.motor_policies import NaiveScanPolicy
+from tbp.monty.frameworks.models.sensor_modules import DetailedLoggingSM
+from tbp.monty.frameworks.models.two_d_sensor_module import TwoDPoseSM
 from tbp.monty.simulators.habitat.configs import (
     PatchViewFinderMountHabitatDatasetArgs,
     EnvInitArgsPatchViewMount,
 )
 from tbp.monty.frameworks.run import print_config
 
-# Let's just pretrain on a single view and see how it goes
-train_rotation = get_cube_face_and_corner_views_rotations()[0]
+LOGO_POSITIONS = [[0.0, 1.5, 0.0], [-0.03, 1.5, 0.0], [0.03, 1.5, 0.0]]
+LOGO_ROTATIONS = [[0.0, 0.0, 0.0]]
 
-supervised_pretraining_logos_2d_sensor = copy.deepcopy(supervised_pre_training_base)
-print_config(supervised_pretraining_logos_2d_sensor)
-
-# Update the dataset and dataloader to use the logos
-supervised_pretraining_logos_2d_sensor.update(
+# Let's learn it using our usual sensor module first
+# Config from feat.compositional_testbed
+supervised_pretraining_logos = copy.deepcopy(supervised_pre_training_base)
+supervised_pretraining_logos["logging_config"].run_name = "supervised_pretraining_logos"
+supervised_pretraining_logos.update(
     experiment_args=ExperimentArgs(
         do_eval=False,
-        n_train_epochs=len(train_rotation),
+        n_train_epochs=len(LOGO_POSITIONS) * len(LOGO_ROTATIONS),
     ),
     dataset_args=PatchViewFinderMountHabitatDatasetArgs(
         env_init_args=EnvInitArgsPatchViewMount(
@@ -59,12 +61,13 @@ supervised_pretraining_logos_2d_sensor.update(
     ),
     train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=get_object_names_by_idx(0, len(LOGOS), object_list=LOGOS),
-        object_init_sampler=PredefinedObjectInitializer(rotations=[train_rotation]),
+        object_init_sampler=PredefinedObjectInitializer(
+            positions=LOGO_POSITIONS,
+            rotations=LOGO_ROTATIONS,
+        ),
     ),
 )
-
-# Update the motor system to use Naive Scan Policy with step size 1
-supervised_pretraining_logos_2d_sensor.update(
+supervised_pretraining_logos.update(
     monty_config=PatchAndViewMontyConfig(
         motor_system_config=MotorSystemConfigNaiveScanSpiral(
             motor_system_args=dict(
@@ -75,19 +78,55 @@ supervised_pretraining_logos_2d_sensor.update(
     ),
 )
 
-# # Update to use 2D sensor module
-# supervised_pretraining_logos_2d_sensor.update(
-#     monty_config=PatchAndViewMontyConfig(
-#         sensor_module_configs=SensorModuleConfigs(
-#             habitat_surface_patch_sm=HabitatSurfacePatchSM(),
-#         ),
-#     ),
-# )
+supervised_pretraining_logos_2d_sensor = copy.deepcopy(supervised_pretraining_logos)
 
-# Update run name
+# Update to use 2D sensor module
+supervised_pretraining_logos_2d_sensor.update(
+    monty_config=PatchAndViewMontyConfig(
+        motor_system_config=MotorSystemConfigNaiveScanSpiral(
+            motor_system_args=dict(
+                policy_class=NaiveScanPolicy,
+                policy_args=make_naive_scan_policy_config(step_size=1),
+            ),
+        ),
+        sensor_module_configs=dict(
+            sensor_module_0=dict(
+                sensor_module_class=TwoDPoseSM,
+                sensor_module_args=dict(
+                    sensor_module_id="patch",
+                    features=[
+                        "pose_vectors",
+                        "pose_fully_defined",
+                        "on_object",
+                        "object_coverage",
+                        "rgba",
+                        "hsv",
+                        "edge_strength",
+                        "edge_orientation",
+                        "edge_tangent",
+                    ],
+                    save_raw_obs=True,
+                    debug_visualize=True,
+                    debug_save_dir=os.path.join(
+                        os.path.expanduser("~"),
+                        "tbp/feat.2d_sensor/results/debug_2d_edges",
+                    ),
+                ),
+            ),
+            sensor_module_1=dict(
+                sensor_module_class=DetailedLoggingSM,
+                sensor_module_args=dict(
+                    sensor_module_id="view_finder",
+                    save_raw_obs=True,
+                ),
+            ),
+        ),
+    ),
+)
 supervised_pretraining_logos_2d_sensor["logging_config"].run_name = "supervised_pretraining_logos_2d_sensor"
 
 experiments = MyExperiments(
+    supervised_pretraining_logos=supervised_pretraining_logos,
     supervised_pretraining_logos_2d_sensor=supervised_pretraining_logos_2d_sensor,
 )
 CONFIGS = asdict(experiments)

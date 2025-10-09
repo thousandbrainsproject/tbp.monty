@@ -31,6 +31,14 @@ from tbp.monty.frameworks.utils.sensor_processing import (
 )
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 
+# Import 2D sensor module (after other imports to avoid circular dependencies)
+try:
+    from tbp.monty.frameworks.models.two_d_sensor_module import TwoDPoseSM
+
+    _2D_SENSOR_AVAILABLE = True
+except ImportError:
+    _2D_SENSOR_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 

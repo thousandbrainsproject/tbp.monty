@@ -110,6 +110,7 @@ class UnsupervisedInferenceExperiments:
 
 @dataclass
 class MyExperiments:
+    supervised_pretraining_logos: dict
     supervised_pretraining_logos_2d_sensor: dict
 
 

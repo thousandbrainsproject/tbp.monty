@@ -10,18 +10,19 @@ import os
 import glob
 from pathlib import Path
 
+
 def main():
     """Main function to visualize the ground truth UV map for all objects."""
     # Dataset configurations
     datasets = {
         "ycb": {
             "base_path": "/Users/hlee/tbp/data/habitat/versioned_data/ycb_1.2/meshes",
-            "file_pattern": "google_16k/textured.glb.orig"
+            "file_pattern": "google_16k/textured.glb.orig",
         },
         "compositional_objects": {
             "base_path": "/Users/hlee/tbp/data/compositional_objects/meshes",
-            "file_pattern": "textured.glb"
-        }
+            "file_pattern": "textured.glb",
+        },
     }
 
     # Process both datasets
@@ -67,6 +68,7 @@ def main():
                 print(f"Error processing {object_name}: {e}")
                 continue
 
+
 def create_visualization(scene, object_name, results_dir, dataset_name):
     """Create and save visualization for a single object."""
     uv_map = scene.visual.uv
@@ -80,17 +82,16 @@ def create_visualization(scene, object_name, results_dir, dataset_name):
     color_normalized = color[:, :3] / 255.0  # Use RGB only, ignore alpha
 
     # Plot 1: 3D Mesh with colors
-    ax1 = fig.add_subplot(141, projection='3d')
+    ax1 = fig.add_subplot(141, projection="3d")
     from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
     # Create triangular patches
     triangles_3d = vertices[faces]
     face_colors = np.mean(color_normalized[faces], axis=1)
 
-    mesh_collection = Poly3DCollection(triangles_3d,
-                                      facecolors=face_colors,
-                                      alpha=0.8,
-                                      edgecolors='none')
+    mesh_collection = Poly3DCollection(
+        triangles_3d, facecolors=face_colors, alpha=0.8, edgecolors="none"
+    )
     ax1.add_collection3d(mesh_collection)
 
     # Set consistent axis limits for both 3D plots
@@ -107,9 +108,8 @@ def create_visualization(scene, object_name, results_dir, dataset_name):
     ax1.set_zlabel("Z")
 
     # Plot 2: 3D Point Cloud
-    ax2 = fig.add_subplot(142, projection='3d')
-    ax2.scatter(vertices[:, 0], vertices[:, 1], vertices[:, 2],
-                c=color_normalized, s=3)
+    ax2 = fig.add_subplot(142, projection="3d")
+    ax2.scatter(vertices[:, 0], vertices[:, 1], vertices[:, 2], c=color_normalized, s=3)
     ax2.set_xlim(x_min, x_max)
     ax2.set_ylim(y_min, y_max)
     ax2.set_zlim(z_min, z_max)
@@ -124,31 +124,33 @@ def create_visualization(scene, object_name, results_dir, dataset_name):
     ax3.set_title(f"UV Map - {dataset_name.upper()}: {object_name}")
     ax3.set_xlabel("U")
     ax3.set_ylabel("V")
-    ax3.set_aspect('equal')
+    ax3.set_aspect("equal")
 
     # Plot 4: Texture Image
     ax4 = fig.add_subplot(144)
     ax4.imshow(texture_image)
     ax4.set_title(f"Texture Image - {dataset_name.upper()}: {object_name}")
 
-    ax4.axis('off')
+    ax4.axis("off")
 
     plt.tight_layout()
 
     # Save the plot
     output_path = results_dir / f"{object_name}_uv_visualization.png"
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()  # Close to free memory
     print(f"Saved: {output_path}")
+
 
 def extract_color(mesh: trimesh.Trimesh) -> np.ndarray:
     """Extract the color from the object mesh."""
 
     # For textured meshes, sample colors from the texture using UV coordinates
-    if (hasattr(mesh.visual, 'material') and
-        mesh.visual.material is not None and
-        hasattr(mesh.visual.material, 'baseColorTexture')):
-
+    if (
+        hasattr(mesh.visual, "material")
+        and mesh.visual.material is not None
+        and hasattr(mesh.visual.material, "baseColorTexture")
+    ):
         print("Sampling colors from texture")
         texture_image = np.array(mesh.visual.material.baseColorTexture)
         uv_coords = mesh.visual.uv
@@ -160,7 +162,9 @@ def extract_color(mesh: trimesh.Trimesh) -> np.ndarray:
         # UV coordinates are typically in [0,1] range
         height, width = texture_image.shape[:2]
         u_pixels = (uv_coords[:, 0] * (width - 1)).astype(int)
-        v_pixels = ((1 - uv_coords[:, 1]) * (height - 1)).astype(int)  # Flip V coordinate
+        v_pixels = ((1 - uv_coords[:, 1]) * (height - 1)).astype(
+            int
+        )  # Flip V coordinate
 
         # Clamp to valid range
         u_pixels = np.clip(u_pixels, 0, width - 1)
@@ -178,10 +182,12 @@ def extract_color(mesh: trimesh.Trimesh) -> np.ndarray:
             color = np.stack([gray, gray, gray, np.full_like(gray, 255)], axis=1)
 
     # Fallback to other color methods
-    elif hasattr(mesh.visual, 'vertex_colors') and mesh.visual.vertex_colors is not None:
+    elif (
+        hasattr(mesh.visual, "vertex_colors") and mesh.visual.vertex_colors is not None
+    ):
         print("Using vertex colors")
         color = mesh.visual.vertex_colors
-    elif hasattr(mesh.visual, 'face_colors') and mesh.visual.face_colors is not None:
+    elif hasattr(mesh.visual, "face_colors") and mesh.visual.face_colors is not None:
         print("Using face colors")
         color = mesh.visual.face_colors
     else:
@@ -190,6 +196,7 @@ def extract_color(mesh: trimesh.Trimesh) -> np.ndarray:
 
     print(f"Final color shape: {color.shape}")
     return color, texture_image
+
 
 if __name__ == "__main__":
     main()
