@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
 
@@ -123,13 +124,13 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
         self.driving_goal_state = received_goal_state
 
-    def get_output_goal_state(self):
+    def get_output_goal_state(self) -> GoalState | None:
         """Retrieve the output goal-state of the GSG.
 
         This is the goal-state projected to other LM's GSGs +/- motor-actuators.
 
         Returns:
-            Output goal-state of the GSG.
+            Output goal-state of the GSG if it exists, otherwise None.
         """
         return self.output_goal_state
 
