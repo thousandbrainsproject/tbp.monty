@@ -913,33 +913,26 @@ def lm_stats_to_dataframe(stats, format_for_wandb=False):
     return big_df
 
 
-def maybe_rename_existing_file(log_file, extension, report_count):
-    """Check if this run has already been executed.
+def maybe_rename_existing_file(filepath: Path) -> None:
+    """If the given log file already exists, rename it to <filename>_old."""
+    if not filepath.exists():
+        return
 
-    If so, change name of existing log file by appending _old to it.
+    old_name = filepath.stem
+    new_name = old_name + "_old" + filepath.suffix
 
-    Args:
-        log_file: full path to the file, e.g. ~/.../detailed_run_stats.json
-        extension: str name of file type
-        report_count: ?
-    """
-    if (report_count == 0) and (os.path.exists(log_file)):
-        old_name = log_file.split(extension)[0]
-        new_name = old_name + "_old" + extension
+    logger.warning(
+        f"Output file {filepath} already exists. This file will be moved to {new_name}"
+    )
 
+    if new_name.exists():
         logger.warning(
-            f"Output file {log_file} already exists. This file will be moved"
-            f" to {new_name}"
+            f"Output file {new_name} also already exists. This file will be removed"
+            " before renaming."
         )
+        new_name.unlink()
 
-        if os.path.exists(new_name):
-            logger.warning(
-                f"Output file {new_name} also already exists. This file will be removed"
-                " before renaming."
-            )
-            os.remove(new_name)
-
-        Path(log_file).rename(new_name)
+    filepath.rename(new_name)
 
 
 def maybe_rename_existing_directory(path, report_count):

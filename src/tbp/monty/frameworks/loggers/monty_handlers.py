@@ -11,10 +11,12 @@
 from __future__ import annotations
 
 import abc
+from pathlib import Path
 import copy
 import json
 import logging
 import os
+from typing import Iterable, Literal
 from pprint import pformat
 
 from tbp.monty.frameworks.actions.actions import ActionJSONEncoder
@@ -59,115 +61,121 @@ class DetailedJSONHandler(MontyHandler):
 
     def __init__(
         self,
-        episodes_to_save: list[int] | None = None,
-        parallel_episode_index: int | None = None,
+        episodes_to_save: Iterable[int] | Literal["all"] = "all",
         save_per_episode: bool = False,
+        episode_id_parallel: int | None = None,
     ) -> None:
         """Initialize the DetailedJSONHandler.
 
         Args:
-            episodes_to_save: List of episodes to save. If None, all episodes are
-                appended to a consolidated file called detailed_run_stats.json.
-            parallel_episode_index: Global episode number associated with
-                this run when generated via parallel configs. Defaults to None.
+            episodes_to_save: Iterable of episodes to save or the string ``"all"``
+                (default) to include every episode.
             save_per_episode: Whether to save individual episode files or
                 consolidate into a single detailed_run_stats.json file.
                 Defaults to False.
+            episode_id_parallel: Episode id associated with current run,
+                used to identify the episode when using run_parallel.
         """
-        self.report_count = 0
-        self.saved_episode_count = 0
-        self.parallel_episode_index = parallel_episode_index
+        self.already_renamed = False
         self.episodes_to_save = episodes_to_save
         self.save_per_episode = save_per_episode
-        if self.episodes_to_save is not None and len(self.episodes_to_save) == 0:
-            logger.info(
-                "episodes_to_save is empty; no detailed episode files will be written"
-            )
+        self.episode_id_parallel = episode_id_parallel
 
     @classmethod
     def log_level(cls):
         return "DETAILED"
 
-    def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
-        """Report episode data.
+    def _should_save_episode(self, episode_id: int) -> bool:
+        """Check if episode should be saved.
 
-        Changed name to report episode since we are currently running with
-        reporting and flushing exactly once per episode.
+        Returns:
+            True if episode should be saved, False otherwise.
+        """
+        return self.episodes_to_save == "all" or episode_id in self.episodes_to_save
+
+    def get_episode_id(self, episode, mode: Literal["train", "eval"], **kwargs) -> int:
+        """Get episode id.
+
+        This function is needed to determine correct episode id when using run_parallel.
+
+        Returns:
+            episode_id: Episode id.
+        """
+        episode_id = (
+            kwargs[f"{mode}_episodes_to_total"][episode]
+            if self.episode_id_parallel is None
+            else self.episode_id_parallel
+        )
+
+        return episode_id
+
+    def get_detailed_stats(
+        self, data, episode_id: int, mode: Literal["train", "eval"]
+    ) -> dict:
+        """Get detailed episode stats.
+
+        Returns:
+            stats: Episode stats.
         """
         output_data = {}
-        if mode == "train":
-            local_total = kwargs["train_episodes_to_total"][episode]
-            stats = data["BASIC"]["train_stats"][episode]
+        stats = data["BASIC"][f"{mode}_stats"][episode_id]
+        output_data[episode_id] = copy.deepcopy(stats)
+        output_data[episode_id].update(data["DETAILED"][episode_id])
 
-        elif mode == "eval":
-            local_total = kwargs["eval_episodes_to_total"][episode]
-            stats = data["BASIC"]["eval_stats"][episode]
+        return output_data
 
-        global_total = (
-            self.parallel_episode_index
-            if self.parallel_episode_index is not None
-            else local_total
-        )
+    def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
+        """Report episode data."""
+        episode_id = self.get_episode_id(episode, mode, **kwargs)
 
-        save_individual = self.save_per_episode and (
-            self.episodes_to_save is None or global_total in self.episodes_to_save
-        )
-
-        if (
-            self.episodes_to_save is not None
-            and global_total not in self.episodes_to_save
-        ):
+        if not self._should_save_episode(episode_id):
             logger.debug(
-                "Skipping detailed JSON for episode %s (not requested)", global_total
+                "Skipping detailed JSON for episode %s (not requested)", episode_id
             )
             self.report_count += 1
             return
 
-        output_data[global_total] = copy.deepcopy(stats)
-        output_data[global_total].update(data["DETAILED"][local_total])
+        stats = self.get_detailed_stats(data, episode_id, mode)
 
-        if save_individual:
-            episodes_dir = os.path.join(output_dir, "detailed_run_stats")
-            os.makedirs(episodes_dir, exist_ok=True)
-
-            episode_file = os.path.join(
-                episodes_dir, f"episode_{global_total:06d}.json"
-            )
-            maybe_rename_existing_file(
-                episode_file, ".json", 0 if self.saved_episode_count == 0 else 1
-            )
-            with open(episode_file, "w") as f:
-                json.dump(
-                    {global_total: output_data[global_total]},
-                    f,
-                    cls=BufferEncoder,
-                    indent=2,
-                )
-
-            logger.debug(
-                "Saved detailed JSON for episode %s to %s", global_total, episode_file
-            )
-            self.saved_episode_count += 1
-
+        if self.save_per_episode:
+            self._save_per_episode(output_dir, episode_id, stats)
         else:
-            save_stats_path = os.path.join(output_dir, "detailed_run_stats.json")
-            maybe_rename_existing_file(
-                save_stats_path, ".json", 0 if self.saved_episode_count == 0 else 1
-            )
+            self._save_all(output_dir, stats)
 
-            with open(save_stats_path, "a") as f:
-                json.dump(
-                    {global_total: output_data[global_total]}, f, cls=BufferEncoder
-                )
-                f.write(os.linesep)
-
-            logger.debug(
-                "Appended detailed stats for episode %s to %s",
-                global_total,
-                save_stats_path,
-            )
-            self.saved_episode_count += 1
         self.report_count += 1
+
+    def _save_per_episode(self, output_dir: str, episode_id: int, stats: dict):
+        """Save detailed stats for a single episode."""
+        episodes_dir = Path(output_dir) / "detailed_run_stats"
+        os.makedirs(episodes_dir, exist_ok=True)
+
+        episode_file = episodes_dir / f"episode_{episode_id:06d}.json"
+        maybe_rename_existing_file(episode_file)
+
+        with open(episode_file, "w") as f:
+            json.dump(stats, f, cls=BufferEncoder, indent=2)
+
+        logger.debug(
+            "Saved detailed JSON for episode %s to %s", episode_id, str(episode_file)
+        )
+
+    def _save_all(self, output_dir: str, stats: dict):
+        """Save detailed stats for all episodes."""
+        save_stats_path = Path(output_dir) / "detailed_run_stats.json"
+        if not self.already_renamed:
+            maybe_rename_existing_file(save_stats_path)
+            self.already_renamed = True
+
+        with open(save_stats_path, "a") as f:
+            json.dump(stats, f, cls=BufferEncoder, indent=2)
+            f.write(os.linesep)
+
+        logged_episode_id = next(iter(stats.keys()), None)
+        logger.debug(
+            "Appended detailed stats for episode %s to %s",
+            logged_episode_id,
+            str(save_stats_path),
+        )
 
     def close(self):
         pass
@@ -199,7 +207,7 @@ class BasicCSVStatsHandler(MontyHandler):
         # Remove file if it existed before to avoid appending to previous results file
         if output_file not in self.reports_per_file:
             self.reports_per_file[output_file] = 0
-            maybe_rename_existing_file(output_file, ".csv", 0)
+            maybe_rename_existing_file(output_file)
         else:
             self.reports_per_file[output_file] += 1
 
