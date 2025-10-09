@@ -76,6 +76,7 @@ class SnapshotTelemetry:
         )
         return dict(raw_observations=self.raw_observations, sm_properties=self.poses)
 
+
 class HabitatObservation(TypedDict):
     semantic_3d: np.ndarray
     sensor_frame_data: np.ndarray
