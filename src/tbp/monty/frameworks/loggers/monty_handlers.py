@@ -158,9 +158,7 @@ class DetailedJSONHandler(MontyHandler):
         else:
             self._save_all(global_episode_id, output_dir, stats)
 
-    def _save_per_episode(
-        self, output_dir: str, global_episode_id: int, stats: dict
-    ):
+    def _save_per_episode(self, output_dir: str, global_episode_id: int, stats: dict):
         """Save detailed stats for a single episode.
 
         Args:
