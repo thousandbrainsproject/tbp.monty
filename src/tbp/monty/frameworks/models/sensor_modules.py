@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
 
@@ -41,8 +42,9 @@ class SnapshotTelemetry:
         self.raw_observations = []
         self.poses = []
 
-    # TODO: Type annotations
-    def raw_observation(self, raw_observation, rotation, position):
+    def raw_observation(
+        self, raw_observation, rotation: quaternion.quaternion, position: np.ndarray
+    ):
         """Record a snapshot of a raw observation and its pose information.
 
         Args:
@@ -58,7 +60,7 @@ class SnapshotTelemetry:
             )
         )
 
-    def state_dict(self):
+    def state_dict(self) -> dict[str, list[np.ndarray]]:
         """Returns recorded raw observation snapshots.
 
         Returns:
