@@ -16,7 +16,7 @@ At a high level, **Actions** are created by the **Motor System** and actuated by
 
 ![](../figures/how-to-use-monty/action_lifecycle_high_level.png)
 
-Within the **Motor System**, **Policies** either explicitly choose a specific **Action** by creating it directly (e.g., create `MoveForward`), or sample a random **Action** from a pool of actions available (e.g., sample `MoveForward` from the action space `{MoveForward, MoveBack}`).
+Within the **Motor System**, **Policies** either explicitly choose specific **Actions** by creating them directly (e.g., create `MoveForward`), or sample random **Actions** from a pool of actions available (e.g., sample `MoveForward` from the action space `{MoveForward, MoveBack}`).
 
 ![](../figures/how-to-use-monty/action_lifecycle_motor_system_detail.png)
 
@@ -142,9 +142,10 @@ SomeSimulatorAction = Union[Jump, Tumble] # Actions the simulator can actuate
 
 class SomeSimulator:
 
-    def step(self, action: SomeSimulatorAction) -> Observations
+    def step(self, actions: Sequence[SomeSimulatorAction]) -> Observations
         # ...
-        action.act(self.actuator)
+        for action in actions:
+            action.act(self.actuator)
         # ...
 ```
 
@@ -153,9 +154,10 @@ You could implement the actuator as a Mixin, in that case it would look more lik
 ```python
 class SomeSimulator(MyActuator):
 
-    def step(self, action: SomeSimulatorAction) -> Observations
+    def step(self, actions: Sequence[SomeSimulatorAction]) -> Observations
         # ...
-        action.act(self)
+        for action in actions:
+            action.act(self)
         # ...
 ```
 

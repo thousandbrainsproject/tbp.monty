@@ -16,7 +16,7 @@ See Also:
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
 import habitat_sim
 import magnum as mn
@@ -470,11 +470,11 @@ class HabitatSim(HabitatActuator):
         agent_index = self._agent_id_to_index[agent_id]
         return self._sim.get_agent(agent_index)
 
-    def apply_action(self, action: Action) -> Dict[str, Dict]:
-        """Execute given action in the environment.
+    def apply_actions(self, actions: Sequence[Action]) -> Dict[str, Dict]:
+        """Execute given actions in the environment.
 
         Args:
-            action: The action to execute
+            actions: The actions to execute
 
         Returns:
             A dictionary with the observations grouped by agent_id
@@ -483,37 +483,42 @@ class HabitatSim(HabitatActuator):
             TypeError: If the action type is invalid
             ValueError: If the action name is invalid
         """
-        action_name = self.action_name(action)
-        if action_name not in self._action_space:
-            raise ValueError(f"Invalid action name: {action_name}")
+        if not actions:
+            return self.observations
 
-        # TODO: This is for the purpose of type checking, but would be better handled
-        #       using the action space check above, once those are integrated into the
-        #       type system.
-        if not isinstance(
-            action,
-            (
-                LookDown,
-                LookUp,
-                MoveForward,
-                MoveTangentially,
-                OrientHorizontal,
-                OrientVertical,
-                SetAgentPitch,
-                SetAgentPose,
-                SetSensorPitch,
-                SetSensorPose,
-                SetSensorRotation,
-                SetYaw,
-                TurnLeft,
-                TurnRight,
-            ),
-        ):
-            raise TypeError(f"Invalid action type: {type(action)}")
+        for action in actions:
+            action_name = self.action_name(action)
+            if action_name not in self._action_space:
+                raise ValueError(f"Invalid action name: {action_name}")
 
-        action.act(self)
+            # TODO: This is for the purpose of type checking, but would be better
+            #       handled using the action space check above, once those are
+            #       integrated into the type system.
+            if not isinstance(
+                action,
+                (
+                    LookDown,
+                    LookUp,
+                    MoveForward,
+                    MoveTangentially,
+                    OrientHorizontal,
+                    OrientVertical,
+                    SetAgentPitch,
+                    SetAgentPose,
+                    SetSensorPitch,
+                    SetSensorPose,
+                    SetSensorRotation,
+                    SetYaw,
+                    TurnLeft,
+                    TurnRight,
+                ),
+            ):
+                raise TypeError(f"Invalid action type: {type(action)}")
 
-        observations = self.observations
+            action.act(self)
+
+            observations = self.observations
+
         return observations
 
     @property

@@ -7,6 +7,7 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
 
 from typing import Literal, Optional
 
@@ -52,7 +53,7 @@ class MotorSystem:
         """
         self._policy.set_experiment_mode(mode)
 
-    def __call__(self) -> Action:
+    def __call__(self) -> list[Action]:
         """Defines the structure for __call__.
 
         Delegates to the motor policy.
@@ -60,5 +61,5 @@ class MotorSystem:
         Returns:
             The action to take.
         """
-        action = self._policy(self._state)
-        return action
+        actions = self._policy(self._state)
+        return actions
