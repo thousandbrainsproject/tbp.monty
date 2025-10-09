@@ -94,7 +94,6 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
             lm.buffer.reset()
         for sm in self.sensor_modules:
             sm.raw_observations = []
-            sm.sm_properties = []
             sm.processed_obs = []
             sm._snapshot_telemetry.reset()
 

@@ -105,7 +105,6 @@ class DetailedLoggingSM(SensorModule):
         self.state = None
         self.save_raw_obs = save_raw_obs
         self.raw_observations = []
-        self.sm_properties = []
         self.pc1_is_pc2_threshold = pc1_is_pc2_threshold
         self.surface_normal_method = surface_normal_method
         self.weight_curvature = weight_curvature
@@ -135,7 +134,6 @@ class DetailedLoggingSM(SensorModule):
         """Reset buffer and is_exploring flag."""
         self._snapshot_telemetry.reset()
         self.raw_observations = []
-        self.sm_properties = []
         self.is_exploring = False
 
         # Store visited locations in global environment coordinates to help inform
