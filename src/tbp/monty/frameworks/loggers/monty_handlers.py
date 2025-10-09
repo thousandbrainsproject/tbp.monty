@@ -11,13 +11,13 @@
 from __future__ import annotations
 
 import abc
-from pathlib import Path
 import copy
 import json
 import logging
 import os
-from typing import Iterable, Literal
+from pathlib import Path
 from pprint import pformat
+from typing import Iterable, Literal
 
 from tbp.monty.frameworks.actions.actions import ActionJSONEncoder
 from tbp.monty.frameworks.models.buffer import BufferEncoder
@@ -132,7 +132,6 @@ class DetailedJSONHandler(MontyHandler):
             logger.debug(
                 "Skipping detailed JSON for episode %s (not requested)", episode_id
             )
-            self.report_count += 1
             return
 
         stats = self.get_detailed_stats(data, episode_id, mode)
@@ -140,9 +139,7 @@ class DetailedJSONHandler(MontyHandler):
         if self.save_per_episode:
             self._save_per_episode(output_dir, episode_id, stats)
         else:
-            self._save_all(output_dir, stats)
-
-        self.report_count += 1
+            self._save_all(episode_id, output_dir, stats)
 
     def _save_per_episode(self, output_dir: str, episode_id: int, stats: dict):
         """Save detailed stats for a single episode."""
@@ -153,13 +150,13 @@ class DetailedJSONHandler(MontyHandler):
         maybe_rename_existing_file(episode_file)
 
         with open(episode_file, "w") as f:
-            json.dump(stats, f, cls=BufferEncoder, indent=2)
+            json.dump({episode_id: stats[episode_id]}, f, cls=BufferEncoder)
 
         logger.debug(
             "Saved detailed JSON for episode %s to %s", episode_id, str(episode_file)
         )
 
-    def _save_all(self, output_dir: str, stats: dict):
+    def _save_all(self, episode_id: int, output_dir: str, stats: dict):
         """Save detailed stats for all episodes."""
         save_stats_path = Path(output_dir) / "detailed_run_stats.json"
         if not self.already_renamed:
@@ -167,13 +164,12 @@ class DetailedJSONHandler(MontyHandler):
             self.already_renamed = True
 
         with open(save_stats_path, "a") as f:
-            json.dump(stats, f, cls=BufferEncoder, indent=2)
+            json.dump({episode_id: stats[episode_id]}, f, cls=BufferEncoder)
             f.write(os.linesep)
 
-        logged_episode_id = next(iter(stats.keys()), None)
         logger.debug(
             "Appended detailed stats for episode %s to %s",
-            logged_episode_id,
+            episode_id,
             str(save_stats_path),
         )
 
@@ -200,7 +196,7 @@ class BasicCSVStatsHandler(MontyHandler):
         # Look for train_stats or eval_stats under BASIC logs
         basic_logs = data["BASIC"]
         mode_key = f"{mode}_stats"
-        output_file = os.path.join(output_dir, f"{mode}_stats.csv")
+        output_file = Path(output_dir) / f"{mode}_stats.csv"
         stats = basic_logs.get(mode_key, {})
         logger.debug(pformat(stats))
 

@@ -918,21 +918,23 @@ def maybe_rename_existing_file(filepath: Path) -> None:
     if not filepath.exists():
         return
 
-    old_name = filepath.stem
-    new_name = old_name + "_old" + filepath.suffix
+    old_filename = filepath.stem
+    new_filename = old_filename + "_old" + filepath.suffix
+    new_filepath = filepath.with_name(new_filename)
 
     logger.warning(
-        f"Output file {filepath} already exists. This file will be moved to {new_name}"
+        f"Output file {filepath.name} already exists. "
+        f"This file will be moved to {new_filepath.name}"
     )
 
-    if new_name.exists():
+    if new_filepath.exists():
         logger.warning(
-            f"Output file {new_name} also already exists. This file will be removed"
+            f"Output file {new_filepath} also already exists. This file will be removed"
             " before renaming."
         )
-        new_name.unlink()
+        new_filepath.unlink()
 
-    filepath.rename(new_name)
+    filepath.rename(new_filepath)
 
 
 def maybe_rename_existing_directory(path, report_count):
