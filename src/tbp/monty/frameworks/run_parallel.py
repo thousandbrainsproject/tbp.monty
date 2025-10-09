@@ -585,7 +585,7 @@ def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> List[M
             else:
                 new_config["logging_config"]["log_parallel_wandb"] = False
 
-            new_config["logging_config"]["parallel_episode_index"] = episode_count
+            new_config["logging_config"]["episode_id_parallel"] = episode_count
 
             new_config["eval_dataloader_args"].update(
                 object_names=[obj],
