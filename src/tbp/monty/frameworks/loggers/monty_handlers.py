@@ -85,7 +85,7 @@ class DetailedJSONHandler(MontyHandler):
     def log_level(cls):
         return "DETAILED"
 
-    def _should_save_episode(self, episode_id: int) -> bool:
+    def _should_save_episode(self, global_episode_id: int) -> bool:
         """Check if episode should be saved.
 
         Returns:
@@ -93,27 +93,34 @@ class DetailedJSONHandler(MontyHandler):
         """
         return (
             self.detailed_episodes_to_save == "all"
-            or episode_id in self.detailed_episodes_to_save
+            or global_episode_id in self.detailed_episodes_to_save
         )
 
-    def get_episode_id(self, episode, mode: Literal["train", "eval"], **kwargs) -> int:
-        """Get episode id.
+    def get_episode_id(
+        self, local_episode, mode: Literal["train", "eval"], **kwargs
+    ) -> int:
+        """Get global episode id corresponding to a mode-local episode index.
 
-        This function is needed to determine correct episode id when using run_parallel.
+        This function is needed to determine correct episode id when using
+        run_parallel.
 
         Returns:
-            episode_id: Episode id.
+            global_episode_id: Combined train+eval episode id.
         """
-        episode_id = (
-            kwargs[f"{mode}_episodes_to_total"][episode]
+        global_episode_id = (
+            kwargs[f"{mode}_episodes_to_total"][local_episode]
             if self.episode_id_parallel is None
             else self.episode_id_parallel
         )
 
-        return episode_id
+        return global_episode_id
 
     def get_detailed_stats(
-        self, data, episode_id: int, mode: Literal["train", "eval"]
+        self,
+        data,
+        global_episode_id: int,
+        local_episode: int,
+        mode: Literal["train", "eval"],
     ) -> dict:
         """Get detailed episode stats.
 
@@ -121,45 +128,66 @@ class DetailedJSONHandler(MontyHandler):
             stats: Episode stats.
         """
         output_data = {}
-        stats = data["BASIC"][f"{mode}_stats"][episode_id]
-        output_data[episode_id] = copy.deepcopy(stats)
-        output_data[episode_id].update(data["DETAILED"][episode_id])
+
+        basic_stats = data["BASIC"][f"{mode}_stats"][local_episode]
+        detailed_pool = data["DETAILED"]
+        detailed_stats = detailed_pool.get(local_episode)
+        if detailed_stats is None:
+            detailed_stats = detailed_pool.get(global_episode_id)
+
+        output_data[global_episode_id] = copy.deepcopy(basic_stats)
+        output_data[global_episode_id].update(detailed_stats)
 
         return output_data
 
-    def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
+    def report_episode(self, data, output_dir, local_episode, mode="train", **kwargs):
         """Report episode data."""
-        episode_id = self.get_episode_id(episode, mode, **kwargs)
+        global_episode_id = self.get_episode_id(local_episode, mode, **kwargs)
 
-        if not self._should_save_episode(episode_id):
+        if not self._should_save_episode(global_episode_id):
             logger.debug(
-                "Skipping detailed JSON for episode %s (not requested)", episode_id
+                "Skipping detailed JSON for episode %s (not requested)",
+                global_episode_id,
             )
             return
 
-        stats = self.get_detailed_stats(data, episode_id, mode)
+        stats = self.get_detailed_stats(data, global_episode_id, local_episode, mode)
 
         if self.detailed_save_per_episode:
-            self._save_per_episode(output_dir, episode_id, stats)
+            self._save_per_episode(output_dir, global_episode_id, stats)
         else:
-            self._save_all(episode_id, output_dir, stats)
+            self._save_all(global_episode_id, output_dir, stats)
 
-    def _save_per_episode(self, output_dir: str, episode_id: int, stats: dict):
-        """Save detailed stats for a single episode."""
+    def _save_per_episode(
+        self, output_dir: str, global_episode_id: int, stats: dict
+    ):
+        """Save detailed stats for a single episode.
+
+        Args:
+            output_dir: Directory where results are written.
+            global_episode_id: Combined train+eval episode id used for DETAILED logs.
+            stats: Dictionary containing episode stats keyed by global episode id.
+        """
         episodes_dir = Path(output_dir) / "detailed_run_stats"
         os.makedirs(episodes_dir, exist_ok=True)
 
-        episode_file = episodes_dir / f"episode_{episode_id:06d}.json"
+        episode_file = episodes_dir / f"episode_{global_episode_id:06d}.json"
         maybe_rename_existing_file(episode_file)
 
         with open(episode_file, "w") as f:
-            json.dump({episode_id: stats[episode_id]}, f, cls=BufferEncoder)
+            json.dump(
+                {global_episode_id: stats[global_episode_id]},
+                f,
+                cls=BufferEncoder,
+            )
 
         logger.debug(
-            "Saved detailed JSON for episode %s to %s", episode_id, str(episode_file)
+            "Saved detailed JSON for episode %s to %s",
+            global_episode_id,
+            str(episode_file),
         )
 
-    def _save_all(self, episode_id: int, output_dir: str, stats: dict):
+    def _save_all(self, global_episode_id: int, output_dir: str, stats: dict):
         """Save detailed stats for all episodes."""
         save_stats_path = Path(output_dir) / "detailed_run_stats.json"
         if not self.already_renamed:
@@ -167,12 +195,16 @@ class DetailedJSONHandler(MontyHandler):
             self.already_renamed = True
 
         with open(save_stats_path, "a") as f:
-            json.dump({episode_id: stats[episode_id]}, f, cls=BufferEncoder)
+            json.dump(
+                {global_episode_id: stats[global_episode_id]},
+                f,
+                cls=BufferEncoder,
+            )
             f.write(os.linesep)
 
         logger.debug(
             "Appended detailed stats for episode %s to %s",
-            episode_id,
+            global_episode_id,
             str(save_stats_path),
         )
 
