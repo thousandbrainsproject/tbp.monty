@@ -96,6 +96,7 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
             sm.raw_observations = []
             sm.sm_properties = []
             sm.processed_obs = []
+            sm._snapshot_telemetry.reset()
 
 
 class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
