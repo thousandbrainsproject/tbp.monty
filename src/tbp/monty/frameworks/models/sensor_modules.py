@@ -30,6 +30,7 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 
 logger = logging.getLogger(__name__)
 
+
 class SnapshotTelemetry:
     """Keeps track of raw observation snapshot telemetry."""
 
