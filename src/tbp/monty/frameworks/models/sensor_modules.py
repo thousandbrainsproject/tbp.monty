@@ -119,7 +119,6 @@ class DetailedLoggingSM(SensorModule):
         self.state = state
 
     def step(self, data):
-        """Add raw observations to SM buffer."""
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
                 data,
@@ -555,7 +554,15 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             State with features and morphological features. Noise may be added.
             use_state flag may be set.
         """
-        super().step(data)  # for logging
+        if self.save_raw_obs and not self.is_exploring:
+            self._snapshot_telemetry.raw_observation(
+                data,
+                self.state["rotation"],
+                self.state["location"]
+                if "location" in self.state.keys()
+                else self.state["position"],
+            )
+
         observed_state = self.observations_to_comunication_protocol(
             data, on_object_only=self.on_object_obs_only
         )
