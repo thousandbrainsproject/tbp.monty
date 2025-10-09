@@ -172,7 +172,6 @@ class HabitatObservationProcessor:
         Args:
             observation: Habitat observation.
             on_object_only: Whether to only process observations on objects.
-            is_exploring: Whether the sensor module is exploring.
 
         Returns:
             Cortical Message.
