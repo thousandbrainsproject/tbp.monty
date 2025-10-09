@@ -61,24 +61,24 @@ class DetailedJSONHandler(MontyHandler):
 
     def __init__(
         self,
-        episodes_to_save: Iterable[int] | Literal["all"] = "all",
-        save_per_episode: bool = False,
+        detailed_episodes_to_save: Iterable[int] | Literal["all"] = "all",
+        detailed_save_per_episode: bool = False,
         episode_id_parallel: int | None = None,
     ) -> None:
         """Initialize the DetailedJSONHandler.
 
         Args:
-            episodes_to_save: Iterable of episodes to save or the string ``"all"``
-                (default) to include every episode.
-            save_per_episode: Whether to save individual episode files or
+            detailed_episodes_to_save: Iterable of episodes to save or
+                the string ``"all"`` (default) to include every episode.
+            detailed_save_per_episode: Whether to save individual episode files or
                 consolidate into a single detailed_run_stats.json file.
                 Defaults to False.
             episode_id_parallel: Episode id associated with current run,
                 used to identify the episode when using run_parallel.
         """
         self.already_renamed = False
-        self.episodes_to_save = episodes_to_save
-        self.save_per_episode = save_per_episode
+        self.detailed_episodes_to_save = detailed_episodes_to_save
+        self.detailed_save_per_episode = detailed_save_per_episode
         self.episode_id_parallel = episode_id_parallel
 
     @classmethod
@@ -91,7 +91,10 @@ class DetailedJSONHandler(MontyHandler):
         Returns:
             True if episode should be saved, False otherwise.
         """
-        return self.episodes_to_save == "all" or episode_id in self.episodes_to_save
+        return (
+            self.detailed_episodes_to_save == "all"
+            or episode_id in self.detailed_episodes_to_save
+        )
 
     def get_episode_id(self, episode, mode: Literal["train", "eval"], **kwargs) -> int:
         """Get episode id.
@@ -136,7 +139,7 @@ class DetailedJSONHandler(MontyHandler):
 
         stats = self.get_detailed_stats(data, episode_id, mode)
 
-        if self.save_per_episode:
+        if self.detailed_save_per_episode:
             self._save_per_episode(output_dir, episode_id, stats)
         else:
             self._save_all(episode_id, output_dir, stats)
