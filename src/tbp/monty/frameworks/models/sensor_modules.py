@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
 
@@ -28,6 +29,49 @@ from tbp.monty.frameworks.utils.sensor_processing import (
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle
 
 logger = logging.getLogger(__name__)
+
+
+class SnapshotTelemetry:
+    """Keeps track of raw observation snapshot telemetry."""
+
+    def __init__(self):
+        self.poses = []
+        self.raw_observations = []
+
+    def reset(self):
+        """Reset the snapshot telemetry."""
+        self.raw_observations = []
+        self.poses = []
+
+    def raw_observation(
+        self, raw_observation, rotation: quaternion.quaternion, position: np.ndarray
+    ):
+        """Record a snapshot of a raw observation and its pose information.
+
+        Args:
+            raw_observation: Raw observation.
+            rotation: Rotation of the sensor.
+            position: Position of the sensor.
+        """
+        self.raw_observations.append(raw_observation)
+        self.poses.append(
+            dict(
+                sm_rotation=quaternion.as_float_array(rotation),
+                sm_location=np.array(position),
+            )
+        )
+
+    def state_dict(self) -> dict[str, list[np.ndarray]]:
+        """Returns recorded raw observation snapshots.
+
+        Returns:
+            Dictionary containing a list of raw observations in `raw_observations` and
+            a list of pose information for each observation in `sm_properties`.
+        """
+        assert len(self.poses) == len(self.raw_observations), (
+            "Each raw observation should have a corresponding pose information."
+        )
+        return dict(raw_observations=self.raw_observations, sm_properties=self.poses)
 
 
 class DetailedLoggingSM(SensorModule):
@@ -63,22 +107,14 @@ class DetailedLoggingSM(SensorModule):
         self.sensor_module_id = sensor_module_id
         self.state = None
         self.save_raw_obs = save_raw_obs
-        self.raw_observations = []
-        self.sm_properties = []
         self.pc1_is_pc2_threshold = pc1_is_pc2_threshold
         self.surface_normal_method = surface_normal_method
         self.weight_curvature = weight_curvature
 
-    def state_dict(self):
-        """Return state_dict."""
-        # this is what is saved to detailed stats
-        assert len(self.sm_properties) == len(self.raw_observations), (
-            "Should have a SM value for every set of observations."
-        )
+        self._snapshot_telemetry = SnapshotTelemetry()
 
-        return dict(
-            raw_observations=self.raw_observations, sm_properties=self.sm_properties
-        )
+    def state_dict(self):
+        return self._snapshot_telemetry.state_dict()
 
     def update_state(self, state):
         """Update information about the sensors location and rotation."""
@@ -86,39 +122,18 @@ class DetailedLoggingSM(SensorModule):
         self.state = state
 
     def step(self, data):
-        """Add raw observations to SM buffer."""
         if self.save_raw_obs and not self.is_exploring:
-            self.raw_observations.append(data)
-            # save the sensor state at every step
-
-            if self.state is not None:
-                # "position" key available for DetailedLoggingSM, "location" key
-                # for e.g. HabitatDistantPatchSM, which accounts for both agent
-                # and sensory positions; TODO consider making these keys
-                # more consistent
-                if "position" in self.state.keys():
-                    self.sm_properties.append(
-                        dict(
-                            sm_rotation=quaternion.as_float_array(
-                                self.state["rotation"]
-                            ),
-                            sm_location=np.array(self.state["position"]),
-                        )
-                    )
-                elif "location" in self.state.keys():
-                    self.sm_properties.append(
-                        dict(
-                            sm_rotation=quaternion.as_float_array(
-                                self.state["rotation"]
-                            ),
-                            sm_location=np.array(self.state["location"]),
-                        )
-                    )
+            self._snapshot_telemetry.raw_observation(
+                data,
+                self.state["rotation"],
+                self.state["location"]
+                if "location" in self.state.keys()
+                else self.state["position"],
+            )
 
     def pre_episode(self):
         """Reset buffer and is_exploring flag."""
-        self.raw_observations = []
-        self.sm_properties = []
+        self._snapshot_telemetry.reset()
         self.is_exploring = False
 
         # Store visited locations in global environment coordinates to help inform
@@ -528,17 +543,9 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
         }
 
     def state_dict(self):
-        """Return state_dict."""
-        assert len(self.sm_properties) == len(self.raw_observations), (
-            "Should have a SM value for every set of observations."
-        )
-
-        return dict(
-            raw_observations=self.raw_observations,
-            processed_observations=self.processed_obs,
-            sm_properties=self.sm_properties,
-            # sensor_states=self.states, # pickle problem with magnum
-        )
+        state_dict = self._snapshot_telemetry.state_dict()
+        state_dict.update(processed_observations=self.processed_obs)
+        return state_dict
 
     def step(self, data):
         """Turn raw observations into dict of features at location.
@@ -550,7 +557,15 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             State with features and morphological features. Noise may be added.
             use_state flag may be set.
         """
-        super().step(data)  # for logging
+        if self.save_raw_obs and not self.is_exploring:
+            self._snapshot_telemetry.raw_observation(
+                data,
+                self.state["rotation"],
+                self.state["location"]
+                if "location" in self.state.keys()
+                else self.state["position"],
+            )
+
         observed_state = self.observations_to_comunication_protocol(
             data, on_object_only=self.on_object_obs_only
         )
