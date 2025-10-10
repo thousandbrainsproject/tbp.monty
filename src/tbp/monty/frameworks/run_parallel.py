@@ -13,7 +13,7 @@ import os
 import shutil
 import time
 from pathlib import Path
-from typing import List, Mapping, Optional
+from typing import Iterable, List, Mapping, Optional
 
 import numpy as np
 import pandas as pd
@@ -37,6 +37,10 @@ from tbp.monty.frameworks.loggers.monty_handlers import (
 )
 from tbp.monty.frameworks.run import print_config
 from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
+from tbp.monty.frameworks.utils.logging_utils import (
+    maybe_rename_existing_dir,
+    maybe_rename_existing_file,
+)
 
 """
 Just like run.py, but run episodes in parallel. Running in parallel is as simple as
@@ -137,6 +141,20 @@ def sample_params_to_init_args(params):
     return new_params
 
 
+def mv_files(filenames: Iterable[Path], outdir: Path):
+    outdir = Path(outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    for f in filenames:
+        src = Path(f)
+        dest = outdir / src.name
+
+        if dest.exists():
+            dest.unlink()
+
+        src.replace(dest)
+
+
 def cat_files(filenames, outfile):
     if os.path.exists(outfile):
         print(f"Removing existing file before writing new one: {outfile}")
@@ -163,7 +181,8 @@ def post_parallel_log_cleanup(filenames, outfile, cat_fn):
 
     # Remove json files
     for f in existing_files:
-        os.remove(f)
+        if os.path.exists(f):
+            os.remove(f)
 
 
 def post_parallel_profile_cleanup(parallel_dirs, base_dir, mode):
@@ -219,47 +238,11 @@ def move_reproducibility_data(base_dir, parallel_dirs):
         )
 
 
-def collect_detailed_episode_logs(parallel_dirs, base_dir):
-    """Move per-episode detailed logs into a shared episodes directory."""
-    collected_files = []
+def collect_detailed_episodes_names(parallel_dirs):
+    filenames = []
     for pdir in parallel_dirs:
-        src_dir = Path(pdir) / "detailed_run_stats"
-        if not src_dir.is_dir():
-            continue
-
-        run_name = Path(pdir).name
-        for episode_file in sorted(src_dir.glob("*.json")):
-            collected_files.append((run_name, episode_file))
-
-    if len(collected_files) == 0:
-        return
-
-    episodes_root = Path(base_dir) / "detailed_run_stats"
-    if episodes_root.exists() and any(episodes_root.iterdir()):
-        timestamp = int(time.time())
-        backup_dir = episodes_root.with_name(f"{episodes_root.name}_{timestamp}")
-        counter = 1
-        while backup_dir.exists():
-            backup_dir = episodes_root.with_name(
-                f"{episodes_root.name}_{timestamp}_{counter:02d}"
-            )
-            counter += 1
-        episodes_root.rename(backup_dir)
-
-    episodes_root.mkdir(exist_ok=True)
-
-    for run_name, episode_file in collected_files:
-        dest_path = episodes_root / episode_file.name
-        if dest_path.exists():
-            stem = episode_file.stem
-            suffix = episode_file.suffix
-            dest_path = episodes_root / f"{run_name}_{stem}{suffix}"
-            counter = 1
-            while dest_path.exists():
-                dest_path = episodes_root / f"{run_name}_{stem}_{counter:02d}{suffix}"
-                counter += 1
-
-        shutil.move(str(episode_file), dest_path)
+        filenames.extend(list((Path(pdir) / "detailed_run_stats").glob("*.json")))
+    return filenames
 
 
 def post_parallel_eval(configs: List[Mapping], base_dir: str) -> None:
@@ -281,13 +264,16 @@ def post_parallel_eval(configs: List[Mapping], base_dir: str) -> None:
     # Loop over types of loggers, figure out how to clean up each one
     for handler in logging_config["monty_handlers"]:
         if issubclass(handler, DetailedJSONHandler):
-            if collect_per_episode:
-                collect_detailed_episode_logs(parallel_dirs, base_dir)
-
-            if not collect_per_episode:
+            if save_per_episode:
+                filenames = collect_detailed_episodes_names(parallel_dirs)
+                outdir = Path(base_dir) / "detailed_run_stats"
+                maybe_rename_existing_dir(outdir)
+                post_parallel_log_cleanup(filenames, outdir, cat_fn=mv_files)
+            else:
                 filename = "detailed_run_stats.json"
                 filenames = [os.path.join(pdir, filename) for pdir in parallel_dirs]
                 outfile = os.path.join(base_dir, filename)
+                maybe_rename_existing_file(Path(outfile))
                 post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
             continue
 
@@ -295,6 +281,7 @@ def post_parallel_eval(configs: List[Mapping], base_dir: str) -> None:
             filename = "eval_stats.csv"
             filenames = [os.path.join(pdir, filename) for pdir in parallel_dirs]
             outfile = os.path.join(base_dir, filename)
+            maybe_rename_existing_file(Path(outfile))
             post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_csv)
             continue
 

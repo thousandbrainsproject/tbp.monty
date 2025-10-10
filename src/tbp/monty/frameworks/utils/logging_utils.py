@@ -14,6 +14,7 @@ import copy
 import json
 import logging
 import os
+import shutil
 from collections import deque
 from itertools import chain
 from pathlib import Path
@@ -937,20 +938,35 @@ def maybe_rename_existing_file(filepath: Path) -> None:
     filepath.rename(new_filepath)
 
 
-def maybe_rename_existing_directory(path, report_count):
-    if (report_count == 0) and os.path.exists(path):
-        new_path = path + "_old"
+def maybe_rename_existing_dir(dirpath: Path) -> None:
+    """If the given log directory already exists, rename it to <dirname>_old.
+
+    Raises:
+        ValueError: If dirpath is not a directory.
+
+    """
+    if not dirpath.exists():
+        return
+    if not dirpath.is_dir():
+        raise ValueError(f"Expected a directory: {dirpath}")
+
+    old_name = dirpath.name
+    new_name = f"{old_name}_old"
+    new_dirpath = dirpath.with_name(new_name)
+
+    logger.warning(
+        f"Output directory {dirpath.name} already exists. "
+        f"This directory will be moved to {new_dirpath.name}"
+    )
+
+    if new_dirpath.exists():
         logger.warning(
-            f"Output path {path} already exists. This path will be movedto {new_path}"
+            f"Output directory {new_dirpath} also already exists. "
+            "This directory will be removed before renaming."
         )
+        shutil.rmtree(new_dirpath)
 
-        if os.path.exists(new_path):
-            logger.warning(
-                f"{new_path} also exists, and will be removed before renaming"
-            )
-            os.remove(new_path)
-
-        Path(path).rename(new_path)
+    dirpath.rename(new_dirpath)
 
 
 def get_rgba_frames_single_sm(observations):
