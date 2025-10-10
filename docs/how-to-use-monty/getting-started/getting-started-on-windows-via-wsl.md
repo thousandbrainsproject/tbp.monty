@@ -159,7 +159,7 @@ export WANDB_DIR=${MONTY_LOGS}/wandb
 
 # 6. Prepare VS Code
 
-Install VS Code: https://code.visualstudio.com/download
+Install VS Code (the Windows version): https://code.visualstudio.com/download
 
 Install the WSL extension: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl
 

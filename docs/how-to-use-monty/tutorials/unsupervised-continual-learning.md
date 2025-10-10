@@ -138,7 +138,6 @@ surf_agent_2obj_unsupervised = dict(
         learning_module_configs=learning_module_configs,
     ),
     # Set up the environment and agent.
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(),
     train_dataloader_class=ED.InformedEnvironmentDataLoader,
     train_dataloader_args=EnvironmentDataloaderPerObjectArgs(

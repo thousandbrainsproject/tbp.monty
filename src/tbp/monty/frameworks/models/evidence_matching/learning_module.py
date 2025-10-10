@@ -184,10 +184,12 @@ class EvidenceGraphLM(GraphLM):
             max_graph_size=max_graph_size,
             num_model_voxels_per_dim=num_model_voxels_per_dim,
         )
-        if gsg_args is None:
-            gsg_args = {}
-        self.gsg = gsg_class(self, **gsg_args)
-        self.gsg.reset()
+        if gsg_class is not None:
+            gsg_args = gsg_args or {}
+            self.gsg = gsg_class(self, **gsg_args)
+            self.gsg.reset()
+        else:
+            self.gsg = None
         # --- Matching Params ---
         self.max_match_distance = max_match_distance
         self.tolerances = tolerances
@@ -997,14 +999,14 @@ class EvidenceGraphLM(GraphLM):
             f" with last ids {self.last_possible_hypotheses}"
         )
         if increment_evidence:
-            previous_hyps = set(possible_object_hypotheses_ids)
-            current_hyps = set(self.last_possible_hypotheses)
+            previous_hyps = set(self.last_possible_hypotheses)
+            current_hyps = set(possible_object_hypotheses_ids)
             hypothesis_overlap = previous_hyps.intersection(current_hyps)
             if len(hypothesis_overlap) / len(current_hyps) > 0.9:
                 # at least 90% of current possible ids were also in previous ids
                 logger.info("added symmetry evidence")
                 self.symmetry_evidence += 1
-            else:  # has to be consequtive
+            else:  # has to be consecutive
                 self.symmetry_evidence = 0
 
         if self._enough_symmetry_evidence_accumulated():

@@ -55,10 +55,7 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
 from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
 )
-from tbp.monty.frameworks.models.goal_state_generation import (
-    EvidenceGoalStateGenerator,
-    GraphGoalStateGenerator,
-)
+from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
@@ -729,7 +726,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         self,
         fake_obs,
         initial_possible_poses="informed",
-        gsg_class=GraphGoalStateGenerator,
+        gsg_class=None,
         gsg_args=None,
     ):
         graph_lm = EvidenceGraphLM(
@@ -1151,13 +1148,12 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 num_steps_checked_symmetry += 1
                 # On the first step we just store previous hypothesis ids.
                 if num_steps_checked_symmetry > 1:
-                    # On the second step we still narrow down 2 ids in
-                    # this example. Then starting on the third step every step
-                    # will add 1 symmetry evidence because we can't resolve between
+                    # On the second step we will add 1 symmetry evidence
+                    # every step because we can't resolve between
                     # 0,0,0 and 180, 0, 180 rotation.
                     self.assertEqual(
                         graph_lm.symmetry_evidence,
-                        num_steps_checked_symmetry - 2,
+                        num_steps_checked_symmetry - 1,
                         "Symmetry evidence doesn't seem to be as expected.",
                     )
             self.assertEqual(

@@ -85,7 +85,6 @@ dist_agent_5lm_2obj_train = dict(
         ),
     ),
     # Set up the environment and agent.
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=FiveLMMountHabitatDatasetArgs(),
     # Set up the training dataloader.
     train_dataloader_class=ED.InformedEnvironmentDataLoader,
@@ -290,7 +289,6 @@ dist_agent_5lm_2obj_eval = dict(
         motor_system_config=MotorSystemConfigInformedGoalStateDriven(),
     ),
     # Set up the environment and agent.
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=FiveLMMountHabitatDatasetArgs(),
     # Set up the training dataloader. Unused, but must be included.
     train_dataloader_class=ED.InformedEnvironmentDataLoader,

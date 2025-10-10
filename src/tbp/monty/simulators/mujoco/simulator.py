@@ -6,7 +6,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
 from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
 
@@ -144,7 +144,7 @@ class MuJoCoSimulator(Simulator):
     def states(self) -> None:
         pass
 
-    def apply_action(self, action: Action) -> Dict[str, Dict]:
+    def apply_actions(self, actions: Sequence[Action]) -> Dict[str, Dict]:
         return {}
 
     def reset(self) -> None:

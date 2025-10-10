@@ -93,9 +93,8 @@ class MontyForNoResetEvidenceGraphMatching(MontyForEvidenceGraphMatching):
         for lm in self.learning_modules:
             lm.buffer.reset()
         for sm in self.sensor_modules:
-            sm.raw_observations = []
-            sm.sm_properties = []
             sm.processed_obs = []
+            sm._snapshot_telemetry.reset()
 
 
 class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
@@ -108,7 +107,8 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
 
         # it does not make sense for the wait factor to exponentially
         # grow when objects are swapped without any supervisory signal.
-        self.gsg.wait_growth_multiplier = 1
+        if self.gsg is not None:
+            self.gsg.wait_growth_multiplier = 1
 
     def reset(self) -> None:
         super().reset()

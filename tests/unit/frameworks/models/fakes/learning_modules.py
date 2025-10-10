@@ -7,7 +7,10 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
 from tbp.monty.frameworks.models.abstract_monty_classes import LearningModule
+from tbp.monty.frameworks.models.states import GoalState
 
 
 class FakeLearningModule(LearningModule):
@@ -48,7 +51,7 @@ class FakeLearningModule(LearningModule):
     def set_experiment_mode(self, inputs):
         pass
 
-    def propose_goal_state(self):
+    def propose_goal_state(self) -> GoalState | None:
         pass
 
     def get_output(self):
