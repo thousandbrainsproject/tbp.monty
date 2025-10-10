@@ -275,8 +275,8 @@ def post_parallel_eval(configs: List[Mapping], base_dir: str) -> None:
     parallel_dirs = [cfg["logging_config"]["output_dir"] for cfg in configs]
 
     logging_config = configs[0]["logging_config"]
-    episodes_to_save = logging_config.get("episodes_to_save")
-    collect_per_episode = episodes_to_save is not None
+    episodes_to_save = logging_config.get("detailed_episodes_to_save")
+    save_per_episode = logging_config.get("detailed_save_per_episode")
 
     # Loop over types of loggers, figure out how to clean up each one
     for handler in logging_config["monty_handlers"]:
