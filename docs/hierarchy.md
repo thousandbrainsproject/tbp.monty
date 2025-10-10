@@ -72,6 +72,7 @@
   - [identify-an-issue-to-work-on](contributing/ways-to-contribute-to-code/identify-an-issue-to-work-on.md)
 - [style-guide](contributing/style-guide.md)
   - [code-style-guide](contributing/style-guide/code-style-guide.md)
+  - [typing-guide](contributing/style-guide/typing-guide.md)
 - [guides-for-maintainers](contributing/guides-for-maintainers.md)
   - [triage](contributing/guides-for-maintainers/triage.md)
 
