@@ -43,6 +43,10 @@ regex_cloudinary_video = re.compile(
     r"\[(.*?)\]\((https://res\.cloudinary\.com/([^/]+)/video/upload/v(\d+)/([^/]+\.mp4))\)",
     re.IGNORECASE,
 )
+regex_youtube_link = re.compile(
+    r"\[(.*?)\]\((https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]{11})(?:[&?][^\)]*)?)\)",
+    re.IGNORECASE,
+)
 regex_markdown_snippet = re.compile(r"!snippet\[(.*?)\]")
 
 # Allowlist of supported CSS properties
@@ -311,6 +315,7 @@ class ReadMe:
         body = self.convert_note_tags(body)
         body = self.parse_images(body)
         body = self.convert_cloudinary_videos(body)
+        body = self.convert_youtube_videos(body)
         return body
 
     def sanitize_html(self, body: str) -> str:
@@ -485,6 +490,39 @@ class ReadMe:
             return f"[block:html]\n{json.dumps(block, indent=2)}\n[/block]"
 
         return regex_cloudinary_video.sub(replace_video, markdown_text)
+
+    def convert_youtube_videos(self, markdown_text: str) -> str:
+        def replace_youtube(match):
+            title, full_url, video_id = match.groups()
+            youtube_url = f"https://www.youtube.com/watch?v={video_id}"
+            embed_url = f"https://www.youtube.com/embed/{video_id}?feature=oembed"
+            thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
+            block = {
+                "html": (
+                    f'<iframe class="embedly-embed" '
+                    f'src="//cdn.embedly.com/widgets/media.html?'
+                    f"src={embed_url.replace(':', '%3A').replace('/', '%2F')}&"
+                    f"display_name=YouTube&"
+                    f"url={youtube_url.replace(':', '%3A').replace('/', '%2F')}&"
+                    f"image={thumbnail_url.replace(':', '%3A').replace('/', '%2F')}&"
+                    f'type=text%2Fhtml&schema=youtube" '
+                    f'width="854" height="480" scrolling="no" '
+                    f'title="YouTube embed" frameborder="0" '
+                    f'allow="autoplay; fullscreen; encrypted-media; '
+                    f'picture-in-picture;" '
+                    f'allowfullscreen="true"></iframe>'
+                ),
+                "url": youtube_url,
+                "title": title,
+                "favicon": "https://www.youtube.com/favicon.ico",
+                "image": thumbnail_url,
+                "provider": "https://www.youtube.com/",
+                "href": youtube_url,
+                "typeOfEmbed": "youtube",
+            }
+            return f"[block:embed]\n{json.dumps(block, indent=2)}\n[/block]"
+
+        return regex_youtube_link.sub(replace_youtube, markdown_text)
 
     def insert_markdown_snippet(self, body: str, file_path: str) -> str:
         """Insert markdown snippets from referenced files.
