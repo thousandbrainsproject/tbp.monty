@@ -17,7 +17,7 @@ import logging
 import os
 from pathlib import Path
 from pprint import pformat
-from typing import Iterable, Literal
+from typing import Container, Literal
 
 from tbp.monty.frameworks.actions.actions import ActionJSONEncoder
 from tbp.monty.frameworks.models.buffer import BufferEncoder
@@ -61,14 +61,14 @@ class DetailedJSONHandler(MontyHandler):
 
     def __init__(
         self,
-        detailed_episodes_to_save: Iterable[int] | Literal["all"] = "all",
+        detailed_episodes_to_save: Container[int] | Literal["all"] = "all",
         detailed_save_per_episode: bool = False,
         episode_id_parallel: int | None = None,
     ) -> None:
         """Initialize the DetailedJSONHandler.
 
         Args:
-            detailed_episodes_to_save: Iterable of episodes to save or
+            detailed_episodes_to_save: Container of episodes to save or
                 the string ``"all"`` (default) to include every episode.
             detailed_save_per_episode: Whether to save individual episode files or
                 consolidate into a single detailed_run_stats.json file.
