@@ -163,7 +163,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
-            dataset_args=PatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_env_interface_class=ED.InformedEnvironmentInterface,
@@ -400,7 +400,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 motor_system_config=MotorSystemConfigFixed(),
                 learning_module_configs=default_5lm_lmconfig,
             ),
-            dataset_args=FiveLMMountHabitatEnvironmentArgs(
+            env_interface_config=FiveLMMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsFiveLMMount(data_path=None).__dict__,
             ),
         )
@@ -600,7 +600,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                     )
                 ),
             ),
-            dataset_args=NoisyPatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=NoisyPatchViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
         )
@@ -657,7 +657,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 monty_args=MontyArgs(num_exploratory_steps=100, min_train_steps=3),
                 learning_module_configs=two_stacked_lms_config,
             ),
-            dataset_args=TwoLMStackedDistantMountHabitatEnvironmentArgs(
+            env_interface_config=TwoLMStackedDistantMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsTwoLMDistantStackedMount(
                     data_path=None
                 ).__dict__,

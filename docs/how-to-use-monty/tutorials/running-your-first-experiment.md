@@ -55,7 +55,7 @@ first_experiment = dict(
     ),
     monty_config=PatchAndViewMontyConfig(),
     # Data{set, loader} config
-    dataset_args=PatchViewFinderMountHabitatEnvironmentArgs(),
+    env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(),
     train_env_interface_class=ED.EnvironmentInterfacePerObject,
     train_env_interface_args=get_env_interface_per_object_by_idx(start=0, stop=1),
 )

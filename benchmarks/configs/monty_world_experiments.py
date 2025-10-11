@@ -73,7 +73,7 @@ world_image_on_scanned_model = dict(
         # Take larger steps (move 20 pixels at a time)
         motor_system_config=MotorSystemConfigInformedNoTransStepS20(),
     ),
-    dataset_args=WorldImageDatasetArgs(
+    env_interface_config=WorldImageDatasetArgs(
         env_init_args=EnvInitArgsMontyWorldStandardScenes()
     ),
     eval_env_interface_class=ED.SaccadeOnImageEnvironmentInterface,
@@ -92,7 +92,7 @@ world_image_on_scanned_model = dict(
 # from the mobile device
 world_image_from_stream_on_scanned_model = copy.deepcopy(world_image_on_scanned_model)
 world_image_from_stream_on_scanned_model.update(
-    dataset_args=WorldImageFromStreamDatasetArgs(),
+    env_interface_config=WorldImageFromStreamDatasetArgs(),
     eval_env_interface_class=ED.SaccadeOnImageFromStreamEnvironmentInterface,
     eval_env_interface_args={},
     logging_config=EvalEvidenceLMLoggingConfig(
@@ -103,28 +103,28 @@ world_image_from_stream_on_scanned_model.update(
 
 bright_world_image_on_scanned_model = copy.deepcopy(world_image_on_scanned_model)
 bright_world_image_on_scanned_model.update(
-    dataset_args=WorldImageDatasetArgs(
+    env_interface_config=WorldImageDatasetArgs(
         env_init_args=EnvInitArgsMontyWorldBrightScenes()
     ),
 )
 
 dark_world_image_on_scanned_model = copy.deepcopy(world_image_on_scanned_model)
 dark_world_image_on_scanned_model.update(
-    dataset_args=WorldImageDatasetArgs(env_init_args=EnvInitArgsMontyWorldDarkScenes()),
+    env_interface_config=WorldImageDatasetArgs(env_init_args=EnvInitArgsMontyWorldDarkScenes()),
 )
 
 hand_intrusion_world_image_on_scanned_model = copy.deepcopy(
     world_image_on_scanned_model
 )
 hand_intrusion_world_image_on_scanned_model.update(
-    dataset_args=WorldImageDatasetArgs(
+    env_interface_config=WorldImageDatasetArgs(
         env_init_args=EnvInitArgsMontyWorldHandIntrusionScenes()
     ),
 )
 
 multi_object_world_image_on_scanned_model = copy.deepcopy(world_image_on_scanned_model)
 multi_object_world_image_on_scanned_model.update(
-    dataset_args=WorldImageDatasetArgs(
+    env_interface_config=WorldImageDatasetArgs(
         env_init_args=EnvInitArgsMontyWorldMultiObjectScenes()
     ),
 )
