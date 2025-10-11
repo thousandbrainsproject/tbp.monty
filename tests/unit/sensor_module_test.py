@@ -56,7 +56,7 @@ class SensorModuleTest(unittest.TestCase):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
-            dataset_args=PatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_env_interface_class=ED.InformedEnvironmentInterface,

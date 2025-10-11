@@ -89,7 +89,7 @@ class ProfileExperimentMixinTest(TestCase):
                 output_dir=self.output_dir, python_log_level="DEBUG"
             ),
             monty_config=FakeSingleCameraMontyConfig(),
-            dataset_args=SinglePTZHabitatEnvironmentArgs(
+            env_interface_config=SinglePTZHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsSinglePTZ(data_path=None).__dict__
             ),
             train_env_interface_class=EnvironmentInterfacePerObject,

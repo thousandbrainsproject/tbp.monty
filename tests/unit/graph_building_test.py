@@ -78,7 +78,7 @@ class GraphLearningTest(unittest.TestCase):
                     )
                 ),
             ),
-            dataset_args=PatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_env_interface_class=ED.InformedEnvironmentInterface,
@@ -114,7 +114,7 @@ class GraphLearningTest(unittest.TestCase):
                     )
                 ),
             ),
-            dataset_args=PatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_env_interface_class=ED.InformedEnvironmentInterface,

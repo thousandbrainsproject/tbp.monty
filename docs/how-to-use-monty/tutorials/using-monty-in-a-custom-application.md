@@ -128,7 +128,7 @@ omniglot_training = dict(
     	motor_system_config=MotorSystemConfigInformedNoTransStepS1(),
     	sensor_module_configs=omniglot_sensor_module_config,
 	),
-	dataset_args=OmniglotDatasetArgs(),
+	env_interface_config=OmniglotDatasetArgs(),
 	train_env_interface_class=ED.OmniglotDataLoader,
 	# Train on the first version of each character (there are 20 drawings for each
 	# character in each alphabet, here we see one of them). The default
@@ -179,7 +179,7 @@ omniglot_inference = dict(
         ),
         sensor_module_configs=omniglot_sensor_module_config,
     ),
-    dataset_args=OmniglotDatasetArgs(),
+    env_interface_config=OmniglotDatasetArgs(),
     eval_env_interface_class=ED.OmniglotDataLoader,
     # Using version 1 means testing on the same version of the character as trained.
     # Version 2 is a new drawing of the previously seen characters. In this small test
@@ -271,7 +271,7 @@ And add the two experiments into the `MyExperiment` class in `benchmarks/configs
 Now you can run training by calling `python benchmarks/run.py -e omniglot_training` and then inference on these models by calling `python benchmarks/run.py -e omniglot_inference`. You can check the `eval_stats.csv` file in `~/tbp/results/monty/projects/monty_runs/omniglot_inference/` to see how Monty did. If you copied the code above, it should have recognized all six characters correctly.
 
 > ❗️ Generalization Performance on Omniglot is Bad Without Hierarchy
-> Note that we currently don't get good generalization performance on the Omniglot dataset. If you use the commented-out dataset_args (`eval_env_interface_args=OmniglotEnvironmentInterfaceArgs(versions=[2, 2, 2, 2, 2, 2])`) in the inference config, which shows previously unseen versions of the characters, you will see that performance degrades a lot. This is because the Omniglot characters are fundamentally compositional objects (strokes relative to each other), and compositional objects can only be modeled by stacking two learning modules hierarchically. The above configs do not do this. Our research team is hard at work getting Monty to model compositional objects.
+> Note that we currently don't get good generalization performance on the Omniglot dataset. If you use the commented-out env_interface_config (`eval_env_interface_args=OmniglotEnvironmentInterfaceArgs(versions=[2, 2, 2, 2, 2, 2])`) in the inference config, which shows previously unseen versions of the characters, you will see that performance degrades a lot. This is because the Omniglot characters are fundamentally compositional objects (strokes relative to each other), and compositional objects can only be modeled by stacking two learning modules hierarchically. The above configs do not do this. Our research team is hard at work getting Monty to model compositional objects.
 
 ## Example 2: Monty Meets World
 Monty Meets World is the code name for our first demo of Monty on real-world data. For a video of this momentous moment (or is that Montymentous?), see our [project showcase page](https://thousandbrainsproject.readme.io/docs/project-showcase#monty-for-object-detection-with-the-ipad-camera).
@@ -324,7 +324,7 @@ monty_meets_world_2dimage_inference = dict(
     	# move 20 pixels at a time
     	motor_system_config=MotorSystemConfigInformedNoTransStepS20(),
 	),
-	dataset_args=WorldImageDatasetArgs(
+	env_interface_config=WorldImageDatasetArgs(
     	env_init_args=EnvInitArgsMontyWorldStandardScenes()
 	),
 	eval_env_interface_class=ED.SaccadeOnImageDataLoader,

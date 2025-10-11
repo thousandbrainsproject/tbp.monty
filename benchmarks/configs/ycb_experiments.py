@@ -265,7 +265,7 @@ base_config_10distinctobj_dist_agent = dict(
         learning_module_configs=lower_max_nneighbors_1lm_config,
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
     ),
-    dataset_args=PatchViewFinderMountHabitatEnvironmentArgs(),
+    env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(),
     eval_env_interface_class=ED.InformedEnvironmentInterface,
     eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
@@ -288,7 +288,7 @@ base_config_10distinctobj_surf_agent.update(
         motor_system_config=MotorSystemConfigCurInformedSurfaceGoalStateDriven(),
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
     ),
-    dataset_args=SurfaceViewFinderMountHabitatEnvironmentArgs(),
+    env_interface_config=SurfaceViewFinderMountHabitatEnvironmentArgs(),
 )
 
 randrot_noise_10distinctobj_dist_agent = copy.deepcopy(
@@ -355,7 +355,7 @@ randrot_noise_10distinctobj_surf_agent.update(
         motor_system_config=MotorSystemConfigCurInformedSurfaceGoalStateDriven(),
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
     ),
-    dataset_args=SurfaceViewFinderMountHabitatEnvironmentArgs(),
+    env_interface_config=SurfaceViewFinderMountHabitatEnvironmentArgs(),
 )
 
 randrot_10distinctobj_surf_agent = copy.deepcopy(base_config_10distinctobj_surf_agent)
@@ -386,7 +386,7 @@ randrot_noise_10distinctobj_5lms_dist_agent.update(
         sensor_module_configs=default_5sm_config,
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
     ),
-    dataset_args=FiveLMMountHabitatEnvironmentArgs(),
+    env_interface_config=FiveLMMountHabitatEnvironmentArgs(),
 )
 
 base_10simobj_surf_agent = copy.deepcopy(base_config_10distinctobj_surf_agent)
@@ -433,7 +433,7 @@ randomrot_rawnoise_10distinctobj_surf_agent = copy.deepcopy(
     randrot_noise_10distinctobj_surf_agent
 )
 randomrot_rawnoise_10distinctobj_surf_agent.update(
-    dataset_args=NoisySurfaceViewFinderMountHabitatEnvironmentArgs(),
+    env_interface_config=NoisySurfaceViewFinderMountHabitatEnvironmentArgs(),
 )
 
 # Experiment with multiple (distractor objects)
@@ -448,7 +448,7 @@ base_10multi_distinctobj_dist_agent.update(
         learning_module_configs=lower_max_nneighbors_1lm_config,
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
     ),
-    dataset_args=PatchViewFinderMultiObjectMountHabitatEnvironmentArgs(),
+    env_interface_config=PatchViewFinderMultiObjectMountHabitatEnvironmentArgs(),
     eval_env_interface_args=EnvironmentInterfaceMultiObjectArgs(
         object_names=dict(
             targets_list=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
@@ -513,7 +513,7 @@ surf_agent_unsupervised_10distinctobj.update(
         monty_args=MontyArgs(num_exploratory_steps=1000, min_train_steps=100),
         learning_module_configs=default_lfs_lm,
     ),
-    dataset_args=SurfaceViewFinderMountHabitatEnvironmentArgs(),
+    env_interface_config=SurfaceViewFinderMountHabitatEnvironmentArgs(),
     train_env_interface_class=ED.InformedEnvironmentInterface,
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
