@@ -1041,7 +1041,6 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
             raise TypeError(
                 f"motor_system must be an instance of MotorSystem, got {motor_system}"
             )
-        # TODO: call super init instead of duplication code & generally clean up more
         self.env = env
         self.rng = rng
         self.motor_system = motor_system
