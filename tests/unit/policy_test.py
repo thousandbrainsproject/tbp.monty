@@ -117,7 +117,7 @@ class PolicyTest(unittest.TestCase):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20),
             ),
-            dataset_args=PatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_env_interface_class=ED.InformedEnvironmentInterface,
@@ -154,7 +154,7 @@ class PolicyTest(unittest.TestCase):
                 monty_args=MontyArgs(num_exploratory_steps=20),
                 motor_system_config=MotorSystemConfigSurface(),
             ),
-            dataset_args=SurfaceViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=SurfaceViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
             ),
         )
@@ -236,7 +236,7 @@ class PolicyTest(unittest.TestCase):
                 monty_class=MontyForEvidenceGraphMatching,
                 learning_module_configs=default_5lm_lmconfig,
             ),
-            dataset_args=FiveLMMountHabitatEnvironmentArgs(
+            env_interface_config=FiveLMMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsFiveLMMount(data_path=None).__dict__,
             ),
         )
@@ -282,7 +282,7 @@ class PolicyTest(unittest.TestCase):
                     ),
                 ),
             ),
-            dataset_args=SurfaceViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=SurfaceViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
             ),
         )
@@ -333,7 +333,7 @@ class PolicyTest(unittest.TestCase):
                     ),
                 ),
             ),
-            dataset_args=SurfaceViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=SurfaceViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
             ),
         )
@@ -344,7 +344,7 @@ class PolicyTest(unittest.TestCase):
         self.poor_initial_view_multi_object_config.update(
             # For multi-objects, we test get good view at evaluation, because in
             # Monty we don't currently train with multiple objects in the environment
-            dataset_args=PatchViewFinderMultiObjectMountHabitatEnvironmentArgs(
+            env_interface_config=PatchViewFinderMultiObjectMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsPatchViewFinderMultiObjectMount(
                     data_path=None
                 ).__dict__,
@@ -403,7 +403,7 @@ class PolicyTest(unittest.TestCase):
                     ),
                 ),
             ),
-            dataset_args=SurfaceViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=SurfaceViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
             ),
         )

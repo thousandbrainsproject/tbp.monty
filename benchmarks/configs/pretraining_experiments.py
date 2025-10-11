@@ -127,7 +127,7 @@ supervised_pre_training_base = dict(
             )
         ),  # use spiral policy for more even object coverage during learning
     ),
-    dataset_args=PatchViewFinderMountHabitatEnvironmentArgs(),
+    env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(),
     train_env_interface_class=ED.InformedEnvironmentInterface,
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
@@ -198,7 +198,7 @@ only_surf_agent_training_10obj.update(
         ),
         motor_system_config=MotorSystemConfigCurvatureInformedSurface(),
     ),
-    dataset_args=SurfaceViewFinderMountHabitatEnvironmentArgs(),
+    env_interface_config=SurfaceViewFinderMountHabitatEnvironmentArgs(),
     logging_config=PretrainLoggingConfig(
         output_dir=fe_pretrain_dir,
         run_name="surf_agent_1lm_10distinctobj",
@@ -242,7 +242,7 @@ only_surf_agent_training_numenta_lab_obj.update(
         output_dir=fe_pretrain_dir,
         run_name="surf_agent_1lm_numenta_lab_obj",
     ),
-    dataset_args=SurfaceViewFinderMontyWorldMountHabitatEnvironmentArgs(),
+    env_interface_config=SurfaceViewFinderMontyWorldMountHabitatEnvironmentArgs(),
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(0, 12, object_list=NUMENTA_OBJECTS),
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations_all),
@@ -262,7 +262,7 @@ supervised_pre_training_5lms.update(
             )
         ),
     ),
-    dataset_args=FiveLMMountHabitatEnvironmentArgs(),
+    env_interface_config=FiveLMMountHabitatEnvironmentArgs(),
 )
 
 supervised_pre_training_5lms_all_objects = copy.deepcopy(supervised_pre_training_5lms)

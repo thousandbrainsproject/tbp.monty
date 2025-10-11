@@ -77,7 +77,7 @@ randrot_noise_sim_on_scan_monty_world = dict(
         # the iPad images can't move around the object.
         motor_system_config=MotorSystemConfigInformedNoTransStepS20(),
     ),
-    dataset_args=PatchViewFinderMontyWorldMountHabitatEnvironmentArgs(),
+    env_interface_config=PatchViewFinderMontyWorldMountHabitatEnvironmentArgs(),
     eval_env_interface_class=ED.InformedEnvironmentInterface,
     eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(0, 12, object_list=NUMENTA_OBJECTS),

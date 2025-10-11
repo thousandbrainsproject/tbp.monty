@@ -174,7 +174,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
-            dataset_args=PatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_env_interface_class=ED.InformedEnvironmentInterface,
@@ -194,7 +194,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             monty_config=SurfaceAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20),
             ),
-            dataset_args=SurfaceViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=SurfaceViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
             ),
         )
@@ -519,7 +519,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                     learning_module_4=multi_ppf_displacement_lm_config,
                 ),
             ),
-            dataset_args=FiveLMMountHabitatEnvironmentArgs(
+            env_interface_config=FiveLMMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsFiveLMMount(data_path=None).__dict__,
             ),
         )
@@ -578,7 +578,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                     learning_module_4=lm4_config,
                 ),
             ),
-            dataset_args=FiveLMMountHabitatEnvironmentArgs(
+            env_interface_config=FiveLMMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsFiveLMMount(data_path=None).__dict__,
             ),
         )
