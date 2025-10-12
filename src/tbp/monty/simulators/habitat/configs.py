@@ -174,7 +174,7 @@ class SinglePTZHabitatEnvironmentArgs:
 
 @dataclass
 class SimpleMountHabitatEnvironmentArgs:
-    """Define an environment with a single cone and a single mount agent with two cameras.
+    """Define an environment with single cone and single mount agent with two cameras.
 
     Use this to make a :class:`EnvironmentInterface` with an env with a single cone and
     a single mount agent with two cameras.

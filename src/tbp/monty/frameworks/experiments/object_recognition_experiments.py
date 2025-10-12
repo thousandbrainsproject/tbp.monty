@@ -47,8 +47,8 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         between semantic ID to labels, both for logging/evaluation purposes.
         """
         # TODO, eventually it would be better to pass
-        # self.env_interface.semantic_id_to_label via an "Observation" object when this is
-        # eventually implemented, such that we can ensure this information is never
+        # self.env_interface.semantic_id_to_label via an "Observation" object when this
+        # is eventually implemented, such that we can ensure this information is never
         # inappropriately accessed and used
         if hasattr(self.env_interface, "semantic_id_to_label"):
             self.model.pre_episode(
@@ -71,9 +71,9 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
     def run_episode_steps(self):
         """Runs one episode of the experiment.
 
-        At each step, observations are collected from the env_interface and either passed
-        to the model or sent directly to the motor system. We also check if a terminal
-        condition was reached at each step and increment step counters.
+        At each step, observations are collected from the env_interface and either
+        passed to the model or sent directly to the motor system. We also check if a
+        terminal condition was reached at each step and increment step counters.
 
         Returns:
             The number of total steps taken in the episode.

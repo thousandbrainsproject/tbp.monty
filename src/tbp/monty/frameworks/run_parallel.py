@@ -781,7 +781,8 @@ def main(
         experiment = exp["logging_config"]["run_name"]
 
     # Simplifying assumption: let's only deal with the main type of exp which involves
-    # per object environment interfaces, otherwise hard to figure out what all goes into an exp
+    # per object environment interfaces, otherwise hard to figure out what all goes into
+    # an exp
     if exp["experiment_args"]["do_train"]:
         assert issubclass(
             exp["train_env_interface_class"], ED.EnvironmentInterfacePerObject
