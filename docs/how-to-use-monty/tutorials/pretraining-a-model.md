@@ -18,7 +18,7 @@ Our model will have one surface agent connected to one sensor module connected t
 
 # Config Overview
 
-Monty experiments are defined using a nested dictionary. These dictionaries define the experiment class and associated simulation parameters, logging configs, the Monty model (which includes sensor modules, learning modules, and a motor system), the environment dataset, and data loaders. This is the basic structure of a complete experiment config, along with their expected types:
+Monty experiments are defined using a nested dictionary. These dictionaries define the experiment class and associated simulation parameters, logging configs, the Monty model (which includes sensor modules, learning modules, and a motor system), and the environment interface. This is the basic structure of a complete experiment config, along with their expected types:
 
 - `experiment_class`: `MontyExperiment` Manages the highest-level calls to the environment and Monty model.
 - `experiment_args`: `ExperimentArgs` Arguments supplied to the experiment class.
@@ -205,7 +205,7 @@ surf_agent_2obj_train = dict(
 
 Here, we explicitly specified most parameters in config classes for transparency. The remaining parameters (e.g., `sm_to_lm_matrix`, etc.) aren't supplied since `PatchAndViewMontyConfig`s defaults will work fine here. If you use a different number of SMs or LMs or want a custom connectivity between them, you will have to specify those as well.
 
-Briefly, we specified our experiment class and the number of epochs to run. We also configured a [logger](../logging-and-analysis.md), the environment dataset, and a training data loader to initialize our objects at different orientations for each episode. We also specified a valid but unused eval environment interface (currently necessary). `monty_config` is a nested config that describes the complete sensorimotor modeling system. Here is a short breakdown of its components:
+Briefly, we specified our experiment class and the number of epochs to run. We also configured a [logger](../logging-and-analysis.md), the environment interface, and a training environment to initialize our objects at different orientations for each episode. We also specified a valid but unused eval environment interface (currently necessary). `monty_config` is a nested config that describes the complete sensorimotor modeling system. Here is a short breakdown of its components:
 
 - `PatchAndViewMontyConfig`: the top-level Monty config object specifies that we will have a sensor patch and an additional viewfinder as inputs to the system. It also specifies the routing matrices between sensors, SMs and LMs (using defaults in this simple setup).
   - `monty_args`: a `MontyArgs`object specifying we want 500 exploratory steps per episode.
