@@ -272,7 +272,9 @@ class PatchViewFinderMontyWorldMountHabitatEnvironmentArgs(
 
 
 @dataclass
-class SurfaceViewFinderMountHabitatEnvironmentArgs(PatchViewFinderMountHabitatEnvironmentArgs):
+class SurfaceViewFinderMountHabitatEnvironmentArgs(
+    PatchViewFinderMountHabitatEnvironmentArgs
+):
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsSurfaceViewMount().__dict__
     )
@@ -379,7 +381,9 @@ class EnvInitArgsTwoLMDistantStackedMount(EnvInitArgs):
 
 
 @dataclass
-class TwoLMStackedDistantMountHabitatEnvironmentArgs(MultiLMMountHabitatEnvironmentArgs):
+class TwoLMStackedDistantMountHabitatEnvironmentArgs(
+    MultiLMMountHabitatEnvironmentArgs
+):
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsTwoLMDistantStackedMount().__dict__
     )
@@ -395,7 +399,9 @@ class EnvInitArgsTwoLMSurfaceStackedMount(EnvInitArgs):
 
 
 @dataclass
-class TwoLMStackedSurfaceMountHabitatEnvironmentArgs(MultiLMMountHabitatEnvironmentArgs):
+class TwoLMStackedSurfaceMountHabitatEnvironmentArgs(
+    MultiLMMountHabitatEnvironmentArgs
+):
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsTwoLMSurfaceStackedMount().__dict__
     )

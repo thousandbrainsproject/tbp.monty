@@ -261,7 +261,9 @@ class MontyExperiment:
         """
         # training and validation are just different environment interfaces
         if not issubclass(env_interface_class, EnvironmentInterface):
-            raise TypeError("env_interface class must be EnvironmentInterface (for now)")
+            raise TypeError(
+                "env_interface class must be EnvironmentInterface (for now)"
+            )
 
         env_interface = env_interface_class(
             **env_interface_args,
