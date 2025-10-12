@@ -110,7 +110,9 @@ bright_world_image_on_scanned_model.update(
 
 dark_world_image_on_scanned_model = copy.deepcopy(world_image_on_scanned_model)
 dark_world_image_on_scanned_model.update(
-    env_interface_config=WorldImageEnvInterfaceConfig(env_init_args=EnvInitArgsMontyWorldDarkScenes()),
+    env_interface_config=WorldImageEnvInterfaceConfig(
+        env_init_args=EnvInitArgsMontyWorldDarkScenes()
+    ),
 )
 
 hand_intrusion_world_image_on_scanned_model = copy.deepcopy(
