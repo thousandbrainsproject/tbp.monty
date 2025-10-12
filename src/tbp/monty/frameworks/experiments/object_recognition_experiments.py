@@ -52,7 +52,8 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         # inappropriately accessed and used
         if hasattr(self.env_interface, "semantic_id_to_label"):
             self.model.pre_episode(
-                self.env_interface.primary_target, self.env_interface.semantic_id_to_label
+                self.env_interface.primary_target,
+                self.env_interface.semantic_id_to_label,
             )
         else:
             self.model.pre_episode(self.env_interface.primary_target)
