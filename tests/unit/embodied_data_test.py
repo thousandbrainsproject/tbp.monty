@@ -231,7 +231,7 @@ class EmbodiedDataTest(unittest.TestCase):
         )
 
     # @unittest.skip("debugging")
-    def test_embodied_env_interface_dist(self):
+    def test_embodied_env_interface_dist_states(self):
         rng = np.random.RandomState(42)
         base_policy_config_dist = make_base_policy_config(
             action_space_type="distant_agent",
@@ -254,7 +254,7 @@ class EmbodiedDataTest(unittest.TestCase):
                 break
 
     # @unittest.skip("debugging")
-    def test_embodied_env_interface_abs(self):
+    def test_embodied_env_interface_abs_states(self):
         rng = np.random.RandomState(42)
 
         base_policy_config_abs = make_base_policy_config(
@@ -372,15 +372,7 @@ class EmbodiedDataTest(unittest.TestCase):
         for i, obs in enumerate(env_interface_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
-<<<<<<< HEAD
-            if i >= DATASET_LEN - 1:
-=======
-            action = env_interface_rel._action
-            action_name = f"{action.agent_id}.{action.name}"
-            self.check_two_d_movement(prev_loc, current_loc, action_name)
-            prev_loc = current_loc
             if i >= NUM_STEPS - 1:
->>>>>>> b538edf (checkpoint for renaming env dataloader to env interface)
                 break
 
         env_interface_rel.post_episode()
@@ -393,17 +385,7 @@ class EmbodiedDataTest(unittest.TestCase):
         for i, obs in enumerate(env_interface_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
-<<<<<<< HEAD
-            if i >= DATASET_LEN - 1:
-=======
-            action = env_interface_rel._action
-            action_name = (
-                f"{action.agent_id}.{action.name}" if action is not None else None
-            )
-            self.check_two_d_movement(prev_loc, current_loc, action_name)
-            prev_loc = current_loc
             if i >= NUM_STEPS - 1:
->>>>>>> b538edf (checkpoint for renaming env dataloader to env interface)
                 break
 
     def test_saccade_on_image_stream_env_interface(self):
@@ -441,15 +423,7 @@ class EmbodiedDataTest(unittest.TestCase):
         for i, obs in enumerate(env_interface_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
-<<<<<<< HEAD
-            if i >= DATASET_LEN - 1:
-=======
-            action = env_interface_rel._action
-            action_name = f"{action.agent_id}.{action.name}"
-            self.check_two_d_movement(prev_loc, current_loc, action_name)
-            prev_loc = current_loc
             if i >= NUM_STEPS - 1:
->>>>>>> b538edf (checkpoint for renaming env dataloader to env interface)
                 break
 
         env_interface_rel.post_episode()
@@ -461,15 +435,7 @@ class EmbodiedDataTest(unittest.TestCase):
         for i, obs in enumerate(env_interface_rel):
             sensed_data = obs[AGENT_ID][sensor_id]
             self.check_two_d_patch_obs(sensed_data, patch_size, expected_keys)
-<<<<<<< HEAD
-            if i >= DATASET_LEN - 1:
-=======
-            action = env_interface_rel._action
-            action_name = f"{action.agent_id}.{action.name}"
-            self.check_two_d_movement(prev_loc, current_loc, action_name)
-            prev_loc = current_loc
             if i >= NUM_STEPS - 1:
->>>>>>> b538edf (checkpoint for renaming env dataloader to env interface)
                 break
 
 
