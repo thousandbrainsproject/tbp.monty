@@ -229,7 +229,7 @@ class EmbodiedDataTest(unittest.TestCase):
         )
 
     # @unittest.skip("debugging")
-    def test_embodied_env_interface_dist(self):
+    def test_embodied_env_interface_dist_states(self):
         rng = np.random.RandomState(42)
         base_policy_config_dist = make_base_policy_config(
             action_space_type="distant_agent",
@@ -252,7 +252,7 @@ class EmbodiedDataTest(unittest.TestCase):
                 break
 
     # @unittest.skip("debugging")
-    def test_embodied_env_interface_abs(self):
+    def test_embodied_env_interface_abs_states(self):
         rng = np.random.RandomState(42)
 
         base_policy_config_abs = make_base_policy_config(
