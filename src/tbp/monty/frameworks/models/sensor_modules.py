@@ -200,9 +200,10 @@ class HabitatObservationProcessor:
                 "Coverage cannot be greater than 100%"
             )
 
-        if obs_3d[center_id][3] or (
-            not on_object_only and features["object_coverage"] > 0
-        ):
+        obs_3d_center = obs_3d[center_id]
+        x, y, z, semantic_id = obs_3d_center
+        on_object = semantic_id > 0
+        if on_object or (not on_object_only and features["object_coverage"] > 0):
             (
                 features,
                 morphological_features,
@@ -221,10 +222,8 @@ class HabitatObservationProcessor:
             invalid_signals = True
             morphological_features = {}
 
-        obs_3d_center = obs_3d[center_id]
-        x, y, z, semantic_id = obs_3d_center
         if "on_object" in self._features:
-            morphological_features["on_object"] = float(semantic_id > 0)
+            morphological_features["on_object"] = float(on_object)
 
         # Sensor module returns features at a location in the form of a State class.
         # use_state is a bool indicating whether the input is "interesting",
@@ -621,7 +620,8 @@ class HabitatDistantPatchSM(SensorModule, NoiseMixin):
             )
 
         observed_state, telemetry = self._habitat_observation_processor.process(
-            data, on_object_only=self.on_object_obs_only
+            data,
+            on_object_only=self.on_object_obs_only,
         )
 
         if self.noise_params is not None and observed_state.use_state:
