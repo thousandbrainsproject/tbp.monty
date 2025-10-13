@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, TypedDict
+from typing import Any, Protocol, TypedDict
 
 import numpy as np
 import quaternion
@@ -426,7 +426,20 @@ class DetailedLoggingSM(SensorModule):
         self.is_exploring = False
 
 
-class FeatureNoise:
+class FeatureNoise(Protocol):
+    def __call__(self, state: State) -> State: ...
+
+
+def no_feature_noise(state: State) -> State:
+    """No noise function.
+
+    Returns:
+        State with no noise added.
+    """
+    return state
+
+
+class DefaultFeatureNoise(FeatureNoise):
     def __init__(self, noise_params: dict[str, Any], rng):
         self.noise_params = noise_params
         self.rng = rng
@@ -551,9 +564,11 @@ class HabitatDistantPatchSM(SensorModule):
             pc1_is_pc2_threshold=pc1_is_pc2_threshold,
         )
         if noise_params:
-            self._feature_noise = FeatureNoise(noise_params=noise_params, rng=rng)
+            self._feature_noise: FeatureNoise = DefaultFeatureNoise(
+                noise_params=noise_params, rng=rng
+            )
         else:
-            self._feature_noise = lambda state: state
+            self._feature_noise = no_feature_noise
         self._snapshot_telemetry = SnapshotTelemetry()
         # Tests check sm.features, not sure if this should be exposed
         self.features = features
