@@ -200,8 +200,7 @@ class HabitatObservationProcessor:
                 "Coverage cannot be greater than 100%"
             )
 
-        obs_3d_center = obs_3d[center_id]
-        x, y, z, semantic_id = obs_3d_center
+        x, y, z, semantic_id = obs_3d[center_id]
         on_object = semantic_id > 0
         if on_object or (not on_object_only and features["object_coverage"] > 0):
             (
@@ -237,7 +236,7 @@ class HabitatObservationProcessor:
             morphological_features=morphological_features,
             non_morphological_features=features,
             confidence=1.0,
-            use_state=bool(morphological_features["on_object"]) and not invalid_signals,
+            use_state=on_object and not invalid_signals,
             sender_id=self._sensor_module_id,
             sender_type="SM",
         )
@@ -427,12 +426,12 @@ class DetailedLoggingSM(SensorModule):
         self.is_exploring = False
 
 
-class NoiseMixin:
-    def __init__(self, noise_params, **kwargs):
-        super().__init__(**kwargs)
+class FeatureNoise:
+    def __init__(self, noise_params: dict[str, Any], rng):
         self.noise_params = noise_params
+        self.rng = rng
 
-    def add_noise_to_sensor_data(self, sensor_data):
+    def __call__(self, state: State) -> State:
         """Add noise to features specified in noise_params.
 
         Noise params should have structure {"features":
@@ -446,14 +445,14 @@ class NoiseMixin:
         noise is just added onto the perceived feature value.
 
         Args:
-            sensor_data: Sensor data to add noise to.
+            state: State to add noise to.
 
         Returns:
-            Sensor data with noise added.
+            State with noise added.
         """
-        if "features" in self.noise_params.keys():
-            for key in self.noise_params["features"].keys():
-                if key in sensor_data.morphological_features.keys():
+        if "features" in self.noise_params:
+            for key in self.noise_params["features"]:
+                if key in state.morphological_features:
                     if key == "pose_vectors":
                         # apply randomly sampled rotation to xyz axes with standard
                         # deviation specified in noise_params
@@ -465,28 +464,28 @@ class NoiseMixin:
                         noise_rotation = Rotation.from_euler(
                             "xyz", noise_angles, degrees=True
                         )
-                        sensor_data.morphological_features[key] = noise_rotation.apply(
-                            sensor_data.morphological_features[key]
+                        state.morphological_features[key] = noise_rotation.apply(
+                            state.morphological_features[key]
                         )
                     else:
-                        sensor_data.morphological_features[key] = (
+                        state.morphological_features[key] = (
                             self.add_noise_to_feat_value(
                                 feat_name=key,
-                                feat_val=sensor_data.morphological_features[key],
+                                feat_val=state.morphological_features[key],
                             )
                         )
-                elif key in sensor_data.non_morphological_features.keys():
-                    sensor_data.non_morphological_features[key] = (
+                elif key in state.non_morphological_features:
+                    state.non_morphological_features[key] = (
                         self.add_noise_to_feat_value(
                             feat_name=key,
-                            feat_val=sensor_data.non_morphological_features[key],
+                            feat_val=state.non_morphological_features[key],
                         )
                     )
-        if "location" in self.noise_params.keys():
+        if "location" in self.noise_params:
             noise = self.rng.normal(0, self.noise_params["location"], 3)
-            sensor_data.location = sensor_data.location + noise
+            state.location = state.location + noise
 
-        return sensor_data
+        return state
 
     def add_noise_to_feat_value(self, feat_name, feat_val):
         if isinstance(feat_val, bool):
@@ -508,7 +507,7 @@ class NoiseMixin:
         return new_feat_val
 
 
-class HabitatDistantPatchSM(SensorModule, NoiseMixin):
+class HabitatDistantPatchSM(SensorModule):
     """Sensor Module that turns Habitat camera obs into features at locations.
 
     Takes in camera rgba and depth input and calculates locations from this.
@@ -518,6 +517,7 @@ class HabitatDistantPatchSM(SensorModule, NoiseMixin):
 
     def __init__(
         self,
+        rng,
         sensor_module_id: str,
         features: list[str],
         save_raw_obs: bool = False,
@@ -545,14 +545,15 @@ class HabitatDistantPatchSM(SensorModule, NoiseMixin):
             gaussian_curvature and mean_curvature should be used together to contain
             the same information as principal_curvatures.
         """
-        super().__init__(
-            noise_params=noise_params,  # NoiseMixin
-        )
         self._habitat_observation_processor = HabitatObservationProcessor(
             features=features,
             sensor_module_id=sensor_module_id,
             pc1_is_pc2_threshold=pc1_is_pc2_threshold,
         )
+        if noise_params:
+            self._feature_noise = FeatureNoise(noise_params=noise_params, rng=rng)
+        else:
+            self._feature_noise = lambda state: state
         self._snapshot_telemetry = SnapshotTelemetry()
         # Tests check sm.features, not sure if this should be exposed
         self.features = features
@@ -624,8 +625,8 @@ class HabitatDistantPatchSM(SensorModule, NoiseMixin):
             on_object_only=self.on_object_obs_only,
         )
 
-        if self.noise_params is not None and observed_state.use_state:
-            observed_state = self.add_noise_to_sensor_data(observed_state)
+        if observed_state.use_state:
+            observed_state = self._feature_noise(observed_state)
 
         if self.motor_only_step:
             # Set interesting-features flag to False, as should not be passed to
