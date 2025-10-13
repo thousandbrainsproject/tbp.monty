@@ -240,7 +240,7 @@ class MontyExperiment:
             env_interface_class = config["eval_env_interface_class"]
             env_interface_args = dict(
                 env=self.env,
-                transform=env_interface_args["transform"],
+                transform=env_interface_config["transform"],
                 **config["eval_env_interface_args"],
             )
 
