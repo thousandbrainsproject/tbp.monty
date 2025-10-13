@@ -521,7 +521,7 @@ class NoiseMixin:
         return new_feat_val
 
 
-class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
+class HabitatDistantPatchSM(SensorModule, NoiseMixin):
     """Sensor Module that turns Habitat camera obs into features at locations.
 
     Takes in camera rgba and depth input and calculates locations from this.
@@ -563,8 +563,6 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             the same information as principal_curvatures.
         """
         super().__init__(
-            sensor_module_id,  # DetailedLoggingSM
-            save_raw_obs,  # DetailedLoggingSM
             noise_params=noise_params,  # NoiseMixin
         )
         self._habitat_observation_processor = HabitatObservationProcessor(
@@ -572,6 +570,7 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             sensor_module_id=sensor_module_id,
             pc1_is_pc2_threshold=pc1_is_pc2_threshold,
         )
+        self._snapshot_telemetry = SnapshotTelemetry()
         # Tests check sm.features, not sure if this should be exposed
         self.features = features
         self.processed_obs = []
@@ -579,12 +578,24 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
         # TODO: give more descriptive & distinct names
         self.on_object_obs_only = True
         self.process_all_obs = process_all_obs
+        self.sensor_module_id = sensor_module_id
+        self.save_raw_obs = save_raw_obs
+
+    def post_episode(self):
+        pass
+
+    def set_experiment_mode(self, mode):
+        pass
 
     def pre_episode(self):
         """Reset buffer and is_exploring flag."""
         super().pre_episode()
+        self._snapshot_telemetry.reset()
+        self.is_exploring = False
         self.processed_obs = []
         self.states = []
+        self.visited_locs = []
+        self.visited_normals = []
 
     def update_state(self, state):
         """Update information about the sensors location and rotation."""
@@ -630,12 +641,6 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             data, on_object_only=self.on_object_obs_only
         )
 
-        if not self.is_exploring:
-            self.processed_obs.append(telemetry.processed_obs.__dict__)
-            self.states.append(self.state)
-            self.visited_locs.append(telemetry.visited_loc)
-            self.visited_normals.append(telemetry.visited_normal)
-
         if self.noise_params is not None and observed_state.use_state:
             observed_state = self.add_noise_to_sensor_data(observed_state)
         if self.process_all_obs:
@@ -645,6 +650,12 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             # Set interesting-features flag to False, as should not be passed to
             # LM, even in e.g. pre-training experiments that might otherwise do so
             observed_state.use_state = False
+
+        if not self.is_exploring:
+            self.processed_obs.append(telemetry.processed_obs.__dict__)
+            self.states.append(self.state)
+            self.visited_locs.append(telemetry.visited_loc)
+            self.visited_normals.append(telemetry.visited_normal)
 
         return observed_state
 
