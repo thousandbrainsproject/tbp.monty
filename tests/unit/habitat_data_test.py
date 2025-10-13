@@ -25,10 +25,7 @@ from tbp.monty.frameworks.actions.action_samplers import (
     UniformlyDistributedSampler,
 )
 from tbp.monty.frameworks.config_utils.config_args import make_base_policy_config
-from tbp.monty.frameworks.environments.embodied_data import (
-    EnvironmentDataLoader,
-    EnvironmentDataset,
-)
+from tbp.monty.frameworks.environments.embodied_data import EnvironmentDataLoader
 from tbp.monty.frameworks.environments.embodied_environment import ActionSpace
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -103,7 +100,7 @@ class HabitatDataTest(unittest.TestCase):
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
-    def test_dataset_dist(self, mock_simulator_class, mock_agent_class):
+    def test_env_interface_dist(self, mock_simulator_class, mock_agent_class):
         # Mock habitat_sim classes
         mock_agent_dist = mock_agent_class.return_value
         mock_agent_dist.agent_config = self.camera_dist.get_spec()
@@ -119,20 +116,6 @@ class HabitatDataTest(unittest.TestCase):
 
         rng = np.random.RandomState(42)
 
-        # Create habitat env datasets with distant-agent action space
-        dataset_dist = EnvironmentDataset(
-            env_init_func=HabitatEnvironment,
-            env_init_args=dict(agents=[self.camera_dist_config]),
-            rng=rng,
-        )
-
-        # Check distant-agent action space
-        action_space_dist = dataset_dist.action_space
-        action_space_dist.rng = rng
-        self.assertIsInstance(action_space_dist, ActionSpace)
-        self.assertCountEqual(action_space_dist, EXPECTED_ACTIONS_DIST)
-        self.assertIn(action_space_dist.sample(), EXPECTED_ACTIONS_DIST)
-
         # Create distant-agent motor systems / policies
         base_policy_config_dist = make_base_policy_config(
             action_space_type="distant_agent",
@@ -143,35 +126,45 @@ class HabitatDataTest(unittest.TestCase):
             policy=BasePolicy(rng=rng, **base_policy_config_dist.__dict__)
         )
 
-        # Check if datasets are getting observations from simulator
+        # Create habitat env datasets with distant-agent action space
+        env_init_args = dict(agents=[self.camera_dist_config])
+        env = HabitatEnvironment(**env_init_args)
+        env_interface_dist = EnvironmentDataLoader(
+            env, rng=rng, motor_system=motor_system_dist
+        )
+
+        # Check distant-agent action space
+        action_space_dist = env_interface_dist.action_space
+        action_space_dist.rng = rng
+        self.assertIsInstance(action_space_dist, ActionSpace)
+        self.assertCountEqual(action_space_dist, EXPECTED_ACTIONS_DIST)
+        self.assertIn(action_space_dist.sample(), EXPECTED_ACTIONS_DIST)
+
+        # Check if env interface is getting observations from simulator
         mock_sim_dist.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, DATASET_LEN):
-            obs_dist, _ = dataset_dist[motor_system_dist()]
+            obs_dist, _ = env_interface_dist.step(motor_system_dist())
             camera_obs_dist = obs_dist[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_dist[SENSORS[0]] == EXPECTED_STATES[i]))
 
         # Check dataset reset gets observations from simulator
-        initial_obs_dist, _ = dataset_dist.reset()
+        initial_obs_dist, _ = env_interface_dist.reset()
         initial_camera_obs_dist = initial_obs_dist[AGENT_ID][SENSOR_ID]
         self.assertTrue(
             np.all(initial_camera_obs_dist[SENSORS[0]] == EXPECTED_STATES[0])
         )
 
-        # Check if dataset actions affect simulator observations
+        # Check if env interface actions affect simulator observations
         mock_sim_dist.get_sensor_observations.side_effect = self.mock_observations
-        obs_dist, _ = dataset_dist[motor_system_dist()]
+        obs_dist, _ = env_interface_dist.step(motor_system_dist())
         camera_obs_dist = obs_dist[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_dist[SENSORS[0]] == initial_camera_obs_dist[SENSORS[0]])
         )
 
-        dataset_dist.close()
-        with self.assertRaises(Exception):  # noqa: B017
-            _ = dataset_dist[action_space_dist.sample()]
-
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
-    def test_dataset_abs(self, mock_simulator_class, mock_agent_class):
+    def test_env_interface_abs(self, mock_simulator_class, mock_agent_class):
         # Mock habitat_sim classes
         mock_agent_abs = mock_agent_class.return_value
         mock_agent_abs.agent_config = self.camera_abs.get_spec()
@@ -187,20 +180,6 @@ class HabitatDataTest(unittest.TestCase):
 
         rng = np.random.RandomState(42)
 
-        # Create habitat env datasets with absolute action space
-        dataset_abs = EnvironmentDataset(
-            env_init_func=HabitatEnvironment,
-            env_init_args=dict(agents=[self.camera_abs_config]),
-            rng=rng,
-        )
-
-        # Check absolute action space
-        action_space_abs = dataset_abs.action_space
-        action_space_abs.rng = rng
-        self.assertIsInstance(action_space_abs, ActionSpace)
-        self.assertCountEqual(action_space_abs, EXPECTED_ACTIONS_ABS)
-        self.assertIn(action_space_abs.sample(), EXPECTED_ACTIONS_ABS)
-
         base_policy_config_abs = make_base_policy_config(
             action_space_type="absolute_only",
             action_sampler_class=UniformlyDistributedSampler,
@@ -210,15 +189,31 @@ class HabitatDataTest(unittest.TestCase):
             policy=BasePolicy(rng=rng, **base_policy_config_abs.__dict__)
         )
 
+        # Create habitat env datasets with absolute action space
+        env_init_args = dict(agents=[self.camera_abs_config])
+        env = HabitatEnvironment(**env_init_args)
+        env_interface_abs = EnvironmentDataLoader(
+            env,
+            rng=rng,
+            motor_system=motor_system_abs,
+        )
+
+        # Check absolute action space
+        action_space_abs = env_interface_abs.action_space
+        action_space_abs.rng = rng
+        self.assertIsInstance(action_space_abs, ActionSpace)
+        self.assertCountEqual(action_space_abs, EXPECTED_ACTIONS_ABS)
+        self.assertIn(action_space_abs.sample(), EXPECTED_ACTIONS_ABS)
+
         # Check if datasets are getting observations from simulator
         mock_sim_abs.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, DATASET_LEN):
-            obs_abs, _ = dataset_abs[motor_system_abs()]
+            obs_abs, _ = env_interface_abs.step(motor_system_abs())
             camera_obs_abs = obs_abs[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_abs[SENSORS[0]] == EXPECTED_STATES[i]))
 
         # Check dataset reset gets observations from simulator
-        initial_obs_abs, _ = dataset_abs.reset()
+        initial_obs_abs, _ = env_interface_abs.reset()
         initial_camera_obs_abs = initial_obs_abs[AGENT_ID][SENSOR_ID]
         self.assertTrue(
             np.all(initial_camera_obs_abs[SENSORS[0]] == EXPECTED_STATES[0])
@@ -226,19 +221,15 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if dataset actions affect simulator observations
         mock_sim_abs.get_sensor_observations.side_effect = self.mock_observations
-        obs_abs, _ = dataset_abs[motor_system_abs()]
+        obs_abs, _ = env_interface_abs.step(motor_system_abs())
         camera_obs_abs = obs_abs[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_abs[SENSORS[0]] == initial_camera_obs_abs[SENSORS[0]])
         )
 
-        dataset_abs.close()
-        with self.assertRaises(Exception):  # noqa: B017
-            _ = dataset_abs[action_space_abs.sample()]
-
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
-    def test_dataset_surf(self, mock_simulator_class, mock_agent_class):
+    def test_env_interface_surf(self, mock_simulator_class, mock_agent_class):
         # Mock habitat_sim classes
         mock_agent_surf = mock_agent_class.return_value
         mock_agent_surf.agent_config = self.camera_surf.get_spec()
@@ -253,21 +244,6 @@ class HabitatDataTest(unittest.TestCase):
         mock_sim_surf.reset.return_value = self.mock_reset
 
         rng = np.random.RandomState(42)
-
-        # Create habitat env datasets with distant-agent action space
-        dataset_surf = EnvironmentDataset(
-            env_init_func=HabitatEnvironment,
-            env_init_args=dict(agents=[self.camera_surf_config]),
-            rng=rng,
-        )
-
-        # Check surface-agent action space
-        action_space_surf = dataset_surf.action_space
-        action_space_surf.rng = rng
-        self.assertIsInstance(action_space_surf, ActionSpace)
-        self.assertCountEqual(action_space_surf, EXPECTED_ACTIONS_SURF)
-        self.assertIn(action_space_surf.sample(), EXPECTED_ACTIONS_SURF)
-
         # Note we just test random actions (i.e. base policy) with the surface-agent
         # action space
         base_policy_config_surf = make_base_policy_config(
@@ -279,15 +255,29 @@ class HabitatDataTest(unittest.TestCase):
             policy=BasePolicy(rng=rng, **base_policy_config_surf.__dict__)
         )
 
+        # Create habitat env datasets with distant-agent action space
+        env_init_args = dict(agents=[self.camera_surf_config])
+        env = HabitatEnvironment(**env_init_args)
+        env_interface_surf = EnvironmentDataLoader(
+            env, rng=rng, motor_system=motor_system_surf
+        )
+
+        # Check surface-agent action space
+        action_space_surf = env_interface_surf.action_space
+        action_space_surf.rng = rng
+        self.assertIsInstance(action_space_surf, ActionSpace)
+        self.assertCountEqual(action_space_surf, EXPECTED_ACTIONS_SURF)
+        self.assertIn(action_space_surf.sample(), EXPECTED_ACTIONS_SURF)
+
         # Check if datasets are getting observations from simulator
         mock_sim_surf.get_sensor_observations.side_effect = self.mock_observations
         for i in range(1, DATASET_LEN):
-            obs_surf, _ = dataset_surf[motor_system_surf()]
+            obs_surf, _ = env_interface_surf.step(motor_system_surf())
             camera_obs_surf = obs_surf[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_surf[SENSORS[0]] == EXPECTED_STATES[i]))
 
         # Check dataset reset gets observations from simulator
-        initial_obs_surf, _ = dataset_surf.reset()
+        initial_obs_surf, _ = env_interface_surf.reset()
         initial_camera_obs_surf = initial_obs_surf[AGENT_ID][SENSOR_ID]
         self.assertTrue(
             np.all(initial_camera_obs_surf[SENSORS[0]] == EXPECTED_STATES[0])
@@ -295,15 +285,11 @@ class HabitatDataTest(unittest.TestCase):
 
         # Check if dataset actions affect simulator observations
         mock_sim_surf.get_sensor_observations.side_effect = self.mock_observations
-        obs_surf, _ = dataset_surf[motor_system_surf()]
+        obs_surf, _ = env_interface_surf.step(motor_system_surf())
         camera_obs_surf = obs_surf[AGENT_ID][SENSOR_ID]
         self.assertFalse(
             np.all(camera_obs_surf[SENSORS[0]] == initial_camera_obs_surf[SENSORS[0]])
         )
-
-        dataset_surf.close()
-        with self.assertRaises(Exception):  # noqa: B017
-            _ = dataset_surf[action_space_surf.sample()]
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
@@ -324,12 +310,6 @@ class HabitatDataTest(unittest.TestCase):
 
         rng = np.random.RandomState(42)
 
-        dataset_dist = EnvironmentDataset(
-            env_init_func=HabitatEnvironment,
-            env_init_args=dict(agents=[self.camera_dist_config]),
-            rng=rng,
-        )
-
         base_policy_config_dist = make_base_policy_config(
             action_space_type="distant_agent",
             action_sampler_class=UniformlyDistributedSampler,
@@ -339,7 +319,12 @@ class HabitatDataTest(unittest.TestCase):
             policy=BasePolicy(rng=rng, **base_policy_config_dist.__dict__)
         )
 
-        dataloader_dist = EnvironmentDataLoader(dataset_dist, motor_system_dist, rng)
+        env_init_args = dict(agents=[self.camera_dist_config])
+        env = HabitatEnvironment(**env_init_args)
+        dataloader_dist = EnvironmentDataLoader(
+            env, motor_system=motor_system_dist, rng=rng
+        )
+
         for i, item in enumerate(dataloader_dist):
             camera_obs_dist = item[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_dist[SENSORS[0]] == EXPECTED_STATES[i]))
@@ -365,12 +350,6 @@ class HabitatDataTest(unittest.TestCase):
 
         rng = np.random.RandomState(42)
 
-        dataset_abs = EnvironmentDataset(
-            env_init_func=HabitatEnvironment,
-            env_init_args=dict(agents=[self.camera_abs_config]),
-            rng=rng,
-        )
-
         base_policy_config_abs = make_base_policy_config(
             action_space_type="absolute_only",
             action_sampler_class=UniformlyDistributedSampler,
@@ -379,8 +358,11 @@ class HabitatDataTest(unittest.TestCase):
         motor_system_abs = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_config_abs.__dict__)
         )
-
-        dataloader_abs = EnvironmentDataLoader(dataset_abs, motor_system_abs, rng)
+        env_init_args = dict(agents=[self.camera_abs_config])
+        env = HabitatEnvironment(**env_init_args)
+        dataloader_abs = EnvironmentDataLoader(
+            env, motor_system=motor_system_abs, rng=rng
+        )
         for i, item in enumerate(dataloader_abs):
             camera_obs_abs = item[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_abs[SENSORS[0]] == EXPECTED_STATES[i]))
@@ -406,12 +388,6 @@ class HabitatDataTest(unittest.TestCase):
 
         rng = np.random.RandomState(42)
 
-        dataset_surf = EnvironmentDataset(
-            env_init_func=HabitatEnvironment,
-            env_init_args=dict(agents=[self.camera_surf_config]),
-            rng=rng,
-        )
-
         # Note we just test random actions (i.e. base policy) with the surface-agent
         # action space
         base_policy_config_surf = make_base_policy_config(
@@ -423,7 +399,11 @@ class HabitatDataTest(unittest.TestCase):
             policy=BasePolicy(rng=rng, **base_policy_config_surf.__dict__)
         )
 
-        dataloader_surf = EnvironmentDataLoader(dataset_surf, motor_system_surf, rng)
+        env_init_args = dict(agents=[self.camera_surf_config])
+        env = HabitatEnvironment(**env_init_args)
+        dataloader_surf = EnvironmentDataLoader(
+            env, motor_system=motor_system_surf, rng=rng
+        )
         for i, item in enumerate(dataloader_surf):
             camera_obs_surf = item[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_surf[SENSORS[0]] == EXPECTED_STATES[i]))

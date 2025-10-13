@@ -114,6 +114,3 @@ class EmbodiedEnvironment(abc.ABC):
         Any call to any other environment method may raise an exception
         """
         pass
-
-    def __del__(self):
-        self.close()

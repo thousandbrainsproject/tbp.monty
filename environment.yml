@@ -10,10 +10,10 @@
 # you open a new terminal, run:
 #     $ conda config --set auto_activate_base false
 # Finally, activate the environment with:
-#     $ conda activate feat.compositional_testbed
+#     $ conda activate tbp.monty
 #
 # platform: default
-name: feat.compositional_testbed
+name: tbp.monty
 channels:
   - aihabitat
   - pytorch
@@ -44,8 +44,7 @@ dependencies:
   - pyg::pyg=2.1.0
   - pyg::pytorch-scatter=2.0.9
   - pyg::pytorch-sparse=0.6.15
-  - pytorch::pytorch=1.11.0
-  - pytorch::torchvision
+  - pytorch::pytorch=1.13.1
 
   - pip
   - pip:

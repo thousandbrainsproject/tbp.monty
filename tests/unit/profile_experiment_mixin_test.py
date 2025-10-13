@@ -34,7 +34,6 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
 )
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentDataLoaderPerObject,
-    EnvironmentDataset,
 )
 from tbp.monty.frameworks.experiments import MontyExperiment, ProfileExperimentMixin
 from tbp.monty.simulators.habitat.configs import (
@@ -90,7 +89,6 @@ class ProfileExperimentMixinTest(TestCase):
                 output_dir=self.output_dir, python_log_level="DEBUG"
             ),
             monty_config=FakeSingleCameraMontyConfig(),
-            dataset_class=EnvironmentDataset,
             dataset_args=SinglePTZHabitatDatasetArgs(
                 env_init_args=EnvInitArgsSinglePTZ(data_path=None).__dict__
             ),

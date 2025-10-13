@@ -39,8 +39,7 @@ requirements:
     - conda-forge::wandb
     - conda-forge::wget
     - pyg::pyg
-    - pytorch::pytorch=1.11.0
-    - pytorch::torchvision
+    - pytorch::pytorch=1.13.1
 
 about:
   home: https://github.com/thousandbrainsproject/tbp.monty

@@ -162,7 +162,6 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
-            dataset_class=ED.EnvironmentDataset,
             dataset_args=PatchViewFinderMountHabitatDatasetArgs(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
@@ -823,7 +822,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             pprint("...removing all objects...")
-            exp.dataset.env._env.remove_all_objects()
+            exp.env._env.remove_all_objects()
             with self.assertRaises(ValueError) as error:
                 exp.pre_episode()
             self.assertEqual(
@@ -1088,13 +1087,12 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 num_steps_checked_symmetry += 1
                 # On the first step we just store previous hypothesis ids.
                 if num_steps_checked_symmetry > 1:
-                    # On the second step we still narrow down 2 ids in
-                    # this example. Then starting on the third step every step
-                    # will add 1 symmetry evidence because we can't resolve between
+                    # On the second step we will add 1 symmetry evidence
+                    # every step because we can't resolve between
                     # 0,0,0 and 180, 0, 180 rotation.
                     self.assertEqual(
                         graph_lm.symmetry_evidence,
-                        num_steps_checked_symmetry - 2,
+                        num_steps_checked_symmetry - 1,
                         "Symmetry evidence doesn't seem to be as expected.",
                     )
             self.assertEqual(
@@ -1767,7 +1765,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             pprint("...removing all objects...")
-            exp.dataset.env._env.remove_all_objects()
+            exp.env._env.remove_all_objects()
             with self.assertRaises(ValueError) as error:
                 exp.pre_episode()
             self.assertEqual(
