@@ -171,7 +171,8 @@ class HabitatObservationProcessor:
 
         Args:
             observation: Habitat observation.
-            on_object_only: Whether to only process observations on objects.
+            on_object_only: Whether to require that the central pixel is "on object"
+               in order to process the observation.
 
         Returns:
             Cortical Message.
