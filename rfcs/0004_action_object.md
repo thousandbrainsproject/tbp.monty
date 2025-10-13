@@ -21,7 +21,7 @@ The `MotorSystem.__call__` returns a tuple of `action, amount` for eventual use 
 
 ## Insufficient
 
-The `action, amount` tuple is insufficient because the `InformedEnvironmentInterface` implements the `update_habitat_sim_agent_actuation_constraint()` method as follows:
+The `action, amount` tuple is insufficient because the `InformedEnvironmentDataLoader` implements the `update_habitat_sim_agent_actuation_constraint()` method as follows:
 
 ```python
     def update_habitat_sim_agent_actuation_constraint(self):
@@ -33,7 +33,7 @@ The `action, amount` tuple is insufficient because the `InformedEnvironmentInter
 
 For a previously generated `action` and `amount` stored in `self._action` and `self._amount`, the data loader requests the Motor System to generate a `constraint`. This `constraint` is then used as an additional parameter to the action (alongside `amount`) in order to correctly actuate the `action`.
 
-The setting of `....actuation.constraint = constraint` is an implementation detail of working around Habitat agent constraints. See implementation of `HabitatSim.apply_action` for details of the workaround. By being unable to pass `constraint` alongside the `action, amount` tuple, the `InformedEnvironmentInterface` implements a workaround that should be confined within `HabitatSim`.
+The setting of `....actuation.constraint = constraint` is an implementation detail of working around Habitat agent constraints. See implementation of `HabitatSim.apply_action` for details of the workaround. By being unable to pass `constraint` alongside the `action, amount` tuple, the `InformedEnvironmentDataLoader` implements a workaround that should be confined within `HabitatSim`.
 
 ## Overconstrained
 
