@@ -397,6 +397,7 @@ class DetailedLoggingSM(SensorModule):
         """
         super().__init__(**kwargs)
 
+        self.is_exploring = False
         self.sensor_module_id = sensor_module_id
         self.state = None
         self.save_raw_obs = save_raw_obs
@@ -425,13 +426,6 @@ class DetailedLoggingSM(SensorModule):
         """Reset buffer and is_exploring flag."""
         self._snapshot_telemetry.reset()
         self.is_exploring = False
-
-        # Store visited locations in global environment coordinates to help inform
-        # more intelligent motor-policies
-        # TODO consider adding a flag or mixin to determine when these are actually
-        # saved
-        self.visited_locs = []
-        self.visited_normals = []
 
 
 class NoiseMixin:
@@ -574,6 +568,12 @@ class HabitatDistantPatchSM(SensorModule, NoiseMixin):
         self.process_all_obs = process_all_obs
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
+        # Store visited locations in global environment coordinates to help inform
+        # more intelligent motor-policies
+        # TODO consider adding a flag or mixin to determine when these are actually
+        # saved
+        self.visited_locs = []
+        self.visited_normals = []
 
     def pre_episode(self):
         """Reset buffer and is_exploring flag."""
