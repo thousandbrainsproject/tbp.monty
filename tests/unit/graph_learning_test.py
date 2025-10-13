@@ -63,6 +63,7 @@ from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphL
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
 from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.models.motor_system import MotorSystem
+from tbp.monty.frameworks.models.object_model import GridObjectModel
 from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 from tbp.monty.frameworks.utils.follow_up_configs import (
     create_eval_config_multiple_episodes,
@@ -673,6 +674,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             experiment_args=ExperimentArgs(
                 do_train=False,
                 min_lms_match=1,
+                n_eval_epochs=2,
                 model_name_or_path=self.compositional_save_path + "/pretrained",
             ),
             logging_config=LoggingConfig(
@@ -1917,64 +1919,96 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         - logging prediction errors
         - logging performance based on parent-child mappings
         """
-        pprint("...parsing experiment to train supervised...")
+        pprint("...supervised training...")
         config = copy.deepcopy(self.two_stacked_lms_config)
         with MontySupervisedObjectPretrainingExperiment(config) as exp:
             exp.model.set_experiment_mode("train")
-
-            pprint("... supervised training...")
             exp.train()
-            print("done with supervised training, learned:")
-            # ['capsule3DSolid', 'cubeSolid']
-            print(exp.model.learning_modules[0].get_all_known_object_ids())
+            # check that both LMs have learned both objects.
+            for lm_idx in range(2):
+                learned_objects = exp.model.learning_modules[
+                    lm_idx
+                ].get_all_known_object_ids()
+                self.assertIn(
+                    "capsule3DSolid",
+                    learned_objects,
+                    f"capsule3DSolid not in learned objects for LM {lm_idx}. "
+                    f"Learned objects: {learned_objects}",
+                )
+                self.assertIn(
+                    "cubeSolid",
+                    learned_objects,
+                    f"cubeSolid not in learned objects for LM {lm_idx}. Learned "
+                    f"objects: {learned_objects}",
+                )
 
-        pprint("...parsing experiment to train semisupervised...")
+        pprint("...semisupervised training...")
         config = copy.deepcopy(self.two_stacked_semisupervised_lms_config)
         with MontySupervisedObjectPretrainingExperiment(config) as exp:
             exp.model.set_experiment_mode("train")
-            print("current graphs in memory:")
-            print(
-                exp.model.learning_modules[0].graph_memory.get_graph(
-                    graph_id="capsule3DSolid"
-                )
-            )
-
-            pprint("... semisupervised training...")
+            # check that models for both objects are loaded into memory correctly.
+            for lm_idx in range(2):
+                for object_id in ["capsule3DSolid", "cubeSolid"]:
+                    self.assertIn(
+                        object_id,
+                        exp.model.learning_modules[
+                            lm_idx
+                        ].graph_memory.get_all_models_in_memory(),
+                    )
+                    # check that the correct input channel is present.
+                    loaded_graph = exp.model.learning_modules[
+                        lm_idx
+                    ].graph_memory.get_graph(graph_id=object_id)
+                    self.assertIn(f"patch_{lm_idx}", loaded_graph.keys())
+                    # check that it is of type GridObjectModel.
+                    self.assertIsInstance(
+                        loaded_graph[f"patch_{lm_idx}"], GridObjectModel
+                    )
+            lm_0_memory_before_learning = exp.model.learning_modules[
+                0
+            ].graph_memory.get_all_models_in_memory()
             exp.train()
-            print("done with supervised training, learned:")
-            print(exp.model.learning_modules[0].get_all_known_object_ids())
+            # check that LM_0 models were not updated
+            for object_id in ["capsule3DSolid", "cubeSolid"]:
+                updated_graph = exp.model.learning_modules[0].graph_memory.get_graph(
+                    graph_id=object_id
+                )
+                self.assertEqual(updated_graph, lm_0_memory_before_learning[object_id])
+            # check that LM_1 models now contain learning_module_0 input channel.
+            # TODO: also get it to recognize cubeSolid
+            for object_id in ["capsule3DSolid"]:
+                updated_graph = exp.model.learning_modules[1].graph_memory.get_graph(
+                    graph_id=object_id
+                )
+                self.assertIn(
+                    "learning_module_0",
+                    updated_graph.keys(),
+                    f"learning_module_0 not in updated graph for {object_id}. Updated "
+                    f"graph: {updated_graph} with keys: {updated_graph.keys()}",
+                )
 
-        pprint("...parsing experiment to evaluate hierarchical LMs...")
+        pprint("...evaluating LM with compositional models...")
         config = copy.deepcopy(self.two_stacked_lms_eval_config)
         with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("... evaluating...")
-            print("graphs in memory after comp learning:")
-            # Check that both patch_1 and learning_module_0 input channels are in the
-            # learned graphs
-            self.assertIn(
-                "patch_1",
-                exp.model.learning_modules[1].graph_memory.get_graph(
-                    graph_id="capsule3DSolid"
-                ),
-            )
-            self.assertIn(
-                "learning_module_0",
-                exp.model.learning_modules[1].graph_memory.get_graph(
-                    graph_id="capsule3DSolid"
-                ),
-            )
-            print(
-                exp.model.learning_modules[1].graph_memory.get_graph(
-                    graph_id="capsule3DSolid"
-                )
-            )
             exp.evaluate()
             pprint("... loading and checking eval statistics...")
             eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
-            print(eval_stats)
-            self.check_multilm_eval_results(
-                eval_stats, num_lms=2, min_done=1, num_episodes=1
-            )
+            episode = 0
+            for lm_id in range(2):
+                self.assertIn(
+                    ["correct", "correct_mlh"],
+                    eval_stats["primary_performance"][episode * 2 + lm_id],
+                    f"LM {lm_id} did not recognize the object on first episode.",
+                )
+            episode = 1
+            for lm_id in range(2):
+                self.assertEqual(
+                    "no_match",
+                    eval_stats["primary_performance"][episode * 2 + lm_id],
+                    "LMs should not recognize object on second episode as it is a "
+                    "previously unseen view.",
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
