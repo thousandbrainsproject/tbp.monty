@@ -73,8 +73,6 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
             "pose_vectors",
             "pose_fully_defined",
             "edge_strength",
-            "edge_orientation",
-            "edge_tangent",
             "coherence",
             "rgba",
             "hsv",
@@ -103,12 +101,7 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
         # Canonical frame tracking for feature-aligned pose vectors
         self._canonical_tangent = None
         self._canonical_perpendicular = None
-        self._canonical_normal = None
         self._pose_frame_confidence = 0.0
-        self._edge_confidence_threshold = (
-            self.edge_params.get("canonical_confidence_threshold")
-            or self.edge_params.get("edge_threshold", 0.1)
-        )
 
         # Debug visualization setup
         self.debug_visualize = debug_visualize
@@ -179,140 +172,173 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
 
         return observed_state
 
-    def observations_to_comunication_protocol(self, data) -> State:
-        """Turn raw observations into State following CMP.
-
-        This method uses the parent class's pose vector computation (surface normals
-        and curvature directions) and additionally extracts 2D edge features from
-        RGB images as supplementary non-morphological features.
-
-        Args:
-            data: Raw observations containing rgba, depth, semantic_3d, sensor_frame_data,
-                world_camera, etc.
-
-        Returns:
-            State with proper 3D pose vectors and supplementary edge features.
+    def edge_angle_to_3d_tangent(
+        theta, normal, *, normal_frame="world", world_camera=None, out_frame="world"
+    ):
         """
-        # Extract basic data
+        Lift the edge angle (theta from the 2D image x-axis) into a 3D tangent vector
+        on the surface, aligned with the camera's image axes.
+        """
+        n = normal / np.linalg.norm(normal)
+
+        R_wc = None
+        if world_camera is not None:
+            R_wc = (
+                world_camera[:3, :3] if world_camera.shape == (4, 4) else world_camera
+            )
+        R_cw = R_wc.T if R_wc is not None else None
+
+        # Put normal in camera frame to build a basis consistent with image axes
+        if normal_frame == "camera":
+            n_cam = n
+        elif normal_frame == "world":
+            if R_cw is None:
+                raise ValueError(
+                    "world_camera must be provided if normal_frame is 'world'"
+                )
+            n_cam = R_cw @ n
+        else:
+            raise ValueError(f"Invalid normal_frame: {normal_frame}")
+
+        n_cam = n_cam / np.linalg.norm(n_cam)
+        ex = np.array([1.0, 0.0, 0.0])
+        ey = np.array([0.0, 1.0, 0.0])
+
+        def project_tangent(v, n_):
+            return v - np.dot(v, n_) * n_
+
+        tx = project_tangent(ex, n_cam)
+        ty = project_tangent(ey, n_cam)
+
+        if np.linalg.norm(tx) < 1e-12:
+            ez = np.array([0.0, 0.0, 1.0])
+            tx = project_tangent(ez, n_cam)
+        if np.linalg.norm(ty) < 1e-12:
+            ez = np.array([0.0, 0.0, 1.0])
+            ty = project_tangent(ez, n_cam)
+
+        tx = tx / np.linalg.norm(tx)
+        ty = ty / np.linalg.norm(ty)
+
+        t_cam = np.cos(theta) * tx + np.sin(theta) * ty
+        t_cam = t_cam / np.linalg.norm(t_cam)
+
+        if out_frame == "camera":
+            return t_cam
+        elif out_frame == "world":
+            if R_wc is None:
+                raise ValueError(
+                    "world_camera must be provided if out_frame is 'world'"
+                )
+            t_world = R_wc @ t_cam
+            t_world = t_world / np.linalg.norm(t_world)
+            return t_world
+        else:
+            raise ValueError(f"Invalid out_frame: {out_frame}")
+
+    def observations_to_comunication_protocol(self, data) -> State:
+        """Turn raw observations into State following CMP."""
         obs_3d = data["semantic_3d"]
         sensor_frame_data = data["sensor_frame_data"]
-        world_camera = data["world_camera"]
         rgba_feat = data["rgba"]
-        depth_feat = data["depth"].reshape(data["depth"].size, 1).astype(np.float64)
+        depth_feat = data["depth"]
+        world_camera = data["world_camera"]
 
-        # Calculate center coordinates
         center_row_col = rgba_feat.shape[0] // 2
         obs_dim = int(np.sqrt(obs_3d.shape[0]))
         half_obs_dim = obs_dim // 2
         center_id = half_obs_dim + obs_dim * half_obs_dim
 
-        # Initialize features dictionary
         features = {}
-
-        # Calculate object coverage if requested
         if "object_coverage" in self.features:
             features["object_coverage"] = sum(obs_3d[:, 3] > 0) / len(obs_3d[:, 3])
 
-        # Get center location and check if on object
         obs_3d_center = obs_3d[center_id]
         x, y, z, semantic_id = obs_3d_center
 
-        if semantic_id > 0:  # On object
-            # Use parent's extract_and_add_features for proper pose vectors
-            (
-                features,
-                morphological_features,
-                invalid_signals,
-            ) = self.extract_and_add_features(
-                features,
-                obs_3d,
-                rgba_feat,
-                depth_feat,
-                center_id,
-                center_row_col,
-                sensor_frame_data,
-                world_camera,
-            )
-
-            # Additionally extract edge features from RGB image
+        (
+            features,
+            morphological_features,
+            invalid_signals,
+        ) = self.extract_and_add_features(
+            features,
+            obs_3d,
+            rgba_feat,
+            depth_feat,
+            center_id,
+            center_row_col,
+            sensor_frame_data,
+            world_camera,
+        )
+        if semantic_id > 0:
+            surface_normal = morphological_features["pose_vectors"][0]
             edge_info = self.extract_2d_edge_features(rgba_feat, center_row_col)
 
-            surface_normal = morphological_features["pose_vectors"][0]
-            edge_confidence = 0.0
-            edge_tangent_world = None
             if edge_info["has_edge"]:
                 theta = edge_info["edge_orientation"]
-                edge_tangent_camera = np.array([
-                    np.cos(theta),
-                    np.sin(theta),
-                    0.0,
-                ])
-
-                edge_tangent_world = quaternion.rotate_vectors(
-                    self.state["rotation"], edge_tangent_camera
+                edge_tangent = self.edge_angle_to_3d_tangent(
+                    theta,
+                    surface_normal,
+                    normal_frame="world",
+                    world_camera=world_camera,
+                    out_frame="world",
                 )
+                edge_perp = np.cross(surface_normal, edge_tangent)
+                edge_perp = edge_perp / np.linalg.norm(edge_perp)
 
-                normal_component = np.dot(edge_tangent_world, surface_normal)
-                edge_tangent_world = edge_tangent_world - normal_component * surface_normal
-                edge_tangent_world = self._normalize(edge_tangent_world)
+                if (
+                    self._canonical_tangent is None
+                    and edge_tangent is not None
+                    and edge_perp is not None
+                ):
+                    self._canonical_tangent = edge_tangent
+                    self._canonical_perpendicular = edge_perp
+                elif (
+                    self._canonical_tangent is not None
+                    and self._canonical_perpendicular is not None
+                ):
+                    # Express edges in canonical basis
+                    if np.dot(edge_tangent, self._canonical_tangent) < 0.0:
+                        edge_tangent = -edge_tangent
+                        edge_perp = -edge_perp
 
-                edge_confidence = edge_info["coherence"]
+                    a = np.dot(edge_tangent, self._canonical_tangent)
+                    b = np.dot(edge_perp, self._canonical_perpendicular)
+                    edge_tangent = np.array([a, b, 0.0])
+                    edge_perp = np.array([-b, a, 0.0])
 
-                if edge_tangent_world is not None:
-                    self._maybe_initialize_canonical_frame(
-                        edge_tangent_world, surface_normal, edge_confidence
-                    )
-
-            # Propagate canonical frame to pose vectors
-            canonical_tangent = None
-            canonical_perp = None
-            if self._canonical_tangent is not None:
-                canonical_tangent, canonical_perp = self._canonical_axes_for_normal(
-                    surface_normal
-                )
-                if canonical_tangent is not None and canonical_perp is not None:
-                    morphological_features["pose_vectors"] = np.vstack(
-                        [
-                            surface_normal,
-                            canonical_tangent,
-                            canonical_perp,
-                        ]
-                    )
-                    morphological_features["pose_fully_defined"] = True
-
-            # Add edge features to non_morphological_features
+        if (
+            self._canonical_tangent is not None
+            and self._canonical_perpendicular is not None
+        ):
+            fake_surface_normal = np.cross(
+                self._canonical_tangent, self._canonical_perpendicular
+            )
+            morphological_features = {
+                "pose_vectors": np.vstack(
+                    [
+                        fake_surface_normal,
+                        edge_tangent,
+                        edge_perp,
+                    ]
+                ),
+                "pose_fully_defined": True,
+            }
             if "edge_strength" in self.features:
                 features["edge_strength"] = edge_info["edge_strength"]
-            if "edge_orientation" in self.features:
-                features["edge_orientation"] = edge_info["edge_orientation"]
             if "coherence" in self.features:
                 features["coherence"] = edge_info["coherence"]
-            features["pose_frame_confidence"] = float(
-                edge_confidence if not invalid_signals else 0.0
-            )
-            self._pose_frame_confidence = features["pose_frame_confidence"]
-
-            # Optionally expose edge tangent if requested
-            if "edge_tangent" in self.features:
-                if edge_tangent_world is not None:
-                    features["edge_tangent"] = edge_tangent_world
-                else:
-                    features["edge_tangent"] = np.zeros(3)
-
-            use_state = not invalid_signals
+            use_state = True
         else:
-            # Not on object
             morphological_features = {}
-            invalid_signals = True
             use_state = False
 
-        # Add on_object to morphological features
         if "on_object" in self.features:
             morphological_features["on_object"] = float(semantic_id > 0)
 
-        # Add standard color features if requested
         if "rgba" in self.features:
             features["rgba"] = rgba_feat[center_row_col, center_row_col]
+
         if "hsv" in self.features:
             from skimage.color import rgb2hsv
 
@@ -320,7 +346,6 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
             hsv = rgb2hsv(rgba[:3])
             features["hsv"] = hsv
 
-        # Create and return State object
         observed_state = State(
             location=np.array([x, y, z]),
             morphological_features=morphological_features,
@@ -331,7 +356,6 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
             sender_type="SM",
         )
 
-        # Store for logging
         if not self.is_exploring:
             self.processed_obs.append(observed_state.__dict__)
             self.states.append(self.state)
@@ -490,7 +514,6 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
         """Clear cached canonical frame information."""
         self._canonical_tangent = None
         self._canonical_perpendicular = None
-        self._canonical_normal = None
         self._pose_frame_confidence = 0.0
 
     @staticmethod
@@ -500,69 +523,6 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
         if norm < 1e-8:
             return None
         return vector / norm
-
-    def _rotation_between(self, source, target):
-        """Quaternion rotating source vector onto target vector."""
-        src = self._normalize(source)
-        tgt = self._normalize(target)
-        if src is None or tgt is None:
-            return quaternion.one
-
-        dot_val = np.clip(np.dot(src, tgt), -1.0, 1.0)
-        if dot_val > 1.0 - 1e-6:
-            return quaternion.one
-        if dot_val < -1.0 + 1e-6:
-            # 180-degree rotation: choose an arbitrary orthogonal axis
-            axis = np.cross(src, np.array([1.0, 0.0, 0.0]))
-            if np.linalg.norm(axis) < 1e-6:
-                axis = np.cross(src, np.array([0.0, 1.0, 0.0]))
-            axis = self._normalize(axis)
-            angle = np.pi
-            return quaternion.from_rotation_vector(axis * angle)
-
-        axis = self._normalize(np.cross(src, tgt))
-        angle = np.arccos(dot_val)
-        return quaternion.from_rotation_vector(axis * angle)
-
-    def _maybe_initialize_canonical_frame(self, tangent, surface_normal, confidence):
-        """Cache canonical tangent/perpendicular if not set and confidence high."""
-        if self._canonical_tangent is not None:
-            return
-
-        if confidence < self._edge_confidence_threshold:
-            return
-
-        tangent = self._normalize(tangent - np.dot(tangent, surface_normal) * surface_normal)
-        if tangent is None:
-            return
-
-        perpendicular = np.cross(surface_normal, tangent)
-        perpendicular = self._normalize(perpendicular)
-        if perpendicular is None:
-            return
-
-        self._canonical_tangent = tangent
-        self._canonical_perpendicular = perpendicular
-        self._canonical_normal = self._normalize(surface_normal)
-
-    def _canonical_axes_for_normal(self, surface_normal):
-        """Return tangent/perpendicular aligned with cached canonical frame."""
-        if self._canonical_tangent is None or self._canonical_normal is None:
-            return None, None
-
-        rot = self._rotation_between(self._canonical_normal, surface_normal)
-        tangent = quaternion.rotate_vectors(rot, self._canonical_tangent)
-        perpendicular = quaternion.rotate_vectors(rot, self._canonical_perpendicular)
-
-        tangent = self._normalize(
-            tangent - np.dot(tangent, surface_normal) * surface_normal
-        )
-        perpendicular = self._normalize(perpendicular)
-
-        if tangent is None or perpendicular is None:
-            return None, None
-
-        return tangent, perpendicular
 
     def state_dict(self):
         """Return state_dict for logging."""
