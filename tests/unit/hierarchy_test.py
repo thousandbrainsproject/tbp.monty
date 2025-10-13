@@ -413,7 +413,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
                 )
             # check that prediction errors are logged
             self.assertIn(
-                "episode_avg_prediction_errorx",
+                "episode_avg_prediction_error",
                 eval_stats.columns,
                 "Prediction error is not logged.",
             )
