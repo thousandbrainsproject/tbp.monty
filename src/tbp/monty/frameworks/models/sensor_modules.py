@@ -524,7 +524,6 @@ class HabitatDistantPatchSM(SensorModule, NoiseMixin):
         save_raw_obs: bool = False,
         pc1_is_pc2_threshold: int = 10,
         noise_params: dict[str, Any] | None = None,
-        process_all_obs: bool = False,
     ) -> None:
         """Initialize Sensor Module.
 
@@ -538,9 +537,6 @@ class HabitatDistantPatchSM(SensorModule, NoiseMixin):
                 classified as being roughly the same (ignore curvature directions).
                 Defaults to 10.
             noise_params: Dictionary of noise amount for each feature.
-            process_all_obs: Enable explicitly to enforce that off-observations are
-                still processed by LMs, primarily for the purpose of unit testing.
-                TODO: remove?
 
         Note:
             When using feature at location matching with graphs, surface_normal and
@@ -565,7 +561,6 @@ class HabitatDistantPatchSM(SensorModule, NoiseMixin):
         self.states = []
         # TODO: give more descriptive & distinct names
         self.on_object_obs_only = True
-        self.process_all_obs = process_all_obs
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
         # Store visited locations in global environment coordinates to help inform
@@ -631,8 +626,6 @@ class HabitatDistantPatchSM(SensorModule, NoiseMixin):
 
         if self.noise_params is not None and observed_state.use_state:
             observed_state = self.add_noise_to_sensor_data(observed_state)
-        if self.process_all_obs:
-            observed_state.use_state = True
 
         if self.motor_only_step:
             # Set interesting-features flag to False, as should not be passed to

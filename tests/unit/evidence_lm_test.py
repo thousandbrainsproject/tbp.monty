@@ -901,10 +901,9 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             # min_steps is reached and the sensor moves off the object). In the second
             # episode the sensor moves off the sphere on episode steps 6+
 
-            # Since process_all_obs == False by default, the off_object points are
-            # not counted as steps. Therefor we have to wait until the camera turns
-            # a full circle and arrives on the other side of the object. From there
-            # we can continue to try and recognize the object.
+            # The off_object points are not counted as steps. Therefore we have to wait
+            # until the camera turns a full circle and arrives on the other side of the
+            # object. From there we can continue to try and recognize the object.
 
             exp.train()
 
@@ -954,7 +953,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.model.matching_steps,
             13,
             "Did not take correct amount of matching steps. Perhaps "
-            "process_all_obs or min_train_steps was not applied correctly.",
+            "min_train_steps was not applied correctly.",
         )
         self.assertGreater(
             exp.model.episode_steps,
