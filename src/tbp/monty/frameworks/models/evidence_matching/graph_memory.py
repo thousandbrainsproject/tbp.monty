@@ -12,7 +12,6 @@ import logging
 
 from tbp.monty.frameworks.models.graph_matching import GraphMemory
 from tbp.monty.frameworks.models.object_model import (
-    GraphObjectModel,
     GridObjectModel,
     GridTooSmallError,
 )
