@@ -10,6 +10,9 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, TypedDict
 
 import numpy as np
 import quaternion
@@ -74,16 +77,315 @@ class SnapshotTelemetry:
         return dict(raw_observations=self.raw_observations, sm_properties=self.poses)
 
 
+class HabitatObservation(TypedDict):
+    semantic_3d: np.ndarray
+    sensor_frame_data: np.ndarray
+    world_camera: np.ndarray
+    rgba: np.ndarray
+    depth: np.ndarray
+
+
+class SurfaceNormalMethod(Enum):
+    TLS = "TLS"
+    """Total Least-Squares"""
+    OLS = "OLS"
+    """Ordinary Least-Squares"""
+    NAIVE = "naive"
+    """Naive"""
+
+
+@dataclass
+class HabitatObservationProcessorTelemetry:
+    processed_obs: State
+    visited_loc: Any
+    visited_normal: Any | None
+
+
+class HabitatObservationProcessor:
+    """Processes Habitat observations into a Cortical Message."""
+
+    CURVATURE_FEATURES = [
+        "principal_curvatures",
+        "principal_curvatures_log",
+        "gaussian_curvature",
+        "mean_curvature",
+        "gaussian_curvature_sc",
+        "mean_curvature_sc",
+        "curvature_for_TM",
+    ]
+
+    POSSIBLE_FEATURES = [
+        "on_object",
+        "object_coverage",
+        "min_depth",
+        "mean_depth",
+        "rgba",
+        "hsv",
+        "pose_vectors",
+        "principal_curvatures",
+        "principal_curvatures_log",
+        "pose_fully_defined",
+        "gaussian_curvature",
+        "mean_curvature",
+        "gaussian_curvature_sc",
+        "mean_curvature_sc",
+        "curvature_for_TM",
+        "coords_for_TM",
+    ]
+
+    def __init__(
+        self,
+        features: list[str],
+        sensor_module_id: str,
+        pc1_is_pc2_threshold=10,
+        surface_normal_method=SurfaceNormalMethod.TLS,
+        weight_curvature=True,
+    ) -> None:
+        """Initializes the HabitatObservationProcessor.
+
+        Args:
+            features: List of features to extract.
+            pc1_is_pc2_threshold: Maximum difference between pc1 and pc2 to be
+                classified as being roughly the same (ignore curvature directions).
+                Defaults to 10.
+            sensor_module_id: ID of sensor module.
+            surface_normal_method: Method to use for surface normal extraction. Defaults
+              to TLS.
+            weight_curvature: Whether to use the weighted implementation for principal
+                curvature extraction (True) or unweighted (False). Defaults to True.
+        """
+        for feature in features:
+            assert feature in self.POSSIBLE_FEATURES, (
+                f"{feature} not part of {self.POSSIBLE_FEATURES}"
+            )
+        self._features = features
+        self._pc1_is_pc2_threshold = pc1_is_pc2_threshold
+        self._sensor_module_id = sensor_module_id
+        self._surface_normal_method = surface_normal_method
+        self._weight_curvature = weight_curvature
+
+    def process(
+        self, observation: HabitatObservation, on_object_only=True
+    ) -> tuple[State, HabitatObservationProcessorTelemetry]:
+        """Processes observation.
+
+        Args:
+            observation: Habitat observation.
+            on_object_only: Whether to only process observations on objects.
+
+        Returns:
+            Cortical Message.
+        """
+        obs_3d = observation["semantic_3d"]
+        sensor_frame_data = observation["sensor_frame_data"]
+        world_camera = observation["world_camera"]
+        rgba_feat = observation["rgba"]
+        depth_feat = (
+            observation["depth"]
+            .reshape(observation["depth"].size, 1)
+            .astype(np.float64)
+        )
+        # Assuming squared patches
+        center_row_col = rgba_feat.shape[0] // 2
+        # Calculate center ID for flat semantic obs
+        obs_dim = int(np.sqrt(obs_3d.shape[0]))
+        half_obs_dim = obs_dim // 2
+        center_id = half_obs_dim + obs_dim * half_obs_dim
+        # Extract all specified features
+        features = {}
+        if "object_coverage" in self._features:
+            # Last dimension is semantic ID (integer >0 if on any object)
+            features["object_coverage"] = sum(obs_3d[:, 3] > 0) / len(obs_3d[:, 3])
+            assert features["object_coverage"] <= 1.0, (
+                "Coverage cannot be greater than 100%"
+            )
+
+        if obs_3d[center_id][3] or (
+            not on_object_only and features["object_coverage"] > 0
+        ):
+            (
+                features,
+                morphological_features,
+                invalid_signals,
+            ) = self._extract_and_add_features(
+                features,
+                obs_3d,
+                rgba_feat,
+                depth_feat,
+                center_id,
+                center_row_col,
+                sensor_frame_data,
+                world_camera,
+            )
+        else:
+            invalid_signals = True
+            morphological_features = {}
+
+        obs_3d_center = obs_3d[center_id]
+        x, y, z, semantic_id = obs_3d_center
+        if "on_object" in self._features:
+            morphological_features["on_object"] = float(semantic_id > 0)
+
+        # Sensor module returns features at a location in the form of a State class.
+        # use_state is a bool indicating whether the input is "interesting",
+        # which indicates that it merits processing by the learning module; by default
+        # it will always be True so long as the surface normal and principal curvature
+        # directions were valid; certain SMs and policies used separately can also set
+        # it to False under appropriate conditions
+
+        observed_state = State(
+            location=np.array([x, y, z]),
+            morphological_features=morphological_features,
+            non_morphological_features=features,
+            confidence=1.0,
+            use_state=bool(morphological_features["on_object"]) and not invalid_signals,
+            sender_id=self._sensor_module_id,
+            sender_type="SM",
+        )
+        # This is just for logging! Do not use _ attributes for matching
+        observed_state._semantic_id = semantic_id
+
+        telemetry = HabitatObservationProcessorTelemetry(
+            processed_obs=observed_state,
+            visited_loc=observed_state.location,
+            visited_normal=morphological_features["pose_vectors"][0]
+            if "pose_vectors" in morphological_features.keys()
+            else None,
+        )
+
+        return observed_state, telemetry
+
+    def _extract_and_add_features(
+        self,
+        features: dict[str, Any],
+        obs_3d: np.ndarray,
+        rgba_feat: np.ndarray,
+        depth_feat: np.ndarray,
+        center_id: int,
+        center_row_col: int,
+        sensor_frame_data: np.ndarray,
+        world_camera: np.ndarray,
+    ) -> tuple[dict[str, Any], dict[str, Any], bool]:
+        """Extract features configured for extraction from sensor patch.
+
+        Returns the features in the patch, and True if the surface normal
+        or principal curvature directions were ill-defined.
+
+        Returns:
+            features: The features in the patch.
+            morphological_features: ?
+            invalid_signals: True if the surface normal or principal curvature
+                directions were ill-defined.
+        """
+        # ------------ Extract Morphological Features ------------
+        # Get surface normal for graph matching with features
+        surface_normal, valid_sn = self._get_surface_normals(
+            obs_3d, sensor_frame_data, center_id, world_camera
+        )
+
+        k1, k2, dir1, dir2, valid_pc = principal_curvatures(
+            obs_3d, center_id, surface_normal, weighted=self._weight_curvature
+        )
+        # TODO: test using log curvatures instead
+        if np.abs(k1 - k2) < self._pc1_is_pc2_threshold:
+            pose_fully_defined = False
+        else:
+            pose_fully_defined = True
+
+        morphological_features: dict[str, Any] = {
+            "pose_vectors": np.vstack(
+                [
+                    surface_normal,
+                    dir1,
+                    dir2,
+                ]
+            ),
+            "pose_fully_defined": pose_fully_defined,
+        }
+        # ---------- Extract Optional, Non-Morphological Features ----------
+        if "rgba" in self._features:
+            features["rgba"] = rgba_feat[center_row_col, center_row_col]
+        if "min_depth" in self._features:
+            features["min_depth"] = np.min(depth_feat[obs_3d[:, 3] != 0])
+        if "mean_depth" in self._features:
+            features["mean_depth"] = np.mean(depth_feat[obs_3d[:, 3] != 0])
+        if "hsv" in self._features:
+            rgba = rgba_feat[center_row_col, center_row_col]
+            hsv = rgb2hsv(rgba[:3])
+            features["hsv"] = hsv
+
+        # Note we only determine curvature if we could determine a valid surface normal
+        if any(feat in self.CURVATURE_FEATURES for feat in self._features) and valid_sn:
+            if valid_pc:
+                # Only process the below features if the principal curvature was valid,
+                # and therefore we have a defined k1, k2 etc.
+                if "principal_curvatures" in self._features:
+                    features["principal_curvatures"] = np.array([k1, k2])
+
+                if "principal_curvatures_log" in self._features:
+                    features["principal_curvatures_log"] = log_sign(np.array([k1, k2]))
+
+                if "gaussian_curvature" in self._features:
+                    features["gaussian_curvature"] = k1 * k2
+
+                if "mean_curvature" in self._features:
+                    features["mean_curvature"] = (k1 + k2) / 2
+
+                if "gaussian_curvature_sc" in self._features:
+                    gc = k1 * k2
+                    gc_scaled_clipped = scale_clip(gc, 4096)
+                    features["gaussian_curvature_sc"] = gc_scaled_clipped
+
+                if "mean_curvature_sc" in self._features:
+                    mc = (k1 + k2) / 2
+                    mc_scaled_clipped = scale_clip(mc, 256)
+                    features["mean_curvature_sc"] = mc_scaled_clipped
+        else:
+            # Flag that PC directions are non-meaningful for e.g. downstream motor
+            # policies
+            features["pose_fully_defined"] = False
+
+        invalid_signals = (not valid_sn) or (not valid_pc)
+        if invalid_signals:
+            logger.debug("Either the surface-normal or pc-directions were ill-defined")
+
+        return features, morphological_features, invalid_signals
+
+    def _get_surface_normals(
+        self,
+        obs_3d: np.ndarray,
+        sensor_frame_data: np.ndarray,
+        center_id: int,
+        world_camera: np.ndarray,
+    ) -> tuple[np.ndarray, bool]:
+        if self._surface_normal_method == SurfaceNormalMethod.TLS:
+            surface_normal, valid_sn = surface_normal_total_least_squares(
+                obs_3d, center_id, world_camera[:3, 2]
+            )
+        elif self._surface_normal_method == SurfaceNormalMethod.OLS:
+            surface_normal, valid_sn = surface_normal_ordinary_least_squares(
+                sensor_frame_data, world_camera, center_id
+            )
+        elif self._surface_normal_method == SurfaceNormalMethod.NAIVE:
+            surface_normal, valid_sn = surface_normal_naive(
+                obs_3d, patch_radius_frac=2.5
+            )
+        else:
+            raise ValueError(
+                f"surface_normal_method must be in [{SurfaceNormalMethod.TLS} (default)"
+                f", {SurfaceNormalMethod.OLS}, {SurfaceNormalMethod.NAIVE}]."
+            )
+
+        return surface_normal, valid_sn
+
+
 class DetailedLoggingSM(SensorModule):
     """Sensor module that keeps track of raw observations for logging."""
 
     def __init__(
         self,
-        sensor_module_id,
-        save_raw_obs,
-        pc1_is_pc2_threshold=10,
-        surface_normal_method="TLS",
-        weight_curvature=True,
+        sensor_module_id: str,
+        save_raw_obs: bool,
         **kwargs,
     ):
         """Initialize Sensor Module.
@@ -91,15 +393,6 @@ class DetailedLoggingSM(SensorModule):
         Args:
             sensor_module_id: Name of sensor module.
             save_raw_obs: Whether to save raw sensory input for logging.
-            pc1_is_pc2_threshold: maximum difference between pc1 and pc2 to be
-                classified as being roughly the same (ignore curvature directions).
-            surface_normal_method: in ['TLS' (default), 'OLS', 'naive']. Determines
-                which implementation to use for surface normal extraction ("TLS" stands
-                for total least-squares (default), "OLS" for ordinary least-squares,
-                'naive' for the original tangent vector cross-product implementation).
-                Any other value will raise an error.
-            weight_curvature: determines whether to use the "weighted" (True) or
-                "unweighted" (False) implementation for principal curvature extraction.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -107,9 +400,6 @@ class DetailedLoggingSM(SensorModule):
         self.sensor_module_id = sensor_module_id
         self.state = None
         self.save_raw_obs = save_raw_obs
-        self.pc1_is_pc2_threshold = pc1_is_pc2_threshold
-        self.surface_normal_method = surface_normal_method
-        self.weight_curvature = weight_curvature
 
         self._snapshot_telemetry = SnapshotTelemetry()
 
@@ -148,220 +438,6 @@ class DetailedLoggingSM(SensorModule):
 
     def set_experiment_mode(self, mode):
         pass
-
-    def extract_and_add_features(
-        self,
-        features,
-        obs_3d,
-        rgba_feat,
-        depth_feat,
-        center_id,
-        center_row_col,
-        sensor_frame_data,
-        world_camera,
-    ):
-        """Extract features specified in self.features from sensor patch.
-
-        Returns the features in the patch, and True if the surface normal
-        or principal curvature directions were ill-defined.
-
-        Returns:
-            features: The features in the patch.
-            morphological_features: ?
-            invalid_signals: True if the surface normal or principal curvature
-                directions were ill-defined.
-        """
-        # ------------ Extract Morphological Features ------------
-        # Get surface normal for graph matching with features
-        surface_normal, valid_sn = self._get_surface_normals(
-            obs_3d, sensor_frame_data, center_id, world_camera
-        )
-
-        k1, k2, dir1, dir2, valid_pc = principal_curvatures(
-            obs_3d, center_id, surface_normal, weighted=self.weight_curvature
-        )
-        # TODO: test using log curvatures instead
-        if np.abs(k1 - k2) < self.pc1_is_pc2_threshold:
-            pose_fully_defined = False
-        else:
-            pose_fully_defined = True
-
-        morphological_features = {
-            "pose_vectors": np.vstack(
-                [
-                    surface_normal,
-                    dir1,
-                    dir2,
-                ]
-            ),
-            "pose_fully_defined": pose_fully_defined,
-        }
-        # ---------- Extract Optional, Non-Morphological Features ----------
-        if "rgba" in self.features:
-            features["rgba"] = rgba_feat[center_row_col, center_row_col]
-        if "min_depth" in self.features:
-            features["min_depth"] = np.min(depth_feat[obs_3d[:, 3] != 0])
-        if "mean_depth" in self.features:
-            features["mean_depth"] = np.mean(depth_feat[obs_3d[:, 3] != 0])
-        if "hsv" in self.features:
-            rgba = rgba_feat[center_row_col, center_row_col]
-            hsv = rgb2hsv(rgba[:3])
-            features["hsv"] = hsv
-
-        # Note we only determine curvature if we could determine a valid surface normal
-        if any("curvature" in feat for feat in self.features) and valid_sn:
-            if valid_pc:
-                # Only process the below features if the principal curvature was valid,
-                # and therefore we have a defined k1, k2 etc.
-                if "principal_curvatures" in self.features:
-                    features["principal_curvatures"] = np.array([k1, k2])
-
-                if "principal_curvatures_log" in self.features:
-                    features["principal_curvatures_log"] = log_sign(np.array([k1, k2]))
-
-                if "gaussian_curvature" in self.features:
-                    features["gaussian_curvature"] = k1 * k2
-
-                if "mean_curvature" in self.features:
-                    features["mean_curvature"] = (k1 + k2) / 2
-
-                if "gaussian_curvature_sc" in self.features:
-                    gc = k1 * k2
-                    gc_scaled_clipped = scale_clip(gc, 4096)
-                    features["gaussian_curvature_sc"] = gc_scaled_clipped
-
-                if "mean_curvature_sc" in self.features:
-                    mc = (k1 + k2) / 2
-                    mc_scaled_clipped = scale_clip(mc, 256)
-                    features["mean_curvature_sc"] = mc_scaled_clipped
-        else:
-            # Flag that PC directions are non-meaningful for e.g. downstream motor
-            # policies
-            features["pose_fully_defined"] = False
-
-        invalid_signals = (not valid_sn) or (not valid_pc)
-        if invalid_signals:
-            logger.debug("Either the surface-normal or pc-directions were ill-defined")
-
-        return features, morphological_features, invalid_signals
-
-    def observations_to_comunication_protocol(self, data, on_object_only=True) -> State:
-        """Turn raw observations into instance of State class following CMP.
-
-        Args:
-            data: Raw observations.
-            on_object_only: If False, do the following:
-                - If the center of the image is not on the object, but some other part
-                    of the object is in the image, continue with feature extraction
-                - Get the surface normal for the whole image, not just the parts of the
-                    image that include an object.
-
-        Returns:
-            Features and morphological features.
-        """
-        obs_3d = data["semantic_3d"]
-        sensor_frame_data = data["sensor_frame_data"]
-        world_camera = data["world_camera"]
-        rgba_feat = data["rgba"]
-        depth_feat = data["depth"].reshape(data["depth"].size, 1).astype(np.float64)
-        # Assuming squared patches
-        center_row_col = rgba_feat.shape[0] // 2
-        # Calculate center ID for flat semantic obs
-        obs_dim = int(np.sqrt(obs_3d.shape[0]))
-        half_obs_dim = obs_dim // 2
-        center_id = half_obs_dim + obs_dim * half_obs_dim
-        # Extract all specified features
-        features = {}
-        if "object_coverage" in self.features:
-            # Last dimension is semantic ID (integer >0 if on any object)
-            features["object_coverage"] = sum(obs_3d[:, 3] > 0) / len(obs_3d[:, 3])
-            assert features["object_coverage"] <= 1.0, (
-                "Coverage cannot be greater than 100%"
-            )
-
-        if obs_3d[center_id][3] or (
-            not on_object_only and features["object_coverage"] > 0
-        ):
-            (
-                features,
-                morphological_features,
-                invalid_signals,
-            ) = self.extract_and_add_features(
-                features,
-                obs_3d,
-                rgba_feat,
-                depth_feat,
-                center_id,
-                center_row_col,
-                sensor_frame_data,
-                world_camera,
-            )
-        else:
-            invalid_signals = True
-            morphological_features = {}
-
-        obs_3d_center = obs_3d[center_id]
-        x, y, z, semantic_id = obs_3d_center
-        if "on_object" in self.features:
-            morphological_features["on_object"] = float(semantic_id > 0)
-
-        # Sensor module returns features at a location in the form of a State class.
-        # use_state is a bool indicating whether the input is "interesting",
-        # which indicates that it merits processing by the learning module; by default
-        # it will always be True so long as the surface normal and principal curvature
-        # directions were valid; certain SMs and policies used separately can also set
-        # it to False under appropriate conditions
-
-        observed_state = State(
-            location=np.array([x, y, z]),
-            morphological_features=morphological_features,
-            non_morphological_features=features,
-            confidence=1.0,
-            use_state=bool(morphological_features["on_object"]) and not invalid_signals,
-            sender_id=self.sensor_module_id,
-            sender_type="SM",
-        )
-        # This is just for logging! Do not use _ attributes for matching
-        observed_state._semantic_id = semantic_id
-
-        # Save raw observations and state for logging, and for use by
-        # specialized motor-policies
-        if not self.is_exploring:
-            # TODO: only if using detailed logger?
-            self.processed_obs.append(observed_state.__dict__)
-            self.states.append(self.state)
-
-            self.visited_locs.append(observed_state.location)
-
-            if "pose_vectors" in morphological_features.keys():
-                self.visited_normals.append(morphological_features["pose_vectors"][0])
-            else:
-                self.visited_normals.append(None)
-
-        return observed_state
-
-    def _get_surface_normals(self, obs_3d, sensor_frame_data, center_id, world_camera):
-        if self.surface_normal_method == "TLS":
-            # Version with Total Least-Squares (TLS) fitting
-            surface_normal, valid_sn = surface_normal_total_least_squares(
-                obs_3d, center_id, world_camera[:3, 2]
-            )
-        elif self.surface_normal_method == "OLS":
-            # Version with Ordinary Least-Squares (TLS) fitting
-            surface_normal, valid_sn = surface_normal_ordinary_least_squares(
-                sensor_frame_data, world_camera, center_id
-            )
-        elif self.surface_normal_method == "naive":
-            # Naive version
-            surface_normal, valid_sn = surface_normal_naive(
-                obs_3d, patch_radius_frac=2.5
-            )
-        else:
-            raise ValueError(
-                "surface_normal_method must be in ['TLS' (default), 'OLS', 'naive']."
-            )
-
-        return surface_normal, valid_sn
 
 
 class NoiseMixin:
@@ -455,13 +531,13 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
 
     def __init__(
         self,
-        sensor_module_id,
-        features,
-        save_raw_obs=False,
-        pc1_is_pc2_threshold=10,
-        noise_params=None,
-        process_all_obs=False,
-    ):
+        sensor_module_id: str,
+        features: list[str],
+        save_raw_obs: bool = False,
+        pc1_is_pc2_threshold: int = 10,
+        noise_params: dict[str, Any] | None = None,
+        process_all_obs: bool = False,
+    ) -> None:
         """Initialize Sensor Module.
 
         Args:
@@ -470,7 +546,9 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
                 principal_curvatures, curvature_directions, gaussian_curvature,
                 mean_curvature]
             save_raw_obs: Whether to save raw sensory input for logging.
-            pc1_is_pc2_threshold: ?. Defaults to 10.
+            pc1_is_pc2_threshold: Maximum difference between pc1 and pc2 to be
+                classified as being roughly the same (ignore curvature directions).
+                Defaults to 10.
             noise_params: Dictionary of noise amount for each feature.
             process_all_obs: Enable explicitly to enforce that off-observations are
                 still processed by LMs, primarily for the purpose of unit testing.
@@ -485,34 +563,16 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
             the same information as principal_curvatures.
         """
         super().__init__(
-            sensor_module_id,
-            save_raw_obs,
-            pc1_is_pc2_threshold,
-            noise_params=noise_params,
+            sensor_module_id,  # DetailedLoggingSM
+            save_raw_obs,  # DetailedLoggingSM
+            noise_params=noise_params,  # NoiseMixin
         )
-        possible_features = [
-            "on_object",
-            "object_coverage",
-            "min_depth",
-            "mean_depth",
-            "rgba",
-            "hsv",
-            "pose_vectors",
-            "principal_curvatures",
-            "principal_curvatures_log",
-            "pose_fully_defined",
-            "gaussian_curvature",
-            "mean_curvature",
-            "gaussian_curvature_sc",
-            "mean_curvature_sc",
-            "curvature_for_TM",
-            "coords_for_TM",
-        ]
-        for feature in features:
-            assert feature in possible_features, (
-                f"{feature} not part of {possible_features}"
-            )
-
+        self._habitat_observation_processor = HabitatObservationProcessor(
+            features=features,
+            sensor_module_id=sensor_module_id,
+            pc1_is_pc2_threshold=pc1_is_pc2_threshold,
+        )
+        # Tests check sm.features, not sure if this should be exposed
         self.features = features
         self.processed_obs = []
         self.states = []
@@ -566,9 +626,15 @@ class HabitatDistantPatchSM(DetailedLoggingSM, NoiseMixin):
                 else self.state["position"],
             )
 
-        observed_state = self.observations_to_comunication_protocol(
+        observed_state, telemetry = self._habitat_observation_processor.process(
             data, on_object_only=self.on_object_obs_only
         )
+
+        if not self.is_exploring:
+            self.processed_obs.append(telemetry.processed_obs.__dict__)
+            self.states.append(self.state)
+            self.visited_locs.append(telemetry.visited_loc)
+            self.visited_normals.append(telemetry.visited_normal)
 
         if self.noise_params is not None and observed_state.use_state:
             observed_state = self.add_noise_to_sensor_data(observed_state)
