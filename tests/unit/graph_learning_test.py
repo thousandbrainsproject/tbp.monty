@@ -1917,7 +1917,6 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         - Extending grid object models after loading them
         - Extending a graph with a new input channel
         - logging prediction errors
-        - logging performance based on parent-child mappings
         """
         pprint("...supervised training...")
         config = copy.deepcopy(self.two_stacked_lms_config)
@@ -2008,6 +2007,12 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                     "LMs should not recognize object on second episode as it is a "
                     "previously unseen view.",
                 )
+            # check that prediction errors are logged
+            self.assertIn(
+                "episode_avg_prediction_error",
+                eval_stats.columns,
+                "Prediction error is not logged.",
+            )
 
 
 if __name__ == "__main__":
