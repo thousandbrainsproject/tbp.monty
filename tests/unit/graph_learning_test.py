@@ -1996,8 +1996,8 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             episode = 0
             for lm_id in range(2):
                 self.assertIn(
-                    ["correct", "correct_mlh"],
                     eval_stats["primary_performance"][episode * 2 + lm_id],
+                    ["correct", "correct_mlh"],
                     f"LM {lm_id} did not recognize the object on first episode.",
                 )
             episode = 1
