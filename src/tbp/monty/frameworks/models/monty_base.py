@@ -329,8 +329,7 @@ class MontyBase(Monty):
         self.step_type = "matching_step"
         for lm in self.learning_modules:
             lm.set_experiment_mode(mode)
-        for sm in self.sensor_modules:
-            sm.set_experiment_mode(mode)
+        # for sm in self.sensor_modules: sm.set_experiment_mode() unused & removed
 
     def pre_episode(self):
         self._is_done = False
@@ -345,9 +344,7 @@ class MontyBase(Monty):
     def post_episode(self):
         for lm in self.learning_modules:
             lm.post_episode()
-
-        for sm in self.sensor_modules:
-            sm.post_episode()
+        # for sm in self.sensor_modules: sm.post_episode() unused & removed
 
     ###
     # Methods for saving and loading

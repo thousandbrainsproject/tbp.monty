@@ -433,12 +433,6 @@ class DetailedLoggingSM(SensorModule):
         self.visited_locs = []
         self.visited_normals = []
 
-    def post_episode(self):
-        pass
-
-    def set_experiment_mode(self, mode):
-        pass
-
 
 class NoiseMixin:
     def __init__(self, noise_params, **kwargs):
@@ -580,12 +574,6 @@ class HabitatDistantPatchSM(SensorModule, NoiseMixin):
         self.process_all_obs = process_all_obs
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
-
-    def post_episode(self):
-        pass
-
-    def set_experiment_mode(self, mode):
-        pass
 
     def pre_episode(self):
         """Reset buffer and is_exploring flag."""
