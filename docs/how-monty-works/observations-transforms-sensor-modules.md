@@ -15,11 +15,11 @@ Before sending information to the sensor module which extracts features and pose
 # Sensor Modules
 The transformed, **raw input is then sent to the sensor module and turned into the CMP-compliant format**. The universal format that all sensor modules output is **features at pose** in 3D space. Each sensor connects to a sensor module which turns the raw sensory input into this format of features at locations. Each input therefore contains x, y, z coordinates of the feature location relative to the body and three orthonormal vectors indicating its rotation. In sensor modules these pose-defining vectors are defined by the surface normal and principal curvature directions sensed at the center of the patch. In learning modules the pose vectors are defined by the detected object rotation. Additionally, the sensor module returns the sensed pose-independent features at this location (e.g. color, texture, curvature, ...). The sensed **features can be modality-specific** (e.g. color for vision or temperature for touch) while the **pose is modality agnostic**.
 
-| List of all sensor module classes          | Description                                                                                                                                                                                                              |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **SensorModule**                           | Abstract sensor module class.                                                                                                                                                                                            |
-| **DetailedLoggingSM**                      |  Saves raw observations for logging.                                                                                               |
-| **HabitatSM**                  | Sensor module for HabitatSim. Extracts pose and features in CMP format from an RGBD patch. Keeps track of agent and sensor states. Also checks if observation is on object and should be sent to LM. Can be configured to add feature noise.                                                  |
+| List of all sensor module classes | Description     |
+| --------------------------------- | --------------- |
+| **SensorModule**                  | Abstract sensor module class. |
+| **TelemetrySM**                   | Saves raw observations for telemetry logging. |
+| **HabitatSM**                     | Sensor module for HabitatSim. Extracts pose and features in CMP format from an RGBD patch. Keeps track of agent and sensor states. Also checks if observation is on object and should be sent to LM. Can be configured to add feature noise. |
 
 ## Noise
 

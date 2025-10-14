@@ -381,7 +381,7 @@ class HabitatObservationProcessor:
         return surface_normal, valid_sn
 
 
-class DetailedLoggingSM(SensorModule):
+class TelemetrySM(SensorModule):
     """Sensor module that keeps track of raw observations for logging."""
 
     def __init__(

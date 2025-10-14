@@ -63,8 +63,8 @@ from tbp.monty.frameworks.models.motor_policies import (
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.sensor_modules import (
-    DetailedLoggingSM,
     HabitatSM,
+    TelemetrySM,
 )
 from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 
@@ -586,7 +586,7 @@ class PatchAndViewMontyConfig(MontyConfig):
             sensor_module_1=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=TelemetrySM,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,
@@ -651,7 +651,7 @@ class PatchAndViewSOTAMontyConfig(PatchAndViewMontyConfig):
             sensor_module_1=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=TelemetrySM,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=False,
@@ -712,7 +712,7 @@ class SurfaceAndViewMontyConfig(PatchAndViewMontyConfig):
             sensor_module_1=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=TelemetrySM,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,
@@ -781,7 +781,7 @@ class SurfaceAndViewSOTAMontyConfig(SurfaceAndViewMontyConfig):
             sensor_module_1=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=TelemetrySM,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=False,
@@ -833,7 +833,7 @@ class PatchAndViewFeatureChangeConfig(PatchAndViewMontyConfig):
             sensor_module_1=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=TelemetrySM,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,
@@ -897,7 +897,7 @@ class TwoLMMontyConfig(MontyConfig):
             sensor_module_2=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=TelemetrySM,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,
@@ -995,7 +995,7 @@ class TwoLMStackedMontyConfig(TwoLMMontyConfig):
             sensor_module_2=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=TelemetrySM,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,
@@ -1086,7 +1086,7 @@ class FiveLMMontyConfig(MontyConfig):
             sensor_module_5=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=TelemetrySM,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=False,
@@ -1248,7 +1248,7 @@ def make_multi_lm_monty_config(
             to `make_multi_lm_flat_dense_connectivity`.
         view_finder_config: A mapping which contains the items
             `"sensor_module_class"` and `"sensor_module_args"`. If not specified,
-            a config is added using the class `DetailedLoggingSM` with  `"view_finder"`
+            a config is added using the class `TelemetrySM` with  `"view_finder"`
             as the `sensor_module_id`. `"save_raw_obs"` will default to match the
             value in `sensor_module_args` and `False` if none was provided.
 
@@ -1285,7 +1285,7 @@ def make_multi_lm_monty_config(
         }
     if view_finder_config is None:
         sensor_module_configs["view_finder"] = {
-            "sensor_module_class": DetailedLoggingSM,
+            "sensor_module_class": TelemetrySM,
             "sensor_module_args": {
                 "sensor_module_id": "view_finder",
                 "save_raw_obs": sensor_module_args.get("save_raw_obs", False),

@@ -58,8 +58,8 @@ from tbp.monty.frameworks.models.evidence_matching.model import (
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.sensor_modules import (
-    DetailedLoggingSM,
     HabitatSM,
+    TelemetrySM,
 )
 from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 from tbp.monty.frameworks.utils.logging_utils import load_models_from_dir
@@ -568,7 +568,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                     ),
                     # view_finder
                     sensor_module_1=dict(
-                        sensor_module_class=DetailedLoggingSM,
+                        sensor_module_class=TelemetrySM,
                         sensor_module_args=dict(
                             sensor_module_id="view_finder",
                             save_raw_obs=True,
