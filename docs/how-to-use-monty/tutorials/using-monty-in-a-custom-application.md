@@ -225,7 +225,7 @@ from tbp.monty.frameworks.models.evidence_matching.model import (
 )
 from tbp.monty.frameworks.models.sensor_modules import (
 	DetailedLoggingSM,
-	HabitatDistantPatchSM,
+	HabitatSM,
 )
 
 monty_models_dir = os.getenv("MONTY_MODELS")
@@ -234,7 +234,7 @@ pretrain_dir = os.path.expanduser(os.path.join(monty_models_dir, "omniglot"))
 
 omniglot_sensor_module_config = dict(
 	sensor_module_0=dict(
-    	sensor_module_class=HabitatDistantPatchSM,
+    	sensor_module_class=HabitatSM,
     	sensor_module_args=dict(
         	sensor_module_id="patch",
         	features=[

@@ -65,7 +65,7 @@ from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
     FeatureChangeSM,
-    HabitatDistantPatchSM,
+    HabitatSM,
 )
 from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 
@@ -558,7 +558,7 @@ class PatchAndViewMontyConfig(MontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch",
                     # TODO: would be nicer to just use lm.tolerances.keys() here
@@ -684,7 +684,7 @@ class SurfaceAndViewMontyConfig(PatchAndViewMontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     is_surface_sm=True,
                     sensor_module_id="patch",
@@ -878,7 +878,7 @@ class TwoLMMontyConfig(MontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_0",
                     features=features,
@@ -886,7 +886,7 @@ class TwoLMMontyConfig(MontyConfig):
                 ),
             ),
             sensor_module_1=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_1",
                     features=features,
@@ -1043,7 +1043,7 @@ class FiveLMMontyConfig(MontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_0",
                     features=features,
@@ -1051,7 +1051,7 @@ class FiveLMMontyConfig(MontyConfig):
                 ),
             ),
             sensor_module_1=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_1",
                     features=features,
@@ -1059,7 +1059,7 @@ class FiveLMMontyConfig(MontyConfig):
                 ),
             ),
             sensor_module_2=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_2",
                     features=features,
@@ -1067,7 +1067,7 @@ class FiveLMMontyConfig(MontyConfig):
                 ),
             ),
             sensor_module_3=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_3",
                     features=features,
@@ -1075,7 +1075,7 @@ class FiveLMMontyConfig(MontyConfig):
                 ),
             ),
             sensor_module_4=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_4",
                     features=features,

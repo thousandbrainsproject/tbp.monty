@@ -524,7 +524,7 @@ class DefaultFeatureNoise(FeatureNoise):
         return new_feat_val
 
 
-class HabitatDistantPatchSM(SensorModule):
+class HabitatSM(SensorModule):
     """Sensor Module that turns Habitat camera obs into features at locations.
 
     Takes in camera rgba and depth input and calculates locations from this.
@@ -663,7 +663,7 @@ class HabitatDistantPatchSM(SensorModule):
         return observed_state
 
 
-class FeatureChangeSM(HabitatDistantPatchSM):
+class FeatureChangeSM(HabitatSM):
     """Sensor Module that turns Habitat camera obs into features at locations.
 
     Takes in camera rgba and depth input and calculates locations from this.
