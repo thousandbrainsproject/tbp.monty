@@ -211,8 +211,8 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
                 model_name_or_path=self.compositional_save_path + "/pretrained",
             ),
             monty_config=TwoLMStackedMontyConfig(
-                # set min_train_steps to 50 to send more observations to LM_1 after LM_0
-                # has recognized the object.
+                # set min_train_steps to 200 to send more observations to LM_1 after
+                # LM_0 has recognized the object.
                 monty_args=MontyArgs(min_train_steps=200, num_exploratory_steps=0),
                 learning_module_configs=two_stacked_constrained_lms_config,
             ),
