@@ -140,6 +140,7 @@ class HabitatObservationProcessor:
         pc1_is_pc2_threshold=10,
         surface_normal_method=SurfaceNormalMethod.TLS,
         weight_curvature=True,
+        is_surface_sm=False,
     ) -> None:
         """Initializes the HabitatObservationProcessor.
 
@@ -153,26 +154,28 @@ class HabitatObservationProcessor:
               to TLS.
             weight_curvature: Whether to use the weighted implementation for principal
                 curvature extraction (True) or unweighted (False). Defaults to True.
+            is_surface_sm: Surface SMs do not require that the central pixel is
+                "on object" in order to process the observation (i.e., extract
+                features). Defaults to False.
         """
         for feature in features:
             assert feature in self.POSSIBLE_FEATURES, (
                 f"{feature} not part of {self.POSSIBLE_FEATURES}"
             )
         self._features = features
+        self._is_surface_sm = is_surface_sm
         self._pc1_is_pc2_threshold = pc1_is_pc2_threshold
         self._sensor_module_id = sensor_module_id
         self._surface_normal_method = surface_normal_method
         self._weight_curvature = weight_curvature
 
     def process(
-        self, observation: HabitatObservation, on_object_only=True
+        self, observation: HabitatObservation
     ) -> tuple[State, HabitatObservationProcessorTelemetry]:
         """Processes observation.
 
         Args:
             observation: Habitat observation.
-            on_object_only: Whether to require that the central pixel is "on object"
-               in order to process the observation.
 
         Returns:
             Cortical Message.
@@ -203,7 +206,7 @@ class HabitatObservationProcessor:
 
         x, y, z, semantic_id = obs_3d[center_id]
         on_object = semantic_id > 0
-        if on_object or (not on_object_only and features["object_coverage"] > 0):
+        if on_object or (self._is_surface_sm and features["object_coverage"] > 0):
             (
                 features,
                 morphological_features,
@@ -383,18 +386,18 @@ class DetailedLoggingSM(SensorModule):
 
     def __init__(
         self,
+        rng,
         sensor_module_id: str,
         save_raw_obs: bool,
-        **kwargs,
     ):
         """Initialize Sensor Module.
 
         Args:
+            rng: Random number generator. Unused.
             sensor_module_id: Name of sensor module.
             save_raw_obs: Whether to save raw sensory input for logging.
-            **kwargs: Additional keyword arguments.
         """
-        super().__init__(**kwargs)
+        super().__init__()
 
         self.is_exploring = False
         self.sensor_module_id = sensor_module_id
@@ -537,10 +540,12 @@ class HabitatDistantPatchSM(SensorModule):
         save_raw_obs: bool = False,
         pc1_is_pc2_threshold: int = 10,
         noise_params: dict[str, Any] | None = None,
+        is_surface_sm: bool = False,
     ) -> None:
         """Initialize Sensor Module.
 
         Args:
+            rng: Random number generator.
             sensor_module_id: Name of sensor module.
             features: Which features to extract. In [on_object, rgba, surface_normal,
                 principal_curvatures, curvature_directions, gaussian_curvature,
@@ -550,6 +555,9 @@ class HabitatDistantPatchSM(SensorModule):
                 classified as being roughly the same (ignore curvature directions).
                 Defaults to 10.
             noise_params: Dictionary of noise amount for each feature.
+            is_surface_sm: Surface SMs do not require that the central pixel is
+                "on object" in order to process the observation (i.e., extract features).
+                Defaults to False.
 
         Note:
             When using feature at location matching with graphs, surface_normal and
@@ -563,6 +571,7 @@ class HabitatDistantPatchSM(SensorModule):
             features=features,
             sensor_module_id=sensor_module_id,
             pc1_is_pc2_threshold=pc1_is_pc2_threshold,
+            is_surface_sm=is_surface_sm,
         )
         if noise_params:
             self._feature_noise: FeatureNoise = DefaultFeatureNoise(
@@ -576,7 +585,6 @@ class HabitatDistantPatchSM(SensorModule):
         self.processed_obs = []
         self.states = []
         # TODO: give more descriptive & distinct names
-        self.on_object_obs_only = True
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
         # Store visited locations in global environment coordinates to help inform
@@ -636,10 +644,7 @@ class HabitatDistantPatchSM(SensorModule):
                 else self.state["position"],
             )
 
-        observed_state, telemetry = self._habitat_observation_processor.process(
-            data,
-            on_object_only=self.on_object_obs_only,
-        )
+        observed_state, telemetry = self._habitat_observation_processor.process(data)
 
         if observed_state.use_state:
             observed_state = self._feature_noise(observed_state)
@@ -667,14 +672,16 @@ class HabitatSurfacePatchSM(HabitatDistantPatchSM):
     """
 
     def __init__(
-        self, sensor_module_id, features, save_raw_obs=False, noise_params=None
+        self, rng, sensor_module_id, features, save_raw_obs=False, noise_params=None
     ):
         super().__init__(
-            sensor_module_id, features, save_raw_obs, noise_params=noise_params
+            rng,
+            sensor_module_id,
+            features,
+            save_raw_obs,
+            noise_params=noise_params,
+            is_surface_sm=True,
         )
-
-        self.on_object_obs_only = False  # parameter used in step() method
-
 
 class FeatureChangeSM(HabitatDistantPatchSM):
     """Sensor Module that turns Habitat camera obs into features at locations.
@@ -686,6 +693,7 @@ class FeatureChangeSM(HabitatDistantPatchSM):
 
     def __init__(
         self,
+        rng,
         sensor_module_id,
         features,
         delta_thresholds,
@@ -696,26 +704,29 @@ class FeatureChangeSM(HabitatDistantPatchSM):
         """Initialize Sensor Module.
 
         Args:
+            rng: Random number generator.
             sensor_module_id: Name of sensor module.
             features: Which features to extract. In [on_object, rgba, surface_normal,
                 principal_curvatures, curvature_directions, gaussian_curvature,
                 mean_curvature]
             delta_thresholds: thresholds for each feature to be considered a
                 significant change.
-            surf_agent_sm: Boolean that is False by default, indicating that the
-                FeatureChangeSM is used for the distant-agent; if True, used to assign
-                appropriate value for self.on_object_obs_only
+            surf_agent_sm: Surface SMs do not require that the central pixel is
+                "on object" in order to process the observation (i.e., extract
+                features). Defaults to False.
             save_raw_obs: Whether to save raw sensory input for logging. Defaults to
                 False.
             noise_params: ?. Defaults to None.
         """
         super().__init__(
-            sensor_module_id, features, save_raw_obs, noise_params=noise_params
+            rng,
+            sensor_module_id,
+            features,
+            save_raw_obs,
+            noise_params=noise_params,
+            is_surface_sm=surf_agent_sm,
         )
         self.delta_thresholds = delta_thresholds
-        self.on_object_obs_only = not (
-            surf_agent_sm
-        )  # If using surface-agent approach,
         # then should be False; for distant-agent SMs, it should be True
         self.last_features = None
         self.last_sent_n_steps_ago = 0
