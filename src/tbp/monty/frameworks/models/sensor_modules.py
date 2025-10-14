@@ -430,11 +430,11 @@ class DetailedLoggingSM(SensorModule):
         self.is_exploring = False
 
 
-class FeatureNoise(Protocol):
+class MessageNoise(Protocol):
     def __call__(self, state: State) -> State: ...
 
 
-def no_feature_noise(state: State) -> State:
+def no_message_noise(state: State) -> State:
     """No noise function.
 
     Returns:
@@ -443,7 +443,7 @@ def no_feature_noise(state: State) -> State:
     return state
 
 
-class DefaultFeatureNoise(FeatureNoise):
+class DefaultMessageNoise(MessageNoise):
     def __init__(self, noise_params: dict[str, Any], rng):
         self.noise_params = noise_params
         self.rng = rng
@@ -574,11 +574,11 @@ class HabitatSM(SensorModule):
             is_surface_sm=is_surface_sm,
         )
         if noise_params:
-            self._feature_noise: FeatureNoise = DefaultFeatureNoise(
+            self._message_noise: MessageNoise = DefaultMessageNoise(
                 noise_params=noise_params, rng=rng
             )
         else:
-            self._feature_noise = no_feature_noise
+            self._message_noise = no_message_noise
         self._snapshot_telemetry = SnapshotTelemetry()
         # Tests check sm.features, not sure if this should be exposed
         self.features = features
@@ -647,7 +647,7 @@ class HabitatSM(SensorModule):
         observed_state, telemetry = self._habitat_observation_processor.process(data)
 
         if observed_state.use_state:
-            observed_state = self._feature_noise(observed_state)
+            observed_state = self._message_noise(observed_state)
 
         if self.motor_only_step:
             # Set interesting-features flag to False, as should not be passed to

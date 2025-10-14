@@ -24,7 +24,7 @@ The transformed, **raw input is then sent to the sensor module and turned into t
 
 ## Noise
 
-Each sensor module accepts `noise_params`, which configure the `DefaultFeatureNoise` that adds feature noise to the created Cortical Message (State) before sending. Features and location noise can be configured individually.
+Each sensor module accepts `noise_params`, which configure the `DefaultMessageNoise` that adds feature and location noise to the created Cortical Message (State) before sending. Features and location noise can be configured individually.
 
 ## Transforms vs. Sensor Modules
 For an overview of **which type of data processing belongs where please refer to the following rules:**
