@@ -347,18 +347,14 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
         with MontySupervisedObjectPretrainingExperiment(config) as exp:
             exp.model.set_experiment_mode("train")
             # check that models for both objects are loaded into memory correctly.
-            for lm_idx in range(2):
+            for lm_idx, lm in enumerate(exp.model.learning_modules):
                 for object_id in ["capsule3DSolid", "cubeSolid"]:
                     self.assertIn(
                         object_id,
-                        exp.model.learning_modules[
-                            lm_idx
-                        ].graph_memory.get_all_models_in_memory(),
+                        lm.graph_memory.get_all_models_in_memory(),
                     )
                     # check that the correct input channel is present.
-                    loaded_graph = exp.model.learning_modules[
-                        lm_idx
-                    ].graph_memory.get_graph(graph_id=object_id)
+                    loaded_graph = lm.graph_memory.get_graph(graph_id=object_id)
                     self.assertIn(f"patch_{lm_idx}", loaded_graph.keys())
                     # check that it is of type GridObjectModel.
                     self.assertIsInstance(
@@ -402,7 +398,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
                     f"LM {lm_id} did not recognize the object on first episode.",
                 )
             episode = 1
-            for lm_id in range(2):
+            for lm_id in range(num_lms):
                 self.assertEqual(
                     "no_match",
                     eval_stats["primary_performance"][episode * 2 + lm_id],
