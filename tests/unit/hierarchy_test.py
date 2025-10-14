@@ -327,10 +327,8 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
             exp.model.set_experiment_mode("train")
             exp.train()
             # check that both LMs have learned both objects.
-            for lm_idx in range(2):
-                learned_objects = exp.model.learning_modules[
-                    lm_idx
-                ].get_all_known_object_ids()
+            for lm_idx, lm in enumerate(exp.model.learning_modules):
+                learned_objects = lm.get_all_known_object_ids()
                 self.assertIn(
                     "capsule3DSolid",
                     learned_objects,
