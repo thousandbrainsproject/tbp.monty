@@ -102,8 +102,8 @@ supervised_pretraining_logos_2d_sensor.update(
                         "rgba",
                         "hsv",
                         "edge_strength",
-                        "edge_orientation",
-                        "edge_tangent",
+                        "coherence",
+                        "pose_from_edge",
                     ],
                     save_raw_obs=True,
                     debug_visualize=True,
@@ -123,7 +123,9 @@ supervised_pretraining_logos_2d_sensor.update(
         ),
     ),
 )
-supervised_pretraining_logos_2d_sensor["logging_config"].run_name = "supervised_pretraining_logos_2d_sensor"
+supervised_pretraining_logos_2d_sensor[
+    "logging_config"
+].run_name = "supervised_pretraining_logos_2d_sensor"
 
 experiments = MyExperiments(
     supervised_pretraining_logos=supervised_pretraining_logos,

@@ -6,6 +6,11 @@ import torch
 import trimesh
 from vedo import Plotter, Points, Line, Text2D, Mesh
 
+def _normalize_rows(V, eps=1e-12):
+    V = np.asarray(V, float)
+    n = np.linalg.norm(V, axis=1, keepdims=True)
+    n = np.maximum(n, eps)
+    return V / n
 
 def load_object_model(model_path, object_name, lm_id=0):
     """Load an object model from a pretraining experiment.
@@ -24,7 +29,9 @@ def load_object_model(model_path, object_name, lm_id=0):
     state_dict = torch.load(model_path, map_location="cpu")
 
     # Navigate to the graph object
-    graph_data = state_dict["lm_dict"][lm_id]["graph_memory"][object_name]["patch"]._graph
+    graph_data = state_dict["lm_dict"][lm_id]["graph_memory"][object_name][
+        "patch"
+    ]._graph
 
     # Extract point positions
     pos = getattr(graph_data, "pos", None)
@@ -53,7 +60,7 @@ def load_object_model(model_path, object_name, lm_id=0):
     if x_np is not None and feature_mapping:
         for feature, idx in feature_mapping.items():
             # idx is expected to be [start, end)
-            feature_data = np.asarray(x_np[:, idx[0]: idx[1]])
+            feature_data = np.asarray(x_np[:, idx[0] : idx[1]])
             feature_dict[feature] = feature_data
 
     return {
@@ -91,163 +98,148 @@ def load_mesh(object_name, mesh_base_path=None):
         return None
 
 
-def visualize_point_cloud_interactive(model_data, title=None, arrow_scale=0.002, mesh=None, mesh_translation=None):
+
+def visualize_point_cloud_interactive(
+    model_data,
+    title=None,
+    arrow_scale=0.002,
+    mesh=None,
+    mesh_translation=None,
+    *,
+    tangent_color="black",
+    tangent_lw=1,
+    max_tangent_lines=8000,     # cap for perf
+    subsample_every=None,        # e.g. 5 to draw every 5th tangent
+    prefer_edgey_points=True,    # if edge_strength available, draw the edgiest first
+):
     """Create interactive 3D visualization with Vedo.
 
     Args:
-        model_data: Dictionary from load_object_model with points and features.
-        title: Optional title for the plot.
-        arrow_scale: Scale factor for edge orientation arrows.
-        mesh: Optional trimesh.Trimesh object to display alongside point cloud.
-        mesh_translation: Optional [x, y, z] translation to apply to mesh. Default is [0, 1.5, 0].
+        model_data: dict with keys:
+            - points: (N,3) world coords
+            - features: dict. Expected options:
+                * 'pose_vectors': (N,3,3) with [normal, edge_tangent, edge_perp] per point
+                  OR
+                * 'edge_tangent': (N,3) directly
+                * optional 'edge_strength': (N,) to prioritize which lines to draw
+                * optional 'rgba': (N,3 or 4)
+        title: window title.
+        arrow_scale: length (in world units) of each tangent line.
+        mesh: optional trimesh.Trimesh or trimesh.Scene to render alongside.
+        mesh_translation: [x,y,z] offset for the mesh (default [0,1.5,0]).
+        tangent_color: Vedo color for tangent lines.
+        tangent_lw: line width for tangent lines.
+        max_tangent_lines: performance guard; limit number of lines.
+        subsample_every: if set, take every k-th tangent.
+        prefer_edgey_points: if True and 'edge_strength' exists, prioritize those.
     """
-    points = model_data["points"]
+    points = np.asarray(model_data["points"], float)
     features = model_data["features"]
 
-    # Create plotter
     plotter = Plotter(size=(1400, 1000), title=title or "Learned Point Cloud")
 
-    # Add mesh if provided
+    # ----- Optional mesh -----
     if mesh is not None:
         if mesh_translation is None:
             mesh_translation = [0, 1.5, 0]
-
-        # Handle both Scene and Trimesh objects
-        if hasattr(mesh, 'vertices'):
-            # Single Trimesh object
+        if hasattr(mesh, "vertices"):  # single Trimesh
             translated_vertices = mesh.vertices + mesh_translation
             vedo_mesh = Mesh([translated_vertices, mesh.faces])
-
-            # Apply texture if available
-            if hasattr(mesh.visual, 'material') and hasattr(mesh.visual.material, 'image'):
+            if hasattr(mesh.visual, "material") and hasattr(mesh.visual.material, "image"):
                 vedo_mesh.alpha(0.4)
             else:
                 vedo_mesh.color("lightblue").alpha(0.4)
-
             plotter.add(vedo_mesh)
-        elif hasattr(mesh, 'geometry'):
-            # Scene object with multiple geometries
+        elif hasattr(mesh, "geometry"):  # Scene with multiple parts
             for geom in mesh.geometry.values():
                 translated_vertices = geom.vertices + mesh_translation
                 vedo_mesh = Mesh([translated_vertices, geom.faces])
-
-                # Apply texture if available
-                if hasattr(geom.visual, 'material') and hasattr(geom.visual.material, 'image'):
+                if hasattr(geom.visual, "material") and hasattr(geom.visual.material, "image"):
                     vedo_mesh.alpha(0.4)
                 else:
                     vedo_mesh.color("lightblue").alpha(0.4)
-
                 plotter.add(vedo_mesh)
 
-    # Determine coloring - prioritize edge_strength visualization
-    if "edge_strength" in features:
-        # Color points by edge strength
-        edge_strengths = features["edge_strength"].flatten()
-        # Normalize to [0, 1] for colormapping
-        max_strength = np.percentile(edge_strengths, 95)  # Use 95th percentile to avoid outliers
-        normalized_strength = np.clip(edge_strengths / max_strength, 0, 1)
-
-        # Create point cloud with edge strength coloring
-        point_cloud = Points(points, r=10)
-        point_cloud.cmap("coolwarm", normalized_strength, vmin=0, vmax=1)
-        point_cloud.add_scalarbar(title="Edge Strength")
-        plotter.add(point_cloud)
-    elif "rgba" in features and features["rgba"].shape[1] >= 3:
-        # Use RGB colors from features
-        # Vedo expects colors in range [0, 255] as a list of tuples or array
+    # ----- Point colors -----
+    if "rgba" in features and features["rgba"].shape[1] >= 3:
         colors = features["rgba"][:, :3].astype(np.uint8).tolist()
         point_cloud = Points(points, r=10)
         point_cloud.pointcolors = colors
         plotter.add(point_cloud)
     else:
-        # Default gray color
         point_cloud = Points(points, r=10).color("gray")
         plotter.add(point_cloud)
 
-    # Add edge tangent lines if available
-    lines = []
-    if "edge_tangent" in features:
-        edge_tangents = features["edge_tangent"]
+    # ----- Collect 3D edge tangents (WORLD frame) -----
+    tangents = None
+    if "pose_vectors" in features:
+        # Expect shape (N, 9)
+        pv = np.asarray(features["pose_vectors"], float)
+        if pv.ndim == 2 and pv.shape[1] == 9:
+            pv = pv.reshape(-1, 3, 3)
+        tangents = pv[:, 1, :]
 
-        # Get edge strength for filtering if available
-        edge_strength_threshold = 0.1
-        if "edge_strength" in features:
-            edge_strengths = features["edge_strength"].flatten()
+    edge_mask = None
+    if "pose_from_edge" in features:
+        edge_mask = np.asarray(features["pose_from_edge"], bool).reshape(-1)
+
+    # Optional: mask to points on object (if semantic ids provided)
+    # If you have a mask, apply it here to 'points' and 'tangents'.
+
+    # ----- Draw tangents as Lines -----
+    if tangents is not None:
+        points = np.asarray(points, float)
+        tangents = np.asarray(tangents, float)
+
+        # Align lengths defensively (some rows may be missing/extra)
+        n_points   = points.shape[0]
+        n_tangents = tangents.shape[0]
+        n_mask     = edge_mask.shape[0] if edge_mask is not None else n_tangents
+        n_common   = min(n_points, n_tangents, n_mask)
+
+        if n_common == 0:
+            print("[viz] No common rows to draw tangents.")
         else:
-            edge_strengths = np.ones(len(points))  # Show all if no strength data
+            P  = points[:n_common]
+            T  = tangents[:n_common]
+            EM = edge_mask[:n_common] if edge_mask is not None else np.ones((n_common,), dtype=bool)
 
-        # Create lines for points with detected edges
-        for i in range(len(points)):
-            # Check if edge is strong enough
-            if edge_strengths[i] < edge_strength_threshold:
-                continue
+            # Print counts for debugging
+            if edge_mask is not None:
+                n_true  = int(EM.sum())
+                n_false = int((~EM).sum())
+                print(f"[viz] pose_from_edge: True={n_true}, False={n_false}, Total(masked)={n_common}")
 
-            tangent = edge_tangents[i]
-            tangent_magnitude = np.linalg.norm(tangent)
+                # Normalize & validate
+                T = _normalize_rows(T)
+                valid = np.isfinite(T).all(axis=1) & (np.linalg.norm(T, axis=1) > 1e-9)
 
-            # Only show line if tangent is non-zero
-            if tangent_magnitude > 1e-8:
-                start_point = points[i]
-                end_point = start_point + arrow_scale * tangent
+                # Keep only edge-derived & valid
+                keep = EM & valid
+                idx = np.where(keep)[0]
 
-                line = Line(
-                    start_point,
-                    end_point,
-                    lw=0.1,
-                    alpha=0.9
-                )
-                lines.append(line)
-                plotter.add(line)
+                # Build lines
+                lines = []
+                for i in idx:
+                    p0 = P[i]
+                    p1 = p0 + arrow_scale * T[i]
+                    lines.append(Line(p0, p1, c=tangent_color, lw=tangent_lw))
 
-    # Add summary text with feature information
-    info_lines = [
-        f"Points: {len(points)}",
-        f"Features: {', '.join(features.keys())}",
-    ]
-    if mesh is not None:
-        # Handle both Scene and Trimesh objects
-        if hasattr(mesh, 'vertices'):
-            info_lines.append(f"Mesh: {len(mesh.vertices)} vertices, {len(mesh.faces)} faces")
-        elif hasattr(mesh, 'geometry'):
-            total_verts = sum(len(geom.vertices) for geom in mesh.geometry.values())
-            total_faces = sum(len(geom.faces) for geom in mesh.geometry.values())
-            info_lines.append(f"Mesh (Scene): {total_verts} vertices, {total_faces} faces")
-    if "edge_strength" in features:
-        info_lines.append(
-            f"Edge Strength: min={features['edge_strength'].min():.3f}, "
-            f"max={features['edge_strength'].max():.3f}"
-        )
-    # if "edge_orientation" in features:
-    #     info_lines.append(
-    #         f"Edge Orientation: min={edge_angles.min():.3f}, "
-    #         f"max={edge_angles.max():.3f} rad"
-    #     )
+                if lines:
+                    plotter.add(*lines)
+                else:
+                    print("[viz] No tangents to draw after filtering (mask/validity).")
+    else:
+        print("[viz] No pose_vectors/tangents found; skipping tangent rendering.")
 
-    info_text = Text2D("\n".join(info_lines), pos="top-left", s=0.8, c="black")
-    plotter.add(info_text)
-
-    # Add legend for lines if edge tangents are shown
-    if "edge_tangent" in features and len(lines) > 0:
-        legend_text = Text2D(
-            f"Yellow lines: Edge Tangents ({len(lines)} shown)",
-            pos="bottom-left",
-            s=0.8,
-            c="yellow"
-        )
-        plotter.add(legend_text)
-
-    # Set up axes and camera
+    # ----- Axes & camera -----
     plotter.show(
-        axes=dict(
-            xtitle="X",
-            ytitle="Y",
-            ztitle="Z",
-        ),
+        axes=dict(xtitle="X", ytitle="Y", ztitle="Z"),
         viewup="y",
         camera=dict(
-            pos=(0, 1.5, 0.2),      # Camera position: directly across from object at y=1.5, slightly back
-            focal_point=(0, 1.5, 0),  # Look at center of object
-            view_angle=45,  # Wider angle to see more
+            pos=(0, 1.5, 0.2),
+            focal_point=(0, 1.5, 0),
+            view_angle=45,
         ),
         interactive=True,
     )
@@ -276,7 +268,9 @@ if __name__ == "__main__":
 
         try:
             # Load the model
-            model_data = load_object_model(pretrained_model_path, object_name, lm_id=lm_id)
+            model_data = load_object_model(
+                pretrained_model_path, object_name, lm_id=lm_id
+            )
 
             print(f"  Points shape: {model_data['points'].shape}")
             print(f"  Available features: {list(model_data['features'].keys())}")
@@ -285,13 +279,21 @@ if __name__ == "__main__":
             mesh = load_mesh(object_name)
             if mesh is not None:
                 # Handle both Scene and Trimesh objects
-                if hasattr(mesh, 'vertices'):
-                    print(f"  Mesh loaded: {len(mesh.vertices)} vertices, {len(mesh.faces)} faces")
-                elif hasattr(mesh, 'geometry'):
+                if hasattr(mesh, "vertices"):
+                    print(
+                        f"  Mesh loaded: {len(mesh.vertices)} vertices, {len(mesh.faces)} faces"
+                    )
+                elif hasattr(mesh, "geometry"):
                     # Scene object - count total vertices/faces across all geometries
-                    total_verts = sum(len(geom.vertices) for geom in mesh.geometry.values())
-                    total_faces = sum(len(geom.faces) for geom in mesh.geometry.values())
-                    print(f"  Mesh loaded (Scene): {total_verts} vertices, {total_faces} faces")
+                    total_verts = sum(
+                        len(geom.vertices) for geom in mesh.geometry.values()
+                    )
+                    total_faces = sum(
+                        len(geom.faces) for geom in mesh.geometry.values()
+                    )
+                    print(
+                        f"  Mesh loaded (Scene): {total_verts} vertices, {total_faces} faces"
+                    )
 
             # Create interactive visualization
             visualize_point_cloud_interactive(
@@ -303,5 +305,6 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"  Error processing {object_name}: {e}")
             import traceback
+
             traceback.print_exc()
             continue

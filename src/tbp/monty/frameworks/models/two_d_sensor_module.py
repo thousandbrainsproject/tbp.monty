@@ -17,6 +17,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import quaternion
+from skimage.color import rgb2hsv
 
 from tbp.monty.frameworks.models.sensor_modules import DetailedLoggingSM, NoiseMixin
 from tbp.monty.frameworks.models.states import State
@@ -24,6 +25,9 @@ from tbp.monty.frameworks.utils.edge_detection_utils import structure_tensor_cen
 
 logger = logging.getLogger(__name__)
 
+def _normalize(v: np.ndarray, eps: float = 1e-12) -> np.ndarray:
+    n = float(np.linalg.norm(v))
+    return v / n if n > eps else v * 0.0
 
 class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
     """Sensor Module that extracts 2D edges."""
@@ -76,6 +80,7 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
             "coherence",
             "rgba",
             "hsv",
+            "pose_from_edge",
         ]
         for feature in features:
             assert feature in possible_features, (
@@ -173,7 +178,7 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
         return observed_state
 
     def edge_angle_to_3d_tangent(
-        theta, normal, *, normal_frame="world", world_camera=None, out_frame="world"
+        self, theta, normal, *, normal_frame="world", world_camera=None, out_frame="world"
     ):
         """
         Lift the edge angle (theta from the 2D image x-axis) into a 3D tangent vector
@@ -244,18 +249,29 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
         depth_feat = data["depth"]
         world_camera = data["world_camera"]
 
-        center_row_col = rgba_feat.shape[0] // 2
+        # Center pixel
+        H = int(rgba_feat.shape[0])
+        center_row_col = H // 2
+
         obs_dim = int(np.sqrt(obs_3d.shape[0]))
         half_obs_dim = obs_dim // 2
         center_id = half_obs_dim + obs_dim * half_obs_dim
 
+        # Extract features
         features = {}
+
+        # Object coverage
         if "object_coverage" in self.features:
-            features["object_coverage"] = sum(obs_3d[:, 3] > 0) / len(obs_3d[:, 3])
+            # prevent division by zero
+            on_obj = obs_3d[:, 3] > 0
+            denominator = max(len(on_obj), 1)
+            features["object_coverage"] = float(np.count_nonzero(on_obj) / denominator)
 
-        obs_3d_center = obs_3d[center_id]
-        x, y, z, semantic_id = obs_3d_center
+        # Center 3D @ semantic
+        x, y, z, semantic_id = obs_3d[center_id]
+        on_object_center = semantic_id > 0
 
+        # 3D Features
         (
             features,
             morphological_features,
@@ -270,12 +286,22 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
             sensor_frame_data,
             world_camera,
         )
-        if semantic_id > 0:
-            surface_normal = morphological_features["pose_vectors"][0]
-            edge_info = self.extract_2d_edge_features(rgba_feat, center_row_col)
+        # Defaults
+        surface_normal = None
+        edge_tangent = None
+        edge_perp = None
+        pose_fully_defined = False
 
-            if edge_info["has_edge"]:
-                theta = edge_info["edge_orientation"]
+        # If we are on object, try to compute edge-based pose vectors
+        if on_object_center and "pose_vectors" in morphological_features:
+            surface_normal = _normalize(morphological_features["pose_vectors"][0])
+
+            # Edge detection at the center
+            edge_info = self.extract_2d_edge_features(rgba_feat, center_row_col)
+            has_edge = edge_info["has_edge"]
+
+            if has_edge:
+                theta = edge_info["edge_orientation"] # radians, image x = right, y=down
                 edge_tangent = self.edge_angle_to_3d_tangent(
                     theta,
                     surface_normal,
@@ -283,56 +309,30 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
                     world_camera=world_camera,
                     out_frame="world",
                 )
-                edge_perp = np.cross(surface_normal, edge_tangent)
-                edge_perp = edge_perp / np.linalg.norm(edge_perp)
+                edge_tangent = _normalize(edge_tangent)
+                edge_perp = _normalize(np.cross(surface_normal, edge_tangent))
 
-                if (
-                    self._canonical_tangent is None
-                    and edge_tangent is not None
-                    and edge_perp is not None
-                ):
-                    self._canonical_tangent = edge_tangent
-                    self._canonical_perpendicular = edge_perp
-                elif (
-                    self._canonical_tangent is not None
-                    and self._canonical_perpendicular is not None
-                ):
-                    # Express edges in canonical basis
-                    if np.dot(edge_tangent, self._canonical_tangent) < 0.0:
-                        edge_tangent = -edge_tangent
-                        edge_perp = -edge_perp
+                pose_fully_defined = True
 
-                    a = np.dot(edge_tangent, self._canonical_tangent)
-                    b = np.dot(edge_perp, self._canonical_perpendicular)
-                    edge_tangent = np.array([a, b, 0.0])
-                    edge_perp = np.array([-b, a, 0.0])
-
-        if (
-            self._canonical_tangent is not None
-            and self._canonical_perpendicular is not None
-        ):
-            fake_surface_normal = np.cross(
-                self._canonical_tangent, self._canonical_perpendicular
-            )
+        # Build morphological features payload
+        if edge_tangent is not None and edge_perp is not None and surface_normal is not None:
             morphological_features = {
                 "pose_vectors": np.vstack(
                     [
-                        fake_surface_normal,
+                        surface_normal,
                         edge_tangent,
                         edge_perp,
                     ]
                 ),
-                "pose_fully_defined": True,
+                "pose_fully_defined": pose_fully_defined,
+                "pose_from_edge": True,
             }
-            if "edge_strength" in self.features:
-                features["edge_strength"] = edge_info["edge_strength"]
-            if "coherence" in self.features:
-                features["coherence"] = edge_info["coherence"]
             use_state = True
-        else:
-            morphological_features = {}
-            use_state = False
 
+        if "pose_from_edge" not in morphological_features:
+            morphological_features["pose_from_edge"] = False
+
+        # Extras
         if "on_object" in self.features:
             morphological_features["on_object"] = float(semantic_id > 0)
 
@@ -346,12 +346,13 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
             hsv = rgb2hsv(rgba[:3])
             features["hsv"] = hsv
 
+        # Assemble state
         observed_state = State(
             location=np.array([x, y, z]),
             morphological_features=morphological_features,
             non_morphological_features=features,
             confidence=1.0,
-            use_state=bool(semantic_id > 0) and use_state,
+            use_state=bool(on_object_center and not invalid_signals),
             sender_id=self.sensor_module_id,
             sender_type="SM",
         )
@@ -370,61 +371,91 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
     def _draw_2d_pose_on_patch(
         self,
         patch,
-        edge_direction,
+        edge_direction=None,
+        label_text=None,
         tangent_color=(255, 255, 0),
         normal_color=(0, 255, 255),
         arrow_length=20,
     ):
-        """Draw both tangent and normal arrows to show 2D pose.
+        """Draw tangent/normal arrows and overlay debug text for a patch.
 
         Args:
-            patch: RGB patch of shape (H, W, 3)
-            edge_direction: Edge tangent direction in radians
-            tangent_color: RGB color for tangent arrow (default: yellow)
-            normal_color: RGB color for normal arrow (default: cyan)
-            arrow_length: Length of arrows in pixels
+            patch: RGB patch of shape (H, W, 3).
+            edge_direction: Edge tangent direction in radians, if available.
+            label_text: Text to overlay for debugging (e.g., angle or "No Edge").
+            tangent_color: RGB color for tangent arrow (default: yellow).
+            normal_color: RGB color for normal arrow (default: cyan).
+            arrow_length: Length of arrows in pixels.
 
         Returns:
-            Patch with 2D pose arrows drawn on it
+            Patch with annotations drawn on it.
         """
-        # Create a copy to avoid modifying original
         patch_with_pose = patch.copy()
-
-        # Center of patch
         center_y, center_x = patch.shape[0] // 2, patch.shape[1] // 2
 
-        # Tangent arrow (edge direction)
-        tangent_end_x = int(center_x + arrow_length * np.cos(edge_direction))
-        tangent_end_y = int(center_y + arrow_length * np.sin(edge_direction))
+        # Draw pose arrows only if we have an edge direction
+        if edge_direction is not None:
 
-        # Normal arrow (perpendicular to edge, 90 degree rotation)
-        normal_direction = edge_direction + np.pi / 2
-        normal_length = arrow_length * 0.7  # Slightly shorter
-        normal_end_x = int(center_x + normal_length * np.cos(normal_direction))
-        normal_end_y = int(center_y + normal_length * np.sin(normal_direction))
+            tangent_end_x = int(center_x + arrow_length * np.cos(edge_direction))
+            tangent_end_y = int(center_y + arrow_length * np.sin(edge_direction))
 
-        # Draw tangent arrow (edge direction)
-        cv2.arrowedLine(
-            patch_with_pose,
-            (center_x, center_y),
-            (tangent_end_x, tangent_end_y),
-            tangent_color,
-            thickness=3,
-            tipLength=0.3,
-        )
+            normal_direction = edge_direction + np.pi / 2
+            normal_length = arrow_length * 0.7
+            normal_end_x = int(center_x + normal_length * np.cos(normal_direction))
+            normal_end_y = int(center_y + normal_length * np.sin(normal_direction))
 
-        # Draw normal arrow (perpendicular)
-        cv2.arrowedLine(
-            patch_with_pose,
-            (center_x, center_y),
-            (normal_end_x, normal_end_y),
-            normal_color,
-            thickness=3,
-            tipLength=0.3,
-        )
+            cv2.arrowedLine(
+                patch_with_pose,
+                (center_x, center_y),
+                (tangent_end_x, tangent_end_y),
+                tangent_color,
+                thickness=3,
+                tipLength=0.3,
+            )
 
-        # Draw center point
-        cv2.circle(patch_with_pose, (center_x, center_y), 4, (255, 255, 255), -1)
+            cv2.arrowedLine(
+                patch_with_pose,
+                (center_x, center_y),
+                (normal_end_x, normal_end_y),
+                normal_color,
+                thickness=3,
+                tipLength=0.3,
+            )
+
+        # Highlight center pixel source for edge extraction
+        cv2.circle(patch_with_pose, (center_x, center_y), 3, (255, 0, 0), -1)
+
+        if label_text:
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            font_scale = 0.35
+            thickness = 1
+            color = (255, 255, 255)
+            margin = 3
+
+            (text_width, text_height), _ = cv2.getTextSize(label_text, font, font_scale, thickness)
+
+            x = patch_with_pose.shape[1] - text_width - margin
+            y = text_height + margin
+
+            # Draw background rectangle for readability
+            cv2.rectangle(
+                patch_with_pose,
+                (x - margin, y - text_height - margin),
+                (x + text_width + margin, y + margin // 2),
+                (0, 0, 0),
+                thickness=-1,
+            )
+
+            cv2.putText(
+                patch_with_pose,
+                label_text,
+                (x, y),
+                font,
+                font_scale,
+                color,
+                thickness=thickness,
+                lineType=cv2.LINE_AA,
+            )
 
         return patch_with_pose
 
@@ -476,20 +507,24 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
             "coherence": coherence,
         }
 
-        # Debug visualization: save patch with edge arrows
-        if self.debug_visualize and has_edge:
-            # Convert RGBA to RGB for visualization
+        # Debug visualization: always save annotated patches when enabled
+        if self.debug_visualize:
             if rgba_image.shape[2] == 4:
                 rgb_patch = rgba_image[:, :, :3]
             else:
                 rgb_patch = rgba_image
 
-            # Draw edge arrows on patch
-            patch_with_arrows = self._draw_2d_pose_on_patch(
-                rgb_patch.copy(), edge_orientation
-            )
+            if has_edge:
+                angle_deg = np.degrees(edge_orientation)
+                label_text = f"{angle_deg:.1f}"
+                patch_with_debug = self._draw_2d_pose_on_patch(
+                    rgb_patch.copy(), edge_orientation, label_text
+                )
+            else:
+                patch_with_debug = self._draw_2d_pose_on_patch(
+                    rgb_patch.copy(), None, "No edge"
+                )
 
-            # Create filename
             filename = (
                 f"ep{self.episode_counter:04d}_"
                 f"step{self.step_counter:04d}_"
@@ -497,10 +532,8 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
             )
             filepath = self.debug_save_dir / filename
 
-            # Save image
-            plt.imsave(filepath, patch_with_arrows)
+            plt.imsave(filepath, patch_with_debug)
 
-            # Increment counters
             self.step_counter += 1
             self.debug_counter += 1
 
