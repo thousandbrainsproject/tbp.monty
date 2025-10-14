@@ -49,7 +49,7 @@ from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphL
 from tbp.monty.frameworks.models.motor_policies import NaiveScanPolicy
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
-    HabitatSurfacePatchSM,
+    HabitatDistantPatchSM,
 )
 from tbp.monty.simulators.habitat.configs import (
     FiveLMMountHabitatDatasetArgs,
@@ -164,8 +164,9 @@ only_surf_agent_training_10obj.update(
         ),
         sensor_module_configs=dict(
             sensor_module_0=dict(
-                sensor_module_class=HabitatSurfacePatchSM,
+                sensor_module_class=HabitatDistantPatchSM,
                 sensor_module_args=dict(
+                    is_surface_sm=True,
                     sensor_module_id="patch",
                     features=[
                         "pose_vectors",

@@ -66,7 +66,6 @@ from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
     FeatureChangeSM,
     HabitatDistantPatchSM,
-    HabitatSurfacePatchSM,
 )
 from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 
@@ -685,8 +684,9 @@ class SurfaceAndViewMontyConfig(PatchAndViewMontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=HabitatSurfacePatchSM,
+                sensor_module_class=HabitatDistantPatchSM,
                 sensor_module_args=dict(
+                    is_surface_sm=True,
                     sensor_module_id="patch",
                     features=[
                         # morphological features (nescessarry)

@@ -663,26 +663,6 @@ class HabitatDistantPatchSM(SensorModule):
         return observed_state
 
 
-class HabitatSurfacePatchSM(HabitatDistantPatchSM):
-    """HabitatDistantPatchSM that continues feature extraction when patch not on object.
-
-    Identical to HabitatDistantPatchSM except that feature extraction continues even
-    if the center of the sensor patch is not on the object.
-    TODO: remove and replace with surf_agent_sm=True.
-    """
-
-    def __init__(
-        self, rng, sensor_module_id, features, save_raw_obs=False, noise_params=None
-    ):
-        super().__init__(
-            rng,
-            sensor_module_id,
-            features,
-            save_raw_obs,
-            noise_params=noise_params,
-            is_surface_sm=True,
-        )
-
 class FeatureChangeSM(HabitatDistantPatchSM):
     """Sensor Module that turns Habitat camera obs into features at locations.
 
