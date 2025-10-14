@@ -676,6 +676,7 @@ class HabitatSM(SensorModule):
 
         return observed_state
 
+
 class StateFilter(Protocol):
     def __call__(self, state: State) -> State: ...
     def reset(self) -> None: ...
