@@ -64,7 +64,6 @@ from tbp.monty.frameworks.models.motor_policies import (
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
-    FeatureChangeSM,
     HabitatSM,
 )
 from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
@@ -623,7 +622,7 @@ class PatchAndViewSOTAMontyConfig(PatchAndViewMontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=FeatureChangeSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch",
                     features=[
@@ -749,7 +748,7 @@ class SurfaceAndViewSOTAMontyConfig(SurfaceAndViewMontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=FeatureChangeSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch",
                     features=[
@@ -773,7 +772,7 @@ class SurfaceAndViewSOTAMontyConfig(SurfaceAndViewMontyConfig):
                         "principal_curvatures_log": [2, 2],
                         "distance": 0.01,
                     },
-                    surf_agent_sm=True,
+                    is_surface_sm=True,
                     save_raw_obs=False,
                 ),
             ),
@@ -798,7 +797,7 @@ class PatchAndViewFeatureChangeConfig(PatchAndViewMontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=FeatureChangeSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch",
                     features=[
@@ -940,7 +939,7 @@ class TwoLMStackedMontyConfig(TwoLMMontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=FeatureChangeSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_0",
                     features=[
@@ -967,7 +966,7 @@ class TwoLMStackedMontyConfig(TwoLMMontyConfig):
                 ),
             ),
             sensor_module_1=dict(
-                sensor_module_class=FeatureChangeSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_1",
                     features=[

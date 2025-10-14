@@ -20,11 +20,13 @@ The transformed, **raw input is then sent to the sensor module and turned into t
 | **SensorModule**                           | Abstract sensor module class.                                                                                                                                                                                            |
 | **DetailedLoggingSM**                      |  Saves raw observations for logging.                                                                                               |
 | **HabitatSM**                  | Sensor module for HabitatSim. Extracts pose and features in CMP format from an RGBD patch. Keeps track of agent and sensor states. Also checks if observation is on object and should be sent to LM. Can be configured to add feature noise.                                                  |
-| **FeatureChangeSM**                        | Sensor module that only sends an observation to the LM if the sensed features changed significantly. How large this change should be is specified in the `delta_thresholds` parameter for each feature. |                                    |
 
 ## Noise
 
 Each sensor module accepts `noise_params`, which configure the `DefaultMessageNoise` that adds feature and location noise to the created Cortical Message (State) before sending. Features and location noise can be configured individually.
+
+## Feature Change Filtering
+Each sensor module accepts `delta_thresholds`, which configure a `FeatureChangeFilter` that may set the `use_state` state attribute to False if sensed features did not change significantly between subsequent observations. Significance is defined by the `delta_thresholds` parameter for each feature.
 
 ## Transforms vs. Sensor Modules
 For an overview of **which type of data processing belongs where please refer to the following rules:**

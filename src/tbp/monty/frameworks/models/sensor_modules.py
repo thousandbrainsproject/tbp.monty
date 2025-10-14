@@ -541,6 +541,7 @@ class HabitatSM(SensorModule):
         pc1_is_pc2_threshold: int = 10,
         noise_params: dict[str, Any] | None = None,
         is_surface_sm: bool = False,
+        delta_thresholds: dict[str, Any] | None = None,
     ) -> None:
         """Initialize Sensor Module.
 
@@ -556,8 +557,12 @@ class HabitatSM(SensorModule):
                 Defaults to 10.
             noise_params: Dictionary of noise amount for each feature.
             is_surface_sm: Surface SMs do not require that the central pixel is
-                "on object" in order to process the observation (i.e., extract features).
-                Defaults to False.
+                "on object" in order to process the observation
+                (i.e., extract features). Defaults to False.
+            delta_thresholds: If given, a FeatureChangeFilter will be used to
+                check whether the current state's features are significantly different
+                from the previous with tolerances set according to `delta_thresholds`.
+                Defaults to None.
 
         Note:
             When using feature at location matching with graphs, surface_normal and
@@ -579,6 +584,12 @@ class HabitatSM(SensorModule):
             )
         else:
             self._message_noise = no_message_noise
+        if delta_thresholds:
+            self._state_filter: StateFilter = FeatureChangeFilter(
+                delta_thresholds=delta_thresholds
+            )
+        else:
+            self._state_filter = PassthroughStateFilter()
         self._snapshot_telemetry = SnapshotTelemetry()
         # Tests check sm.features, not sure if this should be exposed
         self.features = features
@@ -598,6 +609,7 @@ class HabitatSM(SensorModule):
         """Reset buffer and is_exploring flag."""
         super().pre_episode()
         self._snapshot_telemetry.reset()
+        self._state_filter.reset()
         self.is_exploring = False
         self.processed_obs = []
         self.states = []
@@ -654,6 +666,8 @@ class HabitatSM(SensorModule):
             # LM, even in e.g. pre-training experiments that might otherwise do so
             observed_state.use_state = False
 
+        observed_state = self._state_filter(observed_state)
+
         if not self.is_exploring:
             self.processed_obs.append(telemetry.processed_obs.__dict__)
             self.states.append(self.state)
@@ -662,124 +676,64 @@ class HabitatSM(SensorModule):
 
         return observed_state
 
+class StateFilter(Protocol):
+    def __call__(self, state: State) -> State: ...
+    def reset(self) -> None: ...
 
-class FeatureChangeSM(HabitatSM):
-    """Sensor Module that turns Habitat camera obs into features at locations.
 
-    Takes in camera rgba and depth input and calculates locations from this.
-    It also extracts features which are currently: on_object, rgba, surface_normal,
-    curvature.
-    """
+class PassthroughStateFilter(StateFilter):
+    def __call__(self, state: State) -> State:
+        """Passthrough state filter. Never sets `state.use_state` to False.
 
-    def __init__(
-        self,
-        rng,
-        sensor_module_id,
-        features,
-        delta_thresholds,
-        surf_agent_sm=False,
-        save_raw_obs=False,
-        noise_params=None,
-    ):
-        """Initialize Sensor Module.
-
-        Args:
-            rng: Random number generator.
-            sensor_module_id: Name of sensor module.
-            features: Which features to extract. In [on_object, rgba, surface_normal,
-                principal_curvatures, curvature_directions, gaussian_curvature,
-                mean_curvature]
-            delta_thresholds: thresholds for each feature to be considered a
-                significant change.
-            surf_agent_sm: Surface SMs do not require that the central pixel is
-                "on object" in order to process the observation (i.e., extract
-                features). Defaults to False.
-            save_raw_obs: Whether to save raw sensory input for logging. Defaults to
-                False.
-            noise_params: ?. Defaults to None.
+        Returns:
+            State unchanged.
         """
-        super().__init__(
-            rng,
-            sensor_module_id,
-            features,
-            save_raw_obs,
-            noise_params=noise_params,
-            is_surface_sm=surf_agent_sm,
-        )
-        self.delta_thresholds = delta_thresholds
-        # then should be False; for distant-agent SMs, it should be True
-        self.last_features = None
-        self.last_sent_n_steps_ago = 0
+        return state
 
-    def pre_episode(self):
+    def reset(self) -> None:
+        pass
+
+
+class FeatureChangeFilter(StateFilter):
+    def __init__(self, delta_thresholds: dict[str, Any]):
+        self._delta_thresholds = delta_thresholds
+        self._last_state = None
+        self._last_sent_n_steps_ago = 0
+
+    def reset(self):
         """Reset buffer and is_exploring flag."""
-        super().pre_episode()
-        self.last_features = None
+        self._last_state = None
 
-    def step(self, data):
-        """Return Features if they changed significantly."""
-        patch_observation = super().step(data)  # get extracted features
-
-        if not patch_observation.use_state:
-            # If we already know the features are uninteresting (e.g. invalid point
-            # normal due to <3/4 of the object in view, or motor only-step), then
-            # don't bother with the below
-
-            return patch_observation
-
-        if self.last_features is None:  # first step
-            logger.debug("Performing first sensation step of FeatureChangeSM")
-            self.last_features = patch_observation
-            return patch_observation
-
-        else:
-            logger.debug("Performing FeatureChangeSM step")
-            significant_feature_change = self.check_feature_change(patch_observation)
-
-            # Save bool which will tell us whether to pass the information to LMs
-            patch_observation.use_state = significant_feature_change
-
-            if significant_feature_change:
-                # As per original implementation : only update the "last feature" when a
-                # significant change has taken place
-                self.last_features = patch_observation
-                self.last_sent_n_steps_ago = 0
-            else:
-                self.last_sent_n_steps_ago += 1
-
-            return patch_observation
-
-    def check_feature_change(self, observed_features):
+    def _check_feature_change(self, state: State) -> bool:
         """Check feature change between last transmitted observation.
 
         Args:
-            observed_features: Features from the current observation.
+            state: State to check for feature change.
 
         Returns:
             True if the features have changed significantly.
         """
-        if not observed_features.get_on_object():
+        if not state.get_on_object():
             # Even for the surface-agent sensor, do not return a feature for LM
             # processing that is not on the object
             logger.debug(f"No new point because not on object")
             return False
 
-        for feature in self.delta_thresholds.keys():
+        for feature in self._delta_thresholds:
             if feature not in ["n_steps", "distance"]:
-                last_feat = self.last_features.get_feature_by_name(feature)
-                current_feat = observed_features.get_feature_by_name(feature)
+                last_feat = self._last_state.get_feature_by_name(feature)
+                current_feat = state.get_feature_by_name(feature)
 
             if feature == "n_steps":
-                if self.last_sent_n_steps_ago >= self.delta_thresholds[feature]:
+                if self._last_sent_n_steps_ago >= self._delta_thresholds[feature]:
                     logger.debug(f"new point because of {feature}")
                     return True
             elif feature == "distance":
                 distance = np.linalg.norm(
-                    np.array(self.last_features.location)
-                    - np.array(observed_features.location)
+                    np.array(self._last_state.location) - np.array(state.location)
                 )
 
-                if distance > self.delta_thresholds[feature]:
+                if distance > self._delta_thresholds[feature]:
                     logger.debug(f"new point because of {feature}")
                     return True
 
@@ -789,11 +743,11 @@ class FeatureChangeSM(HabitatSM):
                 hue_d = min(
                     abs(current_hue - last_hue), 1 - abs(current_hue - last_hue)
                 )
-                if hue_d > self.delta_thresholds[feature][0]:
+                if hue_d > self._delta_thresholds[feature][0]:
                     return True
                 delta_change_sv = np.abs(last_feat[1:] - current_feat[1:])
                 for i, dc in enumerate(delta_change_sv):
-                    if dc > self.delta_thresholds[feature][i + 1]:
+                    if dc > self._delta_thresholds[feature][i + 1]:
                         logger.debug(f"new point because of {feature} - {i + 1}")
                         return True
 
@@ -802,7 +756,7 @@ class FeatureChangeSM(HabitatSM):
                     last_feat[0],
                     current_feat[0],
                 )
-                if angle_between >= self.delta_thresholds[feature][0]:
+                if angle_between >= self._delta_thresholds[feature][0]:
                     logger.debug(
                         f"new point because of {feature} angle : {angle_between}"
                     )
@@ -812,10 +766,46 @@ class FeatureChangeSM(HabitatSM):
                 delta_change = np.abs(last_feat - current_feat)
                 if len(delta_change.shape) > 0:
                     for i, dc in enumerate(delta_change):
-                        if dc > self.delta_thresholds[feature][i]:
+                        if dc > self._delta_thresholds[feature][i]:
                             logger.debug(f"new point because of {feature} - {dc}")
                             return True
-                elif delta_change > self.delta_thresholds[feature]:
+                elif delta_change > self._delta_thresholds[feature]:
                     logger.debug(f"new point because of {feature}")
                     return True
         return False
+
+    def __call__(self, state: State) -> State:
+        """Sets `state.use_state` to False if features haven't changed significantly.
+
+        Args:
+            state: State to check for feature change.
+
+        Returns:
+            State with `state.use_state` set to False if features haven't changed
+            significantly.
+        """
+        if not state.use_state:
+            # If we already know the features are uninteresting (e.g. invalid surface
+            # normal due to <3/4 of the object in view, or motor only-step), then
+            # don't bother with the below
+            return state
+
+        if not self._last_state:  # first step
+            self._last_state = state
+            self._last_sent_n_steps_ago = 0
+            return state
+
+        significant_feature_change = self._check_feature_change(state)
+
+        # Save bool which will tell us whether to pass the information to LMs
+        state.use_state = significant_feature_change
+
+        if significant_feature_change:
+            # As per original implementation : only update the "last feature" when a
+            # significant change has taken place
+            self._last_state = state
+            self._last_sent_n_steps_ago = 0
+        else:
+            self._last_sent_n_steps_ago += 1
+
+        return state

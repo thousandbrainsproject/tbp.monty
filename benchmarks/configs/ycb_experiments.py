@@ -61,7 +61,7 @@ from tbp.monty.frameworks.models.evidence_matching.model import (
 )
 from tbp.monty.frameworks.models.sensor_modules import (
     DetailedLoggingSM,
-    FeatureChangeSM,
+    HabitatSM,
 )
 from tbp.monty.simulators.habitat.configs import (
     FiveLMMountHabitatDatasetArgs,
@@ -205,7 +205,7 @@ default_sensor_features_surf_agent = [
 ]
 
 default_all_noisy_surf_agent_sensor_module = dict(
-    sensor_module_class=FeatureChangeSM,
+    sensor_module_class=HabitatSM,
     sensor_module_args=dict(
         sensor_module_id="patch",
         features=default_sensor_features_surf_agent,
@@ -214,7 +214,7 @@ default_all_noisy_surf_agent_sensor_module = dict(
             "on_object": 0,
             "distance": 0.01,
         },
-        surf_agent_sm=True,
+        is_surface_sm=True,
         noise_params=default_all_noise_params,
     ),
 )
