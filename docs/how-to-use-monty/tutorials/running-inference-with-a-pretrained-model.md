@@ -213,7 +213,6 @@ surf_agent_2obj_eval = dict(
         motor_system_config=MotorSystemConfigCurInformedSurfaceGoalStateDriven(),
     ),
     # Set up environment/data
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(),
     eval_dataloader_class=ED.InformedEnvironmentDataLoader,
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(

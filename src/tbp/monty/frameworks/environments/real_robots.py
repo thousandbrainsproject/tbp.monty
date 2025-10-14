@@ -57,8 +57,8 @@ class RealRobotsEnvironment(EmbodiedEnvironment):
             "RealRobotsEnvironment does not support adding objects"
         )
 
-    def step(self, action):
-        observation, reward, done, info = self._env.step(action)
+    def step(self, actions):
+        observation, reward, done, info = self._env.step(actions)
         return dict(**observation, reward=reward, done=done, info=info)
 
     def remove_all_objects(self):

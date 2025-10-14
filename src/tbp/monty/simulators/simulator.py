@@ -6,7 +6,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-from typing import Dict, List, Optional, Protocol
+from typing import Dict, List, Optional, Protocol, Sequence
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
@@ -87,14 +87,17 @@ class Simulator(Protocol):
         """Get agent and sensor states."""
         ...
 
-    def apply_action(self, action: Action) -> Dict[str, Dict]:
-        """Execute the given action in the environment.
+    def apply_actions(self, actions: Sequence[Action]) -> Dict[str, Dict]:
+        """Execute the given actions in the environment.
 
         Args:
-            action: The action to execute.
+            actions: The actions to execute.
 
         Returns:
             A dictionary with the observations grouped by agent_id.
+
+        Note:
+            If the actions are an empty sequence, the current observations are returned.
         """
         ...
 

@@ -57,7 +57,9 @@ class LivePlotter:
             observations, the patch depth, and the view finder rgba.
         """
         first_learning_module = model.learning_modules[0]
-        first_sensor_module_raw_observations = model.sensor_modules[0].raw_observations
+        first_sensor_module_raw_observations = model.sensor_modules[
+            0
+        ]._snapshot_telemetry.raw_observations
         first_sensor_module_id = model.sensor_modules[0].sensor_module_id
         first_sensor_depth = observation[model.motor_system._policy.agent_id][
             first_sensor_module_id

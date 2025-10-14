@@ -36,7 +36,7 @@ To use Monty in a custom environment, you usually need to customize the `DataLoa
 ### EmbodiedEnvironment
 The first thing to figure out is how movement should be defined in your environment. What actions are possible, and how do these actions change the agent's state and observations?
 
-If you are working with an existing environment, such as one used for reinforcement learning (for example, `gym` environments or the Habitat environment we are using), you might just need to wrap this into the `.step()` function of your custom `EmbodiedEnvironment` class such that when `env.step(action)` is called, an observation is returned. If you work with an application that isn't already set up like that, defining how actions lead to the next observation may be more involved. You can look at the `OmniglotEnvironment` or `SaccadeOnImageEnvironment` as examples (more details below).
+If you are working with an existing environment, such as one used for reinforcement learning (for example, `gym` environments or the Habitat environment we are using), you might just need to wrap this into the `.step()` function of your custom `EmbodiedEnvironment` class such that when `env.step(actions)` is called, an observation is returned. If you work with an application that isn't already set up like that, defining how actions lead to the next observation may be more involved. You can look at the `OmniglotEnvironment` or `SaccadeOnImageEnvironment` as examples (more details below).
 
 The observations should be returned as a nested dictionary with one entry per agent in the environment. Each agent should have sub-dictionaries with observations for each of its sensors. For example, if there is one agent with two sensors that each sense two types of features, it would look like this:
 
@@ -80,7 +80,7 @@ state = {
 Lastly, you need to define what happens when the environment is initialized (`__init__()`), when it is reset (`reset()`, usually at the end of an episode), and when it is closed (`close()`, at the end of an experiment). Resetting could include loading a new scene, resetting the agent position, or changing the arrangement of objects in the environment. It might also reset some of the environment's internal variables, such as step counters. Note that, as customary for RL environments, the `reset()` function is also expected to return an observation.
 
 ### DataLoader
-The `EnvironmentDataLoader` manages retrieving observations from the `EnvironmentDataset` given actions. The EnvironmentDataset, in turn, wraps around the `EmbodiedEnvironment` and applies basic transforms to the raw observations from the environment.
+The `EnvironmentDataLoader` manages retrieving observations from the `EmbodiedEnvironment` given actions. The EmbodiedEnvironment, in turn, applies basic transforms to the raw observations from the environment.
 
 The `EnvironmentDataLoader` should define all the key events at which the environment needs to be accessed or modified. This includes initializing the environment (`__init__()`), retrieving the next observation (`__next__()`), and things that happen at the beginning or end of episodes and epochs (`pre_episode()`, `post_episode()`, `pre_epoch()`, `post_epoch()`). Note that not all of those are relevant to every application.
 
@@ -100,7 +100,7 @@ Learning and inference on Omniglot characters can be implemented by writing two 
 1. `OmniglotEnvironment`:
    - Defines initialization of all basic variables in the `__init__(patch_size, data_path)` function.
    - In this example, we define the action space as `None` because we give Monty no choice in how to move. The step function just returns the next observation by following the predefined stroke order in the dataset. Note this will still be formulated as a sensorimotor task, as the retrieval of the next observation corresponds to a (pre-defined) movement and we get a relative displacement of the sensor.
-   - Defines the `step(action)` function, which uses the current `step_num` in the episode to determine where we are in the stroke sequence and extracts a patch around that location. It then returns a Gaussian smoothed version of this patch as the observation.
+   - Defines the `step(actions)` function, which uses the current `step_num` in the episode to determine where we are in the stroke sequence and extracts a patch around that location. It then returns a Gaussian smoothed version of this patch as the observation.
    - Defines `get_state()`, which returns the current x, y, z location on the character as a state dict (z is always zero since we are in 2D space here).
    - Defines `reset()` to reset the `step_num` counter and return the first observation on a new character.
    - Helper functions such as 
@@ -129,7 +129,6 @@ omniglot_training = dict(
     	motor_system_config=MotorSystemConfigInformedNoTransStepS1(),
     	sensor_module_configs=omniglot_sensor_module_config,
 	),
-	dataset_class=ED.EnvironmentDataset,
 	dataset_args=OmniglotDatasetArgs(),
 	train_dataloader_class=ED.OmniglotDataLoader,
 	# Train on the first version of each character (there are 20 drawings for each
@@ -181,7 +180,6 @@ omniglot_inference = dict(
         ),
         sensor_module_configs=omniglot_sensor_module_config,
     ),
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=OmniglotDatasetArgs(),
     eval_dataloader_class=ED.OmniglotDataLoader,
     # Using version 1 means testing on the same version of the character as trained.
@@ -294,7 +292,7 @@ This can be implemented using two custom classes the [SaccadeOnImageEnvironment]
 1. `SaccadeOnImageEnvironment`:
    - Defines initialization of all basic variables in the `__init__(patch_size, data_path)` function.
    - Defines the `TwoDDataActionSpace` to move up, down, left, and right on the image by a given amount of pixels.
-   - Defines the `step(action)` function, which uses the sensor's current location, the given action, and its amount to determine the new location on the image and extract a patch. It updates `self.current_loc` and returns the sensor patch observations as a dictionary.
+   - Defines the `step(actions)` function, which uses the sensor's current location, the given actions, and their amounts to determine the new location on the image and extract a patch. It updates `self.current_loc` and returns the sensor patch observations as a dictionary.
    - Defines `get_state()`, which returns the current state as a dictionary. The dictionary mostly contains `self.current_loc` and placeholders for the orientation, as the sensor and agent orientation never change.
    - Helper functions such as 
      - `switch_to_object(scene_id, scene_version_id)` to load a new image
@@ -325,7 +323,6 @@ monty_meets_world_2dimage_inference = dict(
     	# move 20 pixels at a time
     	motor_system_config=MotorSystemConfigInformedNoTransStepS20(),
 	),
-	dataset_class=ED.EnvironmentDataset,
 	dataset_args=WorldImageDatasetArgs(
     	env_init_args=EnvInitArgsMontyWorldStandardScenes()
 	),

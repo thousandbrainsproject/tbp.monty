@@ -235,6 +235,8 @@ class DetailedEvidenceLMLoggingConfig(EvalEvidenceLMLoggingConfig):
     )
     wandb_handlers: list = field(default_factory=list)
     monty_log_level: str = "DETAILED"
+    detailed_episodes_to_save: str = "all"
+    detailed_save_per_episode: bool = False
 
 
 @dataclass
