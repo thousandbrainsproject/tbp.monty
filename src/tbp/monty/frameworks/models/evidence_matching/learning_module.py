@@ -1196,7 +1196,9 @@ class EvidenceGraphLM(GraphLM):
         # prediction error calculation and stats collection.
         graph_id = self.previous_mlh["graph_id"]
 
-        if graph_id == "no_observations_yet":
+        if graph_id in ["no_observations_yet", "new_object0"]:
+            # don't try to log prediction errors if there were no observations or LM
+            # detected no match.
             return
         graph_telemetry = self.hypotheses_updater_telemetry[graph_id]
         prediction_errors = []
