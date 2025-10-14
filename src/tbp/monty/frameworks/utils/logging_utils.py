@@ -810,8 +810,11 @@ def add_evidence_lm_episode_stats(lm, stats, consistent_child_objects):
             ),
             4,
         )
+    # Check if the most likely object is a consistent child object
+    # Don't do this if the episode timed out, we had no match, or the detected object
+    # was already an exact match with the label.
     if (
-        stats["primary_performance"] not in ["correct_mlh", "correct"]
+        stats["primary_performance"] in ["confused", "confused_mlh"]
         and consistent_child_objects is not None
     ):
         if last_mlh["graph_id"] in consistent_child_objects:
