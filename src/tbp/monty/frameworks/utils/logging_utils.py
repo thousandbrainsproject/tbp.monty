@@ -14,10 +14,11 @@ import copy
 import json
 import logging
 import os
+import shutil
 from collections import deque
 from itertools import chain
-from pathlib import Path
 from sys import getsizeof
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -30,6 +31,9 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_unique_rotations,
     rotations_to_quats,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -913,49 +917,59 @@ def lm_stats_to_dataframe(stats, format_for_wandb=False):
     return big_df
 
 
-def maybe_rename_existing_file(log_file, extension, report_count):
-    """Check if this run has already been executed.
+def maybe_rename_existing_file(filepath: Path) -> None:
+    """If the given log file already exists, rename it to <filename>_old."""
+    if not filepath.exists():
+        return
 
-    If so, change name of existing log file by appending _old to it.
+    old_filename = filepath.stem
+    new_filename = old_filename + "_old" + filepath.suffix
+    new_filepath = filepath.with_name(new_filename)
 
-    Args:
-        log_file: full path to the file, e.g. ~/.../detailed_run_stats.json
-        extension: str name of file type
-        report_count: ?
+    logger.warning(
+        f"Output file {filepath.name} already exists. "
+        f"This file will be moved to {new_filepath.name}"
+    )
+
+    if new_filepath.exists():
+        logger.warning(
+            f"Output file {new_filepath} also already exists. This file will be removed"
+            " before renaming."
+        )
+        new_filepath.unlink()
+
+    filepath.rename(new_filepath)
+
+
+def maybe_rename_existing_dir(dirpath: Path) -> None:
+    """If the given log directory already exists, rename it to <dirname>_old.
+
+    Raises:
+        ValueError: If dirpath is not a directory.
+
     """
-    if (report_count == 0) and (os.path.exists(log_file)):
-        old_name = log_file.split(extension)[0]
-        new_name = old_name + "_old" + extension
+    if not dirpath.exists():
+        return
+    if not dirpath.is_dir():
+        raise ValueError(f"Expected a directory: {dirpath}")
 
+    old_name = dirpath.name
+    new_name = f"{old_name}_old"
+    new_dirpath = dirpath.with_name(new_name)
+
+    logger.warning(
+        f"Output directory {dirpath.name} already exists. "
+        f"This directory will be moved to {new_dirpath.name}"
+    )
+
+    if new_dirpath.exists():
         logger.warning(
-            f"Output file {log_file} already exists. This file will be moved"
-            f" to {new_name}"
+            f"Output directory {new_dirpath} also already exists. "
+            "This directory will be removed before renaming."
         )
+        shutil.rmtree(new_dirpath)
 
-        if os.path.exists(new_name):
-            logger.warning(
-                f"Output file {new_name} also already exists. This file will be removed"
-                " before renaming."
-            )
-            os.remove(new_name)
-
-        Path(log_file).rename(new_name)
-
-
-def maybe_rename_existing_directory(path, report_count):
-    if (report_count == 0) and os.path.exists(path):
-        new_path = path + "_old"
-        logger.warning(
-            f"Output path {path} already exists. This path will be movedto {new_path}"
-        )
-
-        if os.path.exists(new_path):
-            logger.warning(
-                f"{new_path} also exists, and will be removed before renaming"
-            )
-            os.remove(new_path)
-
-        Path(path).rename(new_path)
+    dirpath.rename(new_dirpath)
 
 
 def get_rgba_frames_single_sm(observations):
