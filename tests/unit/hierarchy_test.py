@@ -394,7 +394,8 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
             pprint("... loading and checking eval statistics...")
             eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
             episode = 0
-            for lm_id in range(2):
+            num_lms = len(exp.model.learning_modules)
+            for lm_id in range(num_lms):
                 self.assertIn(
                     eval_stats["primary_performance"][episode * 2 + lm_id],
                     ["correct", "correct_mlh"],
