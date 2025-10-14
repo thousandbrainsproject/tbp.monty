@@ -381,8 +381,15 @@ class HabitatObservationProcessor:
         return surface_normal, valid_sn
 
 
-class TelemetrySM(SensorModule):
-    """Sensor module that keeps track of raw observations for logging."""
+class Probe(SensorModule):
+    """A probe that can be inserted into Monty instead of a sensor module.
+
+    It will track raw observations for logging, and can be used by experiments
+    for positioning procedures, visualization, etc.
+
+    What distinguishes a probe from a sensor module is that it does not process
+    observations and does not emit a Cortical Message.
+    """
 
     def __init__(
         self,
@@ -390,7 +397,7 @@ class TelemetrySM(SensorModule):
         sensor_module_id: str,
         save_raw_obs: bool,
     ):
-        """Initialize Sensor Module.
+        """Initialize the probe.
 
         Args:
             rng: Random number generator. Unused.

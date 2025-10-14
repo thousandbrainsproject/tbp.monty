@@ -41,7 +41,7 @@ from tbp.monty.frameworks.models.goal_state_generation import (
 )
 from tbp.monty.frameworks.models.sensor_modules import (
     HabitatSM,
-    TelemetrySM
+    Probe,
 )
 from tbp.monty.simulators.habitat.configs import (
     SurfaceViewFinderMountHabitatDatasetArgs,
@@ -120,7 +120,7 @@ sensor_module_0 = dict(
     ),
 )
 sensor_module_1 = dict(
-    sensor_module_class=TelemetrySM,
+    sensor_module_class=Probe,
     sensor_module_args=dict(
         sensor_module_id="view_finder",
         save_raw_obs=False,

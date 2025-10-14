@@ -225,7 +225,7 @@ from tbp.monty.frameworks.models.evidence_matching.model import (
 )
 from tbp.monty.frameworks.models.sensor_modules import (
 	HabitatSM,
-	TelemetrySM,
+	Probe,
 )
 
 monty_models_dir = os.getenv("MONTY_MODELS")
@@ -249,7 +249,7 @@ omniglot_sensor_module_config = dict(
     	),
 	),
 	sensor_module_1=dict(
-    	sensor_module_class=TelemetrySM,
+    	sensor_module_class=Probe,
     	sensor_module_args=dict(
         	sensor_module_id="view_finder",
         	save_raw_obs=False,

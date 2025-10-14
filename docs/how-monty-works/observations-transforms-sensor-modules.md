@@ -18,8 +18,8 @@ The transformed, **raw input is then sent to the sensor module and turned into t
 | List of all sensor module classes | Description     |
 | --------------------------------- | --------------- |
 | **SensorModule**                  | Abstract sensor module class. |
-| **TelemetrySM**                   | Saves raw observations for telemetry logging. |
 | **HabitatSM**                     | Sensor module for HabitatSim. Extracts pose and features in CMP format from an RGBD patch. Keeps track of agent and sensor states. Also checks if observation is on object and should be sent to LM. Can be configured to add feature noise. |
+| **Probe**                   | A probe that can be inserted into Monty instead of a sensor module. It will track raw observations for logging, and can be used by experiments for positioning procedures, visualization, etc. What distinguishes a probe from a sensor module is that it does not process observations and does not emit a Cortical Message. |
 
 ## Noise
 
