@@ -69,7 +69,6 @@ first_experiment = dict(
         n_train_epochs=1,
     ),
     monty_config=SingleCameraMontyConfig(),
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=SinglePTZHabitatDatasetArgs(),
     train_dataloader_class=ED.EnvironmentDataLoaderPerObject,
     train_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=1),

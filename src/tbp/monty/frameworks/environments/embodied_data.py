@@ -11,6 +11,7 @@
 import copy
 import logging
 from pprint import pformat
+from typing import Sequence
 
 import numpy as np
 import quaternion
@@ -99,7 +100,6 @@ class EnvironmentDataLoader:
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
-        self._action = None
         self._counter = 0
 
     @property
@@ -120,9 +120,8 @@ class EnvironmentDataLoader:
             self._counter += 1
             return self._observation
         else:
-            action = self.motor_system()
-            self._action = action
-            self._observation, proprioceptive_state = self.step(action)
+            actions = self.motor_system()
+            self._observation, proprioceptive_state = self.step(actions)
             self.motor_system._state = (
                 MotorSystemState(proprioceptive_state) if proprioceptive_state else None
             )
@@ -145,8 +144,8 @@ class EnvironmentDataLoader:
             observation = transform(observation, state)
         return observation
 
-    def step(self, action: Action):
-        observation = self.env.step(action)
+    def step(self, actions: Sequence[Action]):
+        observation = self.env.step(actions)
         state = self.env.get_state()
         if self.transform is not None:
             observation = self.apply_transform(self.transform, observation, state)
@@ -160,7 +159,6 @@ class EnvironmentDataLoader:
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
-        self._action = None
         self._counter = 0
 
     def post_episode(self):
@@ -415,16 +413,19 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # NOTE: terminal conditions are now handled in experiment.run_episode loop
         else:
             attempting_to_find_object = False
+            actions = []
             try:
-                self._action = self.motor_system()
+                actions = self.motor_system()
             except ObjectNotVisible:
                 # Note: Only SurfacePolicy raises ObjectNotVisible.
                 attempting_to_find_object = True
-                self._action = self.motor_system._policy.touch_object(
-                    self._observation,
-                    view_sensor_id="view_finder",
-                    state=self.motor_system._state,
-                )
+                actions = [
+                    self.motor_system._policy.touch_object(
+                        self._observation,
+                        view_sensor_id="view_finder",
+                        state=self.motor_system._state,
+                    )
+                ]
             else:
                 # TODO: Encapsulate this reset inside TouchObject positioning
                 #       procedure once it exists.
@@ -434,7 +435,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
                 #       the object using its full repertoire of actions.
                 self.motor_system._policy.touch_search_amount = 0
 
-            self._observation, proprioceptive_state = self.step(self._action)
+            self._observation, proprioceptive_state = self.step(actions)
             motor_system_state = MotorSystemState(proprioceptive_state)
 
             # TODO: Refactor this so that all of this is contained within the
@@ -448,7 +449,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
                 if (
                     not attempting_to_find_object
-                    and self._action.name != OrientVertical.action_name()
+                    and actions
+                    and actions[0].name != OrientVertical.action_name()
                 ):
                     # We are not attempting to find the object, which means that we
                     # are executing the SurfacePolicy.dynamic_call action cycle.
@@ -489,10 +491,6 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         """
         # Return first observation after 'reset' before any action is applied
         self._counter += 1
-
-        # Based on current code-base self._action will always be None when
-        # the counter is 0
-        assert self._action is None, "Setting of motor_only_step may need updating"
 
         # For first step of surface-agent policy, always bypass LM processing
         # For distant-agent policy, we still process the first sensation if it is
@@ -551,11 +549,10 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             self._observation, self.motor_system._state
         )
         while not result.terminated and not result.truncated:
-            for action in result.actions:
-                self._observation, proprio_state = self.step(action)
-                self.motor_system._state = (
-                    MotorSystemState(proprio_state) if proprio_state else None
-                )
+            self._observation, proprio_state = self.step(result.actions)
+            self.motor_system._state = (
+                MotorSystemState(proprio_state) if proprio_state else None
+            )
 
             result = positioning_procedure.positioning_call(
                 self._observation, self.motor_system._state
@@ -644,8 +641,9 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             agent_id=self.motor_system._policy.agent_id,
             rotation_quat=quaternion.one,
         )
-        _, _ = self.step(set_agent_pose)
-        self._observation, proprioceptive_state = self.step(set_sensor_rotation)
+        self._observation, proprioceptive_state = self.step(
+            [set_agent_pose, set_sensor_rotation]
+        )
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
@@ -737,8 +735,9 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             agent_id=self.motor_system._policy.agent_id,
             rotation_quat=pre_jump_state["sensors"][first_sensor]["rotation"],
         )
-        _, _ = self.step(set_agent_pose)
-        self._observation, proprioceptive_state = self.step(set_sensor_rotation)
+        self._observation, proprioceptive_state = self.step(
+            [set_agent_pose, set_sensor_rotation]
+        )
 
         assert np.all(
             proprioceptive_state[self.motor_system._policy.agent_id]["position"]
@@ -816,7 +815,6 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
-        self._action = None
         self._counter = 0
 
         self.alphabets = alphabets
@@ -915,7 +913,6 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
-        self._action = None
         self._counter = 0
 
         self.scenes = scenes
@@ -1014,7 +1011,6 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
         )
-        self._action = None
         self._counter = 0
         self.current_scene = 0
         self.episodes = 0

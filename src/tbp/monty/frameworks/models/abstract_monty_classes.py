@@ -7,8 +7,11 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import abc
+
+from tbp.monty.frameworks.models.states import GoalState
 
 
 class Monty(metaclass=abc.ABCMeta):
@@ -189,8 +192,8 @@ class LearningModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def propose_goal_state(self):
-        """Return the goal-state proposed by this LM's GSG."""
+    def propose_goal_state(self) -> GoalState | None:
+        """Return the goal-state proposed by this LM's GSG if it exists."""
         pass
 
     @abc.abstractmethod
