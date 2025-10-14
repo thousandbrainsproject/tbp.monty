@@ -146,6 +146,9 @@ supervised_pre_training_flat_objects_wo_logos.update(
     experiment_args=ExperimentArgs(
         do_eval=False,
         n_train_epochs=len(train_rotations_all),
+        # only learn child objects in lm_0 at first so they can be used as input when
+        # LM_1 is learning.
+        supervised_lm_ids=["learning_module_0"],
     ),
     monty_config=TwoLMStackedMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=1000),
@@ -186,6 +189,7 @@ supervised_pre_training_logos_after_flat_objects.update(
         do_eval=False,
         n_train_epochs=len(LOGO_POSITIONS) * len(LOGO_ROTATIONS),
         show_sensor_output=False,
+        supervised_lm_ids=["learning_module_0"],
         model_name_or_path=os.path.join(
             fe_pretrain_dir,
             "supervised_pre_training_flat_objects_wo_logos/pretrained/",
@@ -220,6 +224,7 @@ supervised_pre_training_curved_objects_after_flat_and_logo.update(
     experiment_args=ExperimentArgs(
         do_eval=False,
         n_train_epochs=len(train_rotations_all),
+        supervised_lm_ids=["learning_module_0"],
         model_name_or_path=os.path.join(
             fe_pretrain_dir,
             "supervised_pre_training_logos_after_flat_objects/pretrained/",

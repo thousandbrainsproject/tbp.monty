@@ -20,7 +20,9 @@ LOGOS = ["021_logo_tbp", "022_logo_numenta"]
 
 FLAT_OBJECTS_WITHOUT_LOGOS = ["001_cube", "006_disk"]
 
-OBJECTS_WITH_LOGOS_LVL1 = [
+# not including standalone logos since to simplify experiment setup (they can't be shown
+# in all orientations)
+OBJECTS_WITH_LOGOS_LVL1 = FLAT_OBJECTS_WITHOUT_LOGOS + [
     "002_cube_tbp_horz",
     "004_cube_numenta_horz",
     "007_disk_tbp_horz",
@@ -31,14 +33,18 @@ CURVED_OBJECTS_WITHOUT_LOGOS = ["011_cylinder", "016_sphere", "023_mug"]
 
 ALL_PART_OBJECTS = LOGOS + FLAT_OBJECTS_WITHOUT_LOGOS + CURVED_OBJECTS_WITHOUT_LOGOS
 
-OBJECTS_WITH_LOGOS_LVL2 = OBJECTS_WITH_LOGOS_LVL1 + [
-    "012_cylinder_tbp_horz",
-    "014_cylinder_numenta_horz",
-    "017_sphere_tbp_horz",
-    "019_sphere_numenta_horz",
-    "024_mug_tbp_horz",
-    "026_mug_numenta_horz",
-]
+OBJECTS_WITH_LOGOS_LVL2 = (
+    OBJECTS_WITH_LOGOS_LVL1
+    + CURVED_OBJECTS_WITHOUT_LOGOS
+    + [
+        "012_cylinder_tbp_horz",
+        "014_cylinder_numenta_horz",
+        "017_sphere_tbp_horz",
+        "019_sphere_numenta_horz",
+        "024_mug_tbp_horz",
+        "026_mug_numenta_horz",
+    ]
+)
 
 OBJECTS_WITH_LOGOS_LVL3 = OBJECTS_WITH_LOGOS_LVL2 + [
     "003_cube_tbp_vert",
