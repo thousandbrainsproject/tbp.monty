@@ -382,7 +382,7 @@ class HabitatObservationProcessor:
 
 
 class Probe(SensorModule):
-    """A probe that can be inserted into Monty instead of a sensor module.
+    """A probe that can be inserted into Monty in place of a sensor module.
 
     It will track raw observations for logging, and can be used by experiments
     for positioning procedures, visualization, etc.
