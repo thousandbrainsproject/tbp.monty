@@ -20,7 +20,7 @@ LOGOS = ["021_logo_tbp", "022_logo_numenta"]
 
 FLAT_OBJECTS_WITHOUT_LOGOS = ["001_cube", "006_disk"]
 
-# not including standalone logos since to simplify experiment setup (they can't be shown
+# not including standalone logos to simplify experiment setup (they can't be shown
 # in all orientations)
 OBJECTS_WITH_LOGOS_LVL1 = FLAT_OBJECTS_WITHOUT_LOGOS + [
     "002_cube_tbp_horz",
