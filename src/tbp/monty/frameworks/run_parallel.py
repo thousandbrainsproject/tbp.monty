@@ -13,7 +13,7 @@ import os
 import shutil
 import time
 from pathlib import Path
-from typing import List, Mapping, Optional
+from typing import Iterable, List, Mapping, Optional
 
 import numpy as np
 import pandas as pd
@@ -37,6 +37,10 @@ from tbp.monty.frameworks.loggers.monty_handlers import (
 )
 from tbp.monty.frameworks.run import print_config
 from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
+from tbp.monty.frameworks.utils.logging_utils import (
+    maybe_rename_existing_dir,
+    maybe_rename_existing_file,
+)
 
 """
 Just like run.py, but run episodes in parallel. Running in parallel is as simple as
@@ -137,6 +141,20 @@ def sample_params_to_init_args(params):
     return new_params
 
 
+def mv_files(filenames: Iterable[Path], outdir: Path):
+    outdir = Path(outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+
+    for f in filenames:
+        src = Path(f)
+        dest = outdir / src.name
+
+        if dest.exists():
+            dest.unlink()
+
+        src.replace(dest)
+
+
 def cat_files(filenames, outfile):
     if os.path.exists(outfile):
         print(f"Removing existing file before writing new one: {outfile}")
@@ -154,12 +172,17 @@ def cat_csv(filenames, outfile):
 
 
 def post_parallel_log_cleanup(filenames, outfile, cat_fn):
+    existing_files = [f for f in filenames if os.path.exists(f)]
+    if len(existing_files) == 0:
+        return
+
     # Concatenate files together
-    cat_fn(filenames, outfile)
+    cat_fn(existing_files, outfile)
 
     # Remove json files
-    for f in filenames:
-        os.remove(f)
+    for f in existing_files:
+        if os.path.exists(f):
+            os.remove(f)
 
 
 def post_parallel_profile_cleanup(parallel_dirs, base_dir, mode):
@@ -215,6 +238,13 @@ def move_reproducibility_data(base_dir, parallel_dirs):
         )
 
 
+def collect_detailed_episodes_names(parallel_dirs):
+    filenames = []
+    for pdir in parallel_dirs:
+        filenames.extend(list((Path(pdir) / "detailed_run_stats").glob("*.json")))
+    return filenames
+
+
 def post_parallel_eval(configs: List[Mapping], base_dir: str) -> None:
     """Post-execution cleanup after running evaluation in parallel.
 
@@ -227,19 +257,30 @@ def post_parallel_eval(configs: List[Mapping], base_dir: str) -> None:
     print("Executing post parallel evaluation cleanup")
     parallel_dirs = [cfg["logging_config"]["output_dir"] for cfg in configs]
 
+    logging_config = configs[0]["logging_config"]
+    save_per_episode = logging_config.get("detailed_save_per_episode")
+
     # Loop over types of loggers, figure out how to clean up each one
-    for handler in configs[0]["logging_config"]["monty_handlers"]:
+    for handler in logging_config["monty_handlers"]:
         if issubclass(handler, DetailedJSONHandler):
-            filename = "detailed_run_stats.json"
-            filenames = [os.path.join(pdir, filename) for pdir in parallel_dirs]
-            outfile = os.path.join(base_dir, filename)
-            post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
+            if save_per_episode:
+                filenames = collect_detailed_episodes_names(parallel_dirs)
+                outdir = Path(base_dir) / "detailed_run_stats"
+                maybe_rename_existing_dir(outdir)
+                post_parallel_log_cleanup(filenames, outdir, cat_fn=mv_files)
+            else:
+                filename = "detailed_run_stats.json"
+                filenames = [os.path.join(pdir, filename) for pdir in parallel_dirs]
+                outfile = os.path.join(base_dir, filename)
+                maybe_rename_existing_file(Path(outfile))
+                post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
             continue
 
         if issubclass(handler, BasicCSVStatsHandler):
             filename = "eval_stats.csv"
             filenames = [os.path.join(pdir, filename) for pdir in parallel_dirs]
             outfile = os.path.join(base_dir, filename)
+            maybe_rename_existing_file(Path(outfile))
             post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_csv)
             continue
 
@@ -529,6 +570,8 @@ def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> List[M
                 new_config["logging_config"]["experiment_name"] = experiment_name
             else:
                 new_config["logging_config"]["log_parallel_wandb"] = False
+
+            new_config["logging_config"]["episode_id_parallel"] = episode_count
 
             new_config["eval_dataloader_args"].update(
                 object_names=[obj],
