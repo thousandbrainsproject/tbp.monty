@@ -1046,3 +1046,22 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             an output goal-state was generated.
         """
         return self.parent_lm.buffer.get_num_steps_post_output_goal_generated()
+
+
+class SmGoalStateGenerator(GoalStateGenerator):
+    def __init__(self, sensor_module_id: str, goal_tolerances=None) -> None:
+        """Initialize the GSG.
+
+        Args:
+            sensor_module_id: The ID of the sensor module.
+            goal_tolerances: The tolerances for each attribute of the goal-state
+                that can be used by the GSG when determining whether a goal-state is
+                achieved.
+        """
+        self._sensor_module_id = sensor_module_id
+        self._goal_tolerances = dict(goal_tolerances) if goal_tolerances else {}
+        # TODO: deepcopy goal_tolerances
+
+    def reset(self):
+        """Reset any stored attributes of the GSG."""
+        pass
