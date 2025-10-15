@@ -133,11 +133,13 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                     first_pos = self.sensor_pos[0]
                 else:
                     lm_offset = self.sensor_pos[i] - first_pos
-
-                    lm.buffer.stats["detected_location_rel_body"] += lm_offset
-                    # Rotate offset into model RF
-                    lm_offset_model_rf = lm.detected_rotation_r.apply(lm_offset)
-                    lm.buffer.stats["detected_location_on_model"] += lm_offset_model_rf
+                    if lm.detected_object is not None:
+                        lm.buffer.stats["detected_location_rel_body"] += lm_offset
+                        # Rotate offset into model RF
+                        lm_offset_model_rf = lm.detected_rotation_r.apply(lm_offset)
+                        lm.buffer.stats["detected_location_on_model"] += (
+                            lm_offset_model_rf
+                        )
 
         # Update the model in memory
         self.post_episode(num_steps)
