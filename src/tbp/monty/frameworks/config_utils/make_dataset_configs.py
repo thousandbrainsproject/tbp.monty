@@ -83,7 +83,6 @@ class EvalExperimentArgs(ExperimentArgs):
 @dataclass
 class SupervisedPretrainingExperimentArgs(ExperimentArgs):
     do_eval: bool = False
-    n_train_epochs: int = 1
     supervised_lm_ids: Union[List[str], Literal["all"]] = "all"
 
 
