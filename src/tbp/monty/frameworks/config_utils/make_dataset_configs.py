@@ -150,7 +150,7 @@ class OmniglotEnvInterfaceConfig:
 
 
 @dataclass
-class WorldImageEnvInterfaceConfig:
+class WorldImageEnvironmentInterfaceConfig:
     env_init_func: Callable = field(default=SaccadeOnImageEnvironment)
     env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsMontyWorldStandardScenes().__dict__
@@ -159,7 +159,7 @@ class WorldImageEnvInterfaceConfig:
 
 
 @dataclass
-class WorldImageFromStreamEnvInterfaceConfig:
+class WorldImageFromStreamEnvironmentInterfaceConfig:
     env_init_func: Callable = field(default=SaccadeOnImageFromStreamEnvironment)
     env_init_args: dict = field(default_factory=dict)
     transform: Callable | list | None = None
