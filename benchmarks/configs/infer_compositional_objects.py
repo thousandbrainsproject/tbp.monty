@@ -127,7 +127,7 @@ two_stacked_constrained_lms_inference_config = dict(
     learning_module_1=dict(
         learning_module_class=EvidenceGraphLM,
         learning_module_args=dict(
-            max_match_distance=0.01,  # TODO: C - Scale with receptive field size
+            max_match_distance=0.01,
             tolerances={
                 "patch_1": {
                     "hsv": np.array([0.1, 1, 1]),
