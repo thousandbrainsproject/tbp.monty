@@ -112,27 +112,23 @@ two_stacked_constrained_lms_config_with_resampling = copy.deepcopy(
 )
 two_stacked_constrained_lms_config_with_resampling["learning_module_0"][
     "learning_module_args"
-]["hypotheses_updater_class"] = ResamplingHypothesesUpdater
-two_stacked_constrained_lms_config_with_resampling["learning_module_0"][
-    "learning_module_args"
-]["evidence_threshold_config"] = "all"
-two_stacked_constrained_lms_config_with_resampling["learning_module_0"][
-    "learning_module_args"
-]["object_evidence_threshold"] = 1
-two_stacked_constrained_lms_config_with_resampling["learning_module_0"][
-    "learning_module_args"
-]["gsg_class"] = EvidenceGoalStateGenerator
-two_stacked_constrained_lms_config_with_resampling["learning_module_0"][
-    "learning_module_args"
-]["gsg_args"] = dict(
-    goal_tolerances=dict(
-        location=0.015,
-    ),
-    elapsed_steps_factor=10,
-    min_post_goal_success_steps=20,
-    x_percent_scale_factor=0.75,
-    desired_object_distance=0.03,
-    wait_growth_multiplier=1,  # Since learning, enable more frequent jumps
+].update(
+    {
+        "hypotheses_updater_class": ResamplingHypothesesUpdater,
+        "evidence_threshold_config": "all",
+        "object_evidence_threshold": 1,
+        "gsg_class": EvidenceGoalStateGenerator,
+        "gsg_args": dict(
+            goal_tolerances=dict(
+                location=0.015,
+            ),
+            elapsed_steps_factor=10,
+            min_post_goal_success_steps=20,
+            x_percent_scale_factor=0.75,
+            desired_object_distance=0.03,
+            wait_growth_multiplier=1,  # Since learning, enable more frequent jumps
+        ),
+    }
 )
 
 # ====== Learn Child / Part Objects ======
