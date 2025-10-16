@@ -52,9 +52,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
     SurfaceAndViewMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataloaderMultiObjectArgs,
-    EnvironmentDataLoaderPerObjectEvalArgs,
-    EnvironmentDataLoaderPerObjectTrainArgs,
+    EnvironmentInterfaceMultiObjectArgs,
+    EnvironmentInterfacePerObjectEvalArgs,
+    EnvironmentInterfacePerObjectTrainArgs,
     ExperimentArgs,
     PredefinedObjectInitializer,
 )
@@ -88,10 +88,10 @@ from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsPatchViewFinderMultiObjectMount,
     EnvInitArgsPatchViewMount,
     EnvInitArgsSurfaceViewMount,
-    FiveLMMountHabitatDatasetArgs,
-    PatchViewFinderMountHabitatDatasetArgs,
-    PatchViewFinderMultiObjectMountHabitatDatasetArgs,
-    SurfaceViewFinderMountHabitatDatasetArgs,
+    FiveLMMountHabitatEnvironmentArgs,
+    PatchViewFinderMountHabitatEnvironmentArgs,
+    PatchViewFinderMultiObjectMountHabitatEnvironmentArgs,
+    SurfaceViewFinderMountHabitatEnvironmentArgs,
 )
 
 
@@ -115,16 +115,16 @@ class PolicyTest(unittest.TestCase):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20),
             ),
-            dataset_args=PatchViewFinderMountHabitatDatasetArgs(
+            dataset_args=PatchViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
-            train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_class=ED.InformedEnvironmentInterface,
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=["cubeSolid", "capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
-            eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
+            eval_env_interface_class=ED.InformedEnvironmentInterface,
+            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
                 object_names=["cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -152,7 +152,7 @@ class PolicyTest(unittest.TestCase):
                 monty_args=MontyArgs(num_exploratory_steps=20),
                 motor_system_config=MotorSystemConfigSurface(),
             ),
-            dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(
+            dataset_args=SurfaceViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
             ),
         )
@@ -234,7 +234,7 @@ class PolicyTest(unittest.TestCase):
                 monty_class=MontyForEvidenceGraphMatching,
                 learning_module_configs=default_5lm_lmconfig,
             ),
-            dataset_args=FiveLMMountHabitatDatasetArgs(
+            dataset_args=FiveLMMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsFiveLMMount(data_path=None).__dict__,
             ),
         )
@@ -280,7 +280,7 @@ class PolicyTest(unittest.TestCase):
                     ),
                 ),
             ),
-            dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(
+            dataset_args=SurfaceViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
             ),
         )
@@ -289,7 +289,7 @@ class PolicyTest(unittest.TestCase):
             self.base_dist_agent_config
         )
         self.poor_initial_view_dist_agent_config.update(
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=["cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     positions=[[0.0, 1.5, -0.2]]  # Object is farther away than typical
@@ -331,7 +331,7 @@ class PolicyTest(unittest.TestCase):
                     ),
                 ),
             ),
-            dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(
+            dataset_args=SurfaceViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
             ),
         )
@@ -342,12 +342,12 @@ class PolicyTest(unittest.TestCase):
         self.poor_initial_view_multi_object_config.update(
             # For multi-objects, we test get good view at evaluation, because in
             # Monty we don't currently train with multiple objects in the environment
-            dataset_args=PatchViewFinderMultiObjectMountHabitatDatasetArgs(
+            dataset_args=PatchViewFinderMultiObjectMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsPatchViewFinderMultiObjectMount(
                     data_path=None
                 ).__dict__,
             ),
-            eval_dataloader_args=EnvironmentDataloaderMultiObjectArgs(
+            eval_env_interface_args=EnvironmentInterfaceMultiObjectArgs(
                 object_names=dict(
                     targets_list=["cubeSolid"],
                     source_object_list=["cubeSolid", "capsule3DSolid"],
@@ -380,7 +380,7 @@ class PolicyTest(unittest.TestCase):
             self.poor_initial_view_dist_agent_config
         )
         self.rotated_cube_view_config.update(
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=["cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     positions=[[-0.1, 1.5, -0.2]],
@@ -401,7 +401,7 @@ class PolicyTest(unittest.TestCase):
                     ),
                 ),
             ),
-            dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(
+            dataset_args=SurfaceViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
             ),
         )
@@ -619,7 +619,7 @@ class PolicyTest(unittest.TestCase):
             pprint("...stepping through observations...")
 
             # Check the initial view
-            observation = next(exp.dataloader)
+            observation = next(exp.env_interface)
             # TODO M remove the following train-wreck during refactor
             view = observation[exp.model.motor_system._policy.agent_id]["view_finder"]
             semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
@@ -668,11 +668,11 @@ class PolicyTest(unittest.TestCase):
             pprint("...stepping through observations...")
 
             # Get a first step to allow the surface agent to touch the object
-            observation_pre_touch = next(exp.dataloader)
+            observation_pre_touch = next(exp.env_interface)
             exp.model.step(observation_pre_touch)
 
             # Check initial view post touch-attempt
-            observation_post_touch = next(exp.dataloader)
+            observation_post_touch = next(exp.env_interface)
 
             # TODO M remove the following train-wreck during refactor
             view = observation_post_touch[exp.model.motor_system._policy.agent_id][
@@ -726,7 +726,7 @@ class PolicyTest(unittest.TestCase):
 
             pprint("...stepping through observations...")
             # Check the initial view
-            observation = next(exp.dataloader)
+            observation = next(exp.env_interface)
             # TODO M remove the following train-wreck during refactor
             view = observation[exp.model.motor_system._policy.agent_id]["view_finder"]
             semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
@@ -786,7 +786,7 @@ class PolicyTest(unittest.TestCase):
 
             pprint("...stepping through observations...")
             # Manually step through part of run_episode function
-            for loader_step, observation in enumerate(exp.dataloader):
+            for loader_step, observation in enumerate(exp.env_interface):
                 exp.model.step(observation)
 
                 last_action = exp.model.motor_system.last_action
@@ -897,7 +897,7 @@ class PolicyTest(unittest.TestCase):
             pprint("...stepping through observations...")
             # Take several steps in a fixed direction until we fall off the object, then
             # ensure we get back on to it
-            for loader_step, observation in enumerate(exp.dataloader):
+            for loader_step, observation in enumerate(exp.env_interface):
                 exp.model.step(observation)
 
                 #  Step | Action           | Motor-only? | Obs processed? | Source
@@ -1034,7 +1034,7 @@ class PolicyTest(unittest.TestCase):
             exp.pre_episode()
 
             pprint("...stepping through observations...")
-            for loader_step, observation in enumerate(exp.dataloader):
+            for loader_step, observation in enumerate(exp.env_interface):
                 exp.model.step(observation)
                 exp.post_step(loader_step, observation)
 
