@@ -825,7 +825,6 @@ class GridObjectModel(GraphObjectModel):
                     if avg_feat != previous_average:
                         if num_old_obs > num_new_obs:
                             avg_feat = previous_average
-                        avg_feat = previous_average
                 # NOTE: could weight these
                 avg_feat = (avg_feat + previous_average) / 2
             target_ids = target_fm[feature]
