@@ -105,6 +105,10 @@ class MontyExperiment:
         self.rng = np.random.RandomState(experiment_args["seed"])
         self.show_sensor_output = experiment_args["show_sensor_output"]
         self.supervised_lm_ids = experiment_args["supervised_lm_ids"]
+        if self.supervised_lm_ids == "all":
+            self.supervised_lm_ids = list(
+                self.config["monty_config"]["learning_module_configs"].keys()
+            )
 
     def init_model(self, monty_config, model_path=None):
         """Initialize the Monty model.

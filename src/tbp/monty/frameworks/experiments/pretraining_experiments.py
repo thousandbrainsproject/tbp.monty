@@ -69,7 +69,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         self.pre_episode()
         # Save compute if we are providing labels to all models, so don't need to
         # perform matching parts of LM updates (default is matching_step)
-        if self.supervised_lm_ids == "all":
+        if len(self.supervised_lm_ids) == len(self.model.learning_modules):
             self.model.step_type = "exploratory_step"
 
         # Collect data about the object (exploratory steps)
@@ -100,10 +100,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         target = self.dataloader.primary_target
         self.model.detected_object = self.model.primary_target["object"]
         for lm in self.model.learning_modules:
-            if (
-                self.supervised_lm_ids == "all"
-                or lm.learning_module_id in self.supervised_lm_ids
-            ):
+            if lm.learning_module_id in self.supervised_lm_ids:
                 lm.detected_object = target["object"]
                 lm.buffer.stats["possible_matches"] = [target["object"]]
                 lm.buffer.stats["detected_location_on_model"] = (
