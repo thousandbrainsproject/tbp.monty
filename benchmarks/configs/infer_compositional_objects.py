@@ -220,7 +220,6 @@ infer_parts_with_part_models.update(
     experiment_args=EvalExperimentArgs(
         model_name_or_path=model_path_part_models,
         n_eval_epochs=len(test_rotations_all),
-        # show_sensor_output=True,
     ),
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=get_object_names_by_idx(
