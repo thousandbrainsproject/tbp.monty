@@ -1208,20 +1208,18 @@ class EvidenceGraphLM(GraphLM):
             # Check if there is displacer telemetry and if it contains a prediction
             # error. This would not be the case if there are no existing hypotheses
             # or if a channel was newly initialized.
-            if hasattr(
-                channel_telemetry,
-                "channel_hypothesis_displacer_telemetry",
-            ) and hasattr(
-                channel_telemetry.channel_hypothesis_displacer_telemetry,
-                "mlh_prediction_error",
-            ):
+            try:
                 displacer_telemetry = (
                     channel_telemetry.channel_hypothesis_displacer_telemetry
                 )
                 channel_prediction_error = displacer_telemetry.mlh_prediction_error
                 prediction_errors.append(channel_prediction_error)
+            except AttributeError:
+                # channel_telemetry was missing needed attributes, 
+                # so skip adding prediction errors
+                pass
 
-        if len(prediction_errors) > 0:
+        if prediction_errors:
             # Get the average prediction error over all channels for this step.
             mlh_prediction_error = np.mean(prediction_errors)
             self.buffer.update_stats(

@@ -161,16 +161,11 @@ two_stacked_constrained_lms_inference_config = dict(
 two_stacked_constrained_resampling_lms_inf_config = copy.deepcopy(
     two_stacked_constrained_lms_inference_config
 )
-for lm_id in ["learning_module_0", "learning_module_1"]:
-    two_stacked_constrained_resampling_lms_inf_config[lm_id]["learning_module_args"][
-        "hypotheses_updater_class"
-    ] = ResamplingHypothesesUpdater
-    two_stacked_constrained_resampling_lms_inf_config[lm_id]["learning_module_args"][
-        "evidence_threshold_config"
-    ] = "all"
-    two_stacked_constrained_resampling_lms_inf_config[lm_id]["learning_module_args"][
-        "object_evidence_threshold"
-    ] = 1
+for lm_config in two_stacked_constrained_resampling_lms_inf_config.values():
+    lm_args = lm_config["learning_module_args"]
+    lm_args["hypotheses_updater_class"] = ResamplingHypothesesUpdater
+    lm_args["evidence_threshold_config"] = "all"
+    lm_args["object_evidence_threshold"] = 1
 
 # See level description in src/tbp/monty/frameworks/environments/logos_on_objs.py
 infer_comp_base_config = dict(

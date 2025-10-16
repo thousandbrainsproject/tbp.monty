@@ -266,11 +266,8 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                     episode_stats["episode_avg_prediction_error"]
                 )
 
-            stats["num_correct_child_or_parent"] += (
-                int(performance == "consistent_child_obj")
-                or int(performance == "correct")
-                or int(performance == "correct_mlh")
-            )
+            if performance in {"consistent_child_obj", "correct", "correct_mlh"}:
+                stats["num_correct_child_or_parent"] += 1
 
             stats["goal_states_attempted"] = episode_stats["goal_states_attempted"]
 
@@ -494,7 +491,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             # filter out prediction errors that are nan
             prediction_errors = stats["episode_avg_prediction_error"][-len(self.lms) :]
             valid_prediction_errors = [e for e in prediction_errors if not np.isnan(e)]
-            if len(valid_prediction_errors) > 0:
+            if valid_prediction_errors:
                 overall_stats["episode/avg_prediction_error"] = wandb.Histogram(
                     valid_prediction_errors
                 )

@@ -819,7 +819,7 @@ def add_evidence_lm_episode_stats(lm, stats, consistent_child_objects):
     # was already an exact match with the label.
     if (
         stats["primary_performance"] in ["confused", "confused_mlh"]
-        and consistent_child_objects is not None
+        and consistent_child_objects
     ):
         if last_mlh["graph_id"] in consistent_child_objects:
             stats["primary_performance"] = "consistent_child_obj"
