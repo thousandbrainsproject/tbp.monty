@@ -57,6 +57,7 @@ from tbp.monty.simulators.habitat.configs import (
 # for supervised pretraining.
 test_rotations_all = get_cube_face_and_corner_views_rotations()
 # test_rotations_all = [[0.0, 0.0, 0.0]]
+N_EVAL_EPOCHS = len(test_rotations_all)
 
 # For an explanation of the different levels of difficulty, see logos_on_objs.py
 
@@ -175,7 +176,7 @@ for lm_id in ["learning_module_0", "learning_module_1"]:
 infer_comp_base_config = dict(
     experiment_class=MontyObjectRecognitionExperiment,
     experiment_args=EvalExperimentArgs(
-        n_eval_epochs=len(test_rotations_all),
+        n_eval_epochs=N_EVAL_EPOCHS,
         min_lms_match=1,
     ),
     logging_config=ParallelEvidenceLMLoggingConfig(
@@ -210,7 +211,7 @@ infer_comp_lvl1_with_monolithic_models = copy.deepcopy(infer_comp_base_config)
 infer_comp_lvl1_with_monolithic_models.update(
     experiment_args=EvalExperimentArgs(
         model_name_or_path=model_path_monolithic_models_lvl1,
-        n_eval_epochs=len(test_rotations_all),
+        n_eval_epochs=N_EVAL_EPOCHS,
     ),
 )
 
@@ -219,7 +220,7 @@ infer_parts_with_part_models = copy.deepcopy(infer_comp_base_config)
 infer_parts_with_part_models.update(
     experiment_args=EvalExperimentArgs(
         model_name_or_path=model_path_part_models,
-        n_eval_epochs=len(test_rotations_all),
+        n_eval_epochs=N_EVAL_EPOCHS,
     ),
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=get_object_names_by_idx(
@@ -237,7 +238,7 @@ infer_comp_lvl1_with_comp_models = copy.deepcopy(infer_comp_base_config)
 infer_comp_lvl1_with_comp_models.update(
     experiment_args=EvalExperimentArgs(
         model_name_or_path=model_path_compositional_models_lvl1,
-        n_eval_epochs=len(test_rotations_all),
+        n_eval_epochs=N_EVAL_EPOCHS,
     ),
 )
 
@@ -247,7 +248,7 @@ infer_comp_lvl1_with_comp_models_and_resampling = copy.deepcopy(
 infer_comp_lvl1_with_comp_models_and_resampling.update(
     experiment_args=EvalExperimentArgs(
         model_name_or_path=model_path_compositional_models_lvl1_resampling,
-        n_eval_epochs=len(test_rotations_all),
+        n_eval_epochs=N_EVAL_EPOCHS,
     ),
     monty_config=TwoLMStackedMontyConfig(
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
@@ -260,7 +261,7 @@ infer_comp_lvl2_with_comp_models = copy.deepcopy(infer_comp_base_config)
 infer_comp_lvl2_with_comp_models.update(
     experiment_args=EvalExperimentArgs(
         model_name_or_path=model_path_compositional_models_lvl2,
-        n_eval_epochs=len(test_rotations_all),
+        n_eval_epochs=N_EVAL_EPOCHS,
     ),
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=get_object_names_by_idx(
@@ -278,7 +279,7 @@ infer_comp_lvl3_with_comp_models = copy.deepcopy(infer_comp_base_config)
 infer_comp_lvl3_with_comp_models.update(
     experiment_args=EvalExperimentArgs(
         model_name_or_path=model_path_compositional_models_lvl3,
-        n_eval_epochs=len(test_rotations_all),
+        n_eval_epochs=N_EVAL_EPOCHS,
     ),
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=get_object_names_by_idx(
@@ -295,7 +296,7 @@ infer_comp_lvl4_with_comp_models = copy.deepcopy(infer_comp_base_config)
 infer_comp_lvl4_with_comp_models.update(
     experiment_args=EvalExperimentArgs(
         model_name_or_path=model_path_compositional_models_lvl4,
-        n_eval_epochs=len(test_rotations_all),
+        n_eval_epochs=N_EVAL_EPOCHS,
     ),
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
         object_names=get_object_names_by_idx(

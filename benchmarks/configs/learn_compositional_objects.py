@@ -57,6 +57,7 @@ from tbp.monty.simulators.habitat.configs import (
 
 # FOR SUPERVISED PRETRAINING: 14 unique rotations that give good views of the object.
 train_rotations_all = get_cube_face_and_corner_views_rotations()
+N_TRAIN_EPOCHS = len(train_rotations_all)
 
 monty_models_dir = os.getenv("MONTY_MODELS", "")
 
@@ -145,7 +146,7 @@ supervised_pre_training_flat_objects_wo_logos = copy.deepcopy(
 supervised_pre_training_flat_objects_wo_logos.update(
     experiment_args=ExperimentArgs(
         do_eval=False,
-        n_train_epochs=len(train_rotations_all),
+        n_train_epochs=N_TRAIN_EPOCHS,
         # only learn child objects in lm_0 at first so they can be used as input when
         # LM_1 is learning.
         supervised_lm_ids=["learning_module_0"],
@@ -223,7 +224,7 @@ supervised_pre_training_curved_objects_after_flat_and_logo = copy.deepcopy(
 supervised_pre_training_curved_objects_after_flat_and_logo.update(
     experiment_args=ExperimentArgs(
         do_eval=False,
-        n_train_epochs=len(train_rotations_all),
+        n_train_epochs=N_TRAIN_EPOCHS,
         supervised_lm_ids=["learning_module_0"],
         model_name_or_path=os.path.join(
             fe_pretrain_dir,
@@ -255,7 +256,7 @@ supervised_pre_training_objects_with_logos_lvl1_monolithic_models.update(
     # We load the model trained on the individual objects
     experiment_args=ExperimentArgs(
         do_eval=False,
-        n_train_epochs=len(train_rotations_all),
+        n_train_epochs=N_TRAIN_EPOCHS,
         model_name_or_path=os.path.join(
             fe_pretrain_dir,
             "supervised_pre_training_logos_after_flat_objects/pretrained/",
@@ -278,7 +279,7 @@ supervised_pre_training_objects_with_logos_lvl1_comp_models = copy.deepcopy(
 supervised_pre_training_objects_with_logos_lvl1_comp_models.update(
     experiment_args=ExperimentArgs(
         do_eval=False,
-        n_train_epochs=len(train_rotations_all),
+        n_train_epochs=N_TRAIN_EPOCHS,
         model_name_or_path=os.path.join(
             fe_pretrain_dir,
             "supervised_pre_training_logos_after_flat_objects/pretrained/",
@@ -334,7 +335,7 @@ supervised_pre_training_objects_with_logos_lvl2_comp_models = copy.deepcopy(
 supervised_pre_training_objects_with_logos_lvl2_comp_models.update(
     experiment_args=ExperimentArgs(
         do_eval=False,
-        n_train_epochs=len(train_rotations_all),
+        n_train_epochs=N_TRAIN_EPOCHS,
         model_name_or_path=MODEL_PATH_WITH_ALL_CHILD_OBJECTS,
         supervised_lm_ids=["learning_module_1"],
         min_lms_match=2,
