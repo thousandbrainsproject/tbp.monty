@@ -25,8 +25,8 @@ from tbp.monty.frameworks.config_utils.config_args import (
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
-    ExperimentArgs,
     PredefinedObjectInitializer,
+    SupervisedPretrainingExperimentArgs,
     get_object_names_by_idx,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
@@ -140,8 +140,7 @@ supervised_pre_training_flat_objects_wo_logos = copy.deepcopy(
     supervised_pre_training_base
 )
 supervised_pre_training_flat_objects_wo_logos.update(
-    experiment_args=ExperimentArgs(
-        do_eval=False,
+    experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=N_TRAIN_EPOCHS,
         # only learn child objects in lm_0 at first so they can be used as input when
         # LM_1 is learning.
@@ -182,10 +181,8 @@ supervised_pre_training_logos_after_flat_objects = copy.deepcopy(
     supervised_pre_training_flat_objects_wo_logos
 )
 supervised_pre_training_logos_after_flat_objects.update(
-    experiment_args=ExperimentArgs(
-        do_eval=False,
+    experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=len(LOGO_POSITIONS) * len(LOGO_ROTATIONS),
-        show_sensor_output=False,
         supervised_lm_ids=["learning_module_0"],
         model_name_or_path=os.path.join(
             fe_pretrain_dir,
@@ -218,8 +215,7 @@ supervised_pre_training_curved_objects_after_flat_and_logo = copy.deepcopy(
 )
 
 supervised_pre_training_curved_objects_after_flat_and_logo.update(
-    experiment_args=ExperimentArgs(
-        do_eval=False,
+    experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=N_TRAIN_EPOCHS,
         supervised_lm_ids=["learning_module_0"],
         model_name_or_path=os.path.join(
@@ -250,8 +246,7 @@ supervised_pre_training_objects_with_logos_lvl1_monolithic_models = copy.deepcop
 )
 supervised_pre_training_objects_with_logos_lvl1_monolithic_models.update(
     # We load the model trained on the individual objects
-    experiment_args=ExperimentArgs(
-        do_eval=False,
+    experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=N_TRAIN_EPOCHS,
         model_name_or_path=os.path.join(
             fe_pretrain_dir,
@@ -273,8 +268,7 @@ supervised_pre_training_objects_with_logos_lvl1_comp_models = copy.deepcopy(
 )
 
 supervised_pre_training_objects_with_logos_lvl1_comp_models.update(
-    experiment_args=ExperimentArgs(
-        do_eval=False,
+    experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=N_TRAIN_EPOCHS,
         model_name_or_path=os.path.join(
             fe_pretrain_dir,
@@ -329,8 +323,7 @@ supervised_pre_training_objects_with_logos_lvl2_comp_models = copy.deepcopy(
 )
 
 supervised_pre_training_objects_with_logos_lvl2_comp_models.update(
-    experiment_args=ExperimentArgs(
-        do_eval=False,
+    experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=N_TRAIN_EPOCHS,
         model_name_or_path=MODEL_PATH_WITH_ALL_CHILD_OBJECTS,
         supervised_lm_ids=["learning_module_1"],

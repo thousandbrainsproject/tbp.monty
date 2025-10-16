@@ -61,7 +61,7 @@ class ExperimentArgs:
     model_name_or_path: str = ""
     min_lms_match: int = 1
     seed: int = 42
-    supervised_lm_ids: Union[List[str], Literal["all"]] = "all"
+    supervised_lm_ids: List[str] | Literal["all"] = field(default_factory=list)
 
 
 @dataclass
@@ -80,6 +80,12 @@ class EvalExperimentArgs(ExperimentArgs):
     do_train: bool = False
     n_eval_epochs: int = 1
     python_log_level: str = "DEBUG"
+
+@dataclass
+class SupervisedPretrainingExperimentArgs(ExperimentArgs):
+    do_eval: bool = False
+    n_train_epochs: int = 1
+    supervised_lm_ids: List[str] | Literal["all"] = "all"
 
 
 # Data-set containing RGBD images of real-world objects taken with a mobile device
