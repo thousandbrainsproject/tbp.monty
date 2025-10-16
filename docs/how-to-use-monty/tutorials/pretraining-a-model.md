@@ -68,8 +68,8 @@ from tbp.monty.frameworks.experiments import (
 )
 from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.models.sensor_modules import (
-    DetailedLoggingSM,
-    HabitatSurfacePatchSM,
+    HabitatSM,
+    Probe,
 )
 from tbp.monty.simulators.habitat.configs import (
     SurfaceViewFinderMountHabitatDatasetArgs,
@@ -146,8 +146,9 @@ surf_agent_2obj_train = dict(
         # (sensor_module_1).
         sensor_module_configs=dict(
             sensor_module_0=dict(
-                sensor_module_class=HabitatSurfacePatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
+                    is_surface_sm=True,
                     sensor_module_id="patch",
                     # a list of features that the SM will extract and send to the LM
                     features=[
@@ -170,7 +171,7 @@ surf_agent_2obj_train = dict(
                 ),
             ),
             sensor_module_1=dict(
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=False,
@@ -210,8 +211,8 @@ Briefly, we specified our experiment class and the number of epochs to run. We a
 - `PatchAndViewMontyConfig`: the top-level Monty config object specifies that we will have a sensor patch and an additional viewfinder as inputs to the system. It also specifies the routing matrices between sensors, SMs and LMs (using defaults in this simple setup).
   - `monty_args`: a `MontyArgs`object specifying we want 500 exploratory steps per episode.
   - `sensor_module_configs`: a dictionary specifying sensor module class and arguments. These dictionaries specify that
-    - `sensor_module_0` will be a `HabitatSurfacePatchSM` (a small sensory patch for a surface agent). The sensor module will extract the given list of features for each patch. We won't save raw observations here since it is memory-intensive and only required for detailed logging/plotting.
-    - `sensor_module_1` will be a `DetailedLoggingSM` which we can use for logging. We could also store raw observations from the viewfinder for later visualization/analysis if needed. This sensor module is not connected to a learning module and, therefore, is not used for learning. It is called `view_finder` since it helps initialize each episode on the object.
+    - `sensor_module_0` will be a `HabitatSM` with `is_surface_sm=True` (a small sensory patch for a surface agent). The sensor module will extract the given list of features for each patch. We won't save raw observations here since it is memory-intensive and only required for detailed logging/plotting.
+    - `sensor_module_1` will be a `Probe` which we can use for logging. We could also store raw observations from the viewfinder for later visualization/analysis if needed. This sensor module is not connected to a learning module and, therefore, is not used for learning. It is called `view_finder` since it helps initialize each episode on the object.
   - `learning_module_configs`: a dictionary specifying the learning module class and arguments. This dictionary specifies that
     - `learning_module_0` will be a `GraphLM` that constructs a graph of the object being explored.
   - `motor_system_config`: a `MotorSystemConfigCurvatureInformedSurface` config object that specifies a motor policy class to use. This policy here will move orthogonal to the surface of the object with a preference of following principal curvatures that are sensed. When doing pretraining with the distant agent, the `MotorSystemConfigNaiveScanSpiral` policy is recommended since it ensures even coverage of the object from the available view point.

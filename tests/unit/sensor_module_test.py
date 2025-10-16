@@ -36,8 +36,8 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 from tbp.monty.frameworks.models.sensor_modules import (
-    DetailedLoggingSM,
-    HabitatDistantPatchSM,
+    HabitatSM,
+    Probe,
 )
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsPatchViewMount,
@@ -91,7 +91,7 @@ class SensorModuleTest(unittest.TestCase):
                 monty_args=MontyArgs(num_exploratory_steps=2),
                 sensor_module_configs=dict(
                     sensor_module_0=dict(
-                        sensor_module_class=HabitatDistantPatchSM,
+                        sensor_module_class=HabitatSM,
                         sensor_module_args=dict(
                             sensor_module_id="patch",
                             features=self.tested_features,
@@ -99,7 +99,7 @@ class SensorModuleTest(unittest.TestCase):
                         ),
                     ),
                     sensor_module_1=dict(
-                        sensor_module_class=DetailedLoggingSM,
+                        sensor_module_class=Probe,
                         sensor_module_args=dict(
                             sensor_module_id="view_finder",
                             save_raw_obs=False,

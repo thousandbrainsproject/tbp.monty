@@ -48,8 +48,8 @@ from tbp.monty.frameworks.experiments import (
 from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphLM
 from tbp.monty.frameworks.models.motor_policies import NaiveScanPolicy
 from tbp.monty.frameworks.models.sensor_modules import (
-    DetailedLoggingSM,
-    HabitatSurfacePatchSM,
+    HabitatSM,
+    Probe,
 )
 from tbp.monty.simulators.habitat.configs import (
     FiveLMMountHabitatDatasetArgs,
@@ -164,8 +164,9 @@ only_surf_agent_training_10obj.update(
         ),
         sensor_module_configs=dict(
             sensor_module_0=dict(
-                sensor_module_class=HabitatSurfacePatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
+                    is_surface_sm=True,
                     sensor_module_id="patch",
                     features=[
                         "pose_vectors",
@@ -189,7 +190,7 @@ only_surf_agent_training_10obj.update(
             sensor_module_1=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,

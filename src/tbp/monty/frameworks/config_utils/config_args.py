@@ -63,10 +63,8 @@ from tbp.monty.frameworks.models.motor_policies import (
 )
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.sensor_modules import (
-    DetailedLoggingSM,
-    FeatureChangeSM,
-    HabitatDistantPatchSM,
-    HabitatSurfacePatchSM,
+    HabitatSM,
+    Probe,
 )
 from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 
@@ -561,7 +559,7 @@ class PatchAndViewMontyConfig(MontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch",
                     # TODO: would be nicer to just use lm.tolerances.keys() here
@@ -588,7 +586,7 @@ class PatchAndViewMontyConfig(MontyConfig):
             sensor_module_1=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,
@@ -626,7 +624,7 @@ class PatchAndViewSOTAMontyConfig(PatchAndViewMontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=FeatureChangeSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch",
                     features=[
@@ -653,7 +651,7 @@ class PatchAndViewSOTAMontyConfig(PatchAndViewMontyConfig):
             sensor_module_1=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=False,
@@ -687,8 +685,9 @@ class SurfaceAndViewMontyConfig(PatchAndViewMontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=HabitatSurfacePatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
+                    is_surface_sm=True,
                     sensor_module_id="patch",
                     features=[
                         # morphological features (nescessarry)
@@ -713,7 +712,7 @@ class SurfaceAndViewMontyConfig(PatchAndViewMontyConfig):
             sensor_module_1=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,
@@ -751,7 +750,7 @@ class SurfaceAndViewSOTAMontyConfig(SurfaceAndViewMontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=FeatureChangeSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch",
                     features=[
@@ -775,14 +774,14 @@ class SurfaceAndViewSOTAMontyConfig(SurfaceAndViewMontyConfig):
                         "principal_curvatures_log": [2, 2],
                         "distance": 0.01,
                     },
-                    surf_agent_sm=True,
+                    is_surface_sm=True,
                     save_raw_obs=False,
                 ),
             ),
             sensor_module_1=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=False,
@@ -800,7 +799,7 @@ class PatchAndViewFeatureChangeConfig(PatchAndViewMontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=FeatureChangeSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch",
                     features=[
@@ -834,7 +833,7 @@ class PatchAndViewFeatureChangeConfig(PatchAndViewMontyConfig):
             sensor_module_1=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,
@@ -880,7 +879,7 @@ class TwoLMMontyConfig(MontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_0",
                     features=features,
@@ -888,7 +887,7 @@ class TwoLMMontyConfig(MontyConfig):
                 ),
             ),
             sensor_module_1=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_1",
                     features=features,
@@ -898,7 +897,7 @@ class TwoLMMontyConfig(MontyConfig):
             sensor_module_2=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,
@@ -942,7 +941,7 @@ class TwoLMStackedMontyConfig(TwoLMMontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=FeatureChangeSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_0",
                     features=[
@@ -969,7 +968,7 @@ class TwoLMStackedMontyConfig(TwoLMMontyConfig):
                 ),
             ),
             sensor_module_1=dict(
-                sensor_module_class=FeatureChangeSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_1",
                     features=[
@@ -996,7 +995,7 @@ class TwoLMStackedMontyConfig(TwoLMMontyConfig):
             sensor_module_2=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,
@@ -1045,7 +1044,7 @@ class FiveLMMontyConfig(MontyConfig):
     sensor_module_configs: Union[dataclass, Dict] = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_0",
                     features=features,
@@ -1053,7 +1052,7 @@ class FiveLMMontyConfig(MontyConfig):
                 ),
             ),
             sensor_module_1=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_1",
                     features=features,
@@ -1061,7 +1060,7 @@ class FiveLMMontyConfig(MontyConfig):
                 ),
             ),
             sensor_module_2=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_2",
                     features=features,
@@ -1069,7 +1068,7 @@ class FiveLMMontyConfig(MontyConfig):
                 ),
             ),
             sensor_module_3=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_3",
                     features=features,
@@ -1077,7 +1076,7 @@ class FiveLMMontyConfig(MontyConfig):
                 ),
             ),
             sensor_module_4=dict(
-                sensor_module_class=HabitatDistantPatchSM,
+                sensor_module_class=HabitatSM,
                 sensor_module_args=dict(
                     sensor_module_id="patch_4",
                     features=features,
@@ -1087,7 +1086,7 @@ class FiveLMMontyConfig(MontyConfig):
             sensor_module_5=dict(
                 # No need to extract features from the view finder since it is not
                 # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=False,
@@ -1249,7 +1248,7 @@ def make_multi_lm_monty_config(
             to `make_multi_lm_flat_dense_connectivity`.
         view_finder_config: A mapping which contains the items
             `"sensor_module_class"` and `"sensor_module_args"`. If not specified,
-            a config is added using the class `DetailedLoggingSM` with  `"view_finder"`
+            a config is added using the class `Probe` with  `"view_finder"`
             as the `sensor_module_id`. `"save_raw_obs"` will default to match the
             value in `sensor_module_args` and `False` if none was provided.
 
@@ -1286,7 +1285,7 @@ def make_multi_lm_monty_config(
         }
     if view_finder_config is None:
         sensor_module_configs["view_finder"] = {
-            "sensor_module_class": DetailedLoggingSM,
+            "sensor_module_class": Probe,
             "sensor_module_args": {
                 "sensor_module_id": "view_finder",
                 "save_raw_obs": sensor_module_args.get("save_raw_obs", False),

@@ -721,15 +721,15 @@ class GraphLM(LearningModule):
         """
         pass
 
-    def propose_goal_state(self) -> GoalState | None:
-        """Return the goal-state proposed by this LM's GSG.
+    def propose_goal_states(self) -> list[GoalState]:
+        """Return the goal-states proposed by this LM's GSG.
 
-        Only returned if the LM/GSG was stepped, otherwise returns None goal-state.
+        Only returned if the LM/GSG was stepped, otherwise returns empty list.
         """
         if self.buffer.get_last_obs_processed() and self.gsg is not None:
-            return self.gsg.get_output_goal_state()
+            return self.gsg.output_goal_states()
         else:
-            return None
+            return []
 
     def update_terminal_condition(self):
         """Check if we have reached a terminal condition for this episode.

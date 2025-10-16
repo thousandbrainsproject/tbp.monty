@@ -192,8 +192,8 @@ class LearningModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def propose_goal_state(self) -> GoalState | None:
-        """Return the goal-state proposed by this LM's GSG if it exists."""
+    def propose_goal_states(self) -> list[GoalState]:
+        """Return the goal-states proposed by this LM's GSG if they exist."""
         pass
 
     @abc.abstractmethod
@@ -278,8 +278,8 @@ class GoalStateGenerator(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def get_output_goal_state(self):
-        """Return current output goal-state."""
+    def output_goal_states(self) -> list[GoalState]:
+        """Return output goal-states."""
         pass
 
     @abc.abstractmethod
@@ -313,13 +313,4 @@ class SensorModule(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def pre_episode(self):
         """This method is called before each episode."""
-        pass
-
-    @abc.abstractmethod
-    def post_episode(self):
-        """This method is called after each episode."""
-        pass
-
-    @abc.abstractmethod
-    def set_experiment_mode(self, mode: str):
         pass
