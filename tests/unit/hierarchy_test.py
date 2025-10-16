@@ -29,6 +29,7 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
     PredefinedObjectInitializer,
+    SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
@@ -181,8 +182,10 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
 
         two_stacked_constrained_config = copy.deepcopy(base)
         two_stacked_constrained_config.update(
-            experiment_args=ExperimentArgs(
-                max_train_steps=30, max_eval_steps=30, max_total_steps=60, do_eval=False
+            experiment_args=SupervisedPretrainingExperimentArgs(
+                max_train_steps=30,
+                max_eval_steps=30,
+                max_total_steps=60,
             ),
             logging_config=PretrainLoggingConfig(
                 output_dir=self.compositional_save_path,
@@ -204,8 +207,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
             two_stacked_constrained_config
         )
         two_stacked_semisupervised_lms_config.update(
-            experiment_args=ExperimentArgs(
-                do_eval=False,
+            experiment_args=SupervisedPretrainingExperimentArgs(
                 supervised_lm_ids=["learning_module_1"],
                 min_lms_match=2,
                 model_name_or_path=self.compositional_save_path + "/pretrained",

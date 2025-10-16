@@ -59,8 +59,8 @@ from tbp.monty.frameworks.config_utils.config_args import (
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
-    ExperimentArgs,
     PredefinedObjectInitializer,
+    SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
@@ -128,9 +128,8 @@ surf_agent_2obj_train = dict(
     # The MontySupervisedObjectPretrainingExperiment class will provide the model
     # with object and pose labels for supervised pretraining.
     experiment_class=MontySupervisedObjectPretrainingExperiment,
-    experiment_args=ExperimentArgs(
+    experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=len(train_rotations),
-        do_eval=False,
     ),
     # Specify logging config.
     logging_config=PretrainLoggingConfig(
