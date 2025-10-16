@@ -27,7 +27,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PatchAndViewMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    get_env_dataloader_per_object_by_idx,
+    get_env_interface_per_object_by_idx,
     SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
@@ -35,14 +35,14 @@ from tbp.monty.frameworks.experiments.pretraining_experiments import (
     MontySupervisedObjectPretrainingExperiment,
 )
 from tbp.monty.simulators.habitat.configs import (
-    PatchViewFinderMountHabitatDatasetArgs,
+    PatchViewFinderMountHabitatEnvironmentArgs,
 )
 
 #####
 # To test your env and help you familiarize yourself with the code, we'll run the simplest possible
 # experiment. We'll use a model with a single learning module as specified in
 # monty_config. We'll also skip evaluation, train for a single epoch for a single step,
-# and only train on a single object, as specified in experiment_args and train_dataloader_args.
+# and only train on a single object, as specified in experiment_args and train_env_interface_args.
 #####
 
 first_experiment = dict(
@@ -55,9 +55,9 @@ first_experiment = dict(
     ),
     monty_config=PatchAndViewMontyConfig(),
     # Data{set, loader} config
-    dataset_args=PatchViewFinderMountHabitatDatasetArgs(),
-    train_dataloader_class=ED.EnvironmentDataLoaderPerObject,
-    train_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=1),
+    dataset_args=PatchViewFinderMountHabitatEnvironmentArgs(),
+    train_env_interface_class=ED.EnvironmentInterfacePerObject,
+    train_env_interface_args=get_env_interface_per_object_by_idx(start=0, stop=1),
 )
 
 experiments = MyExperiments(
@@ -140,7 +140,7 @@ The term dataset is used loosely here; **the dataset class in this experiment is
 
 So, if the data**set** is an environment, what is a data**loader**? Again, in keeping with the PyTorch use of the term, the dataloader is basically the API between the dataset and the model. Its job is to sample from the dataset and return observations to the model. Note that the next observation is decided by the last action, and the actions are selected by a `motor_system`. This motor system is shared by reference with the model. By changing the actions, the **model** controls what it observes next just as you would expect from a sensorimotor system.
 
- Now, finally answering our question of what happens in an episode, notice that our config uses a special type of dataloader: `EnvironmentDataLoaderPerObject` (note that this is a subclass of `EnvironmentDataLoader` which is kept as general as possible to allow for flexible subclass customization). As indicated in the docstring, this dataloader has a list of objects, and at the beginning / end of an episode, it removes the current object from the environment, increments a (cyclical) counter that determines which object is next, and places the new object in the environment. The arguments to `EnvironmentDataLoaderPerObject` determine which objects are added to the environment and in what pose. **In our config, we use a single list with one YCB object**. As shown by this line `train_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=1),`
+ Now, finally answering our question of what happens in an episode, notice that our config uses a special type of environment interface: `EnvironmentInterfacePerObject` (note that this is a subclass of `EnvironmentInterface` which is kept as general as possible to allow for flexible subclass customization). As indicated in the docstring, this environment interface has a list of objects, and at the beginning / end of an episode, it removes the current object from the environment, increments a (cyclical) counter that determines which object is next, and places the new object in the environment. The arguments to `EnvironmentInterfacePerObject` determine which objects are added to the environment and in what pose. **In our config, we use a single list with one YCB object**. As shown by this line `train_env_interface_args=get_env_interface_per_object_by_idx(start=0, stop=1),`
 
 ## Final Notes on the Model
 

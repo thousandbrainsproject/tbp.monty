@@ -388,7 +388,7 @@ def get_object_names_by_idx(
         return object_list[start:stop]
 
 
-def get_env_dataloader_per_object_by_idx(start, stop, list_of_indices=None):
+def get_env_interface_per_object_by_idx(start, stop, list_of_indices=None):
     return EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(start, stop, list_of_indices),
         object_init_sampler=PredefinedObjectInitializer(),
@@ -412,7 +412,7 @@ class WorldImageInterfaceArgs:
     versions: List = field(default_factory=lambda: [0, 1, 2, 3])
 
 
-def get_omniglot_train_dataloader(num_versions, alphabet_ids, data_path=None):
+def get_omniglot_train_env_interface(num_versions, alphabet_ids, data_path=None):
     """Generate OmniglotInterfaceArgs automatically for training.
 
     Args:
@@ -459,7 +459,7 @@ def get_omniglot_train_dataloader(num_versions, alphabet_ids, data_path=None):
     )
 
 
-def get_omniglot_eval_dataloader(
+def get_omniglot_eval_env_interface(
     start_at_version, alphabet_ids, num_versions=None, data_path=None
 ):
     """Generate OmniglotInterfaceArgs automatically for evaluation.

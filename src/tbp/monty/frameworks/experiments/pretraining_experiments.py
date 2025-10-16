@@ -14,7 +14,9 @@ import os
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.environments.embodied_data import SaccadeOnImageEnvironmentInterface
+from tbp.monty.frameworks.environments.embodied_data import (
+    SaccadeOnImageEnvironmentInterface,
+)
 from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
 
 from .monty_experiment import MontyExperiment
@@ -75,11 +77,11 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
         # Collect data about the object (exploratory steps)
         num_steps = 0
-        for observation in self.dataloader:
+        for observation in self.env_interface:
             num_steps += 1
             if self.show_sensor_output:
                 is_saccade_on_image_env_interface = isinstance(
-                    self.dataloader, SaccadeOnImageEnvironmentInterface
+                    self.env_interface, SaccadeOnImageEnvironmentInterface
                 )
                 self.live_plotter.show_observations(
                     *self.live_plotter.hardcoded_assumptions(observation, self.model),
@@ -98,7 +100,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
         # Pass target info to model --> will overwrite (where specified)
         # with the ground truth labels just before models are updated in memory.
-        target = self.dataloader.primary_target
+        target = self.env_interface.primary_target
         self.model.detected_object = self.model.primary_target["object"]
         for lm in self.model.learning_modules:
             if lm.learning_module_id in self.supervised_lm_ids:
@@ -145,7 +147,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
     def pre_episode(self):
         """Pre episode where we pass target object to the model for logging."""
         self.model.pre_episode(self.env_interface.primary_target)
-        self.dataloader.pre_episode()
+        self.env_interface.pre_episode()
 
         self.max_steps = self.max_train_steps  # no eval mode here
 
@@ -153,10 +155,10 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
         # if it's the first time this object is shown, save it's location. This is
         # needed to provide the correct offset from the learned model when supervising.
-        current_object = self.dataloader.primary_target["object"]
+        current_object = self.env_interface.primary_target["object"]
         if current_object not in self.first_epoch_object_location:
             self.first_epoch_object_location[current_object] = (
-                self.dataloader.primary_target["position"]
+                self.env_interface.primary_target["position"]
             )
 
         if self.show_sensor_output:
@@ -167,7 +169,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         self.logger_handler.post_epoch(self.logger_args)
 
         self.train_epochs += 1
-        self.train_dataloader.post_epoch()
+        self.train_env_interface.post_epoch()
 
     def train(self):
         """Save state_dict at the end of training."""
