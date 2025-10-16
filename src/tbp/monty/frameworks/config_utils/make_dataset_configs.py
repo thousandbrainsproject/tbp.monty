@@ -322,7 +322,7 @@ class RandomRotationObjectInitializer(DefaultObjectInitializer):
 class EnvironmentDataloaderPerObjectArgs:
     object_names: List
     object_init_sampler: Callable
-    parent_to_child_mapping: dict | None
+    parent_to_child_mapping: dict | None = None
 
 
 @dataclass
