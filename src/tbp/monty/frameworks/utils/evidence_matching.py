@@ -418,7 +418,7 @@ class EvidenceSlopeTracker:
             self.remove_hyp(np.arange(self.total_size(channel)), channel)
 
     def select_hypotheses(
-        self, slope_threshold: float, channel: str
+        self, slope_threshold: float, min_maintained_hyps: int, channel: str
     ) -> HypothesesSelection:
         """Returns a hypotheses selection given a slope threshold.
 
@@ -429,7 +429,12 @@ class EvidenceSlopeTracker:
         Args:
             slope_threshold: Minimum slope value to keep a removable (sufficiently old)
                 hypothesis.
+            min_maintained_hyps: Minimum number of hypotheses to maintain.
             channel: Name of the input channel.
+
+        Note that the parameter `min_maintained_hyps` overrides the `slope_threshold`
+        and the removable mask. These hypotheses will be maintained in spite of their
+        slopes and ages.
 
         Returns:
             A selection of hypotheses to maintain.
@@ -444,6 +449,29 @@ class EvidenceSlopeTracker:
         removable_mask = self.removable_indices_mask(channel)
 
         maintain_mask = (slopes >= slope_threshold) | (~removable_mask)
+
+        # Ensure at least `min_maintained_hyps` are maintained.
+        # The needed hypotheses are chosen based on their slopes (i.e. high slopes
+        # first)
+        num_maintained_hyps = int(maintain_mask.sum())
+        num_needed_hyps = max(
+            0,
+            min(min_maintained_hyps, self.total_size(channel)) - num_maintained_hyps,
+        )
+        if num_needed_hyps > 0:
+            cand_idx = np.where(~maintain_mask)[0]
+
+            # Use all available hyps. No sorting here.
+            if cand_idx.size == num_needed_hyps:
+                maintain_mask[cand_idx] = True
+
+            # Use hyps with the highest slopes.
+            else:
+                cand_scores = np.nan_to_num(slopes[cand_idx], nan=-np.inf)
+                topk_ix = np.argpartition(cand_scores, num_needed_hyps)[
+                    -num_needed_hyps:
+                ]
+                maintain_mask[cand_idx[topk_ix]] = True
 
         return HypothesesSelection(maintain_mask)
 

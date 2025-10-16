@@ -414,7 +414,9 @@ class ResamplingHypothesesUpdater:
 
         # Returns a selection of hypotheses to maintain/delete
         hypotheses_selection = tracker.select_hypotheses(
-            slope_threshold=self.evidence_slope_threshold, channel=input_channel
+            slope_threshold=self.evidence_slope_threshold,
+            min_maintained_hyps=2,  # required by gsg
+            channel=input_channel,
         )
 
         return (
