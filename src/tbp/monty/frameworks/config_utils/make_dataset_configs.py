@@ -8,6 +8,8 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import os
 from dataclasses import dataclass, field
 from numbers import Number
@@ -320,7 +322,7 @@ class RandomRotationObjectInitializer(DefaultObjectInitializer):
 class EnvironmentDataloaderPerObjectArgs:
     object_names: List
     object_init_sampler: Callable
-    parent_to_child_mapping: Dict = None
+    parent_to_child_mapping: dict | None
 
 
 @dataclass
