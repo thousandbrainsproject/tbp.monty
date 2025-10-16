@@ -323,7 +323,7 @@ monty_meets_world_2dimage_inference = dict(
     	# move 20 pixels at a time
     	motor_system_config=MotorSystemConfigInformedNoTransStepS20(),
 	),
-	env_interface_config=WorldImageEnvInterfaceConfig(
+	env_interface_config=WorldImageEnvironmentInterfaceConfig(
     	env_init_args=EnvInitArgsMontyWorldStandardScenes()
 	),
 	eval_env_interface_class=ED.SaccadeOnImageEnvironmentInterface,
@@ -363,7 +363,7 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
 	EnvInitArgsMontyWorldStandardScenes,
 	EvalExperimentArgs,
 	WorldImageEnvironmentInterfaceArgs,
-	WorldImageEnvInterfaceConfig,
+	WorldImageEnvironmentInterfaceConfig,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
