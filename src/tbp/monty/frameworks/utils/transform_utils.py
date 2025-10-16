@@ -115,9 +115,9 @@ def cartesian_to_spherical(coords: ArrayLike, degrees: bool = False) -> np.ndarr
 
     az_backwards = np.isclose(azimuth, -np.pi)
     if np.any(az_backwards):
-        # At this point, azimuth = -pi if and only if it the zero vector,
-        # is vertical, or lies within the (positive) z-axis. Checking whether
-        # z > 0 is enough to select the appropriate correction.
+        # azimuth = -pi here if and only if a vector has radius zero or lies along
+        # the y-axis or positive z-axis. If it's along the positive z-axis, we just
+        # switch it to pi. Otherwise, zero it out.
         z_is_positive = z > 0
         azimuth = np.where(az_backwards & z_is_positive, np.pi, azimuth)
         azimuth = np.where(az_backwards & ~z_is_positive, 0, azimuth)
@@ -125,11 +125,8 @@ def cartesian_to_spherical(coords: ArrayLike, degrees: bool = False) -> np.ndarr
     if degrees:
         azimuth, elevation = np.degrees(azimuth), np.degrees(elevation)
 
-    out = np.column_stack([radius, azimuth, elevation])
-
-    if single:
-        return out[0]
-    return out
+    spherical_coords = np.column_stack([radius, azimuth, elevation])
+    return spherical_coords[0] if single else spherical_coords
 
 
 def spherical_to_cartesian(coords: ArrayLike, degrees: bool = False) -> np.ndarray:
