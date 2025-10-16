@@ -58,6 +58,8 @@ from tbp.monty.simulators.habitat.configs import (
 test_rotations_all = get_cube_face_and_corner_views_rotations()
 # test_rotations_all = [[0.0, 0.0, 0.0]]
 
+# For an explanation of the different levels of difficulty, see logos_on_objs.py
+
 model_path_monolithic_models_lvl1 = os.path.join(
     pretrained_dir,
     "supervised_pre_training_objects_with_logos_lvl1_monolithic_models/pretrained/",

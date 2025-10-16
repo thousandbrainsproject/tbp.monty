@@ -243,6 +243,7 @@ supervised_pre_training_curved_objects_after_flat_and_logo.update(
 )
 
 # ====== Learning Compositional Objects ======
+# For an explanation of the different levels of difficulty, see logos_on_objs.py
 
 # Learn monolithic models on the compositional objects, i.e. where both the LLLM
 # and the HLLM learn the compositional *objects*, but without a compitional *model.
