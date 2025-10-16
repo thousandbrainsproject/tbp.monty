@@ -33,11 +33,11 @@ Monty experiments are defined using a nested dictionary. These dictionaries defi
   - `sm_to_lm_matrix`: mapping of which sensor modules connect to which learning modules.
   - `lm_to_lm_matrix`: hierarchical connectivity between learning modules.
   - `lm_to_lm_vote_matrix`: lateral connectivity between learning modules.
-- `dataset_args`: `dataclass` (specifies data-related args incl. transformations that occur before information reaches a sensor module; e.g. `SurfaceViewFinderMountHabitatDatasetArgs`)
-- `train_dataloader_class`: `EnvironmentDataLoader`
-- `train_dataloader_args`: e.g.`EnvironmentDataloaderPerObjectArgs`
-- `eval_dataloader_class`: `EnvironmentDataLoader`
-- `eval_dataloader_args`: e.g.`EnvironmentDataloaderPerObjectArgs`
+- `dataset_args`: `dataclass` (specifies data-related args incl. transformations that occur before information reaches a sensor module; e.g. `SurfaceViewFinderMountHabitatEnvironmentArgs`)
+- `train_env_interface_class`: `EnvironmentInterface`
+- `train_env_interface_args`: e.g.`EnvironmentInterfacePerObjectArgs`
+- `eval_env_interface_class`: `EnvironmentInterface`
+- `eval_env_interface_args`: e.g.`EnvironmentInterfacePerObjectArgs`
 
 Most configs come in pairs: a class to instantiate and arguments to instantiate it with. A set of arguments is specified as a Python data class, and Monty has many data classes that simplify setup by defining different sets of default parameters.
 
@@ -58,7 +58,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
     get_cube_face_and_corner_views_rotations,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataloaderPerObjectArgs,
+    EnvironmentInterfacePerObjectArgs,
     PredefinedObjectInitializer,
     SupervisedPretrainingExperimentArgs,
 )
@@ -72,7 +72,7 @@ from tbp.monty.frameworks.models.sensor_modules import (
     Probe,
 )
 from tbp.monty.simulators.habitat.configs import (
-    SurfaceViewFinderMountHabitatDatasetArgs,
+    SurfaceViewFinderMountHabitatEnvironmentArgs,
 )
 
 """
@@ -188,15 +188,15 @@ surf_agent_2obj_train = dict(
         motor_system_config=MotorSystemConfigCurvatureInformedSurface(),
     ),
     # Set up the environment and agent
-    dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(),
-    train_dataloader_class=ED.InformedEnvironmentDataLoader,
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    dataset_args=SurfaceViewFinderMountHabitatEnvironmentArgs(),
+    train_env_interface_class=ED.InformedEnvironmentInterface,
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=object_names,
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations),
     ),
-    # For a complete config we need to specify an eval_dataloader but since we only train here, this is unused
-    eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-    eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    # For a complete config we need to specify an eval_env_interface but since we only train here, this is unused
+    eval_env_interface_class=ED.InformedEnvironmentInterface,
+    eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=object_names,
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations),
     ),
@@ -205,7 +205,7 @@ surf_agent_2obj_train = dict(
 
 Here, we explicitly specified most parameters in config classes for transparency. The remaining parameters (e.g., `sm_to_lm_matrix`, etc.) aren't supplied since `PatchAndViewMontyConfig`s defaults will work fine here. If you use a different number of SMs or LMs or want a custom connectivity between them, you will have to specify those as well.
 
-Briefly, we specified our experiment class and the number of epochs to run. We also configured a [logger](../logging-and-analysis.md), the environment dataset, and a training data loader to initialize our objects at different orientations for each episode. We also specified a valid but unused eval dataloader (currently necessary). `monty_config` is a nested config that describes the complete sensorimotor modeling system. Here is a short breakdown of its components:
+Briefly, we specified our experiment class and the number of epochs to run. We also configured a [logger](../logging-and-analysis.md), the environment dataset, and a training data loader to initialize our objects at different orientations for each episode. We also specified a valid but unused eval environment interface (currently necessary). `monty_config` is a nested config that describes the complete sensorimotor modeling system. Here is a short breakdown of its components:
 
 - `PatchAndViewMontyConfig`: the top-level Monty config object specifies that we will have a sensor patch and an additional viewfinder as inputs to the system. It also specifies the routing matrices between sensors, SMs and LMs (using defaults in this simple setup).
   - `monty_args`: a `MontyArgs`object specifying we want 500 exploratory steps per episode.

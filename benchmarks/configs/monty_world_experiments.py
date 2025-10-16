@@ -34,8 +34,8 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvInitArgsMontyWorldMultiObjectScenes,
     EnvInitArgsMontyWorldStandardScenes,
     EvalExperimentArgs,
-    WorldImageDataloaderArgs,
     WorldImageDatasetArgs,
+    WorldImageEnvironmentInterfaceArgs,
     WorldImageFromStreamDatasetArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
@@ -76,10 +76,10 @@ world_image_on_scanned_model = dict(
     dataset_args=WorldImageDatasetArgs(
         env_init_args=EnvInitArgsMontyWorldStandardScenes()
     ),
-    eval_dataloader_class=ED.SaccadeOnImageDataLoader,
+    eval_env_interface_class=ED.SaccadeOnImageEnvironmentInterface,
     # TODO: write something akin to PredefinedObjectInitializer to automatically
     # determine these values
-    eval_dataloader_args=WorldImageDataloaderArgs(
+    eval_env_interface_args=WorldImageEnvironmentInterfaceArgs(
         scenes=list(np.repeat(range(12), 4)),
         versions=list(np.tile(range(4), 12)),
         # For debugging:
@@ -93,8 +93,8 @@ world_image_on_scanned_model = dict(
 world_image_from_stream_on_scanned_model = copy.deepcopy(world_image_on_scanned_model)
 world_image_from_stream_on_scanned_model.update(
     dataset_args=WorldImageFromStreamDatasetArgs(),
-    eval_dataloader_class=ED.SaccadeOnImageFromStreamDataLoader,
-    eval_dataloader_args={},
+    eval_env_interface_class=ED.SaccadeOnImageFromStreamEnvironmentInterface,
+    eval_env_interface_args={},
     logging_config=EvalEvidenceLMLoggingConfig(
         wandb_handlers=[], python_log_level="INFO"
     ),

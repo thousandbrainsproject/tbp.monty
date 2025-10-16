@@ -30,7 +30,7 @@ Information flow in Monty implements a sensorimotor loop. Observations from the 
 
 Additionally, the DataLoader and Environment can implement specific functions to be executed at different points in the experiment, such as resetting the agent position and showing a new object or scene at the beginning of a new episode.
 
-To use Monty in a custom environment, you usually need to customize the `DataLoader` and `EmbodiedEnvironment` classes. For example, if you look back at the previous tutorials, you will see that for those Habitat experiments, we've been using the `EnvironmentDataLoaderPerObject` and the `HabitatEnvironment`. The diagram below shows some key elements that need to be defined for these two classes. It's best to start thinking about the environment setup first, as this will force you to think through how to structure your application correctly for Monty to tackle.
+To use Monty in a custom environment, you usually need to customize the `DataLoader` and `EmbodiedEnvironment` classes. For example, if you look back at the previous tutorials, you will see that for those Habitat experiments, we've been using the `EnvironmentInterfacePerObject` and the `HabitatEnvironment`. The diagram below shows some key elements that need to be defined for these two classes. It's best to start thinking about the environment setup first, as this will force you to think through how to structure your application correctly for Monty to tackle.
 ![Key elements to define for a custom environment and data loader](../../figures/how-to-use-monty/defining_env_and_dataloader.png)
 
 ### EmbodiedEnvironment
@@ -80,9 +80,9 @@ state = {
 Lastly, you need to define what happens when the environment is initialized (`__init__()`), when it is reset (`reset()`, usually at the end of an episode), and when it is closed (`close()`, at the end of an experiment). Resetting could include loading a new scene, resetting the agent position, or changing the arrangement of objects in the environment. It might also reset some of the environment's internal variables, such as step counters. Note that, as customary for RL environments, the `reset()` function is also expected to return an observation.
 
 ### DataLoader
-The `EnvironmentDataLoader` manages retrieving observations from the `EmbodiedEnvironment` given actions. The EmbodiedEnvironment, in turn, applies basic transforms to the raw observations from the environment.
+The `EnvironmentInterface` manages retrieving observations from the `EmbodiedEnvironment` given actions. The EmbodiedEnvironment, in turn, applies basic transforms to the raw observations from the environment.
 
-The `EnvironmentDataLoader` should define all the key events at which the environment needs to be accessed or modified. This includes initializing the environment (`__init__()`), retrieving the next observation (`__next__()`), and things that happen at the beginning or end of episodes and epochs (`pre_episode()`, `post_episode()`, `pre_epoch()`, `post_epoch()`). Note that not all of those are relevant to every application.
+The `EnvironmentInterface` should define all the key events at which the environment needs to be accessed or modified. This includes initializing the environment (`__init__()`), retrieving the next observation (`__next__()`), and things that happen at the beginning or end of episodes and epochs (`pre_episode()`, `post_episode()`, `pre_epoch()`, `post_epoch()`). Note that not all of those are relevant to every application.
 
 Think about how your experiment should be structured. What defines an episode? What happens with the environment at the beginning or end of each episode? What happens at the beginning or end of epochs? Does anything need to happen at every step besides retrieving the observation and environment state?
 
@@ -103,7 +103,7 @@ Learning and inference on Omniglot characters can be implemented by writing two 
    - Defines the `step(actions)` function, which uses the current `step_num` in the episode to determine where we are in the stroke sequence and extracts a patch around that location. It then returns a Gaussian smoothed version of this patch as the observation.
    - Defines `get_state()`, which returns the current x, y, z location on the character as a state dict (z is always zero since we are in 2D space here).
    - Defines `reset()` to reset the `step_num` counter and return the first observation on a new character.
-   - Helper functions such as 
+   - Helper functions such as
      - `switch_to_object` and `load_new_character_data` to load a new character
      - `get_image_patch(img, loc, patch_size)` to extract the patch around a given pixel location
      - `motor_to_locations` to convert the movement information from the Omniglot dataset into locations (pixel indices) on the character image
@@ -129,14 +129,14 @@ omniglot_training = dict(
     	sensor_module_configs=omniglot_sensor_module_config,
 	),
 	dataset_args=OmniglotDatasetArgs(),
-	train_dataloader_class=ED.OmniglotDataLoader,
+	train_env_interface_class=ED.OmniglotDataLoader,
 	# Train on the first version of each character (there are 20 drawings for each
 	# character in each alphabet, here we see one of them). The default
-	# OmniglotDataloaderArgs specify alphabets = [0, 0, 0, 1, 1, 1] and
+	# OmniglotEnvironmentInterfaceArgs specify alphabets = [0, 0, 0, 1, 1, 1] and
     # characters = [1, 2, 3, 1, 2, 3]) so in the first episode we will see version 1
 	# of character 1 in alphabet 0, in the next episode version 1 of character 2 in
 	# alphabet 0, and so on.
-	train_dataloader_args=OmniglotDataloaderArgs(versions=[1, 1, 1, 1, 1, 1]),
+	train_env_interface_args=OmniglotEnvironmentInterfaceArgs(versions=[1, 1, 1, 1, 1, 1]),
 )
 ```
 
@@ -180,12 +180,12 @@ omniglot_inference = dict(
         sensor_module_configs=omniglot_sensor_module_config,
     ),
     dataset_args=OmniglotDatasetArgs(),
-    eval_dataloader_class=ED.OmniglotDataLoader,
+    eval_env_interface_class=ED.OmniglotDataLoader,
     # Using version 1 means testing on the same version of the character as trained.
     # Version 2 is a new drawing of the previously seen characters. In this small test
     # setting these are 3 characters from 2 alphabets.
-    eval_dataloader_args=OmniglotDataloaderArgs(versions=[1, 1, 1, 1, 1, 1]),
-    # eval_dataloader_args=OmniglotDataloaderArgs(versions=[2, 2, 2, 2, 2, 2]),
+    eval_env_interface_args=OmniglotEnvironmentInterfaceArgs(versions=[1, 1, 1, 1, 1, 1]),
+    # eval_env_interface_args=OmniglotEnvironmentInterfaceArgs(versions=[2, 2, 2, 2, 2, 2]),
 )
 ```
 
@@ -208,7 +208,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
 	ExperimentArgs,
-	OmniglotDataloaderArgs,
+	OmniglotEnvironmentInterfaceArgs,
 	OmniglotDatasetArgs,
 	SupervisedPretrainingExperimentArgs,
 )
@@ -271,8 +271,8 @@ And add the two experiments into the `MyExperiment` class in `benchmarks/configs
 Now you can run training by calling `python benchmarks/run.py -e omniglot_training` and then inference on these models by calling `python benchmarks/run.py -e omniglot_inference`. You can check the `eval_stats.csv` file in `~/tbp/results/monty/projects/monty_runs/omniglot_inference/` to see how Monty did. If you copied the code above, it should have recognized all six characters correctly.
 
 > ❗️ Generalization Performance on Omniglot is Bad Without Hierarchy
-> Note that we currently don't get good generalization performance on the Omniglot dataset. If you use the commented-out dataset_args (`eval_dataloader_args=OmniglotDataloaderArgs(versions=[2, 2, 2, 2, 2, 2])`) in the inference config, which shows previously unseen versions of the characters, you will see that performance degrades a lot. This is because the Omniglot characters are fundamentally compositional objects (strokes relative to each other), and compositional objects can only be modeled by stacking two learning modules hierarchically. The above configs do not do this. Our research team is hard at work getting Monty to model compositional objects.
- 
+> Note that we currently don't get good generalization performance on the Omniglot dataset. If you use the commented-out dataset_args (`eval_env_interface_args=OmniglotEnvironmentInterfaceArgs(versions=[2, 2, 2, 2, 2, 2])`) in the inference config, which shows previously unseen versions of the characters, you will see that performance degrades a lot. This is because the Omniglot characters are fundamentally compositional objects (strokes relative to each other), and compositional objects can only be modeled by stacking two learning modules hierarchically. The above configs do not do this. Our research team is hard at work getting Monty to model compositional objects.
+
 ## Example 2: Monty Meets World
 Monty Meets World is the code name for our first demo of Monty on real-world data. For a video of this momentous moment (or is that Montymentous?), see our [project showcase page](https://thousandbrainsproject.readme.io/docs/project-showcase#monty-for-object-detection-with-the-ipad-camera).
 
@@ -295,12 +295,12 @@ This can be implemented using two custom classes the [SaccadeOnImageEnvironment]
    - Defines the `TwoDDataActionSpace` to move up, down, left, and right on the image by a given amount of pixels.
    - Defines the `step(actions)` function, which uses the sensor's current location, the given actions, and their amounts to determine the new location on the image and extract a patch. It updates `self.current_loc` and returns the sensor patch observations as a dictionary.
    - Defines `get_state()`, which returns the current state as a dictionary. The dictionary mostly contains `self.current_loc` and placeholders for the orientation, as the sensor and agent orientation never change.
-   - Helper functions such as 
+   - Helper functions such as
      - `switch_to_object(scene_id, scene_version_id)` to load a new image
      - `get_3d_scene_point_cloud` to extract a 3D point cloud from the depth image
      - `get_next_loc(action_name, amount)` to determine valid next locations in pixel space
      - `get_3d_coordinates_from_pixel_indices(pixel_ids)` to get the 3D location from a pixel index
-     - `get_image_patch(loc)` to extract a patch at a location in the image. 
+     - `get_image_patch(loc)` to extract a patch at a location in the image.
   	These functions are all used internally within the `__init__`, `step`, and `get_state` functions (except for the `switch_to_object` function, which is called by the `SaccadeOnImageDataLoader`).
 2. `SaccadeOnImageDataLoader`:
    - Defines initialization of basic variables such as episode and epoch counters in the `__init__` function.
@@ -327,8 +327,8 @@ monty_meets_world_2dimage_inference = dict(
 	dataset_args=WorldImageDatasetArgs(
     	env_init_args=EnvInitArgsMontyWorldStandardScenes()
 	),
-	eval_dataloader_class=ED.SaccadeOnImageDataLoader,
-	eval_dataloader_args=WorldImageDataloaderArgs(
+	eval_env_interface_class=ED.SaccadeOnImageDataLoader,
+	eval_env_interface_args=WorldImageEnvironmentInterfaceArgs(
     	scenes=list(np.repeat(range(12), 4)),
     	versions=list(np.tile(range(4), 12)),
 	),
@@ -363,7 +363,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
 	EnvInitArgsMontyWorldStandardScenes,
 	EvalExperimentArgs,
-	WorldImageDataloaderArgs,
+	WorldImageEnvironmentInterfaceArgs,
 	WorldImageDatasetArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
@@ -375,10 +375,10 @@ model_path_numenta_lab_obj = os.path.join(
 )
 ```
 
-To run the experiment, call `python benchmarks/run.py -e monty_meets_world_2dimage_inference`. If you don't want to log to wandb, add ` wandb_handlers=[]` to the `logging_config`. If you just want to run a quick test on a few of the images, simply adjust the `scenes` and `versions` parameters in the `eval_dataloader_args`.
+To run the experiment, call `python benchmarks/run.py -e monty_meets_world_2dimage_inference`. If you don't want to log to wandb, add ` wandb_handlers=[]` to the `logging_config`. If you just want to run a quick test on a few of the images, simply adjust the `scenes` and `versions` parameters in the `eval_env_interface_args`.
 
 # Other Things You May Need to Customize
-If your application uses sensors different from our commonly used cameras and depth sensors, or you want to extract specific features from your sensory input, you will need to define a custom sensor module. The sensor module receives the raw observations from the dataloader and converts them into the CMP, which contains features at poses. For more details on converting raw observations into the CMP, see our [documentation on sensor modules](https://thousandbrainsproject.readme.io/docs/observations-transforms-sensor-modules).
+If your application uses sensors different from our commonly used cameras and depth sensors, or you want to extract specific features from your sensory input, you will need to define a custom sensor module. The sensor module receives the raw observations from the environment interface and converts them into the CMP, which contains features at poses. For more details on converting raw observations into the CMP, see our [documentation on sensor modules](https://thousandbrainsproject.readme.io/docs/observations-transforms-sensor-modules).
 
 If your application requires a specific policy to move through the environment or you have a complex actuator to control, you might want to implement a custom `MotorSystem` or `MotorPolicy` class. For more details on our existing motor system and policies, see our [documentation on Monty's policies](https://thousandbrainsproject.readme.io/docs/policy).
 

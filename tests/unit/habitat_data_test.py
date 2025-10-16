@@ -27,7 +27,7 @@ from tbp.monty.frameworks.actions.action_samplers import (
     UniformlyDistributedSampler,
 )
 from tbp.monty.frameworks.config_utils.config_args import make_base_policy_config
-from tbp.monty.frameworks.environments.embodied_data import EnvironmentDataLoader
+from tbp.monty.frameworks.environments.embodied_data import EnvironmentInterface
 from tbp.monty.frameworks.environments.embodied_environment import ActionSpace
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -131,7 +131,7 @@ class HabitatDataTest(unittest.TestCase):
         # Create habitat env datasets with distant-agent action space
         env_init_args = dict(agents=[self.camera_dist_config])
         env = HabitatEnvironment(**env_init_args)
-        env_interface_dist = EnvironmentDataLoader(
+        env_interface_dist = EnvironmentInterface(
             env, rng=rng, motor_system=motor_system_dist
         )
 
@@ -194,7 +194,7 @@ class HabitatDataTest(unittest.TestCase):
         # Create habitat env datasets with absolute action space
         env_init_args = dict(agents=[self.camera_abs_config])
         env = HabitatEnvironment(**env_init_args)
-        env_interface_abs = EnvironmentDataLoader(
+        env_interface_abs = EnvironmentInterface(
             env,
             rng=rng,
             motor_system=motor_system_abs,
@@ -260,7 +260,7 @@ class HabitatDataTest(unittest.TestCase):
         # Create habitat env datasets with distant-agent action space
         env_init_args = dict(agents=[self.camera_surf_config])
         env = HabitatEnvironment(**env_init_args)
-        env_interface_surf = EnvironmentDataLoader(
+        env_interface_surf = EnvironmentInterface(
             env, rng=rng, motor_system=motor_system_surf
         )
 
@@ -295,7 +295,7 @@ class HabitatDataTest(unittest.TestCase):
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
-    def test_dataloader_dist(self, mock_simulator_class, mock_agent_class):
+    def test_env_interface_dist(self, mock_simulator_class, mock_agent_class):
         # Mock habitat_sim classes
         mock_agent_dist = mock_agent_class.return_value
         mock_agent_dist.agent_config = self.camera_dist.get_spec()
@@ -323,11 +323,11 @@ class HabitatDataTest(unittest.TestCase):
 
         env_init_args = dict(agents=[self.camera_dist_config])
         env = HabitatEnvironment(**env_init_args)
-        dataloader_dist = EnvironmentDataLoader(
+        env_interface_dist = EnvironmentInterface(
             env, motor_system=motor_system_dist, rng=rng
         )
 
-        for i, item in enumerate(dataloader_dist):
+        for i, item in enumerate(env_interface_dist):
             camera_obs_dist = item[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_dist[SENSORS[0]] == EXPECTED_STATES[i]))
             if i >= DATASET_LEN - 1:
@@ -335,7 +335,7 @@ class HabitatDataTest(unittest.TestCase):
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
-    def test_dataloader_abs(self, mock_simulator_class, mock_agent_class):
+    def test_env_interface_abs(self, mock_simulator_class, mock_agent_class):
         # Mock habitat_sim classes
         mock_agent_abs = mock_agent_class.return_value
         mock_agent_abs.agent_config = self.camera_abs.get_spec()
@@ -362,10 +362,10 @@ class HabitatDataTest(unittest.TestCase):
         )
         env_init_args = dict(agents=[self.camera_abs_config])
         env = HabitatEnvironment(**env_init_args)
-        dataloader_abs = EnvironmentDataLoader(
+        env_interface_abs = EnvironmentInterface(
             env, motor_system=motor_system_abs, rng=rng
         )
-        for i, item in enumerate(dataloader_abs):
+        for i, item in enumerate(env_interface_abs):
             camera_obs_abs = item[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_abs[SENSORS[0]] == EXPECTED_STATES[i]))
             if i >= DATASET_LEN - 1:
@@ -373,7 +373,7 @@ class HabitatDataTest(unittest.TestCase):
 
     @mock.patch("habitat_sim.Agent", autospec=True)
     @mock.patch("habitat_sim.Simulator", autospec=True)
-    def test_dataloader_surf(self, mock_simulator_class, mock_agent_class):
+    def test_env_interface_surf(self, mock_simulator_class, mock_agent_class):
         # Mock habitat_sim classes
         mock_agent_surf = mock_agent_class.return_value
         mock_agent_surf.agent_config = self.camera_surf.get_spec()
@@ -403,10 +403,10 @@ class HabitatDataTest(unittest.TestCase):
 
         env_init_args = dict(agents=[self.camera_surf_config])
         env = HabitatEnvironment(**env_init_args)
-        dataloader_surf = EnvironmentDataLoader(
+        env_interface_surf = EnvironmentInterface(
             env, motor_system=motor_system_surf, rng=rng
         )
-        for i, item in enumerate(dataloader_surf):
+        for i, item in enumerate(env_interface_surf):
             camera_obs_surf = item[AGENT_ID][SENSOR_ID]
             self.assertTrue(np.all(camera_obs_surf[SENSORS[0]] == EXPECTED_STATES[i]))
             if i >= DATASET_LEN - 1:

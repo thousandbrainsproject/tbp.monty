@@ -40,8 +40,8 @@ from tbp.monty.frameworks.config_utils.config_args import (
     SurfaceAndViewMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataLoaderPerObjectEvalArgs,
-    EnvironmentDataLoaderPerObjectTrainArgs,
+    EnvironmentInterfacePerObjectEvalArgs,
+    EnvironmentInterfacePerObjectTrainArgs,
     ExperimentArgs,
     PredefinedObjectInitializer,
 )
@@ -68,9 +68,9 @@ from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsFiveLMMount,
     EnvInitArgsPatchViewMount,
     EnvInitArgsSurfaceViewMount,
-    FiveLMMountHabitatDatasetArgs,
-    PatchViewFinderMountHabitatDatasetArgs,
-    SurfaceViewFinderMountHabitatDatasetArgs,
+    FiveLMMountHabitatEnvironmentArgs,
+    PatchViewFinderMountHabitatEnvironmentArgs,
+    SurfaceViewFinderMountHabitatEnvironmentArgs,
 )
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
@@ -174,16 +174,16 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
-            dataset_args=PatchViewFinderMountHabitatDatasetArgs(
+            dataset_args=PatchViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
-            train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_class=ED.InformedEnvironmentInterface,
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
-            eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
+            eval_env_interface_class=ED.InformedEnvironmentInterface,
+            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
                 object_names=["capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -194,7 +194,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             monty_config=SurfaceAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20),
             ),
-            dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(
+            dataset_args=SurfaceViewFinderMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
             ),
         )
@@ -366,7 +366,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 ),
             ),
             # always show objects in same orientation
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     rotations=[[0.0, 0.0, 0.0]]
@@ -376,15 +376,15 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
         feature_pred_tests_offset = copy.deepcopy(fixed_actions_feat)
         feature_pred_tests_offset.update(
-            train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_class=ED.InformedEnvironmentInterface,
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     positions=[[0.0, 1.5, 0.0]]
                 ),
             ),
-            eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
+            eval_env_interface_class=ED.InformedEnvironmentInterface,
+            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
                 object_names=["capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -454,8 +454,8 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                     )
                 ),
             ),
-            train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_class=ED.InformedEnvironmentInterface,
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=["capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     rotations=[[0, 0, 0]],
@@ -519,7 +519,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                     learning_module_4=multi_ppf_displacement_lm_config,
                 ),
             ),
-            dataset_args=FiveLMMountHabitatDatasetArgs(
+            dataset_args=FiveLMMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsFiveLMMount(data_path=None).__dict__,
             ),
         )
@@ -578,7 +578,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                     learning_module_4=lm4_config,
                 ),
             ),
-            dataset_args=FiveLMMountHabitatDatasetArgs(
+            dataset_args=FiveLMMountHabitatEnvironmentArgs(
                 env_init_args=EnvInitArgsFiveLMMount(data_path=None).__dict__,
             ),
         )
@@ -634,7 +634,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             pprint("...training...")
             exp.pre_epoch()
             exp.pre_episode()
-            for step, observation in enumerate(exp.dataloader):
+            for step, observation in enumerate(exp.env_interface):
                 exp.model.step(observation)
                 self.assertEqual(
                     step + 1,
@@ -838,8 +838,8 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
         # check that the object being used is the same one from original exp
         self.assertEqual(
-            eval_cfg_1["eval_dataloader_args"].object_names,
-            eval_cfg_2["eval_dataloader_args"]["object_names"],
+            eval_cfg_1["eval_env_interface_args"].object_names,
+            eval_cfg_2["eval_env_interface_args"]["object_names"],
         )
 
         # If we made it this far, we have the correct parameters. Now run the experiment
@@ -936,14 +936,14 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         # capsule3DSolid is used as the lone eval object; make sure it is listed once
         # per episode
         self.assertEqual(
-            eval_cfg_2["eval_dataloader_args"]["object_names"],
+            eval_cfg_2["eval_env_interface_args"]["object_names"],
             ["capsule3DSolid", "capsule3DSolid", "capsule3DSolid"],
         )
 
         # Original sampler had just first two rotations, should cycle back to the first
         # on the third episode
         self.assertEqual(
-            eval_cfg_2["eval_dataloader_args"]["object_init_sampler"].rotations,
+            eval_cfg_2["eval_env_interface_args"]["object_init_sampler"].rotations,
             [[0.0, 0.0, 0.0], [45.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
         )
 
@@ -1032,8 +1032,8 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
         # check that the object being used is the same one from original exp
         self.assertEqual(
-            eval_cfg_1["eval_dataloader_args"].object_names,
-            eval_cfg_2["eval_dataloader_args"]["object_names"],
+            eval_cfg_1["eval_env_interface_args"].object_names,
+            eval_cfg_2["eval_env_interface_args"]["object_names"],
         )
 
         # If we made it this far, we have the correct parameters. Now run the experiment
@@ -1760,12 +1760,12 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 exp.pre_episode()
                 # Normally the experiment `pre_episode` method would call the model
                 # `pre_episode` method, but it expects to feed data from a dataset/
-                # dataloader to the model, and we aren't using that, so we call it
+                # environment interface to the model, and we aren't using that, so we call it
                 # again with the correct target value.
                 monty.pre_episode(self.placeholder_target)
                 for step in range(tm.num_observations(episode_num)):
                     # Manually run through the internal Monty steps since we aren't
-                    # using the data from the dataset/dataloader and instead providing
+                    # using the data from the dataset/environment interface and instead providing
                     # faked observations.
                     monty.sensor_module_outputs = [
                         lm.episodes[episode_num].observations[step]
