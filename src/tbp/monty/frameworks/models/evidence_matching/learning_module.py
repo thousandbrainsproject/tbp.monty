@@ -459,8 +459,9 @@ class EvidenceGraphLM(GraphLM):
             },
             non_morphological_features={
                 "object_id": object_id_features,
-                # TODO H: test if this makes sense to communicate
-                # "location_rel_model": mlh["location"],
+                # TODO H: test if it makes sense to communicate mlh["location"] as a
+                # non-morphological feature as well (would be kind of like the inverse
+                # of top-down connections).
             },
             confidence=confidence,
             use_state=use_state,
