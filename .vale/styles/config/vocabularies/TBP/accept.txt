@@ -192,7 +192,7 @@
 \bvoxel\b
 \bvoxels\b
 \bVSCode\b
-\bWalkthrough\b
+\b[Ww]alkthrough\b
 \bWardley\b
 \bwandb\b
 \bworldimages\b
@@ -202,3 +202,6 @@
 \bYouTube\b
 \bzsh\b
 \b[Dd]iscretizing\b
+\b[Mm]agnocellular\b
+\b[Pp]arvocellular\b
+\bKraus\b
