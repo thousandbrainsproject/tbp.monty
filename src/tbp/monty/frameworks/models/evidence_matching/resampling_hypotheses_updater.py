@@ -361,7 +361,7 @@ class ResamplingHypothesesUpdater:
                     channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry
                 )
 
-        return (hypotheses_updates, resampling_telemetry)
+        return hypotheses_updates, resampling_telemetry
 
     def _num_hyps_per_node(self, channel_features: dict) -> int:
         """Calculate the number of hypotheses per node.
