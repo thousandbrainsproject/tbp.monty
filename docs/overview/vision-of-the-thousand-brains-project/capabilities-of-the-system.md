@@ -47,15 +47,4 @@ Following is a list of capabilities that we are always thinking about when desig
 ### Video Walkthrough of Monty's Capabilities
 Finally, here is a video that walks through all of the system's current capabilities (including hard data) and our current thoughts and plans for future capabilities.
 
-[block:embed]
-{
-  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2F3d4DmnODLnE%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D3d4DmnODLnE&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2F3d4DmnODLnE%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
-  "url": "https://www.youtube.com/watch?v=3d4DmnODLnE",
-  "title": "2025/07 - Thousand-Brains Systems: Sensorimotor Intelligence for Rapid Robust Learning and Inference",
-  "favicon": "https://www.youtube.com/favicon.ico",
-  "image": "https://i.ytimg.com/vi/3d4DmnODLnE/hqdefault.jpg",
-  "provider": "https://www.youtube.com/",
-  "href": "https://www.youtube.com/watch?v=3d4DmnODLnE",
-  "typeOfEmbed": "youtube"
-}
-[/block]
+[2025/07 - Thousand-Brains Systems: Sensorimotor Intelligence for Rapid Robust Learning and Inference](https://www.youtube.com/watch?v=3d4DmnODLnE)
