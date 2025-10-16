@@ -107,7 +107,8 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
     def assert_counts_equal(sim: MuJoCoSimulator, count: int) -> None:
         assert sim.model.ngeom == count
         assert sim.num_objects == count
-        assert len(sim.spec.geoms) == count
+        if hasattr(sim.spec, "geoms"):  # only in MuJoCo v3.2.5+
+            assert len(sim.spec.geoms) == count
 
     @staticmethod
     def parse_spec_geoms(spec: MjSpec) -> List[Element]:
