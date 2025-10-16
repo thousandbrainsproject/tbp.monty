@@ -8,8 +8,6 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-from __future__ import annotations
-
 import os
 from dataclasses import dataclass, field
 from numbers import Number
@@ -61,7 +59,7 @@ class ExperimentArgs:
     model_name_or_path: str = ""
     min_lms_match: int = 1
     seed: int = 42
-    supervised_lm_ids: List[str] | Literal["all"] = field(default_factory=list)
+    supervised_lm_ids: Union[List[str], Literal["all"]] = field(default_factory=list)
 
 
 @dataclass
@@ -85,7 +83,7 @@ class EvalExperimentArgs(ExperimentArgs):
 class SupervisedPretrainingExperimentArgs(ExperimentArgs):
     do_eval: bool = False
     n_train_epochs: int = 1
-    supervised_lm_ids: List[str] | Literal["all"] = "all"
+    supervised_lm_ids: Union[List[str], Literal["all"]] = "all"
 
 
 # Data-set containing RGBD images of real-world objects taken with a mobile device
@@ -328,7 +326,7 @@ class RandomRotationObjectInitializer(DefaultObjectInitializer):
 class EnvironmentDataloaderPerObjectArgs:
     object_names: List
     object_init_sampler: Callable
-    parent_to_child_mapping: dict | None = None
+    parent_to_child_mapping: Optional[Dict[str, List[str]]] = None
 
 
 @dataclass
