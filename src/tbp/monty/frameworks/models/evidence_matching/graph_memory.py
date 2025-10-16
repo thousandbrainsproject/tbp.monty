@@ -12,7 +12,6 @@ import logging
 
 from tbp.monty.frameworks.models.graph_matching import GraphMemory
 from tbp.monty.frameworks.models.object_model import (
-    GraphObjectModel,
     GridObjectModel,
     GridTooSmallError,
 )
@@ -79,13 +78,28 @@ class EvidenceGraphMemory(GraphMemory):
         for input_channel in model.keys():
             channel_model = model[input_channel]
             try:
-                if isinstance(channel_model, GraphObjectModel):
+                if not isinstance(channel_model, GridObjectModel):
                     # When loading a model trained with a different LM, need to convert
                     # it to the GridObjectModel (with use_original_graph == True)
                     loaded_graph = channel_model._graph
                     channel_model = self._initialize_model_with_graph(
                         graph_id, loaded_graph
                     )
+                else:
+                    # serialization seems to mess up the sparse tensors, so we need to
+                    # coalesce them again.
+                    if channel_model._observation_count is not None:
+                        channel_model._observation_count = (
+                            channel_model._observation_count.coalesce()
+                        )
+                    if channel_model._feature_grid is not None:
+                        channel_model._feature_grid = (
+                            channel_model._feature_grid.coalesce()
+                        )
+                    if channel_model._location_grid is not None:
+                        channel_model._location_grid = (
+                            channel_model._location_grid.coalesce()
+                        )
 
                 logger.info(f"Loaded {model} for {input_channel}")
                 self.models_in_memory[graph_id][input_channel] = channel_model

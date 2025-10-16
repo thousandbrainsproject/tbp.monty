@@ -104,6 +104,11 @@ class MontyExperiment:
         self.min_lms_match = experiment_args["min_lms_match"]
         self.rng = np.random.RandomState(experiment_args["seed"])
         self.show_sensor_output = experiment_args["show_sensor_output"]
+        self.supervised_lm_ids = experiment_args["supervised_lm_ids"]
+        if self.supervised_lm_ids == "all":
+            self.supervised_lm_ids = list(
+                self.config["monty_config"]["learning_module_configs"].keys()
+            )
 
     def init_model(self, monty_config, model_path=None):
         """Initialize the Monty model.
@@ -303,7 +308,12 @@ class MontyExperiment:
         )
         # FIXME: 'target' attribute is specific to `EnvironmentDataLoaderPerObject`
         if isinstance(self.dataloader, EnvironmentDataLoaderPerObject):
-            args.update(target=self.dataloader.primary_target)
+            target = self.dataloader.primary_target
+            if target is not None:
+                target.update(
+                    consistent_child_objects=self.dataloader.consistent_child_objects
+                )
+            args.update(target=target)
         return args
 
     def init_loggers(self, logging_config: Dict[str, Any]) -> None:

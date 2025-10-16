@@ -27,8 +27,8 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PatchAndViewMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    ExperimentArgs,
     get_env_dataloader_per_object_by_idx,
+    SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments.pretraining_experiments import (
@@ -48,7 +48,7 @@ from tbp.monty.simulators.habitat.configs import (
 first_experiment = dict(
     experiment_class=MontySupervisedObjectPretrainingExperiment,
     logging_config=LoggingConfig(),
-    experiment_args=ExperimentArgs(
+    experiment_args=SupervisedPretrainingExperimentArgs(
         do_eval=False,
         max_train_steps=1,
         n_train_epochs=1,

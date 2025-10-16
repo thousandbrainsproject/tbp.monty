@@ -28,8 +28,8 @@ from tbp.monty.frameworks.config_utils.config_args import (
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
-    ExperimentArgs,
     PredefinedObjectInitializer,
+    SupervisedPretrainingExperimentArgs,
     get_object_names_by_idx,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
@@ -61,7 +61,7 @@ from tbp.monty.simulators.habitat.configs import (
 # FOR SUPERVISED PRETRAINING: 14 unique rotations that give good views of the object.
 train_rotations_all = get_cube_face_and_corner_views_rotations()
 
-monty_models_dir = os.getenv("MONTY_MODELS")
+monty_models_dir = os.getenv("MONTY_MODELS", "")
 
 fe_pretrain_dir = os.path.expanduser(
     os.path.join(monty_models_dir, "pretrained_ycb_v10")
@@ -73,12 +73,12 @@ pre_surf_agent_visual_training_model_path = os.path.join(
 
 supervised_pre_training_base = dict(
     experiment_class=MontySupervisedObjectPretrainingExperiment,
-    experiment_args=ExperimentArgs(
-        do_eval=False,
+    experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=len(train_rotations_all),
     ),
     logging_config=PretrainLoggingConfig(
         output_dir=fe_pretrain_dir,
+        python_log_level="INFO",
     ),
     monty_config=PatchAndViewMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=500),
@@ -138,9 +138,8 @@ supervised_pre_training_base = dict(
 
 only_surf_agent_training_10obj = copy.deepcopy(supervised_pre_training_base)
 only_surf_agent_training_10obj.update(
-    experiment_args=ExperimentArgs(
+    experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=len(train_rotations_all),
-        do_eval=False,
     ),
     monty_config=SurfaceAndViewMontyConfig(
         monty_args=MontyFeatureGraphArgs(num_exploratory_steps=1000),

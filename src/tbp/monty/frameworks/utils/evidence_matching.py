@@ -232,7 +232,7 @@ class ChannelMapper:
 
         start, end = self.channel_range(channel)
 
-        if self.channel_sizes[channel] == data.shape[0]:
+        if (self.channel_sizes[channel] == data.shape[0]) and original.shape[0] > end:
             # returns a view not a copy
             original[start:end] = data
         else:
