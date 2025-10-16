@@ -347,7 +347,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             "semantic_id": self.semantic_label_to_id[self.object_names[idx]],
             **self.object_params,
         }
-        if self.parent_to_child_mapping is not None:
+        if self.parent_to_child_mapping:
             if self.primary_target["object"] in self.parent_to_child_mapping:
                 self.consistent_child_objects = self.parent_to_child_mapping[
                     self.primary_target["object"]
