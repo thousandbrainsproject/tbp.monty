@@ -103,55 +103,59 @@ class RotationFromQuatTest(unittest.TestCase):
         np.testing.assert_array_equal(result.as_quat(), expected.as_quat())
 
 
-class CartesianTransformZeroTest(unittest.TestCase):
-    def setUp(self):
-        self.cartesian_zero = np.array([0, 0, 0], dtype=float)
-        self.spherical_zero = np.array([0, -np.pi, 0], dtype=float)
-        self.spherical_zero_equivalents = np.array(
-            [
-                [0.0, 0.1, -0.2],
-                [0.0, -2.0, -1.0],
-                [0.0, 0.0, -1.2],
-                [0.0, 1.0, 0.5],
-            ]
-        )
-        self.radii = np.arange(1, 6)
+def canonical_cartesian_spherical_pairs():
+    return [
+        ("origin", [0, 0, 0], [0, -np.pi, 0]),
+        ("left", [-1, 0, 0], [1, np.pi / 2, 0]),
+        ("right", [1, 0, 0], [1, -np.pi / 2, 0]),
+        ("up", [0, 1, 0], [1, -np.pi, np.pi / 2]),
+        ("down", [0, -1, 0], [1, -np.pi, -np.pi / 2]),
+        ("forward", [0, 0, -1], [1, 0, 0]),
+        ("backward", [0, 0, 1], [1, -np.pi, 0]),
+    ]
 
-    def test_origin(self):
-        cartesian, spherical = [0, 0, 0], [0, -np.pi, 0]
-        result = cartesian_to_spherical(cartesian)
-        np.testing.assert_allclose(result, spherical)
 
-    def test_left(self):
-        cartesian, spherical = [-1, 0, 0], [1, np.pi / 2, 0]
-        result = cartesian_to_spherical(cartesian)
-        np.testing.assert_allclose(result, spherical)
+class CartesianToSphericalCanonicalPairsTest(unittest.TestCase):
+    def test_cartesian_to_spherical(self):
+        for name, cartesian, spherical in canonical_cartesian_spherical_pairs():
+            with self.subTest(name=name):
+                result = cartesian_to_spherical(cartesian)
+                np.testing.assert_allclose(result, spherical, rtol=1e-15, atol=1e-15)
 
-    def test_right(self):
-        cartesian, spherical = [1, 0, 0], [1, -np.pi / 2, 0]
-        result = cartesian_to_spherical(cartesian)
-        np.testing.assert_allclose(result, spherical)
 
-    def test_up(self):
-        cartesian, spherical = [0, 1, 0], [1, -np.pi, np.pi / 2]
-        result = cartesian_to_spherical(cartesian)
-        np.testing.assert_allclose(result, spherical)
+class SphericalToCartesianCanonicalPairsTest(unittest.TestCase):
+    def test_spherical_to_cartesian(self):
+        for name, cartesian, spherical in canonical_cartesian_spherical_pairs():
+            with self.subTest(name=name):
+                result = spherical_to_cartesian(spherical)
+                np.testing.assert_allclose(result, cartesian, rtol=1e-15, atol=1e-15)
 
-    def test_down(self):
-        cartesian, spherical = [0, -1, 0], [1, -np.pi, -np.pi / 2]
-        result = cartesian_to_spherical(cartesian)
-        np.testing.assert_allclose(result, spherical)
 
-    def test_forward(self):
-        cartesian, spherical = [0, 0, -1], [1, 0, 0]
-        result = cartesian_to_spherical(cartesian)
-        np.testing.assert_allclose(result, spherical)
+class CartesianToSphericalRoundTripTest(unittest.TestCase):
+    def test_canonical_pairs(self):
+        for name, cartesian, spherical in canonical_cartesian_spherical_pairs():
+            with self.subTest(name=name):
+                result = cartesian_to_spherical(cartesian)
+                np.testing.assert_allclose(result, spherical, rtol=1e-15, atol=1e-15)
+                result = spherical_to_cartesian(spherical)
+                np.testing.assert_allclose(result, cartesian, rtol=1e-15, atol=1e-15)
 
-    def test_backward(self):
-        cartesian, spherical = [0, 0, 1], [1, np.pi, 0]
-        result = cartesian_to_spherical(cartesian)
-        np.testing.assert_allclose(result, spherical)
+    def test_random_cartesian_coords(self):
+        n_points = 1000
+        cartesian_in = np.random.uniform(low=-2, high=2, size=(n_points, 3))
+        spherical_out = cartesian_to_spherical(cartesian_in)
+        cartesian_out = spherical_to_cartesian(spherical_out)
+        np.testing.assert_allclose(cartesian_out, cartesian_in, rtol=1e-12, atol=1e-12)
 
+    def test_random_spherical_coords(self):
+        n_points = 1000
+        radii = np.random.uniform(low=0, high=2, size=n_points)
+        azimuths = np.random.uniform(low=-np.pi, high=np.pi, size=n_points)
+        elevations = np.random.uniform(low=-np.pi / 2, high=np.pi / 2, size=n_points)
+        spherical_in = np.column_stack([radii, azimuths, elevations])
+        cartesian_out = spherical_to_cartesian(spherical_in)
+        spherical_out = cartesian_to_spherical(cartesian_out)
+        np.testing.assert_allclose(spherical_out, spherical_in, rtol=1e-12, atol=1e-12)
 
 if __name__ == "__main__":
     unittest.main()

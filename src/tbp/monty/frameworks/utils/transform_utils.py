@@ -80,7 +80,7 @@ def rotation_from_quat(quat: ArrayLike, scalar_first: bool = True) -> Rotation:
     return Rotation.from_quat(quat)
 
 
-def cartesian_to_spherical(coords: ArrayLike, degrees: bool = False) -> np.ndarray:
+def cartesian_to_spherical(coords: ArrayLike) -> np.ndarray:
     """Convert Cartesian coordinates to spherical coordinates.
 
     Converts Cartesian (x, y, z) coordinates to spherical (radius, azimuth, elevation)
@@ -96,27 +96,24 @@ def cartesian_to_spherical(coords: ArrayLike, degrees: bool = False) -> np.ndarr
     Args:
         coords: x, y, z coordinates with shape (3,) for a single point or
             (N, 3) for multiple points.
-        degrees: Whether to return angles in degrees. Defaults to False.
 
     Returns:
         A (3,) or (N, 3) shaped array of spherical coordinates.
     """
-    coords = np.asarray(coords)
+    coords = np.asarray(coords, dtype=float)
     x, y, z = coords if coords.ndim == 1 else coords.T
 
     radius = np.sqrt(x**2 + y**2 + z**2)
+    radius_xz = np.sqrt(x**2 + z**2)
     azimuth = -np.arctan2(x, -z)
-    elevation = np.arctan2(y, np.sqrt(x**2 + z**2))
-
-    if degrees:
-        azimuth, elevation = np.degrees(azimuth), np.degrees(elevation)
+    elevation = np.arctan2(y, radius_xz)
 
     if coords.ndim == 1:
         return np.array([radius, azimuth, elevation])
     return np.column_stack([radius, azimuth, elevation])
 
 
-def spherical_to_cartesian(coords: ArrayLike, degrees: bool = False) -> np.ndarray:
+def spherical_to_cartesian(coords: ArrayLike) -> np.ndarray:
     """Convert spherical coordinates to Cartesian coordinates.
 
     Converts (radius, azimuth, elevation) coordinates to (x, y, z) coordinates
@@ -128,16 +125,12 @@ def spherical_to_cartesian(coords: ArrayLike, degrees: bool = False) -> np.ndarr
     Args:
         coords: (radius, azimuth, elevation coordinates) in with shape (3,) for
             a single point or (N, 3) for multiple points.
-        degrees: Whether angles are given in degrees. Defaults to False.
 
     Returns:
         A (3,) or (N, 3) shaped array of Cartesian coordinates.
     """
-    coords = np.asarray(coords)
+    coords = np.asarray(coords, dtype=float)
     radius, azimuth, elevation = coords if coords.ndim == 1 else coords.T
-
-    if degrees:
-        azimuth, elevation = np.radians(azimuth), np.radians(elevation)
 
     y = radius * np.sin(elevation)
     radius_along_xz = radius * np.cos(elevation)
