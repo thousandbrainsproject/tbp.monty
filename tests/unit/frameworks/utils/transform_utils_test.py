@@ -13,8 +13,10 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.utils.transform_utils import (
+    cartesian_to_spherical,
     rotation_as_quat,
     rotation_from_quat,
+    spherical_to_cartesian,
 )
 
 
@@ -99,6 +101,42 @@ class RotationFromQuatTest(unittest.TestCase):
         result = rotation_from_quat(self.quats_scalar_first[0])
         expected = self.rotations[0]
         np.testing.assert_array_equal(result.as_quat(), expected.as_quat())
+
+
+class CartesianTransformZeroTest(unittest.TestCase):
+    def setUp(self):
+        self.cartesian_zero = np.array([0, 0, 0], dtype=float)
+        self.spherical_zero = np.array([0, -np.pi, 0], dtype=float)
+        self.radius_zero_coords = np.array(
+            [
+                [0.0, 0.1, -0.2],
+                [0.0, -2.0, -1.0],
+                [0.0, 0.0, -1.2],
+                [0.0, 1.0, 0.5],
+            ]
+        )
+
+    def test_cartesian_to_spherical(self):
+        coords_in = np.array([0, 0, 0], dtype=float)
+        expected = np.array([0, -np.pi, 0])
+        result = cartesian_to_spherical(coords_in)
+        np.testing.assert_allclose(result, expected)
+
+    def test_spherical_to_cartesian(self):
+        coords_in = np.array([0, -np.pi, 0], dtype=float)
+        expected = np.array([0, 0, 0])
+        result = spherical_to_cartesian(coords_in)
+        np.testing.assert_allclose(result, expected)
+
+    def test_radius_zero_coords_map_to_origin(self):
+        result = cartesian_to_spherical(self.radius_zeros)
+        expected = np.zeros_like(self.radius_zeros)
+        np.testing.assert_allclose(result, expected)
+
+    # def test_multiple_points(self):
+    #     result = cartesian_to_spherical(self.coords)
+    #     expected = self.spherical
+    #     np.testing.assert_array_equal(result, expected)
 
 
 if __name__ == "__main__":
