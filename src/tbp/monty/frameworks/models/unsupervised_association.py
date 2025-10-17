@@ -78,46 +78,35 @@ class AssociationData:
         return weighted_sum / weight_sum if weight_sum > 0 else 0.0
 
 
-def _extract_evidence_from_vote(vote_info: Any) -> float:
-    """Extract evidence value from vote information (CMP-compliant).
+def _extract_confidence_from_vote(vote_info: Any) -> float:
+    """Extract confidence value from vote information (CMP-compliant).
 
     Returns:
-        float: Evidence strength derived from the vote.
+        float: Confidence value derived from the vote.
     """
     if isinstance(vote_info, dict):
-        return vote_info.get("confidence", vote_info.get("evidence", 0.0))
-    elif isinstance(vote_info, (list, tuple)) and len(vote_info) > 0:
-        # Handle a list of vote objects
+        return vote_info.get("confidence", 0.0)
+    if isinstance(vote_info, (list, tuple)) and len(vote_info) > 0:
         return max(getattr(vote, "confidence", 0.0) for vote in vote_info)
-    elif (
-        hasattr(vote_info, "non_morphological_features")
-        and vote_info.non_morphological_features
-    ):
-        # Extract from CMP-compliant vote - prioritize evidence_strength
-        nmf = vote_info.non_morphological_features
-        return nmf.get("evidence_strength", vote_info.confidence)
-    elif hasattr(vote_info, "confidence"):
+    if hasattr(vote_info, "confidence"):
         return vote_info.confidence
-    else:
-        return 0.0
+    return 0.0
 
 
 def _create_weighted_vote(vote_info: Any, weight: float) -> Any:
     """Create a weighted version of a vote.
 
     Args:
-        vote_info: Vote object or dictionary (CMP-compliant or similar)
-        weight: Weight multiplier to apply to the vote's confidence/evidence
+        vote_info: Vote object or dictionary (CMP-compliant)
+        weight: Weight multiplier to apply to the vote's confidence
 
     Returns:
-        Any: A copy of the input with updated confidence/evidence fields if present.
+        Any: A copy of the input with updated confidence field if present.
     """
     if isinstance(vote_info, dict):
         weighted_vote = vote_info.copy()
         if "confidence" in weighted_vote:
             weighted_vote["confidence"] *= weight
-        elif "evidence" in weighted_vote:
-            weighted_vote["evidence"] *= weight
         return weighted_vote
     elif hasattr(vote_info, "confidence"):
         # Create a copy and modify confidence
@@ -427,14 +416,14 @@ class UnsupervisedAssociator:
                 continue
 
             for other_object_id, vote_info in other_votes.items():
-                other_evidence = _extract_evidence_from_vote(vote_info)
+                other_confidence = _extract_confidence_from_vote(vote_info)
 
-                if other_evidence > self.association_threshold:
+                if other_confidence > self.association_threshold:
                     self._record_co_occurrence(
                         my_current_hypotheses,
                         other_lm_id,
                         other_object_id,
-                        other_evidence,
+                        other_confidence,
                         vote_info,
                         current_mlh,
                     )
@@ -479,7 +468,7 @@ class UnsupervisedAssociator:
         my_objects: List[str],
         other_lm_id: str,
         other_object_id: str,
-        other_evidence: float,
+        other_confidence: float,
         vote_info: Any,
         current_mlh: Dict[str, Any],
     ):
@@ -502,7 +491,7 @@ class UnsupervisedAssociator:
             association_data.co_occurrence_count += 1
 
             # Update confidence
-            association_data.update_confidence(other_evidence, self.current_step)
+            association_data.update_confidence(other_confidence, self.current_step)
 
             # Update spatial consistency if spatial information is available
             spatial_score = self._calculate_spatial_consistency(

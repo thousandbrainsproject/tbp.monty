@@ -208,7 +208,6 @@ class UnsupervisedEvidenceGraphLM(EvidenceGraphLM):
                         non_morphological_features={
                             # Essential for association learning
                             "object_id": graph_id,
-                            "evidence_strength": evidences[graph_id][hyp_id],
                             "association_metadata": self._get_association_metadata(),
                         },
                         confidence=evidences[graph_id][hyp_id],

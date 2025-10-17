@@ -110,10 +110,10 @@ class TestAssociationData(unittest.TestCase):
 class TestCMPCompliance(unittest.TestCase):
     """Test CMP compliance of the unsupervised association system."""
 
-    def test_extract_evidence_from_cmp_vote(self):
-        """Test extracting evidence from CMP-compliant vote messages."""
+    def test_extract_confidence_from_cmp_vote(self):
+        """Test extracting confidence from CMP-compliant vote messages."""
         from tbp.monty.frameworks.models.unsupervised_association import (
-            _extract_evidence_from_vote,
+            _extract_confidence_from_vote,
         )
 
         # Test CMP-compliant State object
@@ -123,21 +123,17 @@ class TestCMPCompliance(unittest.TestCase):
                 "pose_vectors": np.eye(3),
                 "pose_fully_defined": True,
             },
-            non_morphological_features={
-                "object_id": "test_object",
-                "evidence_strength": 0.75,
-            },
+            non_morphological_features={"object_id": "test_object"},
             confidence=0.8,
             use_state=True,
             sender_id="test_lm",
             sender_type="LM",
         )
 
-        # Should extract evidence_strength from non_morphological_features
-        evidence = _extract_evidence_from_vote(state)
-        self.assertEqual(evidence, 0.75)
+        confidence = _extract_confidence_from_vote(state)
+        self.assertEqual(confidence, 0.8)
 
-        # Test fallback to confidence when evidence_strength not available
+        # Test direct confidence extraction
         state_no_evidence = State(
             location=np.array([1, 2, 3]),
             morphological_features={
@@ -151,8 +147,8 @@ class TestCMPCompliance(unittest.TestCase):
             sender_type="LM",
         )
 
-        evidence = _extract_evidence_from_vote(state_no_evidence)
-        self.assertEqual(evidence, 0.9)
+        confidence = _extract_confidence_from_vote(state_no_evidence)
+        self.assertEqual(confidence, 0.9)
 
     def test_extract_spatial_info_from_cmp_vote(self):
         """Test extracting spatial information from CMP-compliant votes."""
@@ -319,10 +315,7 @@ class TestUnsupervisedAssociator(unittest.TestCase):
                         "pose_vectors": np.eye(3),
                         "pose_fully_defined": True,
                     },
-                    non_morphological_features={
-                        "object_id": "other_object",
-                        "evidence_strength": 0.9,
-                    },
+                    non_morphological_features={"object_id": "other_object"},
                     confidence=0.9,
                     use_state=True,
                     sender_id="other_lm",
@@ -398,7 +391,6 @@ class TestUnsupervisedEvidenceGraphLM(unittest.TestCase):
                         },
                         non_morphological_features={
                             "object_id": "other_object",
-                            "evidence_strength": 0.8,
                             "association_metadata": {
                                 "temporal_context": 10,
                                 "num_observations": 5,

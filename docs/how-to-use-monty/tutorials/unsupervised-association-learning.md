@@ -49,7 +49,7 @@ The experiments track several key metrics:
 - **Average Strength**: Mean association strength across all pairs
 - **Spatial Consistency**: How well spatial relationships align across visual patches
 - **Temporal Patterns**: Regularity and clustering of association events
-- **Confidence Score**: Time-weighted evidence for a candidate association, derived from CMP votes. We prioritize `non_morphological_features["evidence_strength"]`; if missing, we fall back to the vote’s `confidence` field. These scores gate co-occurrence logging (via `association_threshold`), accumulate with temporal decay, and contribute as one component to the final association strength (alongside co-occurrence, spatial consistency, and temporal recency). They are not the same as the final association strength.
+- **Confidence Score**: Time-weighted confidence for a candidate association, derived directly from CMP vote `confidence` values. These scores gate co-occurrence logging (via `association_threshold`), accumulate with temporal decay, and contribute as one component to the final association strength (alongside co-occurrence, spatial consistency, and temporal recency). They are not the same as the final association strength.
 
 ### Log Analysis
 
@@ -95,7 +95,6 @@ vote = State(
     },
     non_morphological_features={
         "object_id": "visual_object_1",        # LM-specific object ID
-        "evidence_strength": 0.85,             # Evidence for this object
         "association_metadata": {              # Additional context
             "temporal_context": 15,
             "num_observations": 10,
@@ -116,7 +115,7 @@ vote = State(
 
 2. **Sender Identification**: Use the standard CMP `State.sender_id` field to identify the source LM (no extra field in `non_morphological_features` is needed)
 
-3. **Evidence Strength**: Explicit evidence values help with association confidence calculations
+3. **Confidence Values**: Explicit confidence values from CMP help with association strength calculations
 
 4. **Association Metadata**: Rich contextual information supports sophisticated association learning algorithms
 
@@ -132,12 +131,12 @@ def receive_votes(self, vote_data):
                 # Extract from CMP structure
                 other_object_id = state.non_morphological_features["object_id"]
                 sender_id = state.sender_id
-                evidence = state.non_morphological_features["evidence_strength"]
+                confidence = state.confidence
 
                 # Learn associations based on co-occurrence
-                if evidence > self.association_threshold:
+                if confidence > self.association_threshold:
                     self._record_co_occurrence(
-                        my_objects, sender_id, other_object_id, evidence, state
+                        my_objects, sender_id, other_object_id, confidence, state
                     )
 ```
 
