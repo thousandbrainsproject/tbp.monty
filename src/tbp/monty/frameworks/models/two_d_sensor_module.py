@@ -9,17 +9,24 @@
 
 """2D Sensor Module for extracting 2D pose information from RGB images."""
 
-import csv
 import logging
 from pathlib import Path
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import quaternion
-from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.models.sensor_modules import DetailedLoggingSM, HabitatObservationProcessor, NoiseMixin
+from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.sensor_modules import (
+    DefaultMessageNoise,
+    FeatureChangeFilter,
+    HabitatObservationProcessor,
+    MessageNoise,
+    PassthroughStateFilter,
+    SnapshotTelemetry,
+    StateFilter,
+    no_message_noise,
+)
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.edge_detection_utils import structure_tensor_center
 
@@ -29,16 +36,18 @@ def _normalize(v: np.ndarray, eps: float = 1e-12) -> np.ndarray:
     n = float(np.linalg.norm(v))
     return v / n if n > eps else v * 0.0
 
-class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
+class TwoDPoseSM(SensorModule):
     """Sensor Module that extracts 2D edges."""
 
     def __init__(
         self,
+        rng,
         sensor_module_id,
         features,
         save_raw_obs=False,
         edge_detection_params=None,
         noise_params=None,
+        delta_thresholds=None,
         process_all_obs=False,
         debug_visualize=False,
         debug_save_dir=None,
@@ -47,6 +56,7 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
         """Initialize 2D Pose Sensor Module.
 
         Args:
+            rng: Random number generator.
             sensor_module_id: Name of sensor module.
             features: Which features to extract. Should include "pose_vectors" and
                 "on_object". Additional features: "edge_strength", "coherence".
@@ -57,22 +67,46 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
                 - non_max_radius: Radius for non-maximum suppression (default: 2)
                 - fallback_to_normal: Use surface normal when no edge detected (default: True)
             noise_params: Dictionary of noise amount for each feature.
+            delta_thresholds: If given, a FeatureChangeFilter will be used to
+                check whether the current state's features are significantly different
+                from the previous with tolerances set according to `delta_thresholds`.
+                Defaults to None.
             process_all_obs: Enable explicitly to enforce that off-observations are
                 still processed by LMs, primarily for the purpose of unit testing.
             debug_visualize: Whether to save debug visualizations of edge detection.
             debug_save_dir: Directory to save debug visualizations (required if debug_visualize=True).
             **kwargs: Additional keyword arguments passed to parent class.
         """
-        super().__init__(
-            sensor_module_id,
-            save_raw_obs,
-            noise_params=noise_params,
-            **kwargs,
-        )
+        super().__init__()
+
+        self.sensor_module_id = sensor_module_id
+        self.save_raw_obs = save_raw_obs
+        self.is_exploring = False
+        self.state = None
+
         self._habitat_observation_processor = HabitatObservationProcessor(
             features=features,
             sensor_module_id=sensor_module_id,
         )
+
+        # Initialize snapshot telemetry for raw observation logging
+        self._snapshot_telemetry = SnapshotTelemetry()
+
+        # Initialize noise handling
+        if noise_params:
+            self._message_noise: MessageNoise = DefaultMessageNoise(
+                noise_params=noise_params, rng=rng
+            )
+        else:
+            self._message_noise = no_message_noise
+
+        # Initialize feature change filter
+        if delta_thresholds:
+            self._state_filter: StateFilter = FeatureChangeFilter(
+                delta_thresholds=delta_thresholds
+            )
+        else:
+            self._state_filter = PassthroughStateFilter()
 
         # Validate features
         possible_features = [
@@ -94,6 +128,8 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
         self.features = features
         self.processed_obs = []
         self.states = []
+        self.visited_locs = []
+        self.visited_normals = []
         self.on_object_obs_only = True
         self.process_all_obs = process_all_obs
 
@@ -128,8 +164,13 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
     def pre_episode(self):
         """Reset buffer and episode-specific variables."""
         super().pre_episode()
+        self._snapshot_telemetry.reset()
+        self._state_filter.reset()
+        self.is_exploring = False
         self.processed_obs = []
         self.states = []
+        self.visited_locs = []
+        self.visited_normals = []
         self.episode_counter += 1
         self.step_counter = 0
         self._reset_canonical_frame()
@@ -160,24 +201,35 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
             State with 2D pose vectors and features. Noise may be added.
             use_state flag may be set.
         """
-        super().step(data)  # for logging
+        # Log raw observations if enabled
+        if self.save_raw_obs and not self.is_exploring:
+            self._snapshot_telemetry.raw_observation(
+                data,
+                self.state["rotation"],
+                self.state["location"]
+                if "location" in self.state.keys()
+                else self.state["position"],
+            )
 
         # Process observations to extract 2D features
         observed_state = self.observations_to_comunication_protocol(data)
 
-        # Add noise if specified
-        if self.noise_params is not None and observed_state.use_state:
-            observed_state = self.add_noise_to_sensor_data(observed_state)
-
-        # Process all observations if explicitly requested (e.g., for testing)
-        if self.process_all_obs:
-            observed_state.use_state = True
+        # Add noise if specified and state is interesting
+        if observed_state.use_state:
+            observed_state = self._message_noise(observed_state)
 
         # Motor-only steps should not be passed to learning modules
         if self.motor_only_step:
             # Set interesting-features flag to False, as should not be passed to
             # LM, even in e.g. pre-training experiments that might otherwise do so
             observed_state.use_state = False
+
+        # Apply feature change filter
+        observed_state = self._state_filter(observed_state)
+
+        # Process all observations if explicitly requested (e.g., for testing)
+        if self.process_all_obs:
+            observed_state.use_state = True
 
         return observed_state
 
@@ -642,7 +694,6 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
 
     def state_dict(self):
         """Return state_dict for logging."""
-        return {
-            **super().state_dict(),
-            "processed_observations": self.processed_obs,
-        }
+        state_dict = self._snapshot_telemetry.state_dict()
+        state_dict.update(processed_observations=self.processed_obs)
+        return state_dict

@@ -34,7 +34,7 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
 from tbp.monty.frameworks.models.motor_policies import NaiveScanPolicy
-from tbp.monty.frameworks.models.sensor_modules import DetailedLoggingSM
+from tbp.monty.frameworks.models.sensor_modules import Probe
 from tbp.monty.frameworks.models.two_d_sensor_module import TwoDPoseSM
 from tbp.monty.simulators.habitat.configs import (
     PatchViewFinderMountHabitatDatasetArgs,
@@ -150,7 +150,7 @@ supervised_pretraining_logos_2d_sensor.update(
                 ),
             ),
             sensor_module_1=dict(
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,
@@ -198,7 +198,7 @@ supervised_pretraining_lvl1_2d_sensor.update(
                 ),
             ),
             sensor_module_1=dict(
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,
