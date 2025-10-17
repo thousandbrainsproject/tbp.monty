@@ -122,12 +122,14 @@ class CartesianToSphericalCanonicalPairsTest(unittest.TestCase):
                 result = cartesian_to_spherical(cartesian)
                 np.testing.assert_allclose(result, spherical, rtol=1e-15, atol=1e-15)
 
+
 class SphericalToCartesianCanonicalPairsTest(unittest.TestCase):
     def test_spherical_to_cartesian(self):
         for cartesian, spherical in canonical_cartesian_spherical_pairs():
             with self.subTest(spherical=spherical):
                 result = spherical_to_cartesian(spherical)
                 np.testing.assert_allclose(result, cartesian, rtol=1e-15, atol=1e-15)
+
 
 class CartesianAndSphericalRoundTripTests(unittest.TestCase):
     def test_canonical_pairs_round_trip(self):
