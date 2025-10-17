@@ -107,7 +107,7 @@ class CartesianTransformZeroTest(unittest.TestCase):
     def setUp(self):
         self.cartesian_zero = np.array([0, 0, 0], dtype=float)
         self.spherical_zero = np.array([0, -np.pi, 0], dtype=float)
-        self.radius_zero_coords = np.array(
+        self.spherical_zero_equivalents = np.array(
             [
                 [0.0, 0.1, -0.2],
                 [0.0, -2.0, -1.0],
@@ -115,28 +115,42 @@ class CartesianTransformZeroTest(unittest.TestCase):
                 [0.0, 1.0, 0.5],
             ]
         )
+        self.radii = np.arange(1, 6)
 
-    def test_cartesian_to_spherical(self):
-        coords_in = np.array([0, 0, 0], dtype=float)
-        expected = np.array([0, -np.pi, 0])
-        result = cartesian_to_spherical(coords_in)
-        np.testing.assert_allclose(result, expected)
+    def test_origin(self):
+        cartesian, spherical = [0, 0, 0], [0, -np.pi, 0]
+        result = cartesian_to_spherical(cartesian)
+        np.testing.assert_allclose(result, spherical)
 
-    def test_spherical_to_cartesian(self):
-        coords_in = np.array([0, -np.pi, 0], dtype=float)
-        expected = np.array([0, 0, 0])
-        result = spherical_to_cartesian(coords_in)
-        np.testing.assert_allclose(result, expected)
+    def test_left(self):
+        cartesian, spherical = [-1, 0, 0], [1, np.pi / 2, 0]
+        result = cartesian_to_spherical(cartesian)
+        np.testing.assert_allclose(result, spherical)
 
-    def test_radius_zero_coords_map_to_origin(self):
-        result = cartesian_to_spherical(self.radius_zeros)
-        expected = np.zeros_like(self.radius_zeros)
-        np.testing.assert_allclose(result, expected)
+    def test_right(self):
+        cartesian, spherical = [1, 0, 0], [1, -np.pi / 2, 0]
+        result = cartesian_to_spherical(cartesian)
+        np.testing.assert_allclose(result, spherical)
 
-    # def test_multiple_points(self):
-    #     result = cartesian_to_spherical(self.coords)
-    #     expected = self.spherical
-    #     np.testing.assert_array_equal(result, expected)
+    def test_up(self):
+        cartesian, spherical = [0, 1, 0], [1, -np.pi, np.pi / 2]
+        result = cartesian_to_spherical(cartesian)
+        np.testing.assert_allclose(result, spherical)
+
+    def test_down(self):
+        cartesian, spherical = [0, -1, 0], [1, -np.pi, -np.pi / 2]
+        result = cartesian_to_spherical(cartesian)
+        np.testing.assert_allclose(result, spherical)
+
+    def test_forward(self):
+        cartesian, spherical = [0, 0, -1], [1, 0, 0]
+        result = cartesian_to_spherical(cartesian)
+        np.testing.assert_allclose(result, spherical)
+
+    def test_backward(self):
+        cartesian, spherical = [0, 0, 1], [1, np.pi, 0]
+        result = cartesian_to_spherical(cartesian)
+        np.testing.assert_allclose(result, spherical)
 
 
 if __name__ == "__main__":
