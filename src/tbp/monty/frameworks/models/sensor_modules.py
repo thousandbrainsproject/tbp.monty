@@ -20,6 +20,7 @@ from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
+from tbp.monty.frameworks.models.inhibition_of_return import DecayField
 from tbp.monty.frameworks.models.states import GoalState, State
 from tbp.monty.frameworks.utils.sensor_processing import (
     log_sign,
@@ -843,6 +844,7 @@ class HabitatSalienceSM(SensorModule):
             dict(salience_strategy_args) if salience_strategy_args else {}
         )
         self._salience_strategy = salience_strategy_class(**salience_strategy_args)
+        self._decay_field = DecayField()
 
     def state_dict(self):
         """Return a serializable dict with this sensor module's state.
