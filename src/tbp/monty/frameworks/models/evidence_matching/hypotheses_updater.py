@@ -33,7 +33,10 @@ from tbp.monty.frameworks.models.evidence_matching.hypotheses import (
 from tbp.monty.frameworks.models.evidence_matching.hypotheses_displacer import (
     DefaultHypothesesDisplacer,
 )
-from tbp.monty.frameworks.utils.evidence_matching import ChannelMapper
+from tbp.monty.frameworks.utils.evidence_matching import (
+    ChannelMapper,
+    ConsistentHypothesesIds,
+)
 from tbp.monty.frameworks.utils.graph_matching_utils import (
     get_initial_possible_poses,
     possible_sensed_directions,
@@ -71,6 +74,19 @@ class HypothesesUpdater(Protocol):
 
         Returns:
             The list of channel hypotheses updates to be applied.
+        """
+        ...
+
+    def remap_hypotheses_ids_to_present(
+        self, hypotheses_ids: ConsistentHypothesesIds
+    ) -> ConsistentHypothesesIds:
+        """Update hypotheses ids based on resizing of hypothesis space.
+
+        Args:
+            hypotheses_ids: Hypotheses ids to be updated
+
+        Returns:
+            The list of the updated hypotheses ids.
         """
         ...
 
@@ -384,6 +400,22 @@ class DefaultHypothesesUpdater:
             locations=initial_possible_channel_locations,
             poses=initial_possible_channel_rotations,
         )
+
+    def remap_hypotheses_ids_to_present(
+        self, hypotheses_ids: ConsistentHypothesesIds
+    ) -> ConsistentHypothesesIds:
+        """Update hypotheses ids based on resizing of hypothesis space.
+
+        We do not resize the hypotheses space when using `DefaultHypothesesUpdater`,
+        therefore, we return the same ids without update.
+
+        Args:
+            hypotheses_ids: Hypotheses ids to be updated
+
+        Returns:
+            The list of the updated hypotheses ids.
+        """
+        return hypotheses_ids
 
 
 def all_usable_input_channels(

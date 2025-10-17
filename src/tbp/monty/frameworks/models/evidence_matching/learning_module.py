@@ -35,6 +35,7 @@ from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.evidence_matching import (
     ChannelMapper,
+    ConsistentHypothesesIds,
     evidence_update_threshold,
 )
 from tbp.monty.frameworks.utils.graph_matching_utils import (
@@ -517,18 +518,29 @@ class EvidenceGraphLM(GraphLM):
         # Only try to determine object pose if the evidence for it is high enough.
         if possible_object_hypotheses_ids is not None:
             mlh = self.get_current_mlh()
+
             # Check if all possible poses are similar
             pose_is_unique = self._check_for_unique_poses(
                 object_id, possible_object_hypotheses_ids, mlh["rotation"]
             )
+
             # Check for symmetry
+            self.last_possible_hypotheses = (
+                self.hypotheses_updater.remap_hypotheses_ids_to_present(
+                    self.last_possible_hypotheses
+                )
+            )
             symmetry_detected = self._check_for_symmetry(
+                object_id,
                 possible_object_hypotheses_ids,
                 # Don't increment symmetry counter if LM didn't process observation
                 increment_evidence=self.buffer.get_last_obs_processed(),
             )
-
-            self.last_possible_hypotheses = possible_object_hypotheses_ids
+            self.last_possible_hypotheses = ConsistentHypothesesIds(
+                hypotheses_ids=possible_object_hypotheses_ids,
+                channel_sizes=self.channel_hypothesis_mapping[object_id].channel_sizes,
+                graph_id=object_id,
+            )
 
             if pose_is_unique or symmetry_detected:
                 r_inv = mlh["rotation"].inv()
@@ -557,10 +569,10 @@ class EvidenceGraphLM(GraphLM):
                 if symmetry_detected:
                     symmetry_stats = {
                         "symmetric_rotations": np.array(self.possible_poses[object_id])[
-                            self.last_possible_hypotheses
+                            self.last_possible_hypotheses.hypotheses_ids
                         ],
                         "symmetric_locations": self.possible_locations[object_id][
-                            self.last_possible_hypotheses
+                            self.last_possible_hypotheses.hypotheses_ids
                         ],
                     }
                     self.buffer.add_overall_stats(symmetry_stats)
@@ -569,6 +581,7 @@ class EvidenceGraphLM(GraphLM):
                 logger.debug(f"object {object_id} detected but pose not resolved yet.")
                 return None
         else:
+            self.last_possible_hypotheses = None
             return None
 
     def get_current_mlh(self):
@@ -975,7 +988,9 @@ class EvidenceGraphLM(GraphLM):
         pose_is_unique = location_unique and rotation_unique
         return pose_is_unique
 
-    def _check_for_symmetry(self, possible_object_hypotheses_ids, increment_evidence):
+    def _check_for_symmetry(
+        self, object_id, possible_object_hypotheses_ids, increment_evidence
+    ):
         """Check whether the most likely hypotheses stayed the same over the past steps.
 
         Since the definition of possible_object_hypotheses is a bit murky and depends
@@ -984,6 +999,7 @@ class EvidenceGraphLM(GraphLM):
         not sure if this is the best way to check for symmetry...
 
         Args:
+            object_id: identifier of the object being checked for symmetry
             possible_object_hypotheses_ids: List of IDs of all possible hypotheses.
             increment_evidence: Whether to increment symmetry evidence or not. We
                 may want this to be False for example if we did not receive a new
@@ -998,8 +1014,8 @@ class EvidenceGraphLM(GraphLM):
             f"\n\nchecking for symmetry for hp ids {possible_object_hypotheses_ids}"
             f" with last ids {self.last_possible_hypotheses}"
         )
-        if increment_evidence:
-            previous_hyps = set(self.last_possible_hypotheses)
+        if increment_evidence and self.last_possible_hypotheses.graph_id == object_id:
+            previous_hyps = set(self.last_possible_hypotheses.hypotheses_ids)
             current_hyps = set(possible_object_hypotheses_ids)
             hypothesis_overlap = previous_hyps.intersection(current_hyps)
             if len(hypothesis_overlap) / len(current_hyps) > 0.9:

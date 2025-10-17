@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 from typing import OrderedDict as OrderedDictType
 
@@ -278,7 +279,7 @@ class EvidenceSlopeTracker:
         hyp_age: Maps channel names to hypothesis age counters.
     """
 
-    def __init__(self, window_size: int = 3, min_age: int = 5) -> None:
+    def __init__(self, window_size: int = 10, min_age: int = 5) -> None:
         """Initializes the EvidenceSlopeTracker.
 
         Args:
@@ -664,6 +665,20 @@ def evidence_update_threshold(
             "[int, float, '[int]%', 'mean', "
             "'median', 'all', 'x_percent_threshold']"
         )
+
+
+@dataclass
+class ConsistentHypothesesIds:
+    """Contains hypotheses ids for symmetry detection.
+
+    These ids will be updated when using the `ResamplingHypothesesUpdater`.
+    The update makes sure the ids are consistent across matching steps despite
+    resizing of hypothesis spaces.
+    """
+
+    hypotheses_ids: npt.NDArray[np.int_]
+    channel_sizes: OrderedDictType[str, int]
+    graph_id: str
 
 
 class InvalidEvidenceThresholdConfig(ValueError):
