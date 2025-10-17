@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Protocol, TypedDict
+from typing import Any, Iterable, Protocol, TypedDict
 
 import numpy as np
 import quaternion
@@ -870,3 +870,14 @@ class HabitatSalienceSM(SensorModule):
 
     def propose_goal_states(self) -> list[GoalState]:
         return []
+
+
+def normalize_confidence(goal_states: Iterable[GoalState]) -> None:
+    """Normalize the confidence of the goal states."""
+    confidence_values = [goal_state.confidence for goal_state in goal_states]
+    max_confidence = max(confidence_values)
+    min_confidence = min(confidence_values)
+    for goal_state in goal_states:
+        goal_state.confidence = (goal_state.confidence - min_confidence) / (
+            max_confidence - min_confidence
+        )
