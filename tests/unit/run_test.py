@@ -32,13 +32,13 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     ExperimentArgs,
 )
 from tbp.monty.frameworks.environments.embodied_data import (
-    EnvironmentDataLoader,
+    EnvironmentInterface,
 )
 from tbp.monty.frameworks.experiments import MontyExperiment
 from tbp.monty.frameworks.run import main, run
 from tbp.monty.simulators.habitat import SingleSensorAgent
 from tbp.monty.simulators.habitat.configs import (
-    SinglePTZHabitatDatasetArgs,
+    SinglePTZHabitatEnvironmentArgs,
 )
 from tests.unit.frameworks.config_utils.fakes.config_args import (
     FakeSingleCameraMontyConfig,
@@ -118,11 +118,11 @@ class MontyRunTest(unittest.TestCase):
                     monty_handlers=[],
                 ),
                 "monty_config": FakeSingleCameraMontyConfig(),
-                "dataset_args": SinglePTZHabitatDatasetArgs(),
-                "train_dataloader_class": EnvironmentDataLoader,
-                "train_dataloader_args": {},
-                "eval_dataloader_class": EnvironmentDataLoader,
-                "eval_dataloader_args": {},
+                "env_interface_config": SinglePTZHabitatEnvironmentArgs(),
+                "train_env_interface_class": EnvironmentInterface,
+                "train_env_interface_args": {},
+                "eval_env_interface_class": EnvironmentInterface,
+                "eval_env_interface_args": {},
             },
             "test_2": {
                 "experiment_class": MontyExperiment,
@@ -138,11 +138,11 @@ class MontyRunTest(unittest.TestCase):
                     monty_handlers=[],
                 ),
                 "monty_config": FakeSingleCameraMontyConfig(),
-                "dataset_args": SinglePTZHabitatDatasetArgs(),
-                "train_dataloader_class": EnvironmentDataLoader,
-                "train_dataloader_args": {},
-                "eval_dataloader_class": EnvironmentDataLoader,
-                "eval_dataloader_args": {},
+                "env_interface_config": SinglePTZHabitatEnvironmentArgs(),
+                "train_env_interface_class": EnvironmentInterface,
+                "train_env_interface_args": {},
+                "eval_env_interface_class": EnvironmentInterface,
+                "eval_env_interface_args": {},
             },
         }
 

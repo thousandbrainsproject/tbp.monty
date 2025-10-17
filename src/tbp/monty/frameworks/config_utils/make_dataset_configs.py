@@ -110,7 +110,7 @@ class EnvInitArgsMontyWorldMultiObjectScenes:
 
 
 @dataclass
-class OmniglotDatasetArgs:
+class OmniglotEnvInterfaceConfig:
     env_init_func: Callable = field(default=OmniglotEnvironment)
     env_init_args: Dict = field(default_factory=lambda: {})
     transform: Union[Callable, list, None] = None
@@ -132,7 +132,7 @@ class OmniglotDatasetArgs:
 
 
 @dataclass
-class WorldImageDatasetArgs:
+class WorldImageEnvironmentInterfaceConfig:
     env_init_func: Callable = field(default=SaccadeOnImageEnvironment)
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsMontyWorldStandardScenes().__dict__
@@ -141,7 +141,7 @@ class WorldImageDatasetArgs:
 
 
 @dataclass
-class WorldImageFromStreamDatasetArgs:
+class WorldImageFromStreamEnvironmentInterfaceConfig:
     env_init_func: Callable = field(default=SaccadeOnImageFromStreamEnvironment)
     env_init_args: Dict = field(default_factory=lambda: {})
     transform: Union[Callable, list, None] = None
@@ -306,27 +306,25 @@ class RandomRotationObjectInitializer(DefaultObjectInitializer):
 
 
 @dataclass
-class EnvironmentDataloaderPerObjectArgs:
+class EnvironmentInterfacePerObjectArgs:
     object_names: List
     object_init_sampler: Callable
 
 
 @dataclass
-class EnvironmentDataLoaderPerObjectTrainArgs(EnvironmentDataloaderPerObjectArgs):
+class EnvironmentInterfacePerObjectTrainArgs(EnvironmentInterfacePerObjectArgs):
     object_names: List = field(default_factory=lambda: DefaultTrainObjectList().objects)
     object_init_sampler: Callable = field(default_factory=DefaultObjectInitializer)
 
 
 @dataclass
-class EnvironmentDataLoaderPerObjectEvalArgs(EnvironmentDataloaderPerObjectArgs):
+class EnvironmentInterfacePerObjectEvalArgs(EnvironmentInterfacePerObjectArgs):
     object_names: List = field(default_factory=lambda: DefaultTrainObjectList().objects)
     object_init_sampler: Callable = field(default_factory=DefaultObjectInitializer)
 
 
 @dataclass
-class FixedRotationEnvironmentDataLoaderPerObjectTrainArgs(
-    EnvironmentDataloaderPerObjectArgs
-):
+class FixedRotationEnvironmentPerObjectTrainArgs(EnvironmentInterfacePerObjectArgs):
     object_names: List = field(default_factory=lambda: DefaultTrainObjectList().objects)
     object_init_sampler: Callable = field(
         default_factory=lambda: PredefinedObjectInitializer()
@@ -334,9 +332,7 @@ class FixedRotationEnvironmentDataLoaderPerObjectTrainArgs(
 
 
 @dataclass
-class FixedRotationEnvironmentDataLoaderPerObjectEvalArgs(
-    EnvironmentDataloaderPerObjectArgs
-):
+class FixedRotationEnvironmentPerObjectEvalArgs(EnvironmentInterfacePerObjectArgs):
     object_names: List = field(default_factory=lambda: DefaultTrainObjectList().objects)
     object_init_sampler: Callable = field(
         default_factory=lambda: PredefinedObjectInitializer()
@@ -344,7 +340,7 @@ class FixedRotationEnvironmentDataLoaderPerObjectEvalArgs(
 
 
 @dataclass
-class EnvironmentDataloaderMultiObjectArgs:
+class EnvironmentInterfaceMultiObjectArgs:
     object_names: Dict  # Note Dict and not List
     object_init_sampler: Callable
 
@@ -360,15 +356,15 @@ def get_object_names_by_idx(
         return object_list[start:stop]
 
 
-def get_env_dataloader_per_object_by_idx(start, stop, list_of_indices=None):
-    return EnvironmentDataloaderPerObjectArgs(
+def get_env_interface_per_object_by_idx(start, stop, list_of_indices=None):
+    return EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(start, stop, list_of_indices),
         object_init_sampler=PredefinedObjectInitializer(),
     )
 
 
 @dataclass
-class OmniglotDataloaderArgs:
+class OmniglotInterfaceArgs:
     """Set basic debug args to load 3 characters of 2 alphabets in 1 version."""
 
     alphabets: List = field(default_factory=lambda: [0, 0, 0, 1, 1, 1])
@@ -377,15 +373,15 @@ class OmniglotDataloaderArgs:
 
 
 @dataclass
-class WorldImageDataloaderArgs:
+class WorldImageInterfaceArgs:
     """Set basic debug args to load 1 scene (Numenta mug) in 4 versions."""
 
     scenes: List = field(default_factory=lambda: [0, 0, 0, 0])
     versions: List = field(default_factory=lambda: [0, 1, 2, 3])
 
 
-def get_omniglot_train_dataloader(num_versions, alphabet_ids, data_path=None):
-    """Generate OmniglotDataloaderArgs automatically for training.
+def get_omniglot_train_env_interface(num_versions, alphabet_ids, data_path=None):
+    """Generate OmniglotInterfaceArgs automatically for training.
 
     Args:
         num_versions: Number of versions to show for each character (starting at 1).
@@ -395,7 +391,7 @@ def get_omniglot_train_dataloader(num_versions, alphabet_ids, data_path=None):
             ~/tbp/data/omniglot/python/
 
     Returns:
-        OmniglotDataloaderArgs for training.
+        OmniglotInterfaceArgs for training.
     """
     if data_path is None:
         data_path = os.path.join(os.environ["MONTY_DATA"], "omniglot/python/")
@@ -405,7 +401,7 @@ def get_omniglot_train_dataloader(num_versions, alphabet_ids, data_path=None):
         ]
     else:
         # Use placeholder here to pass Circle CI config check.
-        return OmniglotDataloaderArgs()
+        return OmniglotInterfaceArgs()
     all_alphabet_idx = []
     all_character_idx = []
     all_version_idx = []
@@ -424,17 +420,17 @@ def get_omniglot_train_dataloader(num_versions, alphabet_ids, data_path=None):
                     all_character_idx.append(c_idx + 1)
                     all_version_idx.append(v_idx + 1)
 
-    return OmniglotDataloaderArgs(
+    return OmniglotInterfaceArgs(
         alphabets=all_alphabet_idx,
         characters=all_character_idx,
         versions=all_version_idx,
     )
 
 
-def get_omniglot_eval_dataloader(
+def get_omniglot_eval_env_interface(
     start_at_version, alphabet_ids, num_versions=None, data_path=None
 ):
-    """Generate OmniglotDataloaderArgs automatically for evaluation.
+    """Generate OmniglotInterfaceArgs automatically for evaluation.
 
     Args:
         start_at_version: Version number of character to start at. Then shows all
@@ -447,7 +443,7 @@ def get_omniglot_eval_dataloader(
             ~/tbp/data/omniglot/python/
 
     Returns:
-        OmniglotDataloaderArgs for evaluation.
+        OmniglotInterfaceArgs for evaluation.
     """
     if data_path is None:
         data_path = os.path.join(os.environ["MONTY_DATA"], "omniglot/python/")
@@ -457,7 +453,7 @@ def get_omniglot_eval_dataloader(
         ]
     else:
         # Use placeholder here to pass Circle CI config check.
-        return OmniglotDataloaderArgs()
+        return OmniglotInterfaceArgs()
     all_alphabet_idx = []
     all_character_idx = []
     all_version_idx = []
@@ -479,7 +475,7 @@ def get_omniglot_eval_dataloader(
                     all_character_idx.append(c_idx + 1)
                     all_version_idx.append(v_idx + 1)
 
-    return OmniglotDataloaderArgs(
+    return OmniglotInterfaceArgs(
         alphabets=all_alphabet_idx,
         characters=all_character_idx,
         versions=all_version_idx,
@@ -747,7 +743,7 @@ class PatchAndViewFinderMultiObjectMountConfig(PatchAndViewFinderMountConfig):
 
 
 """
-Utilities for generating multi-LM dataset args.
+Utilities for generating multi-LM environment args.
 """
 
 
@@ -886,7 +882,7 @@ def make_multi_sensor_mount_config(
     """Generate a multi-sensor mount configuration.
 
     Creates a multi-sensor, single-agent mount config. Its primary use is in generating
-    a `MultiLMMountHabitatDatasetArgs` config. Defaults are reasonable and reflect
+    a `MultiLMMountHabitatEnvironmentArgs` config. Defaults are reasonable and reflect
     current common practices.
 
     Note:
