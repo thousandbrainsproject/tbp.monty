@@ -89,9 +89,8 @@ def cartesian_to_spherical(coords: ArrayLike) -> np.ndarray:
      - azimuth is measured away from the forward (-z) axis, and elevation is
        measured upward from the horizontal (xz) plane.
 
-    Azimuth is bound to [-pi, pi], and elevation is bound to [-pi/2, pi/2]. When
-    azimuth is undefined, arctan2 typically returns -pi. However, arctan2 has
-    complicated ways of dealing with these cases, so expect -pi, pi, or 0.
+    Azimuth is bound to [-pi, pi), and elevation is bound to [-pi/2, pi/2]. Undefined
+    angles are returned as 0.
 
     Args:
         coords: x, y, z coordinates with shape (3,) for a single point or
