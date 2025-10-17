@@ -112,6 +112,7 @@ def cartesian_to_spherical(coords: ArrayLike) -> np.ndarray:
     azimuth = -np.arctan2(x, -z)
     elevation = np.arctan2(y, radius_xz)
 
+    # Enforce undefined angles to be 0.
     is_vertical = np.isclose(radius_xz, 0)
     if np.any(is_vertical):
         azimuth = np.where(is_vertical, 0, azimuth)
