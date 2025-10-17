@@ -24,50 +24,18 @@ class DecayKernel:
 
     def __init__(
         self,
-        location: ArrayLike,
+        location: np.ndarray,
         tau_t: float = 10.0,
         tau_s: float = 0.01,
-        cutoff_s: float | None = 0.02,
+        spatial_cutoff: float | None = 0.02,
         w_t_min: float = 0.1,
-        t: int = 0,
     ):
-        self.location = location
-        self.tau_t = tau_t
-        self.tau_s = tau_s
-        self.cutoff_s = cutoff_s
-        self.w_t_min = w_t_min
-        self.t = t
-        self._expired = False
-
-    @property
-    def location(self) -> np.ndarray:
-        return self._location
-
-    @location.setter
-    def location(self, value: ArrayLike) -> None:
-        self._location = np.asarray(value)
-
-    @property
-    def tau_t(self) -> float:
-        return self._tau_t
-
-    @tau_t.setter
-    def tau_t(self, value: float) -> None:
-        self._tau_t = value
-        self._lam_t = self._tau_t / np.log(2)
-
-    @property
-    def tau_s(self) -> float:
-        return self._tau_s
-
-    @tau_s.setter
-    def tau_s(self, value: float) -> None:
-        self._tau_s = value
-        self._lam_s = self._tau_s / np.log(2)
-
-    @property
-    def expired(self) -> bool:
-        return self._expired
+        self._location = location
+        self._tau_t = tau_t
+        self._tau_s = tau_s
+        self._spatial_cutoff = spatial_cutoff
+        self._w_t_min = w_t_min
+        self._t = 0
 
     def w_t(self) -> float | np.ndarray:
         """Compute the time-dependent weight at the current step.
@@ -78,7 +46,7 @@ class DecayKernel:
         Returns:
             The weight, bounded to [0, 1].
         """
-        return np.exp(-self.t / self._lam_t)
+        return np.exp(-self._t / (self._tau_t / np.log(2)))
 
     def w_s(self, point: np.ndarray) -> float | np.ndarray:
         """Compute the distance-dependent weight.
@@ -99,25 +67,20 @@ class DecayKernel:
         """
         if point.ndim == 1:
             dist = self._distance(point)
-            if self.cutoff_s is not None and dist > self.cutoff_s:
+            if self._spatial_cutoff is not None and dist > self._spatial_cutoff:
                 return 0.0
-            return np.exp(-dist / self._lam_s)
+            return np.exp(-dist / (self._tau_s / np.log(2)))
         else:
             dist = self._distance(point)
-            out = np.exp(-dist / self._lam_s)
-            if self.cutoff_s is not None:
-                out[dist > self.cutoff_s] = 0.0
+            out = np.exp(-dist / (self._tau_s / np.log(2)))
+            if self._spatial_cutoff is not None:
+                out[dist > self._spatial_cutoff] = 0.0
             return out
-
-    def reset(self) -> None:
-        """Reset the kernel to its initial state."""
-        self.t = 0
-        self._expired = False
 
     def step(self) -> None:
         """Increment the step counter, and check if the kernel is expired."""
-        self.t += 1
-        self._expired = self.w_t() < self.w_t_min
+        self._t += 1
+        self._expired = self.w_t() < self._w_t_min
 
     def _distance(self, point: np.ndarray) -> float | np.ndarray:
         """Compute the distance between the kernel's location and one or more points.
@@ -167,54 +130,29 @@ class DecayField:
       - step
     """
 
-    def __init__(
-        self,
-        kernel_factory: Callable[[Any, ...], DecayKernel] = DecayKernel,
-        kernel_args: dict | None = None,
-    ):
-        self.kernel_factory = kernel_factory
-        self.kernel_args = dict(kernel_args) if kernel_args else {}
-        self.kernels = []
+    def __init__(self):
+        self._kernels = []
 
     def reset(self) -> None:
-        self.kernels = []
+        self._kernels = []
 
-    def add(self, location: np.ndarray, **kwargs) -> None:
+    def add(self, location: np.ndarray) -> None:
         """Add a kernel to the field."""
-        if kwargs:
-            kernel_args = {**self.kernel_args, **kwargs}
-        else:
-            kernel_args = self.kernel_args
-        kernel = self.kernel_factory(location, **kernel_args)
-        self.kernels.append(kernel)
+        kernel = DecayKernel(location)
+        self._kernels.append(kernel)
 
     def step(self) -> None:
         """Step each kernel, and keep only non-expired ones."""
-        for k in self.kernels:
+        for k in self._kernels:
             k.step()
-        self.kernels = [k for k in self.kernels if not k.expired]
+        self._kernels = [k for k in self._kernels if not k.expired]
 
-    def __call__(self, point: np.ndarray) -> float | np.ndarray:
-        if not self.kernels:
+    def compute_weight(self, point: np.ndarray) -> float | np.ndarray:
+        if not self._kernels:
             return 1.0 if point.ndim == 1 else np.ones(point.shape[0])
-        if len(self.kernels) == 1:
-            return self.kernels[0](point)
+        if len(self._kernels) == 1:
+            return self._kernels[0](point)
 
         # Stack kernel parameters and compute in batch
-        results = np.array([k(point) for k in self.kernels])
-        return combine_decay_values(results)
-
-
-def combine_decay_values(data: np.ndarray) -> np.ndarray:
-    return np.max(data, axis=0)
-
-
-def normalize_confidence(goal_states: Iterable[GoalState]) -> None:
-    """Normalize the confidence of the goal states."""
-    confidence_values = [goal_state.confidence for goal_state in goal_states]
-    max_confidence = max(confidence_values)
-    min_confidence = min(confidence_values)
-    for goal_state in goal_states:
-        goal_state.confidence = (goal_state.confidence - min_confidence) / (
-            max_confidence - min_confidence
-        )
+        results = np.array([k(point) for k in self._kernels])
+        return np.max(results, axis=0)
