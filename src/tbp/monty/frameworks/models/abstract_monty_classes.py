@@ -314,3 +314,7 @@ class SensorModule(metaclass=abc.ABCMeta):
     def pre_episode(self):
         """This method is called before each episode."""
         pass
+
+    def propose_goal_states(self) -> list[GoalState]:
+        """Return the goal-states proposed by this Sensor Module."""
+        return []

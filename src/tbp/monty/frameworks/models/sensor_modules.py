@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Protocol, TypedDict
+from typing import Any, Iterable, Protocol, TypedDict
 
 import numpy as np
 import quaternion
@@ -20,7 +20,8 @@ from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
-from tbp.monty.frameworks.models.states import State
+from tbp.monty.frameworks.models.inhibition_of_return import DecayField
+from tbp.monty.frameworks.models.states import GoalState, State
 from tbp.monty.frameworks.utils.sensor_processing import (
     log_sign,
     principal_curvatures,
@@ -817,3 +818,66 @@ class FeatureChangeFilter(StateFilter):
             self._last_sent_n_steps_ago += 1
 
         return state
+
+
+class SalienceStrategy(Protocol):
+    def __call__(self, obs: dict) -> np.ndarray: ...
+
+
+class UniformSalienceStrategy(SalienceStrategy):
+    def __call__(self, obs: dict) -> np.ndarray:
+        return np.ones_like(obs["depth"])
+
+
+class HabitatSalienceSM(SensorModule):
+    def __init__(
+        self,
+        rng,
+        sensor_module_id: str,
+        salience_strategy_class: type[SalienceStrategy] = UniformSalienceStrategy,
+        salience_strategy_args: dict[str, Any] | None = None,
+    ) -> None:
+        self._rng = rng
+        self._sensor_module_id = sensor_module_id
+
+        salience_strategy_args = (
+            dict(salience_strategy_args) if salience_strategy_args else {}
+        )
+        self._salience_strategy = salience_strategy_class(**salience_strategy_args)
+        self._decay_field = DecayField()
+
+    def state_dict(self):
+        """Return a serializable dict with this sensor module's state.
+
+        Includes everything needed to save/load this sensor module.
+        """
+        pass
+
+    def update_state(self, state):
+        pass
+
+    def step(self, data):
+        """Called on each step.
+
+        Args:
+            data: Sensor observations
+        """
+        pass
+
+    def pre_episode(self):
+        """This method is called before each episode."""
+        pass
+
+    def propose_goal_states(self) -> list[GoalState]:
+        return []
+
+
+def normalize_confidence(goal_states: Iterable[GoalState]) -> None:
+    """Normalize the confidence of the goal states."""
+    confidence_values = [goal_state.confidence for goal_state in goal_states]
+    max_confidence = max(confidence_values)
+    min_confidence = min(confidence_values)
+    for goal_state in goal_states:
+        goal_state.confidence = (goal_state.confidence - min_confidence) / (
+            max_confidence - min_confidence
+        )
