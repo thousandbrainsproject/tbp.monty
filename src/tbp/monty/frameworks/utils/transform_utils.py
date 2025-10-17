@@ -101,16 +101,25 @@ def cartesian_to_spherical(coords: ArrayLike) -> np.ndarray:
         A (3,) or (N, 3) shaped array of spherical coordinates.
     """
     coords = np.asarray(coords, dtype=float)
-    x, y, z = coords if coords.ndim == 1 else coords.T
+
+    # We want to work with 1D arrays, not scalars.
+    if coords.ndim == 1:
+        x, y, z = coords.reshape(1, 3).T
+    else:
+        x, y, z = coords.T
 
     radius = np.sqrt(x**2 + y**2 + z**2)
     radius_xz = np.sqrt(x**2 + z**2)
     azimuth = -np.arctan2(x, -z)
     elevation = np.arctan2(y, radius_xz)
 
-    if coords.ndim == 1:
-        return np.array([radius, azimuth, elevation])
-    return np.column_stack([radius, azimuth, elevation])
+    is_vertical = np.isclose(radius_xz, 0)
+    if np.any(is_vertical):
+        azimuth = np.where(is_vertical, 0, azimuth)
+        elevation = np.where(np.isclose(radius, 0), 0, elevation)
+
+    spherical = np.column_stack([radius, azimuth, elevation])
+    return spherical[0] if coords.ndim == 1 else spherical
 
 
 def spherical_to_cartesian(coords: ArrayLike) -> np.ndarray:
@@ -133,8 +142,8 @@ def spherical_to_cartesian(coords: ArrayLike) -> np.ndarray:
     radius, azimuth, elevation = coords if coords.ndim == 1 else coords.T
 
     y = radius * np.sin(elevation)
-    radius_along_xz = radius * np.cos(elevation)
-    x = -radius_along_xz * np.sin(azimuth)
-    z = -radius_along_xz * np.cos(azimuth)
+    radius_xz = radius * np.cos(elevation)
+    x = -radius_xz * np.sin(azimuth)
+    z = -radius_xz * np.cos(azimuth)
 
     return np.array([x, y, z]) if coords.ndim == 1 else np.column_stack([x, y, z])

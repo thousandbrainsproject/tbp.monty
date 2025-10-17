@@ -105,57 +105,60 @@ class RotationFromQuatTest(unittest.TestCase):
 
 def canonical_cartesian_spherical_pairs():
     return [
-        ("origin", [0, 0, 0], [0, -np.pi, 0]),
-        ("left", [-1, 0, 0], [1, np.pi / 2, 0]),
-        ("right", [1, 0, 0], [1, -np.pi / 2, 0]),
-        ("up", [0, 1, 0], [1, -np.pi, np.pi / 2]),
-        ("down", [0, -1, 0], [1, -np.pi, -np.pi / 2]),
-        ("forward", [0, 0, -1], [1, 0, 0]),
-        ("backward", [0, 0, 1], [1, -np.pi, 0]),
+        ([0, 0, 0], [0, 0, 0]),  # origin
+        ([-1, 0, 0], [1, np.pi / 2, 0]),  # left
+        ([1, 0, 0], [1, -np.pi / 2, 0]),  # right
+        ([0, 1, 0], [1, 0, np.pi / 2]),  # up
+        ([0, -1, 0], [1, 0, -np.pi / 2]),  # down
+        ([0, 0, -1], [1, 0, 0]),  # backward
+        ([0, 0, 1], [1, -np.pi, 0]),  # forward
     ]
 
 
 class CartesianToSphericalCanonicalPairsTest(unittest.TestCase):
     def test_cartesian_to_spherical(self):
-        for name, cartesian, spherical in canonical_cartesian_spherical_pairs():
-            with self.subTest(name=name):
+        for cartesian, spherical in canonical_cartesian_spherical_pairs():
+            with self.subTest(cartesian=cartesian):
                 result = cartesian_to_spherical(cartesian)
                 np.testing.assert_allclose(result, spherical, rtol=1e-15, atol=1e-15)
-
 
 class SphericalToCartesianCanonicalPairsTest(unittest.TestCase):
     def test_spherical_to_cartesian(self):
-        for name, cartesian, spherical in canonical_cartesian_spherical_pairs():
-            with self.subTest(name=name):
+        for cartesian, spherical in canonical_cartesian_spherical_pairs():
+            with self.subTest(spherical=spherical):
                 result = spherical_to_cartesian(spherical)
                 np.testing.assert_allclose(result, cartesian, rtol=1e-15, atol=1e-15)
 
+class CartesianAndSphericalRoundTripTests(unittest.TestCase):
+    def test_canonical_pairs_round_trip(self):
+        for cartesian_in, _ in canonical_cartesian_spherical_pairs():
+            with self.subTest(cartesian=cartesian_in):
+                spherical = cartesian_to_spherical(cartesian_in)
+                cartesian_out = spherical_to_cartesian(spherical)
+                np.testing.assert_allclose(
+                    cartesian_out, cartesian_in, rtol=1e-15, atol=1e-15
+                )
 
-class CartesianToSphericalRoundTripTest(unittest.TestCase):
-    def test_canonical_pairs(self):
-        for name, cartesian, spherical in canonical_cartesian_spherical_pairs():
-            with self.subTest(name=name):
-                result = cartesian_to_spherical(cartesian)
-                np.testing.assert_allclose(result, spherical, rtol=1e-15, atol=1e-15)
-                result = spherical_to_cartesian(spherical)
-                np.testing.assert_allclose(result, cartesian, rtol=1e-15, atol=1e-15)
-
-    def test_random_cartesian_coords(self):
+    def test_random_cartesian_round_trip(self):
+        rng = np.random.default_rng(8675309)
         n_points = 1000
-        cartesian_in = np.random.uniform(low=-2, high=2, size=(n_points, 3))
+        cartesian_in = rng.uniform(low=-2, high=2, size=(n_points, 3))
         spherical_out = cartesian_to_spherical(cartesian_in)
         cartesian_out = spherical_to_cartesian(spherical_out)
-        np.testing.assert_allclose(cartesian_out, cartesian_in, rtol=1e-12, atol=1e-12)
+        np.testing.assert_allclose(cartesian_out, cartesian_in, rtol=1e-15, atol=1e-15)
 
-    def test_random_spherical_coords(self):
+    def test_random_spherical_round_trip(self):
+        rng = np.random.default_rng(8675309)
         n_points = 1000
-        radii = np.random.uniform(low=0, high=2, size=n_points)
-        azimuths = np.random.uniform(low=-np.pi, high=np.pi, size=n_points)
-        elevations = np.random.uniform(low=-np.pi / 2, high=np.pi / 2, size=n_points)
+        radii = rng.uniform(low=0, high=2, size=n_points)
+        azimuths = rng.uniform(low=-np.pi, high=np.pi, size=n_points)
+        elevations = rng.uniform(low=-np.pi / 2, high=np.pi / 2, size=n_points)
+
         spherical_in = np.column_stack([radii, azimuths, elevations])
-        cartesian_out = spherical_to_cartesian(spherical_in)
-        spherical_out = cartesian_to_spherical(cartesian_out)
-        np.testing.assert_allclose(spherical_out, spherical_in, rtol=1e-12, atol=1e-12)
+        cartesian = spherical_to_cartesian(spherical_in)
+        spherical_out = cartesian_to_spherical(cartesian)
+        np.testing.assert_allclose(spherical_in, spherical_out, rtol=1e-15, atol=1e-15)
+
 
 if __name__ == "__main__":
     unittest.main()
