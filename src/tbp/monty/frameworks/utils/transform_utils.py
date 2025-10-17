@@ -83,18 +83,15 @@ def rotation_from_quat(quat: ArrayLike, scalar_first: bool = True) -> Rotation:
 def cartesian_to_spherical(coords: ArrayLike, degrees: bool = False) -> np.ndarray:
     """Convert Cartesian coordinates to spherical coordinates.
 
-    Converts to (radius, azimuth, elevation) coordinates under the assumption that
+    Converts Cartesian (x, y, z) coordinates to spherical (radius, azimuth, elevation)
+    coordinates under the assumption that
      - +x points right, +y points up, and +z points backward
-     - azimuth is measured away from the forward -z axis, and elevation is
-       measured upward from the horizontal xz-plane.
+     - azimuth is measured away from the forward (-z) axis, and elevation is
+       measured upward from the horizontal (xz) plane.
 
-    Azimuth is bound to (-pi, pi], and elevation is bound to [-pi/2, pi/2].
-
-    Ambiguous/degenerate cases are handled as follows:
-     - origin:   (0, 0, 0)  -> (0, 0, 0)
-     - up:       (0, +y, 0) -> (|y|, 0, +pi / 2)
-     - down:     (0, -y, 0) -> (|y|, 0, -pi / 2)
-     - backward: (0, 0, +z) -> (|z|, pi, 0)
+    Azimuth is bound to [-pi, pi], and elevation is bound to [-pi/2, pi/2]. When
+    azimuth is undefined, arctan2 typically returns -pi. However, arctan2 has
+    complicated ways of dealing with these cases, so expect -pi, pi, or 0.
 
     Args:
         coords: x, y, z coordinates with shape (3,) for a single point or
@@ -104,50 +101,40 @@ def cartesian_to_spherical(coords: ArrayLike, degrees: bool = False) -> np.ndarr
     Returns:
         A (3,) or (N, 3) shaped array of spherical coordinates.
     """
-    coords = np.asarray(coords, dtype=float)
-    single = coords.ndim == 1
-    coords = np.atleast_2d(coords)
-    x, y, z = coords[:, 0], coords[:, 1], coords[:, 2]
+    coords = np.asarray(coords)
+    x, y, z = coords if coords.ndim == 1 else coords.T
 
-    radius = np.linalg.norm(coords, axis=1)
+    radius = np.sqrt(x**2 + y**2 + z**2)
     azimuth = -np.arctan2(x, -z)
-    elevation = np.arctan2(y, np.hypot(x, z))
-
-    az_backwards = np.isclose(azimuth, -np.pi)
-    if np.any(az_backwards):
-        # azimuth = -pi here if and only if a vector has radius zero or lies along
-        # the y-axis or positive z-axis. If it's along the positive z-axis, we just
-        # switch it to pi. Otherwise, zero it out.
-        z_is_positive = z > 0
-        azimuth = np.where(az_backwards & z_is_positive, np.pi, azimuth)
-        azimuth = np.where(az_backwards & ~z_is_positive, 0, azimuth)
+    elevation = np.arctan2(y, np.sqrt(x**2 + z**2))
 
     if degrees:
         azimuth, elevation = np.degrees(azimuth), np.degrees(elevation)
 
-    spherical_coords = np.column_stack([radius, azimuth, elevation])
-    return spherical_coords[0] if single else spherical_coords
+    if coords.ndim == 1:
+        return np.array([radius, azimuth, elevation])
+    return np.column_stack([radius, azimuth, elevation])
 
 
 def spherical_to_cartesian(coords: ArrayLike, degrees: bool = False) -> np.ndarray:
     """Convert spherical coordinates to Cartesian coordinates.
 
-    Converts spherical coordinates to Cartesian coordinates under the assumption that
+    Converts (radius, azimuth, elevation) coordinates to (x, y, z) coordinates
+    under the assumption that
      - +x points right, +y points up, and +z points backward.
      - azimuth = 0 points down the forward axis (i.e., -z), and elevation is measured
        upward from the horizontal xz-plane.
 
     Args:
-        coords: (radius, azimuth, elevation) coordinates in with shape (3,) for
+        coords: (radius, azimuth, elevation coordinates) in with shape (3,) for
             a single point or (N, 3) for multiple points.
         degrees: Whether angles are given in degrees. Defaults to False.
 
     Returns:
         A (3,) or (N, 3) shaped array of Cartesian coordinates.
     """
-    coords = np.asarray(coords, dtype=float)
-    single = coords.ndim == 1
-    radius, azimuth, elevation = coords if single else coords.T
+    coords = np.asarray(coords)
+    radius, azimuth, elevation = coords if coords.ndim == 1 else coords.T
 
     if degrees:
         azimuth, elevation = np.radians(azimuth), np.radians(elevation)
@@ -157,4 +144,4 @@ def spherical_to_cartesian(coords: ArrayLike, degrees: bool = False) -> np.ndarr
     x = -radius_along_xz * np.sin(azimuth)
     z = -radius_along_xz * np.cos(azimuth)
 
-    return np.array([x, y, z]) if single else np.column_stack([x, y, z])
+    return np.array([x, y, z]) if coords.ndim == 1 else np.column_stack([x, y, z])
