@@ -818,7 +818,32 @@ class FeatureChangeFilter(StateFilter):
 
         return state
 
+
+class SalienceStrategy(Protocol):
+    def __call__(self, obs: dict) -> np.ndarray: ...
+
+
+class UniformSalienceStrategy(SalienceStrategy):
+    def __call__(self, obs: dict) -> np.ndarray:
+        return np.ones_like(obs["depth"])
+
+
 class HabitatSalienceSM(SensorModule):
+    def __init__(
+        self,
+        rng,
+        sensor_module_id: str,
+        salience_strategy_class: type[SalienceStrategy] = UniformSalienceStrategy,
+        salience_strategy_args: dict[str, Any] | None = None,
+    ) -> None:
+        self._rng = rng
+        self._sensor_module_id = sensor_module_id
+
+        salience_strategy_args = (
+            dict(salience_strategy_args) if salience_strategy_args else {}
+        )
+        self._salience_strategy = salience_strategy_class(**salience_strategy_args)
+
     def state_dict(self):
         """Return a serializable dict with this sensor module's state.
 
