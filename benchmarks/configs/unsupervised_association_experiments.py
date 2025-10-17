@@ -17,7 +17,6 @@ unsupervised association learning capabilities between different learning module
 import os
 from dataclasses import asdict
 
-from benchmarks.configs.names import UnsupervisedAssociationExperiments
 from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
 from tbp.monty.frameworks.config_utils.config_args import MontyArgs
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
@@ -53,6 +52,8 @@ from tbp.monty.frameworks.models.sensor_modules import FeatureChangeSM
 from tbp.monty.simulators.habitat.configs import (
     TwoLMStackedDistantMountHabitatDatasetArgs,
 )
+
+from benchmarks.configs.names import UnsupervisedAssociationExperiments
 
 # Default objects for testing
 test_objects = get_object_names_by_idx(0, 5)  # First 5 YCB objects
@@ -418,12 +419,10 @@ def create_association_strategy_comparison_config():
         "python_log_to_stdout": True,
         "python_log_to_stderr": False,  # Add missing key
         "log_parallel_wandb": False,  # Add missing key
-        "output_dir": (
-            os.getenv("MONTY_LOGS", "~/tbp/results/monty/") + "association_comparison"
-        ),
+        "output_dir": os.path.expanduser(os.getenv("MONTY_LOGS", "~/tbp/results/monty/")),
         "run_name": "association_comparison",
         "wandb_handlers": [],
-        "monty_handlers": [],
+        "monty_handlers": [BasicCSVStatsHandler],
         "detailed_association_metrics": True,
     }
 
@@ -523,8 +522,8 @@ def create_5lm_77obj_benchmark_config():
             "python_log_to_stderr": False,
             "log_parallel_wandb": False,
             "output_dir": (
-                os.getenv("MONTY_LOGS", "~/tbp/results/monty/")
-                + "unsupervised_5lm_from_scratch"
+                    os.getenv("MONTY_LOGS", "~/tbp/results/monty/")
+                    + "unsupervised_5lm_from_scratch"
             ),
             "run_name": "unsupervised_5lm_from_scratch_benchmark",
             "wandb_handlers": [],
