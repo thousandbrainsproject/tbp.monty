@@ -112,6 +112,9 @@ class UnsupervisedInferenceExperiments:
 class MyExperiments:
     supervised_pretraining_logos: dict
     supervised_pretraining_logos_2d_sensor: dict
+    supervised_pretraining_lvl1: dict
+    supervised_pretraining_lvl1_2d_sensor: dict
+    supervised_pretraining_lvl1_upsidedown_2d_sensor: dict
 
 
 current_module = sys.modules[__name__]
