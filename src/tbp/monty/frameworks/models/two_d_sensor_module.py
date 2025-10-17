@@ -19,7 +19,7 @@ import numpy as np
 import quaternion
 from skimage.color import rgb2hsv
 
-from tbp.monty.frameworks.models.sensor_modules import DetailedLoggingSM, NoiseMixin
+from tbp.monty.frameworks.models.sensor_modules import DetailedLoggingSM, HabitatObservationProcessor, NoiseMixin
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.edge_detection_utils import structure_tensor_center
 
@@ -68,6 +68,10 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
             save_raw_obs,
             noise_params=noise_params,
             **kwargs,
+        )
+        self._habitat_observation_processor = HabitatObservationProcessor(
+            features=features,
+            sensor_module_id=sensor_module_id,
         )
 
         # Validate features
@@ -181,6 +185,85 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
         self, theta, normal, *, normal_frame="world", world_camera=None, out_frame="world"
     ):
         """
+        Lift the edge angle (theta, in radians, measured from the 2D image +x axis,
+        with +y pointing DOWN in the image) into a 3D unit tangent on the surface.
+
+        Frames:
+        - If normal_frame='world', provide world_camera as 3x3 or 4x4 rotation (world->camera).
+        - out_frame is 'camera' or 'world'.
+        """
+        n = normal / np.linalg.norm(normal)
+
+        R_wc = None
+        if world_camera is not None:
+            R_wc = world_camera[:3, :3] if world_camera.shape == (4, 4) else world_camera
+        R_cw = R_wc.T if R_wc is not None else None
+
+        # Put normal in camera frame
+        if normal_frame == "camera":
+            n_cam = n
+        elif normal_frame == "world":
+            if R_wc is None:
+                raise ValueError("world_camera must be provided if normal_frame is 'world'")
+            n_cam = R_wc @ n
+        else:
+            raise ValueError(f"Invalid normal_frame: {normal_frame}")
+
+        n_cam = n_cam / np.linalg.norm(n_cam)
+
+        # Image axes in camera frame (OpenCV convention: x right, y down, z forward)
+        ex = np.array([1.0, 0.0, 0.0])
+        ey = np.array([0.0, -1.0, 0.0])  
+
+        def project_tangent(v, n_):
+            return v - np.dot(v, n_) * n_
+
+        # Start with tx aligned with +image x
+        tx = project_tangent(ex, n_cam)
+        if np.linalg.norm(tx) < 1e-12:
+            # If ex is (nearly) normal, pick something orthogonal to n
+            # Use z as a helper; if that fails, use x
+            helper = np.array([0.0, 0.0, 1.0])
+            if abs(np.dot(helper, n_cam)) > 0.99:
+                helper = np.array([1.0, 0.0, 0.0])
+            tx = project_tangent(helper, n_cam)
+        tx = tx / np.linalg.norm(tx)
+
+        # Build ty to be orthonormal to tx and n_cam, but oriented toward +image (down) direction
+        # First get the canonical orthonormal ty
+        ty = np.cross(n_cam, tx)      # this is guaranteed orthogonal to both
+        ty_norm = np.linalg.norm(ty)
+        if ty_norm < 1e-12:
+            # extremely degenerate; fall back to projecting ey then GS
+            ty = project_tangent(ey, n_cam)
+            ty = ty - np.dot(ty, tx) * tx
+            ty_norm = np.linalg.norm(ty)
+            if ty_norm < 1e-12:
+                raise RuntimeError("Failed to construct a stable tangent basis")
+        ty = ty / ty_norm
+
+        # Make ty point as close as possible toward +image y (down) direction
+        if np.dot(ty, ey) < 0:
+            ty = -ty
+
+        # Now tx, ty are orthonormal and image-aligned on the tangent plane
+        t_cam = np.cos(theta) * tx + np.sin(theta) * ty
+        t_cam = t_cam / np.linalg.norm(t_cam)
+
+        if out_frame == "camera":
+            return t_cam
+        elif out_frame == "world":
+            if R_cw is None:
+                raise ValueError("world_camera must be provided if out_frame is 'world'")
+            t_world = R_cw @ t_cam
+            return t_world / np.linalg.norm(t_world)
+        else:
+            raise ValueError(f"Invalid out_frame: {out_frame}")
+
+    def edge_angle_to_3d_tangent_opposite_y(
+        self, theta, normal, *, normal_frame="world", world_camera=None, out_frame="world"
+    ):
+        """
         Lift the edge angle (theta from the 2D image x-axis) into a 3D tangent vector
         on the surface, aligned with the camera's image axes.
         """
@@ -276,7 +359,7 @@ class TwoDPoseSM(DetailedLoggingSM, NoiseMixin):
             features,
             morphological_features,
             invalid_signals,
-        ) = self.extract_and_add_features(
+        ) = self._habitat_observation_processor._extract_and_add_features(
             features,
             obs_3d,
             rgba_feat,
