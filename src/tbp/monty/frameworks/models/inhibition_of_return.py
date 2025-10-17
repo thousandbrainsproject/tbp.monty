@@ -8,12 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable
-
 import numpy as np
-from numpy.typing import ArrayLike
-
-from tbp.monty.frameworks.models.states import GoalState
 
 
 class DecayKernel:
@@ -37,7 +32,7 @@ class DecayKernel:
         self._w_t_min = w_t_min
         self._t = 0
 
-    def w_t(self) -> float | np.ndarray:
+    def w_t(self) -> float:
         """Compute the time-dependent weight at the current step.
 
         The weight is computed as `exp(-t / lam)`, where `t` is the number of
@@ -46,7 +41,7 @@ class DecayKernel:
         Returns:
             The weight, bounded to [0, 1].
         """
-        return np.exp(-self._t / (self._tau_t / np.log(2)))
+        return np.exp(-self._t / (self._tau_t / float(np.log(2))))
 
     def w_s(self, point: np.ndarray) -> float | np.ndarray:
         """Compute the distance-dependent weight.
@@ -66,23 +61,27 @@ class DecayKernel:
             weight is a 1D array with shape (num_points,).
         """
         if point.ndim == 1:
-            dist = self._distance(point)
+            dist = self.distance(point)
             if self._spatial_cutoff is not None and dist > self._spatial_cutoff:
                 return 0.0
             return np.exp(-dist / (self._tau_s / np.log(2)))
         else:
-            dist = self._distance(point)
+            dist = self.distance(point)
             out = np.exp(-dist / (self._tau_s / np.log(2)))
             if self._spatial_cutoff is not None:
                 out[dist > self._spatial_cutoff] = 0.0
             return out
 
-    def step(self) -> None:
-        """Increment the step counter, and check if the kernel is expired."""
-        self._t += 1
-        self._expired = self.w_t() < self._w_t_min
+    def step(self) -> bool:
+        """Increment the step counter, and check if the kernel is expired.
 
-    def _distance(self, point: np.ndarray) -> float | np.ndarray:
+        Returns:
+            True if the kernel is expired, False otherwise.
+        """
+        self._t += 1
+        return self.w_t() < self._w_t_min
+
+    def distance(self, point: np.ndarray) -> float | np.ndarray:
         """Compute the distance between the kernel's location and one or more points.
 
         Args:
@@ -142,10 +141,8 @@ class DecayField:
         self._kernels.append(kernel)
 
     def step(self) -> None:
-        """Step each kernel, and keep only non-expired ones."""
-        for k in self._kernels:
-            k.step()
-        self._kernels = [k for k in self._kernels if not k.expired]
+        """Step each kernel to increment its counter, and keep only non-expired ones."""
+        self._kernels = [k for k in self._kernels if not k.step()]
 
     def compute_weight(self, point: np.ndarray) -> float | np.ndarray:
         if not self._kernels:
