@@ -20,7 +20,7 @@ from scipy.spatial.transform import Rotation
 from skimage.color import rgb2hsv
 
 from tbp.monty.frameworks.models.abstract_monty_classes import SensorModule
-from tbp.monty.frameworks.models.states import State
+from tbp.monty.frameworks.models.states import GoalState, State
 from tbp.monty.frameworks.utils.sensor_processing import (
     log_sign,
     principal_curvatures,
@@ -817,3 +817,29 @@ class FeatureChangeFilter(StateFilter):
             self._last_sent_n_steps_ago += 1
 
         return state
+
+class HabitatSalienceSM(SensorModule):
+    def state_dict(self):
+        """Return a serializable dict with this sensor module's state.
+
+        Includes everything needed to save/load this sensor module.
+        """
+        pass
+
+    def update_state(self, state):
+        pass
+
+    def step(self, data):
+        """Called on each step.
+
+        Args:
+            data: Sensor observations
+        """
+        pass
+
+    def pre_episode(self):
+        """This method is called before each episode."""
+        pass
+
+    def propose_goal_states(self) -> list[GoalState]:
+        return []
