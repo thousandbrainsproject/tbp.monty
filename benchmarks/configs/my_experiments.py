@@ -11,17 +11,12 @@ import copy
 import os
 from dataclasses import asdict
 
-import numpy as np
-
 from benchmarks.configs.names import MyExperiments
 from benchmarks.configs.pretraining_experiments import supervised_pre_training_base
 from tbp.monty.frameworks.config_utils.config_args import (
-    PatchAndViewMontyConfig,
     MotorSystemConfigNaiveScanSpiral,
+    PatchAndViewMontyConfig,
     get_cube_face_and_corner_views_rotations,
-)
-from tbp.monty.frameworks.config_utils.policy_setup_utils import (
-    make_naive_scan_policy_config,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
@@ -29,212 +24,270 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     PredefinedObjectInitializer,
     get_object_names_by_idx,
 )
-from tbp.monty.frameworks.environments.logos_on_objs import LOGOS, OBJECTS_WITH_LOGOS_LVL1
-from tbp.monty.frameworks.models.evidence_matching.learning_module import (
-    EvidenceGraphLM,
+from tbp.monty.frameworks.config_utils.policy_setup_utils import (
+    make_naive_scan_policy_config,
+)
+from tbp.monty.frameworks.environments.logos_on_objs import (
+    ANGLES,
+    TBP_LOGOS,
+    OBJECTS_WITH_LOGOS_LVL1,
 )
 from tbp.monty.frameworks.models.motor_policies import NaiveScanPolicy
 from tbp.monty.frameworks.models.sensor_modules import Probe
 from tbp.monty.frameworks.models.two_d_sensor_module import TwoDPoseSM
 from tbp.monty.simulators.habitat.configs import (
-    PatchViewFinderMountHabitatDatasetArgs,
     EnvInitArgsPatchViewMount,
+    PatchViewFinderMountHabitatDatasetArgs,
 )
-from tbp.monty.frameworks.run import print_config
 
 train_rotations_all = get_cube_face_and_corner_views_rotations()
 
-LOGO_POSITIONS = [[0.0, 1.5, 0.0], [-0.03, 1.5, 0.0], [0.03, 1.5, 0.0]]
-LOGO_ROTATIONS = [[0.0, 0.0, 0.0]]
-
-# Let's learn it using our usual sensor module first
-# Config from feat.compositional_testbed
-supervised_pretraining_logos = copy.deepcopy(supervised_pre_training_base)
-supervised_pretraining_logos["logging_config"].run_name = "supervised_pretraining_logos"
-supervised_pretraining_logos.update(
-    experiment_args=ExperimentArgs(
-        do_eval=False,
-        n_train_epochs=len(LOGO_POSITIONS) * len(LOGO_ROTATIONS),
-    ),
-    dataset_args=PatchViewFinderMountHabitatDatasetArgs(
-        env_init_args=EnvInitArgsPatchViewMount(
-            data_path=os.path.join(os.environ["MONTY_DATA"], "compositional_objects")
-        ).__dict__
-    ),
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
-        object_names=get_object_names_by_idx(0, len(LOGOS), object_list=LOGOS),
-        object_init_sampler=PredefinedObjectInitializer(
-            positions=LOGO_POSITIONS,
-            rotations=LOGO_ROTATIONS,
-        ),
-    ),
-)
-supervised_pretraining_logos.update(
-    monty_config=PatchAndViewMontyConfig(
-        motor_system_config=MotorSystemConfigNaiveScanSpiral(
-            motor_system_args=dict(
-                policy_class=NaiveScanPolicy,
-                policy_args=make_naive_scan_policy_config(step_size=1),
-            ),
-        ),
-    ),
-)
-
-LVL1_POSITIONS = [[0.0, 1.5, 0.0], [-0.03, 1.5, 0.0], [0.03, 1.5, 0.0]]
-# LVL1_ROTATIONS = [[0.0, 0.0, 0.0]]
+# Consolidated constants
+POSITIONS = [
+    [0.0, 1.5, 0.0],
+    [-0.03, 1.5, 0.0],
+    [0.03, 1.5, 0.0],
+    [0.0, 1.53, 0.0],
+    [-0.03, 1.53, 0.0],
+    [0.03, 1.53, 0.0],
+    [0.0, 1.47, 0.0],
+    [-0.03, 1.47, 0.0],
+    [0.03, 1.47, 0.0],
+]
 LVL1_ROTATIONS = [[10, -15, 0]]
+UPSIDEDOWN_ROTATIONS = [[0, 0, 180]]
 
-supervised_pretraining_lvl1 = copy.deepcopy(supervised_pre_training_base)
-supervised_pretraining_lvl1["logging_config"].run_name = "supervised_pretraining_lvl1_step2"
-supervised_pretraining_lvl1.update(
-    experiment_args=ExperimentArgs(
-        n_train_epochs=len(LVL1_POSITIONS) * len(LVL1_ROTATIONS),
-        do_eval=False,
-    ),
-    dataset_args=PatchViewFinderMountHabitatDatasetArgs(
+
+# Helper functions for common config patterns
+def make_2d_sensor_module_config(debug_save_dir, sensor_id="patch"):
+    """Create a 2D sensor module configuration with specified debug directory.
+
+    Returns:
+        dict: Sensor module configuration dictionary.
+    """
+    return dict(
+        sensor_module_class=TwoDPoseSM,
+        sensor_module_args=dict(
+            sensor_module_id=sensor_id,
+            features=[
+                "pose_vectors",
+                "pose_fully_defined",
+                "on_object",
+                "object_coverage",
+                "rgba",
+                "hsv",
+                "edge_strength",
+                "coherence",
+                "pose_from_edge",
+            ],
+            save_raw_obs=True,
+            debug_visualize=True,
+            debug_save_dir=debug_save_dir,
+        ),
+    )
+
+
+def make_naive_scan_motor_config(step_size=1):
+    """Create a naive scan motor system configuration.
+
+    Returns:
+        MotorSystemConfigNaiveScanSpiral: Motor system configuration.
+    """
+    return MotorSystemConfigNaiveScanSpiral(
+        motor_system_args=dict(
+            policy_class=NaiveScanPolicy,
+            policy_args=make_naive_scan_policy_config(step_size=step_size),
+        ),
+    )
+
+
+def make_compositional_dataset_args():
+    """Create dataset args for compositional objects.
+
+    Returns:
+        PatchViewFinderMountHabitatDatasetArgs: Dataset configuration.
+    """
+    return PatchViewFinderMountHabitatDatasetArgs(
         env_init_args=EnvInitArgsPatchViewMount(
             data_path=os.path.join(os.environ["MONTY_DATA"], "compositional_objects")
         ).__dict__
-    ),
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
-        object_names=get_object_names_by_idx(0, len(OBJECTS_WITH_LOGOS_LVL1), object_list=OBJECTS_WITH_LOGOS_LVL1),
+    )
+
+
+def make_object_dataloader_args(object_list, positions, rotations):
+    """Create dataloader args for objects with given positions and rotations.
+
+    Returns:
+        EnvironmentDataloaderPerObjectArgs: Dataloader configuration.
+    """
+    return EnvironmentDataloaderPerObjectArgs(
+        object_names=get_object_names_by_idx(
+            0, len(object_list), object_list=object_list
+        ),
         object_init_sampler=PredefinedObjectInitializer(
-            positions=LVL1_POSITIONS,
-            rotations=LVL1_ROTATIONS,
+            positions=positions,
+            rotations=rotations,
         ),
-    ),
-    monty_config=PatchAndViewMontyConfig(
-        motor_system_config=MotorSystemConfigNaiveScanSpiral(
-            motor_system_args=dict(
-                policy_class=NaiveScanPolicy,
-                policy_args=make_naive_scan_policy_config(step_size=1),
-            ),
-        ),
-    ),
-)
+    )
 
 
-supervised_pretraining_logos_2d_sensor = copy.deepcopy(supervised_pretraining_logos)
+def make_lvl1_experiment_pair(rotation_name, rotations, debug_subdir=None):
+    """Create a pair of LVL1 experiments (control + 2D sensor) with rotations.
 
-# Update to use 2D sensor module
-supervised_pretraining_logos_2d_sensor.update(
-    monty_config=PatchAndViewMontyConfig(
-        motor_system_config=MotorSystemConfigNaiveScanSpiral(
-            motor_system_args=dict(
-                policy_class=NaiveScanPolicy,
-                policy_args=make_naive_scan_policy_config(step_size=1),
-            ),
+    Args:
+        rotation_name: Name for the rotation set (e.g., "standard", "oblique").
+        rotations: List of rotation configurations.
+        debug_subdir: Optional debug subdirectory name for 2D sensor.
+
+    Returns:
+        tuple: (control_config, 2d_sensor_config) experiment dictionaries.
+    """
+    if debug_subdir is None:
+        debug_subdir = f"debug_2d_edges_lvl1_{rotation_name}"
+
+    # Create control experiment
+    control_config = copy.deepcopy(supervised_pre_training_base)
+    control_config[
+        "logging_config"
+    ].run_name = f"supervised_pretraining_lvl1_{rotation_name}_control"
+    control_config.update(
+        experiment_args=ExperimentArgs(
+            n_train_epochs=len(POSITIONS) * len(rotations),
+            do_eval=False,
         ),
-        sensor_module_configs=dict(
-            sensor_module_0=dict(
-                sensor_module_class=TwoDPoseSM,
-                sensor_module_args=dict(
-                    sensor_module_id="patch",
-                    features=[
-                        "pose_vectors",
-                        "pose_fully_defined",
-                        "on_object",
-                        "object_coverage",
-                        "rgba",
-                        "hsv",
-                        "edge_strength",
-                        "coherence",
-                        "pose_from_edge",
-                    ],
-                    save_raw_obs=True,
-                    debug_visualize=True,
+        dataset_args=make_compositional_dataset_args(),
+        train_dataloader_args=make_object_dataloader_args(
+            OBJECTS_WITH_LOGOS_LVL1, POSITIONS, rotations
+        ),
+        monty_config=PatchAndViewMontyConfig(
+            motor_system_config=make_naive_scan_motor_config(step_size=1),
+        ),
+    )
+
+    # Create 2D sensor experiment
+    sensor_2d_config = copy.deepcopy(control_config)
+    sensor_2d_config[
+        "logging_config"
+    ].run_name = f"supervised_pretraining_lvl1_{rotation_name}_2d_sensor"
+    sensor_2d_config.update(
+        monty_config=PatchAndViewMontyConfig(
+            motor_system_config=make_naive_scan_motor_config(step_size=1),
+            sensor_module_configs=dict(
+                sensor_module_0=make_2d_sensor_module_config(
                     debug_save_dir=os.path.join(
                         os.path.expanduser("~"),
-                        "tbp/feat.2d_sensor/results/debug_2d_edges",
+                        f"tbp/feat.2d_sensor/results/{debug_subdir}",
+                    ),
+                ),
+                sensor_module_1=dict(
+                    sensor_module_class=Probe,
+                    sensor_module_args=dict(
+                        sensor_module_id="view_finder",
+                        save_raw_obs=True,
                     ),
                 ),
             ),
-            sensor_module_1=dict(
-                sensor_module_class=Probe,
-                sensor_module_args=dict(
-                    sensor_module_id="view_finder",
-                    save_raw_obs=True,
-                ),
-            ),
         ),
-    ),
+    )
+
+    return control_config, sensor_2d_config
+
+
+########################################
+# LVL1 ROTATION COMPARISON EXPERIMENTS #
+########################################
+# Standard rotation (0, 0, 0)
+lvl1_standard_control, lvl1_standard_2d = make_lvl1_experiment_pair(
+    "standard", [[0.0, 0.0, 0.0]]
 )
-supervised_pretraining_logos_2d_sensor[
-    "logging_config"
-].run_name = "supervised_pretraining_logos_2d_sensor"
 
-supervised_pretraining_lvl1_2d_sensor = copy.deepcopy(supervised_pretraining_lvl1)
+# Oblique rotation
+lvl1_oblique_control, lvl1_oblique_2d = make_lvl1_experiment_pair(
+    "oblique", [[0, 0, 0], [10, -15, 0]]
+)
 
-supervised_pretraining_lvl1_2d_sensor.update(
-    monty_config=PatchAndViewMontyConfig(
-        motor_system_config=MotorSystemConfigNaiveScanSpiral(
-            motor_system_args=dict(
-                policy_class=NaiveScanPolicy,
-                policy_args=make_naive_scan_policy_config(step_size=1),
-            ),
+# Upside down rotation
+lvl1_upsidedown_control, lvl1_upsidedown_2d = make_lvl1_experiment_pair(
+    "upsidedown", [[0, 0, 180]]
+)
+
+
+def make_angles_experiment_pair(rotation_name, rotations, debug_subdir=None):
+    """Create a pair of ANGLES experiments (control + 2D sensor) with rotations.
+
+    Args:
+        rotation_name: Name for the rotation set (e.g., "standard").
+        rotations: List of rotation configurations.
+        debug_subdir: Optional debug subdirectory name for 2D sensor.
+
+    Returns:
+        tuple: (control_config, 2d_sensor_config) experiment dictionaries.
+    """
+    if debug_subdir is None:
+        debug_subdir = f"debug_2d_edges_angles_{rotation_name}"
+
+    # Create control experiment
+    control_config = copy.deepcopy(supervised_pre_training_base)
+    control_config[
+        "logging_config"
+    ].run_name = f"supervised_pretraining_angles_{rotation_name}_control"
+    control_config.update(
+        experiment_args=ExperimentArgs(
+            n_train_epochs=len(POSITIONS) * len(rotations),
+            do_eval=False,
         ),
-        sensor_module_configs=dict(
-            sensor_module_0=dict(
-                sensor_module_class=TwoDPoseSM,
-                sensor_module_args=dict(
-                    sensor_module_id="patch",
-                    features=[
-                        "pose_vectors",
-                        "pose_fully_defined",
-                        "on_object",
-                        "object_coverage",
-                        "rgba",
-                        "hsv",
-                        "edge_strength",
-                        "coherence",
-                        "pose_from_edge",
-                    ],
-                    save_raw_obs=True,
-                    debug_visualize=True,
+        dataset_args=make_compositional_dataset_args(),
+        train_dataloader_args=make_object_dataloader_args(ANGLES, POSITIONS, rotations),
+        monty_config=PatchAndViewMontyConfig(
+            motor_system_config=make_naive_scan_motor_config(step_size=1),
+        ),
+    )
+
+    # Create 2D sensor experiment
+    sensor_2d_config = copy.deepcopy(control_config)
+    sensor_2d_config[
+        "logging_config"
+    ].run_name = f"supervised_pretraining_angles_{rotation_name}_2d_sensor"
+    sensor_2d_config.update(
+        monty_config=PatchAndViewMontyConfig(
+            motor_system_config=make_naive_scan_motor_config(step_size=1),
+            sensor_module_configs=dict(
+                sensor_module_0=make_2d_sensor_module_config(
                     debug_save_dir=os.path.join(
                         os.path.expanduser("~"),
-                        "tbp/feat.2d_sensor/results/debug_2d_edges_lvl1_oblique",
+                        f"tbp/feat.2d_sensor/results/{debug_subdir}",
+                    ),
+                ),
+                sensor_module_1=dict(
+                    sensor_module_class=Probe,
+                    sensor_module_args=dict(
+                        sensor_module_id="view_finder",
+                        save_raw_obs=True,
                     ),
                 ),
             ),
-            sensor_module_1=dict(
-                sensor_module_class=Probe,
-                sensor_module_args=dict(
-                    sensor_module_id="view_finder",
-                    save_raw_obs=True,
-                ),
-            ),
         ),
-    ),
-)
-supervised_pretraining_lvl1_2d_sensor[
-    "logging_config"
-].run_name = "supervised_pretraining_lvl1_oblique_2d_sensor"
+    )
 
-UPSIDEDOWN_ROTATIONS = [[0, 0, 180]]
-supervised_pretraining_lvl1_upsidedown_2d_sensor = copy.deepcopy(supervised_pretraining_lvl1_2d_sensor)
-supervised_pretraining_lvl1_upsidedown_2d_sensor.update(
-    experiment_args=ExperimentArgs(
-        do_eval=False,
-        n_train_epochs=len(LVL1_POSITIONS) * len(UPSIDEDOWN_ROTATIONS),
-    ),
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
-        object_names=get_object_names_by_idx(0, len(OBJECTS_WITH_LOGOS_LVL1), object_list=OBJECTS_WITH_LOGOS_LVL1),
-        object_init_sampler=PredefinedObjectInitializer(
-            positions=LVL1_POSITIONS,
-            rotations=UPSIDEDOWN_ROTATIONS,
-        ),
-    ),
+    return control_config, sensor_2d_config
+
+
+####
+# Angles
+#
+angles_standard_control, angles_standard_2d = make_angles_experiment_pair(
+    "standard", [[0.0, 0.0, 0.0]], debug_subdir="30_angles_yb"
 )
-supervised_pretraining_lvl1_upsidedown_2d_sensor[
-    "logging_config"
-].run_name = "supervised_pretraining_lvl1_upsidedown_2d_sensor"
+
 
 experiments = MyExperiments(
-    supervised_pretraining_logos=supervised_pretraining_logos,
-    supervised_pretraining_logos_2d_sensor=supervised_pretraining_logos_2d_sensor,
-    supervised_pretraining_lvl1=supervised_pretraining_lvl1,
-    supervised_pretraining_lvl1_2d_sensor=supervised_pretraining_lvl1_2d_sensor,
-    supervised_pretraining_lvl1_upsidedown_2d_sensor=supervised_pretraining_lvl1_upsidedown_2d_sensor,
+    supervised_pretraining_lvl1_standard_control=lvl1_standard_control,
+    supervised_pretraining_lvl1_standard_2d_sensor=lvl1_standard_2d,
+    supervised_pretraining_lvl1_oblique_control=lvl1_oblique_control,
+    supervised_pretraining_lvl1_oblique_2d_sensor=lvl1_oblique_2d,
+    supervised_pretraining_lvl1_upsidedown_control=lvl1_upsidedown_control,
+    supervised_pretraining_lvl1_upsidedown_2d_sensor=lvl1_upsidedown_2d,
+    supervised_pretraining_angles_standard_control=angles_standard_control,
+    supervised_pretraining_angles_standard_2d_sensor=angles_standard_2d,
 )
 CONFIGS = asdict(experiments)

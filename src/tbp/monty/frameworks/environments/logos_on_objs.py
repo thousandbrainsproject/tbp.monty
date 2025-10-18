@@ -16,6 +16,8 @@ Levels of Difficulty for Testing Compositional Models:
 4. Logos with bends
 """
 
+ANGLES = ["030_angles_yb"]
+
 LOGOS = ["021_logo_tbp", "022_logo_numenta"]
 
 FLAT_OBJECTS_WITHOUT_LOGOS = ["001_cube", "006_disk"]

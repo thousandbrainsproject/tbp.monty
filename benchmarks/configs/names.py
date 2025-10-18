@@ -109,12 +109,21 @@ class UnsupervisedInferenceExperiments:
 
 
 @dataclass
-class MyExperiments:
+class LogosExperiments:
     supervised_pretraining_logos: dict
     supervised_pretraining_logos_2d_sensor: dict
-    supervised_pretraining_lvl1: dict
-    supervised_pretraining_lvl1_2d_sensor: dict
+
+
+@dataclass
+class MyExperiments:
+    supervised_pretraining_lvl1_standard_control: dict
+    supervised_pretraining_lvl1_standard_2d_sensor: dict
+    supervised_pretraining_lvl1_oblique_control: dict
+    supervised_pretraining_lvl1_oblique_2d_sensor: dict
+    supervised_pretraining_lvl1_upsidedown_control: dict
     supervised_pretraining_lvl1_upsidedown_2d_sensor: dict
+    supervised_pretraining_angles_standard_control: dict
+    supervised_pretraining_angles_standard_2d_sensor: dict
 
 
 current_module = sys.modules[__name__]

@@ -349,7 +349,7 @@ if __name__ == "__main__":
     # Set up paths
     pretrained_model_path = Path(
         "~/tbp/results/monty/pretrained_models/pretrained_ycb_v10/"
-        "supervised_pretraining_lvl1_2d_sensor/pretrained/model.pt"
+        "supervised_pretraining_lvl1_oblique_2d_sensor/pretrained/model.pt"
     ).expanduser()
 
     # Load the model to explore available objects
