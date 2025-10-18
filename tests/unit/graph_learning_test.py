@@ -1759,13 +1759,13 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             for episode_num in range(tm.num_episodes):
                 exp.pre_episode()
                 # Normally the experiment `pre_episode` method would call the model
-                # `pre_episode` method, but it expects to feed data from a dataset/
-                # environment interface to the model, and we aren't using that, so we
-                # call it again with the correct target value.
+                # `pre_episode` method, but it expects to feed data from an environment
+                # interface to the model, and we aren't using that, so we call it again
+                # with the correct target value.
                 monty.pre_episode(self.placeholder_target)
                 for step in range(tm.num_observations(episode_num)):
                     # Manually run through the internal Monty steps since we aren't
-                    # using the data from the dataset/environment interface and instead
+                    # using the data from the environment interface and are instead
                     # providing faked observations.
                     monty.sensor_module_outputs = [
                         lm.episodes[episode_num].observations[step]
