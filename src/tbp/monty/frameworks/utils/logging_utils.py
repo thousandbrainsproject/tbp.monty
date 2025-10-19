@@ -67,7 +67,7 @@ def load_stats(
         print("...loading detailed run statistics...")
         json_file = os.path.join(exp_path, "detailed_run_stats.json")
         try:
-            with open(json_file, "r") as f:
+            with open(json_file) as f:
                 detailed_stats = json.load(f)
         except ValueError:
             detailed_stats = deserialize_json_chunks(json_file)
@@ -127,7 +127,7 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
 
     detailed_json = {}
     stop = stop or np.inf
-    with open(json_file, "r") as f:
+    with open(json_file) as f:
         for line_counter, line in enumerate(f):
             if should_get_episode(start, stop, episodes, line_counter):
                 # NOTE: json logging is only used at inference time and inference

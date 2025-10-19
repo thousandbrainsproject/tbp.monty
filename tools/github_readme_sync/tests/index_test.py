@@ -40,7 +40,7 @@ class TestGenerateIndex(unittest.TestCase):
 
         self.assertTrue(Path(index_file_path).exists())
 
-        with open(index_file_path, "r", encoding="utf-8") as f:
+        with open(index_file_path, encoding="utf-8") as f:
             return json.load(f)
 
     def test_generate_index_with_frontmatter(self):

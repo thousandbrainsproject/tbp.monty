@@ -1596,7 +1596,7 @@ def read_action_file(file: str) -> List[Action]:
         List of actions
     """
     file = os.path.expanduser(file)
-    with open(file, "r") as f:
+    with open(file) as f:
         file_read = f.read()
 
     lines = [line.strip() for line in file_read.split("\n") if line.strip()]

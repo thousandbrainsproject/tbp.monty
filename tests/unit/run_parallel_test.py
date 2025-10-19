@@ -152,10 +152,10 @@ class RunParallelTest(unittest.TestCase):
             pfile = os.path.join(parallel_repro_dir, file)
             sfile = os.path.join(serial_repro_dir, file)
 
-            with open(pfile, "r") as f:
+            with open(pfile) as f:
                 ptarget = f.read()
 
-            with open(sfile, "r") as f:
+            with open(sfile) as f:
                 starget = f.read()
 
             ptarget = json.loads(ptarget)
