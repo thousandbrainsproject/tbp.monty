@@ -469,7 +469,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             overall_stats[f"{lm}/episode/individual_ts_rotation_error"] = lm_stats[
                 "individual_ts_rotation_error"
             ]
-            if "episode_avg_prediction_error" in lm_stats
+            if "episode_avg_prediction_error" in lm_stats:
                 overall_stats[f"{lm}/episode/avg_prediction_error"] = lm_stats[
                     "episode_avg_prediction_error"
                 ]
