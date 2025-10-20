@@ -58,7 +58,6 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
         super().setUp()
 
         self.output_dir = tempfile.mkdtemp()
-        self.compositional_save_path = tempfile.mkdtemp()
 
         base = dict(
             experiment_class=MontyObjectRecognitionExperiment,
@@ -84,7 +83,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
             ),
         )
 
-        two_stacked_constrained_lms_config = dict(
+        two_stacked_lms_config = dict(
             learning_module_0=dict(
                 learning_module_class=EvidenceGraphLM,
                 learning_module_args=dict(
@@ -134,7 +133,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
             ),
             monty_config=TwoLMStackedMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=100, min_train_steps=3),
-                learning_module_configs=two_stacked_constrained_lms_config,
+                learning_module_configs=two_stacked_lms_config,
             ),
             dataset_args=TwoLMStackedDistantMountHabitatDatasetArgs(
                 env_init_args=EnvInitArgsTwoLMDistantStackedMount(
@@ -188,7 +187,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
                 max_total_steps=60,
             ),
             logging_config=PretrainLoggingConfig(
-                output_dir=self.compositional_save_path,
+                output_dir=self.output_dir,
                 python_log_level="INFO",
             ),
             experiment_class=MontySupervisedObjectPretrainingExperiment,
@@ -210,9 +209,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
             experiment_args=SupervisedPretrainingExperimentArgs(
                 supervised_lm_ids=["learning_module_1"],
                 min_lms_match=2,
-                model_name_or_path=os.path.join(
-                    self.compositional_save_path, "pretrained"
-                ),
+                model_name_or_path=os.path.join(self.output_dir, "pretrained"),
             ),
             monty_config=TwoLMStackedMontyConfig(
                 # set min_train_steps to 200 to send more observations to LM_1 after
@@ -228,9 +225,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
                 do_train=False,
                 min_lms_match=1,
                 n_eval_epochs=2,
-                model_name_or_path=os.path.join(
-                    self.compositional_save_path, "pretrained"
-                ),
+                model_name_or_path=os.path.join(self.output_dir, "pretrained"),
             ),
             logging_config=LoggingConfig(
                 output_dir=self.output_dir,
