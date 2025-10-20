@@ -109,6 +109,39 @@ class DecayFieldTest(unittest.TestCase):
             npt.assert_array_equal(spatial_weights_1, spatial_weights_2)
 
     def test_field_selects_max_from_overlapping_kernels(self) -> None:
-        location_1 = np.array([1, 2, 3])
-        location_2 = np.array([1.02, 2, 3])
-        test_point = np.array([1.01, 2, 3])
+        kernel_location_1 = np.array([1, 2, 3])
+        kernel_location_2 = np.array([1.02, 2, 3])
+        self.field.add(kernel_location_1)
+        self.field.add(kernel_location_2)
+        translation = np.array([0.001, 0.0, 0.0])
+        for i in range(5):
+            test_point_1 = kernel_location_1 + translation * i
+            test_point_2 = kernel_location_2 - translation * i
+            spatial_weights_1 = self.field.compute_weight(test_point_1)
+            spatial_weights_2 = self.field.compute_weight(test_point_2)
+            npt.assert_array_equal(spatial_weights_1, spatial_weights_2)
+
+    def test_field_selects_max_from_overlapping_decaying_kernels(self) -> None:
+        kernel_location_1 = np.array([1, 2, 3])
+        kernel_location_2 = np.array([1.02, 2, 3])
+        self.field.add(kernel_location_1)
+        add_second_kernel_at_step = 10
+        test_point = np.array([1.015, 2, 3])
+        weights = []
+        for step in range(30):
+            if step == add_second_kernel_at_step:
+                self.field.add(kernel_location_2)
+            weights.append(self.field.compute_weight(test_point))
+            self.field.step()
+
+        weights_before_second_kernel = weights[:add_second_kernel_at_step]
+        diffs_1 = np.ediff1d(weights_before_second_kernel)
+        self.assertTrue(np.all(diffs_1 < 0))
+
+        weights_after_second_kernel = weights[add_second_kernel_at_step:]
+        diffs_2 = np.ediff1d(weights_after_second_kernel)
+        self.assertTrue(np.all(diffs_2 < 0))
+
+        w_before_second_kernel = weights_before_second_kernel[-1]
+        w_after_second_kernel = weights_after_second_kernel[0]
+        self.assertGreater(w_after_second_kernel, w_before_second_kernel)
