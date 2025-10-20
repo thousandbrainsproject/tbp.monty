@@ -124,15 +124,15 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
         self.driving_goal_state = received_goal_state
 
-    def get_output_goal_state(self) -> GoalState | None:
-        """Retrieve the output goal-state of the GSG.
+    def output_goal_states(self) -> list[GoalState]:
+        """Retrieve the output goal-states of the GSG.
 
         This is the goal-state projected to other LM's GSGs +/- motor-actuators.
 
         Returns:
-            Output goal-state of the GSG if it exists, otherwise None.
+            Output goal-states of the GSG if it exists, otherwise empty list.
         """
-        return self.output_goal_state
+        return [self.output_goal_state] if self.output_goal_state else []
 
     # ------------------- Main Algorithm -----------------------
 

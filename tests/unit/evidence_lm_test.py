@@ -57,8 +57,8 @@ from tbp.monty.frameworks.models.evidence_matching.model import (
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.sensor_modules import (
-    DetailedLoggingSM,
-    HabitatDistantPatchSM,
+    HabitatSM,
+    Probe,
 )
 from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 from tbp.monty.simulators.habitat.configs import (
@@ -539,7 +539,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 learning_module_configs=default_evidence_lm_config,
                 sensor_module_configs=dict(
                     sensor_module_0=dict(
-                        sensor_module_class=HabitatDistantPatchSM,
+                        sensor_module_class=HabitatSM,
                         sensor_module_args=dict(
                             sensor_module_id="patch",
                             features=[
@@ -564,7 +564,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                     ),
                     # view_finder
                     sensor_module_1=dict(
-                        sensor_module_class=DetailedLoggingSM,
+                        sensor_module_class=Probe,
                         sensor_module_args=dict(
                             sensor_module_id="view_finder",
                             save_raw_obs=True,
@@ -837,10 +837,9 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             # min_steps is reached and the sensor moves off the object). In the second
             # episode the sensor moves off the sphere on episode steps 6+
 
-            # Since process_all_obs == False by default, the off_object points are
-            # not counted as steps. Therefor we have to wait until the camera turns
-            # a full circle and arrives on the other side of the object. From there
-            # we can continue to try and recognize the object.
+            # The off_object points are not counted as steps. Therefore we have to wait
+            # until the camera turns a full circle and arrives on the other side of the
+            # object. From there we can continue to try and recognize the object.
 
             exp.train()
 
@@ -890,7 +889,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.model.matching_steps,
             13,
             "Did not take correct amount of matching steps. Perhaps "
-            "process_all_obs or min_train_steps was not applied correctly.",
+            "min_train_steps was not applied correctly.",
         )
         self.assertGreater(
             exp.model.episode_steps,

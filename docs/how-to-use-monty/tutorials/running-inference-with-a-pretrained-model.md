@@ -40,8 +40,8 @@ from tbp.monty.frameworks.models.goal_state_generation import (
     EvidenceGoalStateGenerator,
 )
 from tbp.monty.frameworks.models.sensor_modules import (
-    DetailedLoggingSM,
-    FeatureChangeSM,
+    HabitatSM,
+    Probe,
 )
 from tbp.monty.simulators.habitat.configs import (
     SurfaceViewFinderMountHabitatDatasetArgs,
@@ -88,7 +88,7 @@ sensor_noise_params = dict(
 )
 
 sensor_module_0 = dict(
-    sensor_module_class=FeatureChangeSM,
+    sensor_module_class=HabitatSM,
     sensor_module_args=dict(
         sensor_module_id="patch",
         # Features that will be extracted and sent to LM
@@ -105,7 +105,7 @@ sensor_module_0 = dict(
             "principal_curvatures_log",
         ],
         save_raw_obs=False,
-        # FeatureChangeSM will only send an observation to the LM if features or location
+        # HabitatSM will only send an observation to the LM if features or location
         # changed more than these amounts.
         delta_thresholds={
             "on_object": 0,
@@ -115,12 +115,12 @@ sensor_module_0 = dict(
             "principal_curvatures_log": [2, 2],
             "distance": 0.01,
         },
-        surf_agent_sm=True,  # for surface agent
+        is_surface_sm=True,  # for surface agent
         noise_params=sensor_noise_params,
     ),
 )
 sensor_module_1 = dict(
-    sensor_module_class=DetailedLoggingSM,
+    sensor_module_class=Probe,
     sensor_module_args=dict(
         sensor_module_id="view_finder",
         save_raw_obs=False,
@@ -131,7 +131,7 @@ sensor_module_configs = dict(
     sensor_module_1=sensor_module_1,
 )
 ```
-There are two main differences between this config and the pretraining sensor module config. First, we are adding some noise to the sensor patch, so we define noise parameters and add them to `sensor_module_0`'s dictionary. Second, we're using the `FeatureChangeSM` class instead of `HabitatSurfacePatchSM`. `FeatureChangeSM` is more efficient when graph matching since it only sends an observation to the learning module if the features have changed significantly. Note that `FeatureChangeSM` can be used with either a surface or distant agent, for which `surf_agent_sm` should be appropriately set.
+There are two main differences between this config and the pretraining sensor module config. First, we are adding some noise to the sensor patch, so we define noise parameters and add them to `sensor_module_0`'s dictionary. Second, we're using `delta_threshold` parameters to only send an observation to the learning module if the features have changed significantly. Note that `HabitatSM` can be used as either a surface or distant agent, for which `is_surface_sm` should be appropriately set.
 
 For the learning module, we specify
 

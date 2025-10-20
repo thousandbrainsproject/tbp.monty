@@ -284,9 +284,8 @@ class MontyBase(Monty):
         # Currently only use GSG outputs at inference
         if self.step_type == "matching_step":
             for lm in self.learning_modules:
-                goal_state = lm.propose_goal_state()
-                if goal_state is not None:
-                    self.gsg_outputs.append(goal_state)
+                goal_states = lm.propose_goal_states()
+                self.gsg_outputs.extend(goal_states)
 
     def _pass_infos_to_motor_system(self):
         """Pass input observations and goal states to the motor system."""
@@ -329,8 +328,7 @@ class MontyBase(Monty):
         self.step_type = "matching_step"
         for lm in self.learning_modules:
             lm.set_experiment_mode(mode)
-        for sm in self.sensor_modules:
-            sm.set_experiment_mode(mode)
+        # for sm in self.sensor_modules: sm.set_experiment_mode() unused & removed
 
     def pre_episode(self):
         self._is_done = False
@@ -345,9 +343,7 @@ class MontyBase(Monty):
     def post_episode(self):
         for lm in self.learning_modules:
             lm.post_episode()
-
-        for sm in self.sensor_modules:
-            sm.post_episode()
+        # for sm in self.sensor_modules: sm.post_episode() unused & removed
 
     ###
     # Methods for saving and loading
