@@ -167,7 +167,7 @@ class DecayField:
 
     def compute_weight(self, point: np.ndarray) -> float | np.ndarray:
         if not self._kernels:
-            return 1.0 if point.ndim == 1 else np.ones(point.shape[0])
+            return 0.0 if point.ndim == 1 else np.zeros(point.shape[0])
         if len(self._kernels) == 1:
             return self._kernels[0](point)
 
