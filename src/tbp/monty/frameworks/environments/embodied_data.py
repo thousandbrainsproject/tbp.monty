@@ -347,16 +347,17 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             "semantic_id": self.semantic_label_to_id[self.object_names[idx]],
             **self.object_params,
         }
-        if self.parent_to_child_mapping:
-            if self.primary_target["object"] in self.parent_to_child_mapping:
-                self.consistent_child_objects = self.parent_to_child_mapping[
-                    self.primary_target["object"]
-                ]
-            else:
-                logger.warning(
-                    f"target object {self.primary_target['object']} not in",
-                    " parent_to_child_mapping",
-                )
+        if self.primary_target["object"] in self.parent_to_child_mapping:
+            self.consistent_child_objects = self.parent_to_child_mapping[
+                self.primary_target["object"]
+            ]
+        elif self.parent_to_child_mapping.keys():
+            # if mapping contains keys (i.e. not an empty dict) is should contain the
+            # target object
+            logger.warning(
+                f"target object {self.primary_target['object']} not in",
+                " parent_to_child_mapping",
+            )
         logger.info(f"New primary target: {pformat(self.primary_target)}")
 
     def add_distractor_objects(
