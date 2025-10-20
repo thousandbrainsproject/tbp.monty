@@ -52,10 +52,12 @@ class DecayKernelTest(unittest.TestCase):
 
 class DecayFieldTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.kernel_factory = DecayKernelFactory(
-            tau_t=10.0, spatial_cutoff=0.02, w_t_min=0.1
+        kernel_factory_class = DecayKernelFactory
+        kernel_factory_args = {"tau_t": 10.0, "spatial_cutoff": 0.02, "w_t_min": 0.1}
+        self.field = DecayField(
+            kernel_factory_class=kernel_factory_class,
+            kernel_factory_args=kernel_factory_args,
         )
-        self.field = DecayField(self.kernel_factory)
 
     def test_single_kernel_weight_decays_within_spatial_cutoff(self) -> None:
         location = np.array([1, 2, 3])

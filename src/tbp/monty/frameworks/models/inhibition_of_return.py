@@ -8,6 +8,8 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 
 
@@ -148,10 +150,13 @@ class DecayField:
       - step
     """
 
-    def __init__(self, kernel_factory: DecayKernelFactory | None = None):
-        if kernel_factory is None:
-            kernel_factory = DecayKernelFactory()
-        self._kernel_factory = kernel_factory
+    def __init__(
+        self,
+        kernel_factory_class: type[DecayKernelFactory] = DecayKernelFactory,
+        kernel_factory_args: dict[str, Any] | None = None,
+    ):
+        kernel_factory_args = dict(kernel_factory_args) if kernel_factory_args else {}
+        self._kernel_factory = kernel_factory_class(**kernel_factory_args)
         self._kernels = []
 
     def reset(self) -> None:

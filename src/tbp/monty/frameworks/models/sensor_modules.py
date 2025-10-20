@@ -836,6 +836,8 @@ class HabitatSalienceSM(SensorModule):
         sensor_module_id: str,
         salience_strategy_class: type[SalienceStrategy] = UniformSalienceStrategy,
         salience_strategy_args: dict[str, Any] | None = None,
+        decay_field_class: type[DecayField] = DecayField,
+        decay_field_args: dict[str, Any] | None = None,
     ) -> None:
         self._rng = rng
         self._sensor_module_id = sensor_module_id
@@ -844,7 +846,9 @@ class HabitatSalienceSM(SensorModule):
             dict(salience_strategy_args) if salience_strategy_args else {}
         )
         self._salience_strategy = salience_strategy_class(**salience_strategy_args)
-        self._decay_field = DecayField()
+
+        decay_field_args = dict(decay_field_args) if decay_field_args else {}
+        self._decay_field = decay_field_class(**decay_field_args)
 
     def state_dict(self):
         """Return a serializable dict with this sensor module's state.
