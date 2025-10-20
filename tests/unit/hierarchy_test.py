@@ -210,7 +210,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
             experiment_args=SupervisedPretrainingExperimentArgs(
                 supervised_lm_ids=["learning_module_1"],
                 min_lms_match=2,
-                model_name_or_path=self.compositional_save_path + "/pretrained",
+                model_name_or_path=os.path.join(self.compositional_save_path, "pretrained"),
             ),
             monty_config=TwoLMStackedMontyConfig(
                 # set min_train_steps to 200 to send more observations to LM_1 after
@@ -226,7 +226,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
                 do_train=False,
                 min_lms_match=1,
                 n_eval_epochs=2,
-                model_name_or_path=self.compositional_save_path + "/pretrained",
+                model_name_or_path=os.path.join(self.compositional_save_path, "pretrained"),
             ),
             logging_config=LoggingConfig(
                 output_dir=self.output_dir,

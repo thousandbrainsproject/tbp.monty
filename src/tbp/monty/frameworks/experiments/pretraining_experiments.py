@@ -69,7 +69,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         self.pre_episode()
         # Save compute if we are providing labels to all models, so don't need to
         # perform matching parts of LM updates (default is matching_step)
-        if len(self.supervised_lm_ids) == len(self.model.learning_modules):
+        if set(self.supervised_lm_ids) == set(self.model.learning_modules):
             self.model.step_type = "exploratory_step"
 
         # Collect data about the object (exploratory steps)
@@ -130,7 +130,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
                     first_pos = self.sensor_pos[0]
                 else:
                     lm_offset = self.sensor_pos[i] - first_pos
-                    if lm.detected_object is not None:
+                    if lm.detected_object:
                         lm.buffer.stats["detected_location_rel_body"] += lm_offset
                         # Rotate offset into model RF
                         lm_offset_model_rf = lm.detected_rotation_r.apply(lm_offset)

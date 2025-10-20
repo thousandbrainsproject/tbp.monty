@@ -261,7 +261,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             stats["monty_steps"].append(episode_steps)
             stats["monty_matching_steps"].append(monty_matching_steps)
             # older LMs don't have prediction error stats
-            if "episode_avg_prediction_error" in episode_stats.keys():
+            if "episode_avg_prediction_error" in episode_stats:
                 stats["episode_avg_prediction_error"].append(
                     episode_stats["episode_avg_prediction_error"]
                 )
@@ -469,7 +469,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             overall_stats[f"{lm}/episode/individual_ts_rotation_error"] = lm_stats[
                 "individual_ts_rotation_error"
             ]
-            if "episode_avg_prediction_error" in lm_stats.keys():
+            if "episode_avg_prediction_error" in lm_stats
                 overall_stats[f"{lm}/episode/avg_prediction_error"] = lm_stats[
                     "episode_avg_prediction_error"
                 ]

@@ -249,7 +249,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         self.epochs = 0
         self.primary_target = None
         self.consistent_child_objects = None
-        self.parent_to_child_mapping = parent_to_child_mapping
+        self.parent_to_child_mapping = parent_to_child_mapping if parent_to_child_mapping else {}
 
     def pre_episode(self):
         super().pre_episode()
