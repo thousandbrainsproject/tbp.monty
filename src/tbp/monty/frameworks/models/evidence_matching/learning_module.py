@@ -239,7 +239,7 @@ class EvidenceGraphLM(GraphLM):
             "scale": 1,
             "evidence": 0,
         }
-        self.previous_mlh = copy.deepcopy(self.current_mlh)
+        self.previous_mlh = self.current_mlh
 
         if hypotheses_updater_args is None:
             hypotheses_updater_args = {}
@@ -724,7 +724,7 @@ class EvidenceGraphLM(GraphLM):
         # NOTE: would not need to do this if we are still voting
         # Call this update in the step method?
         self.possible_matches = self._threshold_possible_matches()
-        self.previous_mlh = copy.deepcopy(self.current_mlh)
+        self.previous_mlh = self.current_mlh
         self.current_mlh = self._calculate_most_likely_hypothesis()
 
     def _update_evidence(
