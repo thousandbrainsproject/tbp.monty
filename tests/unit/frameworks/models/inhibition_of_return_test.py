@@ -20,15 +20,19 @@ class DecayKernelTest(unittest.TestCase):
     def setUp(self) -> None:
         pass
 
-    def test_kernel_spatial_weightdecays_with_distance(self) -> None:
-        point = np.array([1, 2, 3])
-        kernel = DecayKernel(location=point)
-        translation = np.array([0.001, 0.001, 0.001])
+    def test_kernel_spatial_weight_decays_within_spatial_cutoff(self) -> None:
+        location = np.array([1, 2, 3])
+        kernel = DecayKernel(location=location, spatial_cutoff=0.02)
+        translation = np.array([0.001, 0.0, 0.0])
+        points = np.array([location + translation * i for i in range(20)])
+        spatial_weights = kernel(points)
+        for i in range(1, len(points)):
+            self.assertLessEqual(spatial_weights[i], spatial_weights[i - 1])
 
-        prev_spatial_weight = kernel(point)
-        npt.assert_allclose(prev_spatial_weight, 1.0)
-        for _ in range(10):
-            new_point = point + translation
-            new_spatial_weight = kernel(new_point)
-            self.assertLessEqual(new_spatial_weight, prev_spatial_weight)
-            prev_spatial_weight = new_spatial_weight
+    def test_kernel_spatial_weight_decays_to_zero_outside_spatial_cutoff(self) -> None:
+        location = np.array([1, 2, 3])
+        kernel = DecayKernel(location=location, spatial_cutoff=0.02)
+        translation = np.array([0.001, 0.0, 0.0])
+        points = np.array([location + translation * i for i in range(20, 100)])
+        spatial_weights = kernel(points)
+        npt.assert_allclose(spatial_weights, 0.0)
