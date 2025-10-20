@@ -104,7 +104,7 @@ class ResamplingHypothesesUpdater:
             DefaultFeaturesForMatchingSelector
         ),
         resampling_multiplier: float = 0.1,
-        evidence_slope_threshold: float = 0.0,
+        evidence_slope_threshold: float = 0.3,
         include_telemetry: bool = False,
         initial_possible_poses: Literal["uniform", "informed"]
         | list[Rotation] = "informed",
