@@ -100,9 +100,9 @@ class DecayKernel:
     def __call__(self, point: np.ndarray) -> float | np.ndarray:
         """Compute the time- and distance-dependent weight at a given point.
 
-        Computes 1 - w_t * w_s. We subtract the product from 1 because outputs
-        are intended to be weights/coefficients. So when w_t and w_s are large,
-        the coefficient will drive values towards 0.
+        Computes the product of the time- and distance-dependent weights. Weights
+        are bounded to [0, 1], where values close to 1 indicate the kernel has a
+        large influence on the given point(s).
 
         Args:
             point: One or more 3D vectors. If multiple vectors are provided,
