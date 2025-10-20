@@ -116,6 +116,25 @@ class DecayKernel:
         return self.w_t() * self.w_s(point)
 
 
+class DecayKernelFactory:
+    def __init__(
+        self,
+        tau_t: float = 10.0,
+        tau_s: float = 0.01,
+        spatial_cutoff: float | None = 0.02,
+        w_t_min: float = 0.1,
+    ):
+        self._tau_t = tau_t
+        self._tau_s = tau_s
+        self._spatial_cutoff = spatial_cutoff
+        self._w_t_min = w_t_min
+
+    def __call__(self, location: np.ndarray) -> DecayKernel:
+        return DecayKernel(
+            location, self._tau_t, self._tau_s, self._spatial_cutoff, self._w_t_min
+        )
+
+
 class DecayField:
     """Implements inhibition of return.
 
@@ -129,7 +148,10 @@ class DecayField:
       - step
     """
 
-    def __init__(self):
+    def __init__(self, kernel_factory: DecayKernelFactory | None = None):
+        if kernel_factory is None:
+            kernel_factory = DecayKernelFactory()
+        self._kernel_factory = kernel_factory
         self._kernels = []
 
     def reset(self) -> None:
@@ -137,8 +159,7 @@ class DecayField:
 
     def add(self, location: np.ndarray) -> None:
         """Add a kernel to the field."""
-        kernel = DecayKernel(location)
-        self._kernels.append(kernel)
+        self._kernels.append(self._kernel_factory(location))
 
     def step(self) -> None:
         """Step each kernel to increment its counter, and keep only non-expired ones."""
