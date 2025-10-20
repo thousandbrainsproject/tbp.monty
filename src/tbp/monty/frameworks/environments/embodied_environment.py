@@ -115,7 +115,7 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def close(self):
+    def close(self) -> None:
         """Close the environmnt releasing all resources.
 
         Any call to any other environment method may raise an exception

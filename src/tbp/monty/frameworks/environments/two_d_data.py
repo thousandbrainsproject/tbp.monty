@@ -264,7 +264,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             locations = np.vstack([locations, stroke])
         return locations[1:]
 
-    def close(self):
+    def close(self) -> None:
         self._current_state = None
 
 
@@ -697,7 +697,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         ), f"Didn't extract a patch of size {self.patch_size}"
         return depth_patch, rgb_patch, depth3d_patch, sensor_frame_patch
 
-    def close(self):
+    def close(self) -> None:
         self._current_state = None
 
 
