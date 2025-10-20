@@ -13,12 +13,14 @@ import unittest
 import numpy as np
 import numpy.testing as npt
 
-from tbp.monty.frameworks.models.inhibition_of_return import DecayKernel
+from tbp.monty.frameworks.models.inhibition_of_return import (
+    DecayField,
+    DecayKernel,
+    DecayKernelFactory,
+)
 
 
 class DecayKernelTest(unittest.TestCase):
-    def setUp(self) -> None:
-        pass
 
     def test_kernel_spatial_weight_decays_within_spatial_cutoff(self) -> None:
         location = np.array([1, 2, 3])
@@ -46,3 +48,27 @@ class DecayKernelTest(unittest.TestCase):
             kernel.step()
         for i in range(1, len(weights)):
             self.assertLess(weights[i], weights[i - 1])
+
+
+class DecayFieldTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.kernel_factory = DecayKernelFactory(spatial_cutoff=0.02)
+        self.field = DecayField(self.kernel_factory)
+
+    def test_single_kernel_spatial_weight_decays_within_spatial_cutoff(self) -> None:
+        location = np.array([1, 2, 3])
+        self.field.add(location)
+
+        translation = np.array([0.001, 0.0, 0.0])
+        points = np.array([location + translation * i for i in range(20)])
+        spatial_weights = self.field.compute_weight(points)
+        diffs = np.ediff1d(spatial_weights)
+        self.assertTrue(np.all(diffs < 0))
+
+    def test_kernel_spatial_weight_decays_to_zero_outside_spatial_cutoff(self) -> None:
+        location = np.array([1, 2, 3])
+        self.field.add(location)
+        translation = np.array([0.001, 0.0, 0.0])
+        points = np.array([location + translation * i for i in range(20, 100)])
+        spatial_weights = self.field.compute_weight(points)
+        npt.assert_allclose(spatial_weights, 0.0)
