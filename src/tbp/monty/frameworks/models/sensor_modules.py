@@ -838,6 +838,32 @@ class UniformSalienceStrategy(SalienceStrategy):
         return np.ones_like(obs.depth)
 
 
+class ReturnInhibitor:
+    def __init__(
+        self,
+        decay_field_class: type[DecayField] = DecayField,
+        decay_field_args: dict[str, Any] | None = None,
+    ):
+        decay_field_args = dict(decay_field_args) if decay_field_args else {}
+        self._decay_field = decay_field_class(**decay_field_args)
+
+    def reset(self) -> None:
+        self._decay_field.reset()
+
+    def __call__(
+        self,
+        central_location: np.ndarray | None,
+        query_locations: np.ndarray,
+    ) -> np.ndarray:
+        if central_location is not None:
+            self._decay_field.add(central_location)
+
+        # TODO: Could get rid of compute_weight in type float | np.ndarray to np.ndarray
+        ior_vals = self._decay_field.compute_weight(query_locations)
+        self._decay_field.step()
+        return ior_vals
+
+
 class HabitatSalienceSM(SensorModule):
     def __init__(
         self,
@@ -845,8 +871,8 @@ class HabitatSalienceSM(SensorModule):
         sensor_module_id: str,
         salience_strategy_class: type[SalienceStrategy] = UniformSalienceStrategy,
         salience_strategy_args: dict[str, Any] | None = None,
-        decay_field_class: type[DecayField] = DecayField,
-        decay_field_args: dict[str, Any] | None = None,
+        return_inhibitor_class: type[ReturnInhibitor] = ReturnInhibitor,
+        return_inhibitor_args: dict[str, Any] | None = None,
     ) -> None:
         self._rng = rng
         self._sensor_module_id = sensor_module_id
@@ -856,8 +882,10 @@ class HabitatSalienceSM(SensorModule):
         )
         self._salience_strategy = salience_strategy_class(**salience_strategy_args)
 
-        decay_field_args = dict(decay_field_args) if decay_field_args else {}
-        self._decay_field = decay_field_class(**decay_field_args)
+        return_inhibitor_args = (
+            dict(return_inhibitor_args) if return_inhibitor_args else {}
+        )
+        self._return_inhibitor = return_inhibitor_class(**return_inhibitor_args)
         self._goals = []
 
     def state_dict(self):
@@ -877,22 +905,16 @@ class HabitatSalienceSM(SensorModule):
             data: Raw sensor observations
 
         """
-        # Make salience map using strategy
         salience_map = self._salience_strategy(
             RGBADepthObservation(rgba=data["rgba"], depth=data["depth"])
         )
 
-        # Get coordinates of image data in (ypix, xpix, vector3d) format.
         on_object = on_object_observation(data, salience_map)
-
-        # Update the decay field with the current sensed location.
-        ior_vals = self._step_decay_field(
+        ior_weights = self._return_inhibitor(
             on_object.center_location, on_object.locations
         )
+        salience = self._weight_salience(on_object.salience, ior_weights)
 
-        salience = self.weight_salience(on_object.salience, ior_vals)
-
-        # create a goal state for each location and confidence
         self._goals = [
             GoalState(
                 location=on_object.locations[i],
@@ -907,30 +929,25 @@ class HabitatSalienceSM(SensorModule):
             for i in range(len(on_object.locations))
         ]
 
-    def weight_salience(self, salience: np.ndarray, ior_vals: np.ndarray) -> np.ndarray:
+    def _weight_salience(
+        self,
+        salience: np.ndarray,
+        ior_weights: np.ndarray,
+    ) -> np.ndarray:
         decay_factor = 0.75
-        salience -= decay_factor * ior_vals
+
+        weighted_salience = salience - decay_factor * ior_weights
 
         randomness_factor = 0.05
-        salience += self._rng.normal(
-            loc=0, scale=randomness_factor, size=salience.shape[0]
+        weighted_salience += self._rng.normal(
+            loc=0, scale=randomness_factor, size=weighted_salience.shape[0]
         )
 
         # normalize confidence values
-        salience = (salience - salience.min()) / (salience.max() - salience.min())
-        return salience
-
-    def _step_decay_field(
-        self, central_location: np.ndarray | None, query_locations: np.ndarray
-    ) -> np.ndarray:
-        """"""
-        if central_location is not None:
-            self._decay_field.add(central_location)
-
-        # TODO: Could get rid of compute_weight in type float | np.ndarray to np.ndarray
-        ior_vals = self._decay_field.compute_weight(query_locations)
-        self._decay_field.step()
-        return ior_vals
+        weighted_salience = (weighted_salience - weighted_salience.min()) / (
+            weighted_salience.max() - weighted_salience.min()
+        )
+        return weighted_salience
 
     def pre_episode(self):
         """This method is called before each episode."""
@@ -948,7 +965,8 @@ class OnObjectObservation:
 
 
 def on_object_observation(
-    raw_observation: dict, salience_map: np.ndarray
+    raw_observation: dict,
+    salience_map: np.ndarray,
 ) -> OnObjectObservation:
     """Convert all raw observation data into image format.
 
@@ -958,10 +976,11 @@ def on_object_observation(
 
     Args:
         raw_observation: A sensor's raw observations dictionary.
+        salience_map: A salience map.
 
     Returns:
-        The grid/matrix formatted (unraveled) observation data. Also includes the center
-        location if it is on the object and the depth is less than 0.99.
+        The grid/matrix formatted (unraveled) on-object salience and location data,
+        along with the location corresponding to the central pixel.
     """
     depth = raw_observation["depth"]
     rgba = raw_observation["rgba"]
