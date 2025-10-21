@@ -884,44 +884,54 @@ class HabitatSalienceSM(SensorModule):
 
         # Get coordinates of image data in (ypix, xpix, vector3d) format.
         obs = unravel_observation(data)
-        locations = obs.locations
-        on_obj = obs.on_object
-
-        # Update the decay field with the current sensed location.
-        if obs.center_location is not None:
-            self._decay_field.add(obs.center_location)
 
         # Make a goal for each on-object pixel. Initialize confidence to salience map.
-        goals = []
-        pix_rows, pix_cols = np.where(on_obj)
-        for row, col in zip(pix_rows, pix_cols):
-            g = self._create_goal_state(
-                location=locations[row, col],
-                confidence=salience_map[row, col],
-                info={"row": row, "col": col},
-            )
-            goals.append(g)
+        pix_rows, pix_cols = np.where(obs.on_object)
+        locations = obs.locations[pix_rows, pix_cols]
 
-        # Incorporate inhibition of return by weighting confidence values
-        # downward if we have recently visited points near a goal.
+        # Update the decay field with the current sensed location.
+        ior_vals = self._step_decay_field(obs.center_location, locations)
+
+        confidences = salience_map[pix_rows, pix_cols]
         decay_factor = 0.75
-        locs_mat = np.row_stack([g.location for g in goals])
-        ior_vals = self._decay_field(locs_mat)
-        for g, val in zip(goals, ior_vals):
-            g.confidence -= decay_factor * val
+        confidences -= decay_factor * ior_vals
 
-        # Add some randomness to the goal-state confidence values.
         randomness_factor = 0.05
-        for g in goals:
-            g.confidence += self._rng.normal(loc=0, scale=randomness_factor)
+        confidences += self._rng.normal(
+            loc=0, scale=randomness_factor, size=confidences.shape[0]
+        )
 
-        # Normalize the goal-state confidence values before returning.
-        normalize_confidence(goals)
+        # normalize confidence values
+        confidences = (confidences - confidences.min()) / (
+            confidences.max() - confidences.min()
+        )
+
+        # create a goal state for each location and confidence
+        self._goals = [
+            GoalState(
+                location=locations[i],
+                confidence=confidences[i],
+                use_state=True,
+                sender_id=self._sensor_module_id,
+                sender_type="SM",
+                goal_tolerances=None,
+            )
+            for i in range(len(locations))
+        ]
 
         # Step the decay field at the end of this function.
         self._decay_field.step()
 
-        self._goals = goals
+    def _step_decay_field(
+        self, central_location: np.ndarray | None, locations: np.ndarray
+    ) -> np.ndarray:
+        """"""
+        if central_location is None:
+            self._decay_field.add(central_location)
+
+        ior_vals = self._decay_field.compute_weight(locations)
+        self._decay_field.step()
+        return ior_vals
 
     def pre_episode(self):
         """This method is called before each episode."""
@@ -930,11 +940,13 @@ class HabitatSalienceSM(SensorModule):
     def propose_goal_states(self) -> list[GoalState]:
         return self._goals
 
+
 @dataclass
 class UnraveledObservation:
     locations: np.ndarray
     on_object: np.ndarray
     center_location: np.ndarray | None
+
 
 def unravel_observation(raw_observation: dict) -> UnraveledObservation:
     """Convert all raw observation data into image format.
@@ -966,14 +978,3 @@ def unravel_observation(raw_observation: dict) -> UnraveledObservation:
         on_object=on_object,
         center_location=center_location,
     )
-
-
-def normalize_confidence(goal_states: Iterable[GoalState]) -> None:
-    """Normalize the confidence of the goal states."""
-    confidence_values = [goal_state.confidence for goal_state in goal_states]
-    max_confidence = max(confidence_values)
-    min_confidence = min(confidence_values)
-    for goal_state in goal_states:
-        goal_state.confidence = (goal_state.confidence - min_confidence) / (
-            max_confidence - min_confidence
-        )
