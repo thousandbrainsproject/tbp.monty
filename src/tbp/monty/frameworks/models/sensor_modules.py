@@ -883,44 +883,42 @@ class HabitatSalienceSM(SensorModule):
         )
 
         # Get coordinates of image data in (ypix, xpix, vector3d) format.
-        obs = unravel_observation(data)
-
-        # Make a goal for each on-object pixel. Initialize confidence to salience map.
-        pix_rows, pix_cols = np.where(obs.on_object)
-        locations = obs.locations[pix_rows, pix_cols]
-        confidences = salience_map[pix_rows, pix_cols]
+        on_object = on_object_observation(data, salience_map)
 
         # Update the decay field with the current sensed location.
-        ior_vals = self._step_decay_field(obs.center_location, locations)
-
-        decay_factor = 0.75
-        confidences -= decay_factor * ior_vals
-
-        randomness_factor = 0.05
-        confidences += self._rng.normal(
-            loc=0, scale=randomness_factor, size=confidences.shape[0]
+        ior_vals = self._step_decay_field(
+            on_object.center_location, on_object.locations
         )
 
-        # normalize confidence values
-        confidences = (confidences - confidences.min()) / (
-            confidences.max() - confidences.min()
-        )
+        salience = self.weight_salience(on_object.salience, ior_vals)
 
         # create a goal state for each location and confidence
         self._goals = [
             GoalState(
-                location=locations[i],
-                confidence=confidences[i],
+                location=on_object.locations[i],
+                morphological_features=None,
+                non_morphological_features=None,
+                confidence=salience[i],
                 use_state=True,
                 sender_id=self._sensor_module_id,
                 sender_type="SM",
                 goal_tolerances=None,
             )
-            for i in range(len(locations))
+            for i in range(len(on_object.locations))
         ]
 
-        # Step the decay field at the end of this function.
-        self._decay_field.step()
+    def weight_salience(self, salience: np.ndarray, ior_vals: np.ndarray) -> np.ndarray:
+        decay_factor = 0.75
+        salience -= decay_factor * ior_vals
+
+        randomness_factor = 0.05
+        salience += self._rng.normal(
+            loc=0, scale=randomness_factor, size=salience.shape[0]
+        )
+
+        # normalize confidence values
+        salience = (salience - salience.min()) / (salience.max() - salience.min())
+        return salience
 
     def _step_decay_field(
         self, central_location: np.ndarray | None, query_locations: np.ndarray
@@ -943,13 +941,15 @@ class HabitatSalienceSM(SensorModule):
 
 
 @dataclass
-class UnraveledObservation:
-    locations: np.ndarray
-    on_object: np.ndarray
+class OnObjectObservation:
     center_location: np.ndarray | None
+    locations: np.ndarray
+    salience: np.ndarray
 
 
-def unravel_observation(raw_observation: dict) -> UnraveledObservation:
+def on_object_observation(
+    raw_observation: dict, salience_map: np.ndarray
+) -> OnObjectObservation:
     """Convert all raw observation data into image format.
 
     This function reformats the arrays in a raw observations dictionary
@@ -969,13 +969,18 @@ def unravel_observation(raw_observation: dict) -> UnraveledObservation:
     semantic_3d = raw_observation["semantic_3d"]
     locations = semantic_3d[:, 0:3].reshape(grid_shape + (3,))
     on_object = semantic_3d[:, 3].reshape(grid_shape).astype(int) > 0
+
     center_depth = depth[rgba.shape[0] // 2, rgba.shape[1] // 2]
     if center_depth < 0.99:
         center_location = locations[locations.shape[0] // 2, locations.shape[1] // 2]
     else:
         center_location = None
-    return UnraveledObservation(
-        locations=locations,
-        on_object=on_object,
+
+    pix_rows, pix_cols = np.where(on_object)
+    on_object_locations = locations[pix_rows, pix_cols]
+    on_object_salience = salience_map[pix_rows, pix_cols]
+    return OnObjectObservation(
         center_location=center_location,
+        salience=on_object_salience,
+        locations=on_object_locations,
     )
