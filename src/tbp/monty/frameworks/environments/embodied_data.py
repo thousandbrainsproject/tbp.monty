@@ -353,7 +353,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             self.consistent_child_objects = self.parent_to_child_mapping[
                 self.primary_target["object"]
             ]
-        elif self.parent_to_child_mapping.keys():
+        elif self.parent_to_child_mapping:
             # if mapping contains keys (i.e. not an empty dict) is should contain the
             # target object
             logger.warning(
