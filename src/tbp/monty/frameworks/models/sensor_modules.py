@@ -819,14 +819,17 @@ class FeatureChangeFilter(StateFilter):
 
         return state
 
+class RGBADepthObservation(Protocol):
+    rgba: np.ndarray
+    depth: np.ndarray
 
 class SalienceStrategy(Protocol):
-    def __call__(self, obs: dict) -> np.ndarray: ...
+    def __call__(self, obs: RGBADepthObservation) -> np.ndarray: ...
 
 
 class UniformSalienceStrategy(SalienceStrategy):
-    def __call__(self, obs: dict) -> np.ndarray:
-        return np.ones_like(obs["depth"])
+    def __call__(self, obs: RGBADepthObservation) -> np.ndarray:
+        return np.ones_like(obs.depth)
 
 
 class HabitatSalienceSM(SensorModule):
@@ -870,19 +873,15 @@ class HabitatSalienceSM(SensorModule):
         """
         # Get coordinates of image data in (ypix, xpix, vector3d) format.
         obs = clean_raw_observation(data)
-        locations = obs["locations"]
-        on_obj = obs["on_object"]
-        rgba = obs["rgba"]
-        depth = obs["depth"]
+        locations = obs.locations
+        on_obj = obs.on_object
 
         # Update the decay field with the current sensed location.
-        center_depth = depth[rgba.shape[0] // 2, rgba.shape[1] // 2]
-        if center_depth < 0.99:
-            cur_loc = locations[locations.shape[0] // 2, locations.shape[1] // 2]
-            self._decay_field.add(cur_loc)
+        if obs.center_location is not None:
+            self._decay_field.add(obs.center_location)
 
         # Make salience map using strategy
-        salience_map = self._salience_strategy.compute_saliency_map(obs)
+        salience_map = self._salience_strategy(obs)
 
         # Make a goal for each on-object pixel. Initialize confidence to salience map.
         goals = []
@@ -921,10 +920,18 @@ class HabitatSalienceSM(SensorModule):
         pass
 
     def propose_goal_states(self) -> list[GoalState]:
-        return self._goal_states
+        return self._goals
 
+@dataclass
+class UnflattenedObservation:
+    rgba: np.ndarray
+    depth: np.ndarray
+    locations: np.ndarray
+    on_object: np.ndarray
+    center_depth: float
+    center_location: np.ndarray | None
 
-def clean_raw_observation(raw_observation: dict) -> dict[str, np.ndarray]:
+def clean_raw_observation(raw_observation: dict) -> UnflattenedObservation:
     """Convert all raw observation data into image format.
 
     This function reformats the arrays in a raw observations dictionary
@@ -937,17 +944,25 @@ def clean_raw_observation(raw_observation: dict) -> dict[str, np.ndarray]:
     Returns:
         The grid/matrix fornatted data.
     """
+    depth = raw_observation["depth"]
     rgba = raw_observation["rgba"]
     grid_shape = rgba.shape[:2]
     semantic_3d = raw_observation["semantic_3d"]
     locations = semantic_3d[:, 0:3].reshape(grid_shape + (3,))
     on_object = semantic_3d[:, 3].reshape(grid_shape).astype(int) > 0
-    return {
-        "rgba": rgba,
-        "depth": raw_observation["depth"],
-        "locations": locations,
-        "on_object": on_object,
-    }
+    center_depth = depth[rgba.shape[0] // 2, rgba.shape[1] // 2]
+    if center_depth < 0.99:
+        center_location = locations[locations.shape[0] // 2, locations.shape[1] // 2]
+    else:
+        center_location = None
+    return UnflattenedObservation(
+        rgba=rgba,
+        depth=depth,
+        locations=locations,
+        on_object=on_object,
+        center_depth=center_depth,
+        center_location=center_location,
+    )
 
 
 def normalize_confidence(goal_states: Iterable[GoalState]) -> None:
