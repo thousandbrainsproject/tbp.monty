@@ -898,8 +898,9 @@ class HabitatSalienceSM(SensorModule):
         # Incorporate inhibition of return by weighting confidence values
         # downward if we have recently visited points near a goal.
         decay_factor = 0.75
-        for g in goal_states:
-            val = self.decay_field(g.location)
+        locs_mat = np.row_stack([g.location for g in goal_states])
+        ior_vals = self.decay_field(locs_mat)
+        for g, val in zip(goal_states, ior_vals):
             g.confidence -= decay_factor * val
 
         # Add some randomness to the goal-state confidence values.
