@@ -849,6 +849,7 @@ class HabitatSalienceSM(SensorModule):
 
         decay_field_args = dict(decay_field_args) if decay_field_args else {}
         self._decay_field = decay_field_class(**decay_field_args)
+        self._goal_states = []
 
     def state_dict(self):
         """Return a serializable dict with this sensor module's state.
@@ -860,20 +861,92 @@ class HabitatSalienceSM(SensorModule):
     def update_state(self, state):
         pass
 
-    def step(self, data):
-        """Called on each step.
+    def step(self, data) -> None:
+        """Generate goal states for the current step.
 
         Args:
-            data: Sensor observations
+            data: Raw sensor observations
+
         """
-        pass
+        # Get coordinates of image data in (ypix, xpix, vector3d) format.
+        obs = clean_raw_observation(data)
+        locations = obs["locations"]
+        on_obj = obs["on_object"]
+        rgba = obs["rgba"]
+        depth = obs["depth"]
+
+        # Update the decay field with the current sensed location.
+        center_depth = depth[rgba.shape[0] // 2, rgba.shape[1] // 2]
+        if center_depth < 0.99:
+            cur_loc = locations[locations.shape[0] // 2, locations.shape[1] // 2]
+            self.decay_field.add(cur_loc)
+
+        # Make salience map using strategy
+        salience_map = self.saliency_strategy.compute_saliency_map(obs)
+
+        # Make a goal for each on-object pixel. Initialize confidence to salience map.
+        goal_states = []
+        pix_rows, pix_cols = np.where(on_obj)
+        for row, col in zip(pix_rows, pix_cols):
+            g = self._create_goal_state(
+                location=locations[row, col],
+                confidence=salience_map[row, col],
+                info={"row": row, "col": col},
+            )
+            goal_states.append(g)
+
+        # Incorporate inhibition of return by weighting confidence values
+        # downward if we have recently visited points near a goal.
+        decay_factor = 0.75
+        for g in goal_states:
+            val = self.decay_field(g.location)
+            g.confidence -= decay_factor * val
+
+        # Add some randomness to the goal-state confidence values.
+        randomness_factor = 0.05
+        for g in goal_states:
+            g.confidence += self.rng.normal(loc=0, scale=randomness_factor)
+
+        # Normalize the goal-state confidence values before returning.
+        normalize_confidence(goal_states)
+
+        # Step the decay field at the end o this function.
+        self.decay_field.step()
+
+        self._goal_states = goal_states
 
     def pre_episode(self):
         """This method is called before each episode."""
         pass
 
     def propose_goal_states(self) -> list[GoalState]:
-        return []
+        return self._goal_states
+
+
+def clean_raw_observation(raw_observation: dict) -> dict[str, np.ndarray]:
+    """Convert raw observation data into image format.
+
+    This function reformats the arrays in a raw observations dictionary
+    so that they're all indexable by image row and column indices. It also splits
+    the semantic_3d array into 3D locations and an on-object/surface indicator array.
+
+    Args:
+        raw_observation: A sensor's raw observations dictionary.
+
+    Returns:
+        The grid/matrix fornatted data.
+    """
+    rgba = raw_observation["rgba"]
+    grid_shape = rgba.shape[:2]
+    semantic_3d = raw_observation["semantic_3d"]
+    locations = semantic_3d[:, 0:3].reshape(grid_shape + (3,))
+    on_object = semantic_3d[:, 3].reshape(grid_shape).astype(int) > 0
+    return {
+        "rgba": rgba,
+        "depth": raw_observation["depth"],
+        "locations": locations,
+        "on_object": on_object,
+    }
 
 
 def normalize_confidence(goal_states: Iterable[GoalState]) -> None:
