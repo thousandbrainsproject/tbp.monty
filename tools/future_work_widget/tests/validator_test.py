@@ -50,14 +50,14 @@ class TestRecordValidator(unittest.TestCase):
 
         validator = RecordValidator(snippets_dir)
 
-        self.assertIn("tags", validator.exact_values)
-        self.assertIn("skills", validator.exact_values)
+        self.assertIn("tags", validator.allowed_values)
+        self.assertIn("skills", validator.allowed_values)
 
         self.assertEqual(
-            sorted(validator.exact_values["tags"]), sorted(self.expected_tags)
+            sorted(validator.allowed_values["tags"]), sorted(self.expected_tags)
         )
         self.assertEqual(
-            sorted(validator.exact_values["skills"]), sorted(self.expected_skills)
+            sorted(validator.allowed_values["skills"]), sorted(self.expected_skills)
         )
 
     def test_missing_validation_files_graceful(self):
@@ -66,7 +66,7 @@ class TestRecordValidator(unittest.TestCase):
 
         validator = RecordValidator(snippets_dir)
 
-        self.assertEqual(len(validator.exact_values), 0)
+        self.assertEqual(len(validator.allowed_values), 0)
         record = {"path1": "future-work", "path2": "test", "path": "test/path.md"}
         _, errors = validator.validate(record)
         self.assertEqual(len(errors), 0)
@@ -76,7 +76,7 @@ class TestRecordValidator(unittest.TestCase):
 
         validator = RecordValidator(nonexistent_dir)
 
-        self.assertEqual(len(validator.exact_values), 0)
+        self.assertEqual(len(validator.allowed_values), 0)
         record = {"path1": "future-work", "path2": "test", "path": "test/path.md"}
         _, errors = validator.validate(record)
         self.assertEqual(len(errors), 0)
@@ -137,23 +137,44 @@ class TestRecordValidator(unittest.TestCase):
 
         self.assertIsNone(result)
         self.assertEqual(len(errors), 1)
-        self.assertIn("tags field cannot have more than", errors[0].message)
+        self.assertIn("Cannot have more than", errors[0].message)
         self.assertIn(str(max_items), errors[0].message)
 
-    def test_custom_validation_field_file_raises_error(self):
+    def test_validation_with_allowed_values_context(self):
+        """Test that Pydantic validators use the allowed_values context."""
         snippets_dir = self.temp_path / "snippets"
         snippets_dir.mkdir()
 
-        rfc_file = snippets_dir / "future-work-rfc.md"
-        with open(rfc_file, "w", encoding="utf-8") as f:
-            f.write("`rfc-001` `rfc-002`")
+        tags_file = snippets_dir / "future-work-tags.md"
+        with open(tags_file, "w", encoding="utf-8") as f:
+            f.write("`accuracy` `pose`")
 
-        with self.assertRaises(ValueError) as context:
-            RecordValidator(snippets_dir)
+        validator = RecordValidator(snippets_dir)
 
-        self.assertIn("Configuration error", str(context.exception))
-        self.assertIn("future-work-rfc.md", str(context.exception))
-        self.assertIn("custom validation", str(context.exception))
+        record = {
+            "path1": "future-work",
+            "path2": "test-item",
+            "path": "future-work/test-item.md",
+            "title": "Test item",
+            "tags": "accuracy",
+        }
+
+        result, errors = validator.validate(record)
+        self.assertIsNotNone(result)
+        self.assertEqual(len(errors), 0)
+
+        invalid_record = {
+            "path1": "future-work",
+            "path2": "test-item",
+            "path": "future-work/test-item.md",
+            "title": "Test item",
+            "tags": "invalid_tag",
+        }
+
+        result, errors = validator.validate(invalid_record)
+        self.assertIsNone(result)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("Invalid tags value", errors[0].message)
 
     def test_missing_path_field_returns_error(self):
         validator = RecordValidator(Path())

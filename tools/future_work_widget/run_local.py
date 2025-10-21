@@ -39,9 +39,9 @@ def main():
     generate_index(str(docs_dir), str(index_file))
     result = build(index_file, output_dir, docs_snippets_dir)
     index_file.unlink()
-    logger.info(json.dumps(result, indent=2))
+    logger.info(json.dumps(result.model_dump(exclude_none=True), indent=2))
 
-    if not result["success"]:
+    if not result.success:
         sys.exit(1)
 
     port = 8080

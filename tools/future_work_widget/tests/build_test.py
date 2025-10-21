@@ -63,11 +63,14 @@ class TestBuild(unittest.TestCase):
 
         result = build(index_file, self.temp_path, snippets_dir)
 
-        if not result["success"]:
-            raise ValueError(result["error_message"])
+        if not result.success:
+            error_details = "\n".join(
+                f"  - {err.field}: {err.message}" for err in (result.errors or [])
+            )
+            raise ValueError(f"{result.error_message}\nErrors:\n{error_details}")
 
         data_file = self.temp_path / "data.json"
-        with open(data_file, "r", encoding="utf-8") as f:
+        with open(data_file, encoding="utf-8") as f:
             return json.load(f)
 
     def _create_test_item(self, **overrides) -> dict[str, Any]:
@@ -115,11 +118,14 @@ class TestBuild(unittest.TestCase):
 
         result = build(index_file, self.temp_path, snippets_dir)
 
-        if not result["success"]:
-            raise ValueError(result["error_message"])
+        if not result.success:
+            error_details = "\n".join(
+                f"  - {err.field}: {err.message}" for err in (result.errors or [])
+            )
+            raise ValueError(f"{result.error_message}\nErrors:\n{error_details}")
 
         data_file = self.temp_path / "data.json"
-        with open(data_file, "r", encoding="utf-8") as f:
+        with open(data_file, encoding="utf-8") as f:
             return json.load(f)
 
     def _expect_build_failure(
@@ -138,8 +144,8 @@ class TestBuild(unittest.TestCase):
 
         result = build(index_file, self.temp_path, snippets_dir)
 
-        self.assertFalse(result["success"])
-        self.assertIn(expected_error_fragment, result["error_message"])
+        self.assertFalse(result.success)
+        self.assertIn(expected_error_fragment, result.error_message)
 
     def test_build_filters_future_work_items(self):
         input_data = [
@@ -230,10 +236,10 @@ class TestBuild(unittest.TestCase):
         result = build(index_file, self.temp_path, snippets_dir)
 
         self.assertIsNotNone(result)
-        self.assertTrue(result["success"])
-        self.assertEqual(result["processed_items"], 1)
-        self.assertEqual(result["total_items"], 1)
-        self.assertNotIn("errors", result)
+        self.assertTrue(result.success)
+        self.assertEqual(result.processed_items, 1)
+        self.assertEqual(result.total_items, 1)
+        self.assertIsNone(result.errors)
 
     def test_json_output_validation_errors(self):
         """Test JSON output mode with validation errors."""
@@ -257,23 +263,23 @@ class TestBuild(unittest.TestCase):
         result = build(index_file, self.temp_path, snippets_dir)
 
         self.assertIsNotNone(result)
-        self.assertFalse(result["success"])
-        self.assertEqual(result["processed_items"], 0)
-        self.assertEqual(result["total_items"], 1)
-        self.assertEqual(len(result["errors"]), 1)
+        self.assertFalse(result.success)
+        self.assertEqual(result.processed_items, 0)
+        self.assertEqual(result.total_items, 1)
+        self.assertEqual(len(result.errors), 1)
 
-        error = result["errors"][0]
-        self.assertIn("Invalid tags value 'invalid-tag'", error["message"])
-        self.assertEqual(error["file"], "docs/future-work/test-item.md")
-        self.assertEqual(error["line"], 1)
-        self.assertEqual(error["field"], "tags")
-        self.assertEqual(error["level"], "error")
-        self.assertEqual(error["annotation_level"], "failure")
-        self.assertIn("test-item.md", error["title"])
+        error = result.errors[0]
+        self.assertIn("Invalid tags value 'invalid-tag'", error.message)
+        self.assertEqual(error.file, "docs/future-work/test-item.md")
+        self.assertEqual(error.line, 1)
+        self.assertEqual(error.field, "tags")
+        self.assertEqual(error.level, "error")
+        self.assertEqual(error.annotation_level, "failure")
+        self.assertIn("test-item.md", error.title)
 
     def test_json_output_too_many_items_error(self):
         """Test JSON output mode with too many comma-separated items."""
-        max_items = RecordValidator.MAX_COMMA_SEPARATED_ITEMS
+        max_items = 10
         too_many_tags = ",".join([f"tag{i}" for i in range(max_items + 1)])
 
         input_data = [
@@ -293,20 +299,20 @@ class TestBuild(unittest.TestCase):
         result = build(index_file, self.temp_path, snippets_dir)
 
         self.assertIsNotNone(result)
-        self.assertFalse(result["success"])
-        self.assertEqual(result["processed_items"], 0)
-        self.assertEqual(result["total_items"], 1)
-        self.assertEqual(len(result["errors"]), 1)
+        self.assertFalse(result.success)
+        self.assertEqual(result.processed_items, 0)
+        self.assertEqual(result.total_items, 1)
+        self.assertEqual(len(result.errors), 1)
 
-        error = result["errors"][0]
-        self.assertIn("tags field cannot have more than", error["message"])
-        self.assertIn(str(max_items), error["message"])
-        self.assertEqual(error["file"], "docs/future-work/test-limits.md")
-        self.assertEqual(error["line"], 1)
-        self.assertEqual(error["field"], "tags")
-        self.assertEqual(error["level"], "error")
-        self.assertEqual(error["annotation_level"], "failure")
-        self.assertIn("test-limits.md", error["title"])
+        error = result.errors[0]
+        self.assertIn("Cannot have more than", error.message)
+        self.assertIn(str(max_items), error.message)
+        self.assertEqual(error.file, "docs/future-work/test-limits.md")
+        self.assertEqual(error.line, 1)
+        self.assertEqual(error.field, "tags")
+        self.assertEqual(error.level, "error")
+        self.assertEqual(error.annotation_level, "failure")
+        self.assertIn("test-limits.md", error.title)
 
     def test_field_validation_scenarios(self):
         """Test validation for various fields with valid and invalid values."""
@@ -366,7 +372,7 @@ class TestBuild(unittest.TestCase):
                     json.dump([valid_item], f)
 
                 result = build(index_file, self.temp_path, snippets_dir)
-                self.assertTrue(result["success"])
+                self.assertTrue(result.success)
 
                 invalid_item = self._create_test_item(
                     **{case["field_name"]: case["invalid_value"]}
@@ -376,9 +382,9 @@ class TestBuild(unittest.TestCase):
                     json.dump([invalid_item], f)
 
                 result = build(index_file, self.temp_path, snippets_dir)
-                self.assertFalse(result["success"])
-                self.assertEqual(len(result["errors"]), 1)
-                error_message = result["errors"][0]["message"]
+                self.assertFalse(result.success)
+                self.assertEqual(len(result.errors), 1)
+                error_message = result.errors[0].message
                 for fragment in case["expected_error_fragments"]:
                     self.assertIn(fragment, error_message)
 

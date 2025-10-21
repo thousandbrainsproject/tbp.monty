@@ -96,7 +96,9 @@ github_readme_sync_tool = [
     'nh3'
 ]
 future_work_widget_tool = [
-    'nh3'
+    'nh3',
+    'pydantic>=2.0.0',
+    'eval_type_backport'
 ]
 print_version_tool = [
     'semver'
