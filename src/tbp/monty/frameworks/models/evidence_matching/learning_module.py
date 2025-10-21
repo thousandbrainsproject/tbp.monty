@@ -176,7 +176,7 @@ class EvidenceGraphLM(GraphLM):
         **kwargs,
     ) -> None:
         kwargs["initialize_base_modules"] = False
-        super(EvidenceGraphLM, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # --- LM components ---
         self.graph_memory = EvidenceGraphMemory(
             graph_delta_thresholds=graph_delta_thresholds,
@@ -184,10 +184,12 @@ class EvidenceGraphLM(GraphLM):
             max_graph_size=max_graph_size,
             num_model_voxels_per_dim=num_model_voxels_per_dim,
         )
-        if gsg_args is None:
-            gsg_args = {}
-        self.gsg = gsg_class(self, **gsg_args)
-        self.gsg.reset()
+        if gsg_class is not None:
+            gsg_args = gsg_args or {}
+            self.gsg = gsg_class(self, **gsg_args)
+            self.gsg.reset()
+        else:
+            self.gsg = None
         # --- Matching Params ---
         self.max_match_distance = max_match_distance
         self.tolerances = tolerances

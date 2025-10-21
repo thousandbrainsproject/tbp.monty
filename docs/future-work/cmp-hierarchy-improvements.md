@@ -10,6 +10,8 @@ These are the things we would like to implement:
 - [Run & Analyze experiments in multi-object environment looking at scene graphs](cmp-hierarchy-improvements/run-analyze-experiments-in-multiobject-environment-looking-at-scene-graphs.md) #multiobj
 - [Test learning at different speeds depending on level in hierarchy](cmp-hierarchy-improvements/test-learning-at-different-speeds-depending-on-level-in-hierarchy.md) #learning #generalization
 - [Send similarity encoding object ID to next level & test](cmp-hierarchy-improvements/send-similarity-encoding-object-id-to-next-level-test.md) #compositional
+- [Global Interval Timer](cmp-hierarchy-improvements/global-interval-timer.md) #dynamic
+- [Include State in CMP](cmp-hierarchy-improvements/include-state-in-CMP.md) #dynamic
 
 !snippet[../snippets/contributing-tasks.md]
 
