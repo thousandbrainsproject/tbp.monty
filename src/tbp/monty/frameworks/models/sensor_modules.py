@@ -888,11 +888,11 @@ class HabitatSalienceSM(SensorModule):
         # Make a goal for each on-object pixel. Initialize confidence to salience map.
         pix_rows, pix_cols = np.where(obs.on_object)
         locations = obs.locations[pix_rows, pix_cols]
+        confidences = salience_map[pix_rows, pix_cols]
 
         # Update the decay field with the current sensed location.
         ior_vals = self._step_decay_field(obs.center_location, locations)
 
-        confidences = salience_map[pix_rows, pix_cols]
         decay_factor = 0.75
         confidences -= decay_factor * ior_vals
 
@@ -923,13 +923,14 @@ class HabitatSalienceSM(SensorModule):
         self._decay_field.step()
 
     def _step_decay_field(
-        self, central_location: np.ndarray | None, locations: np.ndarray
+        self, central_location: np.ndarray | None, query_locations: np.ndarray
     ) -> np.ndarray:
         """"""
-        if central_location is None:
+        if central_location is not None:
             self._decay_field.add(central_location)
 
-        ior_vals = self._decay_field.compute_weight(locations)
+        # TODO: Could get rid of compute_weight in type float | np.ndarray to np.ndarray
+        ior_vals = self._decay_field.compute_weight(query_locations)
         self._decay_field.step()
         return ior_vals
 
