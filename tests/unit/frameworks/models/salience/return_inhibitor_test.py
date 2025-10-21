@@ -13,7 +13,7 @@ import unittest
 import numpy as np
 import numpy.testing as npt
 
-from tbp.monty.frameworks.models.inhibition_of_return import (
+from tbp.monty.frameworks.models.salience.return_inhibitor import (
     DecayField,
     DecayKernel,
     DecayKernelFactory,

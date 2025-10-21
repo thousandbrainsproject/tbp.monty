@@ -157,10 +157,10 @@ class DecayField:
     ):
         kernel_factory_args = dict(kernel_factory_args) if kernel_factory_args else {}
         self._kernel_factory = kernel_factory_class(**kernel_factory_args)
-        self._kernels = []
+        self._kernels: list[DecayKernel] = []
 
     def reset(self) -> None:
-        self._kernels = []
+        self._kernels.clear()
 
     def add(self, location: np.ndarray) -> None:
         """Add a kernel to the field."""
@@ -179,3 +179,29 @@ class DecayField:
         # Stack kernel parameters and compute in batch
         results = np.array([k(point) for k in self._kernels])
         return np.max(results, axis=0)
+
+
+class ReturnInhibitor:
+    def __init__(
+        self,
+        decay_field_class: type[DecayField] = DecayField,
+        decay_field_args: dict[str, Any] | None = None,
+    ):
+        decay_field_args = dict(decay_field_args) if decay_field_args else {}
+        self._decay_field = decay_field_class(**decay_field_args)
+
+    def reset(self) -> None:
+        self._decay_field.reset()
+
+    def __call__(
+        self,
+        central_location: np.ndarray | None,
+        query_locations: np.ndarray,
+    ) -> np.ndarray:
+        if central_location is not None:
+            self._decay_field.add(central_location)
+
+        # TODO: Could get rid of compute_weight in type float | np.ndarray to np.ndarray
+        ior_vals = self._decay_field.compute_weight(query_locations)
+        self._decay_field.step()
+        return ior_vals
