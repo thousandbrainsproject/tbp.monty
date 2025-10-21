@@ -309,7 +309,6 @@ ignore = [
     "TD005", # TD005: Missing issue description after `TODO`
     "TRY003", # TRY003: Avoid specifying long messages outside the exception class
     "UP006", # UP006: Use `type` instead of `Type` for type annotation
-    "UP008", # UP008: Use `super()` instead of `super(__class__, self)`
 ]
 
 [tool.ruff.lint.flake8-comprehensions]

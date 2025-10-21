@@ -31,7 +31,7 @@ class EvidenceGraphMemory(GraphMemory):
         *args,
         **kwargs,
     ):
-        super(EvidenceGraphMemory, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         self.max_nodes_per_graph = max_nodes_per_graph
         self.max_graph_size = max_graph_size
