@@ -21,7 +21,7 @@ class LoggingCallbackHandler:
 
     Each logger receives:
     logger_args: dict with time stamps (steps, epochs, etc.) and
-        dataloader.primary_target which contains object id and pose
+        env_interface.primary_target which contains object id and pose
     output_dir: Full path of the directory to store log files
 
     Note:
