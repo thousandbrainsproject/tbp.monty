@@ -44,6 +44,7 @@ from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
     MontySupervisedObjectPretrainingExperiment,
 )
+from tbp.monty.frameworks.models.motor_policies import NaiveScanPolicy
 from tbp.monty.simulators.habitat.configs import (
     FiveLMMountHabitatDatasetArgs,
 )
@@ -159,9 +160,11 @@ To follow along, open the `benchmarks/configs/my_experiments.py` file and paste 
 ```python
 import copy
 import os
+from dataclasses import asdict
 
 import numpy as np
 
+from benchmarks.configs.names import MyExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     EvalLoggingConfig,
     FiveLMMontyConfig,
@@ -231,8 +234,8 @@ evidence_lm_config = dict(
                 "hsv": np.array([1, 0.5, 0.5]),
             }
         },
-        # Use this to update all hypotheses > x_percent_threshold (faster)
-        evidence_threshold_config="x_percent_threshold",
+        # Use this to update all hypotheses > 80% of the max hypothesis evidence
+        evidence_threshold_config="80%",
         x_percent_threshold=20,
         gsg_class=EvidenceGoalStateGenerator,
         gsg_args=dict(
