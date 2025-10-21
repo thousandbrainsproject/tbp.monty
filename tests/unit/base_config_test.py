@@ -84,7 +84,7 @@ class BaseConfigTest(unittest.TestCase):
         """
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        with MontyExperiment(base_config) as exp:
+        with MontyExperiment(base_config):
             pass
 
     # @unittest.skip("debugging")
