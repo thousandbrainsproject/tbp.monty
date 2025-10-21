@@ -166,13 +166,13 @@ class HabitatEnvironment(EmbodiedEnvironment):
     def step(self, actions: Sequence[Action]) -> Dict[str, Dict]:
         return self._env.apply_actions(actions)
 
-    def remove_all_objects(self):
+    def remove_all_objects(self) -> None:
         return self._env.remove_all_objects()
 
     def reset(self):
         return self._env.reset()
 
-    def close(self):
+    def close(self) -> None:
         _env = getattr(self, "_env", None)
         if _env is not None:
             _env.close()

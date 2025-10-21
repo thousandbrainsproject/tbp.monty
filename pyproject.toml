@@ -234,7 +234,6 @@ ignore = [
     "EM101", # EM101: Exception must not use a string literal, assign to variable first
     "EM102", # EM102: Exception must not use an f-string literal, assign to variable first
     "F403", # F403: from {name} import * used; unable to detect undefined names
-    "F841", # F841: Local variable {name} is assigned to but never used
     "FA100", # FA100: Add `from __future__ import annotations` to simplify
     "FBT001", # FBT001: Boolean-typed positional argument in function definition
     "FBT002", # FBT002: Boolean default positional argument in function definition
@@ -252,7 +251,6 @@ ignore = [
     "PERF401", # PERF401: Use a list comprehension to create a transformed list
     "PERF402", # PERF402: Use `list` or `list.copy` to create a copy of a list
     "PIE790", # PIE790: Unnecessary pass statement
-    "PIE807", # PIE807: Prefer `list` over useless lambda
     "PLE0302", # PLE0302: The special method `__getitem__` expects 2 parameters, 1 was given
     "PLR0402", # PLR0402: Use from {module} import {name} in lieu of alias
     "PLR0911", # PLR0911: Too many return statements
@@ -297,7 +295,6 @@ ignore = [
     "SIM108", # SIM108: Use ternary operator {contents} instead of if-else-block
     "SIM117", # SIM117: Use a single `with` statement with multiple contexts instead of nested `with` statements
     "SIM118", # SIM118: Use `key in dict` instead of `key in dict.keys()`
-    "SIM910", # SIM910: Use {expected} instead of {actual}
     "SLF001", # SLF001: Private member accessed: {access}
     "SLOT001", # SLOT001: Subclasses of `tuple` should define `__slots__`
     "TC001", # TC001: Move application import {} into a type-checking block
@@ -309,8 +306,6 @@ ignore = [
     "TD005", # TD005: Missing issue description after `TODO`
     "TRY003", # TRY003: Avoid specifying long messages outside the exception class
     "UP006", # UP006: Use `type` instead of `Type` for type annotation
-    "UP008", # UP008: Use `super()` instead of `super(__class__, self)`
-    "UP015", # UP015: Unnecessary open mode parameters
 ]
 
 [tool.ruff.lint.flake8-comprehensions]

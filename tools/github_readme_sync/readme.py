@@ -209,7 +209,7 @@ class ReadMe:
             csv_path = os.path.normpath(csv_path)
 
             try:
-                with open(csv_path, "r") as f:
+                with open(csv_path) as f:
                     reader = csv.reader(f)
                     headers = next(reader)
                     rows = list(reader)
@@ -502,7 +502,7 @@ class ReadMe:
             snippet_path = os.path.normpath(snippet_path)
 
             try:
-                with open(snippet_path, "r") as f:
+                with open(snippet_path) as f:
                     unsafe_content = f.read()
                     return self.sanitize_html(unsafe_content)
 

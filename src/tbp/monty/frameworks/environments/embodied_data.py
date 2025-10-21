@@ -211,7 +211,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         Raises:
             TypeError: If `object_names` is not a list or dictionary
         """
-        super(EnvironmentDataLoaderPerObject, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if isinstance(object_names, list):
             self.object_names = object_names
             # Return an (ordered) list of unique items:

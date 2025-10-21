@@ -839,7 +839,7 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 teleport) the agent to a specified goal state.
             **kwargs: Additional keyword arguments.
         """
-        super(InformedPolicy, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.min_perc_on_obj = min_perc_on_obj
         self.good_view_percentage = good_view_percentage
         self.desired_object_distance = desired_object_distance
@@ -977,7 +977,7 @@ class NaiveScanPolicy(InformedPolicy):
         # Mostly use version of InformedPolicy to get the good view in the beginning
         # TODO: maybe separate this out. Don't need to specify reverse_actions or
         # min_perc_on_obj for that.
-        super(NaiveScanPolicy, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # Specify this specific action space, otherwise it doesn't work
         self._naive_scan_actions = [
@@ -1596,7 +1596,7 @@ def read_action_file(file: str) -> List[Action]:
         List of actions
     """
     file = os.path.expanduser(file)
-    with open(file, "r") as f:
+    with open(file) as f:
         file_read = f.read()
 
     lines = [line.strip() for line in file_read.split("\n") if line.strip()]

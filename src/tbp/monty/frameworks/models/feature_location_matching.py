@@ -74,7 +74,7 @@ class FeatureGraphLM(GraphLM):
             umbilical_num_poses: Number of samples rotations in the direction
                 of the plane perpendicular to the surface normal.
         """
-        super(FeatureGraphLM, self).__init__()
+        super().__init__()
         self.graph_memory = FeatureGraphMemory(
             graph_delta_thresholds=graph_delta_thresholds,
         )
@@ -673,9 +673,7 @@ class FeatureGraphMemory(GraphMemory):
             graph_delta_thresholds: Thresholds used to compare nodes in the graphs
                 being learned, and thereby whether to include a new point or not.
         """
-        super(FeatureGraphMemory, self).__init__(
-            graph_delta_thresholds=graph_delta_thresholds
-        )
+        super().__init__(graph_delta_thresholds=graph_delta_thresholds)
 
     # =============== Public Interface Functions ===============
 

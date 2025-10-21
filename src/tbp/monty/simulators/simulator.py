@@ -24,11 +24,11 @@ class Simulator(Protocol):
     """
 
     # TODO - do we need a way to abstract the concept of "agent"?
-    def initialize_agent(self, agent_id, agent_state):
+    def initialize_agent(self, agent_id, agent_state) -> None:
         """Update agent runtime state."""
         ...
 
-    def remove_all_objects(self):
+    def remove_all_objects(self) -> None:
         """Remove all objects from the simulated environment."""
         ...
 
@@ -105,6 +105,6 @@ class Simulator(Protocol):
         """Reset the simulator."""
         ...
 
-    def close(self):
+    def close(self) -> None:
         """Close any resources used by the simulator."""
         ...

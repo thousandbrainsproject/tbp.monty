@@ -65,7 +65,7 @@ class TestHierarchyFile(unittest.TestCase):
         hierarchy_file_path = os.path.join(self.test_dir, HIERARCHY_FILE)
         self.assertTrue(os.path.exists(hierarchy_file_path))
 
-        with open(hierarchy_file_path, "r") as f:
+        with open(hierarchy_file_path) as f:
             content = f.read()
             self.assertIn(f"{CATEGORY_PREFIX}category-1: Category 1\n", content)
             self.assertIn(f"{DOCUMENT_PREFIX}[doc-1](category-1/doc-1.md)\n", content)
