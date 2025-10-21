@@ -74,7 +74,7 @@ def check_hierarchy_file(folder: str):
         logging.error(f"File {os.path.join(folder, HIERARCHY_FILE)} does not exist")
         sys.exit(1)
 
-    with open(os.path.join(folder, HIERARCHY_FILE), "r") as f:
+    with open(os.path.join(folder, HIERARCHY_FILE)) as f:
         content = f.read()
         content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
         lines = content.splitlines()
@@ -140,7 +140,7 @@ def sanity_check(path):
 
 
 def check_links(path):
-    with open(path, "r") as f:
+    with open(path) as f:
         content = f.read()
     file_name = path.split("/")[-1]
 

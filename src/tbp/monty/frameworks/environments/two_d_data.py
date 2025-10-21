@@ -186,7 +186,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         self.character_version = version_id
         self.current_image, self.locations = self.load_new_character_data()
 
-    def remove_all_objects(self):
+    def remove_all_objects(self) -> None:
         # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
         #      interface and how the class hierarchy is defined and used.
         raise NotImplementedError(
@@ -264,7 +264,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             locations = np.vstack([locations, stroke])
         return locations[1:]
 
-    def close(self):
+    def close(self) -> None:
         self._current_state = None
 
 
@@ -440,7 +440,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             self.current_sf_scene_point_cloud,
         ) = self.get_3d_scene_point_cloud()
 
-    def remove_all_objects(self):
+    def remove_all_objects(self) -> None:
         # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
         #      interface and how the class hierarchy is defined and used.
         raise NotImplementedError(
@@ -697,7 +697,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         ), f"Didn't extract a patch of size {self.patch_size}"
         return depth_patch, rgb_patch, depth3d_patch, sensor_frame_patch
 
-    def close(self):
+    def close(self) -> None:
         self._current_state = None
 
 
@@ -821,7 +821,7 @@ def load_img(fn):
 
 def load_motor(fn):
     motor = []
-    with open(fn, "r") as fid:
+    with open(fn) as fid:
         lines = fid.readlines()
     lines = [line.strip() for line in lines]
     for myline in lines:

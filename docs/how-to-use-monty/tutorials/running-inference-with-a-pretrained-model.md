@@ -164,8 +164,8 @@ learning_module_0 = dict(
         # Most likely hypothesis needs to have 20% more evidence than the others to 
         # be considered certain enough to trigger a terminal condition (match).
         x_percent_threshold=20,
-        # Update all hypotheses with evidence > x_percent_threshold (faster)
-        evidence_threshold_config="x_percent_threshold",
+        # Update all hypotheses with evidence > 80% of the max hypothesis evidence
+        evidence_threshold_config="80%",
         # Config for goal state generator of LM which is used for model-based action
         # suggestions, such as hypothesis-testing actions.
         gsg_class=EvidenceGoalStateGenerator,
@@ -199,6 +199,7 @@ surf_agent_2obj_eval = dict(
         model_name_or_path=model_path,  # load the pre-trained models from this path
         n_eval_epochs=len(test_rotations),
         max_total_steps=5000,
+        show_sensor_output=True,  # live visualization of Monty's observations and MLH
     ),
     logging_config=EvalLoggingConfig(
         output_dir=output_dir,
