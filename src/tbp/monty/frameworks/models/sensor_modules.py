@@ -819,7 +819,13 @@ class FeatureChangeFilter(StateFilter):
 
         return state
 
-class RGBADepthObservation(Protocol):
+class SalienceInput(Protocol):
+    rgba: np.ndarray
+    depth: np.ndarray
+
+
+@dataclass
+class RGBADepthObservation:
     rgba: np.ndarray
     depth: np.ndarray
 
@@ -871,17 +877,19 @@ class HabitatSalienceSM(SensorModule):
             data: Raw sensor observations
 
         """
+        # Make salience map using strategy
+        salience_map = self._salience_strategy(
+            RGBADepthObservation(rgba=data["rgba"], depth=data["depth"])
+        )
+
         # Get coordinates of image data in (ypix, xpix, vector3d) format.
-        obs = clean_raw_observation(data)
+        obs = unravel_observation(data)
         locations = obs.locations
         on_obj = obs.on_object
 
         # Update the decay field with the current sensed location.
         if obs.center_location is not None:
             self._decay_field.add(obs.center_location)
-
-        # Make salience map using strategy
-        salience_map = self._salience_strategy(obs)
 
         # Make a goal for each on-object pixel. Initialize confidence to salience map.
         goals = []
@@ -923,15 +931,12 @@ class HabitatSalienceSM(SensorModule):
         return self._goals
 
 @dataclass
-class UnflattenedObservation:
-    rgba: np.ndarray
-    depth: np.ndarray
+class UnraveledObservation:
     locations: np.ndarray
     on_object: np.ndarray
-    center_depth: float
     center_location: np.ndarray | None
 
-def clean_raw_observation(raw_observation: dict) -> UnflattenedObservation:
+def unravel_observation(raw_observation: dict) -> UnraveledObservation:
     """Convert all raw observation data into image format.
 
     This function reformats the arrays in a raw observations dictionary
@@ -942,7 +947,8 @@ def clean_raw_observation(raw_observation: dict) -> UnflattenedObservation:
         raw_observation: A sensor's raw observations dictionary.
 
     Returns:
-        The grid/matrix fornatted data.
+        The grid/matrix formatted (unraveled) observation data. Also includes the center
+        location if it is on the object and the depth is less than 0.99.
     """
     depth = raw_observation["depth"]
     rgba = raw_observation["rgba"]
@@ -955,12 +961,9 @@ def clean_raw_observation(raw_observation: dict) -> UnflattenedObservation:
         center_location = locations[locations.shape[0] // 2, locations.shape[1] // 2]
     else:
         center_location = None
-    return UnflattenedObservation(
-        rgba=rgba,
-        depth=depth,
+    return UnraveledObservation(
         locations=locations,
         on_object=on_object,
-        center_depth=center_depth,
         center_location=center_location,
     )
 
