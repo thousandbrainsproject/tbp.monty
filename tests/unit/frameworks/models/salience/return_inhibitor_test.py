@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import MagicMock, call
 
 import numpy as np
 import numpy.testing as npt
@@ -17,6 +18,7 @@ from tbp.monty.frameworks.models.salience.return_inhibitor import (
     DecayField,
     DecayKernel,
     DecayKernelFactory,
+    ReturnInhibitor,
 )
 
 
@@ -46,7 +48,7 @@ class DecayKernelTest(unittest.TestCase):
             weights.append(kernel(location.reshape(1, 3)))
             kernel.step()
         for i in range(1, len(weights)):
-            self.assertLess(weights[i], weights[i - 1])
+            npt.assert_array_less(weights[i], weights[i - 1])
 
 
 class DecayFieldTest(unittest.TestCase):
@@ -145,7 +147,7 @@ class DecayFieldTest(unittest.TestCase):
 
         w_before_second_kernel = weights_before_second_kernel[-1]
         w_after_second_kernel = weights_after_second_kernel[0]
-        self.assertGreater(w_after_second_kernel, w_before_second_kernel)
+        npt.assert_array_less(w_before_second_kernel, w_after_second_kernel)
 
     def test_field_returns_empty_array_if_empty_query(self) -> None:
         kernel_location = np.array([1, 2, 3])
@@ -157,4 +159,50 @@ class DecayFieldTest(unittest.TestCase):
 
 class ReturnInhibitorTest(unittest.TestCase):
     def setUp(self) -> None:
-        pass
+        self.return_inhibitor = ReturnInhibitor(decay_field_class=MagicMock)
+
+    def test_return_inhibitor_add_central_location_if_present_to_decay_field(
+        self,
+    ) -> None:
+        central_location = np.array([1, 2, 3])
+        query_locations = np.array([[4, 5, 6]])
+        self.return_inhibitor(central_location, query_locations)
+        self.return_inhibitor._decay_field.add.assert_called_once_with(  # type: ignore[attr-defined]
+            central_location
+        )
+
+    def test_return_inhibitor_does_not_add_central_location_if_not_present_to_decay_field(  # noqa: E501
+        self,
+    ) -> None:
+        central_location = None
+        query_locations = np.array([[4, 5, 6]])
+        self.return_inhibitor(central_location, query_locations)
+        self.return_inhibitor._decay_field.add.assert_not_called()  # type: ignore[attr-defined]
+
+    def test_return_inhibitor_computes_weights_before_stepping_decay_field(
+        self,
+    ) -> None:
+        central_location = np.array([1, 2, 3])
+        query_locations = np.array([[4, 5, 6]])
+        expected_calls = [
+            call.add(central_location),
+            call.compute_weights(query_locations),
+            call.step(),
+        ]
+
+        self.return_inhibitor(central_location, query_locations)
+
+        self.assertEqual(
+            self.return_inhibitor._decay_field.method_calls,  # type: ignore[attr-defined]
+            expected_calls,
+        )
+
+    def test_return_inhibitor_returns_computed_weights(self) -> None:
+        central_location = np.array([1, 2, 3])
+        query_locations = np.array([[4, 5, 6]])
+        compute_weights_result = np.array([0.5])
+        self.return_inhibitor._decay_field.compute_weights.return_value = (  # type: ignore[attr-defined]
+            compute_weights_result
+        )
+        weights = self.return_inhibitor(central_location, query_locations)
+        self.assertEqual(id(weights), id(compute_weights_result))
