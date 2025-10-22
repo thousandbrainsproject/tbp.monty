@@ -38,16 +38,15 @@ def on_object_observation(
         The grid/matrix formatted (unraveled) on-object salience and location data,
         along with the location corresponding to the central pixel.
     """
-    depth = raw_observation["depth"]
     rgba = raw_observation["rgba"]
     grid_shape = rgba.shape[:2]
     semantic_3d = raw_observation["semantic_3d"]
     locations = semantic_3d[:, 0:3].reshape(grid_shape + (3,))
     on_object = semantic_3d[:, 3].reshape(grid_shape).astype(int) > 0
 
-    center_depth = depth[rgba.shape[0] // 2, rgba.shape[1] // 2]
-    if center_depth < 0.99:
-        center_location = locations[locations.shape[0] // 2, locations.shape[1] // 2]
+    center_is_on_object = on_object[rgba.shape[0] // 2, rgba.shape[1] // 2]
+    if center_is_on_object:
+        center_location = locations[rgba.shape[0] // 2, rgba.shape[1] // 2]
     else:
         center_location = None
 
