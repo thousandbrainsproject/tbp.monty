@@ -203,8 +203,8 @@ def dicenzo_color_edge_at_center(patch):
     return strength, float(tangent_theta)
 
 
-def structure_tensor_center(patch, win_sigma=1.0, ksize=7):
-    """Enhanced structure tensor at center with OpenCV implementation."""
+def compute_edge_features_at_center(patch, win_sigma=1.0, ksize=7):
+    """Compute edge features at center pixel using structure tensor method."""
     # Convert to BGR for OpenCV (if RGB)
     if len(patch.shape) == 3:
         img_bgr = cv2.cvtColor(patch, cv2.COLOR_RGB2BGR)
@@ -531,7 +531,7 @@ def compare_edge_detection_methods(patch):
 
     # Method 3: Enhanced structure tensor
     try:
-        strength, coherence, angle = structure_tensor_center(
+        strength, coherence, angle = compute_edge_features_at_center(
             patch, win_sigma=1.0, ksize=7
         )
         results["structure_tensor_enhanced"] = {

@@ -4,13 +4,15 @@ from pathlib import Path
 import numpy as np
 import torch
 import trimesh
-from vedo import Plotter, Points, Line, Arrow
+from vedo import Plotter, Points, Line, Arrow, Mesh
+
 
 def _normalize_rows(V, eps=1e-12):
     V = np.asarray(V, float)
     n = np.linalg.norm(V, axis=1, keepdims=True)
     n = np.maximum(n, eps)
     return V / n
+
 
 def load_object_model(model_path, object_name, lm_id=0):
     """Load an object model from a pretraining experiment.
@@ -98,7 +100,6 @@ def load_mesh(object_name, mesh_base_path=None):
         return None
 
 
-
 def visualize_point_cloud_interactive(
     model_data,
     title=None,
@@ -108,9 +109,9 @@ def visualize_point_cloud_interactive(
     *,
     tangent_color="black",
     tangent_lw=3,
-    max_tangent_lines=8000,     # cap for perf
-    subsample_every=None,        # e.g. 5 to draw every 5th tangent
-    prefer_edgey_points=True,    # if edge_strength available, draw the edgiest first
+    max_tangent_lines=8000,  # cap for perf
+    subsample_every=None,  # e.g. 5 to draw every 5th tangent
+    prefer_edgey_points=True,  # if edge_strength available, draw the edgiest first
 ):
     """Create interactive 3D visualization with Vedo.
 
@@ -140,44 +141,41 @@ def visualize_point_cloud_interactive(
     surface_normals_visible = False
     surface_normal_arrows = []
 
+    # State variables for mesh visibility
+    mesh_visible = False
+    mesh_objects = []
+
     def toggle_surface_normals_callback(button, _event):
         """Toggle visibility of surface normal arrows."""
         nonlocal surface_normals_visible, surface_normal_arrows
-        
+
         surface_normals_visible = not surface_normals_visible
         button.switch()
-        
+
         if surface_normals_visible:
             _add_surface_normal_arrows(plotter, points, features, surface_normal_arrows)
         else:
             plotter.remove(surface_normal_arrows)
             surface_normal_arrows.clear()
-        
+
+        plotter.render()
+
+    def toggle_mesh_callback(button, _event):
+        """Toggle visibility of mesh."""
+        nonlocal mesh_visible, mesh_objects
+
+        mesh_visible = not mesh_visible
+        button.switch()
+
+        if mesh_visible:
+            _add_mesh(plotter, mesh, mesh_translation, mesh_objects)
+        else:
+            plotter.remove(mesh_objects)
+            mesh_objects.clear()
+
         plotter.render()
 
     plotter = Plotter(size=(1400, 1000), title=title or "Learned Point Cloud")
-
-    # ----- Optional mesh -----
-    # if mesh is not None:
-    #     if mesh_translation is None:
-    #         mesh_translation = [0, 1.5, 0]
-    #     if hasattr(mesh, "vertices"):  # single Trimesh
-    #         translated_vertices = mesh.vertices + mesh_translation
-    #         vedo_mesh = Mesh([translated_vertices, mesh.faces])
-    #         if hasattr(mesh.visual, "material") and hasattr(mesh.visual.material, "image"):
-    #             vedo_mesh.alpha(0.4)
-    #         else:
-    #             vedo_mesh.color("lightblue").alpha(0.4)
-    #         plotter.add(vedo_mesh)
-    #     elif hasattr(mesh, "geometry"):  # Scene with multiple parts
-    #         for geom in mesh.geometry.values():
-    #             translated_vertices = geom.vertices + mesh_translation
-    #             vedo_mesh = Mesh([translated_vertices, geom.faces])
-    #             if hasattr(geom.visual, "material") and hasattr(geom.visual.material, "image"):
-    #                 vedo_mesh.alpha(0.4)
-    #             else:
-    #                 vedo_mesh.color("lightblue").alpha(0.4)
-    #             plotter.add(vedo_mesh)
 
     # ----- Point colors -----
     if "rgba" in features and features["rgba"].shape[1] >= 3:
@@ -211,23 +209,29 @@ def visualize_point_cloud_interactive(
         tangents = np.asarray(tangents, float)
 
         # Align lengths defensively (some rows may be missing/extra)
-        n_points   = points.shape[0]
+        n_points = points.shape[0]
         n_tangents = tangents.shape[0]
-        n_mask     = edge_mask.shape[0] if edge_mask is not None else n_tangents
-        n_common   = min(n_points, n_tangents, n_mask)
+        n_mask = edge_mask.shape[0] if edge_mask is not None else n_tangents
+        n_common = min(n_points, n_tangents, n_mask)
 
         if n_common == 0:
             print("[viz] No common rows to draw tangents.")
         else:
-            P  = points[:n_common]
-            T  = tangents[:n_common]
-            EM = edge_mask[:n_common] if edge_mask is not None else np.ones((n_common,), dtype=bool)
+            P = points[:n_common]
+            T = tangents[:n_common]
+            EM = (
+                edge_mask[:n_common]
+                if edge_mask is not None
+                else np.ones((n_common,), dtype=bool)
+            )
 
             # Print counts for debugging
             if edge_mask is not None:
-                n_true  = int(EM.sum())
+                n_true = int(EM.sum())
                 n_false = int((~EM).sum())
-                print(f"[viz] pose_from_edge: True={n_true}, False={n_false}, Total(masked)={n_common}")
+                print(
+                    f"[viz] pose_from_edge: True={n_true}, False={n_false}, Total(masked)={n_common}"
+                )
 
                 # Normalize & validate
                 T = _normalize_rows(T)
@@ -263,6 +267,16 @@ def visualize_point_cloud_interactive(
         font="Calco",
     )
 
+    # ----- Add mesh toggle button (only if mesh is available) -----
+    if mesh is not None:
+        mesh_button = plotter.add_button(
+            toggle_mesh_callback,
+            pos=(0.85, 0.12),
+            states=[" Show Mesh ", " Hide Mesh "],
+            size=20,
+            font="Calco",
+        )
+
     # ----- Axes & camera -----
     plotter.show(
         axes=dict(xtitle="X", ytitle="Y", ztitle="Z"),
@@ -278,7 +292,7 @@ def visualize_point_cloud_interactive(
 
 def _add_surface_normal_arrows(plotter, points, features, surface_normal_arrows):
     """Add arrows showing surface normals for edge-detected points.
-    
+
     Args:
         plotter: Vedo plotter instance
         points: (N,3) array of point locations
@@ -286,52 +300,54 @@ def _add_surface_normal_arrows(plotter, points, features, surface_normal_arrows)
         surface_normal_arrows: list to store arrow objects for cleanup
     """
     arrow_length = 0.01
-    
+
     # Check if we have the required features
     if "pose_vectors" not in features or "pose_from_edge" not in features:
-        print("[viz] No pose_vectors or pose_from_edge found; skipping surface normal rendering.")
+        print(
+            "[viz] No pose_vectors or pose_from_edge found; skipping surface normal rendering."
+        )
         return
-    
+
     # Get edge mask and pose vectors
     edge_mask = np.asarray(features["pose_from_edge"], bool).reshape(-1)
     pose_vectors = np.asarray(features["pose_vectors"], float)
-    
+
     # Reshape pose_vectors if needed (should be N,3,3)
     if pose_vectors.ndim == 2 and pose_vectors.shape[1] == 9:
         pose_vectors = pose_vectors.reshape(-1, 3, 3)
-    
+
     # Align lengths defensively
     n_points = points.shape[0]
     n_pose_vectors = pose_vectors.shape[0]
     n_mask = edge_mask.shape[0]
     n_common = min(n_points, n_pose_vectors, n_mask)
-    
+
     if n_common == 0:
         print("[viz] No common rows to draw surface normals.")
         return
-    
+
     # Get data for common indices
     P = points[:n_common]
     PV = pose_vectors[:n_common]
     EM = edge_mask[:n_common]
-    
+
     # Count edge points
     n_edge_points = int(EM.sum())
     print(f"[viz] Found {n_edge_points} edge points for surface normal rendering")
-    
+
     if n_edge_points == 0:
         print("[viz] No edge points found; skipping surface normal rendering.")
         return
-    
+
     # Create arrows for edge points
     for i in range(n_common):
         if EM[i]:  # Only for edge points
             location = P[i]
             surface_normal = PV[i, 0, :]  # First row is surface normal
-            
+
             # Normalize surface normal
             surface_normal = surface_normal / np.linalg.norm(surface_normal)
-            
+
             # Create arrow
             arrow_normal = Arrow(
                 location,
@@ -339,17 +355,64 @@ def _add_surface_normal_arrows(plotter, points, features, surface_normal_arrows)
                 c="gray",
             )
             arrow_normal.alpha(0.4)
-            
+
             # Add to plotter and track for cleanup
             plotter.add(arrow_normal)
             surface_normal_arrows.append(arrow_normal)
+
+
+def _add_mesh(plotter, mesh, mesh_translation, mesh_objects):
+    """Add mesh visualization to the plotter.
+
+    Args:
+        plotter: Vedo plotter instance
+        mesh: trimesh.Trimesh or trimesh.Scene object
+        mesh_translation: [x,y,z] offset for the mesh (default [0,1.5,0])
+        mesh_objects: list to store mesh objects for cleanup
+    """
+    if mesh is None:
+        print("[viz] No mesh provided; skipping mesh rendering.")
+        return
+
+    # Set default translation if not provided
+    if mesh_translation is None:
+        mesh_translation = [0, 1.5, 0]
+
+    # Handle single Trimesh object
+    if hasattr(mesh, "vertices"):
+        translated_vertices = mesh.vertices + mesh_translation
+        vedo_mesh = Mesh([translated_vertices, mesh.faces])
+        if hasattr(mesh.visual, "material") and hasattr(mesh.visual.material, "image"):
+            vedo_mesh.alpha(0.4)
+        else:
+            vedo_mesh.color("lightblue").alpha(0.4)
+        plotter.add(vedo_mesh)
+        mesh_objects.append(vedo_mesh)
+        print(f"[viz] Added mesh with {len(mesh.vertices)} vertices")
+
+    # Handle Scene object with multiple parts
+    elif hasattr(mesh, "geometry"):
+        for geom_name, geom in mesh.geometry.items():
+            translated_vertices = geom.vertices + mesh_translation
+            vedo_mesh = Mesh([translated_vertices, geom.faces])
+            if hasattr(geom.visual, "material") and hasattr(
+                geom.visual.material, "image"
+            ):
+                vedo_mesh.alpha(0.4)
+            else:
+                vedo_mesh.color("lightblue").alpha(0.4)
+            plotter.add(vedo_mesh)
+            mesh_objects.append(vedo_mesh)
+        print(f"[viz] Added mesh scene with {len(mesh.geometry)} geometries")
+    else:
+        print("[viz] Unknown mesh type; skipping mesh rendering.")
 
 
 if __name__ == "__main__":
     # Set up paths
     pretrained_model_path = Path(
         "~/tbp/results/monty/pretrained_models/pretrained_ycb_v10/"
-        "supervised_pretraining_lvl1_oblique_2d_sensor/pretrained/model.pt"
+        "supervised_pretraining_angles_standard_2d_sensor/pretrained/model.pt"
     ).expanduser()
 
     # Load the model to explore available objects
