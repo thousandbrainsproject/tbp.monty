@@ -22,7 +22,8 @@ from tbp.monty.frameworks.models.salience.strategies import (
     SalienceStrategy,
     UniformSalienceStrategy,
 )
-from tbp.monty.frameworks.models.states import GoalState
+from tbp.monty.frameworks.models.sensor_modules import SnapshotTelemetry
+from tbp.monty.frameworks.models.states import GoalState, State
 
 
 class HabitatSalienceSM(SensorModule):
@@ -30,6 +31,7 @@ class HabitatSalienceSM(SensorModule):
         self,
         rng,
         sensor_module_id: str,
+        save_raw_obs: bool = False,
         salience_strategy_class: type[SalienceStrategy] = UniformSalienceStrategy,
         salience_strategy_args: dict[str, Any] | None = None,
         return_inhibitor_class: type[ReturnInhibitor] = ReturnInhibitor,
@@ -37,7 +39,7 @@ class HabitatSalienceSM(SensorModule):
     ) -> None:
         self._rng = rng
         self._sensor_module_id = sensor_module_id
-
+        self._save_raw_obs = save_raw_obs
         salience_strategy_args = (
             dict(salience_strategy_args) if salience_strategy_args else {}
         )
@@ -48,24 +50,35 @@ class HabitatSalienceSM(SensorModule):
         )
         self._return_inhibitor = return_inhibitor_class(**return_inhibitor_args)
         self._goals: list[GoalState] = []
+        self._snapshot_telemetry = SnapshotTelemetry()
+        # TODO: Goes away once experiment code is extracted
+        self.is_exploring = False
 
     def state_dict(self):
-        """Return a serializable dict with this sensor module's state.
-
-        Includes everything needed to save/load this sensor module.
-        """
-        pass
+        return self._snapshot_telemetry.state_dict()
 
     def update_state(self, state):
-        pass
+        """Update the state of the sensor module."""
+        self.state = state
 
-    def step(self, data) -> None:
+    def step(self, data) -> State | None:
         """Generate goal states for the current step.
 
         Args:
             data: Raw sensor observations
 
+        Returns:
+            A Percept, if one is generated.
         """
+        if self._save_raw_obs and not self.is_exploring:
+            self._snapshot_telemetry.raw_observation(
+                data,
+                self.state["rotation"],
+                self.state["location"]
+                if "location" in self.state.keys()
+                else self.state["position"],
+            )
+
         salience_map = self._salience_strategy(
             RGBADepthObservation(rgba=data["rgba"], depth=data["depth"])
         )
@@ -89,6 +102,8 @@ class HabitatSalienceSM(SensorModule):
             )
             for i in range(len(on_object.locations))
         ]
+
+        return None
 
     def _weight_salience(
         self,
@@ -114,6 +129,8 @@ class HabitatSalienceSM(SensorModule):
         """This method is called before each episode."""
         self._goals.clear()
         self._return_inhibitor.reset()
+        self._snapshot_telemetry.reset()
+        self.is_exploring = False
 
     def propose_goal_states(self) -> list[GoalState]:
         return self._goals
