@@ -142,7 +142,7 @@ class DecayField:
         """Step each kernel to increment its counter, and keep only non-expired ones."""
         self._kernels = [k for k in self._kernels if not k.step()]
 
-    def compute_weight(self, points: np.ndarray) -> np.ndarray:
+    def compute_weights(self, points: np.ndarray) -> np.ndarray:
         assert points.ndim == 2 and points.shape[1] == 3
         if not self._kernels:
             return np.zeros(points.shape[0])
@@ -172,7 +172,6 @@ class ReturnInhibitor:
         if central_location is not None:
             self._decay_field.add(central_location)
 
-        # TODO: Could get rid of compute_weight in type float | np.ndarray to np.ndarray
-        ior_vals = self._decay_field.compute_weight(query_locations)
+        ior_vals = self._decay_field.compute_weights(query_locations)
         self._decay_field.step()
         return ior_vals
