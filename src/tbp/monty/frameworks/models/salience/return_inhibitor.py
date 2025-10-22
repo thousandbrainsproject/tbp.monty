@@ -142,14 +142,13 @@ class DecayField:
         """Step each kernel to increment its counter, and keep only non-expired ones."""
         self._kernels = [k for k in self._kernels if not k.step()]
 
-    def compute_weight(self, point: np.ndarray) -> float | np.ndarray:
+    def compute_weight(self, points: np.ndarray) -> np.ndarray:
+        assert points.ndim == 2 and points.shape[1] == 3
         if not self._kernels:
-            return 0.0 if point.ndim == 1 else np.zeros(point.shape[0])
-        if len(self._kernels) == 1:
-            return self._kernels[0](point)
+            return np.zeros(points.shape[0])
 
         # Stack kernel parameters and compute in batch
-        results = np.array([k(point) for k in self._kernels])
+        results = np.array([k(points) for k in self._kernels])
         return np.max(results, axis=0)
 
 
