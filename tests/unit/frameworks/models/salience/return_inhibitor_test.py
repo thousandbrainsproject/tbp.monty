@@ -43,7 +43,7 @@ class DecayKernelTest(unittest.TestCase):
         kernel = DecayKernel(location=location)
         weights = []
         for _ in range(20):
-            weights.append(kernel(location))
+            weights.append(kernel(location.reshape(1, 3)))
             kernel.step()
         for i in range(1, len(weights)):
             self.assertLess(weights[i], weights[i - 1])
@@ -82,7 +82,7 @@ class DecayFieldTest(unittest.TestCase):
         self.field.add(location)
         weights = []
         for _ in range(34):
-            weights.append(self.field.compute_weight(location))
+            weights.append(self.field.compute_weight(location.reshape(1, 3)))
             self.field.step()
         diffs = np.ediff1d(weights)
         self.assertTrue(np.all(diffs < 0))
@@ -93,7 +93,7 @@ class DecayFieldTest(unittest.TestCase):
         weights = []
         for i in range(100):
             if i > 34:  # after temporal cutoff
-                weights.append(self.field.compute_weight(location))
+                weights.append(self.field.compute_weight(location.reshape(1, 3)))
             self.field.step()
         npt.assert_allclose(weights, 0.0)
 
@@ -118,8 +118,8 @@ class DecayFieldTest(unittest.TestCase):
         for i in range(5):
             test_point_1 = kernel_location_1 + translation * i
             test_point_2 = kernel_location_2 - translation * i
-            spatial_weights_1 = self.field.compute_weight(test_point_1)
-            spatial_weights_2 = self.field.compute_weight(test_point_2)
+            spatial_weights_1 = self.field.compute_weight(test_point_1.reshape(1, 3))
+            spatial_weights_2 = self.field.compute_weight(test_point_2.reshape(1, 3))
             npt.assert_array_equal(spatial_weights_1, spatial_weights_2)
 
     def test_field_selects_max_from_overlapping_decaying_kernels(self) -> None:
@@ -132,7 +132,7 @@ class DecayFieldTest(unittest.TestCase):
         for step in range(30):
             if step == add_second_kernel_at_step:
                 self.field.add(kernel_location_2)
-            weights.append(self.field.compute_weight(test_point))
+            weights.append(self.field.compute_weight(test_point.reshape(1, 3)))
             self.field.step()
 
         weights_before_second_kernel = weights[:add_second_kernel_at_step]
@@ -150,7 +150,7 @@ class DecayFieldTest(unittest.TestCase):
     def test_field_returns_empty_array_if_empty_query(self) -> None:
         kernel_location = np.array([1, 2, 3])
         self.field.add(kernel_location)
-        query_locations = np.array([])
+        query_locations = np.array([]).reshape(0, 3)
         weights = self.field.compute_weight(query_locations)
         npt.assert_array_equal(weights, np.array([]))
 

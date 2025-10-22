@@ -45,7 +45,7 @@ class DecayKernel:
         """
         return np.exp(-self._t / (self._tau_t / float(np.log(2))))
 
-    def w_s(self, point: np.ndarray) -> float | np.ndarray:
+    def w_s(self, points: np.ndarray) -> np.ndarray:
         """Compute the distance-dependent weight.
 
         The weight is computed as `exp(-z / lam)`, where `z` is the distance
@@ -53,26 +53,16 @@ class DecayKernel:
         to `tau_s / log(2)`.
 
         Args:
-            point: One or more 3D vectors. If multiple vectors are provided,
-                they must be row vectors (i.e., `point` must be shaped like
-                (num_points, 3)).
+            points: An (num_points, 3) array of points.
 
         Returns:
-            The weight(s), bounded to [0, 1]. If `point` is a 1D array, the
-            returned weight is a scalar. If `point` is a 2D array, the returned
-            weight is a 1D array with shape (num_points,).
+            The weight, bounded to [0, 1]. Has shape (num_points,).
         """
-        if point.ndim == 1:
-            dist = self.distance(point)
-            if self._spatial_cutoff is not None and dist > self._spatial_cutoff:
-                return 0.0
-            return np.exp(-dist / (self._tau_s / np.log(2)))
-        else:
-            dist = self.distance(point)
-            out = np.exp(-dist / (self._tau_s / np.log(2)))
-            if self._spatial_cutoff is not None:
-                out[dist > self._spatial_cutoff] = 0.0
-            return out
+        dist = np.linalg.norm(self._location - points, axis=1)
+        out = np.exp(-dist / (self._tau_s / np.log(2)))
+        if self._spatial_cutoff is not None:
+            out[dist > self._spatial_cutoff] = 0.0
+        return out
 
     def step(self) -> bool:
         """Increment the step counter, and check if the kernel is expired.
@@ -83,23 +73,7 @@ class DecayKernel:
         self._t += 1
         return self.w_t() < self._w_t_min
 
-    def distance(self, point: np.ndarray) -> float | np.ndarray:
-        """Compute the distance between the kernel's location and one or more points.
-
-        Args:
-            point: One or more 3D vectors. If multiple vectors are provided,
-                they must be row vectors (i.e., `point` must be shaped like
-                (num_points, 3)).
-
-        Returns:
-            The distance(s). If `point` is a 1D array, a scalar is returned.
-            If `point` is a 2D array, a 1D array with shape (num_points,) is
-            returned.
-        """
-        axis = 1 if point.ndim > 1 else None
-        return np.linalg.norm(self._location - point, axis=axis)
-
-    def __call__(self, point: np.ndarray) -> float | np.ndarray:
+    def __call__(self, points: np.ndarray) -> np.ndarray:
         """Compute the time- and distance-dependent weight at a given point.
 
         Computes the product of the time- and distance-dependent weights. Weights
@@ -107,15 +81,13 @@ class DecayKernel:
         large influence on the given point(s).
 
         Args:
-            point: One or more 3D vectors. If multiple vectors are provided,
-                they must be provided as a 2D array with shape (num_points, 3).
+            points: An (num_points, 3) array of points.
 
         Returns:
-            The weight(s) bound to [0, 1]. If `point` is a 1D array, the
-            returned weight is a scalar. If `point` is a 2D array, the returned
-            weight is a 1D array with shape (num_points,).
+            The weights, bounded to [0, 1]. Has shape (num_points,).
         """
-        return self.w_t() * self.w_s(point)
+        assert points.ndim == 2 and points.shape[1] == 3
+        return self.w_t() * self.w_s(points)
 
 
 class DecayKernelFactory:
