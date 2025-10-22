@@ -49,7 +49,9 @@ def gradient_to_tangent_angle(gradient_angle: float) -> float:
 
 
 def compute_edge_features_at_center(
-    patch: np.ndarray, win_sigma: float = DEFAULT_WINDOW_SIGMA, ksize: int = DEFAULT_KERNEL_SIZE
+    patch: np.ndarray,
+    win_sigma: float = DEFAULT_WINDOW_SIGMA,
+    ksize: int = DEFAULT_KERNEL_SIZE,
 ) -> Tuple[float, float, float]:
     """Compute edge features at center pixel using structure tensor method.
 
@@ -66,7 +68,7 @@ def compute_edge_features_at_center(
         Tuple of (edge_strength, coherence, tangent_theta):
             - edge_strength: Magnitude of dominant eigenvalue (edge strength)
             - coherence: Edge quality metric in [0, 1], where 1 is edge-like
-            - tangent_theta: Edge tangent angle in [0, 2π) radians
+            - tangent_theta: Edge tangent angle in [0, 2*pi) radians
     """
     img_bgr = cv2.cvtColor(patch, cv2.COLOR_RGB2BGR)
 
