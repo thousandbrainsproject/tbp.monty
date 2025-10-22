@@ -25,12 +25,13 @@ from tbp.monty.frameworks.models.states import GoalState
 
 
 class HabitatGoalGenerator:
-    def __init__(self,
+    def __init__(
+        self,
         rng,
         salience_strategy_class: type[SalienceStrategy] = UniformSalienceStrategy,
         salience_strategy_args: dict[str, Any] | None = None,
         return_inhibitor_class: type[ReturnInhibitor] = ReturnInhibitor,
-        return_inhibitor_args: dict[str, Any] | None = None
+        return_inhibitor_args: dict[str, Any] | None = None,
     ) -> None:
         """Initialize the goal generator.
 

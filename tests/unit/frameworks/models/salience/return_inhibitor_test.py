@@ -21,7 +21,6 @@ from tbp.monty.frameworks.models.salience.return_inhibitor import (
 
 
 class DecayKernelTest(unittest.TestCase):
-
     def test_kernel_spatial_weight_decays_within_spatial_cutoff(self) -> None:
         location = np.array([1, 2, 3])
         kernel = DecayKernel(location=location, spatial_cutoff=0.02)
