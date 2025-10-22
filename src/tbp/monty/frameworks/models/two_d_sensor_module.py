@@ -28,13 +28,17 @@ from tbp.monty.frameworks.models.sensor_modules import (
     no_message_noise,
 )
 from tbp.monty.frameworks.models.states import State
-from tbp.monty.frameworks.utils.edge_detection_utils import structure_tensor_center
+from tbp.monty.frameworks.utils.edge_detection_utils import (
+    compute_edge_features_at_center,
+)
 
 logger = logging.getLogger(__name__)
+
 
 def _normalize(v: np.ndarray, eps: float = 1e-12) -> np.ndarray:
     n = float(np.linalg.norm(v))
     return v / n if n > eps else v * 0.0
+
 
 class TwoDPoseSM(SensorModule):
     """Sensor Module that extracts 2D edges."""
@@ -212,7 +216,7 @@ class TwoDPoseSM(SensorModule):
             )
 
         # Process observations to extract 2D features
-        observed_state = self.observations_to_comunication_protocol(data)
+        observed_state = self.observations_to_communication_protocol(data)
 
         # Add noise if specified and state is interesting
         if observed_state.use_state:
@@ -234,7 +238,13 @@ class TwoDPoseSM(SensorModule):
         return observed_state
 
     def edge_angle_to_3d_tangent(
-        self, theta, normal, *, normal_frame="world", world_camera=None, out_frame="world"
+        self,
+        theta,
+        normal,
+        *,
+        normal_frame="world",
+        world_camera=None,
+        out_frame="world",
     ):
         """
         Lift the edge angle (theta, in radians, measured from the 2D image +x axis,
@@ -244,11 +254,18 @@ class TwoDPoseSM(SensorModule):
         - If normal_frame='world', provide world_camera as 3x3 or 4x4 rotation (world->camera).
         - out_frame is 'camera' or 'world'.
         """
-        n = normal / np.linalg.norm(normal)
+        n = _normalize(normal)
+        if np.allclose(n, 0.0):
+            raise ValueError(
+                "Cannot compute tangent vector: "
+                "input normal has zero or near-zero length"
+            )
 
         R_wc = None
         if world_camera is not None:
-            R_wc = world_camera[:3, :3] if world_camera.shape == (4, 4) else world_camera
+            R_wc = (
+                world_camera[:3, :3] if world_camera.shape == (4, 4) else world_camera
+            )
         R_cw = R_wc.T if R_wc is not None else None
 
         # Put normal in camera frame
@@ -256,16 +273,23 @@ class TwoDPoseSM(SensorModule):
             n_cam = n
         elif normal_frame == "world":
             if R_wc is None:
-                raise ValueError("world_camera must be provided if normal_frame is 'world'")
+                raise ValueError(
+                    "world_camera must be provided if normal_frame is 'world'"
+                )
             n_cam = R_wc @ n
         else:
             raise ValueError(f"Invalid normal_frame: {normal_frame}")
 
-        n_cam = n_cam / np.linalg.norm(n_cam)
+        n_cam = _normalize(n_cam)
+        if np.allclose(n_cam, 0.0):
+            raise ValueError(
+                "Cannot compute tangent vector: "
+                "transformed normal has zero or near-zero length"
+            )
 
         # Image axes in camera frame (OpenCV convention: x right, y down, z forward)
         ex = np.array([1.0, 0.0, 0.0])
-        ey = np.array([0.0, -1.0, 0.0])  
+        ey = np.array([0.0, -1.0, 0.0])
 
         def project_tangent(v, n_):
             return v - np.dot(v, n_) * n_
@@ -283,7 +307,7 @@ class TwoDPoseSM(SensorModule):
 
         # Build ty to be orthonormal to tx and n_cam, but oriented toward +image (down) direction
         # First get the canonical orthonormal ty
-        ty = np.cross(n_cam, tx)      # this is guaranteed orthogonal to both
+        ty = np.cross(n_cam, tx)  # this is guaranteed orthogonal to both
         ty_norm = np.linalg.norm(ty)
         if ty_norm < 1e-12:
             # extremely degenerate; fall back to projecting ey then GS
@@ -306,13 +330,15 @@ class TwoDPoseSM(SensorModule):
             return t_cam
         elif out_frame == "world":
             if R_cw is None:
-                raise ValueError("world_camera must be provided if out_frame is 'world'")
+                raise ValueError(
+                    "world_camera must be provided if out_frame is 'world'"
+                )
             t_world = R_cw @ t_cam
             return t_world / np.linalg.norm(t_world)
         else:
             raise ValueError(f"Invalid out_frame: {out_frame}")
 
-    def observations_to_comunication_protocol(self, data) -> State:
+    def observations_to_communication_protocol(self, data) -> State:
         """Turn raw observations into State following CMP."""
         obs_3d = data["semantic_3d"]
         sensor_frame_data = data["sensor_frame_data"]
@@ -372,7 +398,9 @@ class TwoDPoseSM(SensorModule):
             has_edge = edge_info["has_edge"]
 
             if has_edge:
-                theta = edge_info["edge_orientation"] # radians, image x = right, y=down
+                theta = edge_info[
+                    "edge_orientation"
+                ]  # radians, image x = right, y=down
                 edge_tangent = self.edge_angle_to_3d_tangent(
                     theta,
                     surface_normal,
@@ -386,7 +414,11 @@ class TwoDPoseSM(SensorModule):
                 pose_fully_defined = True
 
         # Build morphological features payload
-        if edge_tangent is not None and edge_perp is not None and surface_normal is not None:
+        if (
+            edge_tangent is not None
+            and edge_perp is not None
+            and surface_normal is not None
+        ):
             morphological_features = {
                 "pose_vectors": np.vstack(
                     [
@@ -466,7 +498,6 @@ class TwoDPoseSM(SensorModule):
 
         # Draw pose arrows only if we have an edge direction
         if edge_direction is not None:
-
             tangent_end_x = int(center_x + arrow_length * np.cos(edge_direction))
             tangent_end_y = int(center_y + arrow_length * np.sin(edge_direction))
 
@@ -503,7 +534,9 @@ class TwoDPoseSM(SensorModule):
             color = (255, 255, 255)
             margin = 3
 
-            (text_width, text_height), _ = cv2.getTextSize(label_text, font, font_scale, thickness)
+            (text_width, text_height), _ = cv2.getTextSize(
+                label_text, font, font_scale, thickness
+            )
 
             x = patch_with_pose.shape[1] - text_width - margin
             y = text_height + margin
@@ -558,7 +591,7 @@ class TwoDPoseSM(SensorModule):
         win_sigma = self.edge_params.get("gaussian_sigma", 1.0)
         ksize = 7  # Standard kernel size for structure tensor
 
-        edge_strength, coherence, edge_orientation = structure_tensor_center(
+        edge_strength, coherence, edge_orientation = compute_edge_features_at_center(
             patch, win_sigma=win_sigma, ksize=ksize
         )
 
@@ -578,23 +611,18 @@ class TwoDPoseSM(SensorModule):
             "coherence": coherence,
         }
 
-        # Debug visualization: always save annotated patches when enabled
-        if self.debug_visualize:
+        # Debug visualization: save annotated patches only when edge is detected
+        if self.debug_visualize and has_edge:
             if rgba_image.shape[2] == 4:
                 rgb_patch = rgba_image[:, :, :3]
             else:
                 rgb_patch = rgba_image
 
-            if has_edge:
-                angle_deg = np.degrees(edge_orientation)
-                label_text = f"{angle_deg:.1f}"
-                patch_with_debug = self._draw_2d_pose_on_patch(
-                    rgb_patch.copy(), edge_orientation, label_text
-                )
-            else:
-                patch_with_debug = self._draw_2d_pose_on_patch(
-                    rgb_patch.copy(), None, "No edge"
-                )
+            angle_deg = np.degrees(edge_orientation)
+            label_text = f"{angle_deg:.1f}"
+            patch_with_debug = self._draw_2d_pose_on_patch(
+                rgb_patch.copy(), edge_orientation, label_text
+            )
 
             filename = (
                 f"ep{self.episode_counter:04d}_"
@@ -619,14 +647,6 @@ class TwoDPoseSM(SensorModule):
         self._canonical_tangent = None
         self._canonical_perpendicular = None
         self._pose_frame_confidence = 0.0
-
-    @staticmethod
-    def _normalize(vector):
-        """Return unit vector or None if norm is ~0."""
-        norm = np.linalg.norm(vector)
-        if norm < 1e-8:
-            return None
-        return vector / norm
 
     def state_dict(self):
         """Return state_dict for logging."""
