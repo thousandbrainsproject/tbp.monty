@@ -282,7 +282,7 @@ class GoalState(State):
 
     def _set_allowable_sender_types(self):
         """Set the allowable sender types of this State class."""
-        self.allowable_sender_types = "GSG"
+        self.allowable_sender_types = ("GSG", "SM")
 
     def _check_all_attributes(self):
         """Overwrite base attribute check to also allow for None values."""
@@ -324,7 +324,8 @@ class GoalState(State):
         )
         # Note *only* GSGs should create GoalState objects
         assert self.sender_type in self.allowable_sender_types, (
-            f"sender_type must be GSG but is {self.sender_type}"
+            f"sender_type must be in {self.allowable_sender_types} but is "
+            f"{self.sender_type}"
         )
         # info is optional, but it must be a dictionary.
         assert isinstance(self.info, dict), "info must be a dictionary"
