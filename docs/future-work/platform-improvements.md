@@ -14,7 +14,7 @@ Similarly, for an overview of all upcoming planned work and what Desired Effects
 
 We track proposed improvements in terms of Injections that change the current reality into a future, more desirable, reality. The following is a list of Injections corresponding to the so far identified Desired Effects.
 
-- [Injection #9: Integrate a second simulator that runs Python >= 3.8](platform-improvements/injection-9-integrate-a-second-simulator-that-runs-python-gte-38.md)
+- [Injection #9: Integrate a second simulator that runs Python >= 3.8](platform-improvements/injection-9-integrate-a-second-simulator-that-runs-python-38.md)
 - [Injection #16: Integrate a second simulator that runs on CPU.](platform-improvements/injection-16-integrate-a-second-simulator-that-runs-on-cpu.md)
 - [Injection #17: Integrate a second simulator that runs on Windows.](platform-improvements/injection-17-integrate-a-second-simulator-that-runs-on-windows.md)
 - [Injection #19: Integrate a second simulator that does not require conda.](platform-improvements/injection-19-integrate-a-second-simulator-that-does-not-require-conda.md)
