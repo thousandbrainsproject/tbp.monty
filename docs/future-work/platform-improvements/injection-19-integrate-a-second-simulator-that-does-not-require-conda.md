@@ -6,7 +6,6 @@ estimated-scope: large
 status: in-progress
 contributor: jeremyshoemaker
 ---
-# Injection #19: Integrate a second simulator that does not require conda.
 
 ## Related work
 

@@ -6,7 +6,6 @@ estimated-scope: large
 status: in-progress
 contributor: jeremyshoemaker
 ---
-# Injection #9: Integrate a second simulator that runs Python >= 3.8
 
 ## Related work
 

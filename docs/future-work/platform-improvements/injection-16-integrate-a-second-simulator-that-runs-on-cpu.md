@@ -6,7 +6,6 @@ estimated-scope: large
 status: in-progress
 contributor: jeremyshoemaker
 ---
-# Injection #16: Integrate a second simulator that runs on CPU.
 
 ## Related work
 

@@ -6,7 +6,6 @@ estimated-scope: large
 status: in-progress
 contributor: jeremyshoemaker
 ---
-# Injection #17: Integrate a second simulator that runs on Windows.
 
 ## Related work
 
