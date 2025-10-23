@@ -7,9 +7,11 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
 import dataclasses
 import unittest
-from typing import Any, NamedTuple, Union
+from typing import Any, NamedTuple
 
 from tbp.monty.frameworks.config_utils.config_args import Dataclass
 from tbp.monty.frameworks.utils import dataclass_utils
@@ -51,12 +53,12 @@ class DeepNestedDataclass:
 @dataclasses.dataclass
 class FakeDataclass:
     name: Any = None
-    value: Union[list, tuple, dict, Dataclass] = dataclasses.field(default_factory=list)
+    value: list | tuple | dict | Dataclass = dataclasses.field(default_factory=list)
 
 
 class FakeNamedTuple(NamedTuple):
     name: Any
-    value: Union[list, tuple, dict, Dataclass]
+    value: list | tuple | dict | Dataclass
 
 
 def sample_function(field1: str, field2: int):

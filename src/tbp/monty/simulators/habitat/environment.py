@@ -7,9 +7,10 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Dict, List, Optional, Sequence, Type, Union
+from typing import Dict, List, Optional, Sequence, Type
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
@@ -73,7 +74,7 @@ class AgentConfig:
     """Agent configuration used by :class:`HabitatEnvironment`."""
 
     agent_type: Type[HabitatAgent]
-    agent_args: Union[dict, Type[HabitatAgentArgs]]
+    agent_args: dict | Type[HabitatAgentArgs]
 
 
 class HabitatActionSpace(tuple, ActionSpace):
@@ -100,8 +101,8 @@ class HabitatEnvironment(EmbodiedEnvironment):
 
     def __init__(
         self,
-        agents: List[Union[dict, AgentConfig]],
-        objects: Optional[List[Union[dict, ObjectConfig]]] = None,
+        agents: List[dict | AgentConfig],
+        objects: Optional[List[dict | ObjectConfig]] = None,
         scene_id: Optional[str] = None,
         seed: int = 42,
         data_path: Optional[str] = None,
