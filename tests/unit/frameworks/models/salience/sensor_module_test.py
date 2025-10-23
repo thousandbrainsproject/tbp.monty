@@ -40,11 +40,13 @@ class HabitatSalienceSMTest(unittest.TestCase):
             (False, True, False),
         ]
     )
+    @patch("tbp.monty.frameworks.models.salience.sensor_module.on_object_observation")
     def test_step_snapshots_raw_observation_as_needed(
         self,
         save_raw_obs: bool,
         is_exploring: bool,
         should_snapshot: bool,
+        on_object_observation: MagicMock,
     ) -> None:
         self.sensor_module._save_raw_obs = save_raw_obs
         self.sensor_module.is_exploring = is_exploring
