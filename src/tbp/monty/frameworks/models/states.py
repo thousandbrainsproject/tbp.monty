@@ -322,7 +322,6 @@ class GoalState(State):
         assert isinstance(self.sender_id, str), (
             f"sender_id must be string but is {type(self.sender_id)}"
         )
-        # Note *only* GSGs should create GoalState objects
         assert self.sender_type in self.allowable_sender_types, (
             f"sender_type must be in {self.allowable_sender_types} but is "
             f"{self.sender_type}"
