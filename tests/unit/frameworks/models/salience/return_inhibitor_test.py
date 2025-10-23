@@ -156,6 +156,15 @@ class DecayFieldTest(unittest.TestCase):
         weights = self.field.compute_weights(query_locations)
         npt.assert_array_equal(weights, np.array([]))
 
+    def test_reset_clears_kernels(self) -> None:
+        kernel_location = np.array([1, 2, 3])
+        self.field.add(kernel_location)
+        weights = self.field.compute_weights(kernel_location.reshape(1, 3))
+        npt.assert_array_equal(weights, 1.0)
+        self.field.reset()
+        weights = self.field.compute_weights(kernel_location.reshape(1, 3))
+        npt.assert_array_equal(weights, 0.0)
+
 
 class ReturnInhibitorTest(unittest.TestCase):
     def setUp(self) -> None:
