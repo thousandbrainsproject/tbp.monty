@@ -48,14 +48,14 @@ class HabitatSalienceSMTest(unittest.TestCase):
         self,
         on_object_observation: MagicMock,
     ) -> None:
-        self.sensor_module._save_raw_obs = self.save_raw_obs
-        self.sensor_module.is_exploring = self.is_exploring
+        self.sensor_module._save_raw_obs = self.save_raw_obs  # type: ignore[attr-defined]
+        self.sensor_module.is_exploring = self.is_exploring  # type: ignore[attr-defined]
         data: dict[str, Any] = MagicMock()
 
         self.sensor_module.update_state(self.state)
         self.sensor_module.step(data)
 
-        if self.should_snapshot:
+        if self.should_snapshot:  # type: ignore[attr-defined]
             self.sensor_module._snapshot_telemetry.raw_observation.assert_called_once_with(  # type: ignore[attr-defined]
                 data, self.state["rotation"], self.state["location"]
             )
@@ -71,7 +71,7 @@ class HabitatSalienceSMTest(unittest.TestCase):
             "depth": np.zeros((64, 64)),
         }
         self.sensor_module.step(data)
-        self.sensor_module._salience_strategy.assert_called_once_with(
+        self.sensor_module._salience_strategy.assert_called_once_with(  # type: ignore[attr-defined]
             RGBADepthObservation(rgba=data["rgba"], depth=data["depth"])
         )
 
@@ -102,11 +102,11 @@ class HabitatSalienceSMPrivateTest(unittest.TestCase):
     ) -> None:
         salience = np.array([1, 2, 3])
         ior_weights = np.array([0.1, 0.2, 0.3])
-        self.sensor_module._decay_salience = MagicMock(return_value=sentinel.decayed)
-        self.sensor_module._randomize_salience = MagicMock(
+        self.sensor_module._decay_salience = MagicMock(return_value=sentinel.decayed)  # type: ignore[method-assign]
+        self.sensor_module._randomize_salience = MagicMock(  # type: ignore[method-assign]
             return_value=sentinel.randomized
         )
-        self.sensor_module._normalize_salience = MagicMock(
+        self.sensor_module._normalize_salience = MagicMock(  # type: ignore[method-assign]
             return_value=sentinel.normalized
         )
 
