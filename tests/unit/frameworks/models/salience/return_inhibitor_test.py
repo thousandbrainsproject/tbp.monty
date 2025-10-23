@@ -206,3 +206,7 @@ class ReturnInhibitorTest(unittest.TestCase):
         )
         weights = self.return_inhibitor(central_location, query_locations)
         self.assertEqual(id(weights), id(compute_weights_result))
+
+    def test_reset_resets_decay_field(self) -> None:
+        self.return_inhibitor.reset()
+        self.return_inhibitor._decay_field.reset.assert_called_once()  # type: ignore[attr-defined]
