@@ -13,6 +13,7 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import numpy.testing as npt
 from parameterized import parameterized_class
 
 from tbp.monty.frameworks.models.salience.sensor_module import HabitatSalienceSM
@@ -73,3 +74,25 @@ class HabitatSalienceSMTest(unittest.TestCase):
         self.sensor_module._salience_strategy.assert_called_once_with(
             RGBADepthObservation(rgba=data["rgba"], depth=data["depth"])
         )
+
+class HabitatSalienceSMPrivateTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.sensor_module = HabitatSalienceSM(
+            rng=np.random.RandomState(42),
+            sensor_module_id="test",
+            salience_strategy_class=MagicMock,
+            return_inhibitor_class=MagicMock,
+            snapshot_telemetry_class=MagicMock,
+        )
+
+    def test_normalize_salience_does_clips_uniform_salience_between_0_and_1(
+        self,
+    ) -> None:
+        salience = 2 * np.ones(10)
+        normalized = self.sensor_module._normalize_salience(salience)
+        npt.assert_array_equal(normalized, np.ones(10))
+
+    def test_normalize_salience_normalizes_empty_salience(self) -> None:
+        salience = np.array([])
+        normalized = self.sensor_module._normalize_salience(salience)
+        npt.assert_array_equal(normalized, np.array([]))

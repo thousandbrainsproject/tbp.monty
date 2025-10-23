@@ -120,11 +120,20 @@ class HabitatSalienceSM(SensorModule):
             loc=0, scale=randomness_factor, size=weighted_salience.shape[0]
         )
 
-        # normalize confidence values
-        weighted_salience = (weighted_salience - weighted_salience.min()) / (
-            weighted_salience.max() - weighted_salience.min()
-        )
+        weighted_salience = self._normalize_salience(weighted_salience)
         return weighted_salience
+
+    def _normalize_salience(self, weighted_salience: np.ndarray) -> np.ndarray:
+        if weighted_salience.size == 0:
+            return weighted_salience
+
+        min_ = weighted_salience.min()
+        max_ = weighted_salience.max()
+        scale = max_ - min_
+        if np.isclose(scale, 0):
+            return np.clip(weighted_salience, 0, 1)
+
+        return (weighted_salience - min_) / scale
 
     def pre_episode(self):
         """This method is called before each episode."""
