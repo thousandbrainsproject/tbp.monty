@@ -329,15 +329,15 @@ class TwoDPoseSM(SensorModule):
         3. Express the edge direction in this tangent basis using the angle theta
         4. Transform the resulting tangent vector back to world coordinates
 
-        The key insight is that an edge in the image lies on the projection of a 3D
-        curve on the surface. Since the surface is locally planar, the edge must be
-        tangent to that surface. By building a tangent basis aligned with the image
-        axes, we can "lift" the 2D edge angle back to 3D.
+        An edge in the image lies on the projection of a 3D curve on the surface.
+        Since the surface is locally planar, the edge must be tangent to that surface. 
+        By building a tangent basis aligned with the image axes, we can "lift" the 2D 
+        edge angle back to 3D.
 
         Args:
             theta: Edge angle in radians, measured counterclockwise from the image
                 +x axis (rightward). In image coordinates, +x is right and +y is down.
-            normal: Surface normal vector in world frame (need not be normalized).
+            normal: Surface normal vector in world frame.
             world_camera: 3x3 or 4x4 rotation matrix transforming from world
                 coordinates to camera coordinates.
 
