@@ -27,6 +27,7 @@ from tbp.monty.frameworks.models.buffer import FeatureAtLocationBuffer
 from tbp.monty.frameworks.models.goal_state_generation import GraphGoalStateGenerator
 from tbp.monty.frameworks.models.monty_base import MontyBase
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
+from tbp.monty.frameworks.models.states import GoalState
 
 logger = logging.getLogger(__name__)
 
@@ -584,7 +585,7 @@ class GraphLM(LearningModule):
                 the base modules if more specialized versions will be initialized in
                 child LMs. Defaults to True.
         """
-        super(GraphLM, self).__init__()
+        super().__init__()
         self.buffer = FeatureAtLocationBuffer()
         self.buffer.reset()
         self.learning_module_id = "LM_0"
@@ -627,7 +628,8 @@ class GraphLM(LearningModule):
         """
         self.reset()
         self.buffer.reset()
-        self.gsg.reset()
+        if self.gsg is not None:
+            self.gsg.reset()
         self.primary_target = primary_target["object"]
         self.primary_target_rotation_quat = primary_target["quat_rotation"]
         self.stepwise_target_object = None
@@ -656,7 +658,8 @@ class GraphLM(LearningModule):
         if len(self.get_possible_matches()) == 0:
             self.set_individual_ts(terminal_state="no_match")
 
-        self.gsg.step(observations)
+        if self.gsg is not None:
+            self.gsg.step(observations)
 
         stats = self.collect_stats_to_save()
         self.buffer.update_stats(stats, append=self.has_detailed_logger)
@@ -718,15 +721,15 @@ class GraphLM(LearningModule):
         """
         pass
 
-    def propose_goal_state(self):
-        """Return the goal-state proposed by this LM's GSG.
+    def propose_goal_states(self) -> list[GoalState]:
+        """Return the goal-states proposed by this LM's GSG.
 
-        Only returned if the LM/GSG was stepped, otherwise returns None goal-state.
+        Only returned if the LM/GSG was stepped, otherwise returns empty list.
         """
-        if self.buffer.get_last_obs_processed():
-            return self.gsg.get_output_goal_state()
+        if self.buffer.get_last_obs_processed() and self.gsg is not None:
+            return self.gsg.output_goal_states()
         else:
-            return None
+            return []
 
     def update_terminal_condition(self):
         """Check if we have reached a terminal condition for this episode.
@@ -737,6 +740,7 @@ class GraphLM(LearningModule):
         possible_matches = self.get_possible_matches()
         # no possible matches
         if len(possible_matches) == 0:
+            self.last_possible_hypotheses = None
             self.set_individual_ts("no_match")
             if (
                 self.buffer.get_num_observations_on_object() > 0
@@ -760,6 +764,7 @@ class GraphLM(LearningModule):
                 logger.info(f"{self.learning_module_id} recognized object {object_id}")
         # > 1 possible match
         else:
+            self.last_possible_hypotheses = None
             logger.info(f"{self.learning_module_id} did not recognize an object yet.")
         return self.terminal_state
 

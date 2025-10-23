@@ -112,7 +112,7 @@ class EnvInitArgsMontyWorldMultiObjectScenes:
 @dataclass
 class OmniglotDatasetArgs:
     env_init_func: Callable = field(default=OmniglotEnvironment)
-    env_init_args: Dict = field(default_factory=lambda: {})
+    env_init_args: Dict = field(default_factory=dict)
     transform: Union[Callable, list, None] = None
 
     def __post_init__(self):
@@ -143,7 +143,7 @@ class WorldImageDatasetArgs:
 @dataclass
 class WorldImageFromStreamDatasetArgs:
     env_init_func: Callable = field(default=SaccadeOnImageFromStreamEnvironment)
-    env_init_args: Dict = field(default_factory=lambda: {})
+    env_init_args: Dict = field(default_factory=dict)
     transform: Union[Callable, list, None] = None
 
     def __post_init__(self):

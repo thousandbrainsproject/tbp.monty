@@ -82,6 +82,7 @@ class DefaultHypothesesUpdater:
         graph_memory: EvidenceGraphMemory,
         max_match_distance: float,
         tolerances: dict,
+        evidence_threshold_config: float | str = "all",
         feature_evidence_calculator: type[FeatureEvidenceCalculator] = (
             DefaultFeatureEvidenceCalculator
         ),
@@ -108,6 +109,15 @@ class DefaultHypothesesUpdater:
                 to be matched.
             tolerances: How much can each observed feature deviate from the
                 stored features to still be considered a match.
+            evidence_threshold_config: How to decide which hypotheses
+                should be updated. When this parameter is either '[int]%' or
+                'x_percent_threshold', then this parameter is applied to the evidence
+                for the Most Likely Hypothesis (MLH) to determine a minimum evidence
+                threshold in order for other hypotheses to be updated. Any hypotheses
+                falling below the resulting evidence threshold do not get updated. The
+                other options set a fixed threshold that does not take MLH evidence into
+                account. In [int, float, '[int]%', 'mean', 'median', 'all',
+                'x_percent_threshold']. Defaults to 'all'.
             feature_evidence_calculator: Class to
                 calculate feature evidence for all nodes. Defaults to the default
                 calculator.
@@ -333,6 +343,9 @@ class DefaultHypothesesUpdater:
                     )
                     initial_possible_channel_rotations.append(rotation.as_matrix())
 
+            initial_possible_channel_locations = np.array(
+                initial_possible_channel_locations
+            )
             initial_possible_channel_rotations = np.array(
                 initial_possible_channel_rotations
             )

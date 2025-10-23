@@ -163,7 +163,6 @@ autodoc_mock_imports = [
     "sklearn",
     "torch",
     "torch_geometric",
-    "torchvision",
 ]
 autodoc_default_options = {
     # Make sphinx generate docs for specific dunder methods
@@ -190,7 +189,6 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
     "torch_geometric": ("https://pytorch-geometric.readthedocs.io/en/latest/", None),
-    "torchvision": ("https://pytorch.org/vision/stable/", None),
 }
 
 # -- Options for todo extension ----------------------------------------------

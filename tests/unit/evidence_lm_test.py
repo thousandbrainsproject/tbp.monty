@@ -55,14 +55,11 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
 from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
 )
-from tbp.monty.frameworks.models.goal_state_generation import (
-    EvidenceGoalStateGenerator,
-    GraphGoalStateGenerator,
-)
+from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.models.sensor_modules import (
-    DetailedLoggingSM,
-    HabitatDistantPatchSM,
+    HabitatSM,
+    Probe,
 )
 from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 from tbp.monty.frameworks.utils.logging_utils import load_models_from_dir
@@ -546,7 +543,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 learning_module_configs=default_evidence_lm_config,
                 sensor_module_configs=dict(
                     sensor_module_0=dict(
-                        sensor_module_class=HabitatDistantPatchSM,
+                        sensor_module_class=HabitatSM,
                         sensor_module_args=dict(
                             sensor_module_id="patch",
                             features=[
@@ -571,7 +568,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                     ),
                     # view_finder
                     sensor_module_1=dict(
-                        sensor_module_class=DetailedLoggingSM,
+                        sensor_module_class=Probe,
                         sensor_module_args=dict(
                             sensor_module_id="view_finder",
                             save_raw_obs=True,
@@ -729,7 +726,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         self,
         fake_obs,
         initial_possible_poses="informed",
-        gsg_class=GraphGoalStateGenerator,
+        gsg_class=None,
         gsg_args=None,
     ):
         graph_lm = EvidenceGraphLM(
@@ -904,10 +901,9 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             # min_steps is reached and the sensor moves off the object). In the second
             # episode the sensor moves off the sphere on episode steps 6+
 
-            # Since process_all_obs == False by default, the off_object points are
-            # not counted as steps. Therefor we have to wait until the camera turns
-            # a full circle and arrives on the other side of the object. From there
-            # we can continue to try and recognize the object.
+            # The off_object points are not counted as steps. Therefore we have to wait
+            # until the camera turns a full circle and arrives on the other side of the
+            # object. From there we can continue to try and recognize the object.
 
             exp.train()
 
@@ -957,7 +953,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.model.matching_steps,
             13,
             "Did not take correct amount of matching steps. Perhaps "
-            "process_all_obs or min_train_steps was not applied correctly.",
+            "min_train_steps was not applied correctly.",
         )
         self.assertGreater(
             exp.model.episode_steps,
@@ -1151,13 +1147,12 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 num_steps_checked_symmetry += 1
                 # On the first step we just store previous hypothesis ids.
                 if num_steps_checked_symmetry > 1:
-                    # On the second step we still narrow down 2 ids in
-                    # this example. Then starting on the third step every step
-                    # will add 1 symmetry evidence because we can't resolve between
+                    # On the second step we will add 1 symmetry evidence
+                    # every step because we can't resolve between
                     # 0,0,0 and 180, 0, 180 rotation.
                     self.assertEqual(
                         graph_lm.symmetry_evidence,
-                        num_steps_checked_symmetry - 2,
+                        num_steps_checked_symmetry - 1,
                         "Symmetry evidence doesn't seem to be as expected.",
                     )
             self.assertEqual(

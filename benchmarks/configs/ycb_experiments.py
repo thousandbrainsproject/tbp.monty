@@ -60,8 +60,8 @@ from tbp.monty.frameworks.models.evidence_matching.model import (
     MontyForEvidenceGraphMatching,
 )
 from tbp.monty.frameworks.models.sensor_modules import (
-    DetailedLoggingSM,
-    FeatureChangeSM,
+    HabitatSM,
+    Probe,
 )
 from tbp.monty.simulators.habitat.configs import (
     FiveLMMountHabitatDatasetArgs,
@@ -205,7 +205,7 @@ default_sensor_features_surf_agent = [
 ]
 
 default_all_noisy_surf_agent_sensor_module = dict(
-    sensor_module_class=FeatureChangeSM,
+    sensor_module_class=HabitatSM,
     sensor_module_args=dict(
         sensor_module_id="patch",
         features=default_sensor_features_surf_agent,
@@ -214,7 +214,7 @@ default_all_noisy_surf_agent_sensor_module = dict(
             "on_object": 0,
             "distance": 0.01,
         },
-        surf_agent_sm=True,
+        is_surface_sm=True,
         noise_params=default_all_noise_params,
     ),
 )
@@ -241,7 +241,7 @@ default_5sm_config = dict(
     sensor_module_3=sm3_config,
     sensor_module_4=sm4_config,
     sensor_module_5=dict(
-        sensor_module_class=DetailedLoggingSM,
+        sensor_module_class=Probe,
         sensor_module_args=dict(
             sensor_module_id="view_finder",
             save_raw_obs=True,
@@ -303,7 +303,7 @@ randrot_noise_10distinctobj_dist_agent.update(
         sensor_module_configs=dict(
             sensor_module_0=default_all_noisy_sensor_module,
             sensor_module_1=dict(
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,
@@ -344,7 +344,7 @@ randrot_noise_10distinctobj_surf_agent.update(
         sensor_module_configs=dict(
             sensor_module_0=default_all_noisy_surf_agent_sensor_module,
             sensor_module_1=dict(
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,
@@ -530,7 +530,7 @@ surf_agent_unsupervised_10distinctobj_noise.update(
         sensor_module_configs=dict(
             sensor_module_0=default_all_noisy_surf_agent_sensor_module,
             sensor_module_1=dict(
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=True,

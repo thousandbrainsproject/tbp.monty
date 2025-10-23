@@ -15,7 +15,7 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
-from tbp.monty.frameworks.models.sensor_modules import FeatureChangeSM
+from tbp.monty.frameworks.models.sensor_modules import HabitatSM
 
 default_all_noise_params = {
     "features": {
@@ -36,7 +36,7 @@ default_sensor_features = [
 ]
 
 default_all_noisy_sensor_module = dict(
-    sensor_module_class=FeatureChangeSM,
+    sensor_module_class=HabitatSM,
     sensor_module_args=dict(
         sensor_module_id="patch",
         features=default_sensor_features,
