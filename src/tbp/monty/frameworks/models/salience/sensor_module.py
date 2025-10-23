@@ -111,16 +111,25 @@ class HabitatSalienceSM(SensorModule):
         salience: np.ndarray,
         ior_weights: np.ndarray,
     ) -> np.ndarray:
+        weighted_salience = self._decay_salience(salience, ior_weights)
+
+        weighted_salience = self._randomize_salience(weighted_salience)
+
+        weighted_salience = self._normalize_salience(weighted_salience)
+        return weighted_salience
+
+    def _decay_salience(
+        self, salience: np.ndarray, ior_weights: np.ndarray
+    ) -> np.ndarray:
         decay_factor = 0.75
-
         weighted_salience = salience - decay_factor * ior_weights
+        return weighted_salience
 
+    def _randomize_salience(self, weighted_salience: np.ndarray) -> np.ndarray:
         randomness_factor = 0.05
         weighted_salience += self._rng.normal(
             loc=0, scale=randomness_factor, size=weighted_salience.shape[0]
         )
-
-        weighted_salience = self._normalize_salience(weighted_salience)
         return weighted_salience
 
     def _normalize_salience(self, weighted_salience: np.ndarray) -> np.ndarray:

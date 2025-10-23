@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import unittest
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, sentinel
 
 import numpy as np
 import numpy.testing as npt
@@ -96,3 +96,27 @@ class HabitatSalienceSMPrivateTest(unittest.TestCase):
         salience = np.array([])
         normalized = self.sensor_module._normalize_salience(salience)
         npt.assert_array_equal(normalized, np.array([]))
+
+    def test_weight_salience_decays_randomizes_and_normalizes_salience_in_that_order(
+        self,
+    ) -> None:
+        salience = np.array([1, 2, 3])
+        ior_weights = np.array([0.1, 0.2, 0.3])
+        self.sensor_module._decay_salience = MagicMock(return_value=sentinel.decayed)
+        self.sensor_module._randomize_salience = MagicMock(
+            return_value=sentinel.randomized
+        )
+        self.sensor_module._normalize_salience = MagicMock(
+            return_value=sentinel.normalized
+        )
+
+        weighted = self.sensor_module._weight_salience(salience, ior_weights)
+
+        self.sensor_module._decay_salience.assert_called_once_with(
+            salience, ior_weights
+        )
+        self.sensor_module._randomize_salience.assert_called_once_with(sentinel.decayed)
+        self.sensor_module._normalize_salience.assert_called_once_with(
+            sentinel.randomized
+        )
+        self.assertEqual(weighted, sentinel.normalized)
