@@ -28,8 +28,8 @@ class OnObjectObservationTest(unittest.TestCase):
         central_region_on_object: bool = True,
     ) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
         image_shape = (64, 64)
-        on_object_rows = slice(32-5, 32+5)
-        on_object_cols = slice(32-5, 32+5)
+        on_object_rows = slice(32 - 5, 32 + 5)
+        on_object_cols = slice(32 - 5, 32 + 5)
 
         rgba = np.zeros(image_shape + (4,), dtype=float)
 
