@@ -71,7 +71,7 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         # perform matching parts of LM updates (default is matching_step)
         all_lm_ids = [lm.learning_module_id for lm in self.model.learning_modules]
         if set(self.supervised_lm_ids) == set(all_lm_ids):
-            self.model.step_type = "exploratory_step"
+            self.model.switch_to_exploratory_step()
 
         # Collect data about the object (exploratory steps)
         num_steps = 0
