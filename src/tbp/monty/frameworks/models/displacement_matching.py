@@ -51,7 +51,7 @@ class DisplacementGraphLM(GraphLM):
                 thresholds based on e.g. surface normal angle difference, or principal
                 curvature magnitude difference.
         """
-        super(DisplacementGraphLM, self).__init__()
+        super().__init__()
         self.graph_memory = DisplacementGraphMemory(
             graph_delta_thresholds=graph_delta_thresholds,
             k=k,
@@ -454,7 +454,7 @@ class DisplacementGraphMemory(GraphMemory):
 
     def __init__(self, match_attribute, *args, **kwargs):
         """Initialize Graph memory."""
-        super(DisplacementGraphMemory, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.match_attribute = match_attribute
 
     # =============== Public Interface Functions ===============
