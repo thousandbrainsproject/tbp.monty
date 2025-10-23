@@ -517,7 +517,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             # sure the same index in different feature array corresponds to
             # the same time step and location.
             self.features[input_channel][attr_name] = np.full(
-                (len(self.locations), attr_shape), np.nan
+                (len(self) + 1, attr_shape), np.nan
             )
         else:
             padded_feat = self._fill_old_values_with_nans(
