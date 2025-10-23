@@ -69,10 +69,11 @@ dev = [
     'mypy==1.11.2',
 
     # Testing, code style, etc...
+    'parameterized==0.9.0',  # Supports Python 3.8
     'pytest==7.1.1',
     'pytest-xdist==2.5.0',
     'pytest-cov==3.0.0',
-    'unittest-parametrize',
+    'unittest-parametrize',  # Python >= 3.9
 
     # Python linter and formatter
     'ruff==0.11.4',

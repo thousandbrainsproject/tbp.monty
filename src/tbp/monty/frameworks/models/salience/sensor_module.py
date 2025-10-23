@@ -36,6 +36,7 @@ class HabitatSalienceSM(SensorModule):
         salience_strategy_args: dict[str, Any] | None = None,
         return_inhibitor_class: type[ReturnInhibitor] = ReturnInhibitor,
         return_inhibitor_args: dict[str, Any] | None = None,
+        snapshot_telemetry_class: type[SnapshotTelemetry] = SnapshotTelemetry,
     ) -> None:
         self._rng = rng
         self._sensor_module_id = sensor_module_id
@@ -50,7 +51,7 @@ class HabitatSalienceSM(SensorModule):
         )
         self._return_inhibitor = return_inhibitor_class(**return_inhibitor_args)
         self._goals: list[GoalState] = []
-        self._snapshot_telemetry = SnapshotTelemetry()
+        self._snapshot_telemetry = snapshot_telemetry_class()
         # TODO: Goes away once experiment code is extracted
         self.is_exploring = False
 
