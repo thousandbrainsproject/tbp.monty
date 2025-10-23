@@ -16,8 +16,12 @@ import numpy as np
 import numpy.testing as npt
 from parameterized import parameterized_class
 
+from tbp.monty.frameworks.models.salience.on_object_observation import (
+    OnObjectObservation,
+)
 from tbp.monty.frameworks.models.salience.sensor_module import HabitatSalienceSM
 from tbp.monty.frameworks.models.salience.strategies import RGBADepthObservation
+from tbp.monty.frameworks.models.states import GoalState
 
 
 @parameterized_class(
@@ -74,6 +78,47 @@ class HabitatSalienceSMTest(unittest.TestCase):
         self.sensor_module._salience_strategy.assert_called_once_with(  # type: ignore[attr-defined]
             RGBADepthObservation(rgba=data["rgba"], depth=data["depth"])
         )
+
+    def test_step_proposes_goals_properly(
+        self, on_object_observation: MagicMock
+    ) -> None:
+        locations = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+        on_object_observation.return_value = OnObjectObservation(
+            center_location=None,
+            locations=locations,
+            salience=np.zeros(locations.shape[0]),
+        )
+        salience = 0.1 * np.array([1, 2, 3])
+        self.sensor_module._weight_salience = MagicMock(return_value=salience)  # type: ignore[method-assign]
+        data = MagicMock()
+        self.sensor_module.step(data)
+        goals = self.sensor_module.propose_goal_states()
+        self.assertEqual(len(goals), locations.shape[0])
+        for i, g in enumerate(goals):
+            expected_goal = GoalState(
+                location=locations[i],
+                confidence=salience[i],
+                use_state=True,
+                morphological_features=None,
+                non_morphological_features=None,
+                goal_tolerances=None,
+                sender_id="test",
+                sender_type="SM",
+            )
+            # TODO: implement __eq__ for GoalState
+            npt.assert_array_equal(g.location, expected_goal.location)
+            self.assertEqual(g.confidence, expected_goal.confidence)
+            self.assertEqual(g.use_state, expected_goal.use_state)
+            self.assertEqual(
+                g.morphological_features, expected_goal.morphological_features
+            )
+            self.assertEqual(
+                g.non_morphological_features, expected_goal.non_morphological_features
+            )
+            self.assertEqual(g.goal_tolerances, expected_goal.goal_tolerances)
+            self.assertEqual(g.sender_id, expected_goal.sender_id)
+            self.assertEqual(g.sender_type, expected_goal.sender_type)
+
 
 class HabitatSalienceSMPrivateTest(unittest.TestCase):
     def setUp(self) -> None:
