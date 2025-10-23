@@ -20,6 +20,36 @@ SOBEL_KERNEL_SIZE = 3
 EPSILON = 1e-12
 
 
+def normalize(v: np.ndarray, eps: float = 1e-12) -> np.ndarray:
+    """Normalize a vector to unit length.
+
+    Args:
+        v: Input vector to normalize
+        eps: Small epsilon value to avoid division by zero
+
+    Returns:
+        Normalized vector if norm > eps, otherwise zero vector
+    """
+    n = float(np.linalg.norm(v))
+    return v / n if n > eps else v * 0.0
+
+
+def project_onto_tangent_plane(v: np.ndarray, n: np.ndarray) -> np.ndarray:
+    """Project a vector onto the tangent plane perpendicular to a normal.
+
+    Removes the component of v that is parallel to n, leaving only the
+    component that lies in the plane perpendicular to n.
+
+    Args:
+        v: Vector to project.
+        n: Normal vector defining the tangent plane (should be normalized).
+
+    Returns:
+        The projection of v onto the plane perpendicular to n.
+    """
+    return v - np.dot(v, n) * n
+
+
 def get_patch_center(h: int, w: int) -> Tuple[int, int]:
     """Get center coordinates of patch.
 
@@ -99,3 +129,93 @@ def compute_edge_features_at_center(
     tangent_theta = gradient_to_tangent_angle(gradient_theta)
 
     return edge_strength, coherence, float(tangent_theta)
+
+
+def draw_2d_pose_on_patch(
+    patch: np.ndarray,
+    edge_direction: float | None = None,
+    label_text: str | None = None,
+    tangent_color: tuple[int, int, int] = (255, 255, 0),
+    normal_color: tuple[int, int, int] = (0, 255, 255),
+    arrow_length: int = 20,
+) -> np.ndarray:
+    """Draw tangent/normal arrows and overlay debug text for a patch.
+
+    Args:
+        patch: RGB patch of shape (H, W, 3).
+        edge_direction: Edge tangent direction in radians, if available.
+        label_text: Text to overlay for debugging (e.g., angle or "No Edge").
+        tangent_color: RGB color for tangent arrow (default: yellow).
+        normal_color: RGB color for normal arrow (default: cyan).
+        arrow_length: Length of arrows in pixels.
+
+    Returns:
+        Patch with annotations drawn on it.
+    """
+    patch_with_pose = patch.copy()
+    center_y, center_x = patch.shape[0] // 2, patch.shape[1] // 2
+
+    # Draw pose arrows only if we have an edge direction
+    if edge_direction is not None:
+        tangent_end_x = int(center_x + arrow_length * np.cos(edge_direction))
+        tangent_end_y = int(center_y + arrow_length * np.sin(edge_direction))
+
+        normal_direction = edge_direction + np.pi / 2
+        normal_length = arrow_length * 0.7
+        normal_end_x = int(center_x + normal_length * np.cos(normal_direction))
+        normal_end_y = int(center_y + normal_length * np.sin(normal_direction))
+
+        cv2.arrowedLine(
+            patch_with_pose,
+            (center_x, center_y),
+            (tangent_end_x, tangent_end_y),
+            tangent_color,
+            thickness=3,
+            tipLength=0.3,
+        )
+
+        cv2.arrowedLine(
+            patch_with_pose,
+            (center_x, center_y),
+            (normal_end_x, normal_end_y),
+            normal_color,
+            thickness=3,
+            tipLength=0.3,
+        )
+
+    cv2.circle(patch_with_pose, (center_x, center_y), 3, (255, 0, 0), -1)
+
+    if label_text:
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 0.35
+        thickness = 1
+        color = (255, 255, 255)
+        margin = 3
+
+        (text_width, text_height), _ = cv2.getTextSize(
+            label_text, font, font_scale, thickness
+        )
+
+        x = patch_with_pose.shape[1] - text_width - margin
+        y = text_height + margin
+
+        cv2.rectangle(
+            patch_with_pose,
+            (x - margin, y - text_height - margin),
+            (x + text_width + margin, y + margin // 2),
+            (0, 0, 0),
+            thickness=-1,
+        )
+
+        cv2.putText(
+            patch_with_pose,
+            label_text,
+            (x, y),
+            font,
+            font_scale,
+            color,
+            thickness=thickness,
+            lineType=cv2.LINE_AA,
+        )
+
+    return patch_with_pose

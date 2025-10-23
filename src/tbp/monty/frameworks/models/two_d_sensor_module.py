@@ -7,12 +7,12 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-"""2D Sensor Module for extracting 2D pose information from RGB images."""
+from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
-import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -29,74 +29,66 @@ from tbp.monty.frameworks.models.sensor_modules import (
 )
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.edge_detection_utils import (
+    DEFAULT_KERNEL_SIZE,
+    DEFAULT_WINDOW_SIGMA,
+    normalize,
     compute_edge_features_at_center,
+    draw_2d_pose_on_patch,
+    project_onto_tangent_plane,
 )
 
 logger = logging.getLogger(__name__)
 
 
-def _normalize(v: np.ndarray, eps: float = 1e-12) -> np.ndarray:
-    n = float(np.linalg.norm(v))
-    return v / n if n > eps else v * 0.0
-
-
 class TwoDPoseSM(SensorModule):
-    """Sensor Module that extracts 2D edges."""
+    """Sensor Module that turns Habitat camera obs into features at locations.
+
+    Currently extracts all the same features as HabitatSM with addition features
+    related to 2D edges.
+    """
 
     def __init__(
         self,
         rng,
-        sensor_module_id,
-        features,
-        save_raw_obs=False,
-        edge_detection_params=None,
-        noise_params=None,
-        delta_thresholds=None,
-        process_all_obs=False,
+        sensor_module_id: str,
+        features: list[str],
+        save_raw_obs: bool = False,
+        edge_detection_params: dict[str, Any] | None = None,
+        noise_params: dict[str, Any] | None = None,
+        delta_thresholds: dict[str, Any] | None = None,
         debug_visualize=False,
         debug_save_dir=None,
-        **kwargs,
     ):
-        """Initialize 2D Pose Sensor Module.
+        """Initialize 2D Sensor Module.
 
         Args:
             rng: Random number generator.
             sensor_module_id: Name of sensor module.
-            features: Which features to extract. Should include "pose_vectors" and
-                "on_object". Additional features: "edge_strength", "coherence".
+            features: Which features to extract.
             save_raw_obs: Whether to save raw sensory input for logging.
             edge_detection_params: Dictionary of edge detection parameters:
-                - gaussian_sigma: Standard deviation for Gaussian smoothing (default: 1.0)
+                - gaussian_sigma: Standard deviation for Gaussian smoothing
+                  (default: DEFAULT_WINDOW_SIGMA from edge_detection_utils)
+                - kernel_size: Kernel size for Gaussian blur
+                  (default: DEFAULT_KERNEL_SIZE from edge_detection_utils)
                 - edge_threshold: Minimum edge strength threshold (default: 0.1)
-                - non_max_radius: Radius for non-maximum suppression (default: 2)
-                - fallback_to_normal: Use surface normal when no edge detected (default: True)
+                - coherence_threshold: Minimum coherence threshold (default: 0.05)
             noise_params: Dictionary of noise amount for each feature.
             delta_thresholds: If given, a FeatureChangeFilter will be used to
                 check whether the current state's features are significantly different
                 from the previous with tolerances set according to `delta_thresholds`.
                 Defaults to None.
-            process_all_obs: Enable explicitly to enforce that off-observations are
-                still processed by LMs, primarily for the purpose of unit testing.
             debug_visualize: Whether to save debug visualizations of edge detection.
-            debug_save_dir: Directory to save debug visualizations (required if debug_visualize=True).
-            **kwargs: Additional keyword arguments passed to parent class.
+            debug_save_dir: Directory to save debug visualizations.
         """
-        super().__init__()
-
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
-        self.is_exploring = False
-        self.state = None
 
         self._habitat_observation_processor = HabitatObservationProcessor(
             features=features,
             sensor_module_id=sensor_module_id,
         )
 
-        # Initialize snapshot telemetry for raw observation logging
-        self._snapshot_telemetry = SnapshotTelemetry()
-
-        # Initialize noise handling
         if noise_params:
             self._message_noise: MessageNoise = DefaultMessageNoise(
                 noise_params=noise_params, rng=rng
@@ -104,7 +96,6 @@ class TwoDPoseSM(SensorModule):
         else:
             self._message_noise = no_message_noise
 
-        # Initialize feature change filter
         if delta_thresholds:
             self._state_filter: StateFilter = FeatureChangeFilter(
                 delta_thresholds=delta_thresholds
@@ -112,61 +103,37 @@ class TwoDPoseSM(SensorModule):
         else:
             self._state_filter = PassthroughStateFilter()
 
-        # Validate features
-        possible_features = [
-            "on_object",
-            "object_coverage",
-            "pose_vectors",
-            "pose_fully_defined",
-            "edge_strength",
-            "coherence",
-            "rgba",
-            "hsv",
-            "pose_from_edge",
-        ]
-        for feature in features:
-            assert feature in possible_features, (
-                f"{feature} not part of {possible_features}"
-            )
+        self._snapshot_telemetry = SnapshotTelemetry()
 
         self.features = features
         self.processed_obs = []
         self.states = []
         self.visited_locs = []
         self.visited_normals = []
-        self.on_object_obs_only = True
-        self.process_all_obs = process_all_obs
 
-        # Set default edge detection parameters
         default_edge_params = {
-            "gaussian_sigma": 1.0,
+            "gaussian_sigma": DEFAULT_WINDOW_SIGMA,
+            "kernel_size": DEFAULT_KERNEL_SIZE,
             "edge_threshold": 0.1,
-            "non_max_radius": 2,
-            "fallback_to_normal": True,
+            "coherence_threshold": 0.05,
         }
-        self.edge_params = edge_detection_params or default_edge_params
-        self.edge_params.update(edge_detection_params or {})
+        self.edge_params = {**default_edge_params, **(edge_detection_params or {})}
 
-        # Canonical frame tracking for feature-aligned pose vectors
-        self._canonical_tangent = None
-        self._canonical_perpendicular = None
-        self._pose_frame_confidence = 0.0
-
-        # Debug visualization setup
         self.debug_visualize = debug_visualize
-        self.debug_save_dir = Path(debug_save_dir) if debug_save_dir else None
-        self.episode_counter = 0
-        self.step_counter = 0
-        self.debug_counter = 0
-
         if self.debug_visualize:
-            assert self.debug_save_dir is not None, (
-                "debug_save_dir must be specified when debug_visualize=True"
-            )
+            # Information to name debug visualizations pngs
+            self.episode_counter = 0
+            self.step_counter = 0
+            self.debug_counter = 0
+
+            if self.debug_save_dir:
+                self.debug_save_dir = Path(self.debug_save_dir)
+            else:
+                self.debug_save_dir = Path.cwd() / "debug_visualizations"
             self.debug_save_dir.mkdir(parents=True, exist_ok=True)
 
     def pre_episode(self):
-        """Reset buffer and episode-specific variables."""
+        """Reset buffer and is_exploring flag."""
         super().pre_episode()
         self._snapshot_telemetry.reset()
         self._state_filter.reset()
@@ -175,9 +142,6 @@ class TwoDPoseSM(SensorModule):
         self.states = []
         self.visited_locs = []
         self.visited_normals = []
-        self.episode_counter += 1
-        self.step_counter = 0
-        self._reset_canonical_frame()
 
     def update_state(self, state):
         """Update information about the sensor's location and rotation."""
@@ -195,17 +159,21 @@ class TwoDPoseSM(SensorModule):
             "rotation": agent_rotation * sensor_rotation,
         }
 
+    def state_dict(self):
+        state_dict = self._snapshot_telemetry.state_dict()
+        state_dict.update(processed_observations=self.processed_obs)
+        return state_dict
+
     def step(self, data):
-        """Process RGB image to extract 2D pose and features.
+        """Turn raw observations into dict of features at location.
 
         Args:
-            data: Raw observations containing rgba, depth, semantic_3d, etc.
+            data: Raw observations.
 
         Returns:
-            State with 2D pose vectors and features. Noise may be added.
+            State with features and morphological features. Noise may be added.
             use_state flag may be set.
         """
-        # Log raw observations if enabled
         if self.save_raw_obs and not self.is_exploring:
             self._snapshot_telemetry.raw_observation(
                 data,
@@ -215,413 +183,98 @@ class TwoDPoseSM(SensorModule):
                 else self.state["position"],
             )
 
-        # Process observations to extract 2D features
-        observed_state = self.observations_to_communication_protocol(data)
+        # TODO: Long-term refactoring idea - Implement a FeatureRegistry pattern
+        # Currently, TwoDPoseSM does a two-step process: (1) extract standard features
+        # via HabitatObservationProcessor.process(), then (2) enhance with edge-based
+        # pose. A more extensible design would allow registering feature extractors
+        # that the processor calls based on the requested features list.
 
-        # Add noise if specified and state is interesting
+        # Pseudocode of the idea
+        # feature_registry = FeatureRegistry()
+        # feature_registry.register("hsv", HSVExtractor())
+        # feature_registry.register("feature_name", FeatureExtractor(feature_params))
+
+        # processor = HabitatObservationProcessor(
+        #     features=["hsv", "feature_name", "etc."],
+        #     feature_registry=feature_registry
+        # )
+        # observed_state, telemetry = processor.process(data)
+
+        observed_state, telemetry = self._habitat_observation_processor.process(data)
+
+        if observed_state.use_state and observed_state.get_on_object():
+            observed_state = self.extract_2d_edge(
+                observed_state,
+                data["rgba"],
+                data["world_camera"],
+            )
+
         if observed_state.use_state:
             observed_state = self._message_noise(observed_state)
 
-        # Motor-only steps should not be passed to learning modules
         if self.motor_only_step:
             # Set interesting-features flag to False, as should not be passed to
             # LM, even in e.g. pre-training experiments that might otherwise do so
             observed_state.use_state = False
 
-        # Apply feature change filter
         observed_state = self._state_filter(observed_state)
 
-        # Process all observations if explicitly requested (e.g., for testing)
-        if self.process_all_obs:
-            observed_state.use_state = True
-
-        return observed_state
-
-    def edge_angle_to_3d_tangent(
-        self,
-        theta,
-        normal,
-        *,
-        normal_frame="world",
-        world_camera=None,
-        out_frame="world",
-    ):
-        """
-        Lift the edge angle (theta, in radians, measured from the 2D image +x axis,
-        with +y pointing DOWN in the image) into a 3D unit tangent on the surface.
-
-        Frames:
-        - If normal_frame='world', provide world_camera as 3x3 or 4x4 rotation (world->camera).
-        - out_frame is 'camera' or 'world'.
-        """
-        n = _normalize(normal)
-        if np.allclose(n, 0.0):
-            raise ValueError(
-                "Cannot compute tangent vector: "
-                "input normal has zero or near-zero length"
-            )
-
-        R_wc = None
-        if world_camera is not None:
-            R_wc = (
-                world_camera[:3, :3] if world_camera.shape == (4, 4) else world_camera
-            )
-        R_cw = R_wc.T if R_wc is not None else None
-
-        # Put normal in camera frame
-        if normal_frame == "camera":
-            n_cam = n
-        elif normal_frame == "world":
-            if R_wc is None:
-                raise ValueError(
-                    "world_camera must be provided if normal_frame is 'world'"
-                )
-            n_cam = R_wc @ n
-        else:
-            raise ValueError(f"Invalid normal_frame: {normal_frame}")
-
-        n_cam = _normalize(n_cam)
-        if np.allclose(n_cam, 0.0):
-            raise ValueError(
-                "Cannot compute tangent vector: "
-                "transformed normal has zero or near-zero length"
-            )
-
-        # Image axes in camera frame (OpenCV convention: x right, y down, z forward)
-        ex = np.array([1.0, 0.0, 0.0])
-        ey = np.array([0.0, -1.0, 0.0])
-
-        def project_tangent(v, n_):
-            return v - np.dot(v, n_) * n_
-
-        # Start with tx aligned with +image x
-        tx = project_tangent(ex, n_cam)
-        if np.linalg.norm(tx) < 1e-12:
-            # If ex is (nearly) normal, pick something orthogonal to n
-            # Use z as a helper; if that fails, use x
-            helper = np.array([0.0, 0.0, 1.0])
-            if abs(np.dot(helper, n_cam)) > 0.99:
-                helper = np.array([1.0, 0.0, 0.0])
-            tx = project_tangent(helper, n_cam)
-        tx = tx / np.linalg.norm(tx)
-
-        # Build ty to be orthonormal to tx and n_cam, but oriented toward +image (down) direction
-        # First get the canonical orthonormal ty
-        ty = np.cross(n_cam, tx)  # this is guaranteed orthogonal to both
-        ty_norm = np.linalg.norm(ty)
-        if ty_norm < 1e-12:
-            # extremely degenerate; fall back to projecting ey then GS
-            ty = project_tangent(ey, n_cam)
-            ty = ty - np.dot(ty, tx) * tx
-            ty_norm = np.linalg.norm(ty)
-            if ty_norm < 1e-12:
-                raise RuntimeError("Failed to construct a stable tangent basis")
-        ty = ty / ty_norm
-
-        # Make ty point as close as possible toward +image y (down) direction
-        if np.dot(ty, ey) < 0:
-            ty = -ty
-
-        # Now tx, ty are orthonormal and image-aligned on the tangent plane
-        t_cam = np.cos(theta) * tx + np.sin(theta) * ty
-        t_cam = t_cam / np.linalg.norm(t_cam)
-
-        if out_frame == "camera":
-            return t_cam
-        elif out_frame == "world":
-            if R_cw is None:
-                raise ValueError(
-                    "world_camera must be provided if out_frame is 'world'"
-                )
-            t_world = R_cw @ t_cam
-            return t_world / np.linalg.norm(t_world)
-        else:
-            raise ValueError(f"Invalid out_frame: {out_frame}")
-
-    def observations_to_communication_protocol(self, data) -> State:
-        """Turn raw observations into State following CMP."""
-        obs_3d = data["semantic_3d"]
-        sensor_frame_data = data["sensor_frame_data"]
-        rgba_feat = data["rgba"]
-        depth_feat = data["depth"]
-        world_camera = data["world_camera"]
-
-        # Center pixel
-        H = int(rgba_feat.shape[0])
-        center_row_col = H // 2
-
-        obs_dim = int(np.sqrt(obs_3d.shape[0]))
-        half_obs_dim = obs_dim // 2
-        center_id = half_obs_dim + obs_dim * half_obs_dim
-
-        # Extract features
-        features = {}
-
-        # Object coverage
-        if "object_coverage" in self.features:
-            # prevent division by zero
-            on_obj = obs_3d[:, 3] > 0
-            denominator = max(len(on_obj), 1)
-            features["object_coverage"] = float(np.count_nonzero(on_obj) / denominator)
-
-        # Center 3D @ semantic
-        x, y, z, semantic_id = obs_3d[center_id]
-        on_object_center = semantic_id > 0
-
-        # 3D Features
-        (
-            features,
-            morphological_features,
-            invalid_signals,
-        ) = self._habitat_observation_processor._extract_and_add_features(
-            features,
-            obs_3d,
-            rgba_feat,
-            depth_feat,
-            center_id,
-            center_row_col,
-            sensor_frame_data,
-            world_camera,
-        )
-        # Defaults
-        surface_normal = None
-        edge_tangent = None
-        edge_perp = None
-        pose_fully_defined = False
-
-        # If we are on object, try to compute edge-based pose vectors
-        if on_object_center and "pose_vectors" in morphological_features:
-            surface_normal = _normalize(morphological_features["pose_vectors"][0])
-
-            # Edge detection at the center
-            edge_info = self.extract_2d_edge_features(rgba_feat, center_row_col)
-            has_edge = edge_info["has_edge"]
-
-            if has_edge:
-                theta = edge_info[
-                    "edge_orientation"
-                ]  # radians, image x = right, y=down
-                edge_tangent = self.edge_angle_to_3d_tangent(
-                    theta,
-                    surface_normal,
-                    normal_frame="world",
-                    world_camera=world_camera,
-                    out_frame="world",
-                )
-                edge_tangent = _normalize(edge_tangent)
-                edge_perp = _normalize(np.cross(surface_normal, edge_tangent))
-
-                pose_fully_defined = True
-
-        # Build morphological features payload
-        if (
-            edge_tangent is not None
-            and edge_perp is not None
-            and surface_normal is not None
-        ):
-            morphological_features = {
-                "pose_vectors": np.vstack(
-                    [
-                        surface_normal,
-                        edge_tangent,
-                        edge_perp,
-                    ]
-                ),
-                "pose_fully_defined": pose_fully_defined,
-                "pose_from_edge": True,
-            }
-            use_state = True
-
-        if "pose_from_edge" not in morphological_features:
-            morphological_features["pose_from_edge"] = False
-
-        # Extras
-        if "on_object" in self.features:
-            morphological_features["on_object"] = float(semantic_id > 0)
-
-        if "rgba" in self.features:
-            features["rgba"] = rgba_feat[center_row_col, center_row_col]
-
-        if "hsv" in self.features:
-            from skimage.color import rgb2hsv
-
-            rgba = rgba_feat[center_row_col, center_row_col]
-            hsv = rgb2hsv(rgba[:3])
-            features["hsv"] = hsv
-
-        # Assemble state
-        observed_state = State(
-            location=np.array([x, y, z]),
-            morphological_features=morphological_features,
-            non_morphological_features=features,
-            confidence=1.0,
-            use_state=bool(on_object_center and not invalid_signals),
-            sender_id=self.sensor_module_id,
-            sender_type="SM",
-        )
-
         if not self.is_exploring:
-            self.processed_obs.append(observed_state.__dict__)
+            self.processed_obs.append(telemetry.processed_obs.__dict__)
             self.states.append(self.state)
-            self.visited_locs.append(observed_state.location)
-            if "pose_vectors" in morphological_features:
-                self.visited_normals.append(morphological_features["pose_vectors"][0])
-            else:
-                self.visited_normals.append(None)
+            self.visited_locs.append(telemetry.visited_loc)
+            self.visited_normals.append(telemetry.visited_normal)
 
         return observed_state
 
-    def _draw_2d_pose_on_patch(
+    def extract_2d_edge(
         self,
-        patch,
-        edge_direction=None,
-        label_text=None,
-        tangent_color=(255, 255, 0),
-        normal_color=(0, 255, 255),
-        arrow_length=20,
-    ):
-        """Draw tangent/normal arrows and overlay debug text for a patch.
+        state: State,
+        rgba_image: np.ndarray,
+        world_camera: np.ndarray,
+    ) -> State:
+        """Extract 2D edge-based pose if edge is detected.
+
+        This method attempts to create a fully-defined pose (normal + 2 tangents)
+        using edge detection, replacing the standard curvature-based tangents.
 
         Args:
-            patch: RGB patch of shape (H, W, 3).
-            edge_direction: Edge tangent direction in radians, if available.
-            label_text: Text to overlay for debugging (e.g., angle or "No Edge").
-            tangent_color: RGB color for tangent arrow (default: yellow).
-            normal_color: RGB color for normal arrow (default: cyan).
-            arrow_length: Length of arrows in pixels.
+            state: State with standard features from HabitatObservationProcessor
+            rgba_image: RGBA image patch
+            world_camera: World to camera transformation matrix
 
         Returns:
-            Patch with annotations drawn on it.
+            State with edge-based pose vectors if edge detected,
+            otherwise returns the original state unchanged.
         """
-        patch_with_pose = patch.copy()
-        center_y, center_x = patch.shape[0] // 2, patch.shape[1] // 2
+        if "pose_vectors" not in state.morphological_features:
+            state.morphological_features["pose_from_edge"] = False
+            return state
 
-        # Draw pose arrows only if we have an edge direction
-        if edge_direction is not None:
-            tangent_end_x = int(center_x + arrow_length * np.cos(edge_direction))
-            tangent_end_y = int(center_y + arrow_length * np.sin(edge_direction))
+        surface_normal = normalize(state.morphological_features["pose_vectors"][0])
 
-            normal_direction = edge_direction + np.pi / 2
-            normal_length = arrow_length * 0.7
-            normal_end_x = int(center_x + normal_length * np.cos(normal_direction))
-            normal_end_y = int(center_y + normal_length * np.sin(normal_direction))
-
-            cv2.arrowedLine(
-                patch_with_pose,
-                (center_x, center_y),
-                (tangent_end_x, tangent_end_y),
-                tangent_color,
-                thickness=3,
-                tipLength=0.3,
-            )
-
-            cv2.arrowedLine(
-                patch_with_pose,
-                (center_x, center_y),
-                (normal_end_x, normal_end_y),
-                normal_color,
-                thickness=3,
-                tipLength=0.3,
-            )
-
-        # Highlight center pixel source for edge extraction
-        cv2.circle(patch_with_pose, (center_x, center_y), 3, (255, 0, 0), -1)
-
-        if label_text:
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            font_scale = 0.35
-            thickness = 1
-            color = (255, 255, 255)
-            margin = 3
-
-            (text_width, text_height), _ = cv2.getTextSize(
-                label_text, font, font_scale, thickness
-            )
-
-            x = patch_with_pose.shape[1] - text_width - margin
-            y = text_height + margin
-
-            # Draw background rectangle for readability
-            cv2.rectangle(
-                patch_with_pose,
-                (x - margin, y - text_height - margin),
-                (x + text_width + margin, y + margin // 2),
-                (0, 0, 0),
-                thickness=-1,
-            )
-
-            cv2.putText(
-                patch_with_pose,
-                label_text,
-                (x, y),
-                font,
-                font_scale,
-                color,
-                thickness=thickness,
-                lineType=cv2.LINE_AA,
-            )
-
-        return patch_with_pose
-
-    def extract_2d_edge_features(self, rgba_image, center_coord):
-        """Extract 2D edge features from RGB image using structure tensor.
-
-        This method applies the enhanced structure tensor method to detect edges
-        and their orientation in the input image.
-
-        Args:
-            rgba_image: rgba patch of size (64, 64, 4)
-            center_coord: Center coordinate (row, col) for patch extraction
-
-        Returns:
-            Dictionary containing:
-                - has_edge: Boolean indicating if edge is detected
-                - edge_orientation: Edge tangent angle in radians [0, 2π)
-                - edge_strength: Magnitude of edge strength
-                - coherence: Edge quality metric [0, 1]
-                - edge_curvature: Curvature estimate (0.0 for structure tensor)
-        """
-        # Convert RGBA to RGB if needed
         if rgba_image.shape[2] == 4:
             patch = rgba_image[:, :, :3]
         else:
             patch = rgba_image
 
-        # Apply structure tensor edge detection
-        win_sigma = self.edge_params.get("gaussian_sigma", 1.0)
-        ksize = 7  # Standard kernel size for structure tensor
-
+        win_sigma = self.edge_params.get("gaussian_sigma", DEFAULT_WINDOW_SIGMA)
+        ksize = self.edge_params.get("kernel_size", DEFAULT_KERNEL_SIZE)
         edge_strength, coherence, edge_orientation = compute_edge_features_at_center(
             patch, win_sigma=win_sigma, ksize=ksize
         )
 
-        # Determine if edge exists based on strength and coherence thresholds
         strength_threshold = self.edge_params.get("edge_threshold", 0.1)
-        coherence_threshold = 0.05  # Minimum coherence for edge-like structure
-
+        coherence_threshold = self.edge_params.get("coherence_threshold", 0.05)
         has_edge = (edge_strength > strength_threshold) and (
             coherence > coherence_threshold
         )
 
-        # Build and return edge info dictionary
-        edge_info = {
-            "has_edge": has_edge,
-            "edge_orientation": edge_orientation,
-            "edge_strength": edge_strength,
-            "coherence": coherence,
-        }
-
-        # Debug visualization: save annotated patches only when edge is detected
         if self.debug_visualize and has_edge:
-            if rgba_image.shape[2] == 4:
-                rgb_patch = rgba_image[:, :, :3]
-            else:
-                rgb_patch = rgba_image
-
             angle_deg = np.degrees(edge_orientation)
             label_text = f"{angle_deg:.1f}"
-            patch_with_debug = self._draw_2d_pose_on_patch(
-                rgb_patch.copy(), edge_orientation, label_text
+            patch_with_debug = draw_2d_pose_on_patch(
+                patch.copy(), edge_orientation, label_text
             )
 
             filename = (
@@ -630,26 +283,105 @@ class TwoDPoseSM(SensorModule):
                 f"{self.debug_counter:04d}.png"
             )
             filepath = self.debug_save_dir / filename
-
             plt.imsave(filepath, patch_with_debug)
 
             self.step_counter += 1
             self.debug_counter += 1
 
-        return edge_info
+        if not has_edge:
+            state.morphological_features["pose_from_edge"] = False
+            return state
 
-    # ---------------------------------------------------------------------
-    # Canonical frame helpers
-    # ---------------------------------------------------------------------
+        edge_tangent = self.edge_angle_to_3d_tangent(
+            edge_orientation, surface_normal, world_camera
+        )
+        edge_tangent = normalize(edge_tangent)
+        edge_perp = normalize(np.cross(surface_normal, edge_tangent))
 
-    def _reset_canonical_frame(self):
-        """Clear cached canonical frame information."""
-        self._canonical_tangent = None
-        self._canonical_perpendicular = None
-        self._pose_frame_confidence = 0.0
+        state.morphological_features["pose_vectors"] = np.vstack(
+            [
+                surface_normal,
+                edge_tangent,
+                edge_perp,
+            ]
+        )
+        state.morphological_features["pose_fully_defined"] = True
+        state.morphological_features["pose_from_edge"] = True
 
-    def state_dict(self):
-        """Return state_dict for logging."""
-        state_dict = self._snapshot_telemetry.state_dict()
-        state_dict.update(processed_observations=self.processed_obs)
-        return state_dict
+        if "edge_strength" in self.features:
+            state.non_morphological_features["edge_strength"] = edge_strength
+        if "coherence" in self.features:
+            state.non_morphological_features["coherence"] = coherence
+
+        return state
+
+    def edge_angle_to_3d_tangent(self, theta, normal, world_camera):
+        """Projects a 2D edge angle from an image to a 3D tangent vector on a surface.
+
+        This function performs the following steps to convert an edge detected in a
+        2D image into a 3D tangent vector on the object's surface:
+
+        1. Transform the surface normal from world coordinates to camera coordinates
+        2. Construct an orthonormal tangent basis (tx, ty) on the surface tangent
+           plane in camera coordinates, aligned with the image coordinate system:
+           - tx aligns with image +x (rightward)
+           - ty aligns with image +y (downward, since image y-axis points down)
+        3. Express the edge direction in this tangent basis using the angle theta
+        4. Transform the resulting tangent vector back to world coordinates
+
+        The key insight is that an edge in the image lies on the projection of a 3D
+        curve on the surface. Since the surface is locally planar, the edge must be
+        tangent to that surface. By building a tangent basis aligned with the image
+        axes, we can "lift" the 2D edge angle back to 3D.
+
+        Args:
+            theta: Edge angle in radians, measured counterclockwise from the image
+                +x axis (rightward). In image coordinates, +x is right and +y is down.
+            normal: Surface normal vector in world frame (need not be normalized).
+            world_camera: 3x3 or 4x4 rotation matrix transforming from world
+                coordinates to camera coordinates.
+
+        Returns:
+            3D unit tangent vector in world frame, representing the direction of the
+            edge on the surface.
+
+        Raises:
+            ValueError: If the input normal has zero or near-zero length.
+        """
+        n_world = normalize(normal)
+        if np.allclose(n_world, 0.0):
+            raise ValueError(
+                "Cannot compute tangent vector: input normal has zero or "
+                "near-zero length"
+            )
+
+        world_camera = (
+            world_camera[:3, :3] if world_camera.shape == (4, 4) else world_camera
+        )
+
+        n_cam = world_camera @ n_world
+
+        image_x = np.array([1.0, 0.0, 0.0])
+        image_y = np.array([0.0, -1.0, 0.0])
+
+        tx = project_onto_tangent_plane(image_x, n_cam)
+        if np.linalg.norm(tx) < 1e-12:
+            # If image x-axis is nearly parallel to normal,
+            # use a different reference axis
+            fallback_axis = np.array([0.0, 0.0, 1.0])
+            if abs(np.dot(fallback_axis, n_cam)) > 0.99:
+                fallback_axis = np.array([0.0, 1.0, 0.0])
+            tx = project_onto_tangent_plane(fallback_axis, n_cam)
+        tx = normalize(tx)
+
+        ty = normalize(np.cross(n_cam, tx))
+
+        # Ensure ty points in the same direction as image y-axis (down)
+        if np.dot(ty, image_y) < 0:
+            ty = -ty
+
+        t_cam = np.cos(theta) * tx + np.sin(theta) * ty
+        t_cam = normalize(t_cam)
+
+        t_world = world_camera.T @ t_cam
+        return normalize(t_world)
