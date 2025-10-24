@@ -166,11 +166,11 @@ class ReturnInhibitor:
 
     def __call__(
         self,
-        central_location: np.ndarray | None,
+        visited_location: np.ndarray | None,
         query_locations: np.ndarray,
     ) -> np.ndarray:
-        if central_location is not None:
-            self._decay_field.add(central_location)
+        if visited_location is not None:
+            self._decay_field.add(visited_location)
 
         ior_vals = self._decay_field.compute_weights(query_locations)
         self._decay_field.step()
