@@ -127,6 +127,8 @@ These experiments are currently run without multiprocessing (using `run.py`).
 
 The following experiments evaluate Monty's ability to learn and infer compositional objects, where these consist of simple 3D objects (a disk, a cube, a cylinder, a sphere, and a mug) with 2D logos on their surface. The logos are either the [TBP](https://thousandbrains.org/) logo or the [Numenta](https://www.numenta.com/) logo. In the dataset, the logos can be in a standard orientation on the object, or oriented vertically. Finally, there is an instance of the mug with the TBP logo bent half-way along the logo at 45 degrees.
 
+![Examples from the compositional dataset of logos on objects.](../figures/overview/comp_logo_dataset_examples.png)
+
 We want to determine the ability of a Monty system with a hierarchy of LMs (here, a single low-level LM sending input to a single high-level LM) to build compositional models of these kinds of objects. To enable learning such models, we provide some amount of supervision to the LMs. The low and high-level LMs begin by learning the 3D objects and logos in isolation, as standalone objects. These are referred to as object "parts" in the configs. We then present Monty the compositional objects, while the low-level LM is set to perform unsupervised inference. Any object IDs it detects to the high level LM. The high level LM continues learning, and is provided with a supervised label for the compositional object (e.g. `024_mug_tbp_horz`).
 
 To measure performance, we introduced two new metrics:
