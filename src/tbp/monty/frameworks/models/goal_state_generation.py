@@ -644,7 +644,6 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             top_id, input_channel=sensor_channel_name
         ).pos
 
-
         if self.focus_on_pose:
             # Overwrite the second most likely hypothesis with the second most likely
             # *pose* of the most-likely object
