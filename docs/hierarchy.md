@@ -61,6 +61,7 @@
 - [why-contribute](contributing/why-contribute.md)
 - [contributing](contributing/contributing.md)
 - [documentation](contributing/documentation.md)
+  - [future-work-widget-metadata](contributing/documentation/future-work-widget-metadata.md)
 - [contributing-tutorials](contributing/contributing-tutorials.md)
 - [comment-on-issues](contributing/comment-on-issues.md)
 - [request-for-comments-rfc](contributing/request-for-comments-rfc.md)
@@ -154,6 +155,7 @@
 - [oss-communication-improvements](future-work/oss-communication-improvements.md)
   - [organize-start-podcast-series](future-work/oss-communication-improvements/organize-start-podcast-series.md)
   - [make-more-condensed-videos-about-the-project-monty](future-work/oss-communication-improvements/make-more-condensed-videos-about-the-project-monty.md)
+  - [future-work-widget](future-work/oss-communication-improvements/future-work-widget.md)
 # theory: Neuroscience Theory
 - [theory-overview](theory/theory-overview.md)
 - [recent-progress](theory/recent-progress.md)
