@@ -45,7 +45,7 @@ class TestBuild(unittest.TestCase):
 
         return snippets_dir
 
-    def _create_test_item(self, **overrides) -> dict[str, Any]:
+    def _create_future_work_item(self, **overrides) -> dict[str, Any]:
         """Create a test item with default values, allowing field overrides.
 
         Args:
@@ -107,21 +107,13 @@ class TestBuild(unittest.TestCase):
         snippets_dir: str | None = None,
     ):
         """Helper method to test that build fails with expected error."""
-        index_file = self.temp_path / "index.json"
-        with open(index_file, "w", encoding="utf-8") as f:
-            json.dump(input_data, f)
-
-        if snippets_dir is None:
-            snippets_dir = self._create_snippets({})
-
-        result = build(index_file, self.temp_path, snippets_dir)
-
-        self.assertFalse(result.success)
-        self.assertIn(expected_error_fragment, result.error_message)
+        with self.assertRaises(ValueError) as context:
+            self._run_build(input_data, snippets_dir)
+        self.assertIn(expected_error_fragment, str(context.exception))
 
     def test_build_filters_future_work_items(self):
         input_data = [
-            self._create_test_item(
+            self._create_future_work_item(
                 path2="voting-improvements",
                 title="Improve voting mechanism",
                 content="Test content for voting",
@@ -165,7 +157,7 @@ class TestBuild(unittest.TestCase):
 
         for case in transformation_cases:
             with self.subTest(case=case["name"]):
-                test_item = self._create_test_item(
+                test_item = self._create_future_work_item(
                     title=f"Test item with {case['field_name']}",
                     **{case["field_name"]: case["input_value"]},
                 )
@@ -186,7 +178,7 @@ class TestBuild(unittest.TestCase):
     def test_build_without_snippets_dir(self):
         """Test that build works without snippets directory for validation."""
         input_data = [
-            self._create_test_item(title="Test item without snippets validation")
+            self._create_future_work_item(title="Test item without snippets validation")
         ]
 
         result_data = self._run_build(input_data)
@@ -195,7 +187,9 @@ class TestBuild(unittest.TestCase):
     def test_json_output_success(self):
         """Test JSON output mode for successful build."""
         input_data = [
-            self._create_test_item(path2="test-success", title="Test success item")
+            self._create_future_work_item(
+                path2="test-success", title="Test success item"
+            )
         ]
 
         index_file = self.temp_path / "index.json"
@@ -218,7 +212,7 @@ class TestBuild(unittest.TestCase):
         )
 
         input_data = [
-            self._create_test_item(
+            self._create_future_work_item(
                 path="docs/future-work/test-item.md",
                 path2="test-item",
                 title="Test item with invalid tags",
@@ -253,7 +247,7 @@ class TestBuild(unittest.TestCase):
         too_many_tags = ",".join([f"tag{i}" for i in range(max_items + 1)])
 
         input_data = [
-            self._create_test_item(
+            self._create_future_work_item(
                 path="docs/future-work/test-limits.md",
                 path2="test-limits",
                 title="Test item with too many tags",
@@ -333,7 +327,7 @@ class TestBuild(unittest.TestCase):
                     {case["snippet_file"]: case["snippet_content"]}
                 )
 
-                valid_item = self._create_test_item(
+                valid_item = self._create_future_work_item(
                     **{case["field_name"]: case["valid_value"]}
                 )
 
@@ -344,7 +338,7 @@ class TestBuild(unittest.TestCase):
                 result = build(index_file, self.temp_path, snippets_dir)
                 self.assertTrue(result.success)
 
-                invalid_item = self._create_test_item(
+                invalid_item = self._create_future_work_item(
                     **{case["field_name"]: case["invalid_value"]}
                 )
 
