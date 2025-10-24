@@ -54,11 +54,13 @@ class MontyBasePrivateTest(unittest.TestCase):
         ]
         self.monty_base._pass_goal_states()
 
-        expected = set({
-            sentinel.lm2_goal,
-            sentinel.lm3_goal_1,
-            sentinel.lm3_goal_2,
-            sentinel.sm2_goal_1,
-            sentinel.sm2_goal_2,
-        })
+        expected = set(
+            {
+                sentinel.lm2_goal,
+                sentinel.lm3_goal_1,
+                sentinel.lm3_goal_2,
+                sentinel.sm2_goal_1,
+                sentinel.sm2_goal_2,
+            }
+        )
         self.assertEqual(set(self.monty_base.gsg_outputs), expected)
