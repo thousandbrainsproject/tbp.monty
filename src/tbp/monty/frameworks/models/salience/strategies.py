@@ -13,15 +13,10 @@ from typing import Protocol
 import numpy as np
 
 
-class SalienceInput(Protocol):
-    rgba: np.ndarray
-    depth: np.ndarray
-
-
 class SalienceStrategy(Protocol):
-    def __call__(self, obs: SalienceInput) -> np.ndarray: ...
+    def __call__(self, rgba: np.ndarray, depth: np.ndarray) -> np.ndarray: ...
 
 
 class UniformSalienceStrategy(SalienceStrategy):
-    def __call__(self, obs: SalienceInput) -> np.ndarray:
-        return np.ones_like(obs.depth)
+    def __call__(self, rgba: np.ndarray, depth: np.ndarray) -> np.ndarray:
+        return np.ones_like(depth)

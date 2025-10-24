@@ -19,8 +19,9 @@ from parameterized import parameterized_class
 from tbp.monty.frameworks.models.salience.on_object_observation import (
     OnObjectObservation,
 )
-from tbp.monty.frameworks.models.salience.sensor_module import HabitatSalienceSM
-from tbp.monty.frameworks.models.salience.sensor_module import RGBADepthObservation
+from tbp.monty.frameworks.models.salience.sensor_module import (
+    HabitatSalienceSM,
+)
 from tbp.monty.frameworks.models.states import GoalState
 
 
@@ -91,7 +92,7 @@ class HabitatSalienceSMTest(unittest.TestCase):
         goals = self.sensor_module.propose_goal_states()
 
         self.sensor_module._salience_strategy.assert_called_once_with(  # type: ignore[attr-defined]
-            RGBADepthObservation(rgba=data["rgba"], depth=data["depth"])
+            rgba=data["rgba"], depth=data["depth"]
         )
         on_object_observation.assert_called_once_with(data, sentinel.salience_map)
         self.sensor_module._return_inhibitor.assert_called_once_with(  # type: ignore[attr-defined]

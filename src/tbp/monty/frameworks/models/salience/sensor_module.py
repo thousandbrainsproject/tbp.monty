@@ -8,7 +8,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -24,12 +23,6 @@ from tbp.monty.frameworks.models.salience.strategies import (
 )
 from tbp.monty.frameworks.models.sensor_modules import SnapshotTelemetry
 from tbp.monty.frameworks.models.states import GoalState, State
-
-
-@dataclass
-class RGBADepthObservation:
-    rgba: np.ndarray
-    depth: np.ndarray
 
 
 class HabitatSalienceSM(SensorModule):
@@ -86,9 +79,7 @@ class HabitatSalienceSM(SensorModule):
                 else self.state["position"],
             )
 
-        salience_map = self._salience_strategy(
-            RGBADepthObservation(rgba=data["rgba"], depth=data["depth"])
-        )
+        salience_map = self._salience_strategy(rgba=data["rgba"], depth=data["depth"])
 
         on_object = on_object_observation(data, salience_map)
         ior_weights = self._return_inhibitor(
