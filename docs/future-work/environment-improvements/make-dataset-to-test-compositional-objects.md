@@ -3,7 +3,7 @@ title: Make Dataset to Test Compositional Objects
 ---
 
 > [!TIP] We have implemented a first dataset to test compositional modeling!
-> You can find the dataset descriptions and current performance on it in out [benchmark documentation](../../overview/benchmark-experiments.md#compositional-datasets).
+> You can find the dataset descriptions and current performance on it in our [benchmark documentation](../../overview/benchmark-experiments.md#compositional-datasets).
 > Nevertheless, we will eventually want to implement a more complex dataset as described below to test scene level representations and generalization.
 
 To test compositional objects, we would like to develop a minimal dataset based on common objects (such as mugs and bowls) with logos on their surfaces. This will enable us to learn on the component objects in isolation, while moving towards a more realistic setting where the component objects must be disentangled from one another. The logo-on-surface setup also enables exploring interesting challenges of object distortion, and learning multiple location-specific associations, such as when a logo has a 90 degree bend half-way along its length.
