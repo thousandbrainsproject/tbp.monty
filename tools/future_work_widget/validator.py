@@ -47,7 +47,7 @@ class FutureWorkRecord(BaseModel):
 
     path: Annotated[
         str,
-        Field(description="Path to the future work markdown file"),
+        Field(min_length=1, description="Path to the future work markdown file"),
     ]
     path1: Annotated[
         str | None,
@@ -105,9 +105,9 @@ class FutureWorkRecord(BaseModel):
 
         max_items = 10
         if len(parsed_items) > max_items:
-            raise ValueError(
-                f"Cannot have more than {max_items} items. Got {len(parsed_items)} items"
-            )
+            msg = f"Cannot have more than {max_items} items. "
+            msg += f"Got {len(parsed_items)} items"
+            raise ValueError(msg)
 
         return parsed_items
 
@@ -255,37 +255,16 @@ class RecordValidator:
         self.allowed_values: dict[str, list[str]] = {}
         self._load_validation_files(docs_snippets_dir)
 
-    def validate(
-        self, record: dict[str, Any]
-    ) -> tuple[dict[str, Any] | None, list[ErrorDetail]]:
+    def validate(self, record: dict[str, Any]) -> list[ErrorDetail]:
         """Validate a record using Pydantic with dynamic validation context.
 
         Args:
             record: The record to validate
 
         Returns:
-            Tuple of (record or None if there are errors, list of error details)
+            List of error details (empty if validation succeeds)
         """
-        if record.get("path1") != "future-work" or "path2" not in record:
-            return None, []
-
-        errors: list[ErrorDetail] = []
-
-        if "path" not in record:
-            errors.append(
-                ErrorDetail(
-                    message="Record is missing required 'path' field",
-                    file="unknown",
-                    line=1,
-                    field="path",
-                    level="error",
-                    title="Validation Error in unknown",
-                    annotation_level="failure",
-                )
-            )
-            return None, errors
-
-        file_path = str(record["path"])
+        file_path = str(record.get("path", "unknown"))
 
         try:
             validation_context = {"allowed_values": self.allowed_values}
@@ -294,11 +273,26 @@ class RecordValidator:
             )
             record_dict = validated_record.model_dump()
         except PydanticValidationError as e:
-            errors.extend(self._convert_pydantic_error_to_error_details(e, file_path))
-            return None, errors
+            return self._convert_pydantic_error_to_error_details(e, file_path)
 
+        errors: list[ErrorDetail] = []
         self._validate_required_fields(record_dict, file_path, errors)
-        return (None if errors else record_dict, errors)
+        return errors
+
+    def transform(self, record: dict[str, Any]) -> dict[str, Any]:
+        """Transform a record using Pydantic after successful validation.
+
+        Args:
+            record: The record to transform (must have been validated first)
+
+        Returns:
+            Transformed record with parsed fields
+        """
+        validation_context = {"allowed_values": self.allowed_values}
+        validated_record = FutureWorkRecord.model_validate(
+            record, context=validation_context
+        )
+        return validated_record.model_dump()
 
     def _convert_pydantic_error_to_error_details(
         self, exc: PydanticValidationError, file_path: str

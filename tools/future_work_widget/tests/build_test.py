@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Any
 
 from tools.future_work_widget.build import build
-from tools.future_work_widget.validator import RecordValidator
 
 
 class TestBuild(unittest.TestCase):
@@ -45,33 +44,6 @@ class TestBuild(unittest.TestCase):
                 f.write(content)
 
         return snippets_dir
-
-    def _run_build_test_with_snippets(
-        self, input_data: list[dict[str, Any]], snippets_dir: str
-    ) -> list[dict[str, Any]]:
-        """Helper method to run build with test data and snippets directory.
-
-        Returns:
-            The processed data from the output JSON file.
-
-        Raises:
-            ValueError: If the build fails with validation errors.
-        """
-        index_file = self.temp_path / "index.json"
-        with open(index_file, "w", encoding="utf-8") as f:
-            json.dump(input_data, f)
-
-        result = build(index_file, self.temp_path, snippets_dir)
-
-        if not result.success:
-            error_details = "\n".join(
-                f"  - {err.field}: {err.message}" for err in (result.errors or [])
-            )
-            raise ValueError(f"{result.error_message}\nErrors:\n{error_details}")
-
-        data_file = self.temp_path / "data.json"
-        with open(data_file, encoding="utf-8") as f:
-            return json.load(f)
 
     def _create_test_item(self, **overrides) -> dict[str, Any]:
         """Create a test item with default values, allowing field overrides.
@@ -202,9 +174,7 @@ class TestBuild(unittest.TestCase):
                     snippets_dir = self._create_snippets(
                         {case["snippet_file"]: case["snippet_content"]}
                     )
-                    result_data = self._run_build_test_with_snippets(
-                        [test_item], snippets_dir
-                    )
+                    result_data = self._run_build([test_item], snippets_dir)
                 else:
                     result_data = self._run_build([test_item])
 

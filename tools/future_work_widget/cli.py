@@ -15,7 +15,12 @@ import logging
 import sys
 from pathlib import Path
 
-from tools.future_work_widget.build import build
+monty_root = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(monty_root))
+
+# Note: this tool requires this specific import order so don't remove
+# the noqa: E402 comments
+from tools.future_work_widget.build import build  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +37,7 @@ def main():
     parser.add_argument(
         "--docs-snippets-dir",
         help="Optional path to a snippets directory for validation files",
-        default="docs/snippets",
+        default=Path("docs/snippets"),
     )
 
     args = parser.parse_args()

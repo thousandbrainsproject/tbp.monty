@@ -68,7 +68,7 @@ class TestRecordValidator(unittest.TestCase):
 
         self.assertEqual(len(validator.allowed_values), 0)
         record = {"path1": "future-work", "path2": "test", "path": "test/path.md"}
-        _, errors = validator.validate(record)
+        errors = validator.validate(record)
         self.assertEqual(len(errors), 0)
 
     def test_nonexistent_snippets_directory(self):
@@ -78,7 +78,7 @@ class TestRecordValidator(unittest.TestCase):
 
         self.assertEqual(len(validator.allowed_values), 0)
         record = {"path1": "future-work", "path2": "test", "path": "test/path.md"}
-        _, errors = validator.validate(record)
+        errors = validator.validate(record)
         self.assertEqual(len(errors), 0)
 
     def test_direct_validation_success(self):
@@ -95,18 +95,18 @@ class TestRecordValidator(unittest.TestCase):
             "contributor": "alice,bob",
         }
 
-        result, errors = validator.validate(record)
-
-        self.assertIsNotNone(result)
+        errors = validator.validate(record)
         self.assertEqual(len(errors), 0)
+
+        result = validator.transform(record)
         self.assertEqual(result["path1"], "future-work")
         self.assertEqual(result["path2"], "test-item")
         self.assertEqual(result["tags"], ["accuracy", "learning"])
         self.assertEqual(result["skills"], ["python", "javascript"])
         self.assertEqual(result["contributor"], ["alice", "bob"])
 
-    def test_direct_validation_filters_non_future_work(self):
-        """Test that non-future-work items are filtered out."""
+    def test_direct_validation_requires_path_field(self):
+        """Test that validation requires path field regardless of path1."""
         validator = RecordValidator(Path())
 
         record = {
@@ -115,9 +115,9 @@ class TestRecordValidator(unittest.TestCase):
             "title": "Test item",
         }
 
-        result, errors = validator.validate(record)
-        self.assertIsNone(result)
-        self.assertEqual(len(errors), 0)
+        errors = validator.validate(record)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("path", errors[0].field)
 
     def test_comma_separated_field_limits(self):
         """Test limits on comma-separated fields."""
@@ -133,9 +133,7 @@ class TestRecordValidator(unittest.TestCase):
             "tags": too_many_tags,
         }
 
-        result, errors = validator.validate(record)
-
-        self.assertIsNone(result)
+        errors = validator.validate(record)
         self.assertEqual(len(errors), 1)
         self.assertIn("Cannot have more than", errors[0].message)
         self.assertIn(str(max_items), errors[0].message)
@@ -159,8 +157,7 @@ class TestRecordValidator(unittest.TestCase):
             "tags": "accuracy",
         }
 
-        result, errors = validator.validate(record)
-        self.assertIsNotNone(result)
+        errors = validator.validate(record)
         self.assertEqual(len(errors), 0)
 
         invalid_record = {
@@ -171,8 +168,7 @@ class TestRecordValidator(unittest.TestCase):
             "tags": "invalid_tag",
         }
 
-        result, errors = validator.validate(invalid_record)
-        self.assertIsNone(result)
+        errors = validator.validate(invalid_record)
         self.assertEqual(len(errors), 1)
         self.assertIn("Invalid tags value", errors[0].message)
 
@@ -185,12 +181,9 @@ class TestRecordValidator(unittest.TestCase):
             "title": "Test item",
         }
 
-        result, errors = validator.validate(record)
-
-        self.assertIsNone(result)
+        errors = validator.validate(record)
         self.assertEqual(len(errors), 1)
-        self.assertIn("missing required 'path' field", errors[0].message)
-        self.assertEqual(errors[0].field, "path")
+        self.assertIn("path", errors[0].field.lower())
 
 
 if __name__ == "__main__":

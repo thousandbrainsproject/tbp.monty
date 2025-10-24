@@ -62,9 +62,14 @@ def build(
         errors = []
 
         for item in data:
-            validated_item, validation_errors = validator.validate(item)
-            errors.extend(validation_errors)
-            if validated_item is not None:
+            if item.get("path1") != "future-work" or "path2" not in item:
+                continue
+
+            validation_errors = validator.validate(item)
+            if validation_errors:
+                errors.extend(validation_errors)
+            else:
+                validated_item = validator.transform(item)
                 future_work_items.append(validated_item)
 
         if errors:
