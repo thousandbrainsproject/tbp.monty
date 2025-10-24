@@ -1338,6 +1338,12 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
             graph_lm.matching_step([observation])
 
+        if not focus_on_pose:
+            # Since up to now we had identical evidence for both cube and house, we give
+            # the house an edge now so we test for it and get the expected result.
+            graph_lm.current_mlh["graph_id"] = "new_object1"
+            graph_lm.evidence["new_object1"] += 1
+
         # Based on most recent observation, propose the most misaligned graph
         # sub-regions
         graph_lm.gsg.focus_on_pose = focus_on_pose

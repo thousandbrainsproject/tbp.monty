@@ -613,7 +613,19 @@ class EvidenceGraphLM(GraphLM):
         else:
             top_id = graph_ids[top_indices[0]]
             second_id = top_id
-
+        # Account for the case where we have multiple top evidences with the same value.
+        # In this case argsort and argmax (used to get current_mlh) will return
+        # different results but some downstream logic (in gsg) expects them to be the
+        # same.
+        if top_id != self.current_mlh["graph_id"]:
+            if second_id == self.current_mlh["graph_id"]:
+                # swap top and second id
+                second_id, top_id = top_id, second_id
+            else:
+                # current mlh is not in top two, so we just set top id to current mlh
+                # and keep the second id as is (since this means there is a threeway
+                # tie in evidence values so its not like top is more likely than second)
+                top_id = self.current_mlh["graph_id"]
         return top_id, second_id
 
     def get_top_two_pose_hypotheses_for_graph_id(self, graph_id):
