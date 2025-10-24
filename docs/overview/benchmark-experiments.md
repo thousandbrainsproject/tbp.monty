@@ -146,6 +146,28 @@ To measure performance, we introduced two new metrics:
 
 Note: To obtain these results, pretraining was run without parallelization across episodes, inference was run with parallelization.
 
+> [!NOTE]
+> You can download the data here:
+> 
+> | Dataset | Archive Format | Download Link |
+> | --- | --- | --- |
+> | compositional_objects | zip | [compositional_objects.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.> zip) |
+> 
+> Unpack the archive in the `~/tbp/data/` folder. For example:
+> 
+> ```plaintext zip
+> mkdir -p ~/tbp/data/
+> 
+> cd ~/tbp/data/
+> 
+> curl -O https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.zip
+> 
+> unzip compositional_objects.zip
+> ```
+>
+> To generate the pretrained models, run the experiments in `benchmarks/configs/learn_compositional_objects.py` in the order in which they are listed by running:
+> `python benchmarks/run.py -e experiment_name`
+
 
 # Monty-Meets-World
 
