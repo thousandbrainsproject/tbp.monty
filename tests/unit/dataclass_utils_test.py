@@ -7,9 +7,11 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
 import dataclasses
 import unittest
-from typing import Any, NamedTuple, Union
+from typing import Any, NamedTuple
 
 from tbp.monty.frameworks.config_utils.config_args import Dataclass
 from tbp.monty.frameworks.utils import dataclass_utils
@@ -51,12 +53,12 @@ class DeepNestedDataclass:
 @dataclasses.dataclass
 class FakeDataclass:
     name: Any = None
-    value: Union[list, tuple, dict, Dataclass] = dataclasses.field(default_factory=list)
+    value: list | tuple | dict | Dataclass = dataclasses.field(default_factory=list)
 
 
 class FakeNamedTuple(NamedTuple):
     name: Any
-    value: Union[list, tuple, dict, Dataclass]
+    value: list | tuple | dict | Dataclass
 
 
 def sample_function(field1: str, field2: int):
@@ -192,8 +194,8 @@ class CreateDataclassArgsTest(unittest.TestCase):
         dc = dataclass_utils.create_dataclass_args("test1", sample_function)
         # Expected dataclass with 2 fields
         expected = {
-            "field1": (str, dataclasses.MISSING),
-            "field2": (int, dataclasses.MISSING),
+            "field1": ("str", dataclasses.MISSING),
+            "field2": ("int", dataclasses.MISSING),
         }
         actual = {f.name: (f.type, f.default) for f in dataclasses.fields(dc)}
         self.assertTrue(dataclasses.is_dataclass(dc))
@@ -207,8 +209,8 @@ class CreateDataclassArgsTest(unittest.TestCase):
         )
         # Expected dataclass with 3 fields and default value on the third
         expected = {
-            "field1": (str, dataclasses.MISSING),
-            "field2": (int, dataclasses.MISSING),
+            "field1": ("str", dataclasses.MISSING),
+            "field2": ("int", dataclasses.MISSING),
             "field3": (float, 0.1),
         }
         actual = {f.name: (f.type, f.default) for f in dataclasses.fields(dc)}
@@ -221,8 +223,8 @@ class CreateDataclassArgsTest(unittest.TestCase):
         dc = dataclass_utils.create_dataclass_args("test3", SampleClass.__init__)
         # Expected dataclass with 3 fields and default value on the third
         expected = {
-            "field1": (str, dataclasses.MISSING),
-            "field2": (int, dataclasses.MISSING),
+            "field1": ("str", dataclasses.MISSING),
+            "field2": ("int", dataclasses.MISSING),
         }
         actual = {f.name: (f.type, f.default) for f in dataclasses.fields(dc)}
         self.assertTrue(dataclasses.is_dataclass(dc))
