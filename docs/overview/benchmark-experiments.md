@@ -144,6 +144,8 @@ To measure performance, we introduced two new metrics:
 >
 > These benchmarks are not currently expected to have good performance and are used to track our research progress for compositional datasets.
 
+Note: To obtain these results, pretraining was run without parallelization across episodes, inference was run with parallelization.
+
 
 # Monty-Meets-World
 
