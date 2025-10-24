@@ -7,13 +7,14 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import abc
 import copy
 import json
 import logging
 import time
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import Any, Callable, Dict, Optional, Type
 
 import numpy as np
 import quaternion
@@ -594,13 +595,13 @@ class FeatureAtLocationBuffer(BaseBuffer):
 class BufferEncoder(json.JSONEncoder):
     """Encoder to turn the buffer into a JSON compliant format."""
 
-    _encoders: Dict[type, Union[Callable, json.JSONEncoder]] = {}
+    _encoders: Dict[type, Callable | json.JSONEncoder] = {}
 
     @classmethod
     def register(
         cls,
         obj_type: type,
-        encoder: Union[Callable, Type[json.JSONEncoder]],
+        encoder: Callable | Type[json.JSONEncoder],
     ) -> None:
         """Register an encoder.
 
