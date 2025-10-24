@@ -33,7 +33,6 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.environments.logos_on_objs import (
-    ALL_PART_OBJECTS,
     OBJECTS_WITH_LOGOS_LVL1,
     OBJECTS_WITH_LOGOS_LVL2,
     OBJECTS_WITH_LOGOS_LVL3,
