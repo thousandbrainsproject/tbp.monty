@@ -110,17 +110,7 @@ class DecayKernelFactory:
 
 
 class DecayField:
-    """Implements inhibition of return.
-
-    Manages a collection of decay kernels. Used to weight
-    `GoalState.confidence` values.
-
-    Calling order:
-      - add (usually)
-      - __call__ (usually many times)
-      - update_telemetry
-      - step
-    """
+    """Manages a collection of decay kernels."""
 
     def __init__(
         self,
