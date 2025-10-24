@@ -412,6 +412,10 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             "episode/confused_mlh": stats["episode_confused_mlh"],
             "episode/pose_time_out": stats["episode_pose_time_out"],
             "episode/time_out": stats["episode_time_out"],
+            "episode/consistent_child_obj": stats["episode_consistent_child_obj"],
+            "episode/consistent_child_or_parent": stats["episode_consistent_child_obj"]
+            or stats["episode_correct"]
+            or stats["episode_correct_mlh"],
             "episode/used_mlh_after_time_out": stats["episode_correct_mlh"]
             or stats["episode_confused_mlh"],
             "episode/rotation_error": (
@@ -492,7 +496,10 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             prediction_errors = stats["episode_avg_prediction_error"][-len(self.lms) :]
             valid_prediction_errors = [e for e in prediction_errors if not np.isnan(e)]
             if valid_prediction_errors:
-                overall_stats["episode/avg_prediction_error"] = wandb.Histogram(
+                overall_stats["episode/avg_prediction_error_dist"] = wandb.Histogram(
+                    valid_prediction_errors
+                )
+                overall_stats["episode/avg_prediction_error"] = np.mean(
                     valid_prediction_errors
                 )
 
