@@ -66,11 +66,6 @@ model_path_monolithic_models_lvl1 = os.path.join(
     "supervised_pre_training_objects_with_logos_lvl1_monolithic_models/pretrained/",
 )
 
-model_path_part_models = os.path.join(
-    pretrained_dir,
-    "supervised_pre_training_curved_objects_after_flat_and_logo/pretrained/",
-)
-
 model_path_compositional_models_lvl1 = os.path.join(
     pretrained_dir,
     "supervised_pre_training_objects_with_logos_lvl1_comp_models/pretrained/",
@@ -211,24 +206,6 @@ infer_comp_lvl1_with_monolithic_models.update(
 )
 
 
-infer_parts_with_part_models = copy.deepcopy(infer_comp_base_config)
-infer_parts_with_part_models.update(
-    experiment_args=EvalExperimentArgs(
-        model_name_or_path=model_path_part_models,
-        n_eval_epochs=N_EVAL_EPOCHS,
-    ),
-    eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
-        object_names=get_object_names_by_idx(
-            0, len(ALL_PART_OBJECTS), object_list=ALL_PART_OBJECTS
-        ),
-        object_init_sampler=PredefinedObjectInitializer(
-            rotations=test_rotations_all,
-        ),
-        parent_to_child_mapping=PARENT_TO_CHILD_MAPPING,
-    ),
-)
-
-
 infer_comp_lvl1_with_comp_models = copy.deepcopy(infer_comp_base_config)
 infer_comp_lvl1_with_comp_models.update(
     experiment_args=EvalExperimentArgs(
@@ -306,7 +283,6 @@ infer_comp_lvl4_with_comp_models.update(
 
 experiments = CompositionalInferenceExperiments(
     infer_comp_lvl1_with_monolithic_models=infer_comp_lvl1_with_monolithic_models,
-    infer_parts_with_part_models=infer_parts_with_part_models,
     infer_comp_lvl1_with_comp_models=infer_comp_lvl1_with_comp_models,
     infer_comp_lvl1_with_comp_models_and_resampling=infer_comp_lvl1_with_comp_models_and_resampling,
     infer_comp_lvl2_with_comp_models=infer_comp_lvl2_with_comp_models,
