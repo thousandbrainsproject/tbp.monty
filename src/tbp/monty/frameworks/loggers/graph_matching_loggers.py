@@ -406,16 +406,19 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             # Performance of the overall Monty model
             "episode/correct": stats["episode_correct"] or stats["episode_correct_mlh"],
             "episode/no_match": stats["episode_no_match"],
-            "episode/confused": stats["episode_confused"]
-            or stats["episode_confused_mlh"],
+            "episode/confused": (
+                stats["episode_confused"] or stats["episode_confused_mlh"]
+            ),
             "episode/correct_mlh": stats["episode_correct_mlh"],
             "episode/confused_mlh": stats["episode_confused_mlh"],
             "episode/pose_time_out": stats["episode_pose_time_out"],
             "episode/time_out": stats["episode_time_out"],
             "episode/consistent_child_obj": stats["episode_consistent_child_obj"],
-            "episode/consistent_child_or_parent": stats["episode_consistent_child_obj"]
-            or stats["episode_correct"]
-            or stats["episode_correct_mlh"],
+            "episode/consistent_child_or_parent": (
+                stats["episode_consistent_child_obj"]
+                or stats["episode_correct"]
+                or stats["episode_correct_mlh"]
+            ),
             "episode/used_mlh_after_time_out": stats["episode_correct_mlh"]
             or stats["episode_confused_mlh"],
             "episode/rotation_error": (
