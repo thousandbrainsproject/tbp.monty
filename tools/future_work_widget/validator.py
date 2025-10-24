@@ -11,7 +11,8 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING, Any
+from pathlib import Path
+from typing import Any
 
 import nh3
 from pydantic import (
@@ -25,20 +26,17 @@ from pydantic import (
 from pydantic import ValidationError as PydanticValidationError
 from typing_extensions import Annotated
 
-if TYPE_CHECKING:
-    from pathlib import Path
-
 logger = logging.getLogger(__name__)
 
 
-class FieldError(BaseModel):
-    """Represents a validation error for a specific field in a record."""
-
+class ErrorDetail(BaseModel):
     message: str
-    file_path: str
+    file: str
+    line: int
     field: str
-
-    model_config = ConfigDict(extra="forbid")
+    level: str
+    title: str
+    annotation_level: str
 
 
 class FutureWorkRecord(BaseModel):
@@ -99,19 +97,19 @@ class FutureWorkRecord(BaseModel):
         if v is None:
             return None
         if isinstance(v, list):
-            items = v
+            parsed_items = v
         elif isinstance(v, str):
-            items = [item.strip() for item in v.split(",")]
+            parsed_items = [item.strip() for item in v.split(",")]
         else:
             return None
 
         max_items = 10
-        if len(items) > max_items:
+        if len(parsed_items) > max_items:
             raise ValueError(
-                f"Cannot have more than {max_items} items. Got {len(items)} items"
+                f"Cannot have more than {max_items} items. Got {len(parsed_items)} items"
             )
 
-        return items
+        return parsed_items
 
     @field_validator("tags", "skills", mode="after")
     @classmethod
@@ -259,26 +257,30 @@ class RecordValidator:
 
     def validate(
         self, record: dict[str, Any]
-    ) -> tuple[dict[str, Any] | None, list[ValidationError]]:
+    ) -> tuple[dict[str, Any] | None, list[ErrorDetail]]:
         """Validate a record using Pydantic with dynamic validation context.
 
         Args:
             record: The record to validate
 
         Returns:
-            Tuple of (record or None if there are errors, list of validation errors)
+            Tuple of (record or None if there are errors, list of error details)
         """
         if record.get("path1") != "future-work" or "path2" not in record:
             return None, []
 
-        errors: list[ValidationError] = []
+        errors: list[ErrorDetail] = []
 
         if "path" not in record:
             errors.append(
-                ValidationError(
+                ErrorDetail(
                     message="Record is missing required 'path' field",
-                    file_path="unknown",
+                    file="unknown",
+                    line=1,
                     field="path",
+                    level="error",
+                    title="Validation Error in unknown",
+                    annotation_level="failure",
                 )
             )
             return None, errors
@@ -292,18 +294,16 @@ class RecordValidator:
             )
             record_dict = validated_record.model_dump()
         except PydanticValidationError as e:
-            errors.extend(
-                self._convert_pydantic_error_to_validation_errors(e, file_path)
-            )
+            errors.extend(self._convert_pydantic_error_to_error_details(e, file_path))
             return None, errors
 
         self._validate_required_fields(record_dict, file_path, errors)
         return (None if errors else record_dict, errors)
 
-    def _convert_pydantic_error_to_validation_errors(
+    def _convert_pydantic_error_to_error_details(
         self, exc: PydanticValidationError, file_path: str
-    ) -> list[ValidationError]:
-        validation_errors = []
+    ) -> list[ErrorDetail]:
+        error_details = []
         for error in exc.errors():
             field = (
                 ".".join(str(loc) for loc in error["loc"])
@@ -311,28 +311,32 @@ class RecordValidator:
                 else "unknown"
             )
             message = error["msg"]
-            validation_errors.append(
-                ValidationError(
+            error_details.append(
+                ErrorDetail(
                     message=message,
-                    file_path=file_path,
+                    file=file_path,
+                    line=1,
                     field=field,
+                    level="error",
+                    title=f"Validation Error in {Path(file_path).name}",
+                    annotation_level="failure",
                 )
             )
-        return validation_errors
+        return error_details
 
     def _validate_required_fields(
-        self, record: dict[str, Any], file_path: str, errors: list[ValidationError]
+        self, record: dict[str, Any], file_path: str, errors: list[ErrorDetail]
     ) -> None:
         """Validate that all required fields are present and not empty."""
         for field in self.REQUIRED_FIELDS:
             if field not in record:
-                self._add_validation_error(
+                self._add_error_detail(
                     f"Required field '{field}' is missing", file_path, field, errors
                 )
                 continue
 
             if not isinstance(record[field], str):
-                self._add_validation_error(
+                self._add_error_detail(
                     f"Required field '{field}' must be a string, "
                     f"got {type(record[field]).__name__}",
                     file_path,
@@ -342,7 +346,7 @@ class RecordValidator:
                 continue
 
             if not record[field].strip():
-                self._add_validation_error(
+                self._add_error_detail(
                     f"Required field '{field}' cannot be empty",
                     file_path,
                     field,
@@ -350,12 +354,20 @@ class RecordValidator:
                 )
                 continue
 
-    def _add_validation_error(
-        self, message: str, file_path: str, field: str, errors: list[ValidationError]
+    def _add_error_detail(
+        self, message: str, file_path: str, field: str, errors: list[ErrorDetail]
     ) -> None:
-        """Add a ValidationError to the errors list."""
+        """Add an error detail to the errors list."""
         errors.append(
-            ValidationError(message=message, file_path=file_path, field=field)
+            ErrorDetail(
+                message=message,
+                file=file_path,
+                line=1,
+                field=field,
+                level="error",
+                title=f"Validation Error in {Path(file_path).name}",
+                annotation_level="failure",
+            )
         )
 
     def _load_validation_files(self, docs_snippets_dir: Path) -> None:
@@ -375,15 +387,15 @@ class RecordValidator:
             with open(file_path, encoding="utf-8") as f:
                 content = f.read().strip()
 
-            simple_values = []
+            parsed_values = []
             for raw_item in content.split("`"):
                 clean_item = nh3.clean(raw_item).strip()
                 if clean_item:
-                    simple_values.append(clean_item)
+                    parsed_values.append(clean_item)
 
-            if simple_values:
-                self.allowed_values[field_name] = simple_values
+            if parsed_values:
+                self.allowed_values[field_name] = parsed_values
                 logger.debug(
-                    f"Loaded {len(simple_values)} allowed values for "
+                    f"Loaded {len(parsed_values)} allowed values for "
                     f"'{field_name}' from {file_path.name}"
                 )

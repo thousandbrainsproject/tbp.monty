@@ -10,21 +10,14 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
 
-from .validator import RecordValidator
+from tools.future_work_widget.validator import ErrorDetail, RecordValidator
 
-
-class ErrorDetail(BaseModel):
-    message: str
-    file: str
-    line: int
-    field: str
-    level: str
-    title: str
-    annotation_level: str
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class BuildResult(BaseModel):
@@ -51,9 +44,9 @@ def build(
         BuildResult with validation/build status and details
     """
     try:
-        validation_error = _validate_params(index_file, output_dir, docs_snippets_dir)
-        if validation_error is not None:
-            return validation_error
+        build_result = _validate_params(index_file, output_dir, docs_snippets_dir)
+        if build_result is not None:
+            return build_result
 
         with open(index_file, encoding="utf-8") as f:
             data = json.load(f)
@@ -69,8 +62,8 @@ def build(
         errors = []
 
         for item in data:
-            validated_item, item_errors = validator.validate(item)
-            errors.extend(item_errors)
+            validated_item, validation_errors = validator.validate(item)
+            errors.extend(validation_errors)
             if validated_item is not None:
                 future_work_items.append(validated_item)
 
@@ -79,18 +72,7 @@ def build(
                 success=False,
                 processed_items=len(future_work_items),
                 total_items=len(data),
-                errors=[
-                    ErrorDetail(
-                        message=error.message,
-                        file=error.file_path,
-                        line=1,
-                        field=error.field,
-                        level="error",
-                        title=f"Validation Error in {Path(error.file_path).name}",
-                        annotation_level="failure",
-                    )
-                    for error in errors
-                ],
+                errors=errors,
                 error_message=f"Validation failed with {len(errors)} error(s)",
             )
 

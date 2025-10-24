@@ -15,7 +15,7 @@ import logging
 import sys
 from pathlib import Path
 
-from .build import build
+from tools.future_work_widget.build import build
 
 logger = logging.getLogger(__name__)
 
