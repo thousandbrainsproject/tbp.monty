@@ -67,21 +67,12 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         objects.
         """
         self.pre_episode()
-        # set is_seeking_match False and goes in exploratory mode
-        self.model.step_type = "exploratory_step"
-        # Pass target info to model
-        target = self.dataloader.primary_target
-        self.model.detected_object = self.model.primary_target["object"]
-        for lm in self.model.learning_modules:
-            lm.detected_object = target["object"]
-            lm.buffer.stats["possible_matches"] = [target["object"]]
-            lm.buffer.stats["detected_location_on_model"] = (
-                self.first_epoch_object_location[target["object"]]
-            )
-            lm.buffer.stats["detected_location_rel_body"] = np.array(target["position"])
-            lm.buffer.stats["detected_rotation"] = target["euler_rotation"]
-            lm.detected_rotation_r = Rotation.from_quat(target["quat_rotation"]).inv()
-            lm.buffer.stats["detected_scale"] = target["scale"]
+        # Save compute if we are providing labels to all models, so don't need to
+        # perform matching parts of LM updates (default is matching_step)
+        all_lm_ids = [lm.learning_module_id for lm in self.model.learning_modules]
+        if set(self.supervised_lm_ids) == set(all_lm_ids):
+            self.model.switch_to_exploratory_step()
+
         # Collect data about the object (exploratory steps)
         num_steps = 0
         for observation in self.dataloader:
@@ -104,17 +95,49 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
             # TODO: should we use model.total_steps here?
             if self.model.episode_steps >= self.max_total_steps:
                 break
+
+        # Pass target info to model --> will overwrite (where specified)
+        # with the ground truth labels just before models are updated in memory.
+        target = self.dataloader.primary_target
+        self.model.detected_object = self.model.primary_target["object"]
+        for lm in self.model.learning_modules:
+            if lm.learning_module_id in self.supervised_lm_ids:
+                lm.detected_object = target["object"]
+                lm.buffer.stats["possible_matches"] = [target["object"]]
+                lm.buffer.stats["detected_location_on_model"] = (
+                    self.first_epoch_object_location[target["object"]]
+                )
+                lm.buffer.stats["detected_location_rel_body"] = np.array(
+                    target["position"]
+                )
+                lm.buffer.stats["detected_rotation"] = target["euler_rotation"]
+                lm.detected_rotation_r = Rotation.from_quat(
+                    target["quat_rotation"]
+                ).inv()
+                lm.buffer.stats["detected_scale"] = target["scale"]
+            else:
+                # wipe LMs hypotheses so we don't update those models
+                lm.detected_object = None
+                lm.detected_pose = None
+                lm.detected_rotation_r = None
+                lm.buffer.stats["detected_location_on_model"] = None
+                lm.buffer.stats["detected_location_rel_body"] = None
+                lm.buffer.stats["detected_rotation"] = None
+                lm.buffer.stats["detected_scale"] = None
+
         if len(self.model.learning_modules) > 1:
             for i, lm in enumerate(self.model.learning_modules):
                 if i == 0:
                     first_pos = self.sensor_pos[0]
                 else:
                     lm_offset = self.sensor_pos[i] - first_pos
-
-                    lm.buffer.stats["detected_location_rel_body"] += lm_offset
-                    # Rotate offset into model RF
-                    lm_offset_model_rf = lm.detected_rotation_r.apply(lm_offset)
-                    lm.buffer.stats["detected_location_on_model"] += lm_offset_model_rf
+                    if lm.detected_object:
+                        lm.buffer.stats["detected_location_rel_body"] += lm_offset
+                        # Rotate offset into model RF
+                        lm_offset_model_rf = lm.detected_rotation_r.apply(lm_offset)
+                        lm.buffer.stats["detected_location_on_model"] += (
+                            lm_offset_model_rf
+                        )
 
         # Update the model in memory
         self.post_episode(num_steps)
@@ -145,9 +168,6 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
 
         self.train_epochs += 1
         self.train_dataloader.post_epoch()
-
-    def pre_epoch(self):
-        super().pre_epoch()
 
     def train(self):
         """Save state_dict at the end of training."""

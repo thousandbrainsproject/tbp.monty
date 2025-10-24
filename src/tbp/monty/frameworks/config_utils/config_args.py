@@ -127,7 +127,7 @@ class CSVLoggingConfig(LoggingConfig):
             BasicCSVStatsHandler,
         ]
     )
-    wandb_handlers: List = field(default_factory=lambda: [])
+    wandb_handlers: List = field(default_factory=list)
 
 
 @dataclass

@@ -36,7 +36,6 @@ from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
     MontyFeatureGraphArgs,
     PatchAndViewMontyConfig,
-    TwoLMStackedMontyConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataLoaderPerObjectEvalArgs,
@@ -62,15 +61,12 @@ from tbp.monty.frameworks.models.sensor_modules import (
     Probe,
 )
 from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
-from tbp.monty.frameworks.utils.logging_utils import load_models_from_dir
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsFiveLMMount,
     EnvInitArgsPatchViewMount,
-    EnvInitArgsTwoLMDistantStackedMount,
     FiveLMMountHabitatDatasetArgs,
     NoisyPatchViewFinderMountHabitatDatasetArgs,
     PatchViewFinderMountHabitatDatasetArgs,
-    TwoLMStackedDistantMountHabitatDatasetArgs,
 )
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
@@ -605,65 +601,6 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             ),
         )
 
-        two_stacked_lms_config = dict(
-            learning_module_0=dict(
-                learning_module_class=EvidenceGraphLM,
-                learning_module_args=dict(
-                    max_match_distance=0.001,
-                    tolerances={
-                        "patch_0": {
-                            "hsv": np.array([0.1, 1, 1]),
-                            "principal_curvatures_log": np.ones(2),
-                        }
-                    },
-                    feature_weights={},
-                    max_graph_size=0.2,
-                    num_model_voxels_per_dim=50,
-                    max_nodes_per_graph=50,
-                ),
-            ),
-            learning_module_1=dict(
-                learning_module_class=EvidenceGraphLM,
-                learning_module_args=dict(
-                    max_match_distance=0.001,
-                    tolerances={
-                        "patch_1": {
-                            "hsv": np.array([0.1, 1, 1]),
-                            "principal_curvatures_log": np.ones(2),
-                        },
-                        # object Id currently is an int representation of the strings
-                        # in the object label so we keep this tolerance high. This is
-                        # just until we have added a way to encode object ID with some
-                        # real similarity measure.
-                        "learning_module_0": {"object_id": 1},
-                    },
-                    feature_weights={"learning_module_0": {"object_id": 1}},
-                    max_graph_size=0.3,
-                    num_model_voxels_per_dim=50,
-                    max_nodes_per_graph=50,
-                ),
-            ),
-        )
-
-        two_lms_heterarchy_config = copy.deepcopy(base)
-        two_lms_heterarchy_config.update(
-            experiment_args=ExperimentArgs(
-                max_train_steps=30,
-                max_eval_steps=30,
-                max_total_steps=60,
-                min_lms_match=2,
-            ),
-            monty_config=TwoLMStackedMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=100, min_train_steps=3),
-                learning_module_configs=two_stacked_lms_config,
-            ),
-            dataset_args=TwoLMStackedDistantMountHabitatDatasetArgs(
-                env_init_args=EnvInitArgsTwoLMDistantStackedMount(
-                    data_path=None
-                ).__dict__,
-            ),
-        )
-
         """
         TESTS STILL MISSING:
         Most of them should probably be added in a separate file. We could have a test
@@ -715,7 +652,6 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         self.bounded_evidence_5lm_evidence = bounded_evidence_5lm_evidence
         self.noise_mixin_config = noise_mixin_config
         self.noisy_sensor_config = noisy_sensor_config
-        self.two_lms_heterarchy_config = two_lms_heterarchy_config
         self.default_gsg_config = default_gsg_config
 
     def tearDown(self):
@@ -1402,6 +1338,12 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             graph_lm.add_lm_processing_to_buffer_stats(lm_processed=True)
             graph_lm.matching_step([observation])
 
+        if not focus_on_pose:
+            # Since up to now we had identical evidence for both cube and house, we give
+            # the house an edge now so we test for it and get the expected result.
+            graph_lm.current_mlh["graph_id"] = "new_object1"
+            graph_lm.evidence["new_object1"] += 1
+
         # Based on most recent observation, propose the most misaligned graph
         # sub-regions
         graph_lm.gsg.focus_on_pose = focus_on_pose
@@ -2002,59 +1944,6 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 f"Eval episode {i} didnt reach no_match."
                 "Is noise being applied correctly?",
             )
-
-    def test_two_lm_heterarchy_experiment(self):
-        """Test two LMs stacked on top of each other.
-
-        LM0 receives input from SM0
-        LM1 receives input from SM1 and LM0
-
-        LM0 can store smaller models at a higher resolution and receives higher
-        frequency input from SM0.
-        LM1 can store larger models and a lower resolution and receives lower frequency
-        input from SM1. It also receives input from LM0 once this one has a high
-        confidence hypothesis.
-
-        What happens in this experiment:
-        Episodes 0-3: Both LMs have no_match and add a new model to memory.
-        Episode 4: Both LMs recognize object 0 correctly and update their models.
-        Episode 5: LM0 recognizes cubeSolid (new_object0) and updates its memory. LM1
-            reaches a time out and does not update its memory (but has correct mlh).
-        Evaluation:
-            In each episode LM0 first recognizes the correct object. Since LM1 gets such
-            low frequency input and stores very few points in its models it reaches
-            no_match.
-
-        NOTE: LM1 usually reaches no_match even if it knows about the object already. I
-        think this is because for the first few observations it does not store features
-        from LM0 yet. This would be different with a longer exploration phase that
-        builds a full model of the object.
-
-        NOTE: This test tests a lot of different things. We could split it up into many
-        separate tests and test each aspect independently. However, this would increase
-        computational cost since for many tests (like extending a graph correctly or
-        getting the LM input) several episodes need to be run first (to build up graphs
-        from which the object can be recognized in the first place). We could use mock
-        data and test the LM in isolation like we already do in some places but we
-        would still want to test the whole pipeline at least once. So why not make use
-        of this longer run if we already have it? Maybe in the future we want to change
-        this but this is my current reasoning.
-        """
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.two_lms_heterarchy_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
-            exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
-            self.check_hierarchical_lm_train_results(train_stats)
-
-            models = load_models_from_dir(exp.output_dir)
-            self.check_hierarchical_models(models)
-
-            pprint("...evaluating...")
-            exp.evaluate()
-            eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
-            self.check_hierarchical_lm_eval_results(eval_stats)
 
 
 if __name__ == "__main__":

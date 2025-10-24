@@ -13,6 +13,8 @@ from dataclasses import fields
 
 from benchmarks.configs.follow_ups.names import NAMES as FOLLOW_UP_NAMES
 from benchmarks.configs.names import (
+    CompositionalInferenceExperiments,
+    CompositionalLearningExperiments,
     MontyWorldExperiments,
     MontyWorldHabitatExperiments,
     MyExperiments,
@@ -76,6 +78,12 @@ def select_config(experiment: str) -> dict:
     pretraining_experiment_names = [
         field.name for field in fields(PretrainingExperiments)
     ]
+    compositional_inference_experiment_names = [
+        field.name for field in fields(CompositionalInferenceExperiments)
+    ]
+    compositional_learning_experiment_names = [
+        field.name for field in fields(CompositionalLearningExperiments)
+    ]
     ycb_experiment_names = [field.name for field in fields(YcbExperiments)]
     unsupervised_inference_experiment_names = [
         field.name for field in fields(UnsupervisedInferenceExperiments)
@@ -96,6 +104,18 @@ def select_config(experiment: str) -> dict:
         from benchmarks.configs.pretraining_experiments import CONFIGS as PRETRAININGS
 
         return PRETRAININGS
+    elif experiment in compositional_inference_experiment_names:
+        from benchmarks.configs.infer_compositional_objects import (
+            CONFIGS as COMPOSITIONAL_INFERENCE,
+        )
+
+        return COMPOSITIONAL_INFERENCE
+    elif experiment in compositional_learning_experiment_names:
+        from benchmarks.configs.learn_compositional_objects import (
+            CONFIGS as COMPOSITIONAL_LEARNING,
+        )
+
+        return COMPOSITIONAL_LEARNING
     elif experiment in ycb_experiment_names:
         from benchmarks.configs.ycb_experiments import CONFIGS as YCB
 
@@ -115,3 +135,4 @@ def select_config(experiment: str) -> dict:
         from benchmarks.configs.follow_ups import CONFIGS as FOLLOW_UP_EXPERIMENTS
 
         return FOLLOW_UP_EXPERIMENTS
+    return None

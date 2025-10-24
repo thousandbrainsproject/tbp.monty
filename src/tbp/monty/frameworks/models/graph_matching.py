@@ -585,7 +585,7 @@ class GraphLM(LearningModule):
                 the base modules if more specialized versions will be initialized in
                 child LMs. Defaults to True.
         """
-        super(GraphLM, self).__init__()
+        super().__init__()
         self.buffer = FeatureAtLocationBuffer()
         self.buffer.reset()
         self.learning_module_id = "LM_0"

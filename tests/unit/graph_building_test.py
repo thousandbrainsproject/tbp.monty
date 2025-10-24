@@ -36,6 +36,7 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
     PredefinedObjectInitializer,
+    SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
@@ -61,8 +62,7 @@ class GraphLearningTest(unittest.TestCase):
         self.habitat_learned_rotations = [[0.0, 0.0, 0.0], [0.0, 45.0, 0.0]]
         self.supervised_pre_training_in_habitat = dict(
             experiment_class=MontySupervisedObjectPretrainingExperiment,
-            experiment_args=ExperimentArgs(
-                do_eval=False,
+            experiment_args=SupervisedPretrainingExperimentArgs(
                 n_train_epochs=len(self.habitat_learned_rotations),
             ),
             logging_config=PretrainLoggingConfig(output_dir=self.habitat_save_path),

@@ -191,7 +191,7 @@ class HabitatSim(HabitatActuator):
         for agent in self._agents:
             agent.initialize(self)
 
-    def initialize_agent(self, agent_id, agent_state):
+    def initialize_agent(self, agent_id, agent_state) -> None:
         """Update agent runtime state.
 
         Usually called first thing to update agent initial pose.
@@ -203,7 +203,7 @@ class HabitatSim(HabitatActuator):
         agent_index = self._agent_id_to_index[agent_id]
         self._sim.initialize_agent(agent_index, agent_state)
 
-    def remove_all_objects(self):
+    def remove_all_objects(self) -> None:
         """Remove all objects from simulated environment."""
         rigid_mgr = self._sim.get_rigid_object_manager()
         rigid_mgr.remove_all_objects()
@@ -629,7 +629,7 @@ class HabitatSim(HabitatActuator):
         obs = self.process_observations(obs)
         return obs
 
-    def close(self):
+    def close(self) -> None:
         """Close simulator and release resources."""
         sim = getattr(self, "_sim", None)
         if sim is not None:

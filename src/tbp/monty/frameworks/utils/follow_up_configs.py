@@ -105,7 +105,7 @@ def create_eval_episode_config(
     object_params_file = os.path.join(
         output_dir, "reproduce_episode_data", f"eval_episode_{episode}_target.txt"
     )
-    with open(object_params_file, "r") as f:
+    with open(object_params_file) as f:
         target_data = json.load(f)
 
     new_config["eval_dataloader_args"]["object_names"] = [
@@ -212,7 +212,7 @@ def create_eval_config_multiple_episodes(
         object_params_file = os.path.join(
             output_dir, "reproduce_episode_data", f"eval_episode_{episode}_target.txt"
         )
-        with open(object_params_file, "r") as f:
+        with open(object_params_file) as f:
             target_data = json.load(f)
 
         # Update accumulators

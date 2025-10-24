@@ -97,7 +97,7 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def remove_all_objects(self):
+    def remove_all_objects(self) -> None:
         """Remove all objects from the environment.
 
         TODO: This remove_all_objects interface is elevated from
@@ -115,7 +115,7 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def close(self):
+    def close(self) -> None:
         """Close the environmnt releasing all resources.
 
         Any call to any other environment method may raise an exception

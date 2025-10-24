@@ -33,9 +33,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
-    ExperimentArgs,
     PredefinedObjectInitializer,
     get_env_dataloader_per_object_by_idx,
+    SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
     make_naive_scan_policy_config,
@@ -44,6 +44,7 @@ from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
     MontySupervisedObjectPretrainingExperiment,
 )
+from tbp.monty.frameworks.models.motor_policies import NaiveScanPolicy
 from tbp.monty.simulators.habitat.configs import (
     FiveLMMountHabitatDatasetArgs,
 )
@@ -64,8 +65,7 @@ dist_agent_5lm_2obj_train = dict(
     # The MontySupervisedObjectPretrainingExperiment class will provide the model
     # with object and pose labels for supervised pretraining.
     experiment_class=MontySupervisedObjectPretrainingExperiment,
-    experiment_args=ExperimentArgs(
-        do_eval=False,
+    experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=len(train_rotations),
     ),
     # Specify logging config.
@@ -159,9 +159,11 @@ To follow along, open the `benchmarks/configs/my_experiments.py` file and paste 
 ```python
 import copy
 import os
+from dataclasses import asdict
 
 import numpy as np
 
+from benchmarks.configs.names import MyExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     EvalLoggingConfig,
     FiveLMMontyConfig,
@@ -231,8 +233,8 @@ evidence_lm_config = dict(
                 "hsv": np.array([1, 0.5, 0.5]),
             }
         },
-        # Use this to update all hypotheses > x_percent_threshold (faster)
-        evidence_threshold_config="x_percent_threshold",
+        # Use this to update all hypotheses > 80% of the max hypothesis evidence
+        evidence_threshold_config="80%",
         x_percent_threshold=20,
         gsg_class=EvidenceGoalStateGenerator,
         gsg_args=dict(

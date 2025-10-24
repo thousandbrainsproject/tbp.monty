@@ -172,7 +172,7 @@ class TactoSensorSpec:
 
     @classmethod
     def from_yaml(cls, yaml_file):
-        with open(yaml_file, "r") as f:
+        with open(yaml_file) as f:
             config = yaml.safe_load(f)["sensor"]
         return cls(**config)
 

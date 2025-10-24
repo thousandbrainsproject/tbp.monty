@@ -11,7 +11,17 @@
 import os
 from dataclasses import dataclass, field
 from numbers import Number
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -49,6 +59,7 @@ class ExperimentArgs:
     model_name_or_path: str = ""
     min_lms_match: int = 1
     seed: int = 42
+    supervised_lm_ids: Union[List[str], Literal["all"]] = field(default_factory=list)
 
 
 @dataclass
@@ -67,6 +78,12 @@ class EvalExperimentArgs(ExperimentArgs):
     do_train: bool = False
     n_eval_epochs: int = 1
     python_log_level: str = "DEBUG"
+
+
+@dataclass
+class SupervisedPretrainingExperimentArgs(ExperimentArgs):
+    do_eval: bool = False
+    supervised_lm_ids: Union[List[str], Literal["all"]] = "all"
 
 
 # Data-set containing RGBD images of real-world objects taken with a mobile device
@@ -112,7 +129,7 @@ class EnvInitArgsMontyWorldMultiObjectScenes:
 @dataclass
 class OmniglotDatasetArgs:
     env_init_func: Callable = field(default=OmniglotEnvironment)
-    env_init_args: Dict = field(default_factory=lambda: {})
+    env_init_args: Dict = field(default_factory=dict)
     transform: Union[Callable, list, None] = None
 
     def __post_init__(self):
@@ -143,7 +160,7 @@ class WorldImageDatasetArgs:
 @dataclass
 class WorldImageFromStreamDatasetArgs:
     env_init_func: Callable = field(default=SaccadeOnImageFromStreamEnvironment)
-    env_init_args: Dict = field(default_factory=lambda: {})
+    env_init_args: Dict = field(default_factory=dict)
     transform: Union[Callable, list, None] = None
 
     def __post_init__(self):
@@ -309,6 +326,7 @@ class RandomRotationObjectInitializer(DefaultObjectInitializer):
 class EnvironmentDataloaderPerObjectArgs:
     object_names: List
     object_init_sampler: Callable
+    parent_to_child_mapping: Optional[Dict[str, List[str]]] = None
 
 
 @dataclass
