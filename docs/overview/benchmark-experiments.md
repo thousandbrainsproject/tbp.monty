@@ -151,11 +151,18 @@ Note: To obtain these results, pretraining was run without parallelization acros
 >
 > | Dataset | Archive Format | Download Link |
 > | --- | --- | --- |
-> | compositional_objects | tgz | [compositional_objects.tgz]([s3://tbp-data-public-5e789bd48e75350c/tbp.monty/compositional_objects.tgz](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.tgz)) |
+> | compositional_objects | tgz | [compositional_objects.tgz]((https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.tgz)) |
 > | compositional_objects | zip | [compositional_objects.zip](https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.zip) |
 > 
 > Unpack the archive in the `~/tbp/data/` folder. For example:
-> 
+>
+> ```plaintext tgz
+> mkdir -p ~/tbp/data/
+>
+> cd ~/tbp/data/
+>
+> curl -L https://tbp-data-public-5e789bd48e75350c.s3.us-east-2.amazonaws.com/tbp.monty/compositional_objects.tgz | tar -xzf -
+> ```
 > ```plaintext zip
 > mkdir -p ~/tbp/data/
 > 
