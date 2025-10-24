@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -18,12 +19,17 @@ from tbp.monty.frameworks.models.salience.on_object_observation import (
 )
 from tbp.monty.frameworks.models.salience.return_inhibitor import ReturnInhibitor
 from tbp.monty.frameworks.models.salience.strategies import (
-    RGBADepthObservation,
     SalienceStrategy,
     UniformSalienceStrategy,
 )
 from tbp.monty.frameworks.models.sensor_modules import SnapshotTelemetry
 from tbp.monty.frameworks.models.states import GoalState, State
+
+
+@dataclass
+class RGBADepthObservation:
+    rgba: np.ndarray
+    depth: np.ndarray
 
 
 class HabitatSalienceSM(SensorModule):

@@ -20,7 +20,7 @@ from tbp.monty.frameworks.models.salience.on_object_observation import (
     OnObjectObservation,
 )
 from tbp.monty.frameworks.models.salience.sensor_module import HabitatSalienceSM
-from tbp.monty.frameworks.models.salience.strategies import RGBADepthObservation
+from tbp.monty.frameworks.models.salience.sensor_module import RGBADepthObservation
 from tbp.monty.frameworks.models.states import GoalState
 
 

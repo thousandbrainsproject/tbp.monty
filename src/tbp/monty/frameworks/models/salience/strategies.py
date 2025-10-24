@@ -8,19 +8,12 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Protocol
 
 import numpy as np
 
 
 class SalienceInput(Protocol):
-    rgba: np.ndarray
-    depth: np.ndarray
-
-
-@dataclass
-class RGBADepthObservation:
     rgba: np.ndarray
     depth: np.ndarray
 
