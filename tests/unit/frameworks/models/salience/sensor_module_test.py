@@ -66,33 +66,41 @@ class HabitatSalienceSMTest(unittest.TestCase):
         else:
             self.sensor_module._snapshot_telemetry.raw_observation.assert_not_called()  # type: ignore[attr-defined]
 
-    def test_step_calls_salience_strategy(
-        self,
-        on_object_observation: MagicMock,
-    ) -> None:
-        data: dict[str, Any] = {
-            "rgba": np.zeros((64, 64, 4)),
-            "depth": np.zeros((64, 64)),
-        }
-        self.sensor_module.step(data)
-        self.sensor_module._salience_strategy.assert_called_once_with(  # type: ignore[attr-defined]
-            RGBADepthObservation(rgba=data["rgba"], depth=data["depth"])
-        )
+    def test_step_returns_no_percept(self, on_object_observation: MagicMock) -> None:
+        self.assertIsNone(self.sensor_module.step(MagicMock()))
 
     def test_step_proposes_goals_properly(
         self, on_object_observation: MagicMock
     ) -> None:
+        self.sensor_module._salience_strategy.return_value = sentinel.salience_map  # type: ignore[attr-defined]
         locations = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
         on_object_observation.return_value = OnObjectObservation(
-            center_location=None,
+            center_location=sentinel.center_location,
             locations=locations,
-            salience=np.zeros(locations.shape[0]),
+            salience=sentinel.salience_map,
         )
+        self.sensor_module._return_inhibitor.return_value = sentinel.ior_weights  # type: ignore[attr-defined]
         salience = 0.1 * np.array([1, 2, 3])
         self.sensor_module._weight_salience = MagicMock(return_value=salience)  # type: ignore[method-assign]
-        data = MagicMock()
+        data: dict[str, Any] = {
+            "rgba": np.zeros((64, 64, 4)),
+            "depth": np.zeros((64, 64)),
+        }
+
         self.sensor_module.step(data)
         goals = self.sensor_module.propose_goal_states()
+
+        self.sensor_module._salience_strategy.assert_called_once_with(  # type: ignore[attr-defined]
+            RGBADepthObservation(rgba=data["rgba"], depth=data["depth"])
+        )
+        on_object_observation.assert_called_once_with(data, sentinel.salience_map)
+        self.sensor_module._return_inhibitor.assert_called_once_with(  # type: ignore[attr-defined]
+            sentinel.center_location, locations
+        )
+        self.sensor_module._weight_salience.assert_called_once_with(
+            sentinel.salience_map, sentinel.ior_weights
+        )
+
         self.assertEqual(len(goals), locations.shape[0])
         for i, g in enumerate(goals):
             expected_goal = GoalState(
