@@ -47,7 +47,7 @@ from tbp.monty.frameworks.experiments import (
 )
 from tbp.monty.frameworks.models.motor_policies import NaiveScanPolicy
 from tbp.monty.simulators.habitat.configs import (
-    FiveLMMountHabitatEnvironmentArgs,
+    FiveLMMountHabitatEnvInterfaceConfig,
 )
 
 # Specify directory where an output directory will be created.
@@ -86,7 +86,7 @@ dist_agent_5lm_2obj_train = dict(
         ),
     ),
     # Set up the environment and agent.
-    env_interface_config=FiveLMMountHabitatEnvironmentArgs(),
+    env_interface_config=FiveLMMountHabitatEnvInterfaceConfig(),
     # Set up the training environment interface.
     train_env_interface_class=ED.InformedEnvironmentInterface,
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
@@ -137,7 +137,7 @@ If you've read the previous tutorials, much of this should look familiar. As in 
 
 We have also specified that we want to use a `MotorSystemConfigNaiveScanSpiral` for the motor system. This is a *learning-focused* motor policy that directs the agent to look across the object surface in a spiraling motion. That way, we can ensure efficient coverage of the entire object (of what is visible from the current perspective) during learning.
 
-Finally, we have also set the `env_interface_config` to `FiveLMMountHabitatEnvironmentArgs`. This specifies that we have five `HabitatSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see the `FiveLMMountConfig` in `tbp/monty/frameworks/config_utils/make_dataset_configs.py`.
+Finally, we have also set the `env_interface_config` to `FiveLMMountHabitatEnvInterfaceConfig`. This specifies that we have five `HabitatSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see the `FiveLMMountConfig` in `tbp/monty/frameworks/config_utils/make_dataset_configs.py`.
 
 Before running this experiment, you will need to declare your experiment name as part of the `MyExperiments` dataclass in the `benchmarks/configs/names.py` file:
 
@@ -192,7 +192,7 @@ from tbp.monty.frameworks.models.goal_state_generation import (
     EvidenceGoalStateGenerator,
 )
 from tbp.monty.simulators.habitat.configs import (
-    FiveLMMountHabitatEnvironmentArgs,
+    FiveLMMountHabitatEnvInterfaceConfig,
 )
 
 """
@@ -292,7 +292,7 @@ dist_agent_5lm_2obj_eval = dict(
         motor_system_config=MotorSystemConfigInformedGoalStateDriven(),
     ),
     # Set up the environment and agent.
-    env_interface_config=FiveLMMountHabitatEnvironmentArgs(),
+    env_interface_config=FiveLMMountHabitatEnvInterfaceConfig(),
     # Set up the training environment interface. Unused, but must be included.
     train_env_interface_class=ED.InformedEnvironmentInterface,
     train_env_interface_args=get_env_interface_per_object_by_idx(start=0, stop=1),

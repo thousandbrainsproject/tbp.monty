@@ -38,7 +38,7 @@ from tbp.monty.frameworks.environments.embodied_data import (
 from tbp.monty.frameworks.experiments import MontyExperiment, ProfileExperimentMixin
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsSinglePTZ,
-    SinglePTZHabitatEnvironmentArgs,
+    SinglePTZHabitatEnvInterfaceConfig,
 )
 from tests.unit.frameworks.config_utils.fakes.config_args import (
     FakeSingleCameraMontyConfig,
@@ -89,7 +89,7 @@ class ProfileExperimentMixinTest(TestCase):
                 output_dir=self.output_dir, python_log_level="DEBUG"
             ),
             monty_config=FakeSingleCameraMontyConfig(),
-            env_interface_config=SinglePTZHabitatEnvironmentArgs(
+            env_interface_config=SinglePTZHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsSinglePTZ(data_path=None).__dict__
             ),
             train_env_interface_class=EnvironmentInterfacePerObject,

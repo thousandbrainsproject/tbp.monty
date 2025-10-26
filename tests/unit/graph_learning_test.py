@@ -68,9 +68,9 @@ from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsFiveLMMount,
     EnvInitArgsPatchViewMount,
     EnvInitArgsSurfaceViewMount,
-    FiveLMMountHabitatEnvironmentArgs,
-    PatchViewFinderMountHabitatEnvironmentArgs,
-    SurfaceViewFinderMountHabitatEnvironmentArgs,
+    FiveLMMountHabitatEnvInterfaceConfig,
+    PatchViewFinderMountHabitatEnvInterfaceConfig,
+    SurfaceViewFinderMountHabitatEnvInterfaceConfig,
 )
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
@@ -174,7 +174,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
-            env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_env_interface_class=ED.InformedEnvironmentInterface,
@@ -194,7 +194,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             monty_config=SurfaceAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20),
             ),
-            env_interface_config=SurfaceViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=SurfaceViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
             ),
         )
@@ -519,7 +519,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                     learning_module_4=multi_ppf_displacement_lm_config,
                 ),
             ),
-            env_interface_config=FiveLMMountHabitatEnvironmentArgs(
+            env_interface_config=FiveLMMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsFiveLMMount(data_path=None).__dict__,
             ),
         )
@@ -578,7 +578,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                     learning_module_4=lm4_config,
                 ),
             ),
-            env_interface_config=FiveLMMountHabitatEnvironmentArgs(
+            env_interface_config=FiveLMMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsFiveLMMount(data_path=None).__dict__,
             ),
         )

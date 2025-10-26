@@ -48,7 +48,7 @@ from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphL
 from tbp.monty.frameworks.run_parallel import main as run_parallel
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsPatchViewMount,
-    PatchViewFinderMountHabitatEnvironmentArgs,
+    PatchViewFinderMountHabitatEnvInterfaceConfig,
 )
 from tests.unit.graph_learning_test import MotorSystemConfigFixed
 
@@ -77,7 +77,7 @@ class RunParallelTest(unittest.TestCase):
                     )
                 ),
             ),
-            env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_env_interface_class=ED.InformedEnvironmentInterface,

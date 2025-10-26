@@ -910,7 +910,7 @@ def make_multi_sensor_mount_config(
     """Generate a multi-sensor mount configuration.
 
     Creates a multi-sensor, single-agent mount config. Its primary use is in generating
-    a `MultiLMMountHabitatEnvironmentArgs` config. Defaults are reasonable and reflect
+    a `MultiLMMountHabitatEnvInterfaceConfig` config. Defaults are reasonable and reflect
     current common practices.
 
     Note:

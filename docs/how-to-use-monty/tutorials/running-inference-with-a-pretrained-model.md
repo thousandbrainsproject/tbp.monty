@@ -44,7 +44,7 @@ from tbp.monty.frameworks.models.sensor_modules import (
     Probe,
 )
 from tbp.monty.simulators.habitat.configs import (
-    SurfaceViewFinderMountHabitatEnvironmentArgs,
+    SurfaceViewFinderMountHabitatEnvInterfaceConfig,
 )
 
 """
@@ -214,7 +214,7 @@ surf_agent_2obj_eval = dict(
         motor_system_config=MotorSystemConfigCurInformedSurfaceGoalStateDriven(),
     ),
     # Set up environment/data
-    env_interface_config=SurfaceViewFinderMountHabitatEnvironmentArgs(),
+    env_interface_config=SurfaceViewFinderMountHabitatEnvInterfaceConfig(),
     eval_env_interface_class=ED.InformedEnvironmentInterface,
     eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=object_names,

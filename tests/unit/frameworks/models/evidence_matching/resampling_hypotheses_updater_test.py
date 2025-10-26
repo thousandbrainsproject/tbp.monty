@@ -48,7 +48,7 @@ from tbp.monty.frameworks.utils.evidence_matching import (
 )
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsPatchViewMount,
-    PatchViewFinderMountHabitatEnvironmentArgs,
+    PatchViewFinderMountHabitatEnvInterfaceConfig,
 )
 
 
@@ -94,7 +94,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
                 monty_args=MontyFeatureGraphArgs(num_exploratory_steps=20),
                 learning_module_configs=default_evidence_lm_config,
             ),
-            env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_env_interface_class=ED.InformedEnvironmentInterface,
