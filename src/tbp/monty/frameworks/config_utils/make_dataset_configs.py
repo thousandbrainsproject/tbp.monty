@@ -771,7 +771,7 @@ class PatchAndViewFinderMultiObjectMountConfig(PatchAndViewFinderMountConfig):
 
 
 """
-Utilities for generating multi-LM environment args.
+Utilities for generating multi-LM environment interface args.
 """
 
 
