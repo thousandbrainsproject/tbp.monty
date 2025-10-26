@@ -158,7 +158,7 @@ class EnvironmentInterface:
     def pre_episode(self):
         self.motor_system.pre_episode()
 
-        # Reset the environment state.
+        # Reset the environment interface state.
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
