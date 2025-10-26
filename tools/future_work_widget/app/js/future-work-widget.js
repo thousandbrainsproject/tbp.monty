@@ -218,11 +218,6 @@ const FutureWorkWidget = {
 
   setupSearch(table) {
     const searchInput = document.getElementById('searchInput');
-    if (!searchInput) {
-      console.warn('Search input not found');
-      return;
-    }
-
     const initialSearchTerm = getInitialSearchTerm();
     if (initialSearchTerm) {
       searchInput.value = initialSearchTerm;
