@@ -296,12 +296,6 @@ dist_agent_5lm_2obj_eval = dict(
     # Set up the training environment interface. Unused, but must be included.
     train_env_interface_class=ED.InformedEnvironmentInterface,
     train_env_interface_args=get_env_interface_per_object_by_idx(start=0, stop=1),
-    # Set up the evaluation environment interface.
-    eval_env_interface_class=ED.InformedEnvironmentInterface,
-    eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=object_names,
-        object_init_sampler=PredefinedObjectInitializer(rotations=test_rotations),
-    ),
 )
 ```
 Finally, add your experiment to `MyExperiments` at the bottom of the file:

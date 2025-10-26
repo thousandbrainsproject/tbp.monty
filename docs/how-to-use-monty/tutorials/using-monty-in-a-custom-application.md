@@ -18,9 +18,6 @@ The diagram below shows the base abstract classes in Monty. For general informat
 The Experiment class coordinates the experiment (learning and evaluation). It initializes and controls Monty and the environment and coordinates the interaction between them.
 The `EmbodiedEnvironment` class is wrapped in an `EnvironmentInterface` subclass, which exposes methods to interact with the environment. An experiment can have two environment interfaces associated with it: one for training and one for evaluation.
 
-> ⚠️ Subject to Change in the Near Future
- We are working on cleaning up the data access between the motor system and environment interface (grey arrows).
-
 ![Class structure in tbp.monty. Each class can be customized independently, allowing for easy modification and testing of individual components.](../../figures/how-to-use-monty/monty_class_diagram.png#width=500px)
 
 Information flow in Monty implements a sensorimotor loop. Observations from the environment are first processed by the sensor module. The resulting CMP-compliant output is then used by the learning modules to model and recognize what it is sensing. The learning modules can suggest an action (`GoalState`) to the motor system at each step. The motor system decides which action to execute and translates it into motor commands. The environment interface then uses this action to extract the next observation from the environment. The next observation is sent to the sensor module(s) and the loop repeats.
