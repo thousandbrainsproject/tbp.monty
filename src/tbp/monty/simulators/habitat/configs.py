@@ -159,7 +159,7 @@ class EnvInitArgsPatchViewMountLowRes(EnvInitArgs):
 
 @dataclass
 class SinglePTZHabitatEnvInterfaceConfig:
-    """Define an environment interface config with a single cone & single PTZCameraAgent.
+    """Define environment interface config with a single cone & single PTZCameraAgent.
 
     Use this to make a :class:`EnvironmentInterface` with an env with a single cone and
     a single PTZCameraAgent.
