@@ -199,12 +199,10 @@ const FutureWorkWidget = {
       throw new Error(`HTTP error! status: ${response.status}, body: ${await response.text()}`);
     }
     const data = await response.json();
-    return Array.isArray(data)
-      ? data.slice().sort((a, b) =>
-          (a.path2 || '').localeCompare(b.path2 || '', undefined, { sensitivity: 'base' }) ||
-          (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' })
-        )
-      : data;
+    return data.slice().sort((a, b) =>
+      (a.path2 || '').localeCompare(b.path2 || '', undefined, { sensitivity: 'base' }) ||
+      (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' })
+    );
   },
 
 
