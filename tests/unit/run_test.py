@@ -40,7 +40,7 @@ from tbp.monty.frameworks.experiments import MontyExperiment
 from tbp.monty.frameworks.run import main, run
 from tbp.monty.simulators.habitat import SingleSensorAgent
 from tbp.monty.simulators.habitat.configs import (
-    SinglePTZHabitatEnvironmentArgs,
+    SinglePTZHabitatEnvInterfaceConfig,
 )
 from tests.unit.frameworks.config_utils.fakes.config_args import (
     FakeSingleCameraMontyConfig,
@@ -122,7 +122,7 @@ class MontyRunTest(unittest.TestCase):
                     monty_handlers=[],
                 ),
                 "monty_config": FakeSingleCameraMontyConfig(),
-                "env_interface_config": SinglePTZHabitatEnvironmentArgs(),
+                "env_interface_config": SinglePTZHabitatEnvInterfaceConfig(),
                 "train_env_interface_class": EnvironmentInterface,
                 "train_env_interface_args": {},
                 "eval_env_interface_class": EnvironmentInterface,
@@ -142,7 +142,7 @@ class MontyRunTest(unittest.TestCase):
                     monty_handlers=[],
                 ),
                 "monty_config": FakeSingleCameraMontyConfig(),
-                "env_interface_config": SinglePTZHabitatEnvironmentArgs(),
+                "env_interface_config": SinglePTZHabitatEnvInterfaceConfig(),
                 "train_env_interface_class": EnvironmentInterface,
                 "train_env_interface_args": {},
                 "eval_env_interface_class": EnvironmentInterface,

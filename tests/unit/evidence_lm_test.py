@@ -65,9 +65,11 @@ from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsFiveLMMount,
     EnvInitArgsPatchViewMount,
-    FiveLMMountHabitatEnvironmentArgs,
-    NoisyPatchViewFinderMountHabitatEnvironmentArgs,
-    PatchViewFinderMountHabitatEnvironmentArgs,
+    EnvInitArgsTwoLMDistantStackedMount,
+    FiveLMMountHabitatEnvInterfaceConfig,
+    NoisyPatchViewFinderMountHabitatEnvInterfaceConfig,
+    PatchViewFinderMountHabitatEnvInterfaceConfig,
+    TwoLMStackedDistantMountHabitatEnvInterfaceConfig,
 )
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
@@ -160,7 +162,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
-            env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_env_interface_class=ED.InformedEnvironmentInterface,
@@ -397,7 +399,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 motor_system_config=MotorSystemConfigFixed(),
                 learning_module_configs=default_5lm_lmconfig,
             ),
-            env_interface_config=FiveLMMountHabitatEnvironmentArgs(
+            env_interface_config=FiveLMMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsFiveLMMount(data_path=None).__dict__,
             ),
         )
@@ -597,7 +599,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                     )
                 ),
             ),
-            env_interface_config=NoisyPatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=NoisyPatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
         )

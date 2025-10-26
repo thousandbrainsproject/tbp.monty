@@ -37,7 +37,7 @@ from tbp.monty.frameworks.experiments.object_recognition_experiments import (
 )
 from tbp.monty.frameworks.models.sensor_modules import Probe
 from tbp.monty.simulators.habitat.configs import (
-    PatchViewFinderMontyWorldMountHabitatEnvironmentArgs,
+    PatchViewFinderMontyWorldMountHabitatEnvInterfaceConfig,
 )
 
 test_rotations_one = [[0, 0, 0]]
@@ -77,7 +77,7 @@ randrot_noise_sim_on_scan_monty_world = dict(
         # the iPad images can't move around the object.
         motor_system_config=MotorSystemConfigInformedNoTransStepS20(),
     ),
-    env_interface_config=PatchViewFinderMontyWorldMountHabitatEnvironmentArgs(),
+    env_interface_config=PatchViewFinderMontyWorldMountHabitatEnvInterfaceConfig(),
     eval_env_interface_class=ED.InformedEnvironmentInterface,
     eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(0, 12, object_list=NUMENTA_OBJECTS),

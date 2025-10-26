@@ -40,7 +40,7 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM
 )
 from tbp.monty.simulators.habitat.configs import (
-    SurfaceViewFinderMountHabitatEnvironmentArgs,
+    SurfaceViewFinderMountHabitatEnvInterfaceConfig,
 )
 
 """
@@ -138,7 +138,7 @@ surf_agent_2obj_unsupervised = dict(
         learning_module_configs=learning_module_configs,
     ),
     # Set up the environment and agent.
-    env_interface_config=SurfaceViewFinderMountHabitatEnvironmentArgs(),
+    env_interface_config=SurfaceViewFinderMountHabitatEnvInterfaceConfig(),
     train_env_interface_class=ED.InformedEnvironmentInterface,
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=object_names,

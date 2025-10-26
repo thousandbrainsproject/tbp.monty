@@ -51,7 +51,7 @@ from tbp.monty.frameworks.environments import embodied_data as ED  # noqa: E402
 from tbp.monty.frameworks.experiments import MontyExperiment  # noqa: E402
 from tbp.monty.frameworks.run import run  # noqa: E402
 from tbp.monty.simulators.habitat.configs import (  # noqa: E402
-    SinglePTZHabitatEnvironmentArgs,
+    SinglePTZHabitatEnvInterfaceConfig,
 )
 
 first_experiment = dict(
@@ -69,7 +69,7 @@ first_experiment = dict(
         n_train_epochs=1,
     ),
     monty_config=SingleCameraMontyConfig(),
-    env_interface_config=SinglePTZHabitatEnvironmentArgs(),
+    env_interface_config=SinglePTZHabitatEnvInterfaceConfig(),
     train_env_interface_class=ED.EnvironmentInterfacePerObject,
     train_env_interface_args=get_env_interface_per_object_by_idx(start=0, stop=1),
 )

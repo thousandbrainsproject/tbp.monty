@@ -52,10 +52,10 @@ from tbp.monty.frameworks.models.sensor_modules import (
     Probe,
 )
 from tbp.monty.simulators.habitat.configs import (
-    FiveLMMountHabitatEnvironmentArgs,
-    PatchViewFinderMountHabitatEnvironmentArgs,
-    SurfaceViewFinderMontyWorldMountHabitatEnvironmentArgs,
-    SurfaceViewFinderMountHabitatEnvironmentArgs,
+    FiveLMMountHabitatEnvInterfaceConfig,
+    PatchViewFinderMountHabitatEnvInterfaceConfig,
+    SurfaceViewFinderMontyWorldMountHabitatEnvInterfaceConfig,
+    SurfaceViewFinderMountHabitatEnvInterfaceConfig,
 )
 
 # FOR SUPERVISED PRETRAINING: 14 unique rotations that give good views of the object.
@@ -127,7 +127,7 @@ supervised_pre_training_base = dict(
             )
         ),  # use spiral policy for more even object coverage during learning
     ),
-    env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(),
+    env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(),
     train_env_interface_class=ED.InformedEnvironmentInterface,
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
@@ -198,7 +198,7 @@ only_surf_agent_training_10obj.update(
         ),
         motor_system_config=MotorSystemConfigCurvatureInformedSurface(),
     ),
-    env_interface_config=SurfaceViewFinderMountHabitatEnvironmentArgs(),
+    env_interface_config=SurfaceViewFinderMountHabitatEnvInterfaceConfig(),
     logging_config=PretrainLoggingConfig(
         output_dir=fe_pretrain_dir,
         run_name="surf_agent_1lm_10distinctobj",
@@ -242,7 +242,7 @@ only_surf_agent_training_numenta_lab_obj.update(
         output_dir=fe_pretrain_dir,
         run_name="surf_agent_1lm_numenta_lab_obj",
     ),
-    env_interface_config=SurfaceViewFinderMontyWorldMountHabitatEnvironmentArgs(),
+    env_interface_config=SurfaceViewFinderMontyWorldMountHabitatEnvInterfaceConfig(),
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(0, 12, object_list=NUMENTA_OBJECTS),
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations_all),
@@ -262,7 +262,7 @@ supervised_pre_training_5lms.update(
             )
         ),
     ),
-    env_interface_config=FiveLMMountHabitatEnvironmentArgs(),
+    env_interface_config=FiveLMMountHabitatEnvInterfaceConfig(),
 )
 
 supervised_pre_training_5lms_all_objects = copy.deepcopy(supervised_pre_training_5lms)

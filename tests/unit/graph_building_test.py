@@ -48,7 +48,7 @@ from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
 from tbp.monty.frameworks.utils.graph_matching_utils import get_correct_k_n
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsPatchViewMount,
-    PatchViewFinderMountHabitatEnvironmentArgs,
+    PatchViewFinderMountHabitatEnvInterfaceConfig,
 )
 
 
@@ -78,7 +78,7 @@ class GraphLearningTest(unittest.TestCase):
                     )
                 ),
             ),
-            env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_env_interface_class=ED.InformedEnvironmentInterface,
@@ -114,7 +114,7 @@ class GraphLearningTest(unittest.TestCase):
                     )
                 ),
             ),
-            env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_env_interface_class=ED.InformedEnvironmentInterface,

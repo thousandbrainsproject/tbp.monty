@@ -52,7 +52,7 @@ from tbp.monty.frameworks.models.no_reset_evidence_matching import (
 )
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsPatchViewMount,
-    PatchViewFinderMountHabitatEnvironmentArgs,
+    PatchViewFinderMountHabitatEnvInterfaceConfig,
 )
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
@@ -105,7 +105,7 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 monty_args=MontyFeatureGraphArgs(num_exploratory_steps=20),
                 learning_module_configs=default_evidence_lm_config,
             ),
-            env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_env_interface_class=ED.InformedEnvironmentInterface,
@@ -130,7 +130,7 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 monty_args=MontyFeatureGraphArgs(num_exploratory_steps=20),
                 learning_module_configs=default_unsupervised_evidence_lm_config,
             ),
-            env_interface_config=PatchViewFinderMountHabitatEnvironmentArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_env_interface_class=ED.InformedEnvironmentInterface,
