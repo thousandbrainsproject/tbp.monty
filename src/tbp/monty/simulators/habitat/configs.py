@@ -159,7 +159,7 @@ class EnvInitArgsPatchViewMountLowRes(EnvInitArgs):
 
 @dataclass
 class SinglePTZHabitatEnvInterfaceConfig:
-    """Define an environment with a single cone and a single PTZCameraAgent.
+    """Define an environment interface config with a single cone & single PTZCameraAgent.
 
     Use this to make a :class:`EnvironmentInterface` with an env with a single cone and
     a single PTZCameraAgent.
@@ -174,7 +174,7 @@ class SinglePTZHabitatEnvInterfaceConfig:
 
 @dataclass
 class SimpleMountHabitatEnvInterfaceConfig:
-    """Define an environment with single cone and single mount agent with two cameras.
+    """Define single cone, two camera single mount agent environment interface config.
 
     Use this to make a :class:`EnvironmentInterface` with an env with a single cone and
     a single mount agent with two cameras.
@@ -466,10 +466,10 @@ def make_multi_sensor_habitat_env_interface_config(
     n_sensors: int,
     **mount_kwargs: Mapping,
 ) -> MultiLMMountHabitatEnvInterfaceConfig:
-    """Generate environment configs for a multi-LM experiment config.
+    """Generate environment interface configs for a multi-LM experiment config.
 
-    This function is useful for creating habitat environment args for multi-LM
-    experiments. The default arguments will place sensors on a grid, with
+    This function is useful for creating habitat environment interface configs for
+    multi-LM experiments. The default arguments will place sensors on a grid, with
     sensors spreading out from the center and with 1 cm spacing between sensors,
     64 x 64 resolution, and 10x zoom (except for the view finder which has a zoom of
     1.0). See `make_multi_sensor_mount_config` and `make_sensor_positions_on_grid` for
