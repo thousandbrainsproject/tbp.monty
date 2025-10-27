@@ -156,7 +156,7 @@ supervised_pre_training_flat_objects_wo_logos.update(
             )
         ),  # use spiral policy for more even object coverage during learning
     ),
-    dataset_args=TwoLMStackedDistantMountHabitatEnvInterfaceConfig(
+    env_interface_config=TwoLMStackedDistantMountHabitatEnvInterfaceConfig(
         env_init_args=EnvInitArgsTwoLMDistantStackedMount(
             data_path=os.path.join(os.environ["MONTY_DATA"], "compositional_objects")
         ).__dict__,
