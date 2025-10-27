@@ -218,14 +218,11 @@ const FutureWorkWidget = {
 
   setupSearch(table) {
     const searchInput = document.getElementById('searchInput');
-    const initialSearchTerm = getInitialSearchTerm();
-    if (initialSearchTerm) {
-      searchInput.value = initialSearchTerm;
-    }
+    const clearLink = document.getElementById('clearSearch');
+    const copyUrlLink = document.getElementById('copyUrl');
 
     const performSearch = (searchTerm) => {
       const trimmedTerm = searchTerm.toLowerCase().trim();
-
       if (!trimmedTerm) {
         table.clearFilter();
         return;
@@ -234,29 +231,28 @@ const FutureWorkWidget = {
       table.setFilter((data) => {
         const searchableText = [
           data.title, data.tags, data.skills, data.status,
-          data.contributor, data['estimated-scope'], data['improved-metric'], data['output-type'], data.rfc, data.link, data.path2
+          data.contributor, data['estimated-scope'], data['improved-metric'], 
+          data['output-type'], data.rfc, data.link, data.path2
         ]
           .filter(Boolean)
           .join(' ')
           .toLowerCase();
 
-        return trimmedTerm
-          .split(/\s+/)
-          .every(word => searchableText.includes(word));
+        return trimmedTerm.split(/\s+/).every(word => searchableText.includes(word));
       });
     };
 
+    const initialSearchTerm = getInitialSearchTerm();
     if (initialSearchTerm) {
+      searchInput.value = initialSearchTerm;
       performSearch(initialSearchTerm);
     }
 
     searchInput.addEventListener('input', (e) => {
-      const searchTerm = e.target.value;
-      updateUrlSearchParam(searchTerm);
-      performSearch(searchTerm);
+      updateUrlSearchParam(e.target.value);
+      performSearch(e.target.value);
     });
 
-    const clearLink = document.getElementById('clearSearch');
     if (clearLink) {
       clearLink.addEventListener('click', (e) => {
         e.preventDefault();
@@ -266,46 +262,45 @@ const FutureWorkWidget = {
       });
     }
 
-    const copyUrlLink = document.getElementById('copyUrl');
     if (copyUrlLink) {
       copyUrlLink.addEventListener('click', async (e) => {
         e.preventDefault();
-        try {
-          await navigator.clipboard.writeText(window.location.href);
-          copyUrlLink.textContent = '✅';
-          copyUrlLink.classList.add('success');
-          setTimeout(() => {
-            copyUrlLink.textContent = '📋';
-            copyUrlLink.classList.remove('success');
-          }, 1500);
-        } catch (err) {
-          console.error('Failed to copy URL to clipboard:', err);
-          copyUrlLink.textContent = '❌';
-          setTimeout(() => {
-            copyUrlLink.textContent = '📋';
-          }, 1500);
-        }
+        await this.handleCopyUrl(copyUrlLink);
       });
     }
 
     document.addEventListener('click', (e) => {
-      const searchValue = e.target.dataset.searchValue;
-      if (searchValue) {
-        addToSearch(searchValue);
+      if (e.target.dataset.searchValue) {
+        addToSearch(e.target.dataset.searchValue);
       }
     });
   },
 
 
-  showError(message) {
-    const errorElement = document.createElement('div');
-    errorElement.className = 'error-message';
-    errorElement.textContent = message;
-    errorElement.style.cssText = 'color: red; padding: 20px; text-align: center; font-weight: bold;';
+  async handleCopyUrl(element) {
+    const setTemporaryState = (icon, className = null) => {
+      element.textContent = icon;
+      if (className) element.classList.add(className);
+      setTimeout(() => {
+        element.textContent = '📋';
+        if (className) element.classList.remove(className);
+      }, 1500);
+    };
 
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setTemporaryState('✅', 'success');
+    } catch (err) {
+      console.error('Failed to copy URL to clipboard:', err);
+      setTemporaryState('❌');
+    }
+  },
+
+
+  showError(message) {
     const tableElement = document.getElementById('table');
     if (tableElement) {
-      tableElement.appendChild(errorElement);
+      tableElement.innerHTML = `<div class="error-message" style="color: red; padding: 20px; text-align: center; font-weight: bold;">${escapeHtml(message)}</div>`;
     }
   }
 };
