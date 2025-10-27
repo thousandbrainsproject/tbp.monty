@@ -59,7 +59,7 @@ class TestBuild(unittest.TestCase):
             "path1": "future-work",
             "path2": "test-item",
             "title": "Test item",
-            "content": "Test content",
+            "text": "Test content",
             "estimated-scope": "medium",
             "rfc": "required",
         }
@@ -116,13 +116,13 @@ class TestBuild(unittest.TestCase):
             self._create_future_work_item(
                 path2="voting-improvements",
                 title="Improve voting mechanism",
-                content="Test content for voting",
+                text="Test content for voting",
             ),
             {
                 "path1": "how-monty-works",
                 "path2": "learning-modules",
                 "title": "Learning modules overview",
-                "content": "Test content for learning",
+                "text": "Test content for learning",
             },
         ]
 

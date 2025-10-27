@@ -69,10 +69,6 @@ class FutureWorkRecord(BaseModel):
         str | None,
         Field(default=None, description="Description of the future work item"),
     ]
-    content: Annotated[
-        str | None,
-        Field(default=None, description="Content of the future work item"),
-    ]
     slug: Annotated[
         str | None,
         Field(default=None, description="URL slug for the future work item"),
