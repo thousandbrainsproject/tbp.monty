@@ -64,11 +64,9 @@ from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsFiveLMMount,
     EnvInitArgsPatchViewMount,
-    EnvInitArgsTwoLMDistantStackedMount,
     FiveLMMountHabitatEnvInterfaceConfig,
     NoisyPatchViewFinderMountHabitatEnvInterfaceConfig,
     PatchViewFinderMountHabitatEnvInterfaceConfig,
-    TwoLMStackedDistantMountHabitatEnvInterfaceConfig,
 )
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
