@@ -74,7 +74,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
-            dataset_args=PatchViewFinderMountHabitatEnvInterfaceConfig(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
             train_env_interface_class=ED.InformedEnvironmentInterface,
@@ -141,7 +141,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
                 monty_args=MontyArgs(num_exploratory_steps=100, min_train_steps=3),
                 learning_module_configs=two_stacked_lms_config,
             ),
-            dataset_args=TwoLMStackedDistantMountHabitatEnvInterfaceConfig(
+            env_interface_config=TwoLMStackedDistantMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsTwoLMDistantStackedMount(
                     data_path=None
                 ).__dict__,
@@ -201,7 +201,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
                 monty_args=MontyArgs(num_exploratory_steps=50),
                 learning_module_configs=two_stacked_constrained_lms_config,
             ),
-            dataset_args=TwoLMStackedDistantMountHabitatEnvInterfaceConfig(
+            env_interface_config=TwoLMStackedDistantMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsTwoLMDistantStackedMount(
                     data_path=None,
                 ).__dict__,
