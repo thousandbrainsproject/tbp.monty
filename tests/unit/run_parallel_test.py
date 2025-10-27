@@ -281,8 +281,8 @@ class RunParallelTest(unittest.TestCase):
         # We have to drop these columns because they are not the same in the parallel
         # and serial runs. In particular, 'stepwise_performance' and
         # 'stepwise_target_object' are derived from the mapping between semantic IDs to
-        #  names which depend on the number of objects in the data loader, and data
-        # loaders only have one object in parallel experiments.
+        # names which depend on the number of objects in the environment, and
+        # environments only have one object in parallel experiments.
         for col in ["time", "stepwise_performance", "stepwise_target_object"]:
             scsv.drop(columns=col, inplace=True)
             pcsv.drop(columns=col, inplace=True)

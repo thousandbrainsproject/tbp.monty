@@ -27,7 +27,7 @@ Information flow in Monty implements a sensorimotor loop. Observations from the 
 Additionally, the `EnvironmentInterface` and Environment can implement specific functions to be executed at different points in the experiment, such as resetting the agent position and showing a new object or scene at the beginning of a new episode.
 
 To use Monty in a custom environment, you usually need to customize the `EnvironmentInterface` and `EmbodiedEnvironment` classes. For example, if you look back at the previous tutorials, you will see that for those Habitat experiments, we've been using the `EnvironmentInterfacePerObject` and the `HabitatEnvironment`. The diagram below shows some key elements that need to be defined for these two classes. It's best to start thinking about the environment setup first, as this will force you to think through how to structure your application correctly for Monty to tackle.
-![Key elements to define for a custom environment and data loader](../../figures/how-to-use-monty/defining_env_and_dataloader.png)
+![Key elements to define for a custom environment interface](../../figures/how-to-use-monty/defining_env_and_dataloader.png)
 
 ### EmbodiedEnvironment
 The first thing to figure out is how movement should be defined in your environment. What actions are possible, and how do these actions change the agent's state and observations?

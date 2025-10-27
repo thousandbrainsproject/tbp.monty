@@ -49,7 +49,7 @@ class LivePlotter:
         fragile by passing the necessary information to the live plotter.
 
         Args:
-            observation: The observation from the data loader.
+            observation: The observation from the environment interface.
             model: The model.
 
         Returns:

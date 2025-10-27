@@ -309,11 +309,11 @@ class MontyExperiment:
             eval_epochs=self.eval_epochs,
         )
         # FIXME: 'target' attribute is specific to `EnvironmentInterfacePerObject`
-        if isinstance(self.dataloader, EnvironmentInterfacePerObject):
-            target = self.dataloader.primary_target
+        if isinstance(self.env_interface, EnvironmentInterfacePerObject):
+            target = self.env_interface.primary_target
             if target is not None:
                 target.update(
-                    consistent_child_objects=self.dataloader.consistent_child_objects
+                    consistent_child_objects=self.env_interface.consistent_child_objects
                 )
             args.update(target=target)
         return args
