@@ -13,6 +13,7 @@
 See Also:
     https://github.com/facebookresearch/habitat-sim
 """
+
 from __future__ import annotations
 
 from collections import defaultdict

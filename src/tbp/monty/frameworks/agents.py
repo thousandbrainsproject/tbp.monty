@@ -11,5 +11,3 @@ from typing import NewType
 __all__ = ["AgentID"]
 
 AgentID = NewType("AgentID", str)
-
-
