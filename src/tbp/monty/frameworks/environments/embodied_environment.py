@@ -7,22 +7,41 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import abc
 import collections.abc
-from typing import Any, Dict, Optional, Sequence, Tuple
+from dataclasses import dataclass
+from typing import Any, Dict, NewType, Optional, Sequence, Tuple
 
 from tbp.monty.frameworks.actions.actions import Action
 
 __all__ = [
     "EmbodiedEnvironment",
     "ActionSpace",
+    "EnvObject",
+    "ObjectID",
+    "SemanticID",
     "VectorXYZ",
     "QuaternionWXYZ",
 ]
 
+ObjectID = NewType("ObjectID", int)
+"""Unique identifier for an object in the environment."""
+
+SemanticID = NewType("SemanticID", int)
+"""Unique identifier for an object's semantic class."""
+
 VectorXYZ = Tuple[float, float, float]
 QuaternionWXYZ = Tuple[float, float, float, float]
+
+
+@dataclass
+class EnvObject:
+    """Contains the identifying information of an object created in the environment."""
+
+    object_id: ObjectID
+    semantic_id: SemanticID | None
 
 
 class ActionSpace(collections.abc.Container):
