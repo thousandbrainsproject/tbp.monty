@@ -48,7 +48,7 @@ To try the tool out simply run the following command from the tbp.monty director
 python tools/future_work_widget/run_local.py
 ```
 
-And then point you browser to http://localhost:8080
+And then point your browser to http://localhost:8080
 
 ## Widget Configuration
 
