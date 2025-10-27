@@ -268,7 +268,7 @@ class MontyBase(Monty):
                 voting_data = [votes_per_lm[j] for j in self.lm_to_lm_vote_matrix[i]]
                 self.learning_modules[i].receive_votes(voting_data)
 
-    def _pass_goal_states(self):
+    def _pass_goal_states(self) -> None:
         """Pass goal states between learning modules.
 
         Currently we just aggregate these for later passing to the (single) motor
@@ -284,7 +284,11 @@ class MontyBase(Monty):
         # Currently only use GSG outputs at inference
         if self.step_type == "matching_step":
             for lm in self.learning_modules:
-                self.gsg_outputs.append(lm.propose_goal_state())
+                goal_states = lm.propose_goal_states()
+                self.gsg_outputs.extend(goal_states)
+            for sm in self.sensor_modules:
+                goal_states = sm.propose_goal_states()
+                self.gsg_outputs.extend(goal_states)
 
     def _pass_infos_to_motor_system(self):
         """Pass input observations and goal states to the motor system."""
@@ -327,8 +331,7 @@ class MontyBase(Monty):
         self.step_type = "matching_step"
         for lm in self.learning_modules:
             lm.set_experiment_mode(mode)
-        for sm in self.sensor_modules:
-            sm.set_experiment_mode(mode)
+        # for sm in self.sensor_modules: sm.set_experiment_mode() unused & removed
 
     def pre_episode(self):
         self._is_done = False
@@ -343,9 +346,7 @@ class MontyBase(Monty):
     def post_episode(self):
         for lm in self.learning_modules:
             lm.post_episode()
-
-        for sm in self.sensor_modules:
-            sm.post_episode()
+        # for sm in self.sensor_modules: sm.post_episode() unused & removed
 
     ###
     # Methods for saving and loading

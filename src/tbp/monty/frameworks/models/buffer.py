@@ -7,13 +7,14 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import abc
 import copy
 import json
 import logging
 import time
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import Any, Callable, Dict, Optional, Type
 
 import numpy as np
 import quaternion
@@ -86,6 +87,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             # LMs
             "matching_step_when_output_goal_set": [],
             "goal_state_achieved": [],
+            "mlh_prediction_error": [],
         }
         self.start_time = time.time()
 
@@ -516,7 +518,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             # sure the same index in different feature array corresponds to
             # the same time step and location.
             self.features[input_channel][attr_name] = np.full(
-                (len(self.locations), attr_shape), np.nan
+                (len(self) + 1, attr_shape), np.nan
             )
         else:
             padded_feat = self._fill_old_values_with_nans(
@@ -593,13 +595,13 @@ class FeatureAtLocationBuffer(BaseBuffer):
 class BufferEncoder(json.JSONEncoder):
     """Encoder to turn the buffer into a JSON compliant format."""
 
-    _encoders: Dict[type, Union[Callable, json.JSONEncoder]] = {}
+    _encoders: Dict[type, Callable | json.JSONEncoder] = {}
 
     @classmethod
     def register(
         cls,
         obj_type: type,
-        encoder: Union[Callable, Type[json.JSONEncoder]],
+        encoder: Callable | Type[json.JSONEncoder],
     ) -> None:
         """Register an encoder.
 

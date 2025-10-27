@@ -5,6 +5,10 @@ title: Style Guide
 
 See the [Code Style Guide](./style-guide/code-style-guide.md).
 
+# Typing Guide
+
+See the [Typing Guide](./style-guide/typing-guide.md).
+
 # GitHub Actions
 
 We use GitHub Actions to run our continuous integration workflows.

@@ -15,14 +15,18 @@ Before sending information to the sensor module which extracts features and pose
 # Sensor Modules
 The transformed, **raw input is then sent to the sensor module and turned into the CMP-compliant format**. The universal format that all sensor modules output is **features at pose** in 3D space. Each sensor connects to a sensor module which turns the raw sensory input into this format of features at locations. Each input therefore contains x, y, z coordinates of the feature location relative to the body and three orthonormal vectors indicating its rotation. In sensor modules these pose-defining vectors are defined by the surface normal and principal curvature directions sensed at the center of the patch. In learning modules the pose vectors are defined by the detected object rotation. Additionally, the sensor module returns the sensed pose-independent features at this location (e.g. color, texture, curvature, ...). The sensed **features can be modality-specific** (e.g. color for vision or temperature for touch) while the **pose is modality agnostic**.
 
-| List of all sensor module classes          | Description                                                                                                                                                                                                              |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **SensorModule**                           | Abstract sensor module class.                                                                                                                                                                                            |
-| **DetailedLoggingSM**                      | Extracts pose and features in CMP format from an RGBD patch. Also has the option to save the raw observations for logging.                                                                                               |
-| **HabitatDistantPatchSM**                  | Custom version of previous SM for a habitat camera patch. Keeps track of agent and sensor states. Also checks if observation is on object and should be sent to LM.                                                      |
-| **HabitatSurfacePatchSM**                  | Similar to previous but also sends off object observations to LM since this is needed for the compensation movements.                                                                                                    |
-| **FeatureChangeSM**                        | Version of HabitatDistantPatchSM that only sends an observation to the LM if the sensed features changed significantly. How large this change should be is specified in the delta_thresholds parameter for each feature. |
-| **NoiseMixin**                             | Option to add gaussian noise to processed sensor module output before sending it to the LM. Amount of noise can be specified in noise_params for features and locations individually.                                    |
+| List of all sensor module classes | Description     |
+| --------------------------------- | --------------- |
+| **SensorModule**                  | Abstract sensor module class. |
+| **HabitatSM**                     | Sensor module for HabitatSim. Extracts pose and features in CMP format from an RGBD patch. Keeps track of agent and sensor states. Also checks if observation is on object and should be sent to LM. Can be configured to add feature noise. |
+| **Probe**                   | A probe that can be inserted into Monty in place of a sensor module. It will track raw observations for logging, and can be used by experiments for positioning procedures, visualization, etc. What distinguishes a probe from a sensor module is that it does not process observations and does not emit a Cortical Message. |
+
+## Noise
+
+Each sensor module accepts `noise_params`, which configure the `DefaultMessageNoise` that adds feature and location noise to the created Cortical Message (State) before sending. Features and location noise can be configured individually.
+
+## Feature Change Filtering
+Each sensor module accepts `delta_thresholds`, which configure a `FeatureChangeFilter` that may set the `use_state` state attribute to False if sensed features did not change significantly between subsequent observations. Significance is defined by the `delta_thresholds` parameter for each feature.
 
 ## Transforms vs. Sensor Modules
 For an overview of **which type of data processing belongs where please refer to the following rules:**

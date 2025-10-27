@@ -33,9 +33,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
-    ExperimentArgs,
     PredefinedObjectInitializer,
     get_env_dataloader_per_object_by_idx,
+    SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
     make_naive_scan_policy_config,
@@ -44,6 +44,7 @@ from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
     MontySupervisedObjectPretrainingExperiment,
 )
+from tbp.monty.frameworks.models.motor_policies import NaiveScanPolicy
 from tbp.monty.simulators.habitat.configs import (
     FiveLMMountHabitatDatasetArgs,
 )
@@ -64,8 +65,7 @@ dist_agent_5lm_2obj_train = dict(
     # The MontySupervisedObjectPretrainingExperiment class will provide the model
     # with object and pose labels for supervised pretraining.
     experiment_class=MontySupervisedObjectPretrainingExperiment,
-    experiment_args=ExperimentArgs(
-        do_eval=False,
+    experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=len(train_rotations),
     ),
     # Specify logging config.
@@ -85,7 +85,6 @@ dist_agent_5lm_2obj_train = dict(
         ),
     ),
     # Set up the environment and agent.
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=FiveLMMountHabitatDatasetArgs(),
     # Set up the training dataloader.
     train_dataloader_class=ED.InformedEnvironmentDataLoader,
@@ -106,7 +105,7 @@ experiments = MyExperiments(
 )
 CONFIGS = asdict(experiments)
 ```
-If you've read the previous tutorials, much of this should look familiar. As in our [pretraining](./pretraining-a-model.md) tutorial, we've configured a `MontySupervisedObjectPretrainingExperiment` with a `PretrainLoggingConfig`. However, we are now using a built-in Monty model configuration called `FiveLMMontyConfig` that specifies everything we need to have five `HabitatDistantPatchSM` sensor modules that each connect to exactly one of five `DisplacementGraphLM` learning modules. `FiveLMMontyConfig` also specifies that each learning module connects to every other learning module through lateral voting connections. Note that `GraphLM` learning modules used in previous tutorials would work fine here, but we're going with the default `DisplacementGraphLM` for convenience (this is a graph-based LM that also stores displacements between points, although these are generally not used during inference at present). To see how this is done, we can take a closer look at the `FiveLMMontyConfig` class which contains the following lines:
+If you've read the previous tutorials, much of this should look familiar. As in our [pretraining](./pretraining-a-model.md) tutorial, we've configured a `MontySupervisedObjectPretrainingExperiment` with a `PretrainLoggingConfig`. However, we are now using a built-in Monty model configuration called `FiveLMMontyConfig` that specifies everything we need to have five `HabitatSM` sensor modules that each connect to exactly one of five `DisplacementGraphLM` learning modules. `FiveLMMontyConfig` also specifies that each learning module connects to every other learning module through lateral voting connections. Note that `GraphLM` learning modules used in previous tutorials would work fine here, but we're going with the default `DisplacementGraphLM` for convenience (this is a graph-based LM that also stores displacements between points, although these are generally not used during inference at present). To see how this is done, we can take a closer look at the `FiveLMMontyConfig` class which contains the following lines:
 
 ```python
     sm_to_lm_matrix: List = field(
@@ -137,7 +136,7 @@ If you've read the previous tutorials, much of this should look familiar. As in 
 
 We have also specified that we want to use a `MotorSystemConfigNaiveScanSpiral` for the motor system. This is a *learning-focused* motor policy that directs the agent to look across the object surface in a spiraling motion. That way, we can ensure efficient coverage of the entire object (of what is visible from the current perspective) during learning.
 
-Finally, we have also set the `dataset_args` to `FiveLMMountHabitatDatasetArgs`. This specifies that we have five `HabitatDistantPatchSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see the `FiveLMMountConfig` in `tbp/monty/frameworks/config_utils/make_dataset_configs.py`.
+Finally, we have also set the `dataset_args` to `FiveLMMountHabitatDatasetArgs`. This specifies that we have five `HabitatSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see the `FiveLMMountConfig` in `tbp/monty/frameworks/config_utils/make_dataset_configs.py`.
 
 Before running this experiment, you will need to declare your experiment name as part of the `MyExperiments` dataclass in the `benchmarks/configs/names.py` file:
 
@@ -160,9 +159,11 @@ To follow along, open the `benchmarks/configs/my_experiments.py` file and paste 
 ```python
 import copy
 import os
+from dataclasses import asdict
 
 import numpy as np
 
+from benchmarks.configs.names import MyExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
     EvalLoggingConfig,
     FiveLMMontyConfig,
@@ -232,8 +233,8 @@ evidence_lm_config = dict(
                 "hsv": np.array([1, 0.5, 0.5]),
             }
         },
-        # Use this to update all hypotheses > x_percent_threshold (faster)
-        evidence_threshold_config="x_percent_threshold",
+        # Use this to update all hypotheses > 80% of the max hypothesis evidence
+        evidence_threshold_config="80%",
         x_percent_threshold=20,
         gsg_class=EvidenceGoalStateGenerator,
         gsg_args=dict(
@@ -290,7 +291,6 @@ dist_agent_5lm_2obj_eval = dict(
         motor_system_config=MotorSystemConfigInformedGoalStateDriven(),
     ),
     # Set up the environment and agent.
-    dataset_class=ED.EnvironmentDataset,
     dataset_args=FiveLMMountHabitatDatasetArgs(),
     # Set up the training dataloader. Unused, but must be included.
     train_dataloader_class=ED.InformedEnvironmentDataLoader,

@@ -7,9 +7,11 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
 import dataclasses
 import unittest
-from typing import Any, NamedTuple, Union
+from typing import Any, NamedTuple
 
 from tbp.monty.frameworks.config_utils.config_args import Dataclass
 from tbp.monty.frameworks.utils import dataclass_utils
@@ -51,32 +53,12 @@ class DeepNestedDataclass:
 @dataclasses.dataclass
 class FakeDataclass:
     name: Any = None
-    value: Union[list, tuple, dict, Dataclass] = dataclasses.field(default_factory=list)
+    value: list | tuple | dict | Dataclass = dataclasses.field(default_factory=list)
 
 
 class FakeNamedTuple(NamedTuple):
     name: Any
-    value: Union[list, tuple, dict, Dataclass]
-
-
-def sample_function(field1: str, field2: int):
-    pass
-
-
-def sample_function_with_default(field1: str, field2: int, field3: float = 0.1):
-    pass
-
-
-class SampleClass:
-    def __init__(self, field1: str, field2: int):
-        pass
-
-
-class SampleClass2:
-    """Has partially overlapping args with SampleClass."""
-
-    def __init__(self, field2: int, field3: str):
-        pass
+    value: list | tuple | dict | Dataclass
 
 
 class DataclassSerializationTest(unittest.TestCase):
@@ -188,45 +170,56 @@ class DataclassSerializationTest(unittest.TestCase):
 
 class CreateDataclassArgsTest(unittest.TestCase):
     def test_simple_functions(self):
-        # Test simple function
+        def sample_function(field1: str, field2: int):
+            pass
+
         dc = dataclass_utils.create_dataclass_args("test1", sample_function)
-        # Expected dataclass with 2 fields
-        expected = {
-            "field1": (str, dataclasses.MISSING),
-            "field2": (int, dataclasses.MISSING),
-        }
-        actual = {f.name: (f.type, f.default) for f in dataclasses.fields(dc)}
+
         self.assertTrue(dataclasses.is_dataclass(dc))
         self.assertEqual(dc.__name__, "test1")
+
+        expected = {
+            "field1": ("str", dataclasses.MISSING),
+            "field2": ("int", dataclasses.MISSING),
+        }
+        actual = {f.name: (f.type, f.default) for f in dataclasses.fields(dc)}
         self.assertDictEqual(actual, expected)
 
     def test_simple_functions_with_default(self):
-        # Test simple function with default values
+        def sample_function_with_default(field1: str, field2: int, field3: float = 0.1):
+            pass
+
         dc = dataclass_utils.create_dataclass_args(
             "test2", sample_function_with_default
         )
-        # Expected dataclass with 3 fields and default value on the third
-        expected = {
-            "field1": (str, dataclasses.MISSING),
-            "field2": (int, dataclasses.MISSING),
-            "field3": (float, 0.1),
-        }
-        actual = {f.name: (f.type, f.default) for f in dataclasses.fields(dc)}
+
         self.assertTrue(dataclasses.is_dataclass(dc))
         self.assertEqual(dc.__name__, "test2")
+
+        expected = {
+            "field1": ("str", dataclasses.MISSING),
+            "field2": ("int", dataclasses.MISSING),
+            "field3": (float, 0.1),  # default preserved
+        }
+        actual = {f.name: (f.type, f.default) for f in dataclasses.fields(dc)}
         self.assertDictEqual(actual, expected)
 
     def test_class_method(self):
-        # Test class method
+        class SampleClass:
+            def __init__(self, field1: str, field2: int):
+                pass
+
         dc = dataclass_utils.create_dataclass_args("test3", SampleClass.__init__)
-        # Expected dataclass with 3 fields and default value on the third
-        expected = {
-            "field1": (str, dataclasses.MISSING),
-            "field2": (int, dataclasses.MISSING),
-        }
-        actual = {f.name: (f.type, f.default) for f in dataclasses.fields(dc)}
+
         self.assertTrue(dataclasses.is_dataclass(dc))
         self.assertEqual(dc.__name__, "test3")
+
+        expected = {
+            # self is ignored
+            "field1": ("str", dataclasses.MISSING),
+            "field2": ("int", dataclasses.MISSING),
+        }
+        actual = {f.name: (f.type, f.default) for f in dataclasses.fields(dc)}
         self.assertDictEqual(actual, expected)
 
 
@@ -601,6 +594,12 @@ class IsDataclassInstanceTest(unittest.TestCase):
 
 class GetSubsetArgsTest(unittest.TestCase):
     def test_get_subset_args(self):
+        class SampleClass2:
+            """Has partially overlapping args with SampleClass."""
+
+            def __init__(self, field2: int, field3: str):
+                pass
+
         pooled_dict = dict(field1="a", field2=3, field3="b")
         subset_args = dataclass_utils.get_subset_of_args(
             pooled_dict, SampleClass2.__init__
