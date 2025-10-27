@@ -16,22 +16,23 @@ import sys
 import tempfile
 from pathlib import Path
 
-project_root = Path(__file__).parent.parent.parent
+monty_root = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(monty_root))
+
+from tools.future_work_widget.build import build  # noqa: E402
+from tools.github_readme_sync.index import generate_index  # noqa: E402
+
 logger = logging.getLogger(__name__)
 
 
 def main():
-    sys.path.insert(0, str(project_root))
-    from tools.future_work_widget.build import build
-    from tools.github_readme_sync.index import generate_index
-
     logging.basicConfig(format="%(message)s", level=logging.INFO, stream=sys.stdout)
 
-    os.chdir(project_root)
+    os.chdir(monty_root)
 
-    docs_dir = project_root / "docs"
-    output_dir = project_root / "tools" / "future_work_widget" / "app"
-    docs_snippets_dir = project_root / "docs" / "snippets"
+    docs_dir = monty_root / "docs"
+    output_dir = monty_root / "tools" / "future_work_widget" / "app"
+    docs_snippets_dir = monty_root / "docs" / "snippets"
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
         index_file = Path(tmp.name)
