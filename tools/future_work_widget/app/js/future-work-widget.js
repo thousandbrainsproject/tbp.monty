@@ -168,11 +168,17 @@ const TableConfig = {
     const allColumns = this.getAllColumns();
     const columnsToShow = this.getColumnsToShow();
 
+    if (!columnsToShow) {
+      return allColumns;
+    }
+
+    const columnMap = new Map(
+      allColumns.map(col => [col.field.toLowerCase(), col])
+    );
+
     return columnsToShow
-      ? allColumns.filter(col =>
-          columnsToShow.includes(col.field.toLowerCase())
-        )
-      : allColumns;
+      .map(fieldName => columnMap.get(fieldName))
+      .filter(Boolean);
   }
 };
 
