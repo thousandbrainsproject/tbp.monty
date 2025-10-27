@@ -22,7 +22,6 @@ from pydantic import (
     RootModel,
     ValidationInfo,
     field_validator,
-    model_validator,
 )
 from pydantic import ValidationError as PydanticValidationError
 from typing_extensions import Annotated
@@ -46,8 +45,9 @@ class FutureWorkIndex(RootModel):
 
 class FutureWorkRecord(BaseModel):
     model_config = ConfigDict(
-        extra="allow",
+        extra="forbid",
         str_strip_whitespace=True,
+        populate_by_name=True,
     )
 
     path: Annotated[
@@ -61,6 +61,54 @@ class FutureWorkRecord(BaseModel):
     path2: Annotated[
         str | None,
         Field(default=None, description="Second component of the path (filename)"),
+    ]
+    title: Annotated[
+        str | None,
+        Field(default=None, description="Title of the future work item"),
+    ]
+    description: Annotated[
+        str | None,
+        Field(default=None, description="Description of the future work item"),
+    ]
+    content: Annotated[
+        str | None,
+        Field(default=None, description="Content of the future work item"),
+    ]
+    slug: Annotated[
+        str | None,
+        Field(default=None, description="URL slug for the future work item"),
+    ]
+    text: Annotated[
+        str | None,
+        Field(default=None, description="Text content of the future work item"),
+    ]
+    estimated_scope: Annotated[
+        str | None,
+        Field(
+            default=None,
+            alias="estimated-scope",
+            description="Estimated scope of the work",
+        ),
+    ]
+    improved_metric: Annotated[
+        str | None,
+        Field(
+            default=None,
+            alias="improved-metric",
+            description="Metric this work improves",
+        ),
+    ]
+    output_type: Annotated[
+        str | None,
+        Field(
+            default=None,
+            alias="output-type",
+            description="Type of output produced",
+        ),
+    ]
+    status: Annotated[
+        str | None,
+        Field(default=None, description="Current status of the work"),
     ]
     tags: Annotated[
         list[str] | None,
@@ -154,6 +202,52 @@ class FutureWorkRecord(BaseModel):
 
         return sanitized_items
 
+    @field_validator("estimated_scope", "improved_metric", "output_type", "status")
+    @classmethod
+    def validate_single_value_field(
+        cls, v: str | None, info: ValidationInfo
+    ) -> str | None:
+        """Validate single-value fields against allowed values.
+
+        Checks field values against allowed values from validation context
+        if available.
+
+        Args:
+            v: Field value
+            info: Validation context containing allowed values
+
+        Returns:
+            The validated value, or None if input is None
+
+        Raises:
+            ValueError: If value is not in allowed values
+        """
+        if v is None:
+            return None
+
+        if info.context is None:
+            return v
+
+        field_name = info.field_name
+        allowed_values = info.context.get("allowed_values", {}).get(field_name)
+
+        if allowed_values is None:
+            return v
+
+        sanitized = nh3.clean(v).strip()
+        if sanitized not in allowed_values:
+            valid_list = ", ".join(sorted(allowed_values))
+            field_info = cls.model_fields.get(field_name)
+            display_name = (
+                field_info.alias if field_info and field_info.alias else field_name
+            )
+            raise ValueError(
+                f"Invalid {display_name} value '{sanitized}'. "
+                f"Valid values are: {valid_list}"
+            )
+
+        return sanitized
+
     @field_validator("contributor", mode="before")
     @classmethod
     def parse_contributor(cls, v: Any) -> list[str] | None:
@@ -220,65 +314,6 @@ class FutureWorkRecord(BaseModel):
 
         return value
 
-    @model_validator(mode="after")
-    def validate_extra_fields(self, info: ValidationInfo) -> FutureWorkRecord:
-        """Validate dynamic extra fields against allowed values.
-
-        This model validator runs after all field validators and validates
-        any extra fields (allowed by extra="allow") against their allowed
-        values from the validation context. This enables dynamic field
-        validation without defining fields explicitly in the model.
-
-        Args:
-            info: Validation context containing allowed values
-
-        Returns:
-            The validated record instance
-
-        Raises:
-            ValueError: If an extra field value is not in its allowed values
-        """
-        if info.context is None:
-            return self
-
-        allowed_values = info.context.get("allowed_values", {})
-        if not allowed_values:
-            return self
-
-        model_dict = self.model_dump()
-
-        # already validated by other validators
-        skip_fields = self.model_fields.keys()
-
-        for field_name, field_value in model_dict.items():
-            if field_name in skip_fields:
-                continue
-
-            if field_value is None:
-                continue
-
-            field_allowed_values = allowed_values.get(field_name)
-            if field_allowed_values is None:
-                continue
-
-            values_to_check = (
-                field_value if isinstance(field_value, list) else [field_value]
-            )
-
-            for value in values_to_check:
-                if value is None:
-                    continue
-
-                sanitized = nh3.clean(str(value)).strip()
-                if sanitized not in field_allowed_values:
-                    valid_list = ", ".join(sorted(field_allowed_values))
-                    raise ValueError(
-                        f"Invalid {field_name} value '{sanitized}'. "
-                        f"Valid values are: {valid_list}"
-                    )
-
-        return self
-
 
 class RecordValidator:
     """Validates and transforms records for the future work widget.
@@ -331,7 +366,7 @@ class RecordValidator:
         validated_record = FutureWorkRecord.model_validate(
             record, context=validation_context
         )
-        return validated_record.model_dump()
+        return validated_record.model_dump(by_alias=True)
 
     def _convert_pydantic_error_to_error_details(
         self, exc: PydanticValidationError, file_path: str
@@ -415,7 +450,7 @@ class RecordValidator:
         future_work_files = list(docs_snippets_dir.glob("future-work-*.md"))
 
         for file_path in future_work_files:
-            field_name = file_path.stem.replace("future-work-", "")
+            field_name = file_path.stem.replace("future-work-", "").replace("-", "_")
 
             with open(file_path, encoding="utf-8") as f:
                 content = f.read().strip()
