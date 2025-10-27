@@ -98,7 +98,25 @@ class FutureWorkRecord(BaseModel):
 
     @field_validator("tags", "skills", mode="before")
     @classmethod
-    def parse_comma_separated(cls, v: Any) -> list[str] | None:
+    def validate_comma_separated_list(
+        cls, v: Any, info: ValidationInfo
+    ) -> list[str] | None:
+        """Parse comma-separated strings and validate against allowed values.
+
+        Runs before Pydantic type coercion to transform string input into
+        lists. Enforces max length and validates items against allowed values
+        from validation context if available.
+
+        Args:
+            v: Raw field value (string, list, or None)
+            info: Validation context containing allowed values
+
+        Returns:
+            Parsed and validated list of strings, or None if input is None
+
+        Raises:
+            ValueError: If list exceeds max length or contains invalid values
+        """
         if v is None:
             return None
         if isinstance(v, list):
@@ -114,27 +132,17 @@ class FutureWorkRecord(BaseModel):
             msg += f"Got {len(parsed_items)} items"
             raise ValueError(msg)
 
-        return parsed_items
-
-    @field_validator("tags", "skills", mode="after")
-    @classmethod
-    def validate_allowed_values(
-        cls, v: list[str] | None, info: ValidationInfo
-    ) -> list[str] | None:
-        if v is None:
-            return None
-
         if info.context is None:
-            return v
+            return parsed_items
 
         field_name = info.field_name
         allowed_values = info.context.get("allowed_values", {}).get(field_name)
 
         if allowed_values is None:
-            return v
+            return parsed_items
 
         sanitized_items = []
-        for item in v:
+        for item in parsed_items:
             sanitized = nh3.clean(item).strip()
             if sanitized not in allowed_values:
                 valid_list = ", ".join(sorted(allowed_values))
@@ -149,6 +157,22 @@ class FutureWorkRecord(BaseModel):
     @field_validator("contributor", mode="before")
     @classmethod
     def parse_contributor(cls, v: Any) -> list[str] | None:
+        """Parse and validate GitHub contributor usernames.
+
+        Runs before Pydantic type coercion to transform comma-separated
+        strings into lists. Validates each username against GitHub's
+        username format requirements.
+
+        Args:
+            v: Raw field value (string, list, or None)
+
+        Returns:
+            Parsed and validated list of GitHub usernames, or None if
+            input is None
+
+        Raises:
+            ValueError: If list exceeds max length or username is invalid
+        """
         if v is None:
             return None
         if isinstance(v, list):
@@ -198,6 +222,22 @@ class FutureWorkRecord(BaseModel):
 
     @model_validator(mode="after")
     def validate_extra_fields(self, info: ValidationInfo) -> FutureWorkRecord:
+        """Validate dynamic extra fields against allowed values.
+
+        This model validator runs after all field validators and validates
+        any extra fields (allowed by extra="allow") against their allowed
+        values from the validation context. This enables dynamic field
+        validation without defining fields explicitly in the model.
+
+        Args:
+            info: Validation context containing allowed values
+
+        Returns:
+            The validated record instance
+
+        Raises:
+            ValueError: If an extra field value is not in its allowed values
+        """
         if info.context is None:
             return self
 
@@ -206,18 +246,12 @@ class FutureWorkRecord(BaseModel):
             return self
 
         model_dict = self.model_dump()
-        defined_fields = {
-            "path",
-            "path1",
-            "path2",
-            "tags",
-            "skills",
-            "rfc",
-            "contributor",
-        }
+
+        # already validated by other validators
+        skip_fields = self.model_fields.keys()
 
         for field_name, field_value in model_dict.items():
-            if field_name in defined_fields:
+            if field_name in skip_fields:
                 continue
 
             if field_value is None:
