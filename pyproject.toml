@@ -207,7 +207,6 @@ ignore = [
     # Original inherited flake8 ignores
     "D1", # D1XX: Missing Docstrings
     "ERA001", # ERA001: Found commented out code
-    "F541", # F541: f-string is missing placeholders
     "FIX001", # FIX001: Line contains FIXME, consider resolving the issue
     "FIX002", # FIX002: Line contains TODO, consider resolving the issue
     "N812", # N812: lowercase imported as non lowercase. Allow "import torch.nn.functional as F"

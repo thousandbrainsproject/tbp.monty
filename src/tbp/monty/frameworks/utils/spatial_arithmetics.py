@@ -346,7 +346,7 @@ def rotate_pose_dependent_features(features, ref_frame_rots) -> dict:
     assert old_pv.shape == (
         3,
         3,
-    ), f"pose_vectors in features need to be 3x3 matrices."
+    ), "pose_vectors in features need to be 3x3 matrices."
     if isinstance(ref_frame_rots, Rotation):
         rotated_pv = ref_frame_rots.apply(old_pv)
     else:

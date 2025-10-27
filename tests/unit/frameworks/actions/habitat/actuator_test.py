@@ -73,7 +73,7 @@ class HabitatAcutatorTest(unittest.TestCase):
 
         self.assertEqual(
             str(context.exception),
-            f"Invalid action name: agent1.fake_action",
+            "Invalid action name: agent1.fake_action",
         )
 
 
