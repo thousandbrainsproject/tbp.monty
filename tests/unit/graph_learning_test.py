@@ -162,6 +162,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         super().setUp()
 
         self.output_dir = tempfile.mkdtemp()
+        self.compositional_save_path = tempfile.mkdtemp()
 
         base = dict(
             experiment_class=MontyObjectRecognitionExperiment,

@@ -117,9 +117,8 @@ An experiment config for training on the Omniglot dataset can then look like thi
 ```python
 omniglot_training = dict(
 	experiment_class=MontySupervisedObjectPretrainingExperiment,
-	experiment_args=ExperimentArgs(
+	experiment_args=SupervisedPretrainingExperimentArgs(
     	n_train_epochs=1,
-    	do_eval=False,
 	),
 	logging_config=PretrainLoggingConfig(
     	output_dir=pretrain_dir,
@@ -211,6 +210,7 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
 	ExperimentArgs,
 	OmniglotDataloaderArgs,
 	OmniglotDatasetArgs,
+	SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (

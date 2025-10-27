@@ -85,8 +85,11 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             num_time_out=0,
             num_patch_off_object=0,
             num_no_label=0,
+            num_consistent_child_obj=0,
+            num_correct_child_or_parent=0,
             num_correct_per_lm=0,
             num_correct_mlh_per_lm=0,
+            num_consistent_child_obj_per_lm=0,
             num_no_match_per_lm=0,
             num_confused_per_lm=0,
             num_confused_mlh_per_lm=0,
@@ -101,6 +104,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             episode_confused_mlh=0,
             episode_pose_time_out=0,
             episode_time_out=0,
+            episode_avg_prediction_error=[],
             episode_lm_performances=[],
             # Total number of steps performed during the episode,
             # including steps where no sensory data was passed to the learning-modules:
@@ -141,6 +145,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             "no_label",
             "pose_time_out",
             "time_out",
+            "consistent_child_obj",  # also counted if LM didn't converge
             "confused_mlh",
             "correct_mlh",
             "no_match",
@@ -255,6 +260,14 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             )
             stats["monty_steps"].append(episode_steps)
             stats["monty_matching_steps"].append(monty_matching_steps)
+            # older LMs don't have prediction error stats
+            if "episode_avg_prediction_error" in episode_stats:
+                stats["episode_avg_prediction_error"].append(
+                    episode_stats["episode_avg_prediction_error"]
+                )
+
+            if performance in {"consistent_child_obj", "correct", "correct_mlh"}:
+                stats["num_correct_child_or_parent"] += 1
 
             stats["goal_states_attempted"] = episode_stats["goal_states_attempted"]
 
@@ -369,6 +382,20 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                 if len(stats["monty_matching_steps"]) > 0
                 else np.nan
             ),
+            "overall/avg_prediction_error": (
+                np.mean(stats["episode_avg_prediction_error"])
+                if len(stats["episode_avg_prediction_error"]) > 0
+                else np.nan
+            ),
+            "overall/percent_consistent_child_obj": (
+                stats["num_consistent_child_obj"] / (stats["num_episodes"])
+            )
+            * 100,
+            "overall/percent_correct_child_or_parent": (
+                stats["num_correct_child_or_parent"]
+                / (stats["num_episodes"] * len(self.lms))
+            )
+            * 100,
             "overall/run_time": np.sum(stats["run_times"]) / len(self.lms),
             # NOTE: does not take into account different runtimes with multiple LMs
             "overall/avg_episode_run_time": (
@@ -379,12 +406,19 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             # Performance of the overall Monty model
             "episode/correct": stats["episode_correct"] or stats["episode_correct_mlh"],
             "episode/no_match": stats["episode_no_match"],
-            "episode/confused": stats["episode_confused"]
-            or stats["episode_confused_mlh"],
+            "episode/confused": (
+                stats["episode_confused"] or stats["episode_confused_mlh"]
+            ),
             "episode/correct_mlh": stats["episode_correct_mlh"],
             "episode/confused_mlh": stats["episode_confused_mlh"],
             "episode/pose_time_out": stats["episode_pose_time_out"],
             "episode/time_out": stats["episode_time_out"],
+            "episode/consistent_child_obj": stats["episode_consistent_child_obj"],
+            "episode/consistent_child_or_parent": (
+                stats["episode_consistent_child_obj"]
+                or stats["episode_correct"]
+                or stats["episode_correct_mlh"]
+            ),
             "episode/used_mlh_after_time_out": stats["episode_correct_mlh"]
             or stats["episode_confused_mlh"],
             "episode/rotation_error": (
@@ -410,6 +444,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             ),
             "episode/goal_states_attempted": stats["goal_states_attempted"],
             "episode/goal_state_success_rate": stats["goal_state_success_rate"],
+            "episode/avg_prediction_error": stats["episode_avg_prediction_error"],
         }
 
         for p in self.performance_options:
@@ -441,6 +476,10 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             overall_stats[f"{lm}/episode/individual_ts_rotation_error"] = lm_stats[
                 "individual_ts_rotation_error"
             ]
+            if "episode_avg_prediction_error" in lm_stats:
+                overall_stats[f"{lm}/episode/avg_prediction_error"] = lm_stats[
+                    "episode_avg_prediction_error"
+                ]
 
         if len(self.lms) > 1:  # add histograms when running multiple LMs
             overall_stats["episode/rotation_error_per_lm"] = wandb.Histogram(episode_re)
@@ -456,6 +495,16 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             overall_stats["episode/lm_performances"] = wandb.Histogram(
                 episode_lm_performances
             )
+            # filter out prediction errors that are nan
+            prediction_errors = stats["episode_avg_prediction_error"][-len(self.lms) :]
+            valid_prediction_errors = [e for e in prediction_errors if not np.isnan(e)]
+            if valid_prediction_errors:
+                overall_stats["episode/avg_prediction_error_dist"] = wandb.Histogram(
+                    valid_prediction_errors
+                )
+                overall_stats["episode/avg_prediction_error"] = np.mean(
+                    valid_prediction_errors
+                )
 
         return overall_stats
 

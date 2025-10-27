@@ -638,7 +638,11 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # are going to focus on pose mismatch
         second_mlh_object = self.parent_lm.get_mlh_for_object(second_id)
 
-        top_mlh_graph = self.parent_lm.get_graph(top_id, input_channel="first").pos
+        sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
+
+        top_mlh_graph = self.parent_lm.get_graph(
+            top_id, input_channel=sensor_channel_name
+        ).pos
 
         if self.focus_on_pose:
             # Overwrite the second most likely hypothesis with the second most likely
@@ -688,10 +692,11 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # Perform kdtree search to identify the point with the most distant
         # nearest-neighbor
         # Note we ultimately want the target location to be one on the most likely
-        # graph, so we pass the top-MLH graph in as the qeury points
-        radius_node_dists = self.parent_lm.get_graph(
-            second_id, input_channel="first"
-        ).find_nearest_neighbors(
+        # graph, so we pass the top-MLH graph in as the query points
+        second_mlh_graph = self.parent_lm.get_graph(
+            second_id, input_channel=sensor_channel_name
+        )
+        radius_node_dists = second_mlh_graph.find_nearest_neighbors(
             top_mlh_graph,
             num_neighbors=1,
             return_distance=True,

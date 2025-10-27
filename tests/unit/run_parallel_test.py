@@ -37,6 +37,7 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
     PredefinedObjectInitializer,
+    SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
@@ -59,8 +60,7 @@ class RunParallelTest(unittest.TestCase):
         self.eval_rotations = [[0.0, 30.0, 0.0], [0.0, 60.0, 0.0], [0.0, 90.0, 0.0]]
         self.supervised_pre_training = dict(
             experiment_class=MontySupervisedObjectPretrainingExperiment,
-            experiment_args=ExperimentArgs(
-                do_eval=False,
+            experiment_args=SupervisedPretrainingExperimentArgs(
                 n_train_epochs=len(self.train_rotations),
             ),
             logging_config=PretrainLoggingConfig(output_dir=self.output_dir),

@@ -286,6 +286,9 @@ class MontyBase(Monty):
             for lm in self.learning_modules:
                 goal_states = lm.propose_goal_states()
                 self.gsg_outputs.extend(goal_states)
+            for sm in self.sensor_modules:
+                goal_states = sm.propose_goal_states()
+                self.gsg_outputs.extend(goal_states)
 
     def _pass_infos_to_motor_system(self):
         """Pass input observations and goal states to the motor system."""

@@ -238,6 +238,7 @@ class EvidenceGraphLM(GraphLM):
             "scale": 1,
             "evidence": 0,
         }
+        self.previous_mlh = self.current_mlh
 
         if hypotheses_updater_args is None:
             hypotheses_updater_args = {}
@@ -445,18 +446,21 @@ class EvidenceGraphLM(GraphLM):
             # motor efference copy here.
             # TODO: get motor efference copy here. Need to refactor motor command
             # selection for this.
-            location=self.buffer.get_current_location(
-                input_channel="first"
-            ),  # location rel. body
+            # location rel. body -> same as sensor input to higher LM (assuming they are
+            # colocated) so it is not used.
+            location=self.buffer.get_current_location(input_channel="first"),
             morphological_features={
                 "pose_vectors": pose_features,
                 "pose_fully_defined": not self._enough_symmetry_evidence_accumulated(),
+                # on_object is also same as sensor input to higher LM (assuming they are
+                # colocated) so not used.
                 "on_object": self.buffer.get_currently_on_object(),
             },
             non_morphological_features={
                 "object_id": object_id_features,
-                # TODO H: test if this makes sense to communicate
-                "location_rel_model": mlh["location"],
+                # TODO H: test if it makes sense to communicate mlh["location"] as a
+                # non-morphological feature as well (would be kind of like the inverse
+                # of top-down connections).
             },
             confidence=confidence,
             use_state=use_state,
@@ -609,7 +613,19 @@ class EvidenceGraphLM(GraphLM):
         else:
             top_id = graph_ids[top_indices[0]]
             second_id = top_id
-
+        # Account for the case where we have multiple top evidences with the same value.
+        # In this case argsort and argmax (used to get current_mlh) will return
+        # different results but some downstream logic (in gsg) expects them to be the
+        # same.
+        if top_id != self.current_mlh["graph_id"]:
+            if second_id == self.current_mlh["graph_id"]:
+                # swap top and second id
+                second_id, top_id = top_id, second_id
+            else:
+                # current mlh is not in top two, so we just set top id to current mlh
+                # and keep the second id as is (since this means there is a threeway
+                # tie in evidence values so its not like top is more likely than second)
+                top_id = self.current_mlh["graph_id"]
         return top_id, second_id
 
     def get_top_two_pose_hypotheses_for_graph_id(self, graph_id):
@@ -687,6 +703,7 @@ class EvidenceGraphLM(GraphLM):
             "possible_matches": self.get_possible_matches(),
             "current_mlh": self.get_current_mlh(),
         }
+        self._append_mlh_prediction_error_to_stats()
         if self.has_detailed_logger:
             stats = self._add_detailed_stats(stats)
         return stats
@@ -718,6 +735,7 @@ class EvidenceGraphLM(GraphLM):
         # NOTE: would not need to do this if we are still voting
         # Call this update in the step method?
         self.possible_matches = self._threshold_possible_matches()
+        self.previous_mlh = self.current_mlh
         self.current_mlh = self._calculate_most_likely_hypothesis()
 
     def _update_evidence(
@@ -1182,6 +1200,44 @@ class EvidenceGraphLM(GraphLM):
         # Do we want to store this? will probably just clutter.
         # self.buffer.update_stats(vote_data, update_time=False)
         pass
+
+    def _append_mlh_prediction_error_to_stats(self):
+        """Append the MLH prediction error for this step to the buffer stats."""
+        # We need to look at the previous mlh (which is the most likely hypothesis at
+        # the time the prediction error was calculated) since the mlh is updated between
+        # prediction error calculation and stats collection.
+        graph_id = self.previous_mlh["graph_id"]
+
+        if graph_id in ["no_observations_yet", "new_object0"]:
+            # don't try to log prediction errors if there were no observations or LM
+            # detected no match.
+            return
+        graph_telemetry = self.hypotheses_updater_telemetry[graph_id]
+        prediction_errors = []
+        for input_channel in graph_telemetry:
+            channel_telemetry = graph_telemetry[input_channel]
+            # Check if there is displacer telemetry and if it contains a prediction
+            # error. This would not be the case if there are no existing hypotheses
+            # or if a channel was newly initialized.
+            try:
+                displacer_telemetry = (
+                    channel_telemetry.channel_hypothesis_displacer_telemetry
+                )
+                channel_prediction_error = displacer_telemetry.mlh_prediction_error
+                prediction_errors.append(channel_prediction_error)
+            except AttributeError:
+                # channel_telemetry was missing needed attributes,
+                # so skip adding prediction errors
+                pass
+
+        if prediction_errors:
+            # Get the average prediction error over all channels for this step.
+            mlh_prediction_error = np.mean(prediction_errors)
+            self.buffer.update_stats(
+                {"mlh_prediction_error": mlh_prediction_error},
+                update_time=False,
+                append=True,  # append here since we want to average over all steps
+            )
 
     def _add_detailed_stats(self, stats):
         # Save possible poses once since they don't change during episode

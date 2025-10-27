@@ -186,7 +186,14 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
     sampled from the same object list, can be added.
     """
 
-    def __init__(self, object_names, object_init_sampler, *args, **kwargs):
+    def __init__(
+        self,
+        object_names,
+        object_init_sampler,
+        parent_to_child_mapping=None,
+        *args,
+        **kwargs,
+    ):
         """Initialize dataloader.
 
         Args:
@@ -201,6 +208,8 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             object_init_sampler: Function that returns dict with position, rotation,
                 and scale of objects when re-initializing. To keep configs
                 serializable, default is set to :class:`DefaultObjectInitializer`.
+            parent_to_child_mapping: dictionary mapping parent objects to their child
+                objects. Used for logging.
             *args: ?
             **kwargs: ?
 
@@ -239,6 +248,10 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         self.episodes = 0
         self.epochs = 0
         self.primary_target = None
+        self.consistent_child_objects = None
+        self.parent_to_child_mapping = (
+            parent_to_child_mapping if parent_to_child_mapping else {}
+        )
 
     def pre_episode(self):
         super().pre_episode()
@@ -336,6 +349,17 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             "semantic_id": self.semantic_label_to_id[self.object_names[idx]],
             **self.object_params,
         }
+        if self.primary_target["object"] in self.parent_to_child_mapping:
+            self.consistent_child_objects = self.parent_to_child_mapping[
+                self.primary_target["object"]
+            ]
+        elif self.parent_to_child_mapping:
+            # if mapping contains keys (i.e. not an empty dict) is should contain the
+            # target object
+            logger.warning(
+                f"target object {self.primary_target['object']} not in",
+                " parent_to_child_mapping",
+            )
         logger.info(f"New primary target: {pformat(self.primary_target)}")
 
     def add_distractor_objects(
@@ -778,6 +802,7 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         motor_system: MotorSystem,
         rng,
         transform=None,
+        parent_to_child_mapping=None,
         *args,
         **kwargs,
     ):
@@ -792,6 +817,8 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned
                  by the environment.
+            parent_to_child_mapping: dictionary mapping parent objects to their child
+                objects. Used for logging.
 
             *args: Additional arguments
             **kwargs: Additional keyword arguments
@@ -829,6 +856,10 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
             str(self.env.alphabet_names[alphabets[i]]) + "_" + str(self.characters[i])
             for i in range(self.n_objects)
         ]
+        self.consistent_child_objects = None
+        self.parent_to_child_mapping = (
+            parent_to_child_mapping if parent_to_child_mapping else {}
+        )
 
     def post_episode(self):
         self.motor_system.post_episode()
@@ -878,6 +909,7 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         motor_system: MotorSystem,
         rng,
         transform=None,
+        parent_to_child_mapping=None,
         *args,
         **kwargs,
     ):
@@ -891,6 +923,8 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned by
                 the environment.
+            parent_to_child_mapping: dictionary mapping parent objects to their child
+                objects. Used for logging.
             *args: Additional arguments
             **kwargs: Additional keyword arguments
 
@@ -923,6 +957,10 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         self.episodes = 0
         self.epochs = 0
         self.primary_target = None
+        self.consistent_child_objects = None
+        self.parent_to_child_mapping = (
+            parent_to_child_mapping if parent_to_child_mapping else {}
+        )
 
     def post_episode(self):
         self.motor_system.post_episode()

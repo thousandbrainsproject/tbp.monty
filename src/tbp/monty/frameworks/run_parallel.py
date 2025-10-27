@@ -110,6 +110,15 @@ def get_overall_stats(stats):
     overall_stats["overall/percent_used_mlh_after_timeout"] = (
         np.mean(stats["episode/used_mlh_after_time_out"]) * 100
     )
+    overall_stats["overall/percent_correct_child_or_parent"] = (
+        np.mean(stats["episode/consistent_child_or_parent"]) * 100
+    )
+    overall_stats["overall/percent_consistent_child_obj"] = (
+        np.mean(stats["episode/consistent_child_obj"]) * 100
+    )
+    overall_stats["overall/avg_prediction_error"] = np.mean(
+        stats["episode/avg_prediction_error"]
+    )
 
     correct_ids = np.where(np.array(stats["episode/correct"]) == 1)
     correct_rotation_errs = np.array(stats["episode/rotation_error"])[correct_ids]
