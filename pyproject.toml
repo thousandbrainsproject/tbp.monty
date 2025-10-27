@@ -99,7 +99,7 @@ github_readme_sync_tool = [
 future_work_widget_tool = [
     'nh3',
     'pydantic>=2.0.0',
-    'eval_type_backport'
+    'eval_type_backport', # Needed to make pydantic work with future annotations, can be removed when we get to python 3.10
 ]
 print_version_tool = [
     'semver'

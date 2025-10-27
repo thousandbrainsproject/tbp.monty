@@ -55,7 +55,7 @@ And then point your browser to http://localhost:8080
 The widget supports URL parameters to customize its display:
 
 ### `columns`
-Controls which columns are displayed in the table.
+Controls which columns are displayed in the table and in what order.
 
 **Usage:** `?columns=column1,column2,column3`
 
