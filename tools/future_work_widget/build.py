@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 class BuildResult(BaseModel):
     success: bool
-    processed_items: int | None = None
+    future_work_items: int | None = None
     total_items: int | None = None
     errors: list[ErrorDetail] | None = None
     error_message: str | None = None
@@ -83,7 +83,7 @@ def build(
         if errors:
             return BuildResult(
                 success=False,
-                processed_items=len(future_work_items),
+                future_work_items=len(future_work_items),
                 total_items=len(data),
                 errors=errors,
                 error_message=f"Validation failed with {len(errors)} error(s)",
@@ -95,7 +95,7 @@ def build(
 
         return BuildResult(
             success=True,
-            processed_items=len(future_work_items),
+            future_work_items=len(future_work_items),
             total_items=len(data),
         )
 
