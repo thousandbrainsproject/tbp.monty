@@ -85,4 +85,4 @@ It was exciting to see Monty, originally tested in simulated environments, start
 
 
 # Conclusion
-The current solution for running Monty on robots is to stream the sensor data and action commands back and forth between the robot and a Monty instance running on a laptop. Outside of that, defining a custom data loader and environments for Monty is analogous to how it was outlined in the [previous tutorial](./using-monty-in-a-custom-application.md).
+The current solution for running Monty on robots is to stream the sensor data and action commands back and forth between the robot and a Monty instance running on a laptop. Outside of that, defining a custom environment interface for Monty is analogous to how it was outlined in the [previous tutorial](./using-monty-in-a-custom-application.md).
