@@ -28,6 +28,8 @@ from typing_extensions import Annotated
 
 logger = logging.getLogger(__name__)
 
+MAX_COMMA_SEPARATED_ITEMS = 10
+
 
 class ErrorDetail(BaseModel):
     message: str
@@ -139,6 +141,38 @@ class FutureWorkRecord(BaseModel):
         ),
     ]
 
+    @classmethod
+    def _parse_comma_separated_list(
+        cls, v: Any, max_items: int = MAX_COMMA_SEPARATED_ITEMS
+    ) -> list[str] | None:
+        """Parse and validate comma-separated string into list.
+
+        Args:
+            v: Raw field value (string, list, or None)
+            max_items: Maximum number of items allowed
+
+        Returns:
+            Parsed list of strings, or None if input is None
+
+        Raises:
+            ValueError: If list exceeds max length
+        """
+        if v is None:
+            return None
+        if isinstance(v, list):
+            parsed_items = v
+        elif isinstance(v, str):
+            parsed_items = [item.strip() for item in v.split(",")]
+        else:
+            return None
+
+        if len(parsed_items) > max_items:
+            msg = f"Cannot have more than {max_items} items. "
+            msg += f"Got {len(parsed_items)} items"
+            raise ValueError(msg)
+
+        return parsed_items
+
     @field_validator("tags", "skills", mode="before")
     @classmethod
     def validate_comma_separated_list(
@@ -160,20 +194,9 @@ class FutureWorkRecord(BaseModel):
         Raises:
             ValueError: If list exceeds max length or contains invalid values
         """
-        if v is None:
+        parsed_items = cls._parse_comma_separated_list(v)
+        if parsed_items is None:
             return None
-        if isinstance(v, list):
-            parsed_items = v
-        elif isinstance(v, str):
-            parsed_items = [item.strip() for item in v.split(",")]
-        else:
-            return None
-
-        max_items = 10
-        if len(parsed_items) > max_items:
-            msg = f"Cannot have more than {max_items} items. "
-            msg += f"Got {len(parsed_items)} items"
-            raise ValueError(msg)
 
         if info.context is None:
             return parsed_items
@@ -262,21 +285,9 @@ class FutureWorkRecord(BaseModel):
         Raises:
             ValueError: If list exceeds max length or username is invalid
         """
-        if v is None:
+        contributors = cls._parse_comma_separated_list(v)
+        if contributors is None:
             return None
-        if isinstance(v, list):
-            contributors = v
-        elif isinstance(v, str):
-            contributors = [item.strip() for item in v.split(",")]
-        else:
-            return None
-
-        max_contributors = 10
-        if len(contributors) > max_contributors:
-            raise ValueError(
-                f"Cannot have more than {max_contributors} items. "
-                f"Got {len(contributors)} items"
-            )
 
         github_pattern = r"[a-zA-Z0-9][a-zA-Z0-9-]{0,38}"
         for contributor in contributors:
@@ -318,7 +329,6 @@ class RecordValidator:
     """
 
     REQUIRED_FIELDS: list[str] = []
-    MAX_COMMA_SEPARATED_ITEMS = 10
 
     def __init__(self, docs_snippets_dir: Path):
         self.allowed_values: dict[str, list[str]] = {}

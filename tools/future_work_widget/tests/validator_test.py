@@ -14,7 +14,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.future_work_widget.validator import RecordValidator
+from tools.future_work_widget.validator import (
+    MAX_COMMA_SEPARATED_ITEMS,
+    RecordValidator,
+)
 
 
 class TestRecordValidator(unittest.TestCase):
@@ -122,7 +125,7 @@ class TestRecordValidator(unittest.TestCase):
     def test_comma_separated_field_limits(self):
         """Test limits on comma-separated fields."""
         validator = RecordValidator(Path())
-        max_items = RecordValidator.MAX_COMMA_SEPARATED_ITEMS
+        max_items = MAX_COMMA_SEPARATED_ITEMS
 
         too_many_tags = ",".join([f"tag{i}" for i in range(max_items + 1)])
         record = {
