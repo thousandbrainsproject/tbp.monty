@@ -142,6 +142,25 @@ class FutureWorkRecord(BaseModel):
     ]
 
     @classmethod
+    def _get_allowed_values(
+        cls, info: ValidationInfo
+    ) -> tuple[str | None, list[str] | None]:
+        """Extract allowed values from validation context.
+
+        Args:
+            info: Validation context containing field name and allowed values
+
+        Returns:
+            Tuple of (field_name, allowed_values) or (None, None) if not available
+        """
+        if info.context is None:
+            return None, None
+
+        field_name = info.field_name
+        allowed_values = info.context.get("allowed_values", {}).get(field_name)
+        return field_name, allowed_values
+
+    @classmethod
     def _parse_comma_separated_list(
         cls, v: Any, max_items: int = MAX_COMMA_SEPARATED_ITEMS
     ) -> list[str] | None:
@@ -198,12 +217,7 @@ class FutureWorkRecord(BaseModel):
         if parsed_items is None:
             return None
 
-        if info.context is None:
-            return parsed_items
-
-        field_name = info.field_name
-        allowed_values = info.context.get("allowed_values", {}).get(field_name)
-
+        field_name, allowed_values = cls._get_allowed_values(info)
         if allowed_values is None:
             return parsed_items
 
@@ -243,12 +257,7 @@ class FutureWorkRecord(BaseModel):
         if v is None:
             return None
 
-        if info.context is None:
-            return v
-
-        field_name = info.field_name
-        allowed_values = info.context.get("allowed_values", {}).get(field_name)
-
+        field_name, allowed_values = cls._get_allowed_values(info)
         if allowed_values is None:
             return v
 
