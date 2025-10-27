@@ -15,12 +15,13 @@ import numpy as np
 import quaternion as qt
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import (
     DepthTo3DLocations,
     MissingToMaxDepth,
 )
 
-AGENT_ID = "camera"
+AGENT_ID = AgentID("camera")
 SENSOR_ID = "sensor_01"
 
 TEST_OBS = {

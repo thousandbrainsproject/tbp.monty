@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Type
@@ -32,6 +33,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
+from tbp.monty.frameworks.agents import AgentID
 
 
 @dataclass
@@ -40,7 +42,7 @@ class BasePolicyConfig:
 
     action_sampler_args: Dict
     action_sampler_class: Type[ActionSampler]
-    agent_id: str
+    agent_id: AgentID
     file_name: Optional[str] = None
     switch_frequency: float = 0.05
 
@@ -49,7 +51,7 @@ class BasePolicyConfig:
 class InformedPolicyConfig:
     action_sampler_args: Dict
     action_sampler_class: Type[ActionSampler]
-    agent_id: str
+    agent_id: AgentID
     file_name: Optional[str] = None
     good_view_percentage: float = 0.5
     desired_object_distance: float = 0.03
@@ -140,7 +142,7 @@ def generate_action_list(action_space_type) -> List[Action]:
 def make_base_policy_config(
     action_space_type: str,
     action_sampler_class: Type[ActionSampler],
-    agent_id: str = "agent_id_0",
+    agent_id: AgentID | None = None,
 ):
     """Generates a config that will apply for the BasePolicy class.
 
@@ -153,6 +155,8 @@ def make_base_policy_config(
     Returns:
         BasePolicyConfig instance
     """
+    if agent_id is None:
+        agent_id = AgentID("agent_id_0")
     actions = generate_action_list(action_space_type)
 
     return BasePolicyConfig(
@@ -168,7 +172,7 @@ def make_informed_policy_config(
     good_view_percentage: float = 0.5,
     use_goal_state_driven_actions: bool = False,
     file_name: str = None,
-    agent_id: str = "agent_id_0",
+    agent_id: AgentID | None = None,
     switch_frequency: float = 1.0,
     **kwargs,
 ):
@@ -201,6 +205,8 @@ def make_informed_policy_config(
     Returns:
         InformedPolicyConfig instance
     """
+    if agent_id is None:
+        agent_id = AgentID("agent_id_0")
     actions = generate_action_list(action_space_type)
 
     return InformedPolicyConfig(
@@ -214,7 +220,7 @@ def make_informed_policy_config(
     )
 
 
-def make_naive_scan_policy_config(step_size: float, agent_id="agent_id_0"):
+def make_naive_scan_policy_config(step_size: float, agent_id: AgentID | None = None):
     """Simliar to InformedPolicyConfigGenerator, but for NaiveScanPolicyConfig.
 
     Currently less flexible than the other two classes above, because this is currently
@@ -227,6 +233,8 @@ def make_naive_scan_policy_config(step_size: float, agent_id="agent_id_0"):
     Returns:
         NaiveScanPolicyConfig instance
     """
+    if agent_id is None:
+        agent_id = AgentID("agent_id_0")
     actions = generate_action_list(action_space_type="distant_agent_no_translation")
 
     return NaiveScanPolicyConfig(
@@ -245,7 +253,7 @@ def make_surface_policy_config(
     action_sampler_class: Type[ActionSampler] = ConstantSampler,
     action_space_type: str = "surface_agent",
     file_name: str = None,
-    agent_id: str = "agent_id_0",
+    agent_id: AgentID | None = None,
     **kwargs,
 ):
     """Similar to BasePolicyConfigGenerator, but for InformedPolicy class.
@@ -276,6 +284,8 @@ def make_surface_policy_config(
     Returns:
         SurfacePolicyConfig instance
     """
+    if agent_id is None:
+        agent_id = AgentID("agent_id_0")
     actions = generate_action_list(action_space_type)
 
     return SurfacePolicyConfig(
@@ -300,7 +310,7 @@ def make_curv_surface_policy_config(
     action_sampler_class: Type[ActionSampler] = ConstantSampler,
     action_space_type="surface_agent",
     file_name=None,
-    agent_id="agent_id_0",
+    agent_id: AgentID | None = None,
     **kwargs,
 ):
     """For the SurfacePolicyCurvatureInformed policy.
@@ -335,6 +345,8 @@ def make_curv_surface_policy_config(
     Returns:
         SurfaceCurveInformedPolicyConfig instance
     """
+    if agent_id is None:
+        agent_id = AgentID("agent_id_0")
     actions = generate_action_list(action_space_type)
 
     return SurfaceCurveInformedPolicyConfig(

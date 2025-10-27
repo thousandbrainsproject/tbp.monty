@@ -12,6 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Optional
 
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
     MontyConfig,
@@ -43,7 +44,7 @@ class FakeSingleCameraMontyConfig(MontyConfig):
     )
     motor_system_config: dataclass | Dict = field(default_factory=MotorSystemConfig)
     sm_to_agent_dict: Dict = field(
-        default_factory=lambda: dict(sensor_id_0="agent_id_0")
+        default_factory=lambda: dict(sensor_id_0=AgentID("agent_id_0"))
     )
     sm_to_lm_matrix: List = field(default_factory=lambda: [[0]])
     lm_to_lm_matrix: Optional[List] = None

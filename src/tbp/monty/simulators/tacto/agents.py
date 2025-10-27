@@ -13,6 +13,7 @@ from typing import Tuple
 
 from habitat_sim.agent import ActionSpec, ActuationSpec
 
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.simulators.habitat import HabitatAgent
 
 from .config import DIGIT, TactoSensorSpec
@@ -47,7 +48,7 @@ class TactoFingerAgent(HabitatAgent):
 
     def __init__(
         self,
-        agent_id: str,
+        agent_id: AgentID,
         sensor_id: str,
         position: Vector3 = (0.0, 0.0, 0.0),
         rotation: Quaternion = (1.0, 0.0, 0.0, 0.0),
@@ -79,16 +80,16 @@ class TactoFingerAgent(HabitatAgent):
     def get_spec(self):
         spec = super().get_spec()
         spec.action_space = {
-            f"{self.agent_id}.move_forward": ActionSpec(
+            f"{str(self.agent_id)}.move_forward": ActionSpec(
                 "move_forward", ActuationSpec(amount=self.translation_step)
             ),
-            f"{self.agent_id}.move_backward": ActionSpec(
+            f"{str(self.agent_id)}.move_backward": ActionSpec(
                 "move_forward", ActuationSpec(amount=-self.translation_step)
             ),
-            f"{self.agent_id}.turn_left": ActionSpec(
+            f"{str(self.agent_id)}.turn_left": ActionSpec(
                 "turn_left", ActuationSpec(amount=self.rotation_step)
             ),
-            f"{self.agent_id}.turn_right": ActionSpec(
+            f"{str(self.agent_id)}.turn_right": ActionSpec(
                 "turn_right", ActuationSpec(amount=self.rotation_step)
             ),
         }

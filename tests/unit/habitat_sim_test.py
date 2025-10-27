@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.frameworks.agents import AgentID
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -70,7 +72,7 @@ def create_agents(
     agents = []
     for i in range(num_agents):
         cam = SingleSensorAgent(
-            agent_id=f"{i}",
+            agent_id=AgentID(f"{i}"),
             sensor_id="0",
             resolution=resolution,
             semantic=semantic,
@@ -298,13 +300,13 @@ class HabitatSimTest(unittest.TestCase):
         sensor_rot = qt.from_rotation_vector(sensor_spec.orientation)
 
         # Compute rotation quartenions
-        turn_left_spec = agent_config.action_space[f"{agent_id}.turn_left"]
+        turn_left_spec = agent_config.action_space[f"{str(agent_id)}.turn_left"]
         amount = turn_left_spec.actuation.amount
         turn_left_quat = qt.from_rotation_vector([0.0, np.deg2rad(amount), 0.0])
-        look_up_spec = agent_config.action_space[f"{agent_id}.look_up"]
+        look_up_spec = agent_config.action_space[f"{str(agent_id)}.look_up"]
         amount = look_up_spec.actuation.amount
         look_up_quat = qt.from_rotation_vector([np.deg2rad(amount), 0.0, 0.0])
-        move_forward_spec = agent_config.action_space[f"{agent_id}.move_forward"]
+        move_forward_spec = agent_config.action_space[f"{str(agent_id)}.move_forward"]
         amount = move_forward_spec.actuation.amount
         move_forward_offset = [0.0, amount, 0.0]
         with HabitatSim(agents=agents) as sim:
@@ -734,7 +736,10 @@ class HabitatSimTest(unittest.TestCase):
 
     def test_agent_height(self):
         agent = SingleSensorAgent(
-            agent_id="camera", sensor_id="0", agent_position=[0.0, 0.0, 0.0], height=0.0
+            agent_id=AgentID("camera"),
+            sensor_id="0",
+            agent_position=[0.0, 0.0, 0.0],
+            height=0.0,
         )
         with HabitatSim(agents=[agent]) as sim:
             states = sim.states

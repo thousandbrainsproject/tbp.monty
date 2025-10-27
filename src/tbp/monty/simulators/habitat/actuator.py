@@ -30,6 +30,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
+from tbp.monty.frameworks.agents import AgentID
 
 __all__ = [
     "HabitatActuator",
@@ -40,7 +41,7 @@ __all__ = [
 class HabitatActuatorRequirements(Protocol):
     """HabitatActuator requires these to be available when mixed in."""
 
-    def get_agent(self, agent_id: str) -> Agent: ...
+    def get_agent(self, agent_id: AgentID) -> Agent: ...
 
 
 class HabitatActuator(HabitatActuatorRequirements):
@@ -63,7 +64,7 @@ class HabitatActuator(HabitatActuatorRequirements):
 
         The action name is prefixed by the agent ID.
         """
-        return f"{action.agent_id}.{action.name}"
+        return f"{str(action.agent_id)}.{action.name}"
 
     def to_habitat(self, action: Action) -> tuple[Agent, ActuationSpec, str]:
         """Transition from the Monty to the Habitat sim domain.
