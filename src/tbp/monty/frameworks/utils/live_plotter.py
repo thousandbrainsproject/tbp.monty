@@ -57,7 +57,9 @@ class LivePlotter:
             observations, the patch depth, and the view finder rgba.
         """
         first_learning_module = model.learning_modules[0]
-        first_sensor_module_raw_observations = model.sensor_modules[0].raw_observations
+        first_sensor_module_raw_observations = model.sensor_modules[
+            0
+        ]._snapshot_telemetry.raw_observations
         first_sensor_module_id = model.sensor_modules[0].sensor_module_id
         first_sensor_depth = observation[model.motor_system._policy.agent_id][
             first_sensor_module_id
@@ -105,7 +107,8 @@ class LivePlotter:
             is_saccade_on_image_data_loader,
         )
         self.show_patch(first_sensor_depth)
-        self.show_mlh(mlh, mlh_model)
+        if mlh_model:
+            self.show_mlh(mlh, mlh_model)
         plt.pause(0.00001)
 
     def show_view_finder(
@@ -145,9 +148,9 @@ class LivePlotter:
                 ec="white",
             )
             self.ax[0].add_patch(square)
-        if hasattr(first_learning_module, "current_mlh"):
+        if hasattr(first_learning_module, "get_current_mlh"):
             mlh = first_learning_module.get_current_mlh()
-            if mlh is not None:
+            if mlh and mlh["graph_id"] != "no_observations_yet":
                 graph_ids, evidences = (
                     first_learning_module.get_evidence_for_each_graph()
                 )
@@ -172,6 +175,7 @@ class LivePlotter:
         if not mlh_model:
             self.ax[2].set_title("No MLH")
             return
+
         self.ax[2].cla()
         self.ax[2].scatter(
             mlh_model.pos[:, 1],

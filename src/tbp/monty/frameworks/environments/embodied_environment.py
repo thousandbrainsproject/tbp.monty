@@ -10,7 +10,7 @@
 
 import abc
 import collections.abc
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 from tbp.monty.frameworks.actions.actions import Action
 
@@ -76,11 +76,18 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def step(self, action: Action) -> Dict[Any, Dict]:
-        """Apply the given action to the environment.
+    def step(self, actions: Sequence[Action]) -> Dict[Any, Dict]:
+        """Apply the given actions to the environment.
 
-        Return the current observations and other environment information (i.e. sensor
-        pose) after the action is applied.
+        Args:
+            actions: The actions to apply to the environment.
+
+        Returns:
+            The current observations and other environment information (i.e. sensor
+            pose) after the actions are applied.
+
+        Note:
+            If the actions are an empty sequence, the current observations are returned.
         """
         pass
 
@@ -90,7 +97,7 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def remove_all_objects(self):
+    def remove_all_objects(self) -> None:
         """Remove all objects from the environment.
 
         TODO: This remove_all_objects interface is elevated from
@@ -108,7 +115,7 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def close(self):
+    def close(self) -> None:
         """Close the environmnt releasing all resources.
 
         Any call to any other environment method may raise an exception

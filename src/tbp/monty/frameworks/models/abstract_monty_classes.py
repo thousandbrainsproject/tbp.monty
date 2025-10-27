@@ -7,8 +7,11 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import abc
+
+from tbp.monty.frameworks.models.states import GoalState
 
 
 class Monty(metaclass=abc.ABCMeta):
@@ -189,8 +192,8 @@ class LearningModule(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def propose_goal_state(self):
-        """Return the goal-state proposed by this LM's GSG."""
+    def propose_goal_states(self) -> list[GoalState]:
+        """Return the goal-states proposed by this LM's GSG if they exist."""
         pass
 
     @abc.abstractmethod
@@ -275,8 +278,8 @@ class GoalStateGenerator(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def get_output_goal_state(self):
-        """Return current output goal-state."""
+    def output_goal_states(self) -> list[GoalState]:
+        """Return output goal-states."""
         pass
 
     @abc.abstractmethod
@@ -312,11 +315,6 @@ class SensorModule(metaclass=abc.ABCMeta):
         """This method is called before each episode."""
         pass
 
-    @abc.abstractmethod
-    def post_episode(self):
-        """This method is called after each episode."""
-        pass
-
-    @abc.abstractmethod
-    def set_experiment_mode(self, mode: str):
-        pass
+    def propose_goal_states(self) -> list[GoalState]:
+        """Return the goal-states proposed by this Sensor Module."""
+        return []

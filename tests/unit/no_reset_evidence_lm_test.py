@@ -33,6 +33,7 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataLoaderPerObjectTrainArgs,
     ExperimentArgs,
     PredefinedObjectInitializer,
+    SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
@@ -93,8 +94,7 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
         self.pretraining_configs = dict(
             experiment_class=MontySupervisedObjectPretrainingExperiment,
-            experiment_args=ExperimentArgs(
-                do_eval=False,
+            experiment_args=SupervisedPretrainingExperimentArgs(
                 n_train_epochs=3,
             ),
             logging_config=PretrainLoggingConfig(

@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import logging
 
@@ -123,15 +124,15 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
         self.driving_goal_state = received_goal_state
 
-    def get_output_goal_state(self):
-        """Retrieve the output goal-state of the GSG.
+    def output_goal_states(self) -> list[GoalState]:
+        """Retrieve the output goal-states of the GSG.
 
         This is the goal-state projected to other LM's GSGs +/- motor-actuators.
 
         Returns:
-            Output goal-state of the GSG.
+            Output goal-states of the GSG if it exists, otherwise empty list.
         """
-        return self.output_goal_state
+        return [self.output_goal_state] if self.output_goal_state else []
 
     # ------------------- Main Algorithm -----------------------
 
@@ -637,7 +638,11 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # are going to focus on pose mismatch
         second_mlh_object = self.parent_lm.get_mlh_for_object(second_id)
 
-        top_mlh_graph = self.parent_lm.get_graph(top_id, input_channel="first").pos
+        sensor_channel_name = self.parent_lm.buffer.get_first_sensory_input_channel()
+
+        top_mlh_graph = self.parent_lm.get_graph(
+            top_id, input_channel=sensor_channel_name
+        ).pos
 
         if self.focus_on_pose:
             # Overwrite the second most likely hypothesis with the second most likely
@@ -687,10 +692,11 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # Perform kdtree search to identify the point with the most distant
         # nearest-neighbor
         # Note we ultimately want the target location to be one on the most likely
-        # graph, so we pass the top-MLH graph in as the qeury points
-        radius_node_dists = self.parent_lm.get_graph(
-            second_id, input_channel="first"
-        ).find_nearest_neighbors(
+        # graph, so we pass the top-MLH graph in as the query points
+        second_mlh_graph = self.parent_lm.get_graph(
+            second_id, input_channel=sensor_channel_name
+        )
+        radius_node_dists = second_mlh_graph.find_nearest_neighbors(
             top_mlh_graph,
             num_neighbors=1,
             return_distance=True,
