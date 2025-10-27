@@ -13,8 +13,13 @@ import json
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
+from pydantic import ValidationError as PydanticValidationError
 
-from tools.future_work_widget.validator import ErrorDetail, RecordValidator
+from tools.future_work_widget.validator import (
+    ErrorDetail,
+    FutureWorkIndex,
+    RecordValidator,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -49,12 +54,15 @@ def build(
             return build_result
 
         with open(index_file, encoding="utf-8") as f:
-            data = json.load(f)
+            raw_data = json.load(f)
 
-        if not isinstance(data, list):
+        try:
+            index = FutureWorkIndex.model_validate(raw_data)
+            data = index.root
+        except PydanticValidationError as e:
             return BuildResult(
                 success=False,
-                error_message="Index file must contain a JSON array",
+                error_message=f"Invalid index file format: {e}",
             )
 
         validator = RecordValidator(docs_snippets_dir)

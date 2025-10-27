@@ -19,6 +19,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    RootModel,
     ValidationInfo,
     field_validator,
     model_validator,
@@ -37,6 +38,10 @@ class ErrorDetail(BaseModel):
     level: str
     title: str
     annotation_level: str
+
+
+class FutureWorkIndex(RootModel):
+    root: list[dict[str, Any]]
 
 
 class FutureWorkRecord(BaseModel):
@@ -365,13 +370,13 @@ class RecordValidator:
         )
 
     def _load_validation_files(self, docs_snippets_dir: Path) -> None:
-        """Load validation files from docs/snippets directory.
+        """Load validation files from docs_snippets_dir.
 
         These files define allowed values for fields like tags, skills, etc.
         The values are passed to Pydantic via validation context.
 
         Args:
-            docs_snippets_dir: Path to the docs/snippets directory
+            docs_snippets_dir: Path to the snippets directory
         """
         future_work_files = list(docs_snippets_dir.glob("future-work-*.md"))
 
