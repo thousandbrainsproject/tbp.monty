@@ -382,6 +382,29 @@ class RecordValidator:
         )
         return validated_record.model_dump(by_alias=True)
 
+    def _create_error_detail(
+        self, message: str, file_path: str, field: str
+    ) -> ErrorDetail:
+        """Create a single error detail object.
+
+        Args:
+            message: Error message
+            file_path: Path to the file with the error
+            field: Field name that has the error
+
+        Returns:
+            ErrorDetail object with standardized error information
+        """
+        return ErrorDetail(
+            message=message,
+            file=file_path,
+            line=1,
+            field=field,
+            level="error",
+            title=f"Validation Error in {Path(file_path).name}",
+            annotation_level="failure",
+        )
+
     def _convert_pydantic_error_to_error_details(
         self, exc: PydanticValidationError, file_path: str
     ) -> list[ErrorDetail]:
@@ -393,17 +416,7 @@ class RecordValidator:
                 else "unknown"
             )
             message = error["msg"]
-            error_details.append(
-                ErrorDetail(
-                    message=message,
-                    file=file_path,
-                    line=1,
-                    field=field,
-                    level="error",
-                    title=f"Validation Error in {Path(file_path).name}",
-                    annotation_level="failure",
-                )
-            )
+            error_details.append(self._create_error_detail(message, file_path, field))
         return error_details
 
     def _validate_required_fields(
@@ -440,17 +453,7 @@ class RecordValidator:
         self, message: str, file_path: str, field: str, errors: list[ErrorDetail]
     ) -> None:
         """Add an error detail to the errors list."""
-        errors.append(
-            ErrorDetail(
-                message=message,
-                file=file_path,
-                line=1,
-                field=field,
-                level="error",
-                title=f"Validation Error in {Path(file_path).name}",
-                annotation_level="failure",
-            )
-        )
+        errors.append(self._create_error_detail(message, file_path, field))
 
     def _load_validation_files(self, docs_snippets_dir: Path) -> None:
         """Load validation files from docs_snippets_dir.
