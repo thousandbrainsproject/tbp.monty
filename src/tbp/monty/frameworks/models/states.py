@@ -82,7 +82,7 @@ class State:
                         repr_string += f"           {vector}\n"
                 else:
                     repr_string += f"       {feature}: {feat_val}\n"
-        repr_string += f"   Non-Morphological Features: \n"
+        repr_string += "   Non-Morphological Features: \n"
         if self.non_morphological_features is not None:
             for feature in self.non_morphological_features:
                 feat_val = self.non_morphological_features[feature]

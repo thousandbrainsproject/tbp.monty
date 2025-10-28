@@ -518,7 +518,7 @@ class DisplacementGraphMemory(GraphMemory):
             graph_id: Name of the object.
             input_channel: ?
         """
-        logger.info(f"Adding a new graph to memory.")
+        logger.info("Adding a new graph to memory.")
 
         model = GraphObjectModel(
             object_id=graph_id,
