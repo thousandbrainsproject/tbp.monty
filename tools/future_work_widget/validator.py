@@ -277,7 +277,7 @@ class FutureWorkRecord(BaseModel):
 
     @field_validator("contributor", mode="before")
     @classmethod
-    def parse_contributor(cls, v: Any) -> list[str] | None:
+    def validate_contributor(cls, v: Any) -> list[str] | None:
         """Parse and validate GitHub contributor usernames.
 
         Runs before Pydantic type coercion to transform comma-separated

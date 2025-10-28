@@ -54,16 +54,14 @@ def build(
             return build_result
 
         with open(index_file, encoding="utf-8") as f:
-            raw_data = json.load(f)
-
-        try:
-            index = FutureWorkIndex.model_validate(raw_data)
-            data = index.root
-        except PydanticValidationError as e:
-            return BuildResult(
-                success=False,
-                error_message=f"Invalid index file format: {e}",
-            )
+            try:
+                index = FutureWorkIndex.model_validate_json(f.read())
+                data = index.root
+            except PydanticValidationError as e:
+                return BuildResult(
+                    success=False,
+                    error_message=f"Invalid index file format: {e}",
+                )
 
         validator = RecordValidator(docs_snippets_dir)
         future_work_items = []
