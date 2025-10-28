@@ -54,7 +54,7 @@ first_experiment = dict(
         n_train_epochs=1,
     ),
     monty_config=PatchAndViewMontyConfig(),
-    # Data{set, loader} config
+    # Set up the environment and agent.
     env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(),
     train_env_interface_class=ED.EnvironmentInterfacePerObject,
     train_env_interface_args=get_env_interface_per_object_by_idx(start=0, stop=1),
