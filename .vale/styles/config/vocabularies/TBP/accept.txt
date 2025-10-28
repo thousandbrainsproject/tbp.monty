@@ -69,10 +69,11 @@
 \bDomnisoru\b
 \bDrost\b
 \bEitan\b
+\b[Ee]thicists?\b
 \b[Ee]xplainers?\b
 \bexcitatory\b
 \bElsevier\b
-\bentorhinal\b
+\b[Ee]ntorhinal\b
 \beval\b
 \bfavicon\b
 \bFelleman\b
@@ -132,6 +133,7 @@
 \bneurophysiologist\b
 \b[Nn]ew[Tt]ype(s)?\b
 \bNum\b
+\bNiels\b
 \bNumenta\b
 \bNumPy|Numpy\b
 \bO'Keefe\b
@@ -165,6 +167,7 @@
 \bSpelke\b
 \bSpolsky\b
 \bStanovich\b
+\bStroop\b
 \bsubclassed\b
 \bsubcomponents\b
 \bsubcortically\b
