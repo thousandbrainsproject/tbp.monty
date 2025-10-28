@@ -228,9 +228,13 @@ class FutureWorkRecord(BaseModel):
             stripped_item = item.strip()
             if stripped_item not in allowed_values:
                 valid_list = ", ".join(sorted(allowed_values))
+                snippet_file = (
+                    f"docs/snippets/future-work-{field_name.replace('_', '-')}.md"
+                )
                 raise ValueError(
                     f"Invalid {field_name} value '{stripped_item}'. "
-                    f"Valid values are: {valid_list}"
+                    f"Valid values are: {valid_list}. "
+                    f"To add a new value, edit {snippet_file}"
                 )
             sanitized_items.append(nh3.clean(stripped_item))
 
@@ -270,9 +274,13 @@ class FutureWorkRecord(BaseModel):
             display_name = (
                 field_info.alias if field_info and field_info.alias else field_name
             )
+            snippet_file = (
+                f"docs/snippets/future-work-{field_name.replace('_', '-')}.md"
+            )
             raise ValueError(
                 f"Invalid {display_name} value '{stripped_value}'. "
-                f"Valid values are: {valid_list}"
+                f"Valid values are: {valid_list}. "
+                f"To add a new value, edit {snippet_file}"
             )
 
         return nh3.clean(stripped_value)
