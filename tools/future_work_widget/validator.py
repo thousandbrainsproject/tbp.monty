@@ -223,14 +223,14 @@ class FutureWorkRecord(BaseModel):
 
         sanitized_items = []
         for item in parsed_items:
-            sanitized = nh3.clean(item).strip()
-            if sanitized not in allowed_values:
+            stripped_item = item.strip()
+            if stripped_item not in allowed_values:
                 valid_list = ", ".join(sorted(allowed_values))
                 raise ValueError(
-                    f"Invalid {field_name} value '{sanitized}'. "
+                    f"Invalid {field_name} value '{stripped_item}'. "
                     f"Valid values are: {valid_list}"
                 )
-            sanitized_items.append(sanitized)
+            sanitized_items.append(nh3.clean(stripped_item))
 
         return sanitized_items
 
@@ -261,19 +261,19 @@ class FutureWorkRecord(BaseModel):
         if allowed_values is None:
             return v
 
-        sanitized = nh3.clean(v).strip()
-        if sanitized not in allowed_values:
+        stripped_value = v.strip()
+        if stripped_value not in allowed_values:
             valid_list = ", ".join(sorted(allowed_values))
             field_info = cls.model_fields.get(field_name)
             display_name = (
                 field_info.alias if field_info and field_info.alias else field_name
             )
             raise ValueError(
-                f"Invalid {display_name} value '{sanitized}'. "
+                f"Invalid {display_name} value '{stripped_value}'. "
                 f"Valid values are: {valid_list}"
             )
 
-        return sanitized
+        return nh3.clean(stripped_value)
 
     @field_validator("contributor", mode="before")
     @classmethod
