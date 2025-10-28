@@ -36,7 +36,7 @@ We  would like to organize and start a podcast series that covers the Thousand B
 - Layers and connectivity in a cortical column
 - Sensorimotor learning in the brain
 - Deep learning to TBP thinking
-- Mohamed Sherif: Temporal Memory and Depression
+- Paper reviews, for example - Mohamed Sherif: Temporal Memory and Depression
   https://www.frontiersin.org/journals/psychiatry/articles/10.3389/fpsyt.2023.976921/full
 
 ## Interviews
