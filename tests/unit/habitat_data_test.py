@@ -57,7 +57,7 @@ EXPECTED_ACTIONS_ABS = (
     f"{AGENT_ID}.set_sensor_rotation",
     f"{AGENT_ID}.set_sensor_pose",
 )
-EXPCTED_ACTIONS_SURF = (
+EXPECTED_ACTIONS_SURF = (
     f"{AGENT_ID}.move_forward",
     f"{AGENT_ID}.move_tangentially",
     f"{AGENT_ID}.orient_horizontal",
