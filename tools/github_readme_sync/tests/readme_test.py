@@ -414,7 +414,10 @@ This is a test document.""",
 
         # Test cases for Markdown file paths
         markdown_paths_with_deep_link = [
-            ("[File 1](slug.md#sub-heading) and [File 2](slug2.md#sub-heading)"),
+            (
+                "[File 1](slug.md#sub-heading) and "  # fmt: skip noqa: RUF028
+                "[File 2](slug2.md#sub-heading)"
+            ),
             (
                 "[File 1](contibuting/slug.md#sub-heading) and "
                 "[File 2](contibuting/slug2.md#sub-heading)"
