@@ -479,20 +479,17 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> List[int]:
     The parser supports single indices and Python-slice-like ranges using
     a colon (`:`), with the end index exclusive.
 
-
-
     Args:
         episode_spec: Selection string describing which episodes to run.
             See supported forms.
-        total: Total number of episodes. Must be non-negative. Valid indices are in
-            `[0, total)`.
+        total: Total number of episodes. Must be non-negative.
 
     Supported forms:
       - `"all"` or empty string: select all valid indices `[0, total)`
       - Comma-separated integers and ranges, for example `"0,3,5:8"`
       - Open-ended ranges (end-exclusive):
-          * `":N"` selects `[0, N)` (i.e., indices `0` through `N-1`)
-          * `"N:"` selects `[N, total)`
+          - `":N"` selects `[0, N)` (i.e., indices `0` through `N-1`)
+          - `"N:"` selects `[N, total)`
 
     Notes:
       - Ranges are validated, not clamped. If a range falls outside `[0, total)`,
