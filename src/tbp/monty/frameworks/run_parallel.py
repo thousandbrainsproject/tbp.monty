@@ -64,6 +64,12 @@ Assumptions and notes:
 """
 
 
+RE_OPEN_LEFT = re.compile(r"^:([+-]?\d+)$")  # ":N"
+RE_OPEN_RIGHT = re.compile(r"^([+-]?\d+):$")  # "N:"
+RE_CLOSED = re.compile(r"^([+-]?\d+)\s*:\s*([+-]?\d+)$")  # "A:B"
+RE_SINGLE = re.compile(r"^[+-]?\d+$")  # "N"
+
+
 def single_train(config):
     os.makedirs(config["logging_config"]["output_dir"], exist_ok=True)
     with config["experiment_class"](config) as exp:
@@ -509,11 +515,6 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> List[int]:
     if s in ("", "all", ":"):
         return list(range(total))
 
-    re_open_left = re.compile(r"^:([+-]?\d+)$")  # ":N"
-    re_open_right = re.compile(r"^([+-]?\d+):$")  # "N:"
-    re_closed = re.compile(r"^([+-]?\d+)\s*:\s*([+-]?\d+)$")  # "A:B"
-    re_single = re.compile(r"^[+-]?\d+$")  # "N"
-
     selected: set[int] = set()
 
     for raw in s.split(","):
@@ -521,7 +522,7 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> List[int]:
         if not part:
             continue
 
-        m = re_open_left.match(part)
+        m = RE_OPEN_LEFT.match(part)
         if m:
             idx_end = int(m.group(1))
             if 0 < idx_end <= total:
@@ -530,7 +531,7 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> List[int]:
 
             raise ValueError(f"{m.group(0)} is not a valid range.")
 
-        m = re_open_right.match(part)
+        m = RE_OPEN_RIGHT.match(part)
         if m:
             idx_start = int(m.group(1))
             if 0 <= idx_start < total:
@@ -539,7 +540,7 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> List[int]:
 
             raise ValueError(f"{m.group(0)} is not a valid range.")
 
-        m = re_closed.match(part)
+        m = RE_CLOSED.match(part)
         if m:
             idx_start = int(m.group(1))
             idx_end = int(m.group(2))
@@ -549,7 +550,7 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> List[int]:
 
             raise ValueError(f"{m.group(0)} is not a valid range.")
 
-        if re_single.match(part):
+        if RE_SINGLE.match(part):
             idx = int(part)
             if 0 <= idx < total:
                 selected.add(idx)
