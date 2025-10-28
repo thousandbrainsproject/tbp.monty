@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+"""A collection of plot utilities used during normal platform runtime."""
 from __future__ import annotations
 
 import numpy as np
