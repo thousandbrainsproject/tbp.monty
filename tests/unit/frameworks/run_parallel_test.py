@@ -20,7 +20,6 @@ class ParseEpisodeSpecTest(unittest.TestCase):
         self.assertEqual(parse_episode_spec(":", total=3), [0, 1, 2])
         self.assertEqual(parse_episode_spec("all", total=4), [0, 1, 2, 3])
 
-    # Single index tests
     def test_single_index_valid(self):
         self.assertEqual(parse_episode_spec("3", total=6), [3])
 
@@ -32,7 +31,6 @@ class ParseEpisodeSpecTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not a valid index"):
             parse_episode_spec("5", total=5)
 
-    # Closed range tests
     def test_closed_range(self):
         self.assertEqual(parse_episode_spec("2:5", total=10), [2, 3, 4])
 
@@ -51,7 +49,6 @@ class ParseEpisodeSpecTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not a valid range"):
             parse_episode_spec("0:6", total=5)
 
-    # Open range tests
     def test_open_left(self):
         self.assertEqual(parse_episode_spec(":3", total=10), [0, 1, 2])
 
@@ -73,7 +70,6 @@ class ParseEpisodeSpecTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "not a valid range"):
             parse_episode_spec("-1:", total=5)
 
-    # Multiple selection and other edge cases
     def test_mixed_selection(self):
         self.assertEqual(
             parse_episode_spec("0,3,5:8", total=10),
