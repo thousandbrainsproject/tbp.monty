@@ -37,7 +37,7 @@ from tbp.monty.frameworks.experiments import (
     MontyObjectRecognitionExperiment,
 )
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
-    EvidenceGraphLM
+    EvidenceGraphLM,
 )
 from tbp.monty.simulators.habitat.configs import (
     SurfaceViewFinderMountHabitatEnvInterfaceConfig,
