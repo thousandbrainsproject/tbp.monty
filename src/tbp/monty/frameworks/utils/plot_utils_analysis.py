@@ -11,6 +11,7 @@
 Do not read too much into the "_analysis" suffix of this file. We needed separate
 files to segment what is imported.
 """
+
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
