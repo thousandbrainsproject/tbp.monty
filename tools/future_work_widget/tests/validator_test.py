@@ -14,27 +14,18 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from tools.future_work_widget.validator import (
     MAX_COMMA_SEPARATED_ITEMS,
-    RecordValidator,
+    FutureWorkRecord,
+    load_allowed_values,
 )
 
 
-class TestRecordValidator(unittest.TestCase):
+class TestLoadAllowedValues(unittest.TestCase):
     def setUp(self):
         self.temp_path = Path(tempfile.mkdtemp())
-        self.expected_tags = [
-            "accuracy",
-            "pose",
-            "learning",
-            "multiobj",
-        ]
-        self.expected_skills = [
-            "python",
-            "github-actions",
-            "JS",
-            "HTML",
-        ]
 
     def tearDown(self):
         shutil.rmtree(self.temp_path)
@@ -43,150 +34,147 @@ class TestRecordValidator(unittest.TestCase):
         snippets_dir = self.temp_path / "snippets"
         snippets_dir.mkdir()
 
+        expected_tags = ["accuracy", "pose", "learning", "multiobj"]
         tags_file = snippets_dir / "future-work-tags.md"
         with open(tags_file, "w", encoding="utf-8") as f:
-            f.write(" ".join(f"`{tag}`" for tag in self.expected_tags))
+            f.write(" ".join(f"`{tag}`" for tag in expected_tags))
 
+        expected_skills = ["python", "github-actions", "JS", "HTML"]
         skills_file = snippets_dir / "future-work-skills.md"
         with open(skills_file, "w", encoding="utf-8") as f:
-            f.write(" ".join(f"`{skill}`" for skill in self.expected_skills))
+            f.write(" ".join(f"`{skill}`" for skill in expected_skills))
 
-        validator = RecordValidator(snippets_dir)
+        allowed_values = load_allowed_values(snippets_dir)
 
-        self.assertIn("tags", validator.allowed_values)
-        self.assertIn("skills", validator.allowed_values)
-
-        self.assertEqual(
-            sorted(validator.allowed_values["tags"]), sorted(self.expected_tags)
-        )
-        self.assertEqual(
-            sorted(validator.allowed_values["skills"]), sorted(self.expected_skills)
-        )
+        self.assertIn("tags", allowed_values)
+        self.assertIn("skills", allowed_values)
+        self.assertEqual(sorted(allowed_values["tags"]), sorted(expected_tags))
+        self.assertEqual(sorted(allowed_values["skills"]), sorted(expected_skills))
 
     def test_missing_validation_files_graceful(self):
         snippets_dir = self.temp_path / "snippets"
         snippets_dir.mkdir()
 
-        validator = RecordValidator(snippets_dir)
-
-        self.assertEqual(len(validator.allowed_values), 0)
-        record = {"path1": "future-work", "path2": "test", "path": "test/path.md"}
-        errors = validator.validate(record)
-        self.assertEqual(len(errors), 0)
+        allowed_values = load_allowed_values(snippets_dir)
+        self.assertEqual(len(allowed_values), 0)
 
     def test_nonexistent_snippets_directory(self):
         nonexistent_dir = self.temp_path / "nonexistent"
+        allowed_values = load_allowed_values(nonexistent_dir)
+        self.assertEqual(len(allowed_values), 0)
 
-        validator = RecordValidator(nonexistent_dir)
 
-        self.assertEqual(len(validator.allowed_values), 0)
-        record = {"path1": "future-work", "path2": "test", "path": "test/path.md"}
-        errors = validator.validate(record)
-        self.assertEqual(len(errors), 0)
-
-    def test_direct_validation_success(self):
-        """Test RecordValidator.validate() method directly."""
-        validator = RecordValidator(Path())
-
+class TestFutureWorkRecord(unittest.TestCase):
+    def test_validation_success(self):
         record = {
+            "path": "future-work/test-item.md",
             "path1": "future-work",
             "path2": "test-item",
-            "path": "future-work/test-item.md",
             "title": "Test item",
             "tags": "accuracy,learning",
             "skills": "python,javascript",
             "contributor": "alice,bob",
         }
 
-        errors = validator.validate(record)
-        self.assertEqual(len(errors), 0)
+        validated = FutureWorkRecord.model_validate(record)
+        self.assertEqual(validated.path1, "future-work")
+        self.assertEqual(validated.path2, "test-item")
+        self.assertEqual(validated.tags, ["accuracy", "learning"])
+        self.assertEqual(validated.skills, ["python", "javascript"])
+        self.assertEqual(validated.contributor, ["alice", "bob"])
 
-        result = validator.transform(record)
-        self.assertEqual(result["path1"], "future-work")
-        self.assertEqual(result["path2"], "test-item")
-        self.assertEqual(result["tags"], ["accuracy", "learning"])
-        self.assertEqual(result["skills"], ["python", "javascript"])
-        self.assertEqual(result["contributor"], ["alice", "bob"])
-
-    def test_direct_validation_requires_path_field(self):
-        """Test that validation requires path field regardless of path1."""
-        validator = RecordValidator(Path())
-
+    def test_path_field_required(self):
         record = {
-            "path1": "other-section",
+            "path1": "future-work",
             "path2": "test-item",
             "title": "Test item",
         }
 
-        errors = validator.validate(record)
-        self.assertEqual(len(errors), 1)
-        self.assertIn("path", errors[0].field)
+        with self.assertRaises(ValidationError) as cm:
+            FutureWorkRecord.model_validate(record)
+
+        errors = cm.exception.errors()
+        self.assertTrue(any("path" in str(e["loc"]) for e in errors))
 
     def test_comma_separated_field_limits(self):
-        """Test limits on comma-separated fields."""
-        validator = RecordValidator(Path())
         max_items = MAX_COMMA_SEPARATED_ITEMS
-
         too_many_tags = ",".join([f"tag{i}" for i in range(max_items + 1)])
+
         record = {
+            "path": "future-work/test-item.md",
             "path1": "future-work",
             "path2": "test-item",
-            "path": "future-work/test-item.md",
             "title": "Test item",
             "tags": too_many_tags,
         }
 
-        errors = validator.validate(record)
-        self.assertEqual(len(errors), 1)
-        self.assertIn("Cannot have more than", errors[0].message)
-        self.assertIn(str(max_items), errors[0].message)
+        with self.assertRaises(ValidationError) as cm:
+            FutureWorkRecord.model_validate(record)
+
+        errors = cm.exception.errors()
+        self.assertTrue(any("Cannot have more than" in e["msg"] for e in errors))
 
     def test_validation_with_allowed_values_context(self):
-        """Test that Pydantic validators use the allowed_values context."""
-        snippets_dir = self.temp_path / "snippets"
-        snippets_dir.mkdir()
-
-        tags_file = snippets_dir / "future-work-tags.md"
-        with open(tags_file, "w", encoding="utf-8") as f:
-            f.write("`accuracy` `pose`")
-
-        validator = RecordValidator(snippets_dir)
-
         record = {
+            "path": "future-work/test-item.md",
             "path1": "future-work",
             "path2": "test-item",
-            "path": "future-work/test-item.md",
             "title": "Test item",
             "tags": "accuracy",
         }
 
-        errors = validator.validate(record)
-        self.assertEqual(len(errors), 0)
+        allowed_values = {"tags": ["accuracy", "pose"]}
 
-        invalid_record = {
+        validated = FutureWorkRecord.model_validate(
+            record, context={"allowed_values": allowed_values}
+        )
+        self.assertEqual(validated.tags, ["accuracy"])
+
+    def test_validation_with_invalid_allowed_values(self):
+        record = {
+            "path": "future-work/test-item.md",
             "path1": "future-work",
             "path2": "test-item",
-            "path": "future-work/test-item.md",
             "title": "Test item",
             "tags": "invalid_tag",
         }
 
-        errors = validator.validate(invalid_record)
-        self.assertEqual(len(errors), 1)
-        self.assertIn("Invalid tags value", errors[0].message)
+        allowed_values = {"tags": ["accuracy", "pose"]}
 
-    def test_missing_path_field_returns_error(self):
-        validator = RecordValidator(Path())
+        with self.assertRaises(ValidationError) as cm:
+            FutureWorkRecord.model_validate(
+                record, context={"allowed_values": allowed_values}
+            )
 
+        errors = cm.exception.errors()
+        self.assertTrue(any("Invalid tags value" in e["msg"] for e in errors))
+
+    def test_github_username_validation(self):
         record = {
+            "path": "future-work/test-item.md",
             "path1": "future-work",
             "path2": "test-item",
             "title": "Test item",
+            "contributor": "valid-user",
         }
 
-        errors = validator.validate(record)
-        self.assertEqual(len(errors), 1)
-        self.assertIn("path", errors[0].field.lower())
+        validated = FutureWorkRecord.model_validate(record)
+        self.assertEqual(validated.contributor, ["valid-user"])
+
+    def test_invalid_github_username(self):
+        record = {
+            "path": "future-work/test-item.md",
+            "path1": "future-work",
+            "path2": "test-item",
+            "title": "Test item",
+            "contributor": "-invalid",
+        }
+
+        with self.assertRaises(ValidationError) as cm:
+            FutureWorkRecord.model_validate(record)
+
+        errors = cm.exception.errors()
+        self.assertTrue(any("Invalid contributor username" in e["msg"] for e in errors))
 
 
 if __name__ == "__main__":

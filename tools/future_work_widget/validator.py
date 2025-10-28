@@ -11,8 +11,7 @@ from __future__ import annotations
 
 import logging
 import re
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import nh3
 from pydantic import (
@@ -23,12 +22,15 @@ from pydantic import (
     ValidationInfo,
     field_validator,
 )
-from pydantic import ValidationError as PydanticValidationError
 from typing_extensions import Annotated
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 MAX_COMMA_SEPARATED_ITEMS = 10
+
 
 
 class ErrorDetail(BaseModel):
@@ -42,7 +44,7 @@ class ErrorDetail(BaseModel):
 
 
 class FutureWorkIndex(RootModel):
-    root: list[dict[str, Any]]
+    root: list[FutureWorkRecord]
 
 
 class FutureWorkRecord(BaseModel):
@@ -332,157 +334,27 @@ class FutureWorkRecord(BaseModel):
         return value
 
 
-class RecordValidator:
-    """Validates and transforms records for the future work widget.
+def load_allowed_values(docs_snippets_dir: Path) -> dict[str, list[str]]:
+    allowed_values: dict[str, list[str]] = {}
+    future_work_files = list(docs_snippets_dir.glob("future-work-*.md"))
 
-    This class loads allowed values from markdown files and passes them
-    to Pydantic for validation via the validation context.
-    """
+    for file_path in future_work_files:
+        field_name = file_path.stem.replace("future-work-", "").replace("-", "_")
 
-    REQUIRED_FIELDS: list[str] = []
+        with open(file_path, encoding="utf-8") as f:
+            content = f.read().strip()
 
-    def __init__(self, docs_snippets_dir: Path):
-        self.allowed_values: dict[str, list[str]] = {}
-        self._load_validation_files(docs_snippets_dir)
+        parsed_values = []
+        for raw_item in content.split("`"):
+            clean_item = nh3.clean(raw_item).strip()
+            if clean_item:
+                parsed_values.append(clean_item)
 
-    def validate(self, record: dict[str, Any]) -> list[ErrorDetail]:
-        """Validate a record using Pydantic with dynamic validation context.
-
-        Args:
-            record: The record to validate
-
-        Returns:
-            List of error details (empty if validation succeeds)
-        """
-        file_path = str(record.get("path", "unknown"))
-
-        try:
-            validation_context = {"allowed_values": self.allowed_values}
-            validated_record = FutureWorkRecord.model_validate(
-                record, context=validation_context
+        if parsed_values:
+            allowed_values[field_name] = parsed_values
+            logger.debug(
+                f"Loaded {len(parsed_values)} allowed values for "
+                f"'{field_name}' from {file_path.name}"
             )
-            record_dict = validated_record.model_dump()
-        except PydanticValidationError as e:
-            return self._convert_pydantic_error_to_error_details(e, file_path)
 
-        errors: list[ErrorDetail] = []
-        self._validate_required_fields(record_dict, file_path, errors)
-        return errors
-
-    def transform(self, record: dict[str, Any]) -> dict[str, Any]:
-        """Transform a record using Pydantic after successful validation.
-
-        Args:
-            record: The record to transform (must have been validated first)
-
-        Returns:
-            Transformed record with parsed fields
-        """
-        validation_context = {"allowed_values": self.allowed_values}
-        validated_record = FutureWorkRecord.model_validate(
-            record, context=validation_context
-        )
-        return validated_record.model_dump(by_alias=True)
-
-    def _create_error_detail(
-        self, message: str, file_path: str, field: str
-    ) -> ErrorDetail:
-        """Create a single error detail object.
-
-        Args:
-            message: Error message
-            file_path: Path to the file with the error
-            field: Field name that has the error
-
-        Returns:
-            ErrorDetail object with standardized error information
-        """
-        return ErrorDetail(
-            message=message,
-            file=file_path,
-            line=1,
-            field=field,
-            level="error",
-            title=f"Validation Error in {Path(file_path).name}",
-            annotation_level="failure",
-        )
-
-    def _convert_pydantic_error_to_error_details(
-        self, exc: PydanticValidationError, file_path: str
-    ) -> list[ErrorDetail]:
-        error_details = []
-        for error in exc.errors():
-            field = (
-                ".".join(str(loc) for loc in error["loc"])
-                if error["loc"]
-                else "unknown"
-            )
-            message = error["msg"]
-            error_details.append(self._create_error_detail(message, file_path, field))
-        return error_details
-
-    def _validate_required_fields(
-        self, record: dict[str, Any], file_path: str, errors: list[ErrorDetail]
-    ) -> None:
-        """Validate that all required fields are present and not empty."""
-        for field in self.REQUIRED_FIELDS:
-            if field not in record:
-                self._add_error_detail(
-                    f"Required field '{field}' is missing", file_path, field, errors
-                )
-                continue
-
-            if not isinstance(record[field], str):
-                self._add_error_detail(
-                    f"Required field '{field}' must be a string, "
-                    f"got {type(record[field]).__name__}",
-                    file_path,
-                    field,
-                    errors,
-                )
-                continue
-
-            if not record[field].strip():
-                self._add_error_detail(
-                    f"Required field '{field}' cannot be empty",
-                    file_path,
-                    field,
-                    errors,
-                )
-                continue
-
-    def _add_error_detail(
-        self, message: str, file_path: str, field: str, errors: list[ErrorDetail]
-    ) -> None:
-        """Add an error detail to the errors list."""
-        errors.append(self._create_error_detail(message, file_path, field))
-
-    def _load_validation_files(self, docs_snippets_dir: Path) -> None:
-        """Load validation files from docs_snippets_dir.
-
-        These files define allowed values for fields like tags, skills, etc.
-        The values are passed to Pydantic via validation context.
-
-        Args:
-            docs_snippets_dir: Path to the snippets directory
-        """
-        future_work_files = list(docs_snippets_dir.glob("future-work-*.md"))
-
-        for file_path in future_work_files:
-            field_name = file_path.stem.replace("future-work-", "").replace("-", "_")
-
-            with open(file_path, encoding="utf-8") as f:
-                content = f.read().strip()
-
-            parsed_values = []
-            for raw_item in content.split("`"):
-                clean_item = nh3.clean(raw_item).strip()
-                if clean_item:
-                    parsed_values.append(clean_item)
-
-            if parsed_values:
-                self.allowed_values[field_name] = parsed_values
-                logger.debug(
-                    f"Loaded {len(parsed_values)} allowed values for "
-                    f"'{field_name}' from {file_path.name}"
-                )
+    return allowed_values

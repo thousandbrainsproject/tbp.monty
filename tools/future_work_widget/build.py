@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 from pydantic import BaseModel
 from pydantic import ValidationError as PydanticValidationError
@@ -18,11 +18,8 @@ from pydantic import ValidationError as PydanticValidationError
 from tools.future_work_widget.validator import (
     ErrorDetail,
     FutureWorkIndex,
-    RecordValidator,
+    load_allowed_values,
 )
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 class BuildResult(BaseModel):
@@ -54,48 +51,33 @@ def build(
             return build_result
 
         with open(index_file, encoding="utf-8") as f:
-            try:
-                index = FutureWorkIndex.model_validate_json(f.read())
-                data = index.root
-            except PydanticValidationError as e:
-                return BuildResult(
-                    success=False,
-                    error_message=f"Invalid index file format: {e}",
-                )
+            raw_data = json.load(f)
 
-        validator = RecordValidator(docs_snippets_dir)
-        future_work_items = []
-        errors = []
+        total_items = len(raw_data)
+        future_work_items = [
+            item
+            for item in raw_data
+            if item.get("path1") == "future-work" and "path2" in item
+        ]
 
-        for item in data:
-            if item.get("path1") != "future-work" or "path2" not in item:
-                continue
+        allowed_values = load_allowed_values(docs_snippets_dir)
 
-            validation_errors = validator.validate(item)
-            if validation_errors:
-                errors.extend(validation_errors)
-            else:
-                validated_item = validator.transform(item)
-                future_work_items.append(validated_item)
-
-        if errors:
-            return BuildResult(
-                success=False,
-                future_work_items=len(future_work_items),
-                total_items=len(data),
-                errors=errors,
-                error_message=f"Validation failed with {len(errors)} error(s)",
+        try:
+            index = FutureWorkIndex.model_validate(
+                future_work_items, context={"allowed_values": allowed_values}
             )
+        except PydanticValidationError as e:
+            return _return_error_result(e, future_work_items, total_items)
+        else:
+            data_file = output_dir / "data.json"
+            with open(data_file, "w", encoding="utf-8") as f:
+                f.write(index.model_dump_json(indent=2, by_alias=True))
 
-        data_file = output_dir / "data.json"
-        with open(data_file, "w", encoding="utf-8") as f:
-            json.dump(future_work_items, f, indent=2, ensure_ascii=False)
-
-        return BuildResult(
-            success=True,
-            future_work_items=len(future_work_items),
-            total_items=len(data),
-        )
+            return BuildResult(
+                success=True,
+                future_work_items=len(index.root),
+                total_items=total_items,
+            )
 
     except Exception as e:  # noqa: BLE001
         return BuildResult(
@@ -135,3 +117,47 @@ def _validate_params(
         )
 
     return None
+
+
+def _return_error_result(
+    exc: PydanticValidationError,
+    filtered_data: list[dict],
+    total_items: int,
+) -> BuildResult:
+    errors = []
+    for error in exc.errors():
+        loc = error["loc"]
+        if loc and isinstance(loc[0], int):
+            record_index = loc[0]
+            file_path = filtered_data[record_index].get("path", "unknown")
+        else:
+            file_path = "unknown"
+
+        field_parts = [str(item) for item in loc[1:]]
+        field = ".".join(field_parts) if len(loc) > 1 else "unknown"
+
+        title = (
+            f"Validation Error in {Path(file_path).name}"
+            if file_path != "unknown"
+            else "Validation Error"
+        )
+
+        errors.append(
+            ErrorDetail(
+                message=error["msg"],
+                file=file_path,
+                line=1,
+                field=field,
+                level="error",
+                title=title,
+                annotation_level="failure",
+            )
+        )
+
+    return BuildResult(
+        success=False,
+        future_work_items=0,
+        total_items=total_items,
+        errors=errors,
+        error_message=f"Validation failed with {len(errors)} error(s)",
+    )
