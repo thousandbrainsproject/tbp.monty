@@ -29,6 +29,7 @@ from vedo import (
     settings,
 )
 
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.ycb import DISTINCT_OBJECTS
 from tbp.monty.frameworks.utils.logging_utils import load_stats
 
@@ -145,7 +146,9 @@ class DataExtractor:
                 processed_steps, episode_data["motor_system"]["action_sequence"]
             ):
                 if processed_step:
-                    self.sensor_positions.append(seq_step[1]["agent_id_0"]["position"])
+                    self.sensor_positions.append(
+                        seq_step[1][AgentID("agent_id_0")]["position"]
+                    )
 
         # Make sure that the agent positions (sampled by processed steps) is the same
         # length as the other logged data

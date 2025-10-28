@@ -14,7 +14,12 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 
 from tbp.monty.frameworks.actions.actions import Action
 
-__all__ = ["EmbodiedEnvironment", "ActionSpace", "VectorXYZ", "QuaternionWXYZ"]
+__all__ = [
+    "EmbodiedEnvironment",
+    "ActionSpace",
+    "VectorXYZ",
+    "QuaternionWXYZ",
+]
 
 VectorXYZ = Tuple[float, float, float]
 QuaternionWXYZ = Tuple[float, float, float, float]

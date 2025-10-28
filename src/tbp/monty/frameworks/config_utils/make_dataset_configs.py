@@ -27,6 +27,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import (
     DepthTo3DLocations,
 )
@@ -138,7 +139,7 @@ class OmniglotDatasetArgs:
     def __post_init__(self):
         self.transform = [
             DepthTo3DLocations(
-                agent_id="agent_id_0",
+                agent_id=AgentID("agent_id_0"),
                 sensor_ids=["patch"],
                 resolutions=np.array([[10, 10]]),
                 world_coord=True,
@@ -169,7 +170,7 @@ class WorldImageFromStreamDatasetArgs:
     def __post_init__(self):
         self.transform = [
             DepthTo3DLocations(
-                agent_id="agent_id_0",
+                agent_id=AgentID("agent_id_0"),
                 sensor_ids=["patch"],
                 resolutions=np.array([[64, 64]]),
                 world_coord=True,
@@ -180,7 +181,11 @@ class WorldImageFromStreamDatasetArgs:
                 depth_clip_sensors=(0,),
                 clip_value=1.1,
             ),
-            # GaussianSmoothing(agent_id="agent_id_0", sigma=8, kernel_width=10),
+            # GaussianSmoothing(
+            #     agent_id=AgentID("agent_id_0"),
+            #     sigma=8,
+            #     kernel_width=10
+            # ),
         ]
 
 
@@ -509,19 +514,19 @@ def get_omniglot_eval_dataloader(
 
 @dataclass
 class SensorAgentMapping:
-    agent_ids: List[str]
+    agent_ids: list[AgentID]
     sensor_ids: List[str]
-    sensor_to_agent: Dict
+    sensor_to_agent: dict[str, AgentID]
 
 
 @dataclass
 class SingleSensorAgentMapping(SensorAgentMapping):
     """Mapping for a sim with a single agent and single sensor."""
 
-    agent_ids: List[str] = field(default_factory=lambda: ["agent_id_0"])
+    agent_ids: list[AgentID] = field(default_factory=lambda: [AgentID("agent_id_0")])
     sensor_ids: List[str] = field(default_factory=lambda: ["sensor_id_0"])
-    sensor_to_agent: Dict = field(
-        default_factory=lambda: dict(sensor_id_0="agent_id_0")
+    sensor_to_agent: dict[str, AgentID] = field(
+        default_factory=lambda: dict(sensor_id_0=AgentID("agent_id_0"))
     )
 
 
@@ -529,27 +534,31 @@ class SingleSensorAgentMapping(SensorAgentMapping):
 class SimpleMountSensorAgentMapping(SensorAgentMapping):
     """Mapping for a sim with a single mount agent with two sensors."""
 
-    agent_ids: List[str] = field(default_factory=lambda: ["agent_id_0"])
+    agent_ids: list[AgentID] = field(default_factory=lambda: [AgentID("agent_id_0")])
     sensor_ids: List[str] = field(
         default_factory=lambda: ["sensor_id_0", "sensor_id_1"]
     )
-    sensor_to_agent: Dict = field(
-        default_factory=lambda: dict(sensor_id_0="agent_id_0", sensor_id_1="agent_id_0")
+    sensor_to_agent: dict[str, AgentID] = field(
+        default_factory=lambda: dict(
+            sensor_id_0=AgentID("agent_id_0"), sensor_id_1=AgentID("agent_id_0")
+        )
     )
 
 
 @dataclass
 class PatchAndViewSensorAgentMapping(SensorAgentMapping):
-    agent_ids: List[str] = field(default_factory=lambda: ["agent_id_0"])
+    agent_ids: list[AgentID] = field(default_factory=lambda: [AgentID("agent_id_0")])
     sensor_ids: List[str] = field(default_factory=lambda: ["patch", "view_finder"])
-    sensor_to_agent: Dict = field(
-        default_factory=lambda: dict(patch="agent_id_0", view_finder="agent_id_0")
+    sensor_to_agent: dict[str, AgentID] = field(
+        default_factory=lambda: dict(
+            patch=AgentID("agent_id_0"), view_finder=AgentID("agent_id_0")
+        )
     )
 
 
 @dataclass
 class TwoCameraMountConfig:
-    agent_id: str | None = field(default=None)
+    agent_id: AgentID | None = field(default=None)
     sensor_ids: List[str] | None = field(default=None)
     resolutions: List[List[int | float]] = field(
         default_factory=lambda: [[16, 16], [16, 16]]
@@ -578,7 +587,7 @@ class PatchAndViewFinderMountConfig:
     so the object is in view before the real experiment happens.
     """
 
-    agent_id: str | None = "agent_id_0"
+    agent_id: AgentID | None = field(default=AgentID("agent_id_0"))
     sensor_ids: List[str] | None = field(
         default_factory=lambda: ["patch", "view_finder"]
     )
@@ -635,7 +644,7 @@ class SurfaceAndViewFinderMountConfig(PatchAndViewFinderMountConfig):
 @dataclass
 class MultiLMMountConfig:
     # Modified from `PatchAndViewFinderMountConfig`
-    agent_id: str | None = "agent_id_0"
+    agent_id: AgentID | None = field(default=AgentID("agent_id_0"))
     sensor_ids: List[str] | None = field(
         default_factory=lambda: ["patch_0", "patch_1", "view_finder"]
     )
@@ -668,7 +677,7 @@ class MultiLMMountConfig:
 class TwoLMStackedDistantMountConfig:
     # two sensor patches at the same location with different receptive field sizes
     # Used for basic test with heterarchy.
-    agent_id: str | None = "agent_id_0"
+    agent_id: AgentID | None = field(default=AgentID("agent_id_0"))
     sensor_ids: List[str] | None = field(
         default_factory=lambda: ["patch_0", "patch_1", "view_finder"]
     )
@@ -705,7 +714,7 @@ class TwoLMStackedSurfaceMountConfig(TwoLMStackedDistantMountConfig):
 @dataclass
 class FiveLMMountConfig:
     # Modified from `PatchAndViewFinderMountConfig`
-    agent_id: str | None = "agent_id_0"
+    agent_id: AgentID | None = field(default=AgentID("agent_id_0"))
     sensor_ids: List[str] | None = field(
         default_factory=lambda: [
             "patch_0",
@@ -888,7 +897,7 @@ def make_sensor_positions_on_grid(
 
 def make_multi_sensor_mount_config(
     n_sensors: int,
-    agent_id: str = "agent_id_0",
+    agent_id: AgentID = AgentID("agent_id_0"),  # noqa: B008
     sensor_ids: Optional[Sequence[str]] = None,
     height: Number = 0.0,
     position: ArrayLike = (0, 1.5, 0.2),  # agent position
@@ -937,7 +946,7 @@ def make_multi_sensor_mount_config(
 
     # Initialize with agent info, then add sensor info.
     mount_config = {
-        "agent_id": str(agent_id),
+        "agent_id": agent_id,
         "height": float(height),
         "position": np.asarray(position),
     }

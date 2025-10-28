@@ -10,6 +10,8 @@
 
 import pytest
 
+from tbp.monty.frameworks.agents import AgentID
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -84,7 +86,9 @@ class MontyRunTest(unittest.TestCase):
 
         # Mock habitat_sim classes
         mock_agent_class = agent_patch.start()
-        camera = SingleSensorAgent(agent_id="agent_id_0", sensor_id="sensor_id_0")
+        camera = SingleSensorAgent(
+            agent_id=AgentID("agent_id_0"), sensor_id="sensor_id_0"
+        )
         self.mock_agent = mock_agent_class.return_value
         self.mock_agent.agent_config = camera.get_spec()
         self.mock_agent.scene_node = mock.Mock(

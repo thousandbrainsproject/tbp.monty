@@ -21,6 +21,7 @@ from skimage.transform import resize
 from torch_geometric.data import Data
 
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
 from tbp.monty.frameworks.utils.graph_matching_utils import find_step_on_new_object
 from tbp.monty.frameworks.utils.logging_utils import (
@@ -1632,13 +1633,13 @@ class PolicyPlot:
             # The location and rotation of the agent (temporarily) before it jumped back
             temp_agent_loc = self.detailed_stats[str(self.episode)]["motor_system"][
                 "action_details"
-            ]["post_jump_pose"][idx_jump]["agent_id_0"]["position"]
+            ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]["position"]
 
             temp_agent_rot = Rotation.from_quat(
                 numpy_to_scipy_quat(
                     self.detailed_stats[str(self.episode)]["motor_system"][
                         "action_details"
-                    ]["post_jump_pose"][idx_jump]["agent_id_0"]["rotation"]
+                    ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]["rotation"]
                 )
             )
 
@@ -1651,7 +1652,7 @@ class PolicyPlot:
                 x
                 for x in self.detailed_stats[str(self.episode)]["motor_system"][
                     "action_details"
-                ]["post_jump_pose"][idx_jump]["agent_id_0"]["sensors"]
+                ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]["sensors"]
                 if "patch" in x and ".depth" in x
             ]
 
@@ -1659,16 +1660,16 @@ class PolicyPlot:
                 temp_sensor_loc = np.array(temp_agent_loc) + np.array(
                     self.detailed_stats[str(self.episode)]["motor_system"][
                         "action_details"
-                    ]["post_jump_pose"][idx_jump]["agent_id_0"]["sensors"][sensor_key][
-                        "position"
-                    ]
+                    ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]["sensors"][
+                        sensor_key
+                    ]["position"]
                 )
 
                 partial_sensor_rot = Rotation.from_quat(
                     numpy_to_scipy_quat(
                         self.detailed_stats[str(self.episode)]["motor_system"][
                             "action_details"
-                        ]["post_jump_pose"][idx_jump]["agent_id_0"]["sensors"][
+                        ]["post_jump_pose"][idx_jump][AgentID("agent_id_0")]["sensors"][
                             sensor_key
                         ]["rotation"]
                     )

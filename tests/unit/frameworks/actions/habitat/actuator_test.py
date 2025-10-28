@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.frameworks.agents import AgentID
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -47,14 +49,14 @@ from tests.unit.frameworks.actions.fakes.action import FakeAction
 
 
 class FakeHabitat(HabitatActuator):
-    def get_agent(self, agent_id: str) -> Agent:
+    def get_agent(self, agent_id: AgentID) -> Agent:
         return None
 
 
 class HabitatAcutatorTest(unittest.TestCase):
     def test_action_name_concatenates_agent_id_and_name_with_period(self) -> None:
         actuator = FakeHabitat()
-        action = FakeAction(agent_id="agent1")
+        action = FakeAction(agent_id=AgentID("agent1"))
         self.assertEqual(actuator.action_name(action), "agent1.fake_action")
 
     @patch("tests.unit.frameworks.actions.habitat.actuator_test.FakeHabitat.get_agent")
@@ -66,7 +68,7 @@ class HabitatAcutatorTest(unittest.TestCase):
         mock_get_agent.return_value = mock_agent
 
         actuator = FakeHabitat()
-        action = FakeAction(agent_id="agent1")
+        action = FakeAction(agent_id=AgentID("agent1"))
 
         with self.assertRaises(InvalidActionName) as context:
             actuator.to_habitat(action)
@@ -90,7 +92,9 @@ class HabitatActuatorsTest(unittest.TestCase):
     def test_actuate_look_down_acts_with_params_set(self, mock_get_agent: Mock) -> None:
         mock_get_agent.return_value = self.mock_agent
 
-        action = LookDown(agent_id="agent1", rotation_degrees=45, constraint_degrees=90)
+        action = LookDown(
+            agent_id=AgentID("agent1"), rotation_degrees=45, constraint_degrees=90
+        )
         action_name = self.actuator.action_name(action)
         self.action_space[action_name] = Mock()
 
@@ -103,7 +107,9 @@ class HabitatActuatorsTest(unittest.TestCase):
     def test_actuate_look_up_acts_with_params_set(self, mock_get_agent: Mock) -> None:
         mock_get_agent.return_value = self.mock_agent
 
-        action = LookUp(agent_id="agent1", rotation_degrees=45, constraint_degrees=90)
+        action = LookUp(
+            agent_id=AgentID("agent1"), rotation_degrees=45, constraint_degrees=90
+        )
         action_name = self.actuator.action_name(action)
         self.action_space[action_name] = Mock()
 
@@ -118,7 +124,7 @@ class HabitatActuatorsTest(unittest.TestCase):
     ) -> None:
         mock_get_agent.return_value = self.mock_agent
 
-        action = MoveForward(agent_id="agent1", distance=1)
+        action = MoveForward(agent_id=AgentID("agent1"), distance=1)
         action_name = self.actuator.action_name(action)
         self.action_space[action_name] = Mock()
 
@@ -132,7 +138,9 @@ class HabitatActuatorsTest(unittest.TestCase):
     ) -> None:
         mock_get_agent.return_value = self.mock_agent
 
-        action = MoveTangentially(agent_id="agent1", distance=1, direction=(1, 0, 0))
+        action = MoveTangentially(
+            agent_id=AgentID("agent1"), distance=1, direction=(1, 0, 0)
+        )
         action_name = self.actuator.action_name(action)
         self.action_space[action_name] = Mock()
 
@@ -148,7 +156,10 @@ class HabitatActuatorsTest(unittest.TestCase):
         mock_get_agent.return_value = self.mock_agent
 
         action = OrientHorizontal(
-            agent_id="agent1", rotation_degrees=45, left_distance=1, forward_distance=2
+            agent_id=AgentID("agent1"),
+            rotation_degrees=45,
+            left_distance=1,
+            forward_distance=2,
         )
         action_name = self.actuator.action_name(action)
         self.action_space[action_name] = Mock()
@@ -165,7 +176,10 @@ class HabitatActuatorsTest(unittest.TestCase):
         mock_get_agent.return_value = self.mock_agent
 
         action = OrientVertical(
-            agent_id="agent1", rotation_degrees=45, down_distance=1, forward_distance=2
+            agent_id=AgentID("agent1"),
+            rotation_degrees=45,
+            down_distance=1,
+            forward_distance=2,
         )
         action_name = self.actuator.action_name(action)
         self.action_space[action_name] = Mock()
@@ -181,7 +195,7 @@ class HabitatActuatorsTest(unittest.TestCase):
     ) -> None:
         mock_get_agent.return_value = self.mock_agent
 
-        action = SetAgentPitch(agent_id="agent1", pitch_degrees=45)
+        action = SetAgentPitch(agent_id=AgentID("agent1"), pitch_degrees=45)
         action_name = self.actuator.action_name(action)
         self.action_space[action_name] = Mock()
 
@@ -196,7 +210,7 @@ class HabitatActuatorsTest(unittest.TestCase):
         mock_get_agent.return_value = self.mock_agent
 
         action = SetAgentPose(
-            agent_id="agent1", location=(1, 2, 3), rotation_quat=(0, 0, 0, 1)
+            agent_id=AgentID("agent1"), location=(1, 2, 3), rotation_quat=(0, 0, 0, 1)
         )
         action_name = self.actuator.action_name(action)
         self.action_space[action_name] = Mock()
@@ -213,7 +227,7 @@ class HabitatActuatorsTest(unittest.TestCase):
     ) -> None:
         mock_get_agent.return_value = self.mock_agent
 
-        action = SetSensorPitch(agent_id="agent1", pitch_degrees=44)
+        action = SetSensorPitch(agent_id=AgentID("agent1"), pitch_degrees=44)
         action_name = self.actuator.action_name(action)
         self.action_space[action_name] = Mock()
 
@@ -228,7 +242,7 @@ class HabitatActuatorsTest(unittest.TestCase):
         mock_get_agent.return_value = self.mock_agent
 
         action = SetSensorPose(
-            agent_id="agent1", location=(1, 2, 3), rotation_quat=(0, 0, 0, 1)
+            agent_id=AgentID("agent1"), location=(1, 2, 3), rotation_quat=(0, 0, 0, 1)
         )
         action_name = self.actuator.action_name(action)
         self.action_space[action_name] = Mock()
@@ -245,7 +259,9 @@ class HabitatActuatorsTest(unittest.TestCase):
     ) -> None:
         mock_get_agent.return_value = self.mock_agent
 
-        action = SetSensorRotation(agent_id="agent1", rotation_quat=(0, 0, 0, 1))
+        action = SetSensorRotation(
+            agent_id=AgentID("agent1"), rotation_quat=(0, 0, 0, 1)
+        )
         action_name = self.actuator.action_name(action)
         self.action_space[action_name] = Mock()
 
@@ -261,7 +277,7 @@ class HabitatActuatorsTest(unittest.TestCase):
     ) -> None:
         mock_get_agent.return_value = self.mock_agent
 
-        action = SetYaw(agent_id="agent1", rotation_degrees=41)
+        action = SetYaw(agent_id=AgentID("agent1"), rotation_degrees=41)
         action_name = self.actuator.action_name(action)
         self.action_space[action_name] = Mock()
 
@@ -275,7 +291,7 @@ class HabitatActuatorsTest(unittest.TestCase):
     ) -> None:
         mock_get_agent.return_value = self.mock_agent
 
-        action = TurnLeft(agent_id="agent1", rotation_degrees=40)
+        action = TurnLeft(agent_id=AgentID("agent1"), rotation_degrees=40)
         action_name = self.actuator.action_name(action)
         self.action_space[action_name] = Mock()
 
@@ -289,7 +305,7 @@ class HabitatActuatorsTest(unittest.TestCase):
     ) -> None:
         mock_get_agent.return_value = self.mock_agent
 
-        action = TurnRight(agent_id="agent1", rotation_degrees=39)
+        action = TurnRight(agent_id=AgentID("agent1"), rotation_degrees=39)
         action_name = self.actuator.action_name(action)
         self.action_space[action_name] = Mock()
 

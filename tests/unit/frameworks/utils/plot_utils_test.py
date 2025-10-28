@@ -11,6 +11,7 @@
 import unittest
 
 from tbp.monty.frameworks.actions.actions import MoveTangentially
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.utils.plot_utils import get_action_name
 
 
@@ -44,7 +45,7 @@ class GetActionNameTest(unittest.TestCase):
 
     def test_not_match_step_action_name(self) -> None:
         action = MoveTangentially(
-            agent_id="agent_id_0", distance=13, direction=(1, 2, 3)
+            agent_id=AgentID("agent_id_0"), distance=13, direction=(1, 2, 3)
         )
         name = get_action_name(
             action_stats=[[action, {}]],

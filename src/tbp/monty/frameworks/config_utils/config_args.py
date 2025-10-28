@@ -31,6 +31,7 @@ from tbp.monty.frameworks.actions.action_samplers import (
     ConstantSampler,
     UniformlyDistributedSampler,
 )
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
     make_base_policy_config,
     make_curv_surface_policy_config,
@@ -602,8 +603,8 @@ class PatchAndViewMontyConfig(MontyConfig):
     )
     sm_to_agent_dict: Dict = field(
         default_factory=lambda: dict(
-            patch="agent_id_0",
-            view_finder="agent_id_0",
+            patch=AgentID("agent_id_0"),
+            view_finder=AgentID("agent_id_0"),
         )
     )
     sm_to_lm_matrix: List = field(
@@ -728,8 +729,8 @@ class SurfaceAndViewMontyConfig(PatchAndViewMontyConfig):
     )
     sm_to_agent_dict: Dict = field(
         default_factory=lambda: dict(
-            patch="agent_id_0",
-            view_finder="agent_id_0",
+            patch=AgentID("agent_id_0"),
+            view_finder=AgentID("agent_id_0"),
         )
     )
     sm_to_lm_matrix: List = field(
@@ -913,9 +914,9 @@ class TwoLMMontyConfig(MontyConfig):
     )
     sm_to_agent_dict: Dict = field(
         default_factory=lambda: dict(
-            patch_0="agent_id_0",
-            patch_1="agent_id_0",
-            view_finder="agent_id_0",
+            patch_0=AgentID("agent_id_0"),
+            patch_1=AgentID("agent_id_0"),
+            view_finder=AgentID("agent_id_0"),
         )
     )
     sm_to_lm_matrix: List = field(
@@ -1102,12 +1103,12 @@ class FiveLMMontyConfig(MontyConfig):
     )
     sm_to_agent_dict: Dict = field(
         default_factory=lambda: dict(
-            patch_0="agent_id_0",
-            patch_1="agent_id_0",
-            patch_2="agent_id_0",
-            patch_3="agent_id_0",
-            patch_4="agent_id_0",
-            view_finder="agent_id_0",
+            patch_0=AgentID("agent_id_0"),
+            patch_1=AgentID("agent_id_0"),
+            patch_2=AgentID("agent_id_0"),
+            patch_3=AgentID("agent_id_0"),
+            patch_4=AgentID("agent_id_0"),
+            view_finder=AgentID("agent_id_0"),
         )
     )
     sm_to_lm_matrix: List = field(
@@ -1164,8 +1165,8 @@ def make_multi_lm_flat_dense_connectivity(n_lms: int) -> Dict:
             "lm_to_lm_matrix", and "lm_to_lm_vote_matrix".
     """
     # Create default sm_to_lm_matrix: all sensors are on 'agent_id_0'.
-    sm_to_agent_dict = {f"patch_{i}": "agent_id_0" for i in range(n_lms)}
-    sm_to_agent_dict["view_finder"] = "agent_id_0"
+    sm_to_agent_dict = {f"patch_{i}": AgentID("agent_id_0") for i in range(n_lms)}
+    sm_to_agent_dict["view_finder"] = AgentID("agent_id_0")
 
     # Create default sm_to_lm_matrix: each sensor connects to one LM.
     sm_to_lm_matrix = [[i] for i in range(n_lms)]

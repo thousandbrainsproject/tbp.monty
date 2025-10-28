@@ -14,6 +14,8 @@ See Also:
     https://github.com/facebookresearch/habitat-sim
 """
 
+from __future__ import annotations
+
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence
@@ -42,6 +44,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
 from tbp.monty.simulators.habitat.environment_utils import get_bounding_corners
 
@@ -81,7 +84,7 @@ class HabitatSim(HabitatActuator):
     Example::
 
         camera = SingleSensorAgent(
-            agent_id="camera",
+            agent_id=AgentID("camera"),
             sensor_id="camera_id",
             resolution=(64, 64),
         )
@@ -124,7 +127,7 @@ class HabitatSim(HabitatActuator):
         agent_configs = []
         self._agents = agents
         self._action_space = set()
-        self._agent_id_to_index = {}
+        self._agent_id_to_index: dict[AgentID, int] = {}
 
         self._object_counter = 0  # Track the number of objects added to an environment
 
@@ -191,7 +194,7 @@ class HabitatSim(HabitatActuator):
         for agent in self._agents:
             agent.initialize(self)
 
-    def initialize_agent(self, agent_id, agent_state) -> None:
+    def initialize_agent(self, agent_id: AgentID, agent_state) -> None:
         """Update agent runtime state.
 
         Usually called first thing to update agent initial pose.
@@ -465,7 +468,7 @@ class HabitatSim(HabitatActuator):
         """
         return set(self._action_space)
 
-    def get_agent(self, agent_id):
+    def get_agent(self, agent_id: AgentID):
         """Return habitat agent instance."""
         agent_index = self._agent_id_to_index[agent_id]
         return self._sim.get_agent(agent_index)

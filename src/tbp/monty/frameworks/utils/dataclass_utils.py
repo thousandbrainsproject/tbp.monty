@@ -145,7 +145,7 @@ def create_dataclass_args(
         # Is equivalent to
         @dataclass(frozen=True)
         class SingleSensorAgentArgs:
-            agent_id: str
+            agent_id: AgentID
             sensor_id: str
             position: Tuple[float. float, float] = (0.0, 1.5, 0.0)
             rotation: Tuple[float, float, float, float] = (1.0, 0.0, 0.0, 0.0)
