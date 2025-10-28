@@ -33,9 +33,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentInterfacePerObjectArgs,
-    ExperimentArgs,
     PredefinedObjectInitializer,
-    get_env_interface_per_object_by_idx,
     SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
@@ -172,7 +170,6 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentInterfacePerObjectArgs,
     EvalExperimentArgs,
     PredefinedObjectInitializer,
-    get_env_interface_per_object_by_idx,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
