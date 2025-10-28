@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 MAX_COMMA_SEPARATED_ITEMS = 10
 
 
-
 class ErrorDetail(BaseModel):
     message: str
     file: str
