@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import pytest
 
@@ -23,7 +24,7 @@ import unittest
 from dataclasses import dataclass, field
 from pathlib import Path
 from pprint import pprint
-from typing import Dict, Union
+from typing import Dict
 
 import numpy as np
 import pandas as pd
@@ -74,7 +75,7 @@ from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 @dataclass
 class MotorSystemConfigFixed:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Union[Dict, Dataclass] = field(
+    motor_system_args: Dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=InformedPolicy,
             policy_args=make_informed_policy_config(
@@ -90,7 +91,7 @@ class MotorSystemConfigFixed:
 @dataclass
 class MotorSystemConfigOffObject:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Union[Dict, Dataclass] = field(
+    motor_system_args: Dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=InformedPolicy,
             policy_args=make_informed_policy_config(
