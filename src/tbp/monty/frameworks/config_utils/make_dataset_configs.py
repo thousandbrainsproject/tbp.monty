@@ -897,7 +897,7 @@ def make_sensor_positions_on_grid(
 
 def make_multi_sensor_mount_config(
     n_sensors: int,
-    agent_id: AgentID | None = None,
+    agent_id: AgentID = AgentID("agent_id_0"),  # noqa: B008
     sensor_ids: Optional[Sequence[str]] = None,
     height: Number = 0.0,
     position: ArrayLike = (0, 1.5, 0.2),  # agent position
@@ -941,8 +941,6 @@ def make_multi_sensor_mount_config(
         converted to lists.
 
     """
-    if agent_id is None:
-        agent_id = AgentID("agent_id_0")
     assert n_sensors > 0, "n_sensors must be a positive integer"
     arr_len = n_sensors + 1
 
