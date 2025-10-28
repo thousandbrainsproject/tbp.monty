@@ -69,6 +69,7 @@
 \bDomnisoru\b
 \bDrost\b
 \bEitan\b
+\b[Ee]xplainers?\b
 \bexcitatory\b
 \bElsevier\b
 \bentorhinal\b
