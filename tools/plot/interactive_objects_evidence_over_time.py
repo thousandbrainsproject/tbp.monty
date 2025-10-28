@@ -17,7 +17,6 @@ from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
-from tbp.monty.frameworks.agents import AgentID
 import trimesh
 from vedo import (
     Line,
@@ -30,6 +29,7 @@ from vedo import (
     settings,
 )
 
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.ycb import DISTINCT_OBJECTS
 from tbp.monty.frameworks.utils.logging_utils import load_stats
 
