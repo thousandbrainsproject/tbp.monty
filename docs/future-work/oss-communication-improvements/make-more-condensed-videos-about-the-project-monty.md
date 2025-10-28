@@ -16,4 +16,4 @@ We’d like to produce shorter, more accessible videos that introduce the Thousa
 - **Core Idea Animations** — short, visual explainers illustrating one key concept per episode.
 - **Community Projects** — videos showcasing projects built with Monty.
 
-A polished example of the style and tone we’re aiming for is Artem Kirsanov’s [**Cortical Columns**](https://www.youtube.com/watch?v=Dykkubb-Qus) video, which effectively conveys the core ideas of the project.
+A polished example is Artem Kirsanov’s [**Cortical Columns**](https://www.youtube.com/watch?v=Dykkubb-Qus) video, which effectively conveys a core concept of the project.
