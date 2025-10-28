@@ -194,12 +194,6 @@ surf_agent_2obj_train = dict(
         object_names=object_names,
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations),
     ),
-    # For a complete config we need to specify an eval_env_interface but since we only train here, this is unused
-    eval_env_interface_class=ED.InformedEnvironmentInterface,
-    eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=object_names,
-        object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations),
-    ),
 )
 ```
 
