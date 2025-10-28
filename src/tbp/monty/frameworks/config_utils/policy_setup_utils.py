@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Type
+from typing import Dict, List, Type
 
 from tbp.monty.frameworks.actions.action_samplers import (
     ActionSampler,
@@ -43,7 +43,7 @@ class BasePolicyConfig:
     action_sampler_args: Dict
     action_sampler_class: Type[ActionSampler]
     agent_id: AgentID
-    file_name: Optional[str] = None
+    file_name: str | None = None
     switch_frequency: float = 0.05
 
 
@@ -52,7 +52,7 @@ class InformedPolicyConfig:
     action_sampler_args: Dict
     action_sampler_class: Type[ActionSampler]
     agent_id: AgentID
-    file_name: Optional[str] = None
+    file_name: str | None = None
     good_view_percentage: float = 0.5
     desired_object_distance: float = 0.03
     use_goal_state_driven_actions: bool = False

@@ -20,7 +20,6 @@ from typing import (
     Iterable,
     List,
     Mapping,
-    Optional,
 )
 
 import numpy as np
@@ -610,8 +609,8 @@ class PatchAndViewMontyConfig(MontyConfig):
     sm_to_lm_matrix: List = field(
         default_factory=lambda: [[0]],  # View finder (sm1) not connected to lm
     )
-    lm_to_lm_matrix: Optional[List] = None
-    lm_to_lm_vote_matrix: Optional[List] = None
+    lm_to_lm_matrix: List | None = None
+    lm_to_lm_vote_matrix: List | None = None
     monty_args: Dict | dataclass = field(default_factory=MontyArgs)
 
 
@@ -736,8 +735,8 @@ class SurfaceAndViewMontyConfig(PatchAndViewMontyConfig):
     sm_to_lm_matrix: List = field(
         default_factory=lambda: [[0]],  # View finder (sm1) not connected to lm
     )
-    lm_to_lm_matrix: Optional[List] = None
-    lm_to_lm_vote_matrix: Optional[List] = None
+    lm_to_lm_matrix: List | None = None
+    lm_to_lm_vote_matrix: List | None = None
     monty_args: Dict | dataclass = field(default_factory=MontyArgs)
 
 
@@ -922,7 +921,7 @@ class TwoLMMontyConfig(MontyConfig):
     sm_to_lm_matrix: List = field(
         default_factory=lambda: [[0], [1]],  # View finder (sm2) not connected to lm
     )
-    lm_to_lm_matrix: Optional[List] = None
+    lm_to_lm_matrix: List | None = None
     lm_to_lm_vote_matrix: List = field(default_factory=lambda: [[1], [0]])
     monty_args: Dict | dataclass = field(default_factory=MontyArgs)
 
@@ -1014,8 +1013,8 @@ class TwoLMStackedMontyConfig(TwoLMMontyConfig):
         ],  # View finder (sm2) not connected to lm
     )
     # First LM only gets sensory input, second gets input from first + sensor
-    lm_to_lm_matrix: Optional[List] = field(default_factory=lambda: [[], [0]])
-    lm_to_lm_vote_matrix: Optional[List] = None
+    lm_to_lm_matrix: List | None = field(default_factory=lambda: [[], [0]])
+    lm_to_lm_vote_matrix: List | None = None
 
 
 @dataclass
@@ -1120,7 +1119,7 @@ class FiveLMMontyConfig(MontyConfig):
             [4],
         ],  # View finder (sm2) not connected to lm
     )
-    lm_to_lm_matrix: Optional[List] = None
+    lm_to_lm_matrix: List | None = None
     # lm_to_lm_vote_matrix: Optional[List] = None
     # All LMs connect to each other
     lm_to_lm_vote_matrix: List = field(
@@ -1194,14 +1193,14 @@ def make_multi_lm_monty_config(
     *,
     monty_class: type,
     learning_module_class: type,
-    learning_module_args: Optional[Mapping],
+    learning_module_args: Mapping | None,
     sensor_module_class: type,
-    sensor_module_args: Optional[Mapping],
+    sensor_module_args: Mapping | None,
     motor_system_class: type,
-    motor_system_args: Optional[Mapping],
-    monty_args: Optional[Mapping | MontyArgs],
+    motor_system_args: Mapping | None,
+    monty_args: Mapping | MontyArgs | None,
     connectivity_func: Callable[[int], Mapping] = make_multi_lm_flat_dense_connectivity,
-    view_finder_config: Optional[Mapping] = None,
+    view_finder_config: Mapping | None = None,
 ) -> MontyConfig:
     """Create a monty config for multi-LM experiments.
 

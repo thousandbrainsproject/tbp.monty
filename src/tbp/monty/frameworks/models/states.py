@@ -292,7 +292,7 @@ class GoalState(State):
             )
             f"{self.morphological_features.keys()}"
             assert np.any(
-                self.morphological_features["pose_vectors"] == np.nan
+                np.isnan(self.morphological_features["pose_vectors"])
             ) or self.morphological_features["pose_vectors"].shape == (
                 3,
                 3,

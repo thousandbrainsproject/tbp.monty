@@ -13,7 +13,7 @@ import copy
 import dataclasses
 import importlib
 from inspect import Parameter, signature
-from typing import Any, Callable, ClassVar, Dict, Optional, Protocol, Type
+from typing import Any, Callable, ClassVar, Dict, Protocol, Type
 
 from typing_extensions import TypeIs
 
@@ -129,7 +129,7 @@ def extract_fields(function):
 def create_dataclass_args(
     dataclass_name: str,
     function: Callable,
-    base: Optional[Type] = None,
+    base: Type | None = None,
 ):
     """Creates configuration dataclass args from a given function arguments.
 

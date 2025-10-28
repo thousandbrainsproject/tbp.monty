@@ -119,7 +119,7 @@ def get_angle_beefed_up(v1, v2):
 
     result = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
-    if result is np.nan:
+    if np.isnan(result):
         result = np.inf
 
     assert result >= 0, f"Angle between is negative : {result}"

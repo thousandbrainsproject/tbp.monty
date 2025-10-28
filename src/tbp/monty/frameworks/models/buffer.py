@@ -14,7 +14,7 @@ import copy
 import json
 import logging
 import time
-from typing import Any, Callable, Dict, Optional, Type
+from typing import Any, Callable, Dict, Type
 
 import numpy as np
 import quaternion
@@ -630,7 +630,7 @@ class BufferEncoder(json.JSONEncoder):
         cls._encoders.pop(obj_type, None)
 
     @classmethod
-    def _find(cls, obj: Any) -> Optional[Callable]:
+    def _find(cls, obj: Any) -> Callable | None:
         """Attempt to find an appropriate encoder for an object.
 
         This method attempts to find an encoder for `obj` in such a way that respects

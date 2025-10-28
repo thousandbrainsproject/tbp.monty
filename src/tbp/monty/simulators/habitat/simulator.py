@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Sequence
 
 import habitat_sim
 import magnum as mn
@@ -107,8 +107,8 @@ class HabitatSim(HabitatActuator):
     def __init__(
         self,
         agents: List[HabitatAgent],
-        data_path: Optional[str] = None,
-        scene_id: Optional[str] = None,
+        data_path: str | None = None,
+        scene_id: str | None = None,
         seed: int = 42,
         enable_physics: bool = True,  # Physics is now standard
     ):
@@ -218,7 +218,7 @@ class HabitatSim(HabitatActuator):
         position: VectorXYZ = (0.0, 0.0, 0.0),
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
-        semantic_id: Optional[str] = None,
+        semantic_id: str | None = None,
         enable_physics=False,
         object_to_avoid=False,
         primary_target_bb=None,

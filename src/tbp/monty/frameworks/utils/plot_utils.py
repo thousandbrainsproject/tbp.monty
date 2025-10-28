@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, Optional, Sequence, cast
+from typing import TYPE_CHECKING, Any, Sequence, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -42,8 +42,8 @@ def plot_graph(
     show_trisurf: bool = False,
     show_axticks: bool = False,
     rotation: Number = -80,
-    ax_lim: Optional[Sequence] = None,
-    ax: Optional[Axes3D] = None,
+    ax_lim: Sequence | None = None,
+    ax: Axes3D | None = None,
 ) -> Figure:
     """Plot a 3D graph of an object model.
 
@@ -109,8 +109,8 @@ def plot_graph(
 
 def plot_sample_animation(all_obs, patch_obs, viz_obs):
     """Plot video of sampled oservations."""
-    from IPython import display
-    from matplotlib import animation
+    from IPython import display  # noqa: PLC0415
+    from matplotlib import animation  # noqa: PLC0415
 
     fig = plt.figure(figsize=(12, 7))
     ax1 = fig.add_subplot(1, 3, 1)
@@ -191,8 +191,8 @@ def plot_sample_animation_multiobj(
     This video supports labelling of targets when there are multiple objects in the
     environment.
     """
-    from IPython import display
-    from matplotlib import animation
+    from IPython import display  # noqa: PLC0415
+    from matplotlib import animation  # noqa: PLC0415
 
     fig = plt.figure(figsize=(8, 4))
     ax1 = fig.add_subplot(1, 2, 1)
@@ -241,8 +241,8 @@ def plot_detection_animation(
     all_obs, patch_obs, viz_obs, path_matches, model, model_name
 ):
     """Plot video of object detection using displacements."""
-    from IPython import display
-    from matplotlib import animation
+    from IPython import display  # noqa: PLC0415
+    from matplotlib import animation  # noqa: PLC0415
 
     fig = plt.figure(figsize=(12, 7))
     ax1 = fig.add_subplot(1, 4, 1)
@@ -610,8 +610,8 @@ def plot_feature_matching_animation(
     TODO: use SM_0 obs to know which raw obs were on the object and show the
     correct corresponding images.
     """
-    from IPython import display
-    from matplotlib import animation
+    from IPython import display  # noqa: PLC0415
+    from matplotlib import animation  # noqa: PLC0415
 
     epoch = stats[str(episode)][lm_id]["train_epochs"]
     model_id = get_model_id(epoch, stats[str(episode)][lm_id]["mode"])
@@ -989,9 +989,9 @@ def plot_rotation_stat_animation(detailed_stats, n_steps):
 
     Note: you will need to install seaborn and jupyter notebook to use this function.
     """
-    import seaborn as sns
-    from IPython import display
-    from matplotlib import animation
+    import seaborn as sns  # noqa: PLC0415
+    from IPython import display  # noqa: PLC0415
+    from matplotlib import animation  # noqa: PLC0415
 
     fig = plt.figure(figsize=(17, 5))
     ax = plt.subplot(1, 1, 1)
@@ -1048,8 +1048,8 @@ def make_detection_stat_animation(detailed_stats, n_steps):
         ax: Axis
         anim: Animation
     """
-    import seaborn as sns
-    from matplotlib import animation
+    import seaborn as sns  # noqa: PLC0415
+    from matplotlib import animation  # noqa: PLC0415
 
     fig = plt.figure(figsize=(17, 5))
     ax = plt.subplot(1, 1, 1)
@@ -1084,7 +1084,7 @@ def make_detection_stat_animation(detailed_stats, n_steps):
 
 def plot_detection_stat_animation(detailed_stats, n_steps):
     """Display detection stat animation in jupyter notebook."""
-    from IPython import display
+    from IPython import display  # noqa: PLC0415
 
     _, _, anim = make_detection_stat_animation(detailed_stats, n_steps)
     video = anim.to_html5_video()
@@ -1800,7 +1800,7 @@ class PolicyPlot:
 
     def plot_animation(self, zoom=1.0, view=None):
         """Plot an animation of the episode's full action policy."""
-        from matplotlib import animation
+        from matplotlib import animation  # noqa: PLC0415
 
         self.plot_core_object()
         self.derive_policy_details()
