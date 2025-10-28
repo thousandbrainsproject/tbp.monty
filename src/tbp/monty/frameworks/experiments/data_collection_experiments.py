@@ -54,7 +54,7 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
             None
             if self.model.motor_system._policy.action is None
             else (
-                f"{str(self.model.motor_system._policy.action.agent_id)}."
+                f"{self.model.motor_system._policy.action.agent_id}."
                 f"{self.model.motor_system._policy.action.name}"
             )
         )

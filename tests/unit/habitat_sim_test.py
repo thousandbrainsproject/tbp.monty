@@ -300,13 +300,13 @@ class HabitatSimTest(unittest.TestCase):
         sensor_rot = qt.from_rotation_vector(sensor_spec.orientation)
 
         # Compute rotation quartenions
-        turn_left_spec = agent_config.action_space[f"{str(agent_id)}.turn_left"]
+        turn_left_spec = agent_config.action_space[f"{agent_id}.turn_left"]
         amount = turn_left_spec.actuation.amount
         turn_left_quat = qt.from_rotation_vector([0.0, np.deg2rad(amount), 0.0])
-        look_up_spec = agent_config.action_space[f"{str(agent_id)}.look_up"]
+        look_up_spec = agent_config.action_space[f"{agent_id}.look_up"]
         amount = look_up_spec.actuation.amount
         look_up_quat = qt.from_rotation_vector([np.deg2rad(amount), 0.0, 0.0])
-        move_forward_spec = agent_config.action_space[f"{str(agent_id)}.move_forward"]
+        move_forward_spec = agent_config.action_space[f"{agent_id}.move_forward"]
         amount = move_forward_spec.actuation.amount
         move_forward_offset = [0.0, amount, 0.0]
         with HabitatSim(agents=agents) as sim:

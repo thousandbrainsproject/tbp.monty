@@ -186,7 +186,7 @@ class DetailedWandbTableStatsHandler(BasicWandbTableStatsHandler):
                     else:
                         o[key] = value
                 actions[i][0] = {
-                    f"{str(a.agent_id)}": {"action": a.name, "params": json.dumps(o)}
+                    f"{a.agent_id}": {"action": a.name, "params": json.dumps(o)}
                 }
         actions_df = pd.DataFrame(actions)
         table = wandb.Table(dataframe=actions_df)

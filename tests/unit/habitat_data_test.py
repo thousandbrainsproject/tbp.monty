@@ -41,29 +41,29 @@ SENSOR_ID = "sensor_id_0"
 SENSORS = ["depth"]
 EXPECTED_STATES = np.random.rand(DATASET_LEN, 64, 64, 1)
 EXPECTED_ACTIONS_DIST = (
-    f"{str(AGENT_ID)}.look_down",
-    f"{str(AGENT_ID)}.look_up",
-    f"{str(AGENT_ID)}.move_forward",
-    f"{str(AGENT_ID)}.turn_left",
-    f"{str(AGENT_ID)}.turn_right",
-    f"{str(AGENT_ID)}.set_agent_pose",
-    f"{str(AGENT_ID)}.set_sensor_rotation",
+    f"{AGENT_ID}.look_down",
+    f"{AGENT_ID}.look_up",
+    f"{AGENT_ID}.move_forward",
+    f"{AGENT_ID}.turn_left",
+    f"{AGENT_ID}.turn_right",
+    f"{AGENT_ID}.set_agent_pose",
+    f"{AGENT_ID}.set_sensor_rotation",
 )
 EXPECTED_ACTIONS_ABS = (
-    f"{str(AGENT_ID)}.set_yaw",
-    f"{str(AGENT_ID)}.set_agent_pitch",
-    f"{str(AGENT_ID)}.set_sensor_pitch",
-    f"{str(AGENT_ID)}.set_agent_pose",
-    f"{str(AGENT_ID)}.set_sensor_rotation",
-    f"{str(AGENT_ID)}.set_sensor_pose",
+    f"{AGENT_ID}.set_yaw",
+    f"{AGENT_ID}.set_agent_pitch",
+    f"{AGENT_ID}.set_sensor_pitch",
+    f"{AGENT_ID}.set_agent_pose",
+    f"{AGENT_ID}.set_sensor_rotation",
+    f"{AGENT_ID}.set_sensor_pose",
 )
-EXPECTED_ACTIONS_SURF = (
-    f"{str(AGENT_ID)}.move_forward",
-    f"{str(AGENT_ID)}.move_tangentially",
-    f"{str(AGENT_ID)}.orient_horizontal",
-    f"{str(AGENT_ID)}.orient_vertical",
-    f"{str(AGENT_ID)}.set_agent_pose",
-    f"{str(AGENT_ID)}.set_sensor_rotation",
+EXPCTED_ACTIONS_SURF = (
+    f"{AGENT_ID}.move_forward",
+    f"{AGENT_ID}.move_tangentially",
+    f"{AGENT_ID}.orient_horizontal",
+    f"{AGENT_ID}.orient_vertical",
+    f"{AGENT_ID}.set_agent_pose",
+    f"{AGENT_ID}.set_sensor_rotation",
 )
 
 

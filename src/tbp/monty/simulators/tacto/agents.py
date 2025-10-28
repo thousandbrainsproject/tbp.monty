@@ -80,16 +80,16 @@ class TactoFingerAgent(HabitatAgent):
     def get_spec(self):
         spec = super().get_spec()
         spec.action_space = {
-            f"{str(self.agent_id)}.move_forward": ActionSpec(
+            f"{self.agent_id}.move_forward": ActionSpec(
                 "move_forward", ActuationSpec(amount=self.translation_step)
             ),
-            f"{str(self.agent_id)}.move_backward": ActionSpec(
+            f"{self.agent_id}.move_backward": ActionSpec(
                 "move_forward", ActuationSpec(amount=-self.translation_step)
             ),
-            f"{str(self.agent_id)}.turn_left": ActionSpec(
+            f"{self.agent_id}.turn_left": ActionSpec(
                 "turn_left", ActuationSpec(amount=self.rotation_step)
             ),
-            f"{str(self.agent_id)}.turn_right": ActionSpec(
+            f"{self.agent_id}.turn_right": ActionSpec(
                 "turn_right", ActuationSpec(amount=self.rotation_step)
             ),
         }

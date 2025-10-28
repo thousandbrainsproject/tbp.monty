@@ -176,7 +176,7 @@ class ActionSpaceMixin:
 
         spec.action_space = {}
         for action in action_space:
-            spec.action_space[f"{str(self.agent_id)}.{action[0]}"] = ActionSpec(
+            spec.action_space[f"{self.agent_id}.{action[0]}"] = ActionSpec(
                 f"{action[0]}",
                 ActuationSpec(amount=action[1], constraint=action[2]),
             )

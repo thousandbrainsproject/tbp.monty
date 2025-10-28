@@ -64,7 +64,7 @@ class HabitatActuator(HabitatActuatorRequirements):
 
         The action name is prefixed by the agent ID.
         """
-        return f"{str(action.agent_id)}.{action.name}"
+        return f"{action.agent_id}.{action.name}"
 
     def to_habitat(self, action: Action) -> tuple[Agent, ActuationSpec, str]:
         """Transition from the Monty to the Habitat sim domain.
