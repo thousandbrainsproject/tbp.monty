@@ -485,7 +485,7 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> List[int]:
         total: Total number of episodes. Must be non-negative.
 
     Supported forms:
-      - `"all"` or empty string: select all valid indices `[0, total)`
+      - `"all"`, `":"`, or empty string: select all valid indices `[0, total)`
       - Comma-separated integers and ranges, for example `"0,3,5:8"`
       - Open-ended ranges (end-exclusive):
           - `":N"` selects `[0, N)` (i.e., indices `0` through `N-1`)
@@ -506,13 +506,13 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> List[int]:
     if episode_spec is None:
         return list(range(total))
     s = episode_spec.strip().lower()
-    if s in ("", "all"):
+    if s in ("", "all", ":"):
         return list(range(total))
 
-    re_open_left = re.compile(r"^:(\d+)$")  # ":N"
-    re_open_right = re.compile(r"^(\d+):$")  # "N:"
-    re_closed = re.compile(r"^(\d+):(\d+)$")  # "A:B"
-    re_single = re.compile(r"^\d+$")  # "N"
+    re_open_left = re.compile(r"^:([+-]?\d+)$")  # ":N"
+    re_open_right = re.compile(r"^([+-]?\d+):$")  # "N:"
+    re_closed = re.compile(r"^([+-]?\d+)\s*:\s*([+-]?\d+)$")  # "A:B"
+    re_single = re.compile(r"^[+-]?\d+$")  # "N"
 
     selected: set[int] = set()
 
@@ -556,6 +556,8 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> List[int]:
                 continue
 
             raise ValueError(f"{part} is not a valid index.")
+
+        raise ValueError(f"{part} is not a valid selection.")
 
     return sorted(selected)
 
