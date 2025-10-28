@@ -299,15 +299,17 @@ class FutureWorkRecord(BaseModel):
             return None
 
         github_pattern = r"[a-zA-Z0-9][a-zA-Z0-9-]{0,38}"
+        validated_contributors = []
         for contributor in contributors:
-            sanitized = nh3.clean(contributor).strip()
-            if not re.fullmatch(github_pattern, sanitized):
+            stripped_contributor = contributor.strip()
+            if not re.fullmatch(github_pattern, stripped_contributor):
                 raise ValueError(
-                    f"Invalid contributor username '{sanitized}'. "
+                    f"Invalid contributor username '{stripped_contributor}'. "
                     f"Must be valid GitHub username (1-39 characters, "
                     f"alphanumeric and hyphens, cannot start with hyphen)"
                 )
-        return [nh3.clean(c).strip() for c in contributors]
+            validated_contributors.append(stripped_contributor)
+        return validated_contributors
 
     @field_validator("rfc")
     @classmethod
