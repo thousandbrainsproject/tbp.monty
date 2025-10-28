@@ -37,10 +37,9 @@ def linebreak_long_strings(string, chars_per_line=40):
             new_string += "\n"
             new_string += string[cnt:]
             break
-        else:
-            new_string += "\n"
-            new_string += string[cnt : cnt + chars_per_line]
-            cnt += chars_per_line
+        new_string += "\n"
+        new_string += string[cnt : cnt + chars_per_line]
+        cnt += chars_per_line
 
     return new_string
 

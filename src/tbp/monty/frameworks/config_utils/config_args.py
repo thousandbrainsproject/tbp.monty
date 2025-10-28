@@ -1164,7 +1164,7 @@ def make_multi_lm_flat_dense_connectivity(n_lms: int) -> Dict:
             "lm_to_lm_matrix", and "lm_to_lm_vote_matrix".
     """
     # Create default sm_to_lm_matrix: all sensors are on 'agent_id_0'.
-    sm_to_agent_dict = {f"patch_{i}": f"agent_id_0" for i in range(n_lms)}
+    sm_to_agent_dict = {f"patch_{i}": "agent_id_0" for i in range(n_lms)}
     sm_to_agent_dict["view_finder"] = "agent_id_0"
 
     # Create default sm_to_lm_matrix: each sensor connects to one LM.

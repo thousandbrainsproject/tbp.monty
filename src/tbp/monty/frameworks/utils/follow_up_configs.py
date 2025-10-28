@@ -176,7 +176,7 @@ def create_eval_config_multiple_episodes(
         new_config["notes"].update(notes)
 
     # Update the output directory to be a "rerun" subdir
-    new_output_dir = os.path.join(output_dir, f"eval_rerun_episodes")
+    new_output_dir = os.path.join(output_dir, "eval_rerun_episodes")
     os.makedirs(new_output_dir, exist_ok=True)
     new_config["logging_config"]["output_dir"] = new_output_dir
     new_config["logging_config"]["run_name"] = run_name

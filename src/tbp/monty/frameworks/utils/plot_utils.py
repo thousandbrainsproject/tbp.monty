@@ -1765,8 +1765,6 @@ class PolicyPlot:
             # to visualize its orientation
             sensor_direction = sensor_rot.apply(np.array([0, 0, -1]))
 
-            sensor_loc = sensor_loc
-
             scaling = 0.02
             self.ax.plot(
                 [sensor_loc[0], sensor_loc[0] + sensor_direction[0] * scaling],

@@ -726,7 +726,7 @@ class FeatureChangeFilter(StateFilter):
         if not state.get_on_object():
             # Even for the surface-agent sensor, do not return a feature for LM
             # processing that is not on the object
-            logger.debug(f"No new point because not on object")
+            logger.debug("No new point because not on object")
             return False
 
         for feature in self._delta_thresholds:

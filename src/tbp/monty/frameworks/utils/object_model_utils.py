@@ -382,12 +382,10 @@ def get_most_common_bool(booleans):
             "with more than 1 bool value. Current bool shape: "
             f"{np.array(booleans).shape} D={np.ndim(booleans)}"
         )
-    else:
-        booleans = np.array(booleans).flatten()
-    if sum(booleans) >= sum(np.logical_not(booleans)):
-        return True
-    else:
-        return False
+
+    booleans = np.array(booleans).flatten()
+
+    return sum(booleans) >= sum(np.logical_not(booleans))
 
 
 def get_most_common_value(values):
