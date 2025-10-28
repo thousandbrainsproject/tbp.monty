@@ -1016,11 +1016,10 @@ class NaiveScanPolicy(InformedPolicy):
             # python loop statements using iterators.
             # See https://docs.python.org/3/library/exceptions.html#StopIteration
             raise StopIteration()
-        else:
-            self.check_cycle_action()
-            action = self._naive_scan_actions[self.current_action_id]
+
+        self.check_cycle_action()
         self.step_on_action += 1
-        return action
+        return self._naive_scan_actions[self.current_action_id]
 
     def pre_episode(self):
         super().pre_episode()
@@ -1273,7 +1272,7 @@ class SurfacePolicy(InformedPolicy):
             # This is determined by some logic in embodied_data.py, in particular
             # the next method of InformedEnvironmentDataLoader
 
-        elif self.last_surface_policy_action is None:
+        if self.last_surface_policy_action is None:
             logger.debug(
                 "Object coverage good at initialization: "
                 + str(
