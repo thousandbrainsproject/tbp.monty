@@ -321,7 +321,8 @@ class ReproduceEpisodeHandler(MontyHandler):
         actions = data["BASIC"][f"{mode}_actions"][episode]
         with open(action_file_path, "w") as f:
             f.writelines(
-                f"{json.dumps(action[0], cls=ActionJSONEncoder)}" for action in actions
+                f"{json.dumps(action[0], cls=ActionJSONEncoder)}\n"
+                for action in actions
             )
 
         # Write data to object params / targets file

@@ -1615,7 +1615,7 @@ def write_action_file(actions: List[Action], file: str) -> None:
     """
     with open(file, "w") as f:
         f.writelines(
-            f"{json.dumps(action, cls=ActionJSONEncoder)}" for action in actions
+            f"{json.dumps(action, cls=ActionJSONEncoder)}\n" for action in actions
         )
 
 
