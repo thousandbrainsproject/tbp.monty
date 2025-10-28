@@ -120,6 +120,7 @@ class TwoDPoseSM(SensorModule):
         self.edge_params = {**default_edge_params, **(edge_detection_params or {})}
 
         self.debug_visualize = debug_visualize
+        self.debug_save_dir = debug_save_dir
         if self.debug_visualize:
             # Information to name debug visualizations pngs
             self.episode_counter = 0
