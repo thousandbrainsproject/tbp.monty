@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 import sys
 from pathlib import Path
@@ -48,7 +47,7 @@ def main():
 
     result = build(index_file, output_dir, docs_snippets_dir)
 
-    logger.info(json.dumps(result.model_dump(exclude_none=True), indent=2))
+    logger.info(result.model_dump_json(exclude_none=True, indent=2))
     sys.exit(0 if result.success else 1)
 
 
