@@ -42,8 +42,9 @@ function addToSearch(value) {
 function updateUrlSearchParam(searchTerm) {
   const url = new URL(window.location);
 
-  if (searchTerm.trim()) {
-    url.searchParams.set('q', searchTerm.trim());
+  const trimmedSearchTerm = searchTerm.trim();
+  if (trimmedSearchTerm) {
+    url.searchParams.set('q', trimmedSearchTerm);
   } else {
     url.searchParams.delete('q');
   }
