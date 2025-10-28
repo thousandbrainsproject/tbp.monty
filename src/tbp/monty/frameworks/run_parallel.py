@@ -746,7 +746,7 @@ def main(
             from command line as the config is selected from `all_configs`.
         experiment: Name of experiment to run. Not required if running
             from command line.
-        episodes: The episodes ids to run. Default is "all".
+        episodes: The episodes ids to run. Defaults to "all".
         num_parallel: Maximum number of parallel processes to run. If
             the config is broken into fewer parallel configs than `num_parallel`, then
             the actual number of processes will be equal to the number of parallel
