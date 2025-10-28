@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING, Any, Sequence, cast
 
 import matplotlib.pyplot as plt
