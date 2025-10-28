@@ -12,6 +12,9 @@ from __future__ import annotations
 import pytest
 
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.environments.embodied_environment import (
+    SemanticID,
+)
 
 pytest.importorskip(
     "habitat_sim",
@@ -164,13 +167,14 @@ class HabitatSimTest(unittest.TestCase):
         with HabitatSim(agents=agents) as sim:
             for obj_name, expected_obj_id in PRIMITIVE_OBJECT_TYPES.items():
                 sim.remove_all_objects()
-                sim.add_object(obj_name, position=(0.0, 1.5, -0.2))
+                env_obj = sim.add_object(obj_name, position=(0.0, 1.5, -0.2))
                 obs = sim.observations
                 agent_obs = obs[agent_id]
                 sensor_obs = agent_obs[sensor_id]
                 semantic = sensor_obs["semantic"]
                 actual = np.unique(semantic[semantic.nonzero()])
                 self.assertEqual(actual, expected_obj_id)
+                self.assertEqual(env_obj.semantic_id, SemanticID(expected_obj_id))
 
     def test_move_and_get_agent_state(self):
         """Move agent and return agent state and sensor observations."""
@@ -183,16 +187,21 @@ class HabitatSimTest(unittest.TestCase):
         sensor_id = agents[0].sensor_id
         with HabitatSim(agents=agents) as sim:
             # Add a couple of objects
-            cylinder = sim.add_object(name="cylinderSolid", position=(-0.2, 1.5, -0.2))
-            cube = sim.add_object(name="cubeSolid", position=(0.6, 1.5, -0.6))
+            cylinder = sim.add_object(
+                name="cylinderSolid", position=(-0.2, 1.5, -0.2)
+            ).semantic_id
+
+            cube = sim.add_object(
+                name="cubeSolid", position=(0.6, 1.5, -0.6)
+            ).semantic_id
 
             # Check if observations include both objects
-            expected = {cylinder.semantic_id, cube.semantic_id}
+            expected = {cylinder, cube}
             obs = sim.observations
             agent_obs = obs[agent_id]
             sensor_obs = agent_obs[sensor_id]
             semantic = sensor_obs["semantic"]
-            actual = set(semantic[semantic.nonzero()])
+            actual = {SemanticID(s) for s in set(semantic[semantic.nonzero()])}
             self.assertSetEqual(expected, actual)
 
             # Turn the camera 10 degrees to the left.
@@ -200,18 +209,18 @@ class HabitatSimTest(unittest.TestCase):
             turn_left = TurnLeft(agent_id=agent_id, rotation_degrees=rotation_degrees)
             obs = sim.apply_actions([turn_left])
             obs = obs[agent_id]
-            expected = {cylinder.semantic_id}
+            expected = {cylinder}
             semantic = np.unique(obs[sensor_id]["semantic"])
-            actual = set(semantic[semantic.nonzero()])
+            actual = {SemanticID(s) for s in set(semantic[semantic.nonzero()])}
             self.assertSetEqual(expected, actual)
 
             # Reset simulator and now the cylinder and cube should be back into view
             initial_obs = sim.reset()
             obs = initial_obs[agent_id]
-            expected = {cylinder.semantic_id, cube.semantic_id}
+            expected = {cylinder, cube}
             semantic = np.unique(obs[sensor_id]["semantic"])
 
-            actual = set(semantic[semantic.nonzero()])
+            actual = {SemanticID(s) for s in set(semantic[semantic.nonzero()])}
             self.assertSetEqual(expected, actual)
 
     def test_zoom(self):
@@ -261,7 +270,11 @@ class HabitatSimTest(unittest.TestCase):
             camera = agent._sensors[f"{sensor_id}.semantic"]
 
             # Place cube 0.5 meters away from camera
-            sim.add_object(name="cube", position=(0.0, 1.5, -0.5), semantic_id=1)
+            sim.add_object(
+                name="cube",
+                position=(0.0, 1.5, -0.5),
+                semantic_id=SemanticID(1),
+            )
 
             # Check initial cube observations before zoom
             obs = sim.observations
@@ -391,8 +404,9 @@ class HabitatSimTest(unittest.TestCase):
                     {"render_asset": "icosphereSolid_subdivs_1", "mass": 1}, json_file
                 )
             with HabitatSim(agents=agents, data_path=data_path) as sim:
-                obj_id = sim.add_object("test_obj")
-                self.assertTrue(obj_id)
+                env_obj = sim.add_object("test_obj")
+                self.assertIsNotNone(env_obj.object_id)
+                self.assertIsNone(env_obj.semantic_id)
 
         # Check valid dataset path
         with tempfile.TemporaryDirectory() as data_path:
@@ -405,8 +419,10 @@ class HabitatSimTest(unittest.TestCase):
                     {"render_asset": "icosphereSolid_subdivs_1", "mass": 1}, json_file
                 )
             with HabitatSim(agents=agents, data_path=data_path) as sim:
-                obj_id = sim.add_object("test_obj")
-                self.assertTrue(obj_id)
+                env_obj = sim.add_object("test_obj")
+                self.assertIsNotNone(env_obj.object_id)
+                self.assertIsNone(env_obj.semantic_id)
+
         # Check invalid data path (i.e. without any valid habitat json files)
         with tempfile.TemporaryDirectory() as data_path:
             with self.assertRaises(ValueError):
@@ -790,7 +806,11 @@ class HabitatSimTest(unittest.TestCase):
         sensor_id = agents[0].sensor_id
         with HabitatSim(agents=agents) as sim:
             # Place cube 0.5 meters away from camera
-            sim.add_object(name="cube", position=(0.0, 1.5, -0.5), semantic_id=1)
+            sim.add_object(
+                name="cube",
+                position=(0.0, 1.5, -0.5),
+                semantic_id=SemanticID(1),
+            )
 
             # Check original cube observations without scale
             obs = sim.observations
@@ -805,7 +825,7 @@ class HabitatSimTest(unittest.TestCase):
                 name="cube",
                 position=(0.0, 1.5, -0.5),
                 scale=(2.0, 2.0, 2.0),
-                semantic_id=1,
+                semantic_id=SemanticID(1),
             )
             obs = sim.observations
             camera_obs = obs[agent_id][sensor_id]["semantic"].tolist()
@@ -817,7 +837,7 @@ class HabitatSimTest(unittest.TestCase):
                 name="cube",
                 position=(0.0, 1.5, -0.5),
                 scale=(2.0, 2.0, 2.0),
-                semantic_id=1,
+                semantic_id=SemanticID(1),
             )
             obs = sim.observations
             camera_obs = obs[agent_id][sensor_id]["semantic"].tolist()

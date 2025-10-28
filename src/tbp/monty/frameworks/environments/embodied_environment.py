@@ -67,11 +67,11 @@ class EmbodiedEnvironment(abc.ABC):
         position: VectorXYZ = (0.0, 0.0, 0.0),
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
-        semantic_id: Optional[str] = None,
+        semantic_id: SemanticID | None = None,
         enable_physics: Optional[bool] = False,
         object_to_avoid=False,
-        primary_target_object=None,
-    ):
+        primary_target_object: ObjectID | None = None,
+    ) -> ObjectID:
         """Add an object to the environment.
 
         Args:
@@ -80,22 +80,18 @@ class EmbodiedEnvironment(abc.ABC):
             rotation: The initial rotation WXYZ quaternion of the object. Defaults to
                 (1,0,0,0).
             scale: The scale of the object to add. Defaults to (1,1,1).
-            semantic_id: Optional override for the object semantic ID.
+            semantic_id: Optional override for the object semantic ID. Defaults to None.
             enable_physics: Whether to enable physics on the object. Defaults to False.
             object_to_avoid: If True, run collision checks to ensure the object will not
                 collide with any other objects in the scene. If collision is detected,
                 the object will be moved. Defaults to False.
-            primary_target_object: If not None, the added object will be positioned so
-                that it does not obscure the initial view of the primary target object
-                (which avoiding collision alone cannot guarantee). Used when adding
-                multiple objects. Defaults to None.
+            primary_target_object: The ID of the primary target object. If not None, the
+                added object will be positioned so that it does not obscure the initial
+                view of the primary target object (which avoiding collision alone cannot
+                guarantee). Used when adding multiple objects. Defaults to None.
 
         Returns:
-            The newly added object.
-
-        TODO: This add_object interface is elevated from HabitatSim.add_object and is
-              quite specific to HabitatSim implementation. We should consider
-              refactoring this to be more generic.
+            The ID of the added object.
         """
         pass
 
