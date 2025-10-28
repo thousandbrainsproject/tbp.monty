@@ -18,11 +18,11 @@ The current platform for documentation is readme.com.  It has a number of drawba
 - The display format is limited in size.
 - Doesn't allow complete control over theming.
 - Doesn't provide UX control over the navigation, menus, etc.
-- Limited local development and previews.
+- Local development support.
 
 We are open to new platform suggestions, but our initial research suggests that a homegrown solution would be the best fit and more extensible for our future needs.
 
-A proof of concept was created by modifying the `github_readme_sync` tool and can be viewed here:  
+A proof of concept was created by modifying the `github_readme_sync` tool and can be viewed here:
 https://github.com/codeallthethingz/tbp.monty/pull/14/files
 
 ---
@@ -35,6 +35,8 @@ https://github.com/codeallthethingz/tbp.monty/pull/14/files
 - Preview versions that are hidden from the main documentation navigation.
 - Permanent links to specific documents / versioned documents.
 - Source documents in markdown.
+- If its not homegrown, it should have API access to sync the content from a GitHub action.
+- Local development support.
 
 ## Content and Presentation
 - Code blocks.
