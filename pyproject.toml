@@ -304,6 +304,9 @@ ignore = [
     "UP006", # UP006: Use `type` instead of `Type` for type annotation
 ]
 
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["tbp.monty.frameworks.agents.AgentID"]
+
 [tool.ruff.lint.flake8-comprehensions]
 # Our configurations use this all the time
 allow-dict-calls-with-keyword-arguments = true

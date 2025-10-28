@@ -142,7 +142,7 @@ def generate_action_list(action_space_type) -> List[Action]:
 def make_base_policy_config(
     action_space_type: str,
     action_sampler_class: Type[ActionSampler],
-    agent_id: AgentID = AgentID("agent_id_0"),  # noqa: B008
+    agent_id: AgentID = AgentID("agent_id_0"),
 ):
     """Generates a config that will apply for the BasePolicy class.
 
@@ -170,7 +170,7 @@ def make_informed_policy_config(
     good_view_percentage: float = 0.5,
     use_goal_state_driven_actions: bool = False,
     file_name: str = None,
-    agent_id: AgentID = AgentID("agent_id_0"),  # noqa: B008
+    agent_id: AgentID = AgentID("agent_id_0"),
     switch_frequency: float = 1.0,
     **kwargs,
 ):
@@ -218,7 +218,7 @@ def make_informed_policy_config(
 
 def make_naive_scan_policy_config(
     step_size: float,
-    agent_id: AgentID = AgentID("agent_id_0"),  # noqa: B008
+    agent_id: AgentID = AgentID("agent_id_0"),
 ):
     """Simliar to InformedPolicyConfigGenerator, but for NaiveScanPolicyConfig.
 
@@ -250,7 +250,7 @@ def make_surface_policy_config(
     action_sampler_class: Type[ActionSampler] = ConstantSampler,
     action_space_type: str = "surface_agent",
     file_name: str = None,
-    agent_id: AgentID = AgentID("agent_id_0"),  # noqa: B008
+    agent_id: AgentID = AgentID("agent_id_0"),
     **kwargs,
 ):
     """Similar to BasePolicyConfigGenerator, but for InformedPolicy class.
@@ -305,7 +305,7 @@ def make_curv_surface_policy_config(
     action_sampler_class: Type[ActionSampler] = ConstantSampler,
     action_space_type="surface_agent",
     file_name=None,
-    agent_id: AgentID = AgentID("agent_id_0"),  # noqa: B008
+    agent_id: AgentID = AgentID("agent_id_0"),
     **kwargs,
 ):
     """For the SurfacePolicyCurvatureInformed policy.

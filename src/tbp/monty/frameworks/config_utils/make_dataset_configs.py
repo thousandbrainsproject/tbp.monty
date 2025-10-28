@@ -899,7 +899,7 @@ def make_sensor_positions_on_grid(
 
 def make_multi_sensor_mount_config(
     n_sensors: int,
-    agent_id: AgentID = AgentID("agent_id_0"),  # noqa: B008
+    agent_id: AgentID = AgentID("agent_id_0"),
     sensor_ids: Sequence[str] | None = None,
     height: Number = 0.0,
     position: ArrayLike = (0, 1.5, 0.2),  # agent position
