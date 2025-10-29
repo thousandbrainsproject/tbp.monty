@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
@@ -20,7 +20,7 @@ class MotorSystem:
     """The basic motor system implementation."""
 
     def __init__(
-        self, policy: MotorPolicy, state: Optional[MotorSystemState] = None
+        self, policy: MotorPolicy, state: MotorSystemState | None = None
     ) -> None:
         """Initialize the motor system with a motor policy.
 

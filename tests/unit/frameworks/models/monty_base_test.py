@@ -11,6 +11,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, sentinel
 
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.monty_base import MontyBase
 
 
@@ -27,7 +28,10 @@ class MontyBasePrivateTest(unittest.TestCase):
             sensor_modules=[self.sm1, self.sm2],
             learning_modules=[self.lm1, self.lm2, self.lm3],
             motor_system=MagicMock(),
-            sm_to_agent_dict={"sm1": "agent_id_0", "sm2": "agent_id_0"},
+            sm_to_agent_dict={
+                "sm1": AgentID("agent_id_0"),
+                "sm2": AgentID("agent_id_0"),
+            },
             sm_to_lm_matrix=[[], [], []],
             lm_to_lm_matrix=[[], [], []],
             lm_to_lm_vote_matrix=[[], [], []],

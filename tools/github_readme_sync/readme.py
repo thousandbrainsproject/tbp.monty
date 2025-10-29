@@ -469,7 +469,7 @@ class ReadMe:
 
     def convert_cloudinary_videos(self, markdown_text: str) -> str:
         def replace_video(match):
-            title, full_url, cloud_id, version, filename = match.groups()
+            _, _, cloud_id, version, filename = match.groups()
             # Replace the cloud ID with the environment variable
             new_url = f"https://res.cloudinary.com/{cloud_id}/video/upload/v{version}/{filename}"
             block = {

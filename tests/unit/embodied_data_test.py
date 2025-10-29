@@ -18,6 +18,7 @@ import numpy as np
 from tbp.monty.frameworks.actions.action_samplers import (
     UniformlyDistributedSampler,
 )
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.config_utils.config_args import make_base_policy_config
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentDataLoader,
@@ -36,7 +37,7 @@ from tbp.monty.frameworks.environments.two_d_data import (
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 
-AGENT_ID = "agent_id_0"
+AGENT_ID = AgentID("agent_id_0")
 SENSOR_ID = "sensor_id_0"
 DATASET_LEN = 10
 POSSIBLE_ACTIONS_DIST = [

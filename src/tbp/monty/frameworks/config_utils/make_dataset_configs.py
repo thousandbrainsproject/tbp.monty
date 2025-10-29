@@ -7,26 +7,26 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from numbers import Number
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
     List,
     Literal,
     Mapping,
-    Optional,
     Sequence,
-    Union,
 )
 
 import numpy as np
 from numpy.typing import ArrayLike
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import (
     DepthTo3DLocations,
 )
@@ -37,6 +37,9 @@ from tbp.monty.frameworks.environments.two_d_data import (
 )
 from tbp.monty.frameworks.environments.ycb import SHUFFLED_YCB_OBJECTS
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
+
+if TYPE_CHECKING:
+    from numbers import Number
 
 # ---------
 # run / training / eval args
@@ -59,7 +62,7 @@ class ExperimentArgs:
     model_name_or_path: str = ""
     min_lms_match: int = 1
     seed: int = 42
-    supervised_lm_ids: Union[List[str], Literal["all"]] = field(default_factory=list)
+    supervised_lm_ids: List[str] | Literal["all"] = field(default_factory=list)
 
 
 @dataclass
@@ -83,7 +86,7 @@ class EvalExperimentArgs(ExperimentArgs):
 @dataclass
 class SupervisedPretrainingExperimentArgs(ExperimentArgs):
     do_eval: bool = False
-    supervised_lm_ids: Union[List[str], Literal["all"]] = "all"
+    supervised_lm_ids: List[str] | Literal["all"] = "all"
 
 
 # Data-set containing RGBD images of real-world objects taken with a mobile device
@@ -130,12 +133,12 @@ class EnvInitArgsMontyWorldMultiObjectScenes:
 class OmniglotDatasetArgs:
     env_init_func: Callable = field(default=OmniglotEnvironment)
     env_init_args: Dict = field(default_factory=dict)
-    transform: Union[Callable, list, None] = None
+    transform: Callable | list | None = None
 
     def __post_init__(self):
         self.transform = [
             DepthTo3DLocations(
-                agent_id="agent_id_0",
+                agent_id=AgentID("agent_id_0"),
                 sensor_ids=["patch"],
                 resolutions=np.array([[10, 10]]),
                 world_coord=True,
@@ -154,19 +157,19 @@ class WorldImageDatasetArgs:
     env_init_args: Dict = field(
         default_factory=lambda: EnvInitArgsMontyWorldStandardScenes().__dict__
     )
-    transform: Union[Callable, list, None] = None
+    transform: Callable | list | None = None
 
 
 @dataclass
 class WorldImageFromStreamDatasetArgs:
     env_init_func: Callable = field(default=SaccadeOnImageFromStreamEnvironment)
     env_init_args: Dict = field(default_factory=dict)
-    transform: Union[Callable, list, None] = None
+    transform: Callable | list | None = None
 
     def __post_init__(self):
         self.transform = [
             DepthTo3DLocations(
-                agent_id="agent_id_0",
+                agent_id=AgentID("agent_id_0"),
                 sensor_ids=["patch"],
                 resolutions=np.array([[64, 64]]),
                 world_coord=True,
@@ -177,7 +180,11 @@ class WorldImageFromStreamDatasetArgs:
                 depth_clip_sensors=(0,),
                 clip_value=1.1,
             ),
-            # GaussianSmoothing(agent_id="agent_id_0", sigma=8, kernel_width=10),
+            # GaussianSmoothing(
+            #     agent_id=AgentID("agent_id_0"),
+            #     sigma=8,
+            #     kernel_width=10
+            # ),
         ]
 
 
@@ -233,6 +240,9 @@ class DefaultObjectInitializer:
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
+
+    def __hash__(self):
+        return hash(self.__dict__)
 
 
 class PredefinedObjectInitializer(DefaultObjectInitializer):
@@ -326,7 +336,7 @@ class RandomRotationObjectInitializer(DefaultObjectInitializer):
 class EnvironmentDataloaderPerObjectArgs:
     object_names: List
     object_init_sampler: Callable
-    parent_to_child_mapping: Optional[Dict[str, List[str]]] = None
+    parent_to_child_mapping: Dict[str, List[str]] | None = None
 
 
 @dataclass
@@ -506,19 +516,19 @@ def get_omniglot_eval_dataloader(
 
 @dataclass
 class SensorAgentMapping:
-    agent_ids: List[str]
+    agent_ids: list[AgentID]
     sensor_ids: List[str]
-    sensor_to_agent: Dict
+    sensor_to_agent: dict[str, AgentID]
 
 
 @dataclass
 class SingleSensorAgentMapping(SensorAgentMapping):
     """Mapping for a sim with a single agent and single sensor."""
 
-    agent_ids: List[str] = field(default_factory=lambda: ["agent_id_0"])
+    agent_ids: list[AgentID] = field(default_factory=lambda: [AgentID("agent_id_0")])
     sensor_ids: List[str] = field(default_factory=lambda: ["sensor_id_0"])
-    sensor_to_agent: Dict = field(
-        default_factory=lambda: dict(sensor_id_0="agent_id_0")
+    sensor_to_agent: dict[str, AgentID] = field(
+        default_factory=lambda: dict(sensor_id_0=AgentID("agent_id_0"))
     )
 
 
@@ -526,40 +536,42 @@ class SingleSensorAgentMapping(SensorAgentMapping):
 class SimpleMountSensorAgentMapping(SensorAgentMapping):
     """Mapping for a sim with a single mount agent with two sensors."""
 
-    agent_ids: List[str] = field(default_factory=lambda: ["agent_id_0"])
+    agent_ids: list[AgentID] = field(default_factory=lambda: [AgentID("agent_id_0")])
     sensor_ids: List[str] = field(
         default_factory=lambda: ["sensor_id_0", "sensor_id_1"]
     )
-    sensor_to_agent: Dict = field(
-        default_factory=lambda: dict(sensor_id_0="agent_id_0", sensor_id_1="agent_id_0")
+    sensor_to_agent: dict[str, AgentID] = field(
+        default_factory=lambda: dict(
+            sensor_id_0=AgentID("agent_id_0"), sensor_id_1=AgentID("agent_id_0")
+        )
     )
 
 
 @dataclass
 class PatchAndViewSensorAgentMapping(SensorAgentMapping):
-    agent_ids: List[str] = field(default_factory=lambda: ["agent_id_0"])
+    agent_ids: list[AgentID] = field(default_factory=lambda: [AgentID("agent_id_0")])
     sensor_ids: List[str] = field(default_factory=lambda: ["patch", "view_finder"])
-    sensor_to_agent: Dict = field(
-        default_factory=lambda: dict(patch="agent_id_0", view_finder="agent_id_0")
+    sensor_to_agent: dict[str, AgentID] = field(
+        default_factory=lambda: dict(
+            patch=AgentID("agent_id_0"), view_finder=AgentID("agent_id_0")
+        )
     )
 
 
 @dataclass
 class TwoCameraMountConfig:
-    agent_id: Union[str, None] = field(default=None)
-    sensor_ids: Union[List[str], None] = field(default=None)
-    resolutions: List[List[Union[int, float]]] = field(
+    agent_id: AgentID | None = field(default=None)
+    sensor_ids: List[str] | None = field(default=None)
+    resolutions: List[List[int | float]] = field(
         default_factory=lambda: [[16, 16], [16, 16]]
     )
-    positions: List[List[Union[int, float]]] = field(
+    positions: List[List[int | float]] = field(
         default_factory=lambda: [[0.0, 0.0, 0.0], [0.02, 0.0, 0.0]]
     )
-    rotations: List[List[Union[int, float]]] = field(
+    rotations: List[List[int | float]] = field(
         default_factory=lambda: [[1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]]
     )
-    semantics: List[List[Union[int, float]]] = field(
-        default_factory=lambda: [False, False]
-    )
+    semantics: List[List[int | float]] = field(default_factory=lambda: [False, False])
     zooms: List[float] = field(default_factory=lambda: [1.0, 1.0])
 
     def __post_init__(self):
@@ -577,30 +589,28 @@ class PatchAndViewFinderMountConfig:
     so the object is in view before the real experiment happens.
     """
 
-    agent_id: Union[str, None] = "agent_id_0"
-    sensor_ids: Union[List[str], None] = field(
+    agent_id: AgentID | None = field(default=AgentID("agent_id_0"))
+    sensor_ids: List[str] | None = field(
         default_factory=lambda: ["patch", "view_finder"]
     )
-    height: Union[float, None] = 0.0
-    position: List[Union[int, float]] = field(default_factory=lambda: [0.0, 1.5, 0.2])
-    resolutions: List[List[Union[int, float]]] = field(
+    height: float | None = 0.0
+    position: List[int | float] = field(default_factory=lambda: [0.0, 1.5, 0.2])
+    resolutions: List[List[int | float]] = field(
         default_factory=lambda: [[64, 64], [64, 64]]
     )
-    positions: List[List[Union[int, float]]] = field(
+    positions: List[List[int | float]] = field(
         default_factory=lambda: [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
     )
-    rotations: List[List[Union[int, float]]] = field(
+    rotations: List[List[int | float]] = field(
         default_factory=lambda: [[1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]]
     )
-    semantics: List[List[Union[int, float]]] = field(
-        default_factory=lambda: [False, False]
-    )
+    semantics: List[List[int | float]] = field(default_factory=lambda: [False, False])
     zooms: List[float] = field(default_factory=lambda: [10.0, 1.0])
 
 
 @dataclass
 class PatchAndViewFinderMountLowResConfig(PatchAndViewFinderMountConfig):
-    resolutions: List[List[Union[int, float]]] = field(
+    resolutions: List[List[int | float]] = field(
         default_factory=lambda: [[5, 5], [64, 64]]
     )
 
@@ -615,14 +625,14 @@ class SurfaceAndViewFinderMountConfig(PatchAndViewFinderMountConfig):
 
     # The height should be zero, so that body actions do not cause the agent
     # to move backward or forward
-    height: Union[float, None] = 0.0
-    position: List[Union[int, float]] = field(default_factory=lambda: [0.0, 1.5, 0.1])
-    resolutions: List[List[Union[int, float]]] = field(
+    height: float | None = 0.0
+    position: List[int | float] = field(default_factory=lambda: [0.0, 1.5, 0.1])
+    resolutions: List[List[int | float]] = field(
         default_factory=lambda: [[64, 64], [64, 64]]
     )
     # The surface sensor is at the same position as the agent, the viewfinder is 3cm
     # behind the agent. So when the agent turns, the viewfinder moves accordingly.
-    positions: List[List[Union[int, float]]] = field(
+    positions: List[List[int | float]] = field(
         default_factory=lambda: [[0.0, 0.0, 0.0], [0.0, 0.0, 0.03]]
     )
     zooms: List[float] = field(default_factory=lambda: [10.0, 1.0])
@@ -636,30 +646,30 @@ class SurfaceAndViewFinderMountConfig(PatchAndViewFinderMountConfig):
 @dataclass
 class MultiLMMountConfig:
     # Modified from `PatchAndViewFinderMountConfig`
-    agent_id: Union[str, None] = "agent_id_0"
-    sensor_ids: Union[List[str], None] = field(
+    agent_id: AgentID | None = field(default=AgentID("agent_id_0"))
+    sensor_ids: List[str] | None = field(
         default_factory=lambda: ["patch_0", "patch_1", "view_finder"]
     )
-    height: Union[float, None] = 0.0
-    position: List[Union[int, float]] = field(default_factory=lambda: [0.0, 1.5, 0.2])
-    resolutions: List[List[Union[int, float]]] = field(
+    height: float | None = 0.0
+    position: List[int | float] = field(default_factory=lambda: [0.0, 1.5, 0.2])
+    resolutions: List[List[int | float]] = field(
         default_factory=lambda: [[64, 64], [64, 64], [64, 64]]
     )
-    positions: List[List[Union[int, float]]] = field(
+    positions: List[List[int | float]] = field(
         default_factory=lambda: [
             [0.0, 0.0, 0.0],
             [0.0, 0.01, 0.0],
             [0.0, 0.0, 0.0],
         ]
     )
-    rotations: List[List[Union[int, float]]] = field(
+    rotations: List[List[int | float]] = field(
         default_factory=lambda: [
             [1.0, 0.0, 0.0, 0.0],
             [1.0, 0.0, 0.0, 0.0],
             [1.0, 0.0, 0.0, 0.0],
         ]
     )
-    semantics: List[List[Union[int, float]]] = field(
+    semantics: List[List[int | float]] = field(
         default_factory=lambda: [False, False, False]
     )
     zooms: List[float] = field(default_factory=lambda: [10.0, 10.0, 1.0])
@@ -669,30 +679,30 @@ class MultiLMMountConfig:
 class TwoLMStackedDistantMountConfig:
     # two sensor patches at the same location with different receptive field sizes
     # Used for basic test with heterarchy.
-    agent_id: Union[str, None] = "agent_id_0"
-    sensor_ids: Union[List[str], None] = field(
+    agent_id: AgentID | None = field(default=AgentID("agent_id_0"))
+    sensor_ids: List[str] | None = field(
         default_factory=lambda: ["patch_0", "patch_1", "view_finder"]
     )
-    height: Union[float, None] = 0.0
-    position: List[Union[int, float]] = field(default_factory=lambda: [0.0, 1.5, 0.2])
-    resolutions: List[List[Union[int, float]]] = field(
+    height: float | None = 0.0
+    position: List[int | float] = field(default_factory=lambda: [0.0, 1.5, 0.2])
+    resolutions: List[List[int | float]] = field(
         default_factory=lambda: [[64, 64], [64, 64], [64, 64]]
     )
-    positions: List[List[Union[int, float]]] = field(
+    positions: List[List[int | float]] = field(
         default_factory=lambda: [
             [0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0],
         ]
     )
-    rotations: List[List[Union[int, float]]] = field(
+    rotations: List[List[int | float]] = field(
         default_factory=lambda: [
             [1.0, 0.0, 0.0, 0.0],
             [1.0, 0.0, 0.0, 0.0],
             [1.0, 0.0, 0.0, 0.0],
         ]
     )
-    semantics: List[List[Union[int, float]]] = field(
+    semantics: List[List[int | float]] = field(
         default_factory=lambda: [False, False, False]
     )
     zooms: List[float] = field(default_factory=lambda: [10.0, 5.0, 1.0])
@@ -706,8 +716,8 @@ class TwoLMStackedSurfaceMountConfig(TwoLMStackedDistantMountConfig):
 @dataclass
 class FiveLMMountConfig:
     # Modified from `PatchAndViewFinderMountConfig`
-    agent_id: Union[str, None] = "agent_id_0"
-    sensor_ids: Union[List[str], None] = field(
+    agent_id: AgentID | None = field(default=AgentID("agent_id_0"))
+    sensor_ids: List[str] | None = field(
         default_factory=lambda: [
             "patch_0",
             "patch_1",
@@ -717,9 +727,9 @@ class FiveLMMountConfig:
             "view_finder",
         ]
     )
-    height: Union[float, None] = 0.0
-    position: List[Union[int, float]] = field(default_factory=lambda: [0.0, 1.5, 0.2])
-    resolutions: List[List[Union[int, float]]] = field(
+    height: float | None = 0.0
+    position: List[int | float] = field(default_factory=lambda: [0.0, 1.5, 0.2])
+    resolutions: List[List[int | float]] = field(
         default_factory=lambda: [
             [64, 64],
             [64, 64],
@@ -729,7 +739,7 @@ class FiveLMMountConfig:
             [64, 64],
         ]
     )
-    positions: List[List[Union[int, float]]] = field(
+    positions: List[List[int | float]] = field(
         default_factory=lambda: [
             [0.0, 0.0, 0.0],
             [0.0, 0.01, 0.0],
@@ -739,7 +749,7 @@ class FiveLMMountConfig:
             [0.0, 0.0, 0.0],
         ]
     )
-    rotations: List[List[Union[int, float]]] = field(
+    rotations: List[List[int | float]] = field(
         default_factory=lambda: [
             [1.0, 0.0, 0.0, 0.0],
             [1.0, 0.0, 0.0, 0.0],
@@ -749,7 +759,7 @@ class FiveLMMountConfig:
             [1.0, 0.0, 0.0, 0.0],
         ]
     )
-    semantics: List[List[Union[int, float]]] = field(
+    semantics: List[List[int | float]] = field(
         default_factory=lambda: [False, False, False, False, False, False]
     )
     zooms: List[float] = field(
@@ -759,9 +769,7 @@ class FiveLMMountConfig:
 
 @dataclass
 class PatchAndViewFinderMultiObjectMountConfig(PatchAndViewFinderMountConfig):
-    semantics: List[List[Union[int, float]]] = field(
-        default_factory=lambda: [True, True]
-    )
+    semantics: List[List[int | float]] = field(default_factory=lambda: [True, True])
 
 
 """
@@ -891,15 +899,15 @@ def make_sensor_positions_on_grid(
 
 def make_multi_sensor_mount_config(
     n_sensors: int,
-    agent_id: str = "agent_id_0",
-    sensor_ids: Optional[Sequence[str]] = None,
+    agent_id: AgentID = AgentID("agent_id_0"),
+    sensor_ids: Sequence[str] | None = None,
     height: Number = 0.0,
     position: ArrayLike = (0, 1.5, 0.2),  # agent position
-    resolutions: Optional[ArrayLike] = None,
-    positions: Optional[ArrayLike] = None,
-    rotations: Optional[ArrayLike] = None,
-    semantics: Optional[ArrayLike] = None,
-    zooms: Optional[ArrayLike] = None,
+    resolutions: ArrayLike | None = None,
+    positions: ArrayLike | None = None,
+    rotations: ArrayLike | None = None,
+    semantics: ArrayLike | None = None,
+    zooms: ArrayLike | None = None,
 ) -> Mapping[str, Any]:
     """Generate a multi-sensor mount configuration.
 
@@ -940,7 +948,7 @@ def make_multi_sensor_mount_config(
 
     # Initialize with agent info, then add sensor info.
     mount_config = {
-        "agent_id": str(agent_id),
+        "agent_id": agent_id,
         "height": float(height),
         "position": np.asarray(position),
     }

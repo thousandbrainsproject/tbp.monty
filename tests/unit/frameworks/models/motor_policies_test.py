@@ -14,6 +14,7 @@ import numpy as np
 
 from tbp.monty.frameworks.actions.action_samplers import UniformlyDistributedSampler
 from tbp.monty.frameworks.actions.actions import LookUp
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system_state import (
     AgentState,
@@ -25,7 +26,7 @@ from tbp.monty.frameworks.models.motor_system_state import (
 class BasePolicyTest(unittest.TestCase):
     def setUp(self):
         self.rng = np.random.RandomState(42)
-        self.agent_id = f"agent_id_{self.rng.randint(0, 999_999_999)}"
+        self.agent_id = AgentID(f"agent_id_{self.rng.randint(0, 999_999_999)}")
         self.default_sensor_state: SensorState = {
             "position": (0.0, 0.0, 0.0),
             "rotation": (1.0, 0.0, 0.0, 0.0),
@@ -53,7 +54,7 @@ class BasePolicyTest(unittest.TestCase):
         }
         state = MotorSystemState(
             {
-                f"{self.agent_id}": expected_state,
+                AgentID(f"{self.agent_id}"): expected_state,
                 "different_agent_id": {},
             }
         )
@@ -64,7 +65,7 @@ class BasePolicyTest(unittest.TestCase):
     ):
         state = MotorSystemState(
             {
-                f"{self.agent_id}": self.default_agent_state,
+                AgentID(f"{self.agent_id}"): self.default_agent_state,
             }
         )
         self.assertFalse(self.policy.is_motor_only_step(state))
@@ -74,7 +75,7 @@ class BasePolicyTest(unittest.TestCase):
     ):
         state = MotorSystemState(
             {
-                f"{self.agent_id}": {
+                AgentID(f"{self.agent_id}"): {
                     **self.default_agent_state,
                     "motor_only_step": True,
                 },
@@ -87,7 +88,7 @@ class BasePolicyTest(unittest.TestCase):
     ):
         state = MotorSystemState(
             {
-                f"{self.agent_id}": {
+                AgentID(f"{self.agent_id}"): {
                     **self.default_agent_state,
                     "motor_only_step": False,
                 },

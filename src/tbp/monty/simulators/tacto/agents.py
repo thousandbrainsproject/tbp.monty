@@ -13,6 +13,7 @@ from typing import Tuple
 
 from habitat_sim.agent import ActionSpec, ActuationSpec
 
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.simulators.habitat import HabitatAgent
 
 from .config import DIGIT, TactoSensorSpec
@@ -47,7 +48,7 @@ class TactoFingerAgent(HabitatAgent):
 
     def __init__(
         self,
-        agent_id: str,
+        agent_id: AgentID,
         sensor_id: str,
         position: Vector3 = (0.0, 0.0, 0.0),
         rotation: Quaternion = (1.0, 0.0, 0.0, 0.0),

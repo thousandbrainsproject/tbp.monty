@@ -21,7 +21,7 @@ setup_env()
 
 
 class MontyRequestHandler(http.server.SimpleHTTPRequestHandler):
-    def do_PUT(self):  # noqa: N802
+    def do_PUT(self):
         # Check type of incoming data: depth or rgb
         inc_filename = os.path.basename(self.path)
         data_type = "depth" if inc_filename == "depth.data" else "rgb"

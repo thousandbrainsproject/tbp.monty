@@ -26,6 +26,7 @@ from tbp.monty.frameworks.actions.actions import (
     SetAgentPose,
     SetSensorRotation,
 )
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.motor_policies import (
     GetGoodView,
     InformedPolicy,
@@ -603,7 +604,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         """
         self.get_good_view("view_finder")
         for patch_id in ("patch", "patch_0"):
-            if patch_id in self._observation["agent_id_0"].keys():
+            if patch_id in self._observation[AgentID("agent_id_0")]:
                 on_target_object = self.get_good_view(
                     patch_id,
                     allow_translation=False,  # only orientation movements

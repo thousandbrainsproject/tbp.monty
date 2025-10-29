@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import pytest
 
+from tbp.monty.frameworks.agents import AgentID
+
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -70,7 +72,7 @@ def create_agents(
     agents = []
     for i in range(num_agents):
         cam = SingleSensorAgent(
-            agent_id=f"{i}",
+            agent_id=AgentID(f"{i}"),
             sensor_id="0",
             resolution=resolution,
             semantic=semantic,
@@ -734,7 +736,10 @@ class HabitatSimTest(unittest.TestCase):
 
     def test_agent_height(self):
         agent = SingleSensorAgent(
-            agent_id="camera", sensor_id="0", agent_position=[0.0, 0.0, 0.0], height=0.0
+            agent_id=AgentID("camera"),
+            sensor_id="0",
+            agent_position=[0.0, 0.0, 0.0],
+            height=0.0,
         )
         with HabitatSim(agents=[agent]) as sim:
             states = sim.states

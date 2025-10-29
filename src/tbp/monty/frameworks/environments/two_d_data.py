@@ -20,6 +20,7 @@ import quaternion as qt
 from scipy.ndimage import gaussian_filter
 
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import DepthTo3DLocations
 from tbp.monty.frameworks.environments.embodied_environment import (
     ActionSpace,
@@ -143,7 +144,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         )
         depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
         obs = {
-            "agent_id_0": {
+            AgentID("agent_id_0"): {
                 "patch": {
                     "depth": depth,
                     "semantic": np.array(~patch, dtype=int),
@@ -163,7 +164,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         loc = self.locations[self.step_num % self.max_steps]
         sensor_position = np.array([loc[0], loc[1], 0])
         state = {
-            "agent_id_0": {
+            AgentID("agent_id_0"): {
                 "sensors": {
                     "patch" + ".depth": {
                         "rotation": self.rotation,
@@ -200,7 +201,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         )
         depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
         obs = {
-            "agent_id_0": {
+            AgentID("agent_id_0"): {
                 "patch": {
                     "depth": depth,
                     "semantic": np.array(~patch, dtype=int),
@@ -377,7 +378,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             sensor_frame_patch,
         ) = self.get_image_patch(self.current_loc)
         obs = {
-            "agent_id_0": {
+            AgentID("agent_id_0"): {
                 "patch": {
                     "depth": depth_patch,
                     "rgba": rgb_patch,
@@ -407,7 +408,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
 
         # NOTE: This is super hacky and only works for 1 agent with 1 sensor
         state = {
-            "agent_id_0": {
+            AgentID("agent_id_0"): {
                 "sensors": {
                     "patch" + ".depth": {
                         "rotation": self.rotation,
@@ -465,7 +466,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             self.current_loc,
         )
         obs = {
-            "agent_id_0": {
+            AgentID("agent_id_0"): {
                 "patch": {
                     "depth": depth_patch,
                     "rgba": rgb_patch,
@@ -559,7 +560,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             current_scene_point_cloud: The 3D scene point cloud.
             current_sf_scene_point_cloud: The 3D scene point cloud in sensor frame.
         """
-        agent_id = "agent_01"
+        agent_id = AgentID("agent_01")
         sensor_id = "patch_01"
         obs = {agent_id: {sensor_id: {"depth": self.current_depth_image}}}
         rotation = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
