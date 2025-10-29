@@ -401,9 +401,9 @@ class MontyForGraphMatching(MontyBase):
         # Log possible matches
         for i, lm in enumerate(self.learning_modules):
             pm = (
-                set(lm.get_possible_matches())
+                lm.get_possible_matches()
                 if lm.buffer.get_num_observations_on_object()
-                else set()
+                else []
             )
             logger.info(f"Possible matches for LM {i}: {pm}")
 
