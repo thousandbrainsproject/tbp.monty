@@ -501,11 +501,14 @@ def evidence_update_threshold(
 
     if type(evidence_threshold_config) in [int, float]:
         return evidence_threshold_config
-    elif evidence_threshold_config == "mean":
+
+    if evidence_threshold_config == "mean":
         return np.mean(evidence_all_channels)
-    elif evidence_threshold_config == "median":
+
+    if evidence_threshold_config == "median":
         return np.median(evidence_all_channels)
-    elif isinstance(
+
+    if isinstance(
         evidence_threshold_config, str
     ) and evidence_threshold_config.endswith("%"):
         percentage_str = evidence_threshold_config.strip("%")
@@ -515,17 +518,19 @@ def evidence_update_threshold(
         )
         x_percent_of_max = max_global_evidence * (percentage / 100)
         return max_global_evidence - x_percent_of_max
-    elif evidence_threshold_config == "x_percent_threshold":
+
+    if evidence_threshold_config == "x_percent_threshold":
         x_percent_of_max = max_global_evidence / 100 * x_percent_threshold
         return max_global_evidence - x_percent_of_max
-    elif evidence_threshold_config == "all":
+
+    if evidence_threshold_config == "all":
         return np.min(evidence_all_channels)
-    else:
-        raise InvalidEvidenceThresholdConfig(
-            "evidence_threshold_config not in "
-            "[int, float, '[int]%', 'mean', "
-            "'median', 'all', 'x_percent_threshold']"
-        )
+
+    raise InvalidEvidenceThresholdConfig(
+        "evidence_threshold_config not in "
+        "[int, float, '[int]%', 'mean', "
+        "'median', 'all', 'x_percent_threshold']"
+    )
 
 
 class InvalidEvidenceThresholdConfig(ValueError):

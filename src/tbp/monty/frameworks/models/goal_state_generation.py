@@ -315,8 +315,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
 
             return goal_achieved
 
-        else:
-            return False
+        return False
 
     def _check_input_matches_sensory_prediction(self, observations):
         """Check whether the input matches the sensory prediction.
@@ -377,8 +376,8 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         """
         if output_goal_achieved:
             return True
-        else:
-            return False
+
+        return False
 
     def _check_keep_current_output_goal(self) -> bool:
         """Should we keep our current goal?
@@ -416,8 +415,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         if len(mask) == 0:
             return 0
 
-        else:
-            return np.linalg.norm(a[mask] - b[mask])
+        return np.linalg.norm(a[mask] - b[mask])
 
     # ------------------ Getters, Setters & Logging ---------------------
 
@@ -913,8 +911,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         if output_goal_achieved:
             return False
 
-        else:
-            return self._check_conditions_for_hypothesis_test()
+        return self._check_conditions_for_hypothesis_test()
 
     def _check_keep_current_output_goal(self) -> bool:
         """Determine whether the GSG should keep the current goal-state.
@@ -1002,7 +999,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # place to test
         # TODO when optimizing, consider using np.any rather than np.all, i.e. as long
         # as there is any change in the top two MLH
-        elif self.prev_top_mlhs is not None and np.all(
+        if self.prev_top_mlhs is not None and np.all(
             [
                 self.prev_top_mlhs[0]["graph_id"],
                 self.prev_top_mlhs[1]["graph_id"],
@@ -1020,7 +1017,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # TODO expand this to handle change in translationm/location pose as well
         # TODO add a parameter that specifies the angle between the two poses above
         # which we consider it a new pose (rather than it needing to be identical)
-        elif self.prev_top_mlhs is not None and np.all(
+        if self.prev_top_mlhs is not None and np.all(
             top_mlh["rotation"].as_euler("xyz")
             != self.prev_top_mlhs[0]["rotation"].as_euler("xyz")
         ):
@@ -1032,7 +1029,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # Otherwise, if a sufficient number of steps have elapsed,
         # still perform a jump; note however that this threshold exponentially
         # increases, so that we avoid continuously returning to the same location
-        elif num_elapsed_steps % (self.wait_factor * self.elapsed_steps_factor) == 0:
+        if num_elapsed_steps % (self.wait_factor * self.elapsed_steps_factor) == 0:
             logger.debug(
                 "Hypothesis jump indicated: sufficient steps elapsed with no jump"
             )
@@ -1040,8 +1037,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             self.wait_factor *= self.wait_growth_multiplier
             return True
 
-        else:
-            return False
+        return False
 
     def _get_num_steps_post_output_goal_generated(self):
         """Number of steps since last output goal-state.

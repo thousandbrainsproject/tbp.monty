@@ -164,8 +164,8 @@ class GraphObjectModel(ObjectModel):
         """Return a string representation of the object."""
         if self._graph is not None:
             return self._graph.__repr__()
-        else:
-            return f"Model for {self.object_id}:\n   No graph stored yet."
+
+        return f"Model for {self.object_id}:\n   No graph stored yet."
 
     # ======================= Private ==========================
     # ------------------- Main Algorithm -----------------------
@@ -462,8 +462,8 @@ class GridObjectModel(GraphObjectModel):
 
         if return_distance:
             return distances
-        else:
-            return nearest_node_ids
+
+        return nearest_node_ids
 
     # ------------------ Getters & Setters ---------------------
     def set_graph(self, graph):

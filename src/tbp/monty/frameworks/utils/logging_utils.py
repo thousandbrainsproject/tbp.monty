@@ -122,8 +122,8 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
     def should_get_episode(start, stop, episodes, counter):
         if episodes is not None:
             return counter in episodes
-        else:
-            return (counter >= start) and (counter < stop)
+
+        return (counter >= start) and (counter < stop)
 
     detailed_json = {}
     stop = stop or np.inf
@@ -546,8 +546,8 @@ def calculate_tpr(tp, fn):
     """
     if (tp + fn) == 0:
         return None
-    else:
-        return tp / (tp + fn)
+
+    return tp / (tp + fn)
 
 
 def calculate_fpr(fp, tn):
@@ -562,8 +562,8 @@ def calculate_fpr(fp, tn):
     """
     if (fp + tn) == 0:
         return None
-    else:
-        return fp / (fp + tn)
+
+    return fp / (fp + tn)
 
 
 ###

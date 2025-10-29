@@ -186,8 +186,8 @@ class MontyBase(Monty):
         ):
             self.deal_with_time_out()
             return True
-        else:
-            return False
+
+        return False
 
     def deal_with_time_out(self):
         """Call any functions and logging in case of a time out."""
@@ -449,8 +449,10 @@ class MontyBase(Monty):
         if self.step_type == "matching_step":
             if self.experiment_mode == "train":
                 return self.min_train_steps
-            elif self.experiment_mode == "eval":
+
+            if self.experiment_mode == "eval":
                 return self.min_eval_steps
+
         elif self.step_type == "exploratory_step":
             return self.num_exploratory_steps
 
@@ -458,7 +460,7 @@ class MontyBase(Monty):
     def step_type_count(self):
         if self.step_type == "matching_step":
             return self.matching_steps
-        elif self.step_type == "exploratory_step":
+        if self.step_type == "exploratory_step":
             return self.exploratory_steps
 
     @property

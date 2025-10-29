@@ -38,8 +38,8 @@ def recover_output_dir(config, config_name):
 def recover_run_name(config, config_name):
     if not config["logging_config"]["run_name"]:
         return config_name
-    else:
-        return config["logging_config"]["run_name"]
+
+    return config["logging_config"]["run_name"]
 
 
 def recover_wandb_id(output_dir):

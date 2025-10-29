@@ -248,8 +248,8 @@ def get_model_colors(shape, step, is_match_step):
 def get_match_step(is_match_step, step):
     if not is_match_step and step > 0:
         return step - 1
-    else:
-        return step
+
+    return step
 
 
 def plot_search_displacements(ax, search_positions, start_node):

@@ -22,10 +22,13 @@ def _supports_color():
     if os.getenv("CI", "false").lower() == "true":
         # Disable color in CI environments
         return False
-    elif sys.platform == "win32":
+
+    if sys.platform == "win32":
         return True  # Colorama handles color support on Windows
-    elif hasattr(sys.stdout, "isatty") and sys.stdout.isatty():
+
+    if hasattr(sys.stdout, "isatty") and sys.stdout.isatty():
         return True  # Non-Windows platforms with a TTY
+
     return False
 
 

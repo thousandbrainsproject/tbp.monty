@@ -295,10 +295,11 @@ class BasePolicy(MotorPolicy):
             True if the current step is a motor-only step, False otherwise.
         """
         agent_state = self.get_agent_state(state)
+
         if "motor_only_step" in agent_state.keys() and agent_state["motor_only_step"]:
             return True
-        else:
-            return False
+
+        return False
 
     @property
     def last_action(self) -> Action:
@@ -368,8 +369,7 @@ class JumpToGoalStateMixin:
 
             return target_loc, target_quat
 
-        else:
-            return None, None
+        return None, None
 
 
 @dataclass
@@ -679,15 +679,15 @@ class GetGoodView(PositioningProcedure):
                         "Getting too close to other objects, not moving forward."
                     )
                     return None
-                else:
-                    logger.debug("Moving forward")
-                    return MoveForward(agent_id=self.agent_id, distance=0.01)
-            else:
-                logger.debug("Close enough.")
-                return None
-        else:
-            logger.debug("Enough percent visible.")
+
+                logger.debug("Moving forward")
+                return MoveForward(agent_id=self.agent_id, distance=0.01)
+
+            logger.debug("Close enough.")
             return None
+
+        logger.debug("Enough percent visible.")
+        return None
 
     def orient_to_object(
         self, observation: Mapping, state: MotorSystemState | None = None
@@ -769,8 +769,8 @@ class GetGoodView(PositioningProcedure):
 
         if on_target_object:
             return PositioningProcedureResult(success=True, terminated=True)
-        else:
-            return PositioningProcedureResult(truncated=True)
+
+        return PositioningProcedureResult(truncated=True)
 
     def sensor_rotation_relative_to_world(self, state: MotorSystemState) -> Any:
         """Derives the positioning sensor's rotation relative to the world.
@@ -924,36 +924,41 @@ class InformedPolicy(BasePolicy, JumpToGoalStateMixin):
                 rotation_degrees=-last_action.rotation_degrees,
                 constraint_degrees=last_action.constraint_degrees,
             )
-        elif isinstance(last_action, LookUp):
+
+        if isinstance(last_action, LookUp):
             return LookUp(
                 agent_id=last_action.agent_id,
                 rotation_degrees=-last_action.rotation_degrees,
                 constraint_degrees=last_action.constraint_degrees,
             )
-        elif isinstance(last_action, TurnLeft):
+
+        if isinstance(last_action, TurnLeft):
             return TurnLeft(
                 agent_id=last_action.agent_id,
                 rotation_degrees=-last_action.rotation_degrees,
             )
-        elif isinstance(last_action, TurnRight):
+
+        if isinstance(last_action, TurnRight):
             return TurnRight(
                 agent_id=last_action.agent_id,
                 rotation_degrees=-last_action.rotation_degrees,
             )
-        elif isinstance(last_action, MoveForward):
+
+        if isinstance(last_action, MoveForward):
             return MoveForward(
                 agent_id=last_action.agent_id,
                 distance=-last_action.distance,
             )
-        elif isinstance(last_action, MoveTangentially):
+
+        if isinstance(last_action, MoveTangentially):
             return MoveTangentially(
                 agent_id=last_action.agent_id,
                 distance=-last_action.distance,
                 # Same direction, negative distance
                 direction=last_action.direction,
             )
-        else:
-            raise TypeError(f"Invalid action: {last_action}")
+
+        raise TypeError(f"Invalid action: {last_action}")
 
     def post_action(
         self, action: Action | None, state: MotorSystemState | None = None
@@ -1434,17 +1439,20 @@ class SurfacePolicy(InformedPolicy):
 
         if isinstance(last_action, MoveForward):
             return self._orient_horizontal(state)
-        elif isinstance(last_action, OrientHorizontal):
+
+        if isinstance(last_action, OrientHorizontal):
             return self._orient_vertical(state)
-        elif isinstance(last_action, OrientVertical):
+
+        if isinstance(last_action, OrientVertical):
             return self._move_tangentially(state)
-        elif isinstance(last_action, MoveTangentially):
+
+        if isinstance(last_action, MoveTangentially):
             # orient around object if it's not centered in view
             if not self.processed_observations.get_on_object():
                 return self._orient_horizontal(state)
+
             # move to the desired_object_distance if it is in view
-            else:
-                return self._move_forward()
+            return self._move_forward()
 
     def tangential_direction(self, state: MotorSystemState) -> VectorXYZ:
         """Set the direction of the action to be a direction 0 - 2pi.
@@ -2147,8 +2155,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         if self.min_dir_pref:  # Follow minimal curvature direction
             return np.argmin(absolute_pcs)
 
-        else:
-            return np.argmax(absolute_pcs)
+        return np.argmax(absolute_pcs)
 
     def avoid_revisiting_locations(
         self,
@@ -2314,8 +2321,8 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             )
         ):
             return True
-        else:
-            return False
+
+        return False
 
     def attempt_conflict_resolution(self, vec_copy):
         """Try to define direction vector that avoids revisiting previous locations."""

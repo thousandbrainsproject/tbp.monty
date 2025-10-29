@@ -147,8 +147,8 @@ class State:
         """
         if self.sender_type == "SM":
             return self.get_nth_pose_vector(0)
-        else:
-            raise ValueError("Sender type must be SM to get surface normal.")
+
+        raise ValueError("Sender type must be SM to get surface normal.")
 
     def get_pose_vectors(self):
         """Return the pose vectors."""
@@ -162,8 +162,8 @@ class State:
         """
         if self.sender_type == "SM":
             return self.get_nth_pose_vector(1), self.get_nth_pose_vector(2)
-        else:
-            raise ValueError("Sender type must be SM to get curvature directions.")
+
+        raise ValueError("Sender type must be SM to get curvature directions.")
 
     def get_on_object(self):
         """Return whether we think we are on the object or not.
@@ -172,10 +172,10 @@ class State:
         """
         if "on_object" in self.morphological_features.keys():
             return self.morphological_features["on_object"]
-        else:
-            # TODO: Use depth values to estimate on_object (either threshold or large
-            # displacement)
-            return True
+
+        # TODO: Use depth values to estimate on_object (either threshold or large
+        # displacement)
+        return True
 
     def _check_all_attributes(self):
         assert "pose_vectors" in self.morphological_features.keys(), (

@@ -293,10 +293,11 @@ class FeatureGraphLM(GraphLM):
 
         if (location_is_unique and rotation_is_unique) or symmetry_detected:
             return euler_poses, unique_poses
-        else:
-            self.last_unique_poses = np.array(euler_poses)
-            self.last_num_unique_locations = len(unique_locations)
-            return None, None
+
+        self.last_unique_poses = np.array(euler_poses)
+        self.last_num_unique_locations = len(unique_locations)
+
+        return None, None
 
     def _check_for_symmetry(self, current_unique_poses, num_unique_locations):
         """Check for symmetry and update symmetry evidence count.
@@ -323,11 +324,12 @@ class FeatureGraphLM(GraphLM):
                 self.symmetry_evidence = 0
         else:  # has to be consequtive
             self.symmetry_evidence = 0
+
         if self._enough_symmetry_evidence_accumulated():
             logger.info(f"Symmetry detected for poses {current_unique_poses}")
             return True
-        else:
-            return False
+
+        return False
 
     def _enough_symmetry_evidence_accumulated(self):
         """Check if enough evidence for symmetry has been accumulated.
@@ -745,11 +747,11 @@ class FeatureGraphMemory(GraphMemory):
         if list_of_lists:
             loc_lists = [[loc.numpy()] for loc in all_node_locs[possible_nodes_idx]]
             return all_node_ids[possible_nodes_idx], loc_lists
-        else:
-            return (
-                all_node_ids[possible_nodes_idx],
-                all_node_locs[possible_nodes_idx],
-            )
+
+        return (
+            all_node_ids[possible_nodes_idx],
+            all_node_locs[possible_nodes_idx],
+        )
 
     # ------------------ Logging & Saving ----------------------
 

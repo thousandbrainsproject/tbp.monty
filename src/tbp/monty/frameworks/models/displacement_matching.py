@@ -364,8 +364,8 @@ class DisplacementGraphLM(GraphLM):
 
         if len(self.possible_paths[graph_id]) == 0:
             return 0
-        else:
-            return 1
+
+        return 1
 
     def _get_prediction_error(self, predictions, target):
         """Calculate the prediction error (binary if not using features).

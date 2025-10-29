@@ -569,11 +569,11 @@ class EvidenceGraphLM(GraphLM):
                     }
                     self.buffer.add_overall_stats(symmetry_stats)
                 return pose_and_scale
-            else:
-                logger.debug(f"object {object_id} detected but pose not resolved yet.")
-                return None
-        else:
+
+            logger.debug(f"object {object_id} detected but pose not resolved yet.")
             return None
+
+        return None
 
     def get_current_mlh(self):
         """Return the current most likely hypothesis of the learning module.
@@ -1032,8 +1032,8 @@ class EvidenceGraphLM(GraphLM):
                 f"Symmetry detected for hypotheses {possible_object_hypotheses_ids}"
             )
             return True
-        else:
-            return False
+
+        return False
 
     def _enough_symmetry_evidence_accumulated(self):
         """Check if enough evidence for symmetry has been accumulated.
@@ -1056,10 +1056,10 @@ class EvidenceGraphLM(GraphLM):
         """
         if pose is None:
             return np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-        else:
-            # Equivalent to applying the pose rotation to the rf spanning unit vectors
-            # -> pose.as_matrix().dot(pose_vectors.T).T
-            return pose.as_matrix().T
+
+        # Equivalent to applying the pose rotation to the rf spanning unit vectors
+        # -> pose.as_matrix().dot(pose_vectors.T).T
+        return pose.as_matrix().T
 
     def _object_id_to_features(self, object_id):
         """Turn object ID into features that express object similarity.

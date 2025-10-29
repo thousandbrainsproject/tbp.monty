@@ -274,7 +274,6 @@ ignore = [
     "RET501", # RET501: Do not explicitly `return None` in function if it is the only possible return value
     "RET503", # RET503: Missing explicit `return` at the end of function able to return non-`None` value
     "RET504", # RET504: Unnecessary assignment to {name} before return statement
-    "RET505", # RET505: Unnecessary {branch} after return statement
     "RSE102", # RSE102: Unnecessary parentheses on raised exception
     "RUF005", # RUF005: Consider {expression} instead of concatenation
     "RUF010", # RUF010: Use explicit conversion flag

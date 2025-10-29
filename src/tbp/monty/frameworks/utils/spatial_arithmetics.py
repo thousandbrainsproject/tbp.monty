@@ -204,8 +204,8 @@ def align_orthonormal_vectors(m1, m2, as_scipy=True):
         # and mirrored vectors will be corrected by the sensor module.
         error = np.mean(np.abs(rotation.inv().apply(m1) - m2))
         return rotation, error
-    else:
-        return rot_mat, None
+
+    return rot_mat, None
 
 
 def align_multiple_orthonormal_vectors(ms1, ms2, as_scipy=True):
@@ -227,8 +227,8 @@ def align_multiple_orthonormal_vectors(ms1, ms2, as_scipy=True):
         for rot_mat in rot_mats:
             all_rotations.append(Rotation.from_matrix(rot_mat))
         return all_rotations
-    else:
-        return rot_mats
+
+    return rot_mats
 
 
 def get_right_hand_angle(v1, v2, surface_normal):
@@ -250,8 +250,8 @@ def non_singular_mat(a):
     """
     if np.linalg.cond(a) < 1 / sys.float_info.epsilon:
         return True
-    else:
-        return False
+
+    return False
 
 
 def get_more_directions_in_plane(vecs, n_poses) -> List[np.ndarray]:

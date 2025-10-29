@@ -667,8 +667,8 @@ class EvidenceSDRLMMixin:
         """
         if object_id in self.obj2id:
             return self.sdr_encoder.get_sdr(self.obj2id[object_id])
-        else:
-            return np.zeros(self.sdr_args["sdr_length"])
+
+        return np.zeros(self.sdr_args["sdr_length"])
 
 
 class EvidenceSDRGraphLM(EvidenceSDRLMMixin, EvidenceGraphLM):

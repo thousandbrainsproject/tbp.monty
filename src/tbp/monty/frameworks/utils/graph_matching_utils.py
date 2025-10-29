@@ -465,8 +465,8 @@ def find_step_on_new_object(
     # If conv contains at least one True, find the first occurrence
     if conv.any():
         return np.where(conv)[0][0] + n_steps_off_primary_target - 1
-    else:
-        return None
+
+    return None
 
 
 def possible_sensed_directions(

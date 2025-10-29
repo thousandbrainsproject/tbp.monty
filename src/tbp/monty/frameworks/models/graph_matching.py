@@ -705,8 +705,8 @@ class GraphLM(LearningModule):
         """
         if self.buffer.get_last_obs_processed() and self.gsg is not None:
             return self.gsg.output_goal_states()
-        else:
-            return []
+
+        return []
 
     def update_terminal_condition(self):
         """Check if we have reached a terminal condition for this episode.
@@ -1212,16 +1212,18 @@ class GraphMemory(LMMemory):
         """
         if input_channel is None:
             return self.models_in_memory[graph_id]
-        elif input_channel == "first":
+
+        if input_channel == "first":
             # Arbitrarily take first input channel. Mostly used as placeholder for now.
             # Usually this will be input from a sensor module but we do nothing to
             # guarantee this.
             first_channel = self.get_input_channels_in_graph(graph_id)[0]
             return self.models_in_memory[graph_id][first_channel]
-        elif input_channel in self.get_input_channels_in_graph(graph_id):
+
+        if input_channel in self.get_input_channels_in_graph(graph_id):
             return self.models_in_memory[graph_id][input_channel]
-        else:
-            raise ValueError(f"{graph_id} has no data stored for {input_channel}.")
+
+        raise ValueError(f"{graph_id} has no data stored for {input_channel}.")
 
     def get_feature_array(self, graph_id):
         return self.feature_array[graph_id]
@@ -1269,11 +1271,11 @@ class GraphMemory(LMMemory):
         """
         if input_channel is not None:
             return self.models_in_memory[graph_id][input_channel].x.shape[0]
-        else:
-            return sum(
-                self.get_num_nodes_in_graph(graph_id, input_channel)
-                for input_channel in self.get_input_channels_in_graph(graph_id)
-            )
+
+        return sum(
+            self.get_num_nodes_in_graph(graph_id, input_channel)
+            for input_channel in self.get_input_channels_in_graph(graph_id)
+        )
 
     def get_features_at_node(self, graph_id, input_channel, node_id, feature_keys=None):
         """Get features at a specific node in the graph.

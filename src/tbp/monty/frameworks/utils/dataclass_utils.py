@@ -187,9 +187,9 @@ def config_to_dict(config: Dataclass | Dict[str, Any]) -> Dict[str, Any]:
     """
     if is_config_like(config):
         return _config_to_dict_inner(config)
-    else:
-        msg = f"Expecting dict or dataclass instance but got {type(config)}"
-        raise TypeError(msg)
+
+    msg = f"Expecting dict or dataclass instance but got {type(config)}"
+    raise TypeError(msg)
 
 
 def _config_to_dict_inner(obj: Any) -> Any:
@@ -213,20 +213,22 @@ def _config_to_dict_inner(obj: Any) -> Any:
             value = _config_to_dict_inner(getattr(obj, f.name))
             result.append((f.name, value))
         return dict(result)
-    elif isinstance(obj, tuple) and hasattr(obj, "_fields"):
+
+    if isinstance(obj, tuple) and hasattr(obj, "_fields"):
         # obj is a namedtuple.
         return type(obj)(*[_config_to_dict_inner(v) for v in obj])
-    elif isinstance(obj, (list, tuple)):
+
+    if isinstance(obj, (list, tuple)):
         # Assume we can create an object of this type by passing in a
         # generator (which is not true for namedtuples, handled
         # above).
         return type(obj)(_config_to_dict_inner(v) for v in obj)
-    elif isinstance(obj, dict):
+
+    if isinstance(obj, dict):
         return type(obj)(
             (_config_to_dict_inner(k), _config_to_dict_inner(v)) for k, v in obj.items()
         )
-    else:
-        return copy.deepcopy(obj)
+    return copy.deepcopy(obj)
 
 
 def is_config_like(obj: Any) -> TypeIs[Dataclass | Dict[str, Any]]:
