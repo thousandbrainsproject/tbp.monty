@@ -1375,7 +1375,7 @@ class GraphMemory(LMMemory):
             graph_id: name of new graph.
             input_channel: ?
         """
-        logger.info(f"Adding a new graph to memory.")
+        logger.info("Adding a new graph to memory.")
         model = GraphObjectModel(
             object_id=graph_id,
         )

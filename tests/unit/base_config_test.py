@@ -167,7 +167,7 @@ class BaseConfigTest(unittest.TestCase):
             exp.save_state_dict()
             prev_model = exp.model
 
-        pprint(f"\n\n\n loading second experiment\n\n\n")
+        pprint("\n\n\n loading second experiment\n\n\n")
         # checkpoint_dir = self.exp.experiment_args.output_dir
         config_2 = copy.deepcopy(self.base_config)
         config_2["experiment_args"].model_name_or_path = exp.output_dir

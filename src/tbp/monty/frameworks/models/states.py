@@ -82,7 +82,7 @@ class State:
                         repr_string += f"           {vector}\n"
                 else:
                     repr_string += f"       {feature}: {feat_val}\n"
-        repr_string += f"   Non-Morphological Features: \n"
+        repr_string += "   Non-Morphological Features: \n"
         if self.non_morphological_features is not None:
             for feature in self.non_morphological_features:
                 feat_val = self.non_morphological_features[feature]
@@ -292,7 +292,7 @@ class GoalState(State):
             )
             f"{self.morphological_features.keys()}"
             assert np.any(
-                self.morphological_features["pose_vectors"] == np.nan
+                np.isnan(self.morphological_features["pose_vectors"])
             ) or self.morphological_features["pose_vectors"].shape == (
                 3,
                 3,

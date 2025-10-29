@@ -24,6 +24,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.buffer import BufferEncoder
 from tests.unit.frameworks.models.fakes.encoder_classes import (
     FakeClass,
@@ -163,10 +164,10 @@ class BufferEncoderTest(unittest.TestCase):
 
     def test_buffer_encoder_encodes_actions_by_default(self):
         actions = [
-            LookDown(agent_id="test", rotation_degrees=47),
-            LookUp(agent_id="test", rotation_degrees=77),
-            TurnLeft(agent_id="test", rotation_degrees=90),
-            TurnRight(agent_id="test", rotation_degrees=90),
+            LookDown(agent_id=AgentID("test"), rotation_degrees=47),
+            LookUp(agent_id=AgentID("test"), rotation_degrees=77),
+            TurnLeft(agent_id=AgentID("test"), rotation_degrees=90),
+            TurnRight(agent_id=AgentID("test"), rotation_degrees=90),
         ]
         for action in actions:
             self.assertEqual(

@@ -13,12 +13,13 @@ from __future__ import annotations
 from typing_extensions import Protocol
 
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.agents import AgentID
 
 __all__ = ["FakeAction", "FakeActionActionSampler", "FakeActionActuator"]
 
 
 class FakeActionActionSampler(Protocol):
-    def sample_fake_action(self, agent_id: str) -> FakeAction: ...
+    def sample_fake_action(self, agent_id: AgentID) -> FakeAction: ...
 
 
 class FakeActionActuator(Protocol):
@@ -33,10 +34,10 @@ class FakeAction(Action):
     """
 
     @classmethod
-    def sample(cls, agent_id: str, sampler: FakeActionActionSampler) -> FakeAction:
+    def sample(cls, agent_id: AgentID, sampler: FakeActionActionSampler) -> FakeAction:
         return sampler.sample_fake_action(agent_id)
 
-    def __init__(self, agent_id: str) -> None:
+    def __init__(self, agent_id: AgentID) -> None:
         super().__init__(agent_id=agent_id)
 
     def act(self, _: FakeActionActuator) -> None:

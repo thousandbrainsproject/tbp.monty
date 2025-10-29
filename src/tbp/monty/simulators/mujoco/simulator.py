@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Sequence
 from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
 
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_environment import (
     QuaternionWXYZ,
     VectorXYZ,
@@ -47,7 +48,7 @@ class MuJoCoSimulator(Simulator):
         """Recompile the MuJoCo model while retaining any state data."""
         self.model, self.data = self.spec.recompile(self.model, self.data)
 
-    def initialize_agent(self, agent_id, agent_state) -> None:
+    def initialize_agent(self, agent_id: AgentID, agent_state) -> None:
         pass
 
     def remove_all_objects(self) -> None:
@@ -130,10 +131,7 @@ class MuJoCoSimulator(Simulator):
     def action_space(self) -> None:
         pass
 
-    def get_agent(
-        self,
-        agent_id: str,  # TODO - replace with newtype
-    ) -> None:
+    def get_agent(self, agent_id: AgentID) -> None:
         pass
 
     @property

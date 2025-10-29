@@ -130,7 +130,7 @@ class EvidenceGraphMemory(GraphMemory):
             graph_id: name of new graph.
             input_channel: ?
         """
-        logger.info(f"Adding a new graph to memory.")
+        logger.info("Adding a new graph to memory.")
 
         model = GridObjectModel(
             object_id=graph_id,

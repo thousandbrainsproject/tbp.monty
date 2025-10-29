@@ -917,8 +917,8 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             self.assertEqual(
                 train_stats["individual_ts_performance"][0],
                 "no_match",
-                f"with no objects in memory individual_ts_performance"
-                f" should be no match",
+                "with no objects in memory individual_ts_performance"
+                " should be no match",
             )
             for i in range(5):
                 self.assertEqual(

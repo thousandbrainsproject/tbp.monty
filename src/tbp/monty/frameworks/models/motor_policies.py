@@ -23,7 +23,6 @@ from typing import (
     List,
     Literal,
     Mapping,
-    Optional,
     Tuple,
     Type,
     cast,
@@ -51,6 +50,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
     VectorXYZ,
 )
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
@@ -152,7 +152,7 @@ class BasePolicy(MotorPolicy):
         rng,
         action_sampler_args: Dict,
         action_sampler_class: Type[ActionSampler],
-        agent_id: str,
+        agent_id: AgentID,
         switch_frequency,
         file_name=None,
         file_names_per_episode=None,
@@ -401,7 +401,7 @@ class PositioningProcedure(BasePolicy):
     """
 
     @staticmethod
-    def depth_at_center(agent_id: str, observation: Any, sensor_id: str) -> float:
+    def depth_at_center(agent_id: AgentID, observation: Any, sensor_id: str) -> float:
         """Determine the depth of the central pixel for the sensor.
 
         Args:
@@ -423,7 +423,7 @@ class PositioningProcedure(BasePolicy):
     def positioning_call(
         self,
         observation: Mapping,
-        state: Optional[MotorSystemState] = None,
+        state: MotorSystemState | None = None,
     ) -> PositioningProcedureResult:
         """Return a list of actions to position the agent in the scene.
 
@@ -505,7 +505,7 @@ class GetGoodView(PositioningProcedure):
         self._executed_multiple_objects_orientation = False
 
     def compute_look_amounts(
-        self, relative_location: np.ndarray, state: Optional[MotorSystemState] = None
+        self, relative_location: np.ndarray, state: MotorSystemState | None = None
     ) -> Tuple[float, float]:
         """Compute the amount to look down and left given a relative location.
 
@@ -548,7 +548,7 @@ class GetGoodView(PositioningProcedure):
         self,
         sem3d_obs: np.ndarray,
         image_shape: Tuple[int, int],
-        state: Optional[MotorSystemState] = None,
+        state: MotorSystemState | None = None,
     ) -> np.ndarray:
         """Find the location to look at in the observation.
 
@@ -690,7 +690,7 @@ class GetGoodView(PositioningProcedure):
             return None
 
     def orient_to_object(
-        self, observation: Mapping, state: Optional[MotorSystemState] = None
+        self, observation: Mapping, state: MotorSystemState | None = None
     ) -> List[Action]:
         """Rotate sensors so that they are centered on the object using the view finder.
 
@@ -732,7 +732,7 @@ class GetGoodView(PositioningProcedure):
     def positioning_call(
         self,
         observation: Mapping,
-        state: Optional[MotorSystemState] = None,
+        state: MotorSystemState | None = None,
     ) -> PositioningProcedureResult:
         if (
             self._multiple_objects_present
@@ -995,7 +995,7 @@ class NaiveScanPolicy(InformedPolicy):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, _state: Optional[MotorSystemState] = None) -> Action:
+    def dynamic_call(self, _state: MotorSystemState | None = None) -> Action:
         """Return the next action in the spiral being executed.
 
         The MotorSystemState is ignored.
@@ -1016,11 +1016,10 @@ class NaiveScanPolicy(InformedPolicy):
             # python loop statements using iterators.
             # See https://docs.python.org/3/library/exceptions.html#StopIteration
             raise StopIteration()
-        else:
-            self.check_cycle_action()
-            action = self._naive_scan_actions[self.current_action_id]
+
+        self.check_cycle_action()
         self.step_on_action += 1
-        return action
+        return self._naive_scan_actions[self.current_action_id]
 
     def pre_episode(self):
         super().pre_episode()
@@ -1142,9 +1141,9 @@ class SurfacePolicy(InformedPolicy):
             distance = (
                 depth_at_center
                 - self.desired_object_distance
-                - state["agent_id_0"]["sensors"][f"{view_sensor_id}.depth"]["position"][
-                    2
-                ]
+                - state[AgentID("agent_id_0")]["sensors"][f"{view_sensor_id}.depth"][
+                    "position"
+                ][2]
             )
             logger.debug(f"Move to touch visible object, forward by {distance}")
 
@@ -1234,7 +1233,7 @@ class SurfacePolicy(InformedPolicy):
     # Methods that define behavior of __call__
     ###
     def dynamic_call(
-        self, state: Optional[MotorSystemState] = None
+        self, state: MotorSystemState | None = None
     ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
         """Return the next action to take.
 
@@ -1273,7 +1272,7 @@ class SurfacePolicy(InformedPolicy):
             # This is determined by some logic in embodied_data.py, in particular
             # the next method of InformedEnvironmentDataLoader
 
-        elif self.last_surface_policy_action is None:
+        if self.last_surface_policy_action is None:
             logger.debug(
                 "Object coverage good at initialization: "
                 + str(
@@ -1615,8 +1614,9 @@ def write_action_file(actions: List[Action], file: str) -> None:
         file: path to file to save actions to
     """
     with open(file, "w") as f:
-        for action in actions:
-            f.write(f"{json.dumps(action, cls=ActionJSONEncoder)}\n")
+        f.writelines(
+            f"{json.dumps(action, cls=ActionJSONEncoder)}\n" for action in actions
+        )
 
 
 def get_perc_on_obj_semantic(semantic_obs, semantic_id=0):
@@ -1960,7 +1960,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             self.following_heading_counter = 0
 
             return tuple(
-                qt.rotate_vectors(state["agent_id_0"]["rotation"], self.tangential_vec)
+                qt.rotate_vectors(state[self.agent_id]["rotation"], self.tangential_vec)
             )
 
         # Otherwise our heading is good; we continue and use our original heading (or
@@ -1980,7 +1980,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         self.continuous_pc_steps += 1
 
         return tuple(
-            qt.rotate_vectors(state["agent_id_0"]["rotation"], self.tangential_vec)
+            qt.rotate_vectors(state[self.agent_id]["rotation"], self.tangential_vec)
         )
 
     def perform_standard_tang_step(self, state: MotorSystemState) -> VectorXYZ:
@@ -2047,7 +2047,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
         return tuple(
             qt.rotate_vectors(
-                state["agent_id_0"]["rotation"],
+                state[self.agent_id]["rotation"],
                 self.tangential_vec,
             )
         )

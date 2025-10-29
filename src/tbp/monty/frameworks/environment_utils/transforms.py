@@ -15,6 +15,7 @@ import numpy as np
 import quaternion as qt
 import scipy
 
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.states import State
 
 __all__ = [
@@ -33,7 +34,7 @@ class MissingToMaxDepth:
     https://github.com/facebookresearch/habitat-sim/issues/1157 for discussion.
     """
 
-    def __init__(self, agent_id, max_depth, threshold=0):
+    def __init__(self, agent_id: AgentID, max_depth, threshold=0):
         """Initialize the transform.
 
         Args:
@@ -67,7 +68,7 @@ class MissingToMaxDepth:
 class AddNoiseToRawDepthImage:
     """Add gaussian noise to raw sensory input."""
 
-    def __init__(self, agent_id, sigma):
+    def __init__(self, agent_id: AgentID, sigma):
         """Initialize the transform.
 
         Args:
@@ -116,7 +117,7 @@ class GaussianSmoothing:
     in a real-world depth camera.
     """
 
-    def __init__(self, agent_id, sigma=2, kernel_width=3):
+    def __init__(self, agent_id: AgentID, sigma=2, kernel_width=3):
         """Initialize the transform.
 
         Args:
@@ -259,7 +260,7 @@ class DepthTo3DLocations:
 
     def __init__(
         self,
-        agent_id,
+        agent_id: AgentID,
         sensor_ids,
         resolutions,
         zooms=1.0,

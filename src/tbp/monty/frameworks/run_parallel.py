@@ -214,7 +214,7 @@ def post_parallel_profile_cleanup(parallel_dirs, base_dir, mode):
         overall_csvs.append(overall_csv)
 
     episode_outfile = os.path.join(base_dir, f"profile-{mode}_episodes.csv")
-    setup_outfile = os.path.join(base_dir, f"profile-setup_experiment.csv")
+    setup_outfile = os.path.join(base_dir, "profile-setup_experiment.csv")
     overall_outfile = os.path.join(base_dir, f"profile-{mode}.csv")
 
     post_parallel_log_cleanup(episode_csvs, episode_outfile, cat_fn=cat_csv)

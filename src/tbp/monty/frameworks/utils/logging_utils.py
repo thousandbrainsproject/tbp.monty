@@ -914,8 +914,8 @@ def consistent_child_objects_accuracy(eval_stats_for_lm, parent_to_child_mapping
                 consistent_child_count += 1
         else:
             raise ValueError(
-                f"No mappings found for target object",
-                f" {episode_stats.primary_target_object}",
+                f"No mappings found for target object"
+                f" {episode_stats.primary_target_object}"
             )
     consistent_child_percentage = consistent_child_count / total_count * 100
     return consistent_child_percentage
