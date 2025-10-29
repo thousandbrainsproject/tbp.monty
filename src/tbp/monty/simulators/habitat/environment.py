@@ -146,7 +146,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
         object_to_avoid=False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectID:
-        env_obj = self._env.add_object(
+        return self._env.add_object(
             name,
             position,
             rotation,
@@ -155,8 +155,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
             enable_physics,
             object_to_avoid,
             primary_target_object,
-        )
-        return env_obj.object_id
+        ).object_id
 
     def step(self, actions: Sequence[Action]) -> Dict[str, Dict]:
         return self._env.apply_actions(actions)

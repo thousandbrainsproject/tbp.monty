@@ -55,8 +55,8 @@ __all__ = [
 ]
 
 from tbp.monty.frameworks.environments.embodied_environment import (
-    EnvObject,
     ObjectID,
+    ObjectInfo,
     QuaternionWXYZ,
     SemanticID,
     VectorXYZ,
@@ -226,7 +226,7 @@ class HabitatSim(HabitatActuator):
         enable_physics=False,
         object_to_avoid=False,
         primary_target_object: ObjectID | None = None,
-    ) -> EnvObject:
+    ) -> ObjectInfo:
         """Add new object to simulated environment.
 
         Args:
@@ -246,7 +246,7 @@ class HabitatSim(HabitatActuator):
                 guarantee). Used when adding multiple objects. Defaults to None.
 
         Returns:
-            EnvObject instance of the added object.
+            The added object's information.
         """
         obj_mgr = self._sim.get_object_template_manager()
         rigid_mgr = self._sim.get_rigid_object_manager()
@@ -329,7 +329,7 @@ class HabitatSim(HabitatActuator):
             assert len(self._objects) == num_objects_added, "Not all objects added"
 
         semantic_id = SemanticID(obj.semantic_id) if obj.semantic_id != 0 else None
-        return EnvObject(
+        return ObjectInfo(
             object_id=obj_id,
             semantic_id=semantic_id,
         )

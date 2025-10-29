@@ -15,8 +15,8 @@ from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_environment import (
-    EnvObject,
     ObjectID,
+    ObjectInfo,
     QuaternionWXYZ,
     SemanticID,
     VectorXYZ,
@@ -72,7 +72,7 @@ class MuJoCoSimulator(Simulator):
         enable_physics: bool = False,
         object_to_avoid: bool = False,
         primary_target_object: ObjectID | None = None,
-    ) -> EnvObject:
+    ) -> ObjectInfo:
         obj_name = f"{name}_{self._object_count}"
 
         # TODO: support arbitrary objects from a registry
@@ -83,7 +83,7 @@ class MuJoCoSimulator(Simulator):
 
         # TODO: reinitialize agents?
 
-        return EnvObject(
+        return ObjectInfo(
             object_id=ObjectID(self._object_count),
             semantic_id=semantic_id,
         )

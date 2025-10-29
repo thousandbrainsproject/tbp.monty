@@ -13,8 +13,8 @@ from typing import Dict, Protocol, Sequence
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_environment import (
-    EnvObject,
     ObjectID,
+    ObjectInfo,
     QuaternionWXYZ,
     SemanticID,
     VectorXYZ,
@@ -48,7 +48,7 @@ class Simulator(Protocol):
         enable_physics: bool = False,
         object_to_avoid: bool = False,
         primary_target_object: ObjectID | None = None,
-    ) -> EnvObject:
+    ) -> ObjectInfo:
         """Add new object to simulated environment.
 
         Adds a new object based on the named object. This assumes that the set of
@@ -69,7 +69,7 @@ class Simulator(Protocol):
                 guarantee). Used when adding multiple objects. Defaults to None.
 
         Returns:
-            EnvObject instance of the added object.
+            The added object's information.
         """
         ...
 

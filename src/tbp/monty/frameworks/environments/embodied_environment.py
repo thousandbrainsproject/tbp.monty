@@ -19,7 +19,7 @@ from tbp.monty.frameworks.actions.actions import Action
 __all__ = [
     "EmbodiedEnvironment",
     "ActionSpace",
-    "EnvObject",
+    "ObjectInfo",
     "ObjectID",
     "SemanticID",
     "VectorXYZ",
@@ -37,7 +37,7 @@ QuaternionWXYZ = Tuple[float, float, float, float]
 
 
 @dataclass
-class EnvObject:
+class ObjectInfo:
     """Contains the identifying information of an object created in the environment."""
 
     object_id: ObjectID
