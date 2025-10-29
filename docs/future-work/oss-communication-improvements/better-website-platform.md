@@ -16,4 +16,4 @@ The current website (thousandbrains.org) is hosted on WordPress.  It has a numbe
 - There are security risks with the plugins on WordPress.
 - The website is slow.
 - There is a lot of cognitive load to figure out how to customize the website.
-- It's closed source and goes against our open source philosophy.
+- The source code for the website is not available for modification by the community and goes against our open source philosophy.
