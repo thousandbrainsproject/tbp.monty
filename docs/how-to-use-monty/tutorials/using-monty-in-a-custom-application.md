@@ -124,7 +124,7 @@ omniglot_training = dict(
     	motor_system_config=MotorSystemConfigInformedNoTransStepS1(),
     	sensor_module_configs=omniglot_sensor_module_config,
 	),
-	env_interface_config=OmniglotEnvInterfaceConfig(),
+	env_interface_config=OmniglotEnvironmentInterfaceConfig(),
 	train_env_interface_class=ED.OmniglotEnvironmentInterface,
 	# Train on the first version of each character (there are 20 drawings for each
 	# character in each alphabet, here we see one of them). The default
@@ -175,7 +175,7 @@ omniglot_inference = dict(
         ),
         sensor_module_configs=omniglot_sensor_module_config,
     ),
-    env_interface_config=OmniglotEnvInterfaceConfig(),
+    env_interface_config=OmniglotEnvironmentInterfaceConfig(),
     eval_env_interface_class=ED.OmniglotEnvironmentInterface,
     # Using version 1 means testing on the same version of the character as trained.
     # Version 2 is a new drawing of the previously seen characters. In this small test
@@ -205,7 +205,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
 	ExperimentArgs,
 	OmniglotEnvironmentInterfaceArgs,
-	OmniglotEnvInterfaceConfig,
+	OmniglotEnvironmentInterfaceConfig,
 	SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
