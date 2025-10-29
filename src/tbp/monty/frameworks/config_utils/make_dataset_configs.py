@@ -130,7 +130,7 @@ class EnvInitArgsMontyWorldMultiObjectScenes:
 
 
 @dataclass
-class OmniglotEnvInterfaceConfig:
+class OmniglotEnvironmentInterfaceConfig:
     env_init_func: Callable = field(default=OmniglotEnvironment)
     env_init_args: Dict = field(default_factory=dict)
     transform: Callable | list | None = None
