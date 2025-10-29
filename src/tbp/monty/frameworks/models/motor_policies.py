@@ -2261,7 +2261,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
 
                     self.update_tangential_reps(vec_form=vec_copy)
 
-                    return None
+                    return
 
                 else:
                     # Search continues, but occasionally narrow the region in which we

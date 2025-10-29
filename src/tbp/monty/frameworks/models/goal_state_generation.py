@@ -179,7 +179,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         a GoalState object with a None value for the location, morphological features,
         etc, or some variation of this.
         """
-        return None
+        return
 
     def _generate_goal_state(self, observations):
         """Generate a new goal-state to send out to other LMs and/or motor actuators.
