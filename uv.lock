@@ -5113,9 +5113,9 @@ requires-dist = [
     { name = "sphinx-autodoc-typehints", marker = "extra == 'generate-api-docs-tool'" },
     { name = "sympy" },
     { name = "torch", specifier = "==1.13.1" },
-    { name = "torch-geometric", specifier = "==2.1.0.post1" },
-    { name = "torch-scatter", specifier = "==2.0.9" },
-    { name = "torch-sparse", specifier = "==0.6.15" },
+    { name = "torch-geometric", specifier = ">=2.1.0.post1" },
+    { name = "torch-scatter", specifier = ">=2.0.9" },
+    { name = "torch-sparse", specifier = ">=0.6.15" },
     { name = "tqdm" },
     { name = "trimesh", marker = "extra == 'analysis'" },
     { name = "typing-extensions" },
@@ -5123,7 +5123,7 @@ requires-dist = [
     { name = "vedo", marker = "extra == 'analysis'" },
     { name = "wandb" },
 ]
-provides-extras = ["analysis", "build", "dev", "generate-api-docs-tool", "github-readme-sync-tool", "print-version-tool", "real-robots", "simulator-habitat", "simulator-mujoco"]
+provides-extras = ["simulator-habitat", "simulator-mujoco", "analysis", "build", "dev", "generate-api-docs-tool", "github-readme-sync-tool", "print-version-tool", "real-robots"]
 
 [[package]]
 name = "text-unidecode"
@@ -5318,33 +5318,19 @@ sdist = { url = "https://files.pythonhosted.org/packages/bd/e3/3913bc65cb23db1dc
 
 [[package]]
 name = "torch-scatter"
-version = "2.0.9"
-source = { registry = "https://data.pyg.org/whl/torch-1.13.1+cpu.html" }
-wheels = [
-    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-linux_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-macosx_10_15_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-win_amd64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp39-cp39-linux_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp39-cp39-macosx_10_15_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp39-cp39-win_amd64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp310-cp310-linux_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp310-cp310-macosx_10_15_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_scatter-2.0.9-cp310-cp310-win_amd64.whl" },
-]
+version = "2.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f5/ab/2a44ecac0f891dd0d765fc59ac8d277c6283a31907626560e72685df2ed6/torch_scatter-2.1.2.tar.gz", hash = "sha256:69b3aa435f2424ac6a1bfb6ff702da6eb73b33ca0db38fb26989c74159258e47", size = 108045, upload-time = "2023-10-06T08:49:07.081Z" }
 
 [[package]]
 name = "torch-sparse"
-version = "0.6.15"
-source = { registry = "https://data.pyg.org/whl/torch-1.13.1+cpu.html" }
+version = "0.6.18"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "scipy", version = "1.10.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "scipy", version = "1.13.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
 ]
-wheels = [
-    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_sparse-0.6.15-cp38-cp38-macosx_10_15_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_sparse-0.6.15-cp39-cp39-macosx_10_15_x86_64.whl" },
-    { url = "https://data.pyg.org/whl/torch-1.13.0%2Bcpu/torch_sparse-0.6.15-cp310-cp310-macosx_10_15_x86_64.whl" },
-]
+sdist = { url = "https://files.pythonhosted.org/packages/42/e2/cddf10a8e32a0b214918943e6173672c8ec11000e69c36dad8e6b141cb60/torch_sparse-0.6.18.tar.gz", hash = "sha256:2f14c510a6e93f404c6ea357210615b3c15a71731f9dbd86f25434e34fb5a741", size = 209982, upload-time = "2023-10-06T08:51:55.326Z" }
 
 [[package]]
 name = "tornado"
