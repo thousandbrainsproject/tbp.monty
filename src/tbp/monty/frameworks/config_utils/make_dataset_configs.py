@@ -392,7 +392,7 @@ def get_env_interface_per_object_by_idx(start, stop, list_of_indices=None):
 
 
 @dataclass
-class OmniglotInterfaceArgs:
+class OmniglotEnvironmentInterfaceArgs:
     """Set basic debug args to load 3 characters of 2 alphabets in 1 version."""
 
     alphabets: List = field(default_factory=lambda: [0, 0, 0, 1, 1, 1])
@@ -409,7 +409,7 @@ class WorldImageInterfaceArgs:
 
 
 def get_omniglot_train_env_interface(num_versions, alphabet_ids, data_path=None):
-    """Generate OmniglotInterfaceArgs automatically for training.
+    """Generate OmniglotEnvironmentInterfaceArgs automatically for training.
 
     Args:
         num_versions: Number of versions to show for each character (starting at 1).
@@ -419,7 +419,7 @@ def get_omniglot_train_env_interface(num_versions, alphabet_ids, data_path=None)
             ~/tbp/data/omniglot/python/
 
     Returns:
-        OmniglotInterfaceArgs for training.
+        OmniglotEnvironmentInterfaceArgs for training.
     """
     if data_path is None:
         data_path = os.path.join(os.environ["MONTY_DATA"], "omniglot/python/")
@@ -429,7 +429,7 @@ def get_omniglot_train_env_interface(num_versions, alphabet_ids, data_path=None)
         ]
     else:
         # Use placeholder here to pass Circle CI config check.
-        return OmniglotInterfaceArgs()
+        return OmniglotEnvironmentInterfaceArgs()
     all_alphabet_idx = []
     all_character_idx = []
     all_version_idx = []
@@ -448,7 +448,7 @@ def get_omniglot_train_env_interface(num_versions, alphabet_ids, data_path=None)
                     all_character_idx.append(c_idx + 1)
                     all_version_idx.append(v_idx + 1)
 
-    return OmniglotInterfaceArgs(
+    return OmniglotEnvironmentInterfaceArgs(
         alphabets=all_alphabet_idx,
         characters=all_character_idx,
         versions=all_version_idx,
@@ -458,7 +458,7 @@ def get_omniglot_train_env_interface(num_versions, alphabet_ids, data_path=None)
 def get_omniglot_eval_env_interface(
     start_at_version, alphabet_ids, num_versions=None, data_path=None
 ):
-    """Generate OmniglotInterfaceArgs automatically for evaluation.
+    """Generate OmniglotEnvironmentInterfaceArgs automatically for evaluation.
 
     Args:
         start_at_version: Version number of character to start at. Then shows all
@@ -471,7 +471,7 @@ def get_omniglot_eval_env_interface(
             ~/tbp/data/omniglot/python/
 
     Returns:
-        OmniglotInterfaceArgs for evaluation.
+        OmniglotEnvironmentInterfaceArgs for evaluation.
     """
     if data_path is None:
         data_path = os.path.join(os.environ["MONTY_DATA"], "omniglot/python/")
@@ -481,7 +481,7 @@ def get_omniglot_eval_env_interface(
         ]
     else:
         # Use placeholder here to pass Circle CI config check.
-        return OmniglotInterfaceArgs()
+        return OmniglotEnvironmentInterfaceArgs()
     all_alphabet_idx = []
     all_character_idx = []
     all_version_idx = []
@@ -503,7 +503,7 @@ def get_omniglot_eval_env_interface(
                     all_character_idx.append(c_idx + 1)
                     all_version_idx.append(v_idx + 1)
 
-    return OmniglotInterfaceArgs(
+    return OmniglotEnvironmentInterfaceArgs(
         alphabets=all_alphabet_idx,
         characters=all_character_idx,
         versions=all_version_idx,
