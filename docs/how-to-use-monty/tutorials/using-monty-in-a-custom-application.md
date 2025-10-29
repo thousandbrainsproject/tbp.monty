@@ -262,7 +262,14 @@ experiments = MyExperiments(
 )
 CONFIGS = asdict(experiments)
 ```
-And add the two experiments into the `MyExperiment` class in `benchmarks/configs/names.py`.
+And add the two experiments into the `MyExperiments` class in `benchmarks/configs/names.py`:
+
+```python
+@dataclass
+class MyExperiments:
+    omniglot_training: dict
+    omniglot_inference: dict
+```
 
 Now you can run training by calling `python benchmarks/run.py -e omniglot_training` and then inference on these models by calling `python benchmarks/run.py -e omniglot_inference`. You can check the `eval_stats.csv` file in `~/tbp/results/monty/projects/monty_runs/omniglot_inference/` to see how Monty did. If you copied the code above, it should have recognized all six characters correctly.
 
