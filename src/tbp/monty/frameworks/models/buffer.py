@@ -189,10 +189,11 @@ class FeatureAtLocationBuffer(BaseBuffer):
         """
         if input_channel == "first":
             input_channel = self.get_first_sensory_input_channel()
+
         if len(self) > 0 and input_channel is not None:
             return self.locations[input_channel][-1]
-        else:
-            return None
+
+        return None
 
     def get_current_features(self, keys):
         """Get the current value of a specific feature.
@@ -222,13 +223,12 @@ class FeatureAtLocationBuffer(BaseBuffer):
         channel_pose = sensed_pose_features[input_channel]["pose_vectors"].reshape(
             (3, 3)
         )
-        sensed_pose = np.vstack(
+        return np.vstack(
             [
                 sensed_location,
                 channel_pose,
             ]
         )
-        return sensed_pose
 
     def get_last_obs_processed(self):
         """Check whether last sensation was processed by LM.
@@ -238,8 +238,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
         """
         if len(self) > 0:
             return self.stats["lm_processed_steps"][-1]
-        else:
-            return False
+        return False
 
     def get_currently_on_object(self):
         """Check whether last sensation was on object.
@@ -249,8 +248,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
         """
         if len(self) > 0:
             return self.on_object[-1]
-        else:
-            return False
+        return False
 
     def get_all_locations_on_object(self, input_channel=None):
         """Get all observed locations that were on the object.
@@ -283,8 +281,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
         """
         if len(self.input_states) > 1:
             return self.input_states[-2]
-        else:
-            return None
+        return None
 
     def get_nth_displacement(self, n, input_channel):
         """Get the nth displacement.
@@ -307,8 +304,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             for input_channel in self.displacements.keys():
                 all_disps[input_channel] = self.get_current_displacement(input_channel)
             return all_disps
-        else:
-            return self.get_nth_displacement(-1, input_channel)
+        return self.get_nth_displacement(-1, input_channel)
 
     def get_current_ppf(self, input_channel):
         """Get the current ppf.
@@ -332,8 +328,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
             input_channel = self.get_first_sensory_input_channel()
         if "ppf" in self.displacements[input_channel].keys():
             return self.displacements[input_channel]["ppf"][1][0]
-        else:
-            return np.linalg.norm(self.displacements[input_channel]["displacement"][1])
+        return np.linalg.norm(self.displacements[input_channel]["displacement"][1])
 
     def get_all_features_on_object(self):
         """Get all observed features that were on the object.
@@ -439,22 +434,20 @@ class FeatureAtLocationBuffer(BaseBuffer):
             # of Monty matching steps that have taken place in the episode
             return self.get_num_matching_steps()
 
-        else:
-            return (
-                self.get_num_matching_steps()
-                - self.get_matching_step_when_output_goal_set()
-            )
+        return (
+            self.get_num_matching_steps()
+            - self.get_matching_step_when_output_goal_set()
+        )
 
     def get_infos_for_graph_update(self):
         """Return all stored infos require to update a graph in memory."""
-        infos = dict(
+        return dict(
             locations=self.get_all_locations_on_object(),
             features=self.get_all_features_on_object(),
             object_location_rel_body=self.stats["detected_location_rel_body"],
             location_rel_model=self.stats["detected_location_on_model"],
             object_scale=self.stats["detected_scale"],
         )
-        return infos
 
     def get_first_sensory_input_channel(self):
         """Get name of first sensory (coming from SM) input channel in buffer.

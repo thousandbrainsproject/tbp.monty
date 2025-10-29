@@ -1316,7 +1316,7 @@ def make_multi_lm_monty_config(
     else:
         monty_args = MontyArgs(**monty_args)
 
-    monty_config = MontyConfig(
+    return MontyConfig(
         monty_class=monty_class,
         learning_module_configs=learning_module_configs,
         sensor_module_configs=sensor_module_configs,
@@ -1327,7 +1327,6 @@ def make_multi_lm_monty_config(
         lm_to_lm_vote_matrix=connectivity["lm_to_lm_vote_matrix"],
         monty_args=monty_args,
     )
-    return monty_config
 
 
 def get_possible_3d_rotations(

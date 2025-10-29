@@ -378,8 +378,8 @@ class ResamplingHypothesesUpdater:
                 if channel_features["pose_fully_defined"]
                 else self.umbilical_num_poses
             )
-        else:
-            return len(self.initial_possible_poses)
+
+        return len(self.initial_possible_poses)
 
     def _sample_count(
         self,

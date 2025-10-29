@@ -548,8 +548,7 @@ class HabitatSim(HabitatActuator):
         """
         agent_indices = range(len(self._agents))
         obs = self._sim.get_sensor_observations(agent_ids=agent_indices)
-        obs = self.process_observations(obs)
-        return obs
+        return self.process_observations(obs)
 
     def process_observations(self, obs) -> dict:
         """Habitat returns observations grouped by agent_index.
@@ -629,8 +628,7 @@ class HabitatSim(HabitatActuator):
         # All agents managed by this simulator
         agent_indices = range(len(self._agents))
         obs = self._sim.reset(agent_ids=agent_indices)
-        obs = self.process_observations(obs)
-        return obs
+        return self.process_observations(obs)
 
     def close(self) -> None:
         """Close simulator and release resources."""

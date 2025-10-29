@@ -117,6 +117,16 @@ def create_cmd_parser_parallel(experiments: list[str]):
         choices=experiments,
     )
     parser.add_argument(
+        "-i",
+        "--episodes",
+        default="all",
+        help=(
+            "Which episodes to run (zero-based). Examples: "
+            "'all' | '3' | '0,3,5:8' | '4:' | ':8'. "
+        ),
+        type=str,
+    )
+    parser.add_argument(
         "-n",
         "--num_parallel",
         default=16,

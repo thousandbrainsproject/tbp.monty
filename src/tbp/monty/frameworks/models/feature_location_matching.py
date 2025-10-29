@@ -135,13 +135,12 @@ class FeatureGraphLM(GraphLM):
         possible_locations = self.get_possible_locations()
         possible_poses = self.get_possible_poses(as_euler=False)
         sensed_pose = self.buffer.get_current_pose(input_channel="first")
-        vote = {
+        return {
             "object_id_vote": object_id_vote,
             "location_vote": possible_locations,
             "rotation_vote": possible_poses,
             "sensed_pose_rel_body": sensed_pose,
         }
-        return vote
 
     def receive_votes(self, vote_data):
         """Use votes to remove objects and poses from possible matches.
@@ -293,10 +292,11 @@ class FeatureGraphLM(GraphLM):
 
         if (location_is_unique and rotation_is_unique) or symmetry_detected:
             return euler_poses, unique_poses
-        else:
-            self.last_unique_poses = np.array(euler_poses)
-            self.last_num_unique_locations = len(unique_locations)
-            return None, None
+
+        self.last_unique_poses = np.array(euler_poses)
+        self.last_num_unique_locations = len(unique_locations)
+
+        return None, None
 
     def _check_for_symmetry(self, current_unique_poses, num_unique_locations):
         """Check for symmetry and update symmetry evidence count.
@@ -323,11 +323,12 @@ class FeatureGraphLM(GraphLM):
                 self.symmetry_evidence = 0
         else:  # has to be consequtive
             self.symmetry_evidence = 0
+
         if self._enough_symmetry_evidence_accumulated():
             logger.info(f"Symmetry detected for poses {current_unique_poses}")
             return True
-        else:
-            return False
+
+        return False
 
     def _enough_symmetry_evidence_accumulated(self):
         """Check if enough evidence for symmetry has been accumulated.
@@ -708,8 +709,7 @@ class FeatureGraphMemory(GraphMemory):
             feature_keys=["pose_vectors"],
         )
         node_directions = node_r_features["pose_vectors"]
-        node_directions = np.array(node_directions).reshape((3, 3))
-        return node_directions
+        return np.array(node_directions).reshape((3, 3))
 
     def get_nodes_with_matching_features(
         self,
@@ -745,11 +745,11 @@ class FeatureGraphMemory(GraphMemory):
         if list_of_lists:
             loc_lists = [[loc.numpy()] for loc in all_node_locs[possible_nodes_idx]]
             return all_node_ids[possible_nodes_idx], loc_lists
-        else:
-            return (
-                all_node_ids[possible_nodes_idx],
-                all_node_locs[possible_nodes_idx],
-            )
+
+        return (
+            all_node_ids[possible_nodes_idx],
+            all_node_locs[possible_nodes_idx],
+        )
 
     # ------------------ Logging & Saving ----------------------
 

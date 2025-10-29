@@ -87,8 +87,7 @@ def get_angle(vec1, vec2):
     # unit_vector_1 = vec1 / np.linalg.norm(vec1)
     # unit_vector_2 = vec2 / np.linalg.norm(vec2)
     dot_product = np.dot(vec1, vec2)
-    angle = np.arccos(np.clip(dot_product, -1, 1))
-    return angle
+    return np.arccos(np.clip(dot_product, -1, 1))
 
 
 def get_angle_beefed_up(v1, v2):
@@ -143,8 +142,7 @@ def get_angles_for_all_hypotheses(hyp_f, query_f):
         Angles between hypotheses and query pose vectors
     """
     dot_product = np.einsum("ijk,ik->ij", hyp_f, query_f)
-    angle = np.arccos(np.clip(dot_product, -1, 1))
-    return angle
+    return np.arccos(np.clip(dot_product, -1, 1))
 
 
 def get_angle_torch(v1, v2):
@@ -204,8 +202,8 @@ def align_orthonormal_vectors(m1, m2, as_scipy=True):
         # and mirrored vectors will be corrected by the sensor module.
         error = np.mean(np.abs(rotation.inv().apply(m1) - m2))
         return rotation, error
-    else:
-        return rot_mat, None
+
+    return rot_mat, None
 
 
 def align_multiple_orthonormal_vectors(ms1, ms2, as_scipy=True):
@@ -227,8 +225,8 @@ def align_multiple_orthonormal_vectors(ms1, ms2, as_scipy=True):
         for rot_mat in rot_mats:
             all_rotations.append(Rotation.from_matrix(rot_mat))
         return all_rotations
-    else:
-        return rot_mats
+
+    return rot_mats
 
 
 def get_right_hand_angle(v1, v2, surface_normal):
@@ -237,8 +235,7 @@ def get_right_hand_angle(v1, v2, surface_normal):
     # a = np.dot(cp(v1, v2), surface_normal)
     a = np.dot(np.cross(v1, v2), surface_normal)
     b = np.dot(v1, v2)
-    rha = np.arctan2(a, b)
-    return rha
+    return np.arctan2(a, b)
 
 
 def non_singular_mat(a):
@@ -250,8 +247,8 @@ def non_singular_mat(a):
     """
     if np.linalg.cond(a) < 1 / sys.float_info.epsilon:
         return True
-    else:
-        return False
+
+    return False
 
 
 def get_more_directions_in_plane(vecs, n_poses) -> List[np.ndarray]:

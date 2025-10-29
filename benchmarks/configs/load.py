@@ -96,51 +96,59 @@ def select_config(experiment: str) -> dict:
         )
 
         return MONTY_WORLD
-    elif experiment in monty_world_habitat_experiment_names:
+
+    if experiment in monty_world_habitat_experiment_names:
         from benchmarks.configs.monty_world_habitat_experiments import (  # noqa: PLC0415
             CONFIGS as MONTY_WORLD_HABITAT,
         )
 
         return MONTY_WORLD_HABITAT
-    elif experiment in pretraining_experiment_names:
+
+    if experiment in pretraining_experiment_names:
         from benchmarks.configs.pretraining_experiments import (  # noqa: PLC0415
             CONFIGS as PRETRAININGS,
         )
 
         return PRETRAININGS
-    elif experiment in compositional_inference_experiment_names:
+
+    if experiment in compositional_inference_experiment_names:
         from benchmarks.configs.infer_compositional_objects import (  # noqa: PLC0415
             CONFIGS as COMPOSITIONAL_INFERENCE,
         )
 
         return COMPOSITIONAL_INFERENCE
-    elif experiment in compositional_learning_experiment_names:
+
+    if experiment in compositional_learning_experiment_names:
         from benchmarks.configs.learn_compositional_objects import (  # noqa: PLC0415
             CONFIGS as COMPOSITIONAL_LEARNING,
         )
 
         return COMPOSITIONAL_LEARNING
-    elif experiment in ycb_experiment_names:
+
+    if experiment in ycb_experiment_names:
         from benchmarks.configs.ycb_experiments import CONFIGS as YCB  # noqa: PLC0415
 
         return YCB
-    elif experiment in unsupervised_inference_experiment_names:
+
+    if experiment in unsupervised_inference_experiment_names:
         from benchmarks.configs.unsupervised_inference_experiments import (  # noqa: PLC0415
             CONFIGS as UNSUPERVISED_INFERENCE,
         )
 
         return UNSUPERVISED_INFERENCE
-    elif experiment in my_experiment_names:
+
+    if experiment in my_experiment_names:
         from benchmarks.configs.my_experiments import (  # noqa: PLC0415
             CONFIGS as MY_EXPERIMENTS,
         )
 
         return MY_EXPERIMENTS
 
-    elif experiment in FOLLOW_UP_NAMES:
+    if experiment in FOLLOW_UP_NAMES:
         from benchmarks.configs.follow_ups import (  # noqa: PLC0415
             CONFIGS as FOLLOW_UP_EXPERIMENTS,
         )
 
         return FOLLOW_UP_EXPERIMENTS
+
     return None

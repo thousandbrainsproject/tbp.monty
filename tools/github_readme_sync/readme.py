@@ -310,8 +310,7 @@ class ReadMe:
         body = self.correct_file_locations(body)
         body = self.convert_note_tags(body)
         body = self.parse_images(body)
-        body = self.convert_cloudinary_videos(body)
-        return body
+        return self.convert_cloudinary_videos(body)
 
     def sanitize_html(self, body: str) -> str:
         allowed_attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
@@ -342,11 +341,10 @@ class ReadMe:
         relative_path = relative_path + "snippets/edit-this-page.md"
         body = body + f"\n\n!snippet[{relative_path}]"
         body = self.insert_markdown_snippet(body, file_path)
-        body = body.replace(
+        return body.replace(
             "!!LINK!!",
             f"https://github.com/thousandbrainsproject/tbp.monty/edit/main/{file_path}/{filename}.md",
         )
-        return body
 
     def correct_image_locations(self, body: str) -> str:
         repo = os.getenv("IMAGE_PATH")
@@ -377,8 +375,7 @@ class ReadMe:
                         new_body = new_body.replace(img_tag, new_img_tag)
 
         # Process regular markdown images
-        new_body = re.sub(regex_image_path, replace_image_path, new_body)
-        return new_body
+        return re.sub(regex_image_path, replace_image_path, new_body)
 
     def correct_file_locations(self, body: str) -> str:
         def replace_path(match):

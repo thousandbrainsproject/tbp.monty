@@ -107,13 +107,11 @@ class DetailedJSONHandler(MontyHandler):
         Returns:
             global_episode_id: Combined train+eval episode id.
         """
-        global_episode_id = (
+        return (
             kwargs[f"{mode}_episodes_to_total"][local_episode]
             if self.episode_id_parallel is None
             else self.episode_id_parallel
         )
-
-        return global_episode_id
 
     def get_detailed_stats(
         self,
