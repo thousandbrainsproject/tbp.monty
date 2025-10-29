@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Sequence
+from typing import Any, Dict, List, Sequence
 
 import habitat_sim
 import magnum as mn
@@ -46,7 +46,6 @@ from tbp.monty.frameworks.actions.actions import (
 )
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
-from tbp.monty.simulators.habitat.environment_utils import get_bounding_corners
 
 from .agents import HabitatAgent
 
@@ -56,7 +55,10 @@ __all__ = [
 ]
 
 from tbp.monty.frameworks.environments.embodied_environment import (
+    ObjectID,
+    ObjectInfo,
     QuaternionWXYZ,
+    SemanticID,
     VectorXYZ,
 )
 
@@ -129,7 +131,9 @@ class HabitatSim(HabitatActuator):
         self._action_space = set()
         self._agent_id_to_index: dict[AgentID, int] = {}
 
-        self._object_counter = 0  # Track the number of objects added to an environment
+        self._objects: dict[ObjectID, Any] = {}
+        """Map from object ID to object handle.
+        `Any` is a stand-in for the internal HabitatSim data structure."""
 
         for index, agent in enumerate(self._agents):
             config = agent.get_spec()
@@ -210,7 +214,7 @@ class HabitatSim(HabitatActuator):
         """Remove all objects from simulated environment."""
         rigid_mgr = self._sim.get_rigid_object_manager()
         rigid_mgr.remove_all_objects()
-        self._object_counter = 0
+        self._objects = {}
 
     def add_object(
         self,
@@ -218,11 +222,11 @@ class HabitatSim(HabitatActuator):
         position: VectorXYZ = (0.0, 0.0, 0.0),
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
-        semantic_id: str | None = None,
+        semantic_id: SemanticID | None = None,
         enable_physics=False,
         object_to_avoid=False,
-        primary_target_bb=None,
-    ):
+        primary_target_object: ObjectID | None = None,
+    ) -> ObjectInfo:
         """Add new object to simulated environment.
 
         Args:
@@ -232,18 +236,17 @@ class HabitatSim(HabitatActuator):
             position: Object initial absolute position
             rotation: Object rotation quaternion. Default (1, 0, 0, 0)
             scale: Object scale. Default (1, 1, 1)
-            semantic_id: Optional override object semantic ID
+            semantic_id: Optional override object semantic ID. Defaults to None.
             enable_physics: Whether or not to enable physics on this objects
             object_to_avoid: If True, run collision checks to ensure the object is not
                 colliding with any other objects in the scene, and otherwise move it
-            primary_target_bb: If not None, the bounding box of the primary target
-                object; passed when we're adding multiple objects, such that we ensure
-                that the added object does not obscure the initial view of the primary
-                target object (which avoiding collision alone cannot guarantee); defined
-                by a list of the min and max corners
+            primary_target_object: ID of the primary target object. If not None, the
+                added object will be positioned so that it does not obscure the initial
+                view of the primary target object (which avoiding collision alone cannot
+                guarantee). Used when adding multiple objects. Defaults to None.
 
         Returns:
-            RigidObject: The newly added object
+            The added object's information.
         """
         obj_mgr = self._sim.get_object_template_manager()
         rigid_mgr = self._sim.get_rigid_object_manager()
@@ -274,10 +277,16 @@ class HabitatSim(HabitatActuator):
             rotation = np.quaternion(*rotation)
         obj.rotation = sim_utils.quat_to_magnum(rotation)
 
-        if object_to_avoid:
+        # Need to store the reference to the object here so that we can use it in the
+        # _bounding_corners function.
+        obj_id = ObjectID(obj.object_id)
+        self._objects[obj_id] = obj
+
+        if object_to_avoid and primary_target_object is not None:
             assert self.sim_enable_physics, (
                 "Sim-level physics must be enabled to support collision detection"
             )
+            primary_target_bb = self._bounding_corners(primary_target_object)
             # Temporarily enable *object* physics for collision detection
             obj.motion_type = habitat_sim.physics.MotionType.DYNAMIC
             obj = self.find_non_colliding_positions(
@@ -311,16 +320,53 @@ class HabitatSim(HabitatActuator):
 
         # Compare the intended number of objects added (counter) vs the number
         # instantiated in the Habitat environmnet
-        self._object_counter += 1
         num_objects_added = self.num_objects
         if isinstance(num_objects_added, int):
             # In some units tests (e.g. MontyRunTest.test_main_with_single_experiment),
             # a simulator mock object is used, and so self.num_objects does not
             # return a meaningful int, but instead another mock object
             # TODO make this test more robust and move to its own unit test
-            assert self._object_counter == num_objects_added, "Not all objects added"
+            assert len(self._objects) == num_objects_added, "Not all objects added"
 
-        return obj
+        semantic_id = SemanticID(obj.semantic_id) if obj.semantic_id != 0 else None
+        return ObjectInfo(
+            object_id=obj_id,
+            semantic_id=semantic_id,
+        )
+
+    def _bounding_corners(self, object_id: ObjectID) -> tuple[np.ndarray, np.ndarray]:
+        """Determine and return the bounding box of a Habitat object.
+
+        Determines and returns the bounding box (defined by a "max" and "min" corner) of
+        a Habitat object (such as a mug), given in world coordinates.
+
+        Specifically uses the "axis-aligned bounding box" (aabb) available in Habitat;
+        this is a bounding box aligned with the axes of the co-oridante system, which
+        tends to be computationally efficient to retrieve.
+
+        Args:
+            object_id: The ID of the object to get the bounding corners of.
+
+        Returns:
+            min_corner and max_corner, the defining corners of the bounding box.
+        """
+        object_ref = self._objects[object_id]
+        object_aabb = object_ref.collision_shape_aabb
+
+        # The bounding box will be in the coordinate frame of the object, and so needs
+        # to be transformed (rotated and translated) based on the pose of the object in
+        # the environment
+        # The matrix returned by object_ref.transformation can apply this transformation
+        # pointwise to the min and max corner points below
+        object_t_mat = object_ref.transformation
+
+        min_corner = object_aabb.min
+        max_corner = object_aabb.max
+
+        min_corner = np.array(object_t_mat.transform_point(min_corner))
+        max_corner = np.array(object_t_mat.transform_point(max_corner))
+
+        return min_corner, max_corner
 
     def non_conflicting_vector(self) -> np.ndarray:
         """Find a non-conflicting vector.
@@ -430,7 +476,9 @@ class HabitatSim(HabitatActuator):
             new_object.translation = obj_pos
 
             # Extract updated bounding box of new object being added
-            min_corner, max_corner = get_bounding_corners(new_object)
+            min_corner, max_corner = self._bounding_corners(
+                ObjectID(new_object.object_id)
+            )
 
             # Step the physics simulation to allow objects to settle and compute
             # collisions

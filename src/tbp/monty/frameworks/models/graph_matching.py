@@ -16,6 +16,7 @@ import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.environments.embodied_environment import SemanticID
 from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger
 from tbp.monty.frameworks.loggers.graph_matching_loggers import (
     BasicGraphMatchingLogger,
@@ -510,7 +511,7 @@ class MontyForGraphMatching(MontyBase):
         """
         try:
             lm.stepwise_target_object = self.semantic_id_to_label[
-                sensory_inputs[0]._semantic_id
+                SemanticID(sensory_inputs[0]._semantic_id)
             ]
             logger.debug(f"Stepwise target: {lm.stepwise_target_object}")
         except KeyError:

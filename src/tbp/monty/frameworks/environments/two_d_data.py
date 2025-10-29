@@ -25,6 +25,7 @@ from tbp.monty.frameworks.environment_utils.transforms import DepthTo3DLocations
 from tbp.monty.frameworks.environments.embodied_environment import (
     ActionSpace,
     EmbodiedEnvironment,
+    ObjectID,
 )
 
 logger = logging.getLogger(__name__)
@@ -97,7 +98,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
     def action_space(self):
         return None
 
-    def add_object(self, *args, **kwargs):
+    def add_object(self, *args, **kwargs) -> ObjectID:
         # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
         #      interface and how the class hierarchy is defined and used.
         raise NotImplementedError("OmniglotEnvironment does not support adding objects")
@@ -331,7 +332,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             ]
         )
 
-    def add_object(self, *args, **kwargs):
+    def add_object(self, *args, **kwargs) -> ObjectID:
         # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
         #      interface and how the class hierarchy is defined and used.
         raise NotImplementedError(

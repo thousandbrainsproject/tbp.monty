@@ -27,6 +27,11 @@ from tbp.monty.frameworks.actions.actions import (
     SetSensorRotation,
 )
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.environments.embodied_environment import (
+    EmbodiedEnvironment,
+    ObjectID,
+    SemanticID,
+)
 from tbp.monty.frameworks.models.motor_policies import (
     GetGoodView,
     InformedPolicy,
@@ -39,8 +44,6 @@ from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
 )
-
-from .embodied_environment import EmbodiedEnvironment
 
 __all__ = [
     "EnvironmentDataLoader",
@@ -291,11 +294,11 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         starting_integer = 1  # Start at 1 so that we can distinguish on-object semantic
         # IDs (>0) from being off object (semantic_id == 0 in Habitat by default)
         self.semantic_id_to_label = {
-            i + starting_integer: label
+            SemanticID(i + starting_integer): label
             for i, label in enumerate(self.source_object_list)
         }
         self.semantic_label_to_id = {
-            label: i + starting_integer
+            label: SemanticID(i + starting_integer)
             for i, label in enumerate(self.source_object_list)
         }
 
@@ -364,13 +367,16 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         logger.info(f"New primary target: {pformat(self.primary_target)}")
 
     def add_distractor_objects(
-        self, primary_target_obj, init_params, primary_target_name
+        self,
+        primary_target_obj: ObjectID,
+        init_params,
+        primary_target_name,
     ):
         """Add arbitrarily many "distractor" objects to the environment.
 
         Args:
-            primary_target_obj : the Habitat object which is the primary target in
-                the scene
+            primary_target_obj : The ID of the object which is the primary target in
+                the scene.
             init_params: parameters used to initialize the object, e.g.
                 orientation; for now, these are identical to the primary target
                 except for the object ID

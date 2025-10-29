@@ -6,14 +6,19 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-from typing import Dict, List, Optional, Sequence
+from __future__ import annotations
+
+from typing import Dict, Sequence
 
 from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_environment import (
+    ObjectID,
+    ObjectInfo,
     QuaternionWXYZ,
+    SemanticID,
     VectorXYZ,
 )
 from tbp.monty.simulators.simulator import Simulator
@@ -63,11 +68,11 @@ class MuJoCoSimulator(Simulator):
         position: VectorXYZ = (0.0, 0.0, 0.0),
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
-        semantic_id: Optional[str] = None,
+        semantic_id: SemanticID | None = None,
         enable_physics: bool = False,
         object_to_avoid: bool = False,
-        primary_target_bb: Optional[List] = None,
-    ) -> None:
+        primary_target_object: ObjectID | None = None,
+    ) -> ObjectInfo:
         obj_name = f"{name}_{self._object_count}"
 
         # TODO: support arbitrary objects from a registry
@@ -77,6 +82,11 @@ class MuJoCoSimulator(Simulator):
         self._recompile()
 
         # TODO: reinitialize agents?
+
+        return ObjectInfo(
+            object_id=ObjectID(self._object_count),
+            semantic_id=semantic_id,
+        )
 
     def _add_primitive_object(
         self,
