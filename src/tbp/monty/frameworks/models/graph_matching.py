@@ -171,7 +171,7 @@ class MontyForGraphMatching(MontyBase):
 
     def reset(self):
         """Reset monty status."""
-        self.union_of_possible_matches = None
+        pass
 
     # ------------------ Getters & Setters ---------------------
 
@@ -265,35 +265,6 @@ class MontyForGraphMatching(MontyBase):
                 self.learning_modules[i].stepwise_targets_list.append(
                     self.learning_modules[i].stepwise_target_object
                 )
-
-    def _get_union_of_possible_matches(self):
-        """Take union of matches between LMs.
-
-        Update the union of possible matches returned by each learning module.
-        This is used to check the terminal condition that possible_matches is 0 or 1.
-
-        Returns:
-            Union of possible matches.
-        """
-        union_of_pm = None
-        for i, lm in enumerate(self.learning_modules):
-            if lm.buffer.get_num_observations_on_object() > 0:
-                pm = set(lm.get_possible_matches())
-            else:  # LM didn't get any observations yet -> don't make predictions.
-                # if we would use all memory IDs then time outs occur if the patch
-                # never gets on the object because it keeps the union of possible
-                # matches large.
-                # TODO: This LM may already have some IDs narrowed down by using
-                # incoming voted. Account for that.
-                pm = set()
-            logger.info(f"Possible matches for LM {i}: {pm}")
-            if union_of_pm is None:
-                union_of_pm = pm
-            else:
-                union_of_pm = set.union(union_of_pm, pm)
-        if len(self.learning_modules) > 1:
-            logger.info(f"Union of matches: {union_of_pm}")
-        return union_of_pm
 
     def _combine_votes(self, votes_per_lm):
         """Combine outgoing votes using lm_to_lm_vote_matrix matrix.
@@ -427,8 +398,14 @@ class MontyForGraphMatching(MontyBase):
                 self.send_vote_to_lm(self.learning_modules[i], i, combined_votes)
                 self.update_stats_after_vote(self.learning_modules[i])
 
-        # Update IoPM, needed for checking terminal condition
-        self.union_of_possible_matches = self._get_union_of_possible_matches()
+        # Log possible matches
+        for lm in self.learning_modules:
+            pm = (
+                lm.get_possible_matches()
+                if lm.buffer.get_num_observations_on_object()
+                else []
+            )
+            logger.info(f"Possible matches for {lm.learning_module_id}: {pm}")
 
     def _pass_infos_to_motor_system(self):
         """Pass input observations to the motor system.
