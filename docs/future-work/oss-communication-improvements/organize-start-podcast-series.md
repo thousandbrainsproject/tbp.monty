@@ -84,6 +84,6 @@ We  would like to organize and start a podcast series that covers the Thousand B
 - Perception challenges
 - Fine grained motor learning
 - Sensorimotor learning
-- Multimodal learning
+- Multi-modal learning
 - Challenges in traditional education
 - TBP Employee's sensorimotor-offspring experiences
