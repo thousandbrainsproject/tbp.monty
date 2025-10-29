@@ -78,12 +78,11 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
 
     def step(self, actions):
         self._current_state += 1
-        obs = {
+        return {
             f"{AGENT_ID}": {
                 f"{SENSOR_ID}": {"sensor": EXPECTED_STATES[self._current_state]}
             }
         }
-        return obs
 
     def get_state(self):
         return None
@@ -93,12 +92,11 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
 
     def reset(self):
         self._current_state = 0
-        obs = {
+        return {
             f"{AGENT_ID}": {
                 f"{SENSOR_ID}": {"sensor": EXPECTED_STATES[self._current_state]}
             }
         }
-        return obs
 
     def close(self):
         self._current_state = None
@@ -117,12 +115,11 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
 
     def step(self, actions):
         self._current_state += 1
-        obs = {
+        return {
             f"{AGENT_ID}": {
                 f"{SENSOR_ID}": {"sensor": EXPECTED_STATES[self._current_state]}
             }
         }
-        return obs
 
     def get_state(self):
         return None
@@ -132,12 +129,11 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
 
     def reset(self):
         self._current_state = 0
-        obs = {
+        return {
             f"{AGENT_ID}": {
                 f"{SENSOR_ID}": {"sensor": EXPECTED_STATES[self._current_state]}
             }
         }
-        return obs
 
     def close(self):
         self._current_state = None

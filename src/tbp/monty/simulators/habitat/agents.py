@@ -311,8 +311,7 @@ class MultiSensorAgent(HabitatAgent, ActionSpaceMixin):
 
     def get_spec(self):
         spec = super().get_spec()
-        spec = self.get_action_space(spec)
-        return spec
+        return self.get_action_space(spec)
 
     def initialize(self, simulator):
         """Initialize agent runtime state.
@@ -410,8 +409,7 @@ class SingleSensorAgent(HabitatAgent, ActionSpaceMixin):
 
     def get_spec(self):
         spec = super().get_spec()
-        spec = self.get_action_space(spec)
-        return spec
+        return self.get_action_space(spec)
 
     def initialize(self, simulator):
         """Initialize agent runtime state.

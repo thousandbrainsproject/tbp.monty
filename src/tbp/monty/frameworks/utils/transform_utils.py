@@ -25,14 +25,11 @@ def numpy_to_scipy_quat(quat):
     Returns:
         A quaternion in xyzw format
     """
-    new_quat = np.array((quat[1], quat[2], quat[3], quat[0]))
-
-    return new_quat
+    return np.array((quat[1], quat[2], quat[3], quat[0]))
 
 
 def scipy_to_numpy_quat(quat: np.ndarray) -> np.quaternion:
-    numpy_quat = np.quaternion(quat[3], quat[0], quat[1], quat[2])
-    return numpy_quat
+    return np.quaternion(quat[3], quat[0], quat[1], quat[2])
 
 
 def rotation_as_quat(rot: Rotation, scalar_first: bool = True) -> np.ndarray:

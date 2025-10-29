@@ -12,7 +12,7 @@ import unittest
 
 from tbp.monty.frameworks.actions.actions import MoveTangentially
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.utils.plot_utils import get_action_name
+from tbp.monty.frameworks.utils.plot_utils_dev import get_action_name
 
 
 class GetActionNameTest(unittest.TestCase):

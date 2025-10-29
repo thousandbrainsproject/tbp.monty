@@ -318,17 +318,13 @@ class DefaultHypothesesDisplacer:
         # Removing the comment weights the evidence by the nodes distance from the
         # search location. However, epirically this did not seem to help.
         # shape=(H,)
-        location_evidence = np.max(
+        return np.max(
             radius_evidence,  # * node_distance_weights,
             axis=1,
         )
-        return location_evidence
 
     def _get_node_distance_weights(self, distances):
-        node_distance_weights = (
-            self.max_match_distance - distances
-        ) / self.max_match_distance
-        return node_distance_weights
+        return (self.max_match_distance - distances) / self.max_match_distance
 
     def _get_pose_evidence_matrix(
         self,

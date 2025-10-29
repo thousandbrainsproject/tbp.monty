@@ -238,8 +238,7 @@ def increment_sparse_tensor_by_count(old_tensor, indices):
         new_indices, new_values, old_tensor.shape
     ).coalesce()
     # Add the new sparse tensor to the old one
-    new_tensor = old_tensor + new_sparse_tensor
-    return new_tensor
+    return old_tensor + new_sparse_tensor
 
 
 def get_values_from_dense_last_dim(tensor, index_3d):
@@ -254,11 +253,10 @@ def get_values_from_dense_last_dim(tensor, index_3d):
         List of values.
     """
     last_dim_size = tensor.shape[-1]
-    values = [
+    return [
         float(tensor[index_3d[0], index_3d[1], index_3d[2], n])
         for n in range(last_dim_size)
     ]
-    return values
 
 
 def expand_index_dims(indices_3d, last_dim_size):
@@ -412,8 +410,7 @@ def circular_mean(values):
     if mean_angle < 0:
         mean_angle += 2 * np.pi
     # convert back to [0, 1] range
-    mean = mean_angle / (2 * np.pi)
-    return mean
+    return mean_angle / (2 * np.pi)
 
 
 def build_point_cloud_graph(locations, features, feature_mapping):
@@ -427,6 +424,4 @@ def build_point_cloud_graph(locations, features, feature_mapping):
     Returns:
         A NumpyGraph containing the observed features at locations.
     """
-    graph = NumpyGraph(dict(x=features, pos=locations, feature_mapping=feature_mapping))
-
-    return graph
+    return NumpyGraph(dict(x=features, pos=locations, feature_mapping=feature_mapping))

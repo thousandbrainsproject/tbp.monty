@@ -342,7 +342,7 @@ This is a test document.""",
             "description": "A collection of terms",
         }
 
-        doc_id, created = self.readme.create_or_update_doc(
+        self.readme.create_or_update_doc(
             order=1,
             category_id="category-id",
             doc=doc_with_description,
@@ -415,7 +415,7 @@ This is a test document.""",
         # Test cases for Markdown file paths
         markdown_paths_with_deep_link = [
             (
-                "[File 1](slug.md#sub-heading) and "  # fmt: skip
+                "[File 1](slug.md#sub-heading) and "  # fmt: skip noqa: RUF028
                 "[File 2](slug2.md#sub-heading)"
             ),
             (

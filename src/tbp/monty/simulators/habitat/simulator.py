@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Sequence
 
 import habitat_sim
 import magnum as mn
@@ -109,8 +109,8 @@ class HabitatSim(HabitatActuator):
     def __init__(
         self,
         agents: List[HabitatAgent],
-        data_path: Optional[str] = None,
-        scene_id: Optional[str] = None,
+        data_path: str | None = None,
+        scene_id: str | None = None,
         seed: int = 42,
         enable_physics: bool = True,  # Physics is now standard
     ):
@@ -596,8 +596,7 @@ class HabitatSim(HabitatActuator):
         """
         agent_indices = range(len(self._agents))
         obs = self._sim.get_sensor_observations(agent_ids=agent_indices)
-        obs = self.process_observations(obs)
-        return obs
+        return self.process_observations(obs)
 
     def process_observations(self, obs) -> dict:
         """Habitat returns observations grouped by agent_index.
@@ -677,8 +676,7 @@ class HabitatSim(HabitatActuator):
         # All agents managed by this simulator
         agent_indices = range(len(self._agents))
         obs = self._sim.reset(agent_ids=agent_indices)
-        obs = self.process_observations(obs)
-        return obs
+        return self.process_observations(obs)
 
     def close(self) -> None:
         """Close simulator and release resources."""
