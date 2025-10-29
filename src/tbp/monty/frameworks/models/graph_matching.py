@@ -398,6 +398,15 @@ class MontyForGraphMatching(MontyBase):
                 self.send_vote_to_lm(self.learning_modules[i], i, combined_votes)
                 self.update_stats_after_vote(self.learning_modules[i])
 
+        # Log possible matches
+        for i, lm in enumerate(self.learning_modules):
+            pm = (
+                set(lm.get_possible_matches())
+                if lm.buffer.get_num_observations_on_object()
+                else set()
+            )
+            logger.info(f"Possible matches for LM {i}: {pm}")
+
     def _pass_infos_to_motor_system(self):
         """Pass input observations to the motor system.
 
