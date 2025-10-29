@@ -15,7 +15,7 @@ import re
 import shutil
 import time
 from pathlib import Path
-from typing import Iterable, List, Mapping, Optional
+from typing import Iterable, List, Mapping
 
 import numpy as np
 import pandas as pd
@@ -702,11 +702,11 @@ def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> List[M
 
 
 def main(
-    all_configs: Optional[Mapping[str, Mapping]] = None,
-    exp: Optional[Mapping] = None,
-    experiment: Optional[str] = None,
+    all_configs: Mapping[str, Mapping] | None = None,
+    exp: Mapping | None = None,
+    experiment: str | None = None,
     episodes: str = "all",
-    num_parallel: Optional[int] = None,
+    num_parallel: int | None = None,
     quiet_habitat_logs: bool = True,
     print_cfg: bool = False,
     is_unittest: bool = False,
