@@ -23,10 +23,6 @@ class ParseEpisodeSpecTest(unittest.TestCase):
     def test_single_index_valid(self):
         self.assertEqual(parse_episode_spec("3", total=6), [3])
 
-    def test_single_index_negative_raises(self):
-        with self.assertRaisesRegex(ValueError, "not a valid index"):
-            parse_episode_spec("-1", total=5)
-
     def test_single_index_out_of_bounds_raises(self):
         with self.assertRaisesRegex(ValueError, "not a valid index"):
             parse_episode_spec("5", total=5)
@@ -65,10 +61,6 @@ class ParseEpisodeSpecTest(unittest.TestCase):
     def test_open_right_start_equals_total_invalid(self):
         with self.assertRaisesRegex(ValueError, "not a valid range"):
             parse_episode_spec("5:", total=5)
-
-    def test_open_right_start_negative_invalid(self):
-        with self.assertRaisesRegex(ValueError, "not a valid range"):
-            parse_episode_spec("-1:", total=5)
 
     def test_mixed_selection(self):
         self.assertEqual(

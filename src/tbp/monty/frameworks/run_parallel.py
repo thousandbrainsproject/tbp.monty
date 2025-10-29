@@ -64,10 +64,10 @@ Assumptions and notes:
 """
 
 
-RE_OPEN_LEFT = re.compile(r"^:([+-]?\d+)$")  # ":N"
-RE_OPEN_RIGHT = re.compile(r"^([+-]?\d+):$")  # "N:"
-RE_CLOSED = re.compile(r"^([+-]?\d+)\s*:\s*([+-]?\d+)$")  # "A:B"
-RE_SINGLE = re.compile(r"^[+-]?\d+$")  # "N"
+RE_OPEN_LEFT = re.compile(r"^:(\d+)$")  # ":N"
+RE_OPEN_RIGHT = re.compile(r"^(\d+):$")  # "N:"
+RE_CLOSED = re.compile(r"^(\d+)\s*:\s*(\d+)$")  # "A:B"
+RE_SINGLE = re.compile(r"^\d+$")  # "N"
 
 
 def single_train(config):
