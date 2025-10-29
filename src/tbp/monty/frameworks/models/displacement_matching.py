@@ -158,13 +158,9 @@ class DisplacementGraphLM(GraphLM):
         """
         try:
             if get_reverse_r:
-                r, msr = Rotation.align_vectors(
-                    sensed_displacements, model_displacements
-                )
+                r, _ = Rotation.align_vectors(sensed_displacements, model_displacements)
             else:
-                r, msr = Rotation.align_vectors(
-                    model_displacements, sensed_displacements
-                )
+                r, _ = Rotation.align_vectors(model_displacements, sensed_displacements)
         except UserWarning:
             # This can happen if the displacements that were sampled lie in one plane
             # such that we can not determine the rotation along all three axes.
@@ -518,7 +514,7 @@ class DisplacementGraphMemory(GraphMemory):
             graph_id: Name of the object.
             input_channel: ?
         """
-        logger.info(f"Adding a new graph to memory.")
+        logger.info("Adding a new graph to memory.")
 
         model = GraphObjectModel(
             object_id=graph_id,

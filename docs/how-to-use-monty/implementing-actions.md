@@ -35,7 +35,7 @@ Once you have a new **Action** in mind, to create it, you'll need to explicitly 
 ```python
 class Jump(Action):
 
-    def __init__(self, agent_id: str, how_high: float) -> None:
+    def __init__(self, agent_id: AgentID, how_high: float) -> None:
         super().__init__(agent_id=agent_id)
         self.how_high = how_high
 ```
@@ -67,15 +67,15 @@ For the **Motor System** to be able to sample the **Action** with the help of a 
 
 ```python
 class JumpActionSampler(Protocol):
-    def sample_jump(self, agent_id: str) -> Jump: ...
+    def sample_jump(self, agent_id: AgentID) -> Jump: ...
 
 class Jump(Action):
 
     @staticmethod
-    def sample(agent_id: str, sampler: JumpActionSampler) -> Jump:
+    def sample(agent_id: AgentID, sampler: JumpActionSampler) -> Jump:
         return sampler.sample_jump(agent_id)
 
-    def __init__(self, agent_id: str, how_high: float) -> None:
+    def __init__(self, agent_id: AgentID, how_high: float) -> None:
         super().__init__(agent_id=agent_id)
         self.how_high = how_high
 ```
@@ -96,7 +96,7 @@ class MyConstantSampler(ActionSampler):
         super().__init__(actions=actions, rng=rng)
         self.height = 1.8
 
-    def sample_jump(self, agent_id: str) -> Jump:
+    def sample_jump(self, agent_id: AgentID) -> Jump:
         return Jump(agent_id=agent_id, how_high=self.height)
 ```
 
@@ -117,7 +117,7 @@ class JumpActuator(Protocol):
 
 class Jump(Action):
 
-    def __init__(self, agent_id: str, how_high: float) -> None:
+    def __init__(self, agent_id: AgentID, how_high: float) -> None:
         super().__init__(agent_id=agent_id)
         self.how_high = how_high
 

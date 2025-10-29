@@ -13,7 +13,7 @@ import copy
 import dataclasses
 import importlib
 from inspect import Parameter, signature
-from typing import Any, Callable, ClassVar, Dict, Optional, Protocol, Type
+from typing import Any, Callable, ClassVar, Dict, Protocol, Type
 
 from typing_extensions import TypeIs
 
@@ -129,7 +129,7 @@ def extract_fields(function):
 def create_dataclass_args(
     dataclass_name: str,
     function: Callable,
-    base: Optional[Type] = None,
+    base: Type | None = None,
 ):
     """Creates configuration dataclass args from a given function arguments.
 
@@ -145,7 +145,7 @@ def create_dataclass_args(
         # Is equivalent to
         @dataclass(frozen=True)
         class SingleSensorAgentArgs:
-            agent_id: str
+            agent_id: AgentID
             sensor_id: str
             position: Tuple[float. float, float] = (0.0, 1.5, 0.0)
             rotation: Tuple[float, float, float, float] = (1.0, 0.0, 0.0, 0.0)

@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT..
+from __future__ import annotations
 
 import uuid
 from collections import defaultdict
@@ -16,6 +17,8 @@ import habitat_sim
 import numpy as np
 import quaternion as qt
 from habitat_sim.agent import ActionSpec, ActuationSpec, AgentConfiguration, AgentState
+
+from tbp.monty.frameworks.agents import AgentID
 
 from .sensors import RGBDSensorConfig, SemanticSensorConfig, SensorConfig
 
@@ -48,13 +51,13 @@ class HabitatAgent:
 
     def __init__(
         self,
-        agent_id: str,
+        agent_id: AgentID | None,
         position: Vector3 = (0.0, 1.5, 0.0),
         rotation: Quaternion = (1.0, 0.0, 0.0, 0.0),
         height: float = 0.0,
     ):
         if agent_id is None:
-            agent_id = uuid.uuid4().hex
+            agent_id = AgentID(uuid.uuid4().hex)
         self.agent_id = agent_id
         self.position = position
         self.rotation = rotation
@@ -245,7 +248,7 @@ class MultiSensorAgent(HabitatAgent, ActionSpaceMixin):
 
     def __init__(
         self,
-        agent_id: str,
+        agent_id: AgentID | None,
         sensor_ids: Tuple[str],
         position: Vector3 = (0.0, 1.5, 0.0),  # Agent position
         rotation: Quaternion = (1.0, 0.0, 0.0, 0.0),
@@ -346,7 +349,7 @@ class SingleSensorAgent(HabitatAgent, ActionSpaceMixin):
 
     def __init__(
         self,
-        agent_id: str,
+        agent_id: AgentID | None,
         sensor_id: str,
         agent_position: Vector3 = (0.0, 1.5, 0.0),
         sensor_position: Vector3 = (0.0, 0.0, 0.0),

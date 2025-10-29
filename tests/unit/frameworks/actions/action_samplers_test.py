@@ -22,12 +22,13 @@ from tbp.monty.frameworks.actions.action_samplers import (
     UniformlyDistributedSampler,
 )
 from tbp.monty.frameworks.actions.actions import Action, QuaternionWXYZ, VectorXYZ
+from tbp.monty.frameworks.agents import AgentID
 
 RNG_SEED = 1337
 
 
 class FakeActionOneActionSampler(Protocol):
-    def sample_fake_action_one(self, agent_id: str) -> FakeActionOne: ...
+    def sample_fake_action_one(self, agent_id: AgentID) -> FakeActionOne: ...
 
 
 class FakeActionOneActuator(Protocol):
@@ -37,11 +38,11 @@ class FakeActionOneActuator(Protocol):
 class FakeActionOne(Action):
     @classmethod
     def sample(
-        cls, agent_id: str, sampler: FakeActionOneActionSampler
+        cls, agent_id: AgentID, sampler: FakeActionOneActionSampler
     ) -> FakeActionOne:
         return sampler.sample_fake_action_one(agent_id)
 
-    def __init__(self, agent_id: str):
+    def __init__(self, agent_id: AgentID):
         super().__init__(agent_id)
 
     def act(self, _: FakeActionOneActuator) -> None:
@@ -49,7 +50,7 @@ class FakeActionOne(Action):
 
 
 class FakeActionTwoActionSampler(Protocol):
-    def sample_fake_action_two(self, agent_id: str) -> FakeActionTwo: ...
+    def sample_fake_action_two(self, agent_id: AgentID) -> FakeActionTwo: ...
 
 
 class FakeActionTwoActuator(Protocol):
@@ -59,11 +60,11 @@ class FakeActionTwoActuator(Protocol):
 class FakeActionTwo(Action):
     @classmethod
     def sample(
-        cls, agent_id: str, sampler: FakeActionTwoActionSampler
+        cls, agent_id: AgentID, sampler: FakeActionTwoActionSampler
     ) -> FakeActionTwo:
         return sampler.sample_fake_action_two(agent_id)
 
-    def __init__(self, agent_id: str):
+    def __init__(self, agent_id: AgentID):
         super().__init__(agent_id)
 
     def act(self, _: FakeActionTwoActuator) -> None:
@@ -71,7 +72,7 @@ class FakeActionTwo(Action):
 
 
 class FakeActionThreeActionSampler(Protocol):
-    def sample_fake_action_three(self, agent_id: str) -> FakeActionThree: ...
+    def sample_fake_action_three(self, agent_id: AgentID) -> FakeActionThree: ...
 
 
 class FakeActionThreeActuator(Protocol):
@@ -81,11 +82,11 @@ class FakeActionThreeActuator(Protocol):
 class FakeActionThree(Action):
     @classmethod
     def sample(
-        cls, agent_id: str, sampler: FakeActionThreeActionSampler
+        cls, agent_id: AgentID, sampler: FakeActionThreeActionSampler
     ) -> FakeActionThree:
         return sampler.sample_fake_action_three(agent_id)
 
-    def __init__(self, agent_id: str):
+    def __init__(self, agent_id: AgentID):
         super().__init__(agent_id)
 
     def act(self, _: FakeActionThreeActuator) -> None:
@@ -100,13 +101,13 @@ class FakeSampler(ActionSampler):
     ):
         super().__init__(rng=rng, actions=actions)
 
-    def sample_fake_action_one(self, agent_id: str) -> FakeActionOne:
+    def sample_fake_action_one(self, agent_id: AgentID) -> FakeActionOne:
         return FakeActionOne(agent_id)
 
-    def sample_fake_action_two(self, agent_id: str) -> FakeActionTwo:
+    def sample_fake_action_two(self, agent_id: AgentID) -> FakeActionTwo:
         return FakeActionTwo(agent_id)
 
-    def sample_fake_action_three(self, agent_id: str) -> FakeActionThree:
+    def sample_fake_action_three(self, agent_id: AgentID) -> FakeActionThree:
         return FakeActionThree(agent_id)
 
 
@@ -118,7 +119,7 @@ class ActionSamplerTest(unittest.TestCase):
         )
         actions = []
         for _ in range(100):
-            actions.append(sampler.sample("agent"))
+            actions.append(sampler.sample(AgentID("agent")))
             # We are counting on the fact that 100 random samples
             # will not all be the same
 
@@ -127,7 +128,7 @@ class ActionSamplerTest(unittest.TestCase):
         for action in actions:
             sampled_method_name = f"sample_{action.name}"
             sampled_method = getattr(sampler, sampled_method_name)
-            action_again = sampled_method("agent")
+            action_again = sampled_method(AgentID("agent"))
             self.assertEqual(action.__dict__, action_again.__dict__)
 
 

@@ -9,6 +9,7 @@
 from typing import Dict, List, Optional, Protocol, Sequence
 
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_environment import (
     QuaternionWXYZ,
     VectorXYZ,
@@ -24,7 +25,7 @@ class Simulator(Protocol):
     """
 
     # TODO - do we need a way to abstract the concept of "agent"?
-    def initialize_agent(self, agent_id, agent_state) -> None:
+    def initialize_agent(self, agent_id: AgentID, agent_state) -> None:
         """Update agent runtime state."""
         ...
 
@@ -73,7 +74,7 @@ class Simulator(Protocol):
         """Returns the set of all available actions."""
         ...
 
-    def get_agent(self, agent_id):
+    def get_agent(self, agent_id: AgentID):
         """Return agent instance."""
         ...
 
