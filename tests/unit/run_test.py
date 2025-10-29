@@ -215,7 +215,7 @@ class MontyRunTest(unittest.TestCase):
         base_dir = pathlib.Path(*current_file_path.parts[:base_repo_idx])
         exp_dir = os.path.join(str(base_dir), "benchmarks")
         sys.path.append(exp_dir)
-        import configs  # noqa: F401
+        import configs  # noqa: F401, PLC0415
 
 
 if __name__ == "__main__":

@@ -78,7 +78,7 @@ def bar_chart_cumtime(df, n_functions=None):
     if not n_functions:
         n_functions = len(func_names)
 
-    fig, ax = plt.subplots(figsize=(20, 10))
+    _, ax = plt.subplots(figsize=(20, 10))
     # NOTE: profiler dominates cumulative time because everything happens within profile
     # hence drop the first item so you can actually see the scale properly
     ax.bar(x=range(n_functions), height=cumtimes[1 : n_functions + 1])
@@ -96,7 +96,7 @@ def bar_chart_tottime(df, n_functions=None):
     if not n_functions:
         n_functions = len(func_names)
 
-    fig, ax = plt.subplots(figsize=(20, 10))
+    _, ax = plt.subplots(figsize=(20, 10))
     # NOTE: profiler dominates cumulative time because everything happens within profile
     # hence drop the first item so you can actually see the scale properly
     ax.bar(x=range(n_functions), height=tottimes[n_functions])

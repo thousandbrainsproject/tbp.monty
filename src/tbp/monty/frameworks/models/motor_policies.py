@@ -23,7 +23,6 @@ from typing import (
     List,
     Literal,
     Mapping,
-    Optional,
     Tuple,
     Type,
     cast,
@@ -424,7 +423,7 @@ class PositioningProcedure(BasePolicy):
     def positioning_call(
         self,
         observation: Mapping,
-        state: Optional[MotorSystemState] = None,
+        state: MotorSystemState | None = None,
     ) -> PositioningProcedureResult:
         """Return a list of actions to position the agent in the scene.
 
@@ -506,7 +505,7 @@ class GetGoodView(PositioningProcedure):
         self._executed_multiple_objects_orientation = False
 
     def compute_look_amounts(
-        self, relative_location: np.ndarray, state: Optional[MotorSystemState] = None
+        self, relative_location: np.ndarray, state: MotorSystemState | None = None
     ) -> Tuple[float, float]:
         """Compute the amount to look down and left given a relative location.
 
@@ -549,7 +548,7 @@ class GetGoodView(PositioningProcedure):
         self,
         sem3d_obs: np.ndarray,
         image_shape: Tuple[int, int],
-        state: Optional[MotorSystemState] = None,
+        state: MotorSystemState | None = None,
     ) -> np.ndarray:
         """Find the location to look at in the observation.
 
@@ -691,7 +690,7 @@ class GetGoodView(PositioningProcedure):
             return None
 
     def orient_to_object(
-        self, observation: Mapping, state: Optional[MotorSystemState] = None
+        self, observation: Mapping, state: MotorSystemState | None = None
     ) -> List[Action]:
         """Rotate sensors so that they are centered on the object using the view finder.
 
@@ -733,7 +732,7 @@ class GetGoodView(PositioningProcedure):
     def positioning_call(
         self,
         observation: Mapping,
-        state: Optional[MotorSystemState] = None,
+        state: MotorSystemState | None = None,
     ) -> PositioningProcedureResult:
         if (
             self._multiple_objects_present
@@ -996,7 +995,7 @@ class NaiveScanPolicy(InformedPolicy):
     # Methods that define behavior of __call__
     ###
 
-    def dynamic_call(self, _state: Optional[MotorSystemState] = None) -> Action:
+    def dynamic_call(self, _state: MotorSystemState | None = None) -> Action:
         """Return the next action in the spiral being executed.
 
         The MotorSystemState is ignored.
@@ -1234,7 +1233,7 @@ class SurfacePolicy(InformedPolicy):
     # Methods that define behavior of __call__
     ###
     def dynamic_call(
-        self, state: Optional[MotorSystemState] = None
+        self, state: MotorSystemState | None = None
     ) -> OrientHorizontal | OrientVertical | MoveTangentially | MoveForward | None:
         """Return the next action to take.
 
@@ -1615,8 +1614,9 @@ def write_action_file(actions: List[Action], file: str) -> None:
         file: path to file to save actions to
     """
     with open(file, "w") as f:
-        for action in actions:
-            f.write(f"{json.dumps(action, cls=ActionJSONEncoder)}\n")
+        f.writelines(
+            f"{json.dumps(action, cls=ActionJSONEncoder)}\n" for action in actions
+        )
 
 
 def get_perc_on_obj_semantic(semantic_obs, semantic_id=0):

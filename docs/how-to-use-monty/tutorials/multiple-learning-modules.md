@@ -341,7 +341,7 @@ During pretraining, each learning module learns its own object models independen
 import os
 import matplotlib.pyplot as plt
 import torch
-from tbp.monty.frameworks.utils.plot_utils import plot_graph
+from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 # Get path to pretrained model
 project_dir = os.path.expanduser("~/tbp/results/monty/projects")

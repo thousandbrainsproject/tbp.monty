@@ -19,7 +19,6 @@ from typing import (
     List,
     Literal,
     Mapping,
-    Optional,
     Sequence,
 )
 
@@ -242,6 +241,9 @@ class DefaultObjectInitializer:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def __hash__(self):
+        return hash(self.__dict__)
+
 
 class PredefinedObjectInitializer(DefaultObjectInitializer):
     def __init__(
@@ -334,7 +336,7 @@ class RandomRotationObjectInitializer(DefaultObjectInitializer):
 class EnvironmentDataloaderPerObjectArgs:
     object_names: List
     object_init_sampler: Callable
-    parent_to_child_mapping: Optional[Dict[str, List[str]]] = None
+    parent_to_child_mapping: Dict[str, List[str]] | None = None
 
 
 @dataclass
@@ -897,15 +899,15 @@ def make_sensor_positions_on_grid(
 
 def make_multi_sensor_mount_config(
     n_sensors: int,
-    agent_id: AgentID = AgentID("agent_id_0"),  # noqa: B008
-    sensor_ids: Optional[Sequence[str]] = None,
+    agent_id: AgentID = AgentID("agent_id_0"),
+    sensor_ids: Sequence[str] | None = None,
     height: Number = 0.0,
     position: ArrayLike = (0, 1.5, 0.2),  # agent position
-    resolutions: Optional[ArrayLike] = None,
-    positions: Optional[ArrayLike] = None,
-    rotations: Optional[ArrayLike] = None,
-    semantics: Optional[ArrayLike] = None,
-    zooms: Optional[ArrayLike] = None,
+    resolutions: ArrayLike | None = None,
+    positions: ArrayLike | None = None,
+    rotations: ArrayLike | None = None,
+    semantics: ArrayLike | None = None,
+    zooms: ArrayLike | None = None,
 ) -> Mapping[str, Any]:
     """Generate a multi-sensor mount configuration.
 
