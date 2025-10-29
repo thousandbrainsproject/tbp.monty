@@ -1258,8 +1258,7 @@ class GraphMemory(LMMemory):
 
     def get_graph_node_ids(self, graph_id, input_channel):
         num_nodes = self.models_in_memory[graph_id][input_channel].x.shape[0]
-        node_ids = np.linspace(0, num_nodes - 1, num_nodes, dtype=int)
-        return node_ids
+        return np.linspace(0, num_nodes - 1, num_nodes, dtype=int)
 
     def get_num_nodes_in_graph(self, graph_id, input_channel=None):
         """Get number of nodes in graph.
@@ -1482,8 +1481,7 @@ class GraphMemory(LMMemory):
             ]:
                 continue
             feature_array_len += len(node_features[feature])
-        feature_array = np.zeros((num_nodes, feature_array_len)) * np.nan
-        return feature_array
+        return np.zeros((num_nodes, feature_array_len)) * np.nan
 
     def _extract_entries_with_content(self, features, locations):
         """Only keep features & locations at steps where information was received.

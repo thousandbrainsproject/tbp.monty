@@ -129,5 +129,4 @@ def load_doc(file_path: str, category_slug: str, child: dict):
 
     with open(file_path, encoding="utf-8") as file:
         body = file.read()
-        doc = process_markdown(body, child["slug"])
-        return doc
+        return process_markdown(body, child["slug"])

@@ -135,13 +135,12 @@ class FeatureGraphLM(GraphLM):
         possible_locations = self.get_possible_locations()
         possible_poses = self.get_possible_poses(as_euler=False)
         sensed_pose = self.buffer.get_current_pose(input_channel="first")
-        vote = {
+        return {
             "object_id_vote": object_id_vote,
             "location_vote": possible_locations,
             "rotation_vote": possible_poses,
             "sensed_pose_rel_body": sensed_pose,
         }
-        return vote
 
     def receive_votes(self, vote_data):
         """Use votes to remove objects and poses from possible matches.
@@ -710,8 +709,7 @@ class FeatureGraphMemory(GraphMemory):
             feature_keys=["pose_vectors"],
         )
         node_directions = node_r_features["pose_vectors"]
-        node_directions = np.array(node_directions).reshape((3, 3))
-        return node_directions
+        return np.array(node_directions).reshape((3, 3))
 
     def get_nodes_with_matching_features(
         self,

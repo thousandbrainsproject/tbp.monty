@@ -83,8 +83,7 @@ def single_evaluate(config):
         print("---------evaluating---------")
         exp.evaluate()
         if config["logging_config"]["log_parallel_wandb"]:
-            eval_stats = get_episode_stats(exp, "eval")
-            return eval_stats
+            return get_episode_stats(exp, "eval")
 
 
 def get_episode_stats(exp, mode):

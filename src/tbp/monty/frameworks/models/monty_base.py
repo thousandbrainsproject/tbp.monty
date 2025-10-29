@@ -217,10 +217,7 @@ class MontyBase(Monty):
         else:
             sensory_inputs_from_lms = []
         # Combine sensory inputs from SMs and LMs to LM i
-        sensory_inputs = self._combine_inputs(
-            sensory_inputs_from_sms, sensory_inputs_from_lms
-        )
-        return sensory_inputs
+        return self._combine_inputs(sensory_inputs_from_sms, sensory_inputs_from_lms)
 
     def _combine_inputs(self, inputs_from_sms, inputs_from_lms) -> dict | None:
         """Combine all inputs to an LM into one dict.
@@ -420,8 +417,7 @@ class MontyBase(Monty):
         # the agent (actuator) this sensor is attached to
         agent_id = self.sm_to_agent_dict[sensor_module_id]
         agent_obs = observations[agent_id]
-        sensor_obs = agent_obs[sensor_module_id]
-        return sensor_obs
+        return agent_obs[sensor_module_id]
 
     def get_agent_state(self):
         """Get state of agent (dict).

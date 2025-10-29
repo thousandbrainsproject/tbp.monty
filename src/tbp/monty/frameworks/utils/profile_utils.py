@@ -56,13 +56,11 @@ def drop_filename(string):
 
 
 def sort_by_cumtime(df):
-    new_df = df.sort_values("cumtime", ascending=False)
-    return new_df
+    return df.sort_values("cumtime", ascending=False)
 
 
 def sort_by_tottime(df):
-    new_df = df.sort_values("tottime", ascending=False)
-    return new_df
+    return df.sort_values("tottime", ascending=False)
 
 
 def get_data_from_df(df, sortby="cumtime"):

@@ -177,8 +177,7 @@ class DisplacementGraphLM(GraphLM):
         Returns:
             The scale of the object.
         """
-        scale = np.linalg.norm(sensed_displacement) / np.linalg.norm(model_displacement)
-        return scale
+        return np.linalg.norm(sensed_displacement) / np.linalg.norm(model_displacement)
 
     # ------------------ Logging & Saving ----------------------
 

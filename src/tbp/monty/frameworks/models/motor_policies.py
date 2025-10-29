@@ -594,9 +594,7 @@ class GetGoodView(PositioningProcedure):
         ]["position"]
         agent_location = self.get_agent_state(state)["position"]
         # Get the location of the object relative to sensor.
-        relative_location = location_to_look_at - (camera_location + agent_location)
-
-        return relative_location
+        return location_to_look_at - (camera_location + agent_location)
 
     def is_on_target_object(self, observation: Mapping) -> bool:
         """Check if a sensor is on the target object.
@@ -616,8 +614,7 @@ class GetGoodView(PositioningProcedure):
 
         # Check if the central pixel is on the target object.
         y_mid, x_mid = image_shape[0] // 2, image_shape[1] // 2
-        on_target_object = semantic[y_mid, x_mid] == self._target_semantic_id
-        return on_target_object
+        return semantic[y_mid, x_mid] == self._target_semantic_id
 
     def move_close_enough(self, observation: Mapping) -> Action | None:
         """Move closer to the object until we are close enough.
@@ -1403,14 +1400,13 @@ class SurfacePolicy(InformedPolicy):
         Returns:
             MoveForward action.
         """
-        action = MoveForward(
+        return MoveForward(
             agent_id=self.agent_id,
             distance=(
                 self.processed_observations.get_feature_by_name("min_depth")
                 - self.desired_object_distance
             ),
         )
-        return action
 
     def get_next_action(
         self, state: MotorSystemState
@@ -1607,9 +1603,7 @@ def read_action_file(file: str) -> List[Action]:
         file_read = f.read()
 
     lines = [line.strip() for line in file_read.split("\n") if line.strip()]
-    actions = [cast(Action, json.loads(line, cls=ActionJSONDecoder)) for line in lines]
-
-    return actions
+    return [cast(Action, json.loads(line, cls=ActionJSONDecoder)) for line in lines]
 
 
 def write_action_file(actions: List[Action], file: str) -> None:
@@ -1649,8 +1643,7 @@ def get_perc_on_obj_semantic(semantic_obs, semantic_id=0):
     else:
         # Count only pixels on the target (e.g. primary target) object
         csum = np.sum(semantic_obs == semantic_id)
-    per_on_obj = csum / res
-    return per_on_obj
+    return csum / res
 
 
 class SurfacePolicyCurvatureInformed(SurfacePolicy):
@@ -1938,7 +1931,6 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # and the PC is predominantly defined in the z-direction; note that this
             # step will be weighted by the standard momentum, integrating the previous
             # movement, as we want to move in a consistent heading
-            alternative_movement = self.perform_standard_tang_step(state)
 
             # Note that we *don't* re-set the PC buffers, because with any luck,
             # the PC axes will be better defined on the next step; it was also found in
@@ -1946,7 +1938,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
             # the PC-guided actions) occasionally resulted in longer, more noisy
             # inference
 
-            return alternative_movement
+            return self.perform_standard_tang_step(state)
 
         self.update_tangential_reps(vec_form=rotated_form)
 
@@ -2404,9 +2396,7 @@ def theta_change(a, b):
     min_sep = a - b
 
     # If an angle has "looped" round, correct for this
-    min_sep = enforce_pi_bounds(min_sep)
-
-    return min_sep
+    return enforce_pi_bounds(min_sep)
 
 
 def enforce_pi_bounds(theta):

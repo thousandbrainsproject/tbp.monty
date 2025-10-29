@@ -31,8 +31,7 @@ def make_stats_df(stats):
         columns=["func", "ncalls", "ccalls", "tottime", "cumtime", "callers"],
     )
 
-    df = df.sort_values("cumtime", ascending=False)
-    return df
+    return df.sort_values("cumtime", ascending=False)
 
 
 class ProfileExperimentMixin:

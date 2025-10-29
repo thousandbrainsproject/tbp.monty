@@ -311,9 +311,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
             Whether the output goal-state was achieved.
         """
         if self.output_goal_state is not None:
-            goal_achieved = self._check_input_matches_sensory_prediction(observations)
-
-            return goal_achieved
+            return self._check_input_matches_sensory_prediction(observations)
 
         return False
 
@@ -357,13 +355,11 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         # case _check_states_different will return False, and we return goal_achieved as
         # False, as we cannot meaningfully evaluate whether this occured
 
-        input_changed = self._check_states_different(
+        return self._check_states_different(
             current_sensory_input,
             previous_sensory_input,
             diff_tolerances=self.goal_tolerances,
         )
-
-        return input_changed
 
     def _check_need_new_output_goal(self, output_goal_achieved) -> bool:
         """Determine whether the GSG should generate a new output goal-state.
@@ -573,13 +569,11 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         )
 
         # Compute the goal-state (for the motor-actuator)
-        motor_goal_state = self._compute_goal_state_for_target_loc(
+        return self._compute_goal_state_for_target_loc(
             observations,
             target_info,
             goal_confidence=goal_confidence,
         )
-
-        return motor_goal_state
 
     def _compute_graph_mismatch(self):
         """Propose a point for the model to test.
@@ -729,13 +723,11 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             target_loc_id, surface_normal_mapping[0] : surface_normal_mapping[0] + 3
         ]
 
-        target_info = {
+        return {
             "hypothesis_to_test": mlh,
             "target_loc": target_loc,
             "target_surface_normal": target_surface_normal,
         }
-
-        return target_info
 
     def _compute_goal_confidence(
         self, lm_output_confidence, separation, space_size=1.0, confidence_weighting=0.1
@@ -766,9 +758,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         # goal_confidence = squashed_displacement + confidence_weighting
         # * lm_output_confidence
 
-        goal_confidence = lm_output_confidence
-
-        return goal_confidence
+        return lm_output_confidence
 
     def _compute_goal_state_for_target_loc(
         self, observations, target_info, goal_confidence=1.0
@@ -845,30 +835,6 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             "matching_step_when_output_goal_set": None,
         }
 
-        motor_goal_state = GoalState(
-            location=np.array(target_loc),
-            morphological_features={
-                # Note the hypothesis-testing policy does not specify the roll of the
-                # agent, because this is not relevant to the task
-                "pose_vectors": np.array(
-                    [
-                        (-1) * target_surface_normal_rotated,
-                        [np.nan, np.nan, np.nan],
-                        [np.nan, np.nan, np.nan],
-                    ]
-                ),
-                "pose_fully_defined": None,
-                "on_object": 1,
-            },
-            non_morphological_features=None,
-            confidence=goal_confidence,
-            use_state=True,
-            sender_id=self.parent_lm.learning_module_id,
-            sender_type="GSG",
-            goal_tolerances=None,
-            info=info,
-        )
-
         # TODO M consider also using the below sensor-predicted state as an additional
         # evalaution of how much we have achieved our goal, i.e. consistent with the
         # object we thought we were on; could have more detailed information using the
@@ -896,7 +862,29 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         #     goal_tolerances=None,
         # )
 
-        return motor_goal_state
+        return GoalState(
+            location=np.array(target_loc),
+            morphological_features={
+                # Note the hypothesis-testing policy does not specify the roll of the
+                # agent, because this is not relevant to the task
+                "pose_vectors": np.array(
+                    [
+                        (-1) * target_surface_normal_rotated,
+                        [np.nan, np.nan, np.nan],
+                        [np.nan, np.nan, np.nan],
+                    ]
+                ),
+                "pose_fully_defined": None,
+                "on_object": 1,
+            },
+            non_morphological_features=None,
+            confidence=goal_confidence,
+            use_state=True,
+            sender_id=self.parent_lm.learning_module_id,
+            sender_type="GSG",
+            goal_tolerances=None,
+            info=info,
+        )
 
     def _check_need_new_output_goal(self, output_goal_achieved) -> bool:
         """Determine whether the GSG should generate a new output goal-state.

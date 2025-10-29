@@ -309,10 +309,9 @@ def get_custom_distances(nearest_node_locs, search_locs, search_sns, search_curv
     # To have a minimum wiggle room above and below the plane, even if we have 0
     # curvature (and to avoid division by 0) we add 0.5 to the denominator.
     # shape=(num_hyp, max_nneighbors).
-    custom_nearest_node_dists = euclidean_dists + np.abs(dot_products) * (
+    return euclidean_dists + np.abs(dot_products) * (
         1 / (np.abs(search_curvature) + 0.5)
     )
-    return custom_nearest_node_dists
 
 
 # ====== Functions for detecting on new object ======
@@ -334,8 +333,7 @@ def create_exponential_kernel(size, decay_rate):
     # Index so that exponential kernel applies 1.0 to the
     # most recent evidence change (i.e. full weighting)
     indices = np.arange(start=size - 1, stop=-1, step=-1)
-    kernel = np.exp(-decay_rate * indices)
-    return kernel
+    return np.exp(-decay_rate * indices)
 
 
 def detect_new_object_exponential(

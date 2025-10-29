@@ -61,5 +61,4 @@ class MotorSystem:
         Returns:
             The action to take.
         """
-        actions = self._policy(self._state)
-        return actions
+        return self._policy(self._state)

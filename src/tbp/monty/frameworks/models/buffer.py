@@ -223,13 +223,12 @@ class FeatureAtLocationBuffer(BaseBuffer):
         channel_pose = sensed_pose_features[input_channel]["pose_vectors"].reshape(
             (3, 3)
         )
-        sensed_pose = np.vstack(
+        return np.vstack(
             [
                 sensed_location,
                 channel_pose,
             ]
         )
-        return sensed_pose
 
     def get_last_obs_processed(self):
         """Check whether last sensation was processed by LM.
@@ -442,14 +441,13 @@ class FeatureAtLocationBuffer(BaseBuffer):
 
     def get_infos_for_graph_update(self):
         """Return all stored infos require to update a graph in memory."""
-        infos = dict(
+        return dict(
             locations=self.get_all_locations_on_object(),
             features=self.get_all_features_on_object(),
             object_location_rel_body=self.stats["detected_location_rel_body"],
             location_rel_model=self.stats["detected_location_on_model"],
             object_scale=self.stats["detected_scale"],
         )
-        return infos
 
     def get_first_sensory_input_channel(self):
         """Get name of first sensory (coming from SM) input channel in buffer.

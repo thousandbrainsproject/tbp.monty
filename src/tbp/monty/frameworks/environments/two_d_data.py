@@ -143,7 +143,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             self.patch_size,
         )
         depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
-        obs = {
+        return {
             AgentID("agent_id_0"): {
                 "patch": {
                     "depth": depth,
@@ -158,12 +158,11 @@ class OmniglotEnvironment(EmbodiedEnvironment):
                 },
             }
         }
-        return obs
 
     def get_state(self):
         loc = self.locations[self.step_num % self.max_steps]
         sensor_position = np.array([loc[0], loc[1], 0])
-        state = {
+        return {
             AgentID("agent_id_0"): {
                 "sensors": {
                     "patch" + ".depth": {
@@ -179,7 +178,6 @@ class OmniglotEnvironment(EmbodiedEnvironment):
                 "position": np.array([0, 0, 0]),
             }
         }
-        return state
 
     def switch_to_object(self, alphabet_id, character_id, version_id):
         self.current_alphabet = self.alphabet_names[alphabet_id]
@@ -200,7 +198,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             self.current_image, self.locations[self.step_num], self.patch_size
         )
         depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
-        obs = {
+        return {
             AgentID("agent_id_0"): {
                 "patch": {
                     "depth": depth,
@@ -215,7 +213,6 @@ class OmniglotEnvironment(EmbodiedEnvironment):
                 },
             }
         }
-        return obs
 
     def load_new_character_data(self):
         img_char_dir = os.path.join(
@@ -254,8 +251,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         stopx = loc[1] + patch_size // 2
         starty = loc[0] - patch_size // 2
         stopy = loc[0] + patch_size // 2
-        patch = img[startx:stopx, starty:stopy]
-        return patch
+        return img[startx:stopx, starty:stopy]
 
     def motor_to_locations(self, motor):
         motor = [d[:, 0:2] for d in motor]
@@ -377,7 +373,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             depth3d_patch,
             sensor_frame_patch,
         ) = self.get_image_patch(self.current_loc)
-        obs = {
+        return {
             AgentID("agent_id_0"): {
                 "patch": {
                     "depth": depth_patch,
@@ -393,7 +389,6 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
                 },
             }
         }
-        return obs
 
     def get_state(self):
         """Get agent state.
@@ -407,7 +402,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         sensor_position = self.get_3d_coordinates_from_pixel_indices(loc[:2])
 
         # NOTE: This is super hacky and only works for 1 agent with 1 sensor
-        state = {
+        return {
             AgentID("agent_id_0"): {
                 "sensors": {
                     "patch" + ".depth": {
@@ -423,7 +418,6 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
                 "position": np.array([0, 0, 0]),
             }
         }
-        return state
 
     def switch_to_object(self, scene_id, scene_version_id):
         """Load new image to be used as environment."""
@@ -465,7 +459,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         ) = self.get_image_patch(
             self.current_loc,
         )
-        obs = {
+        return {
             AgentID("agent_id_0"): {
                 "patch": {
                     "depth": depth_patch,
@@ -481,7 +475,6 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
                 },
             }
         }
-        return obs
 
     def load_new_scene_data(self):
         """Load depth and rgb data for next scene environment.
@@ -515,8 +508,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         Returns:
             The depth image.
         """
-        depth = np.fromfile(depth_path, np.float32).reshape(height, width)
-        return depth
+        return np.fromfile(depth_path, np.float32).reshape(height, width)
 
     def process_depth_data(self, depth):
         """Process depth data by reshaping, clipping and flipping.
@@ -535,8 +527,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         # in here we also have to comment in the flipping in the rgb image and probably
         # flip left-right. It may be better to flip the image in the app, depending on
         # sensor orientation (TODO).
-        current_depth_image = depth_clipped  # np.flipud(depth_clipped)
-        return current_depth_image
+        return depth_clipped  # np.flipud(depth_clipped)
 
     def load_rgb_data(self, rgb_path):
         """Load RGB image and put into np array.
@@ -544,10 +535,9 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         Returns:
             The rgb image.
         """
-        current_rgb_image = np.array(
+        return np.array(
             PIL.Image.open(rgb_path)  # .transpose(PIL.Image.FLIP_TOP_BOTTOM)
         )
-        return current_rgb_image
 
     def get_3d_scene_point_cloud(self):
         """Turn 2D depth image into 3D pointcloud using DepthTo3DLocations.
@@ -617,8 +607,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             The 3D coordinates of the pixel.
         """
         [i, j] = pixel_idx
-        loc_3d = np.array(self.current_scene_point_cloud[i, j, :3])
-        return loc_3d
+        return np.array(self.current_scene_point_cloud[i, j, :3])
 
     def get_move_area(self):
         """Calculate area in which patch can move on the image.
@@ -628,13 +617,12 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         """
         obs_shape = self.current_depth_image.shape
         half_patch_size = self.patch_size // 2 + 1
-        move_area = np.array(
+        return np.array(
             [
                 [half_patch_size, obs_shape[0] - half_patch_size],
                 [half_patch_size, obs_shape[1] - half_patch_size],
             ]
         )
-        return move_area
 
     def get_next_loc(self, action_name, amount):
         """Calculate next location in pixel space given the current action.
@@ -816,8 +804,7 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
 # TODO: integrate better and maybe rewrite
 def load_img(fn):
     img = plt.imread(fn)
-    img = np.array(img, dtype=bool)
-    return img
+    return np.array(img, dtype=bool)
 
 
 def load_motor(fn):
