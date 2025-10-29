@@ -12,7 +12,7 @@ from __future__ import annotations
 import abc
 import collections.abc
 from dataclasses import dataclass
-from typing import Any, Dict, NewType, Optional, Sequence, Tuple
+from typing import Any, Dict, NewType, Sequence, Tuple
 
 from tbp.monty.frameworks.actions.actions import Action
 
@@ -68,7 +68,7 @@ class EmbodiedEnvironment(abc.ABC):
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: SemanticID | None = None,
-        enable_physics: Optional[bool] = False,
+        enable_physics: bool | None = False,
         object_to_avoid=False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectID:
