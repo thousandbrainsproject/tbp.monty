@@ -78,7 +78,8 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         Returns:
             The number of total steps taken in the episode.
         """
-        for loader_step, observation in enumerate(self.env_interface):
+        for loader_step, observation in enumerate(self.dataloader):
+            print("loader_step", loader_step)
             if self.show_sensor_output:
                 is_saccade_on_image_data_loader = isinstance(
                     self.env_interface, SaccadeOnImageEnvironmentInterface

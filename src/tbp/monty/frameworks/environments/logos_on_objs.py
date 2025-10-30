@@ -22,6 +22,11 @@ LOGOS = ["021_logo_tbp", "022_logo_numenta"]
 
 FLAT_OBJECTS_WITHOUT_LOGOS = ["001_cube", "006_disk"]
 
+OBJECTS_WITH_LOGOS_LVL1_DISK = [
+    "007_disk_tbp_horz",
+    "009_disk_numenta_horz",
+]
+
 OBJECTS_WITH_LOGOS_LVL1 = [
     "002_cube_tbp_horz",
     "004_cube_numenta_horz",

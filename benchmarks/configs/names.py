@@ -116,14 +116,26 @@ class LogosExperiments:
 
 @dataclass
 class MyExperiments:
-    supervised_pretraining_lvl1_standard_control: dict
-    supervised_pretraining_lvl1_standard_2d_sensor: dict
-    supervised_pretraining_lvl1_oblique_control: dict
-    supervised_pretraining_lvl1_oblique_2d_sensor: dict
-    supervised_pretraining_lvl1_upsidedown_control: dict
-    supervised_pretraining_lvl1_upsidedown_2d_sensor: dict
-    supervised_pretraining_angles_standard_control: dict
-    supervised_pretraining_angles_standard_2d_sensor: dict
+    lvl1_standard_control: dict
+    lvl1_standard_2d_sensor: dict
+    lvl1_oblique_control: dict
+    lvl1_oblique_2d_sensor: dict
+    lvl1_upsidedown_control: dict
+    lvl1_upsidedown_2d_sensor: dict
+    angles_standard_control: dict
+    angles_standard_2d_sensor: dict
+    angles_oblique_control: dict
+    angles_oblique_2d_sensor: dict
+
+
+@dataclass
+class DiskExperiments:
+    disk_learning_control: dict
+    disk_learning_2d: dict
+    disk_inference_control_on_control: dict
+    disk_inference_control_on_2d: dict
+    disk_inference_2d_on_control: dict
+    disk_inference_2d_on_2d: dict
 
 
 current_module = sys.modules[__name__]

@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import trimesh
 from vedo import Plotter, Points, Line, Arrow, Mesh
+from matplotlib.colors import hsv_to_rgb
 
 
 def _normalize_rows(V, eps=1e-12):
@@ -145,6 +146,51 @@ def visualize_point_cloud_interactive(
     mesh_visible = False
     mesh_objects = []
 
+    # State variables for color mode
+    # 0 = Hue (full saturation), 1 = HSV->RGB (actual values), 2 = RGBA
+    color_mode = 0 if "hsv" in features else 2
+    point_cloud_obj = None
+
+    def toggle_color_mode_callback(button, _event):
+        """Toggle between hue, HSV->RGB, and RGBA coloring."""
+        nonlocal color_mode, point_cloud_obj
+
+        # Cycle through available modes
+        if "hsv" in features and "rgba" in features:
+            color_mode = (color_mode + 1) % 3
+        elif "hsv" in features:
+            color_mode = (color_mode + 1) % 2
+        elif "rgba" in features:
+            color_mode = 2
+
+        button.switch()
+
+        if point_cloud_obj is not None:
+            if color_mode == 0 and "hsv" in features:
+                # Mode 0: Hue only (full saturation and value)
+                hsv_data = features["hsv"]
+                hue = hsv_data[:, 0]
+                n_points = len(hue)
+                hsv_for_display = np.zeros((n_points, 3))
+                hsv_for_display[:, 0] = hue
+                hsv_for_display[:, 1] = 1.0
+                hsv_for_display[:, 2] = 1.0
+                rgb_colors = hsv_to_rgb(hsv_for_display)
+                colors = (rgb_colors * 255).astype(np.uint8).tolist()
+                point_cloud_obj.pointcolors = colors
+            elif color_mode == 1 and "hsv" in features:
+                # Mode 1: Full HSV to RGB conversion
+                hsv_data = features["hsv"]
+                rgb_colors = hsv_to_rgb(hsv_data)
+                colors = (rgb_colors * 255).astype(np.uint8).tolist()
+                point_cloud_obj.pointcolors = colors
+            elif color_mode == 2 and "rgba" in features:
+                # Mode 2: RGBA coloring
+                colors = features["rgba"][:, :3].astype(np.uint8).tolist()
+                point_cloud_obj.pointcolors = colors
+
+        plotter.render()
+
     def toggle_surface_normals_callback(button, _event):
         """Toggle visibility of surface normal arrows."""
         nonlocal surface_normals_visible, surface_normal_arrows
@@ -178,14 +224,34 @@ def visualize_point_cloud_interactive(
     plotter = Plotter(size=(1400, 1000), title=title or "Learned Point Cloud")
 
     # ----- Point colors -----
-    if "rgba" in features and features["rgba"].shape[1] >= 3:
+    if "hsv" in features:
+        # Use hue component from HSV
+        hsv_data = features["hsv"]
+        hue = hsv_data[:, 0]  # Extract hue (first channel)
+
+        # Convert hue to RGB colors for visualization
+        # Create HSV array with full saturation and value to show pure hue colors
+        n_points = len(hue)
+        hsv_for_display = np.zeros((n_points, 3))
+        hsv_for_display[:, 0] = hue  # Hue
+        hsv_for_display[:, 1] = 1.0  # Full saturation
+        hsv_for_display[:, 2] = 1.0  # Full value/brightness
+
+        # Convert to RGB (0-255 range for vedo)
+        rgb_colors = hsv_to_rgb(hsv_for_display)
+        colors = (rgb_colors * 255).astype(np.uint8).tolist()
+
+        point_cloud_obj = Points(points, r=10)
+        point_cloud_obj.pointcolors = colors
+        plotter.add(point_cloud_obj)
+    elif "rgba" in features and features["rgba"].shape[1] >= 3:
         colors = features["rgba"][:, :3].astype(np.uint8).tolist()
-        point_cloud = Points(points, r=10)
-        point_cloud.pointcolors = colors
-        plotter.add(point_cloud)
+        point_cloud_obj = Points(points, r=10)
+        point_cloud_obj.pointcolors = colors
+        plotter.add(point_cloud_obj)
     else:
-        point_cloud = Points(points, r=10).color("gray")
-        plotter.add(point_cloud)
+        point_cloud_obj = Points(points, r=10).color("gray")
+        plotter.add(point_cloud_obj)
 
     # ----- Collect 3D edge tangents (WORLD frame) -----
     tangents = None
@@ -273,6 +339,24 @@ def visualize_point_cloud_interactive(
             toggle_mesh_callback,
             pos=(0.85, 0.12),
             states=[" Show Mesh ", " Hide Mesh "],
+            size=20,
+            font="Calco",
+        )
+
+    # ----- Add color mode toggle button -----
+    if "hsv" in features and "rgba" in features:
+        color_mode_button = plotter.add_button(
+            toggle_color_mode_callback,
+            pos=(0.85, 0.19),
+            states=[" Hue ", " HSV→RGB ", " RGBA "],
+            size=20,
+            font="Calco",
+        )
+    elif "hsv" in features:
+        color_mode_button = plotter.add_button(
+            toggle_color_mode_callback,
+            pos=(0.85, 0.19),
+            states=[" Hue ", " HSV→RGB "],
             size=20,
             font="Calco",
         )
@@ -411,8 +495,8 @@ def _add_mesh(plotter, mesh, mesh_translation, mesh_objects):
 if __name__ == "__main__":
     # Set up paths
     pretrained_model_path = Path(
-        "~/tbp/results/monty/pretrained_models/pretrained_ycb_v10/"
-        "supervised_pretraining_angles_standard_2d_sensor/pretrained/model.pt"
+        "~/tbp/results/monty/pretrained_models/2d_sensor/"
+        "disk_learning_standard_control/pretrained/model.pt"
     ).expanduser()
 
     # Load the model to explore available objects

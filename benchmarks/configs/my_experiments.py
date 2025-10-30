@@ -16,12 +16,12 @@ from benchmarks.configs.pretraining_experiments import supervised_pre_training_b
 from tbp.monty.frameworks.config_utils.config_args import (
     MotorSystemConfigNaiveScanSpiral,
     PatchAndViewMontyConfig,
-    get_cube_face_and_corner_views_rotations,
+    PretrainLoggingConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
-    ExperimentArgs,
     PredefinedObjectInitializer,
+    SupervisedPretrainingExperimentArgs,
     get_object_names_by_idx,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
@@ -39,10 +39,17 @@ from tbp.monty.simulators.habitat.configs import (
     PatchViewFinderMountHabitatDatasetArgs,
 )
 
-train_rotations_all = get_cube_face_and_corner_views_rotations()
+# Define the output directory for 2D sensor models
+monty_models_dir = os.getenv("MONTY_MODELS", "")
+fe_pretrain_dir = os.path.expanduser(os.path.join(monty_models_dir, "2d_sensor"))
 
 # Consolidated constants
-POSITIONS = [
+LVL1_POSITIONS = [
+    [0.0, 1.5, 0.0],
+    [-0.03, 1.5, 0.0],
+    [0.03, 1.5, 0.0],
+]
+ANGLES_POSITIONS = [
     [0.0, 1.5, 0.0],
     [-0.03, 1.5, 0.0],
     [0.03, 1.5, 0.0],
@@ -53,8 +60,6 @@ POSITIONS = [
     [-0.03, 1.47, 0.0],
     [0.03, 1.47, 0.0],
 ]
-LVL1_ROTATIONS = [[10, -15, 0]]
-UPSIDEDOWN_ROTATIONS = [[0, 0, 180]]
 
 
 # Helper functions for common config patterns
@@ -146,17 +151,17 @@ def make_lvl1_experiment_pair(rotation_name, rotations, debug_subdir=None):
 
     # Create control experiment
     control_config = copy.deepcopy(supervised_pre_training_base)
-    control_config[
-        "logging_config"
-    ].run_name = f"supervised_pretraining_lvl1_{rotation_name}_control"
     control_config.update(
-        experiment_args=ExperimentArgs(
-            n_train_epochs=len(POSITIONS) * len(rotations),
-            do_eval=False,
+        logging_config=PretrainLoggingConfig(
+            output_dir=fe_pretrain_dir,
+            run_name=f"lvl1_{rotation_name}_control",
+        ),
+        experiment_args=SupervisedPretrainingExperimentArgs(
+            n_train_epochs=len(LVL1_POSITIONS) * len(rotations),
         ),
         dataset_args=make_compositional_dataset_args(),
         train_dataloader_args=make_object_dataloader_args(
-            OBJECTS_WITH_LOGOS_LVL1, POSITIONS, rotations
+            OBJECTS_WITH_LOGOS_LVL1, LVL1_POSITIONS, rotations
         ),
         monty_config=PatchAndViewMontyConfig(
             motor_system_config=make_naive_scan_motor_config(step_size=1),
@@ -165,10 +170,11 @@ def make_lvl1_experiment_pair(rotation_name, rotations, debug_subdir=None):
 
     # Create 2D sensor experiment
     sensor_2d_config = copy.deepcopy(control_config)
-    sensor_2d_config[
-        "logging_config"
-    ].run_name = f"supervised_pretraining_lvl1_{rotation_name}_2d_sensor"
     sensor_2d_config.update(
+        logging_config=PretrainLoggingConfig(
+            output_dir=fe_pretrain_dir,
+            run_name=f"lvl1_{rotation_name}_2d_sensor",
+        ),
         monty_config=PatchAndViewMontyConfig(
             motor_system_config=make_naive_scan_motor_config(step_size=1),
             sensor_module_configs=dict(
@@ -211,13 +217,14 @@ lvl1_upsidedown_control, lvl1_upsidedown_2d = make_lvl1_experiment_pair(
 )
 
 
-def make_angles_experiment_pair(rotation_name, rotations, debug_subdir=None):
+def make_angles_experiment_pair(rotation_name, rotations, debug_subdir=None, step_size=1):
     """Create a pair of ANGLES experiments (control + 2D sensor) with rotations.
 
     Args:
         rotation_name: Name for the rotation set (e.g., "standard").
         rotations: List of rotation configurations.
         debug_subdir: Optional debug subdirectory name for 2D sensor.
+        step_size: Step size for the naive scan motor policy (default: 1).
 
     Returns:
         tuple: (control_config, 2d_sensor_config) experiment dictionaries.
@@ -227,29 +234,30 @@ def make_angles_experiment_pair(rotation_name, rotations, debug_subdir=None):
 
     # Create control experiment
     control_config = copy.deepcopy(supervised_pre_training_base)
-    control_config[
-        "logging_config"
-    ].run_name = f"supervised_pretraining_angles_{rotation_name}_control"
     control_config.update(
-        experiment_args=ExperimentArgs(
-            n_train_epochs=len(POSITIONS) * len(rotations),
-            do_eval=False,
+        logging_config=PretrainLoggingConfig(
+            output_dir=fe_pretrain_dir,
+            run_name=f"angles_{rotation_name}_control",
+        ),
+        experiment_args=SupervisedPretrainingExperimentArgs(
+            n_train_epochs=len(ANGLES_POSITIONS) * len(rotations),
         ),
         dataset_args=make_compositional_dataset_args(),
-        train_dataloader_args=make_object_dataloader_args(ANGLES, POSITIONS, rotations),
+        train_dataloader_args=make_object_dataloader_args(ANGLES, ANGLES_POSITIONS, rotations),
         monty_config=PatchAndViewMontyConfig(
-            motor_system_config=make_naive_scan_motor_config(step_size=1),
+            motor_system_config=make_naive_scan_motor_config(step_size=step_size),
         ),
     )
 
     # Create 2D sensor experiment
     sensor_2d_config = copy.deepcopy(control_config)
-    sensor_2d_config[
-        "logging_config"
-    ].run_name = f"supervised_pretraining_angles_{rotation_name}_2d_sensor"
     sensor_2d_config.update(
+        logging_config=PretrainLoggingConfig(
+            output_dir=fe_pretrain_dir,
+            run_name=f"angles_{rotation_name}_2d_sensor",
+        ),
         monty_config=PatchAndViewMontyConfig(
-            motor_system_config=make_naive_scan_motor_config(step_size=1),
+            motor_system_config=make_naive_scan_motor_config(step_size=step_size),
             sensor_module_configs=dict(
                 sensor_module_0=make_2d_sensor_module_config(
                     debug_save_dir=os.path.join(
@@ -275,18 +283,23 @@ def make_angles_experiment_pair(rotation_name, rotations, debug_subdir=None):
 # Angles
 #
 angles_standard_control, angles_standard_2d = make_angles_experiment_pair(
-    "standard", [[0.0, 0.0, 0.0]], debug_subdir="30_angles_yb"
+    "step_size_3", [[0.0, 0.0, 0.0]], debug_subdir="30_angles_yb_ss3", step_size=3
 )
 
+angles_oblique_control, angles_oblique_2d = make_angles_experiment_pair(
+    "oblique", [[0, 0, 0], [10, -15, 0]], debug_subdir="30_angles_yb_rotations"
+)
 
 experiments = MyExperiments(
-    supervised_pretraining_lvl1_standard_control=lvl1_standard_control,
-    supervised_pretraining_lvl1_standard_2d_sensor=lvl1_standard_2d,
-    supervised_pretraining_lvl1_oblique_control=lvl1_oblique_control,
-    supervised_pretraining_lvl1_oblique_2d_sensor=lvl1_oblique_2d,
-    supervised_pretraining_lvl1_upsidedown_control=lvl1_upsidedown_control,
-    supervised_pretraining_lvl1_upsidedown_2d_sensor=lvl1_upsidedown_2d,
-    supervised_pretraining_angles_standard_control=angles_standard_control,
-    supervised_pretraining_angles_standard_2d_sensor=angles_standard_2d,
+    lvl1_standard_control=lvl1_standard_control,
+    lvl1_standard_2d_sensor=lvl1_standard_2d,
+    lvl1_oblique_control=lvl1_oblique_control,
+    lvl1_oblique_2d_sensor=lvl1_oblique_2d,
+    lvl1_upsidedown_control=lvl1_upsidedown_control,
+    lvl1_upsidedown_2d_sensor=lvl1_upsidedown_2d,
+    angles_standard_control=angles_standard_control,
+    angles_standard_2d_sensor=angles_standard_2d,
+    angles_oblique_control=angles_oblique_control,
+    angles_oblique_2d_sensor=angles_oblique_2d,
 )
 CONFIGS = asdict(experiments)
