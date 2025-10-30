@@ -242,7 +242,6 @@ ignore = [
     "G003", # G003: Logging statement uses `+`
     "G004", # G004: Logging statement uses f-string
     "ISC001", # ISC001: Implicitly concatenated string literals on one line
-    "ISC003", # ISC003: Explicitly concatenated string should be implicitly concatenated
     "N804", # N804: First argument of a class method should be named `cls`
     "NPY002", # NPY002: Replace legacy `np.random.normal` call with `np.random.Generator`
     "PD002", # PD002: `inplace=True` should be avoided; it has inconsistent behavior
