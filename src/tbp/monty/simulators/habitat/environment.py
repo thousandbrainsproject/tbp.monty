@@ -10,13 +10,15 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Dict, List, Optional, Sequence, Type
+from typing import Dict, List, Sequence, Type
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
     ActionSpace,
     EmbodiedEnvironment,
+    ObjectID,
     QuaternionWXYZ,
+    SemanticID,
     VectorXYZ,
 )
 from tbp.monty.frameworks.utils.dataclass_utils import create_dataclass_args
@@ -26,7 +28,6 @@ from tbp.monty.simulators.habitat import (
     MultiSensorAgent,
     SingleSensorAgent,
 )
-from tbp.monty.simulators.habitat.environment_utils import get_bounding_corners
 
 __all__ = [
     "AgentConfig",
@@ -102,10 +103,10 @@ class HabitatEnvironment(EmbodiedEnvironment):
     def __init__(
         self,
         agents: List[dict | AgentConfig],
-        objects: Optional[List[dict | ObjectConfig]] = None,
-        scene_id: Optional[str] = None,
+        objects: List[dict | ObjectConfig] | None = None,
+        scene_id: str | None = None,
         seed: int = 42,
-        data_path: Optional[str] = None,
+        data_path: str | None = None,
     ):
         super().__init__()
         self._agents = []
@@ -140,19 +141,11 @@ class HabitatEnvironment(EmbodiedEnvironment):
         position: VectorXYZ = (0.0, 0.0, 0.0),
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
-        semantic_id: Optional[str] = None,
+        semantic_id: SemanticID | None = None,
         enable_physics=False,
         object_to_avoid=False,
-        primary_target_object=None,
-    ):
-        primary_target_bb = None
-        if primary_target_object is not None:
-            # TODO It may be worth memoizing this result. If we are adding multiple
-            #      objects to the scene, we may be calling this function multiple times
-            #      for the same primary target object.
-            min_corner, max_corner = get_bounding_corners(primary_target_object)
-            primary_target_bb = [min_corner, max_corner]
-
+        primary_target_object: ObjectID | None = None,
+    ) -> ObjectID:
         return self._env.add_object(
             name,
             position,
@@ -161,8 +154,8 @@ class HabitatEnvironment(EmbodiedEnvironment):
             semantic_id,
             enable_physics,
             object_to_avoid,
-            primary_target_bb=primary_target_bb,
-        )
+            primary_target_object,
+        ).object_id
 
     def step(self, actions: Sequence[Action]) -> Dict[str, Dict]:
         return self._env.apply_actions(actions)

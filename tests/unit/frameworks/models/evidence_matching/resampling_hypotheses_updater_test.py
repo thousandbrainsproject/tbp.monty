@@ -118,10 +118,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
 
     def _graph_node_count(self, rlm, graph_id):
         """Returns the number of graph points on a specific graph object."""
-        graph_num_points = rlm.graph_memory.get_locations_in_graph(
-            graph_id, "patch"
-        ).shape[0]
-        return graph_num_points
+        return rlm.graph_memory.get_locations_in_graph(graph_id, "patch").shape[0]
 
     def _num_hyps_multiplier(self, rlm, pose_defined):
         """Returns the expected hyps multiplier based on Principal curvatures."""

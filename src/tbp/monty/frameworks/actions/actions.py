@@ -555,85 +555,100 @@ class ActionJSONDecoder(JSONDecoder):
     def object_hook(self, obj: dict[str, Any]) -> Any:
         if "action" not in obj:
             raise ValueError("Invalid action object: missing 'action' key.")
+
         action = obj["action"]
+
         if action == LookDown.action_name():
             return LookDown(
                 agent_id=obj["agent_id"],
                 rotation_degrees=obj["rotation_degrees"],
                 constraint_degrees=obj["constraint_degrees"],
             )
-        elif action == LookUp.action_name():
+
+        if action == LookUp.action_name():
             return LookUp(
                 agent_id=obj["agent_id"],
                 rotation_degrees=obj["rotation_degrees"],
                 constraint_degrees=obj["constraint_degrees"],
             )
-        elif action == MoveForward.action_name():
+
+        if action == MoveForward.action_name():
             return MoveForward(
                 agent_id=obj["agent_id"],
                 distance=obj["distance"],
             )
-        elif action == MoveTangentially.action_name():
+
+        if action == MoveTangentially.action_name():
             return MoveTangentially(
                 agent_id=obj["agent_id"],
                 distance=obj["distance"],
                 direction=tuple(obj["direction"]),
             )
-        elif action == OrientHorizontal.action_name():
+
+        if action == OrientHorizontal.action_name():
             return OrientHorizontal(
                 agent_id=obj["agent_id"],
                 rotation_degrees=obj["rotation_degrees"],
                 left_distance=obj["left_distance"],
                 forward_distance=obj["forward_distance"],
             )
-        elif action == OrientVertical.action_name():
+
+        if action == OrientVertical.action_name():
             return OrientVertical(
                 agent_id=obj["agent_id"],
                 rotation_degrees=obj["rotation_degrees"],
                 down_distance=obj["down_distance"],
                 forward_distance=obj["forward_distance"],
             )
-        elif action == SetAgentPitch.action_name():
+
+        if action == SetAgentPitch.action_name():
             return SetAgentPitch(
                 agent_id=obj["agent_id"],
                 pitch_degrees=obj["pitch_degrees"],
             )
-        elif action == SetAgentPose.action_name():
+
+        if action == SetAgentPose.action_name():
             return SetAgentPose(
                 agent_id=obj["agent_id"],
                 location=tuple(obj["location"]),
                 rotation_quat=tuple(obj["rotation_quat"]),
             )
-        elif action == SetSensorPitch.action_name():
+
+        if action == SetSensorPitch.action_name():
             return SetSensorPitch(
                 agent_id=obj["agent_id"],
                 pitch_degrees=obj["pitch_degrees"],
             )
-        elif action == SetSensorPose.action_name():
+
+        if action == SetSensorPose.action_name():
             return SetSensorPose(
                 agent_id=obj["agent_id"],
                 location=tuple(obj["location"]),
                 rotation_quat=tuple(obj["rotation_quat"]),
             )
-        elif action == SetSensorRotation.action_name():
+
+        if action == SetSensorRotation.action_name():
             return SetSensorRotation(
                 agent_id=obj["agent_id"],
                 rotation_quat=tuple(obj["rotation_quat"]),
             )
-        elif action == SetYaw.action_name():
+
+        if action == SetYaw.action_name():
             return SetYaw(
                 agent_id=obj["agent_id"],
                 rotation_degrees=obj["rotation_degrees"],
             )
-        elif action == TurnLeft.action_name():
+
+        if action == TurnLeft.action_name():
             return TurnLeft(
                 agent_id=obj["agent_id"],
                 rotation_degrees=obj["rotation_degrees"],
             )
-        elif action == TurnRight.action_name():
+
+        if action == TurnRight.action_name():
             return TurnRight(
                 agent_id=obj["agent_id"],
                 rotation_degrees=obj["rotation_degrees"],
             )
-        else:
-            raise ValueError(f"Invalid action object: unknown action '{action}'.")
+
+        raise ValueError(f"Invalid action object: unknown action '{action}'.")

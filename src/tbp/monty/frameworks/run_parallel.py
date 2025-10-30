@@ -7,13 +7,15 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import copy
 import os
+import re
 import shutil
 import time
 from pathlib import Path
-from typing import Iterable, List, Mapping, Optional
+from typing import Iterable, List, Mapping
 
 import numpy as np
 import pandas as pd
@@ -62,6 +64,12 @@ Assumptions and notes:
 """
 
 
+RE_OPEN_LEFT = re.compile(r"^:(\d+)$")  # ":N"
+RE_OPEN_RIGHT = re.compile(r"^(\d+):$")  # "N:"
+RE_CLOSED = re.compile(r"^(\d+)\s*:\s*(\d+)$")  # "A:B"
+RE_SINGLE = re.compile(r"^\d+$")  # "N"
+
+
 def single_train(config):
     os.makedirs(config["logging_config"]["output_dir"], exist_ok=True)
     with config["experiment_class"](config) as exp:
@@ -75,8 +83,7 @@ def single_evaluate(config):
         print("---------evaluating---------")
         exp.evaluate()
         if config["logging_config"]["log_parallel_wandb"]:
-            eval_stats = get_episode_stats(exp, "eval")
-            return eval_stats
+            return get_episode_stats(exp, "eval")
 
 
 def get_episode_stats(exp, mode):
@@ -469,6 +476,97 @@ def run_episodes_parallel(
         f.write(f"total_time: {total_time}")
 
 
+def parse_episode_spec(episode_spec: str | None, total: int) -> List[int]:
+    """Parses a zero-based episode selection string into episode indices.
+
+    Converts a human-friendly selection string into a sorted list of unique,
+    zero-based episode indices in the half-open interval `[0, total)`.
+    The parser supports single indices and Python-slice-like ranges using
+    a colon (`:`), with the end index exclusive.
+
+    Args:
+        episode_spec: Selection string describing which episodes to run.
+            See supported forms.
+        total: Total number of episodes. Must be non-negative.
+
+    Supported forms:
+      - `"all"`, `":"`, or empty string: select all valid indices `[0, total)`
+      - Comma-separated integers and ranges, for example `"0,3,5:8"`
+      - Open-ended ranges (end-exclusive):
+          - `":N"` selects `[0, N)` (i.e., indices `0` through `N-1`)
+          - `"N:"` selects `[N, total)`
+
+    Notes:
+      - Ranges are validated, not clamped. If a range falls outside `[0, total)`,
+        or is otherwise malformed, a `ValueError` is raised.
+      - Duplicates are eliminated; the result is returned in ascending order.
+
+    Returns:
+        A sorted list of unique zero-based indices within `[0, total)` that match
+        the selection described by `episode_spec`.
+
+    Raises:
+        ValueError: If the selection contains any invalid index or range.
+    """
+    if episode_spec is None:
+        return list(range(total))
+    s = episode_spec.strip().lower()
+    if s in ("", "all", ":"):
+        return list(range(total))
+
+    selected: set[int] = set()
+
+    for raw in s.split(","):
+        part = raw.strip()
+        if not part:
+            continue
+
+        m = RE_OPEN_LEFT.match(part)
+        if m:
+            idx_end = int(m.group(1))
+            if 0 < idx_end <= total:
+                selected.update(range(idx_end))
+                continue
+
+            raise ValueError(f"{m.group(0)} is not a valid range.")
+
+        m = RE_OPEN_RIGHT.match(part)
+        if m:
+            idx_start = int(m.group(1))
+            if 0 <= idx_start < total:
+                selected.update(range(idx_start, total))
+                continue
+
+            raise ValueError(f"{m.group(0)} is not a valid range.")
+
+        m = RE_CLOSED.match(part)
+        if m:
+            idx_start = int(m.group(1))
+            idx_end = int(m.group(2))
+            if 0 <= idx_start < idx_end and idx_start < idx_end <= total:
+                selected.update(range(idx_start, idx_end))
+                continue
+
+            raise ValueError(f"{m.group(0)} is not a valid range.")
+
+        if RE_SINGLE.match(part):
+            idx = int(part)
+            if 0 <= idx < total:
+                selected.add(idx)
+                continue
+
+            raise ValueError(f"{part} is not a valid index.")
+
+        raise ValueError(f"{part} is not a valid selection.")
+
+    return sorted(selected)
+
+
+def filter_episode_configs(configs: list[dict], episode_spec: str | None) -> list[dict]:
+    idxs = parse_episode_spec(episode_spec, len(configs))
+    return [cfg for i, cfg in enumerate(configs) if i in idxs]
+
+
 def generate_parallel_train_configs(
     exp: Mapping, experiment_name: str
 ) -> List[Mapping]:
@@ -603,10 +701,11 @@ def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> List[M
 
 
 def main(
-    all_configs: Optional[Mapping[str, Mapping]] = None,
-    exp: Optional[Mapping] = None,
-    experiment: Optional[str] = None,
-    num_parallel: Optional[int] = None,
+    all_configs: Mapping[str, Mapping] | None = None,
+    exp: Mapping | None = None,
+    experiment: str | None = None,
+    episodes: str = "all",
+    num_parallel: int | None = None,
     quiet_habitat_logs: bool = True,
     print_cfg: bool = False,
     is_unittest: bool = False,
@@ -646,6 +745,7 @@ def main(
             from command line as the config is selected from `all_configs`.
         experiment: Name of experiment to run. Not required if running
             from command line.
+        episodes: The episodes ids to run. Defaults to "all".
         num_parallel: Maximum number of parallel processes to run. If
             the config is broken into fewer parallel configs than `num_parallel`, then
             the actual number of processes will be equal to the number of parallel
@@ -688,6 +788,7 @@ def main(
         ), "parallel experiments only work (for now) with per object dataloaders"
 
         train_configs = generate_parallel_train_configs(exp, experiment)
+        train_configs = filter_episode_configs(train_configs, episodes)
         if print_cfg:
             print("Printing configs for spot checking")
             for cfg in train_configs:
@@ -707,6 +808,7 @@ def main(
         ), "parallel experiments only work (for now) with per object dataloaders"
 
         eval_configs = generate_parallel_eval_configs(exp, experiment)
+        eval_configs = filter_episode_configs(eval_configs, episodes)
         if print_cfg:
             print("Printing configs for spot checking")
             for cfg in eval_configs:

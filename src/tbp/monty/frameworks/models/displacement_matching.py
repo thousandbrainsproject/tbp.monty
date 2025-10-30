@@ -158,13 +158,9 @@ class DisplacementGraphLM(GraphLM):
         """
         try:
             if get_reverse_r:
-                r, msr = Rotation.align_vectors(
-                    sensed_displacements, model_displacements
-                )
+                r, _ = Rotation.align_vectors(sensed_displacements, model_displacements)
             else:
-                r, msr = Rotation.align_vectors(
-                    model_displacements, sensed_displacements
-                )
+                r, _ = Rotation.align_vectors(model_displacements, sensed_displacements)
         except UserWarning:
             # This can happen if the displacements that were sampled lie in one plane
             # such that we can not determine the rotation along all three axes.
@@ -181,8 +177,7 @@ class DisplacementGraphLM(GraphLM):
         Returns:
             The scale of the object.
         """
-        scale = np.linalg.norm(sensed_displacement) / np.linalg.norm(model_displacement)
-        return scale
+        return np.linalg.norm(sensed_displacement) / np.linalg.norm(model_displacement)
 
     # ------------------ Logging & Saving ----------------------
 
@@ -368,8 +363,8 @@ class DisplacementGraphLM(GraphLM):
 
         if len(self.possible_paths[graph_id]) == 0:
             return 0
-        else:
-            return 1
+
+        return 1
 
     def _get_prediction_error(self, predictions, target):
         """Calculate the prediction error (binary if not using features).

@@ -6,12 +6,17 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-from typing import Dict, List, Optional, Protocol, Sequence
+from __future__ import annotations
+
+from typing import Dict, Protocol, Sequence
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.embodied_environment import (
+    ObjectID,
+    ObjectInfo,
     QuaternionWXYZ,
+    SemanticID,
     VectorXYZ,
 )
 
@@ -39,11 +44,11 @@ class Simulator(Protocol):
         position: VectorXYZ = (0.0, 0.0, 0.0),
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
-        semantic_id: Optional[str] = None,
+        semantic_id: SemanticID | None = None,
         enable_physics: bool = False,
         object_to_avoid: bool = False,
-        primary_target_bb: Optional[List] = None,
-    ) -> None:
+        primary_target_object: ObjectID | None = None,
+    ) -> ObjectInfo:
         """Add new object to simulated environment.
 
         Adds a new object based on the named object. This assumes that the set of
@@ -58,9 +63,13 @@ class Simulator(Protocol):
             enable_physics: Whether to enable physics on the object.
             object_to_avoid: If True, ensure the object is not colliding with
               other objects.
-            primary_target_bb: If not None, this is a list of the min and
-              max corners of a bounding box for the primary object, used to prevent
-              obscuring the primary object with the new object.
+            primary_target_object: ID of the primary target object. If not None, the
+                added object will be positioned so that it does not obscure the initial
+                view of the primary target object (which avoiding collision alone cannot
+                guarantee). Used when adding multiple objects. Defaults to None.
+
+        Returns:
+            The added object's information.
         """
         ...
 

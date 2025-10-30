@@ -487,5 +487,4 @@ def make_multi_sensor_habitat_dataset_args(
     env_init_args = EnvInitArgsMultiLMMount()
     env_init_args.agents = [AgentConfig(MultiSensorAgent, mount_config)]
     env_init_args = env_init_args.__dict__
-    dataset_args = MultiLMMountHabitatDatasetArgs(env_init_args=env_init_args)
-    return dataset_args
+    return MultiLMMountHabitatDatasetArgs(env_init_args=env_init_args)

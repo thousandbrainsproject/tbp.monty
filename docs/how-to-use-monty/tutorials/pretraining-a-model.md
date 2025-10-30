@@ -248,7 +248,7 @@ This will take a few minutes to complete and then you can inspect and visualize 
 import os
 import matplotlib.pyplot as plt
 from tbp.monty.frameworks.utils.logging_utils import load_stats
-from tbp.monty.frameworks.utils.plot_utils import plot_graph
+from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 # Specify where pretraining data is stored.
 exp_path = os.path.expanduser("~/tbp/results/monty/projects/surf_agent_1lm_2obj")

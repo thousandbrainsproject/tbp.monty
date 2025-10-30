@@ -122,8 +122,8 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
     def should_get_episode(start, stop, episodes, counter):
         if episodes is not None:
             return counter in episodes
-        else:
-            return (counter >= start) and (counter < stop)
+
+        return (counter >= start) and (counter < stop)
 
     detailed_json = {}
     stop = stop or np.inf
@@ -157,11 +157,10 @@ def deserialize_json_chunks(json_file, start=0, stop=None, episodes=None):
 def get_object_graph_stats(graph_to_target, target_to_graph):
     n_objects_per_graph = [len(graph_to_target[k]) for k in graph_to_target.keys()]
     n_graphs_per_object = [len(target_to_graph[k]) for k in target_to_graph.keys()]
-    results = dict(
+    return dict(
         mean_objects_per_graph=np.mean(n_objects_per_graph),
         mean_graphs_per_object=np.mean(n_graphs_per_object),
     )
-    return results
 
 
 def matches_to_target_str(possible_matches, graph_to_target):
@@ -237,8 +236,7 @@ def get_unique_euler_poses(poses):
     for path_poses in poses:
         for pose in path_poses:
             all_poses.append(pose)
-    unique_poses = np.unique(all_poses, axis=0)
-    return unique_poses
+    return np.unique(all_poses, axis=0)
 
 
 def check_rotation_accuracy(stats, last_n_step=1):
@@ -444,8 +442,7 @@ def compute_pose_error(
     Returns:
         The minimum angular error in radians.
     """
-    error = np.min(compute_pose_errors(predicted_rotation, target_rotation))
-    return error
+    return np.min(compute_pose_errors(predicted_rotation, target_rotation))
 
 
 def get_overall_pose_error(stats, lm_id="LM_0"):
@@ -546,8 +543,8 @@ def calculate_tpr(tp, fn):
     """
     if (tp + fn) == 0:
         return None
-    else:
-        return tp / (tp + fn)
+
+    return tp / (tp + fn)
 
 
 def calculate_fpr(fp, tn):
@@ -562,8 +559,8 @@ def calculate_fpr(fp, tn):
     """
     if (fp + tn) == 0:
         return None
-    else:
-        return fp / (fp + tn)
+
+    return fp / (fp + tn)
 
 
 ###
@@ -872,7 +869,7 @@ def target_data_to_dict(target):
 
 
 def overall_accuracy(eval_stats):
-    acc = (
+    return (
         (
             len(eval_stats[eval_stats["primary_performance"] == "correct"])
             + len(eval_stats[eval_stats["primary_performance"] == "correct_mlh"])
@@ -880,7 +877,6 @@ def overall_accuracy(eval_stats):
         / len(eval_stats)
         * 100
     )
-    return acc
 
 
 def consistent_child_objects_accuracy(eval_stats_for_lm, parent_to_child_mapping):
@@ -917,8 +913,7 @@ def consistent_child_objects_accuracy(eval_stats_for_lm, parent_to_child_mapping
                 f"No mappings found for target object"
                 f" {episode_stats.primary_target_object}"
             )
-    consistent_child_percentage = consistent_child_count / total_count * 100
-    return consistent_child_percentage
+    return consistent_child_count / total_count * 100
 
 
 def accuracy_stats_for_compositional_objects(
@@ -1096,8 +1091,7 @@ def get_rgba_frames_single_sm(observations):
         # format according to wandb API: [time, channels, height, width]
         formatted_observations.append(np.moveaxis(rgba, [0, 1, 2], [1, 2, 0]))
 
-    formatted_observations = np.array(formatted_observations)
-    return formatted_observations
+    return np.array(formatted_observations)
 
 
 ###

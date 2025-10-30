@@ -196,7 +196,7 @@ import os
 import matplotlib.pyplot as plt
 import torch
 from tbp.monty.frameworks.models.object_model import GraphObjectModel
-from tbp.monty.frameworks.utils.plot_utils import plot_graph
+from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 
 def load_graph(exp_dir: str, epoch: int, object_name: str) -> GraphObjectModel:

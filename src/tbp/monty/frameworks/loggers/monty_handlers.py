@@ -107,13 +107,11 @@ class DetailedJSONHandler(MontyHandler):
         Returns:
             global_episode_id: Combined train+eval episode id.
         """
-        global_episode_id = (
+        return (
             kwargs[f"{mode}_episodes_to_total"][local_episode]
             if self.episode_id_parallel is None
             else self.episode_id_parallel
         )
-
-        return global_episode_id
 
     def get_detailed_stats(
         self,
@@ -320,8 +318,10 @@ class ReproduceEpisodeHandler(MontyHandler):
         action_file_path = os.path.join(self.data_dir, action_file)
         actions = data["BASIC"][f"{mode}_actions"][episode]
         with open(action_file_path, "w") as f:
-            for action in actions:
-                f.write(f"{json.dumps(action[0], cls=ActionJSONEncoder)}\n")
+            f.writelines(
+                f"{json.dumps(action[0], cls=ActionJSONEncoder)}\n"
+                for action in actions
+            )
 
         # Write data to object params / targets file
         object_file = f"{mode}_episode_{episode}_target.txt"

@@ -164,8 +164,8 @@ class GraphObjectModel(ObjectModel):
         """Return a string representation of the object."""
         if self._graph is not None:
             return self._graph.__repr__()
-        else:
-            return f"Model for {self.object_id}:\n   No graph stored yet."
+
+        return f"Model for {self.object_id}:\n   No graph stored yet."
 
     # ======================= Private ==========================
     # ------------------- Main Algorithm -----------------------
@@ -462,8 +462,8 @@ class GridObjectModel(GraphObjectModel):
 
         if return_distance:
             return distances
-        else:
-            return nearest_node_ids
+
+        return nearest_node_ids
 
     # ------------------ Getters & Setters ---------------------
     def set_graph(self, graph):
@@ -864,8 +864,7 @@ class GridObjectModel(GraphObjectModel):
         else:
             k = self._max_nodes
         _counts, top_k_indices = self._observation_count.values().topk(k)
-        indices_3d = self._observation_count.indices()[:3, top_k_indices]
-        return indices_3d
+        return self._observation_count.indices()[:3, top_k_indices]
 
     def _locations_to_grid_ids(self, locations):
         """Convert locations to grid ids using scale_factor and location_offset.
@@ -873,11 +872,10 @@ class GridObjectModel(GraphObjectModel):
         Returns:
             Grid ids for the locations.
         """
-        location_grid_ids = np.array(
+        return np.array(
             np.round(locations * self._location_scale_factor) + self._location_offset,
             dtype=int,
         )
-        return location_grid_ids
 
     def _old_new_lists_to_sparse_tensors(
         self, indices, new_values, old_values, target_mat_shape
