@@ -401,7 +401,7 @@ class OmniglotEnvironmentInterfaceArgs:
 
 
 @dataclass
-class WorldImageInterfaceArgs:
+class WorldImageEnvironmentInterfaceArgs:
     """Set basic debug args to load 1 scene (Numenta mug) in 4 versions."""
 
     scenes: List = field(default_factory=lambda: [0, 0, 0, 0])
