@@ -183,6 +183,7 @@
 \bTGZ|tgz\b
 \bThrun\b
 \btimeseries\b
+\b[Tt]ooltips?\b
 \bTolman's\b
 \btransthalamic\b
 \bunmerged\b

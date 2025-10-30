@@ -58,3 +58,8 @@ https://github.com/codeallthethingz/tbp.monty/pull/14/files
 ## Search and Analytics
 - Search.
 - Integration with Google Analytics.
+
+## Glossary Integration
+- Automatic identification of glossary terms from `docs/overview/glossary.md` in all markdown files
+- Subtle hover tooltips displaying glossary definitions when users hover over terms
+- This feature may require the new platform as readme.com may not support the necessary markdown extensions or JavaScript integration
