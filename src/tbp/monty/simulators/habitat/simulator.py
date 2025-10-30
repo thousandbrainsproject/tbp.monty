@@ -26,7 +26,6 @@ import numpy as np
 from habitat_sim.utils import common as sim_utils
 from importlib_resources import files
 
-import tbp.monty.simulators.resources as resources
 from tbp.monty.frameworks.actions.actions import (
     Action,
     LookDown,
@@ -45,6 +44,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
 )
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.simulators import resources
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
 
 from .agents import HabitatAgent

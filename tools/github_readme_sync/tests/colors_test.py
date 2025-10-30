@@ -13,7 +13,7 @@ import os
 import unittest
 from unittest import mock
 
-import tools.github_readme_sync.colors as colors  # Import the colors module initially
+from tools.github_readme_sync import colors  # Import the colors module initially
 
 
 class TestColors(unittest.TestCase):

@@ -319,8 +319,8 @@ class EncoderSDR:
 
         if np.all(np.array(target_overlaps.shape) > self.n_objects):
             logger.warning(
-                "Overlap targets have larger size than "
-                + f"{(self.n_objects, self.n_objects)}"
+                f"Overlap targets have larger size than "
+                f"{(self.n_objects, self.n_objects)}"
             )
             target_overlaps = target_overlaps[: self.n_objects, : self.n_objects]
 

@@ -246,8 +246,6 @@ ignore = [
     "FLY002", # FLY002: Consider {expression} instead of string join
     "G003", # G003: Logging statement uses `+`
     "G004", # G004: Logging statement uses f-string
-    "ISC001", # ISC001: Implicitly concatenated string literals on one line
-    "ISC003", # ISC003: Explicitly concatenated string should be implicitly concatenated
     "N804", # N804: First argument of a class method should be named `cls`
     "NPY002", # NPY002: Replace legacy `np.random.normal` call with `np.random.Generator`
     "PD002", # PD002: `inplace=True` should be avoided; it has inconsistent behavior
@@ -256,7 +254,6 @@ ignore = [
     "PERF402", # PERF402: Use `list` or `list.copy` to create a copy of a list
     "PIE790", # PIE790: Unnecessary pass statement
     "PLE0302", # PLE0302: The special method `__getitem__` expects 2 parameters, 1 was given
-    "PLR0402", # PLR0402: Use from {module} import {name} in lieu of alias
     "PLR0911", # PLR0911: Too many return statements
     "PLR0912", # PLR0912: Too many branches
     "PLR0913", # PLR0913: Too many arguments in function definition
@@ -277,9 +274,7 @@ ignore = [
     "PTH120", # PTH120: `os.path.dirname()` should be replaced by `Path.parent`
     "PTH123", # PTH123: `open()` should be replaced by `Path.open()`
     "RET503", # RET503: Missing explicit `return` at the end of function able to return non-`None` value
-    "RSE102", # RSE102: Unnecessary parentheses on raised exception
     "RUF005", # RUF005: Consider {expression} instead of concatenation
-    "RUF010", # RUF010: Use explicit conversion flag
     "RUF012", # RUF012: Mutable class attributes should be annotated with `typing.ClassVar`
     "RUF013", # RUF013: PEP 484 prohibits implicit `Optional`
     "RUF015", # RUF015: Prefer next({iterable}) over single element slice

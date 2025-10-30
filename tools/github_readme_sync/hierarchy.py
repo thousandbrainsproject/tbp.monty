@@ -293,7 +293,7 @@ def check_readme_link(url, rdme):
         if not response:
             return [f"  broken link: {url} (Not found)"]
     except Exception as e:  # noqa: BLE001
-        return [f"  {url}: {str(e)}"]
+        return [f"  {url}: {e}"]
 
     return []
 
@@ -316,7 +316,7 @@ def check_external_link(url):
         if response.status_code < 200 or response.status_code > 299:
             return [f"  broken link: {url} ({response.status_code})"]
     except requests.RequestException as e:
-        return [f"  {url}: {str(e)}"]
+        return [f"  {url}: {e}"]
 
     return []
 

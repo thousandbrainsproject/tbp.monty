@@ -1017,7 +1017,7 @@ class NaiveScanPolicy(InformedPolicy):
             # the experiment. This exception is automatically handled by any
             # python loop statements using iterators.
             # See https://docs.python.org/3/library/exceptions.html#StopIteration
-            raise StopIteration()
+            raise StopIteration
 
         self.check_cycle_action()
         self.step_on_action += 1
