@@ -1,9 +1,9 @@
 ---
-title: Better Documentation Platform
+title: Better Website Platform
 rfc: required
 estimated-scope: large
 improved-metric: community-engagement
-output-type: documentation
+output-type: website
 skills: github-actions, s3, javascript, html, css, web-frameworks, tailwindcss
 ---
 
