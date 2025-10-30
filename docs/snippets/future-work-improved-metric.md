@@ -1,1 +1,1 @@
-`infrastructure` `community-engagement`
+`infrastructure` `community-engagement` `learning-experience`

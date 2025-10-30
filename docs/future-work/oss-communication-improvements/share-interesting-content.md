@@ -4,7 +4,7 @@ rfc: optional
 estimated-scope: small
 improved-metric: community-engagement
 skills: social-media, content-curation
-output-type: social-media-posts, forum-posts
+output-type: social-media-posts
 ---
 
 Share interesting content related to the Thousand Brains Project through social media and the forum to help the community discover relevant research and discussions.
