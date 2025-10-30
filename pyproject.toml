@@ -272,7 +272,6 @@ ignore = [
     "PTH120", # PTH120: `os.path.dirname()` should be replaced by `Path.parent`
     "PTH123", # PTH123: `open()` should be replaced by `Path.open()`
     "RET503", # RET503: Missing explicit `return` at the end of function able to return non-`None` value
-    "RSE102", # RSE102: Unnecessary parentheses on raised exception
     "RUF005", # RUF005: Consider {expression} instead of concatenation
     "RUF010", # RUF010: Use explicit conversion flag
     "RUF012", # RUF012: Mutable class attributes should be annotated with `typing.ClassVar`
