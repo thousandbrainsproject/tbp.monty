@@ -278,6 +278,7 @@ class ResamplingHypothesesUpdater:
                 graph_id=graph_id,
                 mapper=mapper,
                 tracker=tracker,
+                init_hyp_space=(displacements is None),
             )
 
             # Sample hypotheses based on their type
@@ -373,6 +374,7 @@ class ResamplingHypothesesUpdater:
         graph_id: str,
         mapper: ChannelMapper,
         tracker: EvidenceSlopeTracker,
+        init_hyp_space: bool,
     ) -> Tuple[HypothesesSelection, int]:
         """Calculates the number of existing and informed hypotheses needed.
 
@@ -384,6 +386,8 @@ class ResamplingHypothesesUpdater:
                 evidence, locations, and poses based on the input channel
             tracker: Slope tracker for the evidence values of a
                 graph_id
+            init_hyp_space: Initialize a new hypothesis space. Happens only at the
+                beginning of the episode.
 
         Returns:
             A tuple containing the hypotheses selection and count of new hypotheses
@@ -401,12 +405,12 @@ class ResamplingHypothesesUpdater:
             graph_id, input_channel
         ).shape[0]
         num_hyps_per_node = self._num_hyps_per_node(channel_features)
-        full_informed_count = graph_num_points * num_hyps_per_node
 
         # If hypothesis space does not exist, we initialize with informed hypotheses.
         # Should we remove this now that we are resampling? We can sample the
         # same number of hypotheses during initialization as in every other step.
-        if input_channel not in mapper.channels:
+        if init_hyp_space:
+            full_informed_count = graph_num_points * num_hyps_per_node
             return HypothesesSelection(maintain_mask=[]), full_informed_count
 
         # This makes sure that we do not request more than the available number of
@@ -419,9 +423,7 @@ class ResamplingHypothesesUpdater:
 
         # Returns a selection of hypotheses to maintain/delete
         hypotheses_selection = tracker.select_hypotheses(
-            slope_threshold=self.evidence_slope_threshold,
-            min_maintained_hyps=2,  # required by gsg
-            channel=input_channel,
+            slope_threshold=self.evidence_slope_threshold, channel=input_channel
         )
 
         return (
@@ -653,6 +655,7 @@ class ResamplingHypothesesUpdater:
         if (
             hypotheses_ids is None
             or hypotheses_ids.graph_id not in self.resampling_telemetry
+            or not len(hypotheses_ids.channel_sizes)
         ):
             return hypotheses_ids
 

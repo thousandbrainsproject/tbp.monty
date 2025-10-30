@@ -101,7 +101,7 @@ class TheoreticalLimitLMLoggingMixin:
         Returns:
             Updated statistics dictionary.
         """
-        stats["max_evidence"] = {k: max(v) for k, v in self.evidence.items()}
+        stats["max_evidence"] = {k: max(v) for k, v in self.evidence.items() if len(v)}
         stats["target_object_theoretical_limit"] = (
             self._theoretical_limit_target_object_pose_error()
         )
@@ -137,6 +137,20 @@ class TheoreticalLimitLMLoggingMixin:
             HypothesesUpdaterChannelTelemetry for the given graph ID and input channel.
         """
         mapper = self.channel_hypothesis_mapping[graph_id]
+
+        if input_channel not in mapper.channels:
+            channel_evidence = np.empty(shape=(0,), dtype=np.float64)
+            channel_rotations_inv = np.empty(shape=(0, 3, 3), dtype=np.float64)
+            channel_locations = np.empty(shape=(0, 3), dtype=np.float64)
+
+            return HypothesesUpdaterChannelTelemetry(
+                hypotheses_updater=channel_telemetry.copy(),
+                evidence=np.empty(shape=(0,), dtype=np.float64),
+                rotations=np.empty(shape=(0, 3, 3), dtype=np.float64),
+                locations=np.empty(shape=(0, 3), dtype=np.float64),
+                pose_errors=np.empty(shape=(0,), dtype=np.float64),
+            )
+
         channel_rotations = mapper.extract(self.possible_poses[graph_id], input_channel)
         channel_rotations_inv = Rotation.from_matrix(channel_rotations).inv()
         channel_evidence = mapper.extract(self.evidence[graph_id], input_channel)

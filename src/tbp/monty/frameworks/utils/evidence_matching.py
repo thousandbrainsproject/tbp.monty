@@ -98,27 +98,10 @@ class ChannelMapper:
                 return (start, start + size)
             start += size
 
-    def resize_channel_by(self, channel_name: str, value: int) -> None:
-        """Increases or decreases the channel by a specific amount.
-
-        Args:
-            channel_name: The name of the channel.
-            value: The value used to modify the channel size.
-                Use a negative value to decrease the size.
-
-        Raises:
-            ValueError: If the channel is not found or the requested size is negative.
-        """
-        if channel_name not in self.channel_sizes:
-            raise ValueError(f"Channel '{channel_name}' not found.")
-        if self.channel_sizes[channel_name] + value <= 0:
-            raise ValueError(
-                f"Channel '{channel_name}' size cannot be negative or zero."
-            )
-        self.channel_sizes[channel_name] += value
-
     def resize_channel_to(self, channel_name: str, new_size: int) -> None:
         """Sets the size of the given channel to a specific value.
+
+        This function will also delete the channel if the `new_size` is 0.
 
         Args:
             channel_name: The name of the channel.
@@ -129,9 +112,26 @@ class ChannelMapper:
         """
         if channel_name not in self.channel_sizes:
             raise ValueError(f"Channel '{channel_name}' not found.")
-        if new_size <= 0:
+        if new_size < 0:
             raise ValueError(f"Channel '{channel_name}' size must be positive.")
+        if new_size == 0:
+            self.delete_channel(channel_name)
+            return
+
         self.channel_sizes[channel_name] = new_size
+
+    def delete_channel(self, channel_name: str) -> None:
+        """Delete a channel from the mapping.
+
+        Args:
+            channel_name: The name of the channel to delete.
+
+        Raises:
+            ValueError: If the channel is not found.
+        """
+        if channel_name not in self.channel_sizes:
+            raise ValueError(f"Channel '{channel_name}' not found.")
+        del self.channel_sizes[channel_name]
 
     def add_channel(
         self, channel_name: str, size: int, position: Optional[int] = None
@@ -419,7 +419,7 @@ class EvidenceSlopeTracker:
             self.remove_hyp(np.arange(self.total_size(channel)), channel)
 
     def select_hypotheses(
-        self, slope_threshold: float, min_maintained_hyps: int, channel: str
+        self, slope_threshold: float, channel: str
     ) -> HypothesesSelection:
         """Returns a hypotheses selection given a slope threshold.
 
@@ -430,12 +430,7 @@ class EvidenceSlopeTracker:
         Args:
             slope_threshold: Minimum slope value to keep a removable (sufficiently old)
                 hypothesis.
-            min_maintained_hyps: Minimum number of hypotheses to maintain.
             channel: Name of the input channel.
-
-        Note that the parameter `min_maintained_hyps` overrides the `slope_threshold`
-        and the removable mask. These hypotheses will be maintained in spite of their
-        slopes and ages.
 
         Returns:
             A selection of hypotheses to maintain.
@@ -450,29 +445,6 @@ class EvidenceSlopeTracker:
         removable_mask = self.removable_indices_mask(channel)
 
         maintain_mask = (slopes >= slope_threshold) | (~removable_mask)
-
-        # Ensure at least `min_maintained_hyps` are maintained.
-        # The needed hypotheses are chosen based on their slopes (i.e. high slopes
-        # first)
-        num_maintained_hyps = int(maintain_mask.sum())
-        num_needed_hyps = max(
-            0,
-            min(min_maintained_hyps, self.total_size(channel)) - num_maintained_hyps,
-        )
-        if num_needed_hyps > 0:
-            cand_idx = np.where(~maintain_mask)[0]
-
-            # Use all available hyps. No sorting here.
-            if cand_idx.size == num_needed_hyps:
-                maintain_mask[cand_idx] = True
-
-            # Use hyps with the highest slopes.
-            else:
-                cand_scores = np.nan_to_num(slopes[cand_idx], nan=-np.inf)
-                topk_ix = np.argpartition(cand_scores, num_needed_hyps)[
-                    -num_needed_hyps:
-                ]
-                maintain_mask[cand_idx[topk_ix]] = True
 
         return HypothesesSelection(maintain_mask)
 

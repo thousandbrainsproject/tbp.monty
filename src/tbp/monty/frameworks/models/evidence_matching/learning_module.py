@@ -612,16 +612,22 @@ class EvidenceGraphLM(GraphLM):
         """
         graph_ids, graph_evidences = self.get_evidence_for_each_graph()
 
+        # If all hypothesis spaces are empty return None for both mlh ids. The gsg will
+        # not generate a goal state.
+        if len(graph_ids) == 0:
+            return None, None
+
+        # If we have a single hypothesis space, return the second object id as None.
+        # The gsg will focus on pose to generate a goal state.
+        if len(graph_ids) == 1:
+            return graph_ids[0], None
+
         # Note the indices below will be ordered with the 2nd MLH appearing first, and
         # the 1st MLH appearing second.
         top_indices = np.argsort(graph_evidences)[-2:]
 
-        if len(top_indices) > 1:
-            top_id = graph_ids[top_indices[1]]
-            second_id = graph_ids[top_indices[0]]
-        else:
-            top_id = graph_ids[top_indices[0]]
-            second_id = top_id
+        top_id = graph_ids[top_indices[1]]
+        second_id = graph_ids[top_indices[0]]
 
         return top_id, second_id
 
@@ -680,14 +686,23 @@ class EvidenceGraphLM(GraphLM):
         graph_ids = self.get_all_known_object_ids()
         if graph_ids[0] not in self.evidence.keys():
             return ["patch_off_object"], [0]
-        graph_evidences = []
+
+        available_graph_ids = []
+        available_graph_evidences = []
         for graph_id in graph_ids:
-            graph_evidences.append(np.max(self.evidence[graph_id]))
-        return graph_ids, np.array(graph_evidences)
+            if len(self.hyp_evidences_for_object(graph_id)):
+                available_graph_ids.append(graph_id)
+                available_graph_evidences.append(np.max(self.evidence[graph_id]))
+
+        return available_graph_ids, np.array(available_graph_evidences)
 
     def get_all_evidences(self):
         """Return evidence for each pose on each graph (pointer)."""
         return self.evidence
+
+    def hyp_evidences_for_object(self, object_id):
+        """Return evidences for a specific object_id."""
+        return self.evidence[object_id]
 
     # ------------------ Logging & Saving ----------------------
     def collect_stats_to_save(self):
@@ -795,12 +810,20 @@ class EvidenceGraphLM(GraphLM):
             self._set_hypotheses_in_hpspace(graph_id=graph_id, new_hypotheses=update)
 
         end_time = time.time()
-        assert not np.isnan(np.max(self.evidence[graph_id])), "evidence contains NaN."
-        logger.debug(
+
+        logger_msg = (
             f"evidence update for {graph_id} took "
             f"{np.round(end_time - start_time, 2)} seconds."
-            f" New max evidence: {np.round(np.max(self.evidence[graph_id]), 3)}"
         )
+        graph_evidence = self.hyp_evidences_for_object(graph_id)
+        if len(graph_evidence):
+            assert not np.isnan(np.max(self.evidence[graph_id])), (
+                "evidence contains NaN."
+            )
+            logger_msg += (
+                f" New max evidence: {np.round(np.max(self.evidence[graph_id]), 3)}"
+            )
+        logger.debug(logger_msg)
 
     def _set_hypotheses_in_hpspace(
         self,
@@ -1106,7 +1129,13 @@ class EvidenceGraphLM(GraphLM):
         if len(self.graph_memory) == 0:
             logger.info("no objects in memory yet.")
             return []
+
         graph_ids, graph_evidences = self.get_evidence_for_each_graph()
+
+        if len(graph_ids) == 0:
+            logger.info("All hypothesis spaces are empty. No possible matches.")
+            return []
+
         # median_ge = np.median(graph_evidences)
         mean_ge = np.mean(graph_evidences)
         max_ge = np.max(graph_evidences)
@@ -1168,23 +1197,28 @@ class EvidenceGraphLM(GraphLM):
         """
         mlh = {}
         if graph_id is not None:
-            mlh_id = np.argmax(self.evidence[graph_id])
-            mlh = self._get_mlh_dict_from_id(graph_id, mlh_id)
+            graph_evidence = self.hyp_evidences_for_object(graph_id)
+            if len(graph_evidence):
+                mlh_id = np.argmax(graph_evidence)
+                mlh = self._get_mlh_dict_from_id(graph_id, mlh_id)
         else:
             highest_evidence_so_far = -np.inf
             for graph_id in self.get_all_known_object_ids():
-                mlh_id = np.argmax(self.evidence[graph_id])
-                evidence = self.evidence[graph_id][mlh_id]
-                if evidence > highest_evidence_so_far:
-                    mlh = self._get_mlh_dict_from_id(graph_id, mlh_id)
-                    highest_evidence_so_far = evidence
-            if not mlh:  # No objects in memory
-                mlh = self.current_mlh
-                mlh["graph_id"] = "new_object0"
-            logger.info(
-                f"current most likely hypothesis: {mlh['graph_id']} "
-                f"with evidence {np.round(mlh['evidence'], 2)}"
-            )
+                graph_evidence = self.hyp_evidences_for_object(graph_id)
+                if len(graph_evidence):
+                    mlh_id = np.argmax(graph_evidence)
+                    evidence = graph_evidence[mlh_id]
+                    if evidence > highest_evidence_so_far:
+                        mlh = self._get_mlh_dict_from_id(graph_id, mlh_id)
+                        highest_evidence_so_far = evidence
+
+        if not mlh:  # No objects in memory
+            mlh = self.current_mlh
+            mlh["graph_id"] = "new_object0"
+        logger.info(
+            f"current most likely hypothesis: {mlh['graph_id']} "
+            f"with evidence {np.round(mlh['evidence'], 2)}"
+        )
         return mlh
 
     def _get_node_distance_weights(self, distances):

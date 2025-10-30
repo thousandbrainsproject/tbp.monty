@@ -930,7 +930,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         pose and object ID determination, i.e. determines whether there is a good chance
         of discriminating between conflicting object IDs or poses.
 
-        The schedule is designed to balance descriminating the pose and objects as
+        The schedule is designed to balance discriminating the pose and objects as
         efficiently as possible; TODO M future work can use the schedule conditions as
         primitives and use RL or evolutionary algorithms to optimize the relevant
         parameters.
@@ -957,7 +957,16 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
 
         top_id, second_id = self.parent_lm.get_top_two_mlh_ids()
 
-        if top_id == second_id:
+        # This happens when all hypothesis spaces are empty
+        if top_id is None and second_id is None:
+            return False
+
+        if second_id is None:
+            # If we only have one object with a single hypothesis, we should not
+            # attempt to generate a goal state.
+            if len(self.parent_lm.hyp_evidences_for_object(top_id)) == 1:
+                return False
+
             # If we only know (i.e. have learned) about one object, we can focus on pose
             # In this case, get_top_two_mlh_ids returns the same IDs for top_id and
             # second_id
@@ -968,7 +977,7 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         top_mlh = self.parent_lm.get_current_mlh()
 
         # If the MLH evidence is significantly above the second MLH (where "significant"
-        # is determined by x_percent_scale_factor below), then focus on descriminating
+        # is determined by x_percent_scale_factor below), then focus on discriminating
         # its pose on some (random) occasions; always focus on pose if we've convereged
         # to one object
         # TODO M update so that not accessing private methods here; part of 2nd phase
@@ -981,6 +990,11 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         if (
             len(pm_smaller_thresh) == 1 and (self.parent_lm.rng.uniform() <= 0.5)
         ) or len(pm_base_thresh) == 1:
+            # If we only have one object with a single hypothesis, we should not
+            # attempt to generate a goal state.
+            if len(self.parent_lm.hyp_evidences_for_object(top_id)) == 1:
+                return False
+
             # We always focus on pose if there is just 1 possible match - if we are part
             # of the way towards being certain about the ID
             # (len(pm_smaller_thresh) == 1), then we sometimes (hence the randomness)
