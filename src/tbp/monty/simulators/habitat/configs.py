@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Mapping
 
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     FiveLMMountConfig,
     MultiLMMountConfig,
     PatchAndViewFinderMountConfig,

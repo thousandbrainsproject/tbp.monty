@@ -218,7 +218,7 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
             **kwargs: ?
 
         See Also:
-            tbp.monty.frameworks.make_dataset_configs
+            tbp.monty.frameworks.make_env_interface_configs
             :class:`EnvironmentInterfacePerObjectTrainArgs`
 
         Raises:

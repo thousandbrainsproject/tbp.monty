@@ -30,7 +30,7 @@ import magnum as mn
 import numpy as np
 
 from tbp.monty.frameworks.config_utils.config_args import LoggingConfig
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     ExperimentArgs,
 )
 from tbp.monty.frameworks.environments.embodied_data import (

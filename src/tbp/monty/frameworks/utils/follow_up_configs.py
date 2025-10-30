@@ -14,7 +14,7 @@ import os
 
 import torch
 
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     PredefinedObjectInitializer,
 )
 from tbp.monty.frameworks.loggers.monty_handlers import DetailedJSONHandler

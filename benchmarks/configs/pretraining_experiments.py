@@ -26,7 +26,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
     SurfaceAndViewMontyConfig,
     get_cube_face_and_corner_views_rotations,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     EnvironmentInterfacePerObjectArgs,
     PredefinedObjectInitializer,
     SupervisedPretrainingExperimentArgs,

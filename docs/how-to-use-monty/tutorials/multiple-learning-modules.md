@@ -31,7 +31,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PretrainLoggingConfig,
     get_cube_face_and_corner_views_rotations,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     EnvironmentInterfacePerObjectArgs,
     PredefinedObjectInitializer,
     SupervisedPretrainingExperimentArgs,
@@ -132,7 +132,7 @@ If you've read the previous tutorials, much of this should look familiar. As in 
 
 We have also specified that we want to use a `MotorSystemConfigNaiveScanSpiral` for the motor system. This is a *learning-focused* motor policy that directs the agent to look across the object surface in a spiraling motion. That way, we can ensure efficient coverage of the entire object (of what is visible from the current perspective) during learning.
 
-Finally, we have also set the `env_interface_config` to `FiveLMMountHabitatEnvInterfaceConfig`. This specifies that we have five `HabitatSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see the `FiveLMMountConfig` in `tbp/monty/frameworks/config_utils/make_dataset_configs.py`.
+Finally, we have also set the `env_interface_config` to `FiveLMMountHabitatEnvInterfaceConfig`. This specifies that we have five `HabitatSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see the `FiveLMMountConfig` in `tbp/monty/frameworks/config_utils/make_env_interface_configs.py`.
 
 Before running this experiment, you will need to declare your experiment name as part of the `MyExperiments` dataclass in the `benchmarks/configs/names.py` file:
 
@@ -166,7 +166,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
     MotorSystemConfigInformedGoalStateDriven,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     EnvironmentInterfacePerObjectArgs,
     EvalExperimentArgs,
     PredefinedObjectInitializer,
