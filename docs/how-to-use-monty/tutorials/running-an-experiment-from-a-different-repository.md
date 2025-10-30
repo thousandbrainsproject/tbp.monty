@@ -43,7 +43,7 @@ from tbp.monty.frameworks.config_utils.config_args import (  # noqa: E402
     LoggingConfig,
     SingleCameraMontyConfig,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (  # noqa: E402
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (  # noqa: E402
     ExperimentArgs,
     get_env_interface_per_object_by_idx,
 )

@@ -24,7 +24,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
     MotorSystemConfigCurInformedSurfaceGoalStateDriven,
     PatchAndViewSOTAMontyConfig,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     EnvironmentInterfacePerObjectArgs,
     EvalExperimentArgs,
     PredefinedObjectInitializer,

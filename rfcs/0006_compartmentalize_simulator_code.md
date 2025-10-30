@@ -5,7 +5,7 @@
 
 The proposal is to compartmentalize the HabitatSim-related code into its own folder, specifically `tbp/monty/simulators/habitat`.
 
-1. Move HabitatSim-dependent config utils out of `frameworks/config_utils/make_dataset_configs.py` and into `simulators/habitat/configs.py`.
+1. Move HabitatSim-dependent config utils out of `frameworks/config_utils/make_env_interface_configs.py` and into `simulators/habitat/configs.py`.
 2. Move `frameworks/environments/habitat.py` into `simulators/habitat/environment.py`.
 3. Move `frameworks/environment_utils/habitat_utils.py` into `simulators/habitat/environment_utils.py`.
 

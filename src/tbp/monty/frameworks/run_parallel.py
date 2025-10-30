@@ -24,7 +24,7 @@ import torch.multiprocessing as mp
 import wandb
 
 from tbp.monty.frameworks.config_utils.cmd_parser import create_cmd_parser_parallel
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     PredefinedObjectInitializer,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
