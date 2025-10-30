@@ -27,9 +27,9 @@ dependencies = [
     'scipy>=1.10.1', # imported via conda (conda-forge::scipy)
     'sympy', # imported via conda (conda-forge::sympy)
     'torch==1.13.1', # imported via conda (pytorch::pytorch)
-    'torch-geometric==2.1.0.post1', # imported via conda (pyg::pyg)
-    'torch-sparse==0.6.15', # imported via conda (pytorch::pytorch-sparse)
-    'torch-scatter==2.0.9', # imported via conda (pytorch::pytorch-scatter)
+    'torch-geometric>=2.1.0.post1', # imported via conda (pyg::pyg)
+    'torch-sparse>=0.6.15', # imported via conda (pytorch::pytorch-sparse)
+    'torch-scatter>=2.0.9', # imported via conda (pytorch::pytorch-scatter)
     'tqdm', # imported via conda (conda-forge::tqdm)
     'typing-extensions',
     'wandb', # imported via conda (conda-forge::wandb)
@@ -324,5 +324,4 @@ namespaces = true
 'tbp.monty.simulators.resources' = ['*.json', '*.yml', '*.txt']
 
 [tool.uv]
-# Extra index for PyTorch extensions
-find-links = ["https://data.pyg.org/whl/torch-1.13.1+cpu.html"]
+no-build-isolation-package = ["torch-scatter", "torch-sparse"]

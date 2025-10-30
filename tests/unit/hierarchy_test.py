@@ -16,6 +16,12 @@ from pprint import pprint
 
 import numpy as np
 import pandas as pd
+import pytest
+
+pytest.importorskip(
+    "habitat_sim",
+    reason="Habitat Sim optional dependency not installed.",
+)
 
 from tbp.monty.frameworks.config_utils.config_args import (
     LoggingConfig,
