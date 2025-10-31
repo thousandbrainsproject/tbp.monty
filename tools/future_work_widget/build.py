@@ -46,9 +46,9 @@ def build(
         BuildResult with validation/build status and details
     """
     try:
-        build_result = _validate_params(index_file, output_dir, docs_snippets_dir)
-        if build_result is not None:
-            return build_result
+        error_message = _validate_params(index_file, output_dir, docs_snippets_dir)
+        if error_message is not None:
+            return BuildResult(success=False, error_message=error_message)
 
         with open(index_file, encoding="utf-8") as f:
             raw_data = json.load(f)
@@ -90,31 +90,22 @@ def _validate_params(
     index_file: Path,
     output_dir: Path,
     docs_snippets_dir: Path,
-) -> BuildResult | None:
+) -> str | None:
     """Validate input paths and setup output directory.
 
     Returns:
-        None if all validations pass, otherwise BuildResult with success=False
+        None if all validations pass, otherwise error message string
     """
     if not index_file.exists():
-        return BuildResult(
-            success=False,
-            error_message=f"Index file not found: {index_file}",
-        )
+        return f"Index file not found: {index_file}"
 
     if not docs_snippets_dir.exists():
-        return BuildResult(
-            success=False,
-            error_message=f"Docs snippets directory not found: {docs_snippets_dir}",
-        )
+        return f"Docs snippets directory not found: {docs_snippets_dir}"
 
     try:
         output_dir.mkdir(parents=True, exist_ok=True)
     except (OSError, PermissionError) as e:
-        return BuildResult(
-            success=False,
-            error_message=f"Failed to create output directory {output_dir}: {e}",
-        )
+        return f"Failed to create output directory {output_dir}: {e}"
 
     return None
 
