@@ -350,17 +350,19 @@ class EnvironmentInterfacePerObjectEvalArgs(EnvironmentInterfacePerObjectArgs):
     object_names: List = field(default_factory=lambda: DefaultTrainObjectList().objects)
     object_init_sampler: Callable = field(default_factory=DefaultObjectInitializer)
 
-
 @dataclass
-class FixedRotationEnvironmentPerObjectTrainArgs(EnvironmentInterfacePerObjectArgs):
+class FixedRotationEnvironmentInterfacePerObjectTrainArgs(
+    EnvironmentInterfacePerObjectArgs
+):
     object_names: List = field(default_factory=lambda: DefaultTrainObjectList().objects)
     object_init_sampler: Callable = field(
         default_factory=lambda: PredefinedObjectInitializer()
     )
 
-
 @dataclass
-class FixedRotationEnvironmentPerObjectEvalArgs(EnvironmentInterfacePerObjectArgs):
+class FixedRotationEnvironmentInterfacePerObjectEvalArgs(
+    EnvironmentInterfacePerObjectArgs
+):
     object_names: List = field(default_factory=lambda: DefaultTrainObjectList().objects)
     object_init_sampler: Callable = field(
         default_factory=lambda: PredefinedObjectInitializer()
