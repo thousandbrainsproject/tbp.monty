@@ -1,1 +1,1 @@
-`small` `medium` `large` `unknown` `low`
+`small` `medium` `large` `unknown`

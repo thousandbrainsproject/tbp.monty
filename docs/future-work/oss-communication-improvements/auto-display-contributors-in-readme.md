@@ -1,8 +1,9 @@
 ---
 title: Auto-Display Contributors in README
 rfc: not-required
-estimated-scope: low
+estimated-scope: small
 improved-metric: community-engagement
+skills: github-actions, javascript, css
 output-type: documentation
 ---
 

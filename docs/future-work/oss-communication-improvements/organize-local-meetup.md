@@ -4,6 +4,7 @@ rfc: not-required
 estimated-scope: small
 improved-metric: community-engagement
 skills: event-planning, community-organizing, networking
+output-type: community-event
 ---
 
 Organize a meetup in your area to form a group of interested peers who want to learn with and discuss the Thousand Brains Project and Theory and related AI topics.

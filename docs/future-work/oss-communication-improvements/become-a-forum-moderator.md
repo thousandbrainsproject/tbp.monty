@@ -4,6 +4,7 @@ rfc: not-required
 estimated-scope: small
 improved-metric: community-engagement
 skills: community-management, forum-moderation, ai-knowledge, thousand-brains-theory-knowledge
+output-type: forum-moderator
 ---
 
 Apply to become a moderator on the Thousand Brains Project forum (thousandbrains.discourse.group) to help maintain a welcoming and organized community space.
