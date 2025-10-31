@@ -414,7 +414,7 @@ class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
     Also has the following, additional functionality; TODO refactor/separate these
     out as appropriate
 
-    i) this interface allows for early stopping by adding the set_done
+    i) this environment interface allows for early stopping by adding the set_done
     method which can for example be called when the object is recognized.
 
     ii) the motor_only_step can be set such that the sensory module can
