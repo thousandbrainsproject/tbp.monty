@@ -12,7 +12,7 @@ First, ensure you've setup Monty. See [Getting Started - 2. Set up Your Environm
 Next, from the root Monty directory, install this tool's dependencies:
 
 ```
-pip install -e '.[future_work_widget_tool]'
+pip install -e '.[github_readme_sync_tool,future_work_widget_tool]'
 ```
 
 ## Usage
@@ -42,7 +42,7 @@ pytest -n 0 tools/future_work_widget
 
 ## Running Locally
 
-To try the tool out simply run the following command from the tbp.monty directory:
+To try the tool out, simply run the following command from the tbp.monty directory:
 
 ```
 python tools/future_work_widget/run_local.py

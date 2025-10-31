@@ -199,7 +199,7 @@ const FutureWorkWidget = {
 
 
   async loadData() {
-    const response = await fetch(`data.json?t=${Date.now()}`, {
+    const response = await fetch('data.json', {
       cache: 'no-store'
     });
     if (!response.ok) {
