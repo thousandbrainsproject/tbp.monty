@@ -27,9 +27,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PatchAndViewFeatureChangeConfig,
     PatchAndViewMontyConfig,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataLoaderPerObjectEvalArgs,
-    EnvironmentDataLoaderPerObjectTrainArgs,
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
+    EnvironmentInterfacePerObjectEvalArgs,
+    EnvironmentInterfacePerObjectTrainArgs,
     ExperimentArgs,
     PredefinedObjectInitializer,
 )
@@ -41,7 +41,7 @@ from tbp.monty.frameworks.models.sensor_modules import (
 )
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsPatchViewMount,
-    PatchViewFinderMountHabitatDatasetArgs,
+    PatchViewFinderMountHabitatEnvInterfaceConfig,
 )
 
 
@@ -56,16 +56,16 @@ class SensorModuleTest(unittest.TestCase):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
-            dataset_args=PatchViewFinderMountHabitatDatasetArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
-            train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_class=ED.InformedEnvironmentInterface,
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
-            eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
+            eval_env_interface_class=ED.InformedEnvironmentInterface,
+            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
                 object_names=["capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -136,7 +136,7 @@ class SensorModuleTest(unittest.TestCase):
             pprint("...training...")
             exp.pre_epoch()
             exp.pre_episode()
-            for step, observation in enumerate(exp.dataloader):
+            for step, observation in enumerate(exp.env_interface):
                 exp.model.step(observation)
                 if step == 1:
                     break
@@ -151,7 +151,7 @@ class SensorModuleTest(unittest.TestCase):
             pprint("...training...")
             exp.pre_epoch()
             exp.pre_episode()
-            for _, observation in enumerate(exp.dataloader):
+            for _, observation in enumerate(exp.env_interface):
                 exp.model.aggregate_sensory_inputs(observation)
 
                 pprint(exp.model.sensor_module_outputs)

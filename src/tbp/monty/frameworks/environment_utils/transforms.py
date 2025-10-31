@@ -370,7 +370,7 @@ class DepthTo3DLocations:
         to the original observations dict.
 
         Args:
-            observations: Observations returned by the data loader.
+            observations: Observations returned by the environment interface.
             state: Optionally supplied CMP-compliant state object.
 
         Returns:

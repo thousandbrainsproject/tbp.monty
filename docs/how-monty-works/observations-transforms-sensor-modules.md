@@ -2,7 +2,7 @@
 title: Observations, Transforms & Sensor Modules
 ---
 # Transforms
-Before sending information to the sensor module which extracts features and poses we can apply transforms to the raw input. Possible transforms are listed in tables below.  **Transforms are applied to all sensors in an environment before sending observations to the SMs** and are specified in the data set arguments.
+Before sending information to the sensor module which extracts features and poses, we can apply transforms to the raw input. Possible transforms are listed in tables below.  **Transforms are applied to all sensors in an environment before sending observations to the SMs** and are specified in the environment interface arguments.
 
 | List of all transform classes  | Description                                                                                                                                                                                       |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

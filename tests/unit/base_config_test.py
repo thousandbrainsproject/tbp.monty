@@ -23,10 +23,10 @@ import unittest
 from pprint import pprint
 
 from tbp.monty.frameworks.config_utils.config_args import LoggingConfig
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     DebugExperimentArgs,
-    EnvironmentDataLoaderPerObjectEvalArgs,
-    EnvironmentDataLoaderPerObjectTrainArgs,
+    EnvironmentInterfacePerObjectEvalArgs,
+    EnvironmentInterfacePerObjectTrainArgs,
     NotYCBEvalObjectList,
     NotYCBTrainObjectList,
 )
@@ -34,7 +34,7 @@ from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyExperiment
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsSinglePTZ,
-    SinglePTZHabitatDatasetArgs,
+    SinglePTZHabitatEnvInterfaceConfig,
 )
 from tests.unit.frameworks.config_utils.fakes.config_args import (
     FakeSingleCameraMontyConfig,
@@ -53,15 +53,15 @@ class BaseConfigTest(unittest.TestCase):
                 output_dir=self.output_dir, python_log_level="DEBUG"
             ),
             monty_config=FakeSingleCameraMontyConfig(),
-            dataset_args=SinglePTZHabitatDatasetArgs(
+            env_interface_config=SinglePTZHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsSinglePTZ(data_path=None).__dict__
             ),
-            train_dataloader_class=ED.EnvironmentDataLoaderPerObject,
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_class=ED.EnvironmentInterfacePerObject,
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=NotYCBTrainObjectList().objects,
             ),
-            eval_dataloader_class=ED.EnvironmentDataLoaderPerObject,
-            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
+            eval_env_interface_class=ED.EnvironmentInterfacePerObject,
+            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
                 object_names=NotYCBEvalObjectList().objects,
             ),
         )
@@ -94,7 +94,7 @@ class BaseConfigTest(unittest.TestCase):
         with MontyExperiment(base_config) as exp:
             pprint("...training...")
             exp.model.set_experiment_mode("train")
-            exp.dataloader = exp.train_dataloader
+            exp.env_interface = exp.train_env_interface
             exp.run_episode()
 
     # @unittest.skip("speed")
@@ -123,7 +123,7 @@ class BaseConfigTest(unittest.TestCase):
 
             # Handle the training loop manually for this interim test
             max_count = 5
-            for count, observation in enumerate(exp.train_dataloader):
+            for count, observation in enumerate(exp.train_env_interface):
                 agent_keys = set(observation.keys())
                 sensor_keys = []
                 for agent in agent_keys:

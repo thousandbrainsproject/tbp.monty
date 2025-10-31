@@ -26,8 +26,8 @@ from tbp.monty.frameworks.config_utils.config_args import (
     SurfaceAndViewMontyConfig,
     get_cube_face_and_corner_views_rotations,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataloaderPerObjectArgs,
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
+    EnvironmentInterfacePerObjectArgs,
     PredefinedObjectInitializer,
     SupervisedPretrainingExperimentArgs,
     get_object_names_by_idx,
@@ -52,10 +52,10 @@ from tbp.monty.frameworks.models.sensor_modules import (
     Probe,
 )
 from tbp.monty.simulators.habitat.configs import (
-    FiveLMMountHabitatDatasetArgs,
-    PatchViewFinderMountHabitatDatasetArgs,
-    SurfaceViewFinderMontyWorldMountHabitatDatasetArgs,
-    SurfaceViewFinderMountHabitatDatasetArgs,
+    FiveLMMountHabitatEnvInterfaceConfig,
+    PatchViewFinderMountHabitatEnvInterfaceConfig,
+    SurfaceViewFinderMontyWorldMountHabitatEnvInterfaceConfig,
+    SurfaceViewFinderMountHabitatEnvInterfaceConfig,
 )
 
 # FOR SUPERVISED PRETRAINING: 14 unique rotations that give good views of the object.
@@ -127,9 +127,9 @@ supervised_pre_training_base = dict(
             )
         ),  # use spiral policy for more even object coverage during learning
     ),
-    dataset_args=PatchViewFinderMountHabitatDatasetArgs(),
-    train_dataloader_class=ED.InformedEnvironmentDataLoader,
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(),
+    train_env_interface_class=ED.InformedEnvironmentInterface,
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations_all),
     ),
@@ -198,13 +198,13 @@ only_surf_agent_training_10obj.update(
         ),
         motor_system_config=MotorSystemConfigCurvatureInformedSurface(),
     ),
-    dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(),
+    env_interface_config=SurfaceViewFinderMountHabitatEnvInterfaceConfig(),
     logging_config=PretrainLoggingConfig(
         output_dir=fe_pretrain_dir,
         run_name="surf_agent_1lm_10distinctobj",
     ),
-    train_dataloader_class=ED.InformedEnvironmentDataLoader,
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    train_env_interface_class=ED.InformedEnvironmentInterface,
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations_all),
     ),
@@ -216,7 +216,7 @@ only_surf_agent_training_10simobj.update(
         output_dir=fe_pretrain_dir,
         run_name="surf_agent_1lm_10similarobj",
     ),
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(0, 10, object_list=SIMILAR_OBJECTS),
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations_all),
     ),
@@ -228,7 +228,7 @@ only_surf_agent_training_allobj.update(
         output_dir=fe_pretrain_dir,
         run_name=f"surf_agent_1lm_{len(SHUFFLED_YCB_OBJECTS)}obj",
     ),
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(
             0, len(SHUFFLED_YCB_OBJECTS), object_list=SHUFFLED_YCB_OBJECTS
         ),
@@ -242,8 +242,8 @@ only_surf_agent_training_numenta_lab_obj.update(
         output_dir=fe_pretrain_dir,
         run_name="surf_agent_1lm_numenta_lab_obj",
     ),
-    dataset_args=SurfaceViewFinderMontyWorldMountHabitatDatasetArgs(),
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    env_interface_config=SurfaceViewFinderMontyWorldMountHabitatEnvInterfaceConfig(),
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(0, 12, object_list=NUMENTA_OBJECTS),
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations_all),
     ),
@@ -262,12 +262,12 @@ supervised_pre_training_5lms.update(
             )
         ),
     ),
-    dataset_args=FiveLMMountHabitatDatasetArgs(),
+    env_interface_config=FiveLMMountHabitatEnvInterfaceConfig(),
 )
 
 supervised_pre_training_5lms_all_objects = copy.deepcopy(supervised_pre_training_5lms)
 supervised_pre_training_5lms_all_objects.update(
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(
             0, len(SHUFFLED_YCB_OBJECTS), object_list=SHUFFLED_YCB_OBJECTS
         ),

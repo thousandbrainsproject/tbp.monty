@@ -14,7 +14,7 @@ import os
 
 import torch
 
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     PredefinedObjectInitializer,
 )
 from tbp.monty.frameworks.loggers.monty_handlers import DetailedJSONHandler
@@ -67,8 +67,8 @@ def create_eval_episode_config(
         For now, assume we just care about re-running an eval episode
 
     Note:
-        For now, assume dataloader_class is a subclass of
-              `EnvironmentDataLoaderPerObject`
+        For now, assume env_interface_class is a subclass of
+              `EnvironmentInterfacePerObject`
 
     Returns:
         Config for re-running the specified episode.
@@ -99,17 +99,17 @@ def create_eval_episode_config(
         "policy_args"
     ]["file_name"] = motor_file
 
-    # 2) Load object params from this episode into dataloader config
+    # 2) Load object params from this episode into environment interface config
     object_params_file = os.path.join(
         output_dir, "reproduce_episode_data", f"eval_episode_{episode}_target.txt"
     )
     with open(object_params_file) as f:
         target_data = json.load(f)
 
-    new_config["eval_dataloader_args"]["object_names"] = [
+    new_config["eval_env_interface_args"]["object_names"] = [
         target_data["primary_target_object"]
     ]
-    new_config["eval_dataloader_args"]["object_init_sampler"] = (
+    new_config["eval_env_interface_args"]["object_init_sampler"] = (
         PredefinedObjectInitializer(
             positions=[target_data["primary_target_position"]],
             rotations=[target_data["primary_target_rotation_euler"]],
@@ -220,8 +220,8 @@ def create_eval_config_multiple_episodes(
         target_rotations.append(target_data["primary_target_rotation_euler"])
 
     # Update config with episode-specific data
-    new_config["eval_dataloader_args"]["object_names"] = target_objects
-    new_config["eval_dataloader_args"]["object_init_sampler"] = (
+    new_config["eval_env_interface_args"]["object_names"] = target_objects
+    new_config["eval_env_interface_args"]["object_init_sampler"] = (
         PredefinedObjectInitializer(
             positions=target_positions,
             rotations=target_rotations,

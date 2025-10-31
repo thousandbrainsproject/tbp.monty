@@ -7,11 +7,11 @@ In a sensorimotor learning setup, one naturally encounters several different ref
 ![](../../figures/how-monty-works/reference_frames_overview.png)
 
 ### 🔴 Object rel. World
-The orientation of the object in the world (unknown to Monty). For instance, if we use a simulator, this would be the configuration that specifies where the object is placed in the environment (like we do [here](https://github.com/thousandbrainsproject/tbp.monty/blob/4844ef17a4cadce455acb8d852fe3ed7038a298f/src/tbp/monty/frameworks/config_utils/make_dataset_configs.py#L229)). In the real world we don't have a specific origin, but all objects are still in a common reference frame with relative displacements between each other.
+The orientation of the object in the world (unknown to Monty). For instance, if we use a simulator, this would be the configuration that specifies where the object is placed in the environment (like we do [here](https://github.com/thousandbrainsproject/tbp.monty/blob/4844ef17a4cadce455acb8d852fe3ed7038a298f/src/tbp/monty/frameworks/config_utils/make_env_interface_configs.py#L229)). In the real world we don't have a specific origin, but all objects are still in a common reference frame with relative displacements between each other.
 ### 🔴⚫️ Feature rel. Object
 The pose of all the features on the object (also unknown to the Monty). For instance, if you use a 3D simulator, this could be defined in the object meshes.
 ### 🟢⚫️ Sensor rel. World/Body
-The sensor’s location and orientation in the world can be estimated from proprioceptive information and motor efference copies. Basically, as the system moves its sensors, it can use this information to update the locations of those sensors in a common reference frame. For the purposes of Monty it doesn't matter where the origin of this RF is (it could be the agent's body or an arbitrary location in the environment) but it matters that all sensor locations are represented in this common RF. In simulation environments, this pose estimation can be perfect / error-free if desired, while in the real world you usually have noisy estimates. 
+The sensor’s location and orientation in the world can be estimated from proprioceptive information and motor efference copies. Basically, as the system moves its sensors, it can use this information to update the locations of those sensors in a common reference frame. For the purposes of Monty it doesn't matter where the origin of this RF is (it could be the agent's body or an arbitrary location in the environment) but it matters that all sensor locations are represented in this common RF. In simulation environments, this pose estimation can be perfect / error-free if desired, while in the real world you usually have noisy estimates.
 ### 🟢⚪️ Feature rel. Sensor
 This is the feature's orientation relative to the sensor. For instance in Monty, we often use the surface normal and curvature direction to define the sensed pose, which are extracted from the depth image of the sensor ([code](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/frameworks/models/sensor_modules.py#L161-L167)).
 ### 🔵 Feature rel. World/Body
@@ -22,11 +22,11 @@ The [inverse of this pose](https://github.com/thousandbrainsproject/tbp.monty/bl
 ### 🔵⚫️ Feature rel. Model
 This is the rotation of the currently sensed feature relative to the object model in the LM (feature_rel_world * object_rel_model, see code [here](https://github.com/thousandbrainsproject/tbp.monty/blob/main/src/tbp/monty/frameworks/models/evidence_matching/hypotheses_displacer.py#L141-L142)). The learning module uses its pose hypothesis to transform the feature relative to the world into its object's reference frame so that it can recognize the object in any orientation and location in the world, independent of where it was learned.
 
-> [!NOTE] 
+> [!NOTE]
 > For a description of these transforms in mathematical notation, see our pre-print [Thousand-Brains Systems: Sensorimotor Intelligence for Rapid, Robust Learning and Inference](https://arxiv.org/abs/2507.04494).
 
 
-> [!NOTE] 
+> [!NOTE]
 > In the brain we hypothesize that the transformation of sensory input into the object's reference frame is done by the thalamus (see our [neuroscience theory paper](https://arxiv.org/abs/2507.05888) for more details).
 
 ## Keeping Input to the LM Constant as the Sensor Moves
@@ -48,11 +48,11 @@ The plot below only shows one pose hypothesis, but in practice, Monty has many o
 
 ## Applying the Pose Hypothesis to the Sensor Movement
 
-What is not shown in the visualizations above is that the same rotation transform is also applied to the movement vector (displacement) of the sensor (pink). In Monty we calculate how much the sensor has moved in the world by taking the difference between two successive location and orientation inputs to the LM ([code](https://github.com/thousandbrainsproject/tbp.monty/blob/a408bf6063852323b98e009da5e1373d097beb73/src/tbp/monty/frameworks/models/graph_matching.py#L1052)). The sensor movement is applied to update the hypothesized location on the object (pink dot). 
+What is not shown in the visualizations above is that the same rotation transform is also applied to the movement vector (displacement) of the sensor (pink). In Monty we calculate how much the sensor has moved in the world by taking the difference between two successive location and orientation inputs to the LM ([code](https://github.com/thousandbrainsproject/tbp.monty/blob/a408bf6063852323b98e009da5e1373d097beb73/src/tbp/monty/frameworks/models/graph_matching.py#L1052)). The sensor movement is applied to update the hypothesized location on the object (pink dot).
 
-Before we can apply the movement to update our hypothesized location on the object, the movement needs to be transformed from a movement in the world to movement in the object's reference frame. To do this, the hypothesized object orientation (yellow) is applied, the same way it is applied to the incoming features. 
+Before we can apply the movement to update our hypothesized location on the object, the movement needs to be transformed from a movement in the world to movement in the object's reference frame. To do this, the hypothesized object orientation (yellow) is applied, the same way it is applied to the incoming features.
 
-So for example, if object is rotated by 90 degrees to the left and the sensor moved right to left on the object (like in the animation shown below), then the orientation transform will update the location on the object model (pink dot) to move from bottom to top of the object. 
+So for example, if object is rotated by 90 degrees to the left and the sensor moved right to left on the object (like in the animation shown below), then the orientation transform will update the location on the object model (pink dot) to move from bottom to top of the object.
 
 ![](../../figures/how-monty-works/movement_transform.gif)
 
@@ -79,7 +79,7 @@ However, voting in this case does not help reduce ambiguity as both LMs receive 
 If the two LMs receive input from two different locations in the world (like in the animation above and the image below), we need to calculate the displacement between the two and apply it to the incoming votes. In the example below, the left LM is sensing the left side of the rim and the right LM is sensing the handle. When the right LM receives votes from the left one, it needs to shift those down and towards the right. You can think of the right LM saying "if you are over there, and you think you are at this location on the mug, then I should be x amount to the lower right of that".
 ![](../../figures/how-monty-works/vote_loc_transform.png#width=400px)
 
-The displaced votes are overlaid onto the existing location hypotheses of the receiving LM (purple dots). Only a few points will be consistent with the incoming votes (in this case just one, circled in dark green). When the right LM sends votes to the left one, it's location hypotheses will have to be displaced in the opposite direction (towards the left). 
+The displaced votes are overlaid onto the existing location hypotheses of the receiving LM (purple dots). Only a few points will be consistent with the incoming votes (in this case just one, circled in dark green). When the right LM sends votes to the left one, it's location hypotheses will have to be displaced in the opposite direction (towards the left).
 
 ## Example: Accounting for the Pose Hypothesis
 What we haven't shown so far is how voting accounts for the pose hypothesis. The examples above all illustrated cases where the object orientation in the world matched the orientation it was learned in (hence the yellow arrow did not rotate any of the input). The figures above were also simplified in that they only showed one pose hypothesis for the object. In reality, we have one pose hypothesis (yellow arrows) for each hypothesized location (pink dots).
@@ -88,4 +88,4 @@ When voting, the sending LM does not only send it's location hypotheses but also
 
 ![](../../figures/how-monty-works/vote_loc_rot_transform.png#width=400px)
 
-After this displacement is applied, the vote locations (pink dots) can again be overlaid onto the existing hypothesis space (purple dots). 
+After this displacement is applied, the vote locations (pink dots) can again be overlaid onto the existing hypothesis space (purple dots).

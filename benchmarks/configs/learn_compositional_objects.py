@@ -23,8 +23,8 @@ from tbp.monty.frameworks.config_utils.config_args import (
     TwoLMStackedMontyConfig,
     get_cube_face_and_corner_views_rotations,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataloaderPerObjectArgs,
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
+    EnvironmentInterfacePerObjectArgs,
     PredefinedObjectInitializer,
     SupervisedPretrainingExperimentArgs,
     get_object_names_by_idx,
@@ -52,7 +52,7 @@ from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateG
 from tbp.monty.frameworks.models.motor_policies import InformedPolicy, NaiveScanPolicy
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsTwoLMDistantStackedMount,
-    TwoLMStackedDistantMountHabitatDatasetArgs,
+    TwoLMStackedDistantMountHabitatEnvInterfaceConfig,
 )
 
 # FOR SUPERVISED PRETRAINING: 14 unique rotations that give good views of the object.
@@ -156,12 +156,12 @@ supervised_pre_training_flat_objects_wo_logos.update(
             )
         ),  # use spiral policy for more even object coverage during learning
     ),
-    dataset_args=TwoLMStackedDistantMountHabitatDatasetArgs(
+    env_interface_config=TwoLMStackedDistantMountHabitatEnvInterfaceConfig(
         env_init_args=EnvInitArgsTwoLMDistantStackedMount(
             data_path=os.path.join(os.environ["MONTY_DATA"], "compositional_objects")
         ).__dict__,
     ),
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(
             0, len(FLAT_OBJECTS_WITHOUT_LOGOS), object_list=FLAT_OBJECTS_WITHOUT_LOGOS
         ),
@@ -199,7 +199,7 @@ supervised_pre_training_logos_after_flat_objects.update(
             )
         ),  # use spiral policy for more even object coverage during learning
     ),
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(0, len(LOGOS), object_list=LOGOS),
         object_init_sampler=PredefinedObjectInitializer(
             positions=LOGO_POSITIONS,
@@ -223,7 +223,7 @@ supervised_pre_training_curved_objects_after_flat_and_logo.update(
             "supervised_pre_training_logos_after_flat_objects/pretrained/",
         ),
     ),
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(
             0,
             len(CURVED_OBJECTS_WITHOUT_LOGOS),
@@ -253,7 +253,7 @@ supervised_pre_training_objects_with_logos_lvl1_monolithic_models.update(
             "supervised_pre_training_logos_after_flat_objects/pretrained/",
         ),
     ),
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(
             0, len(OBJECTS_WITH_LOGOS_LVL1), object_list=OBJECTS_WITH_LOGOS_LVL1
         ),
@@ -329,7 +329,7 @@ supervised_pre_training_objects_with_logos_lvl2_comp_models.update(
         supervised_lm_ids=["learning_module_1"],
         min_lms_match=2,
     ),
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(
             0, len(OBJECTS_WITH_LOGOS_LVL2), object_list=OBJECTS_WITH_LOGOS_LVL2
         ),
@@ -344,7 +344,7 @@ supervised_pre_training_objects_with_logos_lvl3_comp_models = copy.deepcopy(
 )
 
 supervised_pre_training_objects_with_logos_lvl3_comp_models.update(
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(
             0, len(OBJECTS_WITH_LOGOS_LVL3), object_list=OBJECTS_WITH_LOGOS_LVL3
         ),
@@ -360,7 +360,7 @@ supervised_pre_training_objects_with_logos_lvl4_comp_models = copy.deepcopy(
 )
 
 supervised_pre_training_objects_with_logos_lvl4_comp_models.update(
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(
             0, len(OBJECTS_WITH_LOGOS_LVL4), object_list=OBJECTS_WITH_LOGOS_LVL4
         ),
