@@ -13,6 +13,8 @@ from dataclasses import fields
 
 from benchmarks.configs.follow_ups.names import NAMES as FOLLOW_UP_NAMES
 from benchmarks.configs.names import (
+    CompositionalInferenceExperiments,
+    CompositionalLearningExperiments,
     MontyWorldExperiments,
     MontyWorldHabitatExperiments,
     MyExperiments,
@@ -76,6 +78,12 @@ def select_config(experiment: str) -> dict:
     pretraining_experiment_names = [
         field.name for field in fields(PretrainingExperiments)
     ]
+    compositional_inference_experiment_names = [
+        field.name for field in fields(CompositionalInferenceExperiments)
+    ]
+    compositional_learning_experiment_names = [
+        field.name for field in fields(CompositionalLearningExperiments)
+    ]
     ycb_experiment_names = [field.name for field in fields(YcbExperiments)]
     unsupervised_inference_experiment_names = [
         field.name for field in fields(UnsupervisedInferenceExperiments)
@@ -83,35 +91,64 @@ def select_config(experiment: str) -> dict:
     my_experiment_names = [field.name for field in fields(MyExperiments)]
 
     if experiment in monty_world_experiment_names:
-        from benchmarks.configs.monty_world_experiments import CONFIGS as MONTY_WORLD
+        from benchmarks.configs.monty_world_experiments import (  # noqa: PLC0415
+            CONFIGS as MONTY_WORLD,
+        )
 
         return MONTY_WORLD
-    elif experiment in monty_world_habitat_experiment_names:
-        from benchmarks.configs.monty_world_habitat_experiments import (
+
+    if experiment in monty_world_habitat_experiment_names:
+        from benchmarks.configs.monty_world_habitat_experiments import (  # noqa: PLC0415
             CONFIGS as MONTY_WORLD_HABITAT,
         )
 
         return MONTY_WORLD_HABITAT
-    elif experiment in pretraining_experiment_names:
-        from benchmarks.configs.pretraining_experiments import CONFIGS as PRETRAININGS
+
+    if experiment in pretraining_experiment_names:
+        from benchmarks.configs.pretraining_experiments import (  # noqa: PLC0415
+            CONFIGS as PRETRAININGS,
+        )
 
         return PRETRAININGS
-    elif experiment in ycb_experiment_names:
-        from benchmarks.configs.ycb_experiments import CONFIGS as YCB
+
+    if experiment in compositional_inference_experiment_names:
+        from benchmarks.configs.infer_compositional_objects import (  # noqa: PLC0415
+            CONFIGS as COMPOSITIONAL_INFERENCE,
+        )
+
+        return COMPOSITIONAL_INFERENCE
+
+    if experiment in compositional_learning_experiment_names:
+        from benchmarks.configs.learn_compositional_objects import (  # noqa: PLC0415
+            CONFIGS as COMPOSITIONAL_LEARNING,
+        )
+
+        return COMPOSITIONAL_LEARNING
+
+    if experiment in ycb_experiment_names:
+        from benchmarks.configs.ycb_experiments import CONFIGS as YCB  # noqa: PLC0415
 
         return YCB
-    elif experiment in unsupervised_inference_experiment_names:
-        from benchmarks.configs.unsupervised_inference_experiments import (
+
+    if experiment in unsupervised_inference_experiment_names:
+        from benchmarks.configs.unsupervised_inference_experiments import (  # noqa: PLC0415
             CONFIGS as UNSUPERVISED_INFERENCE,
         )
 
         return UNSUPERVISED_INFERENCE
-    elif experiment in my_experiment_names:
-        from benchmarks.configs.my_experiments import CONFIGS as MY_EXPERIMENTS
+
+    if experiment in my_experiment_names:
+        from benchmarks.configs.my_experiments import (  # noqa: PLC0415
+            CONFIGS as MY_EXPERIMENTS,
+        )
 
         return MY_EXPERIMENTS
 
-    elif experiment in FOLLOW_UP_NAMES:
-        from benchmarks.configs.follow_ups import CONFIGS as FOLLOW_UP_EXPERIMENTS
+    if experiment in FOLLOW_UP_NAMES:
+        from benchmarks.configs.follow_ups import (  # noqa: PLC0415
+            CONFIGS as FOLLOW_UP_EXPERIMENTS,
+        )
 
         return FOLLOW_UP_EXPERIMENTS
+
+    return None

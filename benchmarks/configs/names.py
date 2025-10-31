@@ -56,6 +56,29 @@ class PretrainingExperiments:
 
 
 @dataclass
+class CompositionalInferenceExperiments:
+    infer_comp_lvl1_with_monolithic_models: dict
+    infer_comp_lvl1_with_comp_models: dict
+    infer_comp_lvl1_with_comp_models_and_resampling: dict
+    infer_comp_lvl2_with_comp_models: dict
+    infer_comp_lvl3_with_comp_models: dict
+    infer_comp_lvl4_with_comp_models: dict
+
+
+@dataclass
+class CompositionalLearningExperiments:
+    supervised_pre_training_flat_objects_wo_logos: dict
+    supervised_pre_training_logos_after_flat_objects: dict
+    supervised_pre_training_curved_objects_after_flat_and_logo: dict
+    supervised_pre_training_objects_with_logos_lvl1_monolithic_models: dict
+    supervised_pre_training_objects_with_logos_lvl1_comp_models: dict
+    supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling: dict
+    supervised_pre_training_objects_with_logos_lvl2_comp_models: dict
+    supervised_pre_training_objects_with_logos_lvl3_comp_models: dict
+    supervised_pre_training_objects_with_logos_lvl4_comp_models: dict
+
+
+@dataclass
 class YcbExperiments:
     base_config_10distinctobj_dist_agent: dict
     base_config_10distinctobj_surf_agent: dict

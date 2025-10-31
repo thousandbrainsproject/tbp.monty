@@ -34,6 +34,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
     VectorXYZ,
 )
+from tbp.monty.frameworks.agents import AgentID
 
 __all__ = [
     "ActionSampler",
@@ -59,7 +60,7 @@ class ActionSampler:
             f"sample_{action_name}" for action_name in self._action_names
         ]
 
-    def sample(self, agent_id: str) -> Action:
+    def sample(self, agent_id: AgentID) -> Action:
         """Sample a random action from the available action types.
 
         Returns:
@@ -107,23 +108,23 @@ class ConstantSampler(ActionSampler):
         self.rotation_quat = rotation_quat if rotation_quat is not None else qt.one
         self.translation_distance = translation_distance
 
-    def sample_look_down(self, agent_id: str) -> LookDown:
+    def sample_look_down(self, agent_id: AgentID) -> LookDown:
         return LookDown(agent_id=agent_id, rotation_degrees=self.rotation_degrees)
 
-    def sample_look_up(self, agent_id: str) -> LookUp:
+    def sample_look_up(self, agent_id: AgentID) -> LookUp:
         return LookUp(agent_id=agent_id, rotation_degrees=self.rotation_degrees)
 
-    def sample_move_forward(self, agent_id: str) -> MoveForward:
+    def sample_move_forward(self, agent_id: AgentID) -> MoveForward:
         return MoveForward(agent_id=agent_id, distance=self.translation_distance)
 
-    def sample_move_tangentially(self, agent_id: str) -> MoveTangentially:
+    def sample_move_tangentially(self, agent_id: AgentID) -> MoveTangentially:
         return MoveTangentially(
             agent_id=agent_id,
             distance=self.translation_distance,
             direction=self.direction,
         )
 
-    def sample_orient_horizontal(self, agent_id: str) -> OrientHorizontal:
+    def sample_orient_horizontal(self, agent_id: AgentID) -> OrientHorizontal:
         return OrientHorizontal(
             agent_id=agent_id,
             rotation_degrees=self.rotation_degrees,
@@ -131,7 +132,7 @@ class ConstantSampler(ActionSampler):
             forward_distance=self.translation_distance,
         )
 
-    def sample_orient_vertical(self, agent_id: str) -> OrientVertical:
+    def sample_orient_vertical(self, agent_id: AgentID) -> OrientVertical:
         return OrientVertical(
             agent_id=agent_id,
             rotation_degrees=self.rotation_degrees,
@@ -139,32 +140,32 @@ class ConstantSampler(ActionSampler):
             forward_distance=self.translation_distance,
         )
 
-    def sample_set_agent_pitch(self, agent_id: str) -> SetAgentPitch:
+    def sample_set_agent_pitch(self, agent_id: AgentID) -> SetAgentPitch:
         return SetAgentPitch(agent_id=agent_id, pitch_degrees=self.absolute_degrees)
 
-    def sample_set_agent_pose(self, agent_id: str) -> SetAgentPose:
+    def sample_set_agent_pose(self, agent_id: AgentID) -> SetAgentPose:
         return SetAgentPose(
             agent_id=agent_id, location=self.location, rotation_quat=self.rotation_quat
         )
 
-    def sample_set_sensor_pitch(self, agent_id: str) -> SetSensorPitch:
+    def sample_set_sensor_pitch(self, agent_id: AgentID) -> SetSensorPitch:
         return SetSensorPitch(agent_id=agent_id, pitch_degrees=self.absolute_degrees)
 
-    def sample_set_sensor_pose(self, agent_id: str) -> SetSensorPose:
+    def sample_set_sensor_pose(self, agent_id: AgentID) -> SetSensorPose:
         return SetSensorPose(
             agent_id=agent_id, location=self.location, rotation_quat=self.rotation_quat
         )
 
-    def sample_set_sensor_rotation(self, agent_id: str) -> SetSensorRotation:
+    def sample_set_sensor_rotation(self, agent_id: AgentID) -> SetSensorRotation:
         return SetSensorRotation(agent_id=agent_id, rotation_quat=self.rotation_quat)
 
-    def sample_set_yaw(self, agent_id: str) -> SetYaw:
+    def sample_set_yaw(self, agent_id: AgentID) -> SetYaw:
         return SetYaw(agent_id=agent_id, rotation_degrees=self.absolute_degrees)
 
-    def sample_turn_left(self, agent_id: str) -> TurnLeft:
+    def sample_turn_left(self, agent_id: AgentID) -> TurnLeft:
         return TurnLeft(agent_id=agent_id, rotation_degrees=self.rotation_degrees)
 
-    def sample_turn_right(self, agent_id: str) -> TurnRight:
+    def sample_turn_right(self, agent_id: AgentID) -> TurnRight:
         return TurnRight(agent_id=agent_id, rotation_degrees=self.rotation_degrees)
 
 
@@ -213,23 +214,23 @@ class UniformlyDistributedSampler(ActionSampler):
     def _random_vector_xyz(self) -> VectorXYZ:
         return (self.rng.random(), self.rng.random(), self.rng.random())
 
-    def sample_look_down(self, agent_id: str) -> LookDown:
+    def sample_look_down(self, agent_id: AgentID) -> LookDown:
         rotation_degrees = self.rng.uniform(
             low=self.min_rotation_degrees, high=self.max_rotation_degrees
         )
         return LookDown(agent_id=agent_id, rotation_degrees=rotation_degrees)
 
-    def sample_look_up(self, agent_id: str) -> LookUp:
+    def sample_look_up(self, agent_id: AgentID) -> LookUp:
         rotation_degrees = self.rng.uniform(
             low=self.min_rotation_degrees, high=self.max_rotation_degrees
         )
         return LookUp(agent_id=agent_id, rotation_degrees=rotation_degrees)
 
-    def sample_move_forward(self, agent_id: str) -> MoveForward:
+    def sample_move_forward(self, agent_id: AgentID) -> MoveForward:
         distance = self.rng.uniform(low=self.min_translation, high=self.max_translation)
         return MoveForward(agent_id=agent_id, distance=distance)
 
-    def sample_move_tangentially(self, agent_id: str) -> MoveTangentially:
+    def sample_move_tangentially(self, agent_id: AgentID) -> MoveTangentially:
         distance = self.rng.uniform(low=self.min_translation, high=self.max_translation)
         direction = self._random_vector_xyz()
         return MoveTangentially(
@@ -238,7 +239,7 @@ class UniformlyDistributedSampler(ActionSampler):
             direction=direction,
         )
 
-    def sample_orient_horizontal(self, agent_id: str) -> OrientHorizontal:
+    def sample_orient_horizontal(self, agent_id: AgentID) -> OrientHorizontal:
         rotation_degrees = self.rng.uniform(
             low=self.min_rotation_degrees, high=self.max_rotation_degrees
         )
@@ -255,7 +256,7 @@ class UniformlyDistributedSampler(ActionSampler):
             forward_distance=forward_distance,
         )
 
-    def sample_orient_vertical(self, agent_id: str) -> OrientVertical:
+    def sample_orient_vertical(self, agent_id: AgentID) -> OrientVertical:
         rotation_degrees = self.rng.uniform(
             low=self.min_rotation_degrees, high=self.max_rotation_degrees
         )
@@ -272,49 +273,49 @@ class UniformlyDistributedSampler(ActionSampler):
             forward_distance=forward_distance,
         )
 
-    def sample_set_agent_pitch(self, agent_id: str) -> SetAgentPitch:
+    def sample_set_agent_pitch(self, agent_id: AgentID) -> SetAgentPitch:
         pitch_degrees = self.rng.uniform(
             low=self.min_absolute_degrees, high=self.max_absolute_degrees
         )
         return SetAgentPitch(agent_id=agent_id, pitch_degrees=pitch_degrees)
 
-    def sample_set_agent_pose(self, agent_id: str) -> SetAgentPose:
+    def sample_set_agent_pose(self, agent_id: AgentID) -> SetAgentPose:
         location = self._random_vector_xyz()
         rotation_quat = self._random_quaternion_wxyz()
         return SetAgentPose(
             agent_id=agent_id, location=location, rotation_quat=rotation_quat
         )
 
-    def sample_set_sensor_pitch(self, agent_id: str) -> SetSensorPitch:
+    def sample_set_sensor_pitch(self, agent_id: AgentID) -> SetSensorPitch:
         pitch_degrees = self.rng.uniform(
             low=self.min_absolute_degrees, high=self.max_absolute_degrees
         )
         return SetSensorPitch(agent_id=agent_id, pitch_degrees=pitch_degrees)
 
-    def sample_set_sensor_pose(self, agent_id: str) -> SetSensorPose:
+    def sample_set_sensor_pose(self, agent_id: AgentID) -> SetSensorPose:
         location = self._random_vector_xyz()
         rotation_quat = self._random_quaternion_wxyz()
         return SetSensorPose(
             agent_id=agent_id, location=location, rotation_quat=rotation_quat
         )
 
-    def sample_set_sensor_rotation(self, agent_id: str) -> SetSensorRotation:
+    def sample_set_sensor_rotation(self, agent_id: AgentID) -> SetSensorRotation:
         rotation_quat = self._random_quaternion_wxyz()
         return SetSensorRotation(agent_id=agent_id, rotation_quat=rotation_quat)
 
-    def sample_set_yaw(self, agent_id: str) -> SetYaw:
+    def sample_set_yaw(self, agent_id: AgentID) -> SetYaw:
         rotation_degrees = self.rng.uniform(
             low=self.min_absolute_degrees, high=self.max_absolute_degrees
         )
         return SetYaw(agent_id=agent_id, rotation_degrees=rotation_degrees)
 
-    def sample_turn_left(self, agent_id: str) -> TurnLeft:
+    def sample_turn_left(self, agent_id: AgentID) -> TurnLeft:
         rotation_degrees = self.rng.uniform(
             low=self.min_rotation_degrees, high=self.max_rotation_degrees
         )
         return TurnLeft(agent_id=agent_id, rotation_degrees=rotation_degrees)
 
-    def sample_turn_right(self, agent_id: str) -> TurnRight:
+    def sample_turn_right(self, agent_id: AgentID) -> TurnRight:
         rotation_degrees = self.rng.uniform(
             low=self.min_rotation_degrees, high=self.max_rotation_degrees
         )

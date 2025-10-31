@@ -176,7 +176,7 @@ class EvidenceGraphLM(GraphLM):
         **kwargs,
     ) -> None:
         kwargs["initialize_base_modules"] = False
-        super(EvidenceGraphLM, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         # --- LM components ---
         self.graph_memory = EvidenceGraphMemory(
             graph_delta_thresholds=graph_delta_thresholds,
@@ -238,6 +238,7 @@ class EvidenceGraphLM(GraphLM):
             "scale": 1,
             "evidence": 0,
         }
+        self.previous_mlh = self.current_mlh
 
         if hypotheses_updater_args is None:
             hypotheses_updater_args = {}
@@ -438,32 +439,34 @@ class EvidenceGraphLM(GraphLM):
         # object_loc_rel_body = (
         #     self.buffer.get_current_location(input_channel="first") - mlh["location"]
         # )
-        hypothesized_state = State(
+        return State(
             # Same as input location from patch (rel body)
             # NOTE: Just for common format at the moment, movement information will be
             # taken from the sensor. For higher level LMs, we may want to transmit the
             # motor efference copy here.
             # TODO: get motor efference copy here. Need to refactor motor command
             # selection for this.
-            location=self.buffer.get_current_location(
-                input_channel="first"
-            ),  # location rel. body
+            # location rel. body -> same as sensor input to higher LM (assuming they are
+            # colocated) so it is not used.
+            location=self.buffer.get_current_location(input_channel="first"),
             morphological_features={
                 "pose_vectors": pose_features,
                 "pose_fully_defined": not self._enough_symmetry_evidence_accumulated(),
+                # on_object is also same as sensor input to higher LM (assuming they are
+                # colocated) so not used.
                 "on_object": self.buffer.get_currently_on_object(),
             },
             non_morphological_features={
                 "object_id": object_id_features,
-                # TODO H: test if this makes sense to communicate
-                "location_rel_model": mlh["location"],
+                # TODO H: test if it makes sense to communicate mlh["location"] as a
+                # non-morphological feature as well (would be kind of like the inverse
+                # of top-down connections).
             },
             confidence=confidence,
             use_state=use_state,
             sender_id=self.learning_module_id,
             sender_type="LM",
         )
-        return hypothesized_state
 
     # ------------------ Getters & Setters ---------------------
     def set_detected_object(self, terminal_state):
@@ -565,11 +568,11 @@ class EvidenceGraphLM(GraphLM):
                     }
                     self.buffer.add_overall_stats(symmetry_stats)
                 return pose_and_scale
-            else:
-                logger.debug(f"object {object_id} detected but pose not resolved yet.")
-                return None
-        else:
+
+            logger.debug(f"object {object_id} detected but pose not resolved yet.")
             return None
+
+        return None
 
     def get_current_mlh(self):
         """Return the current most likely hypothesis of the learning module.
@@ -609,7 +612,19 @@ class EvidenceGraphLM(GraphLM):
         else:
             top_id = graph_ids[top_indices[0]]
             second_id = top_id
-
+        # Account for the case where we have multiple top evidences with the same value.
+        # In this case argsort and argmax (used to get current_mlh) will return
+        # different results but some downstream logic (in gsg) expects them to be the
+        # same.
+        if top_id != self.current_mlh["graph_id"]:
+            if second_id == self.current_mlh["graph_id"]:
+                # swap top and second id
+                second_id, top_id = top_id, second_id
+            else:
+                # current mlh is not in top two, so we just set top id to current mlh
+                # and keep the second id as is (since this means there is a threeway
+                # tie in evidence values so its not like top is more likely than second)
+                top_id = self.current_mlh["graph_id"]
         return top_id, second_id
 
     def get_top_two_pose_hypotheses_for_graph_id(self, graph_id):
@@ -687,6 +702,7 @@ class EvidenceGraphLM(GraphLM):
             "possible_matches": self.get_possible_matches(),
             "current_mlh": self.get_current_mlh(),
         }
+        self._append_mlh_prediction_error_to_stats()
         if self.has_detailed_logger:
             stats = self._add_detailed_stats(stats)
         return stats
@@ -718,6 +734,7 @@ class EvidenceGraphLM(GraphLM):
         # NOTE: would not need to do this if we are still voting
         # Call this update in the step method?
         self.possible_matches = self._threshold_possible_matches()
+        self.previous_mlh = self.current_mlh
         self.current_mlh = self._calculate_most_likely_hypothesis()
 
     def _update_evidence(
@@ -972,8 +989,7 @@ class EvidenceGraphLM(GraphLM):
             np.max(np.nan_to_num(differences)) <= self.pose_similarity_threshold
         )
 
-        pose_is_unique = location_unique and rotation_unique
-        return pose_is_unique
+        return location_unique and rotation_unique
 
     def _check_for_symmetry(self, possible_object_hypotheses_ids, increment_evidence):
         """Check whether the most likely hypotheses stayed the same over the past steps.
@@ -1014,8 +1030,8 @@ class EvidenceGraphLM(GraphLM):
                 f"Symmetry detected for hypotheses {possible_object_hypotheses_ids}"
             )
             return True
-        else:
-            return False
+
+        return False
 
     def _enough_symmetry_evidence_accumulated(self):
         """Check if enough evidence for symmetry has been accumulated.
@@ -1038,10 +1054,10 @@ class EvidenceGraphLM(GraphLM):
         """
         if pose is None:
             return np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-        else:
-            # Equivalent to applying the pose rotation to the rf spanning unit vectors
-            # -> pose.as_matrix().dot(pose_vectors.T).T
-            return pose.as_matrix().T
+
+        # Equivalent to applying the pose rotation to the rf spanning unit vectors
+        # -> pose.as_matrix().dot(pose_vectors.T).T
+        return pose.as_matrix().T
 
     def _object_id_to_features(self, object_id):
         """Turn object ID into features that express object similarity.
@@ -1051,8 +1067,7 @@ class EvidenceGraphLM(GraphLM):
         """
         # TODO H: Make this based on object similarity
         # For now just taking sum of character ids in object name
-        id_feature = sum(ord(i) for i in object_id)
-        return id_feature
+        return sum(ord(i) for i in object_id)
 
     def _fill_feature_weights_with_default(self, default: int) -> None:
         for input_channel, channel_tolerances in self.tolerances.items():
@@ -1132,14 +1147,13 @@ class EvidenceGraphLM(GraphLM):
         Returns:
             The most likely hypothesis dictionary.
         """
-        mlh_dict = {
+        return {
             "graph_id": graph_id,
             "location": self.possible_locations[graph_id][mlh_id],
             "rotation": Rotation.from_matrix(self.possible_poses[graph_id][mlh_id]),
             "scale": self.get_object_scale(graph_id),
             "evidence": self.evidence[graph_id][mlh_id],
         }
-        return mlh_dict
 
     def _calculate_most_likely_hypothesis(self, graph_id=None):
         """Return pose with highest evidence count.
@@ -1172,16 +1186,51 @@ class EvidenceGraphLM(GraphLM):
         return mlh
 
     def _get_node_distance_weights(self, distances):
-        node_distance_weights = (
-            self.max_match_distance - distances
-        ) / self.max_match_distance
-        return node_distance_weights
+        return (self.max_match_distance - distances) / self.max_match_distance
 
     # ----------------------- Logging --------------------------
     def _add_votes_to_buffer_stats(self, vote_data):
         # Do we want to store this? will probably just clutter.
         # self.buffer.update_stats(vote_data, update_time=False)
         pass
+
+    def _append_mlh_prediction_error_to_stats(self):
+        """Append the MLH prediction error for this step to the buffer stats."""
+        # We need to look at the previous mlh (which is the most likely hypothesis at
+        # the time the prediction error was calculated) since the mlh is updated between
+        # prediction error calculation and stats collection.
+        graph_id = self.previous_mlh["graph_id"]
+
+        if graph_id in ["no_observations_yet", "new_object0"]:
+            # don't try to log prediction errors if there were no observations or LM
+            # detected no match.
+            return
+        graph_telemetry = self.hypotheses_updater_telemetry[graph_id]
+        prediction_errors = []
+        for input_channel in graph_telemetry:
+            channel_telemetry = graph_telemetry[input_channel]
+            # Check if there is displacer telemetry and if it contains a prediction
+            # error. This would not be the case if there are no existing hypotheses
+            # or if a channel was newly initialized.
+            try:
+                displacer_telemetry = (
+                    channel_telemetry.channel_hypothesis_displacer_telemetry
+                )
+                channel_prediction_error = displacer_telemetry.mlh_prediction_error
+                prediction_errors.append(channel_prediction_error)
+            except AttributeError:
+                # channel_telemetry was missing needed attributes,
+                # so skip adding prediction errors
+                pass
+
+        if prediction_errors:
+            # Get the average prediction error over all channels for this step.
+            mlh_prediction_error = np.mean(prediction_errors)
+            self.buffer.update_stats(
+                {"mlh_prediction_error": mlh_prediction_error},
+                update_time=False,
+                append=True,  # append here since we want to average over all steps
+            )
 
     def _add_detailed_stats(self, stats):
         # Save possible poses once since they don't change during episode

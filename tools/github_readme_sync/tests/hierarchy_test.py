@@ -65,7 +65,7 @@ class TestHierarchyFile(unittest.TestCase):
         hierarchy_file_path = os.path.join(self.test_dir, HIERARCHY_FILE)
         self.assertTrue(os.path.exists(hierarchy_file_path))
 
-        with open(hierarchy_file_path, "r") as f:
+        with open(hierarchy_file_path) as f:
             content = f.read()
             self.assertIn(f"{CATEGORY_PREFIX}category-1: Category 1\n", content)
             self.assertIn(f"{DOCUMENT_PREFIX}[doc-1](category-1/doc-1.md)\n", content)
@@ -150,7 +150,7 @@ class TestHierarchyFile(unittest.TestCase):
     def test_check_external_links(self):
         # Set up a mock server
         class MockHandler(http.server.SimpleHTTPRequestHandler):
-            def do_GET(self):  # noqa: N802
+            def do_GET(self):
                 if self.path == "/missing":
                     self.send_response(404)
                     self.end_headers()

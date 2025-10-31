@@ -40,9 +40,9 @@ If you are working with an existing environment, such as one used for reinforcem
 
 The observations should be returned as a nested dictionary with one entry per agent in the environment. Each agent should have sub-dictionaries with observations for each of its sensors. For example, if there is one agent with two sensors that each sense two types of features, it would look like this:
 
-```
+```python
 obs = {
-	"agent_id_0": {
+	AgentID("agent_id_0"): {
     	"patch_0": {
         	"depth": depth_sensed_by_patch_0,
         	"rgba": rgba_sensed_by_patch_0
@@ -58,9 +58,9 @@ obs = {
 Related to defining how actions change observations, you will also need to define how actions change the state of the agent. This is what the `get_state()` function returns. The returned state needs to be a dictionary with an entry per agent in the environment. The entry should contain the agent's position and orientation relative to some global reference point. For each sensor associated with that agent, a sub-dictionary should return the sensor's position and orientation relative to the agent.
 
 For example, if you have one agent with two sensors, the state dictionary could look like this:
-```
+```python
 state = {
-	"agent_id_0": {
+	AgentID("agent_id_0"): {
 		"position": current_agent_location,
 		"rotation": current_agent_orientation,
     	"sensors": {
@@ -114,12 +114,11 @@ Learning and inference on Omniglot characters can be implemented by writing two 
 ![Custom classes for character recognition on the Omniglot dataset](../../figures/how-to-use-monty/omniglot_custom_classes.png#width=500px)
 
 An experiment config for training on the Omniglot dataset can then look like this:
-```
+```python
 omniglot_training = dict(
 	experiment_class=MontySupervisedObjectPretrainingExperiment,
-	experiment_args=ExperimentArgs(
+	experiment_args=SupervisedPretrainingExperimentArgs(
     	n_train_epochs=1,
-    	do_eval=False,
 	),
 	logging_config=PretrainLoggingConfig(
     	output_dir=pretrain_dir,
@@ -211,6 +210,7 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
 	ExperimentArgs,
 	OmniglotDataloaderArgs,
 	OmniglotDatasetArgs,
+	SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
@@ -224,8 +224,8 @@ from tbp.monty.frameworks.models.evidence_matching.model import (
 	MontyForEvidenceGraphMatching
 )
 from tbp.monty.frameworks.models.sensor_modules import (
-	DetailedLoggingSM,
-	HabitatDistantPatchSM,
+	HabitatSM,
+	Probe,
 )
 
 monty_models_dir = os.getenv("MONTY_MODELS")
@@ -234,7 +234,7 @@ pretrain_dir = os.path.expanduser(os.path.join(monty_models_dir, "omniglot"))
 
 omniglot_sensor_module_config = dict(
 	sensor_module_0=dict(
-    	sensor_module_class=HabitatDistantPatchSM,
+    	sensor_module_class=HabitatSM,
     	sensor_module_args=dict(
         	sensor_module_id="patch",
         	features=[
@@ -249,7 +249,7 @@ omniglot_sensor_module_config = dict(
     	),
 	),
 	sensor_module_1=dict(
-    	sensor_module_class=DetailedLoggingSM,
+    	sensor_module_class=Probe,
     	sensor_module_args=dict(
         	sensor_module_id="view_finder",
         	save_raw_obs=False,
@@ -259,11 +259,12 @@ omniglot_sensor_module_config = dict(
 ```
 
 Finally, you will need to set the `experiments` variable at the bottom of the file to this:
-```
+```python
 experiments = MyExperiments(
-	omniglot_training=omniglot_training,
-	omniglot_inference=omniglot_inference,
+    omniglot_training=omniglot_training,
+    omniglot_inference=omniglot_inference,
 )
+CONFIGS = asdict(experiments)
 ```
 And add the two experiments into the `MyExperiment` class in `benchmarks/configs/names.py`.
 

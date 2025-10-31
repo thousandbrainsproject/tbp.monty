@@ -35,7 +35,7 @@ from tbp.monty.frameworks.environments.two_d_data import NUMENTA_OBJECTS
 from tbp.monty.frameworks.experiments.object_recognition_experiments import (
     MontyObjectRecognitionExperiment,
 )
-from tbp.monty.frameworks.models.sensor_modules import DetailedLoggingSM
+from tbp.monty.frameworks.models.sensor_modules import Probe
 from tbp.monty.simulators.habitat.configs import (
     PatchViewFinderMontyWorldMountHabitatDatasetArgs,
 )
@@ -64,7 +64,7 @@ randrot_noise_sim_on_scan_monty_world = dict(
         sensor_module_configs=dict(
             sensor_module_0=default_all_noisy_sensor_module,
             sensor_module_1=dict(
-                sensor_module_class=DetailedLoggingSM,
+                sensor_module_class=Probe,
                 sensor_module_args=dict(
                     sensor_module_id="view_finder",
                     save_raw_obs=False,

@@ -116,7 +116,7 @@ class TestReadme(unittest.TestCase):
         self.assertEqual(len(docs), 2)
         self.assertEqual(docs[0]["name"], "Doc 1")
         mock_get.assert_called_once_with(
-            f"https://dash.readme.com/api/v1/categories/example-category/docs",
+            "https://dash.readme.com/api/v1/categories/example-category/docs",
             {"x-readme-version": self.version},
         )
 
@@ -138,7 +138,7 @@ class TestReadme(unittest.TestCase):
         self.assertIn("title: Test Document", doc)
         self.assertIn("This is a test document.", doc)
         mock_get.assert_called_once_with(
-            f"https://dash.readme.com/api/v1/docs/test-doc",
+            "https://dash.readme.com/api/v1/docs/test-doc",
             {"x-readme-version": self.version},
         )
 
@@ -159,7 +159,7 @@ hidden: true
 This is a test document.""",
         )
         mock_get.assert_called_once_with(
-            f"https://dash.readme.com/api/v1/docs/test-doc",
+            "https://dash.readme.com/api/v1/docs/test-doc",
             {"x-readme-version": self.version},
         )
 
@@ -176,7 +176,7 @@ This is a test document.""",
         doc_id = self.readme.get_doc_id("test-doc")
         self.assertEqual(doc_id, "123")
         mock_get.assert_called_once_with(
-            f"https://dash.readme.com/api/v1/docs/test-doc",
+            "https://dash.readme.com/api/v1/docs/test-doc",
             {"x-readme-version": self.version},
         )
 
@@ -257,7 +257,7 @@ This is a test document.""",
     def test_delete_category(self, mock_delete):
         self.readme.delete_category("category-1")
         mock_delete.assert_called_once_with(
-            f"https://dash.readme.com/api/v1/categories/category-1",
+            "https://dash.readme.com/api/v1/categories/category-1",
             {"x-readme-version": self.version},
         )
 
@@ -265,7 +265,7 @@ This is a test document.""",
     def test_delete_doc(self, mock_delete):
         self.readme.delete_doc("doc-1")
         mock_delete.assert_called_once_with(
-            f"https://dash.readme.com/api/v1/docs/doc-1",
+            "https://dash.readme.com/api/v1/docs/doc-1",
             {"x-readme-version": self.version},
         )
 
@@ -280,7 +280,7 @@ This is a test document.""",
         self.assertTrue(created)
         self.assertEqual(category_id, "new-category-id")
         mock_get.assert_called_once_with(
-            f"https://dash.readme.com/api/v1/categories/new-category",
+            "https://dash.readme.com/api/v1/categories/new-category",
             {"x-readme-version": self.version},
         )
         mock_post.assert_called_once_with(
@@ -342,7 +342,7 @@ This is a test document.""",
             "description": "A collection of terms",
         }
 
-        doc_id, created = self.readme.create_or_update_doc(
+        self.readme.create_or_update_doc(
             order=1,
             category_id="category-id",
             doc=doc_with_description,
@@ -415,7 +415,7 @@ This is a test document.""",
         # Test cases for Markdown file paths
         markdown_paths_with_deep_link = [
             (
-                "[File 1](slug.md#sub-heading) and "  # fmt: skip
+                "[File 1](slug.md#sub-heading) and "  # fmt: skip noqa: RUF028
                 "[File 2](slug2.md#sub-heading)"
             ),
             (
@@ -451,7 +451,7 @@ This is a test document.""",
 
         for path in markdown_paths_without_deep_link:
             self.assertEqual(
-                self.readme.correct_file_locations(path), f"[File 1](/docs/slug)"
+                self.readme.correct_file_locations(path), "[File 1](/docs/slug)"
             )
 
         for path in markdown_paths_that_should_not_change:
@@ -690,7 +690,7 @@ This is a test document.""",
 
             # Test relative path from doc to csv
             result = self.readme.convert_csv_to_html_table(
-                f"!table[../../data/test.csv]", doc_path
+                "!table[../../data/test.csv]", doc_path
             )
 
             # Check the table structure

@@ -6,9 +6,13 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
 from typing import Any, Dict, TypedDict
 
 import numpy as np
+
+from tbp.monty.frameworks.agents import AgentID
 
 
 class SensorState(TypedDict):
@@ -44,7 +48,7 @@ class ProprioceptiveState(Dict[str, AgentState]):
     """
 
 
-class MotorSystemState(Dict[str, Any]):
+class MotorSystemState(Dict[AgentID, Any]):
     """The state of the motor system.
 
     TODO: Currently, ProprioceptiveState can be cast to MotorSystemState since
@@ -65,7 +69,7 @@ class MotorSystemState(Dict[str, Any]):
         Returns:
             Copy of the motor state.
         """
-        state_copy = {}
+        state_copy: dict[AgentID, Any] = {}
         for key in self.keys():
             state_copy[key] = {}
             for key_inner in self[key].keys():

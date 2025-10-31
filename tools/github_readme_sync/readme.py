@@ -213,7 +213,7 @@ class ReadMe:
             csv_path = os.path.normpath(csv_path)
 
             try:
-                with open(csv_path, "r") as f:
+                with open(csv_path) as f:
                     reader = csv.reader(f)
                     headers = next(reader)
                     rows = list(reader)
@@ -347,11 +347,10 @@ class ReadMe:
         relative_path = relative_path + "snippets/edit-this-page.md"
         body = body + f"\n\n!snippet[{relative_path}]"
         body = self.insert_markdown_snippet(body, file_path)
-        body = body.replace(
+        return body.replace(
             "!!LINK!!",
             f"https://github.com/thousandbrainsproject/tbp.monty/edit/main/{file_path}/{filename}.md",
         )
-        return body
 
     def correct_image_locations(self, body: str) -> str:
         repo = os.getenv("IMAGE_PATH")
@@ -382,8 +381,7 @@ class ReadMe:
                         new_body = new_body.replace(img_tag, new_img_tag)
 
         # Process regular markdown images
-        new_body = re.sub(regex_image_path, replace_image_path, new_body)
-        return new_body
+        return re.sub(regex_image_path, replace_image_path, new_body)
 
     def correct_file_locations(self, body: str) -> str:
         def replace_path(match):
@@ -474,7 +472,7 @@ class ReadMe:
 
     def convert_cloudinary_videos(self, markdown_text: str) -> str:
         def replace_video(match):
-            title, full_url, cloud_id, version, filename = match.groups()
+            _, _, cloud_id, version, filename = match.groups()
             # Replace the cloud ID with the environment variable
             new_url = f"https://res.cloudinary.com/{cloud_id}/video/upload/v{version}/{filename}"
             block = {
@@ -540,7 +538,7 @@ class ReadMe:
             snippet_path = os.path.normpath(snippet_path)
 
             try:
-                with open(snippet_path, "r") as f:
+                with open(snippet_path) as f:
                     unsafe_content = f.read()
                     return self.sanitize_html(unsafe_content)
 

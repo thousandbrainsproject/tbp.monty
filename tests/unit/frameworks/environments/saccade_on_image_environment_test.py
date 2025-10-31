@@ -19,9 +19,10 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environments.two_d_data import SaccadeOnImageEnvironment
 
-AGENT_ID = "agent_id_0"
+AGENT_ID = AgentID("agent_id_0")
 SENSOR_ID = "patch"
 
 

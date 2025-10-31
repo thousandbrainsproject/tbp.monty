@@ -13,6 +13,7 @@ import gym
 from tbp.monty.frameworks.environments.embodied_environment import (
     ActionSpace,
     EmbodiedEnvironment,
+    ObjectID,
 )
 
 __all__ = ["RealRobotsEnvironment"]
@@ -50,7 +51,7 @@ class RealRobotsEnvironment(EmbodiedEnvironment):
     def action_space(self):
         return GymActionSpace(self._env.action_space)
 
-    def add_object(self, *args, **kwargs):
+    def add_object(self, *args, **kwargs) -> ObjectID:
         # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
         #      interface and how the class hierarchy is defined and used.
         raise NotImplementedError(
@@ -61,7 +62,7 @@ class RealRobotsEnvironment(EmbodiedEnvironment):
         observation, reward, done, info = self._env.step(actions)
         return dict(**observation, reward=reward, done=done, info=info)
 
-    def remove_all_objects(self):
+    def remove_all_objects(self) -> None:
         # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
         #      interface and how the class hierarchy is defined and used.
         raise NotImplementedError(
@@ -72,7 +73,7 @@ class RealRobotsEnvironment(EmbodiedEnvironment):
         observation = self._env.reset()
         return dict(**observation, reward=0, done=False, info=None)
 
-    def close(self):
+    def close(self) -> None:
         if self._env is not None:
             self._env.close()
             self._env = None

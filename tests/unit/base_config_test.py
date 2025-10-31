@@ -84,7 +84,7 @@ class BaseConfigTest(unittest.TestCase):
         """
         pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        with MontyExperiment(base_config) as exp:
+        with MontyExperiment(base_config):
             pass
 
     # @unittest.skip("debugging")
@@ -167,7 +167,7 @@ class BaseConfigTest(unittest.TestCase):
             exp.save_state_dict()
             prev_model = exp.model
 
-        pprint(f"\n\n\n loading second experiment\n\n\n")
+        pprint("\n\n\n loading second experiment\n\n\n")
         # checkpoint_dir = self.exp.experiment_args.output_dir
         config_2 = copy.deepcopy(self.base_config)
         config_2["experiment_args"].model_name_or_path = exp.output_dir
@@ -205,7 +205,7 @@ class BaseConfigTest(unittest.TestCase):
             logger.info(info_message)
             logger.warning(warning_message)
 
-            with open(os.path.join(exp.output_dir, "log.txt"), "r") as f:
+            with open(os.path.join(exp.output_dir, "log.txt")) as f:
                 log = f.read()
 
             self.assertTrue(info_message in log)
@@ -224,7 +224,7 @@ class BaseConfigTest(unittest.TestCase):
             logger.debug(debug_message)
             logger.warning(warning_message)
 
-            with open(os.path.join(exp.output_dir, "log.txt"), "r") as f:
+            with open(os.path.join(exp.output_dir, "log.txt")) as f:
                 log = f.read()
 
             self.assertTrue(debug_message not in log)
