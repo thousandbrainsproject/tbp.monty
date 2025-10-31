@@ -143,7 +143,7 @@ class FutureWorkRecord(BaseModel):
     ]
 
     @classmethod
-    def _get_allowed_values(
+    def _allowed_values(
         cls, info: ValidationInfo
     ) -> tuple[str | None, list[str] | None]:
         """Extract allowed values from validation context.
@@ -218,7 +218,7 @@ class FutureWorkRecord(BaseModel):
         if parsed_items is None:
             return None
 
-        field_name, allowed_values = cls._get_allowed_values(info)
+        field_name, allowed_values = cls._allowed_values(info)
         if allowed_values is None:
             return parsed_items
 
@@ -266,7 +266,7 @@ class FutureWorkRecord(BaseModel):
         if v is None:
             return None
 
-        field_name, allowed_values = cls._get_allowed_values(info)
+        field_name, allowed_values = cls._allowed_values(info)
         if allowed_values is None:
             return v
 
