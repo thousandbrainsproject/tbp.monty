@@ -74,6 +74,8 @@ class TestFutureWorkRecord(unittest.TestCase):
             "tags": "accuracy,learning",
             "skills": "python,javascript",
             "contributor": "alice,bob",
+            "output-type": "documentation,website",
+            "improved-metric": "community-engagement,infrastructure",
         }
 
         validated = FutureWorkRecord.model_validate(record)
@@ -82,6 +84,8 @@ class TestFutureWorkRecord(unittest.TestCase):
         self.assertEqual(validated.tags, ["accuracy", "learning"])
         self.assertEqual(validated.skills, ["python", "javascript"])
         self.assertEqual(validated.contributor, ["alice", "bob"])
+        self.assertEqual(validated.output_type, ["documentation", "website"])
+        self.assertEqual(validated.improved_metric, ["community-engagement", "infrastructure"])
 
     def test_path_field_required(self):
         record = {
@@ -106,6 +110,42 @@ class TestFutureWorkRecord(unittest.TestCase):
             "path2": "test-item",
             "title": "Test item",
             "tags": too_many_tags,
+        }
+
+        with self.assertRaises(ValidationError) as cm:
+            FutureWorkRecord.model_validate(record)
+
+        errors = cm.exception.errors()
+        self.assertTrue(any("Cannot have more than" in e["msg"] for e in errors))
+
+    def test_comma_separated_output_type_limits(self):
+        max_items = MAX_COMMA_SEPARATED_ITEMS
+        too_many_output_types = ",".join([f"type{i}" for i in range(max_items + 1)])
+
+        record = {
+            "path": "future-work/test-item.md",
+            "path1": "future-work",
+            "path2": "test-item",
+            "title": "Test item",
+            "output-type": too_many_output_types,
+        }
+
+        with self.assertRaises(ValidationError) as cm:
+            FutureWorkRecord.model_validate(record)
+
+        errors = cm.exception.errors()
+        self.assertTrue(any("Cannot have more than" in e["msg"] for e in errors))
+
+    def test_comma_separated_improved_metric_limits(self):
+        max_items = MAX_COMMA_SEPARATED_ITEMS
+        too_many_metrics = ",".join([f"metric{i}" for i in range(max_items + 1)])
+
+        record = {
+            "path": "future-work/test-item.md",
+            "path1": "future-work",
+            "path2": "test-item",
+            "title": "Test item",
+            "improved-metric": too_many_metrics,
         }
 
         with self.assertRaises(ValidationError) as cm:
@@ -148,6 +188,65 @@ class TestFutureWorkRecord(unittest.TestCase):
 
         errors = cm.exception.errors()
         self.assertTrue(any("Invalid tags value" in e["msg"] for e in errors))
+
+    def test_validation_with_invalid_output_type(self):
+        record = {
+            "path": "future-work/test-item.md",
+            "path1": "future-work",
+            "path2": "test-item",
+            "title": "Test item",
+            "output-type": "invalid_type",
+        }
+
+        allowed_values = {"output_type": ["documentation", "website"]}
+
+        with self.assertRaises(ValidationError) as cm:
+            FutureWorkRecord.model_validate(
+                record, context={"allowed_values": allowed_values}
+            )
+
+        errors = cm.exception.errors()
+        self.assertTrue(any("Invalid output-type value" in e["msg"] for e in errors))
+
+    def test_validation_with_invalid_improved_metric(self):
+        record = {
+            "path": "future-work/test-item.md",
+            "path1": "future-work",
+            "path2": "test-item",
+            "title": "Test item",
+            "improved-metric": "invalid_metric",
+        }
+
+        allowed_values = {"improved_metric": ["community-engagement", "infrastructure"]}
+
+        with self.assertRaises(ValidationError) as cm:
+            FutureWorkRecord.model_validate(
+                record, context={"allowed_values": allowed_values}
+            )
+
+        errors = cm.exception.errors()
+        self.assertTrue(any("Invalid improved-metric value" in e["msg"] for e in errors))
+
+    def test_validation_with_valid_output_type_and_improved_metric(self):
+        record = {
+            "path": "future-work/test-item.md",
+            "path1": "future-work",
+            "path2": "test-item",
+            "title": "Test item",
+            "output-type": "documentation,website",
+            "improved-metric": "community-engagement,infrastructure",
+        }
+
+        allowed_values = {
+            "output_type": ["documentation", "website"],
+            "improved_metric": ["community-engagement", "infrastructure"],
+        }
+
+        validated = FutureWorkRecord.model_validate(
+            record, context={"allowed_values": allowed_values}
+        )
+        self.assertEqual(validated.output_type, ["documentation", "website"])
+        self.assertEqual(validated.improved_metric, ["community-engagement", "infrastructure"])
 
     def test_github_username_validation(self):
         record = {

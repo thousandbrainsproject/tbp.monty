@@ -89,7 +89,7 @@ class FutureWorkRecord(BaseModel):
         ),
     ]
     improved_metric: Annotated[
-        str | None,
+        list[str] | None,
         Field(
             default=None,
             alias="improved-metric",
@@ -97,7 +97,7 @@ class FutureWorkRecord(BaseModel):
         ),
     ]
     output_type: Annotated[
-        str | None,
+        list[str] | None,
         Field(
             default=None,
             alias="output-type",
@@ -193,7 +193,7 @@ class FutureWorkRecord(BaseModel):
 
         return parsed_items
 
-    @field_validator("tags", "skills", mode="before")
+    @field_validator("tags", "skills", "output_type", "improved_metric", mode="before")
     @classmethod
     def validate_comma_separated_list(
         cls, v: Any, info: ValidationInfo
@@ -227,11 +227,15 @@ class FutureWorkRecord(BaseModel):
             stripped_item = item.strip()
             if stripped_item not in allowed_values:
                 valid_list = ", ".join(sorted(allowed_values))
+                field_info = cls.model_fields.get(field_name)
+                display_name = (
+                    field_info.alias if field_info and field_info.alias else field_name
+                )
                 snippet_file = (
                     f"docs/snippets/future-work-{field_name.replace('_', '-')}.md"
                 )
                 raise ValueError(
-                    f"Invalid {field_name} value '{stripped_item}'. "
+                    f"Invalid {display_name} value '{stripped_item}'. "
                     f"Valid values are: {valid_list}. "
                     f"To add a new value, edit {snippet_file}"
                 )
@@ -239,7 +243,7 @@ class FutureWorkRecord(BaseModel):
 
         return sanitized_items
 
-    @field_validator("estimated_scope", "improved_metric", "output_type", "status")
+    @field_validator("estimated_scope", "status")
     @classmethod
     def validate_single_value_field(
         cls, v: str | None, info: ValidationInfo

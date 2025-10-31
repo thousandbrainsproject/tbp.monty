@@ -148,6 +148,22 @@ class TestBuild(unittest.TestCase):
                 "expected_result": ["accuracy", "learning"],
             },
             {
+                "name": "output_type_transformation",
+                "snippet_file": "future-work-output-type.md",
+                "snippet_content": "`documentation` `website` `tutorial`",
+                "field_name": "output-type",
+                "input_value": "documentation,website",
+                "expected_result": ["documentation", "website"],
+            },
+            {
+                "name": "improved_metric_transformation",
+                "snippet_file": "future-work-improved-metric.md",
+                "snippet_content": "`community-engagement` `infrastructure`",
+                "field_name": "improved-metric",
+                "input_value": "community-engagement,infrastructure",
+                "expected_result": ["community-engagement", "infrastructure"],
+            },
+            {
                 "name": "rfc_url_passthrough",
                 "field_name": "rfc",
                 "input_value": "https://github.com/thousandbrainsproject/tbp.monty/pull/1223",
@@ -317,6 +333,30 @@ class TestBuild(unittest.TestCase):
                 "expected_error_fragments": [
                     "Invalid tags value 'invalid-tag'",
                     "accuracy, learning, multiobj, pose",
+                ],
+            },
+            {
+                "name": "output_type_validation",
+                "snippet_file": "future-work-output-type.md",
+                "snippet_content": "`documentation` `website` `tutorial`",
+                "field_name": "output-type",
+                "valid_value": "documentation,website",
+                "invalid_value": "documentation,invalid-type",
+                "expected_error_fragments": [
+                    "Invalid output-type value 'invalid-type'",
+                    "documentation, tutorial, website",
+                ],
+            },
+            {
+                "name": "improved_metric_validation",
+                "snippet_file": "future-work-improved-metric.md",
+                "snippet_content": "`community-engagement` `infrastructure`",
+                "field_name": "improved-metric",
+                "valid_value": "community-engagement,infrastructure",
+                "invalid_value": "community-engagement,invalid-metric",
+                "expected_error_fragments": [
+                    "Invalid improved-metric value 'invalid-metric'",
+                    "community-engagement, infrastructure",
                 ],
             },
         ]
