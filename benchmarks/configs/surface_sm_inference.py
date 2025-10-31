@@ -22,20 +22,29 @@ from benchmarks.configs.my_experiments import (
 )
 from benchmarks.configs.names import DiskExperiments
 from benchmarks.configs.pretraining_experiments import supervised_pre_training_base
+from benchmarks.configs.ycb_experiments import base_config_10distinctobj_dist_agent
 from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
     ParallelEvidenceLMLoggingConfig,
     PatchAndViewMontyConfig,
+    PatchAndViewSOTAMontyConfig,
     PretrainLoggingConfig,
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EvalExperimentArgs,
     SupervisedPretrainingExperimentArgs,
 )
-from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.environments.logos_on_objs import OBJECTS_WITH_LOGOS_LVL1_DISK
-from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 from tbp.monty.frameworks.models.sensor_modules import Probe
+
+# Custom tolerances without principal_curvatures_log
+CUSTOM_TOLERANCE_VALUES = {
+    "hsv": np.array([0.1, 0.2, 0.2]),
+}
+
+CUSTOM_TOLERANCES = {
+    "patch": CUSTOM_TOLERANCE_VALUES
+}
 
 LEARN_POSITIONS = [
     [0.0, 1.5, 0.0],
@@ -45,7 +54,7 @@ LEARN_POSITIONS = [
 
 
 def generate_inference_positions(
-    base_positions, n_samples_per_position=7, sigma=0.03, seed=42
+    base_positions, n_samples_per_position=1, sigma=0.01, seed=42
 ):
     """Generate inference positions by adding Gaussian jitter to base.
 
@@ -173,23 +182,33 @@ def make_disk_inference_experiment(
     if debug_subdir is None and use_2d_sensor:
         debug_subdir = "debug_2d_inference_disk"
 
-    # Base configuration
-    config = dict(
-        experiment_class=MontyObjectRecognitionExperiment,
+    # Start with base config from YCB experiments
+    config = copy.deepcopy(base_config_10distinctobj_dist_agent)
+
+    # Preserve learning module configs from base
+    learning_module_configs = config["monty_config"].learning_module_configs
+
+    # Override tolerances to remove principal_curvatures_log
+    for lm_key in learning_module_configs:
+        lm_config = learning_module_configs[lm_key]
+        if "learning_module_args" in lm_config:
+            lm_config["learning_module_args"]["tolerances"] = CUSTOM_TOLERANCES
+
+    # Override disk-specific fields
+    config.update(
         experiment_args=EvalExperimentArgs(
             model_name_or_path=model_path,
             n_eval_epochs=len(INFERENCE_POSITIONS),
-            max_eval_steps=100,
         ),
         logging_config=ParallelEvidenceLMLoggingConfig(
             wandb_group="disk_inference_experiments",
         ),
-        monty_config=PatchAndViewMontyConfig(
+        monty_config=PatchAndViewSOTAMontyConfig(
+            learning_module_configs=learning_module_configs,
             motor_system_config=make_naive_scan_motor_config(step_size=1),
             monty_args=MontyArgs(min_eval_steps=50),
         ),
         dataset_args=make_compositional_dataset_args(),
-        eval_dataloader_class=ED.InformedEnvironmentDataLoader,
         eval_dataloader_args=make_object_dataloader_args(
             OBJECTS_WITH_LOGOS_LVL1_DISK,
             INFERENCE_POSITIONS,
@@ -199,7 +218,8 @@ def make_disk_inference_experiment(
 
     # Add 2D sensor if requested
     if use_2d_sensor:
-        config["monty_config"] = PatchAndViewMontyConfig(
+        config["monty_config"] = PatchAndViewSOTAMontyConfig(
+            learning_module_configs=learning_module_configs,
             motor_system_config=make_naive_scan_motor_config(step_size=1),
             sensor_module_configs=dict(
                 sensor_module_0=make_2d_sensor_module_config(

@@ -496,7 +496,7 @@ if __name__ == "__main__":
     # Set up paths
     pretrained_model_path = Path(
         "~/tbp/results/monty/pretrained_models/2d_sensor/"
-        "disk_learning_standard_control/pretrained/model.pt"
+        "disk_learning_standard_2d_sensor/pretrained/model.pt"
     ).expanduser()
 
     # Load the model to explore available objects
