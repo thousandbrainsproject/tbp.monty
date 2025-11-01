@@ -1,6 +1,6 @@
 ---
 title: Find Forum Questions Themes & Improve Docs
-rfc: optional
+rfc: not-required
 estimated-scope: medium
 improved-metric: community-engagement
 skills: data-analysis, documentation-writing, spreadsheet-analysis, forum-moderation

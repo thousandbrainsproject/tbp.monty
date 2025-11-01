@@ -1,6 +1,6 @@
 ---
 title: Build Getting Started Tutorial
-rfc: optional
+rfc: not-required
 estimated-scope: medium
 improved-metric: community-engagement
 skills: video-production, writing, tutorial-creation, documentation

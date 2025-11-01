@@ -1,6 +1,6 @@
 ---
 title: Share Interesting Content
-rfc: optional
+rfc: not-required
 estimated-scope: small
 improved-metric: community-engagement
 skills: social-media, content-curation

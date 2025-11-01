@@ -1,6 +1,6 @@
 ---
 title: Find University Departments for Engagement
-rfc: optional
+rfc: not-required
 estimated-scope: medium
 improved-metric: community-engagement
 skills: research, networking, academic-outreach

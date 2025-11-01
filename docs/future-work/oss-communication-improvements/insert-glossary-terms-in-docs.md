@@ -1,6 +1,6 @@
 ---
 title: Insert Glossary Terms in Docs
-rfc: not-required
+rfc: required
 estimated-scope: small
 improved-metric: learning-experience
 skills: github-readme-sync-tool, css, javascript
