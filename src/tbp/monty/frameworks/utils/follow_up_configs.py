@@ -38,8 +38,8 @@ def recover_output_dir(config, config_name):
 def recover_run_name(config, config_name):
     if not config["logging_config"]["run_name"]:
         return config_name
-    else:
-        return config["logging_config"]["run_name"]
+
+    return config["logging_config"]["run_name"]
 
 
 def recover_wandb_id(output_dir):
@@ -47,9 +47,7 @@ def recover_wandb_id(output_dir):
     config_file_name = os.path.join(output_dir, "0", "config.pt")
     cfg = torch.load(config_file_name)
     config = config_to_dict(cfg)
-    wandb_id = config["logging_config"]["wandb_id"]
-
-    return wandb_id
+    return config["logging_config"]["wandb_id"]
 
 
 def create_eval_episode_config(
@@ -176,7 +174,7 @@ def create_eval_config_multiple_episodes(
         new_config["notes"].update(notes)
 
     # Update the output directory to be a "rerun" subdir
-    new_output_dir = os.path.join(output_dir, f"eval_rerun_episodes")
+    new_output_dir = os.path.join(output_dir, "eval_rerun_episodes")
     os.makedirs(new_output_dir, exist_ok=True)
     new_config["logging_config"]["output_dir"] = new_output_dir
     new_config["logging_config"]["run_name"] = run_name

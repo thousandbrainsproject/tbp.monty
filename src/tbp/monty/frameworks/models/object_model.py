@@ -27,6 +27,7 @@ from tbp.monty.frameworks.utils.object_model_utils import (
     circular_mean,
     expand_index_dims,
     get_most_common_bool,
+    get_most_common_value,
     get_values_from_dense_last_dim,
     increment_sparse_tensor_by_count,
     pose_vector_mean,
@@ -163,8 +164,8 @@ class GraphObjectModel(ObjectModel):
         """Return a string representation of the object."""
         if self._graph is not None:
             return self._graph.__repr__()
-        else:
-            return f"Model for {self.object_id}:\n   No graph stored yet."
+
+        return f"Model for {self.object_id}:\n   No graph stored yet."
 
     # ======================= Private ==========================
     # ------------------- Main Algorithm -----------------------
@@ -461,8 +462,8 @@ class GridObjectModel(GraphObjectModel):
 
         if return_distance:
             return distances
-        else:
-            return nearest_node_ids
+
+        return nearest_node_ids
 
     # ------------------ Getters & Setters ---------------------
     def set_graph(self, graph):
@@ -534,7 +535,8 @@ class GridObjectModel(GraphObjectModel):
         # The offset is set such that the first observed location starts at the
         # center of the grid. To preserve the relative locations, the offset is
         # applied to all following locations.
-        self._initialize_location_mapping(start_location=locations[0])
+        start_location = locations[0]
+        self._initialize_location_mapping(start_location=start_location)
         # initialize self._feature_grid with feat_dim calculated from features
         feat_dim = features.shape[-1]
         self._feature_grid = self._generate_empty_grid(
@@ -794,20 +796,32 @@ class GridObjectModel(GraphObjectModel):
                 avg_feat = get_most_common_bool(feats)
                 # NOTE: object_id may need its own most common function until
                 # IDs actually represent similarities
+            elif feature == "object_id":
+                avg_feat = get_most_common_value(feats)
             else:
                 avg_feat = np.mean(feats, axis=0)
             # Only take average if there was a feature stored here before.
             # since self._observation_count already includes the new obs
             # this needs to be > the number of new feature obs in the voxel.
-            if self._observation_count[voxel[0], voxel[1], voxel[2], 0] > len(feats):
+            num_obs_in_voxel = self._observation_count[voxel[0], voxel[1], voxel[2], 0]
+            num_new_obs = len(feats)
+            if num_obs_in_voxel > num_new_obs:
                 old_ids = self.feature_mapping[feature]
                 previous_average = previous_feat_in_voxel[old_ids[0] : old_ids[1],]
+                num_old_obs = num_obs_in_voxel - num_new_obs
 
                 if feature == "pose_vectors":
                     if avg_feat is None:
                         avg_feat = previous_average
                     elif use_cds_to_update is False:
                         avg_feat[3:] = previous_average[3:]
+                elif feature == "object_id":
+                    # TODO: Figure out a more nuanced way to take into account past obs
+                    if avg_feat != previous_average:
+                        if num_old_obs > num_new_obs:
+                            avg_feat = previous_average
+                        else:
+                            previous_average = avg_feat
                 # NOTE: could weight these
                 avg_feat = (avg_feat + previous_average) / 2
             target_ids = target_fm[feature]
@@ -850,8 +864,7 @@ class GridObjectModel(GraphObjectModel):
         else:
             k = self._max_nodes
         _counts, top_k_indices = self._observation_count.values().topk(k)
-        indices_3d = self._observation_count.indices()[:3, top_k_indices]
-        return indices_3d
+        return self._observation_count.indices()[:3, top_k_indices]
 
     def _locations_to_grid_ids(self, locations):
         """Convert locations to grid ids using scale_factor and location_offset.
@@ -859,11 +872,10 @@ class GridObjectModel(GraphObjectModel):
         Returns:
             Grid ids for the locations.
         """
-        location_grid_ids = np.array(
+        return np.array(
             np.round(locations * self._location_scale_factor) + self._location_offset,
             dtype=int,
         )
-        return location_grid_ids
 
     def _old_new_lists_to_sparse_tensors(
         self, indices, new_values, old_values, target_mat_shape

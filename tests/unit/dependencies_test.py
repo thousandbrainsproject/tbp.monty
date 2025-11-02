@@ -13,6 +13,6 @@ import unittest
 
 class DependenciesTest(unittest.TestCase):
     def test_torch_geometric(self):
-        import torch_geometric
-        import torch_geometric.data
-        import torch_geometric.typing  # noqa: F401
+        import torch_geometric  # noqa: F401, PLC0415
+        import torch_geometric.data  # noqa: F401, PLC0415
+        import torch_geometric.typing  # noqa: F401, PLC0415

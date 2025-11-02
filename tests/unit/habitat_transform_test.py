@@ -15,12 +15,13 @@ import numpy as np
 import quaternion as qt
 from scipy.spatial.transform import Rotation
 
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import (
     DepthTo3DLocations,
     MissingToMaxDepth,
 )
 
-AGENT_ID = "camera"
+AGENT_ID = AgentID("camera")
 SENSOR_ID = "sensor_01"
 
 TEST_OBS = {
@@ -216,7 +217,7 @@ class HabitatTransformTest(unittest.TestCase):
 
         expected_semantic_id = np.unique(semantic_obs[semantic_obs.nonzero()])[0]
 
-        expected_semantic_3d = np.column_stack(
+        return np.column_stack(
             (
                 points_world[:, 0],
                 points_world[:, 1],
@@ -224,8 +225,6 @@ class HabitatTransformTest(unittest.TestCase):
                 np.full(points_world.shape[0], expected_semantic_id),
             )
         )
-
-        return expected_semantic_3d
 
     def test_semantic_3d_global_translation(self):
         agent_position = np.array([0.0, 0.0, 0.0])

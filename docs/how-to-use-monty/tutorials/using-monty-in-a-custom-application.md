@@ -42,7 +42,7 @@ The observations should be returned as a nested dictionary with one entry per ag
 
 ```python
 obs = {
-	"agent_id_0": {
+	AgentID("agent_id_0"): {
     	"patch_0": {
         	"depth": depth_sensed_by_patch_0,
         	"rgba": rgba_sensed_by_patch_0
@@ -60,7 +60,7 @@ Related to defining how actions change observations, you will also need to defin
 For example, if you have one agent with two sensors, the state dictionary could look like this:
 ```python
 state = {
-	"agent_id_0": {
+	AgentID("agent_id_0"): {
 		"position": current_agent_location,
 		"rotation": current_agent_orientation,
     	"sensors": {
@@ -117,9 +117,8 @@ An experiment config for training on the Omniglot dataset can then look like thi
 ```python
 omniglot_training = dict(
 	experiment_class=MontySupervisedObjectPretrainingExperiment,
-	experiment_args=ExperimentArgs(
+	experiment_args=SupervisedPretrainingExperimentArgs(
     	n_train_epochs=1,
-    	do_eval=False,
 	),
 	logging_config=PretrainLoggingConfig(
     	output_dir=pretrain_dir,
@@ -211,6 +210,7 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
 	ExperimentArgs,
 	OmniglotDataloaderArgs,
 	OmniglotDatasetArgs,
+	SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (

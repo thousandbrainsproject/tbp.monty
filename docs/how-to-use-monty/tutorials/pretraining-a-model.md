@@ -59,8 +59,8 @@ from tbp.monty.frameworks.config_utils.config_args import (
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
-    ExperimentArgs,
     PredefinedObjectInitializer,
+    SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
@@ -128,9 +128,8 @@ surf_agent_2obj_train = dict(
     # The MontySupervisedObjectPretrainingExperiment class will provide the model
     # with object and pose labels for supervised pretraining.
     experiment_class=MontySupervisedObjectPretrainingExperiment,
-    experiment_args=ExperimentArgs(
+    experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=len(train_rotations),
-        do_eval=False,
     ),
     # Specify logging config.
     logging_config=PretrainLoggingConfig(
@@ -249,7 +248,7 @@ This will take a few minutes to complete and then you can inspect and visualize 
 import os
 import matplotlib.pyplot as plt
 from tbp.monty.frameworks.utils.logging_utils import load_stats
-from tbp.monty.frameworks.utils.plot_utils import plot_graph
+from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 # Specify where pretraining data is stored.
 exp_path = os.path.expanduser("~/tbp/results/monty/projects/surf_agent_1lm_2obj")

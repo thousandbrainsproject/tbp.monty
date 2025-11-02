@@ -33,9 +33,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataloaderPerObjectArgs,
-    ExperimentArgs,
     PredefinedObjectInitializer,
     get_env_dataloader_per_object_by_idx,
+    SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
     make_naive_scan_policy_config,
@@ -65,8 +65,7 @@ dist_agent_5lm_2obj_train = dict(
     # The MontySupervisedObjectPretrainingExperiment class will provide the model
     # with object and pose labels for supervised pretraining.
     experiment_class=MontySupervisedObjectPretrainingExperiment,
-    experiment_args=ExperimentArgs(
-        do_eval=False,
+    experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=len(train_rotations),
     ),
     # Specify logging config.
@@ -342,7 +341,7 @@ During pretraining, each learning module learns its own object models independen
 import os
 import matplotlib.pyplot as plt
 import torch
-from tbp.monty.frameworks.utils.plot_utils import plot_graph
+from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 # Get path to pretrained model
 project_dir = os.path.expanduser("~/tbp/results/monty/projects")

@@ -150,7 +150,7 @@ class TestHierarchyFile(unittest.TestCase):
     def test_check_external_links(self):
         # Set up a mock server
         class MockHandler(http.server.SimpleHTTPRequestHandler):
-            def do_GET(self):  # noqa: N802
+            def do_GET(self):
                 if self.path == "/missing":
                     self.send_response(404)
                     self.end_headers()

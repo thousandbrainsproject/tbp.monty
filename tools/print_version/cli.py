@@ -32,14 +32,17 @@ def parse_version(version, part):
 
     if part == "full" or part == "":
         return str(parsed_version)
-    elif part == "major":
+
+    if part == "major":
         return str(parsed_version.major)
-    elif part == "minor":
+
+    if part == "minor":
         return f"{parsed_version.major}.{parsed_version.minor}"
-    elif part == "patch":
+
+    if part == "patch":
         return f"{parsed_version.major}.{parsed_version.minor}.{parsed_version.patch}"
-    else:
-        raise ValueError(f"Unknown version part: {part}")
+
+    raise ValueError(f"Unknown version part: {part}")
 
 
 def main():

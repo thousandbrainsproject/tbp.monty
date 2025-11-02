@@ -28,8 +28,8 @@ from tbp.monty.frameworks.config_utils.config_args import (
 )
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     EnvironmentDataLoaderPerObjectTrainArgs,
-    ExperimentArgs,
     PredefinedObjectInitializer,
+    SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments.pretraining_experiments import (
@@ -94,8 +94,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
 
         self.pretraining_configs = dict(
             experiment_class=MontySupervisedObjectPretrainingExperiment,
-            experiment_args=ExperimentArgs(
-                do_eval=False,
+            experiment_args=SupervisedPretrainingExperimentArgs(
                 n_train_epochs=3,
             ),
             logging_config=PretrainLoggingConfig(
@@ -138,10 +137,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
 
     def _graph_node_count(self, rlm, graph_id):
         """Returns the number of graph points on a specific graph object."""
-        graph_num_points = rlm.graph_memory.get_locations_in_graph(
-            graph_id, "patch"
-        ).shape[0]
-        return graph_num_points
+        return rlm.graph_memory.get_locations_in_graph(graph_id, "patch").shape[0]
 
     def _num_hyps_multiplier(self, rlm, pose_defined):
         """Returns the expected hyps multiplier based on Principal curvatures."""
