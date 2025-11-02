@@ -150,6 +150,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         evidence_slope_threshold,
         pose_defined,
         graph_id,
+        init_hyp_space,
     ):
         rlm.hypotheses_updater.resampling_multiplier = resampling_multiplier
         rlm.hypotheses_updater.evidence_slope_threshold = evidence_slope_threshold
@@ -160,6 +161,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
             graph_id=graph_id,
             mapper=rlm.channel_hypothesis_mapping[graph_id],
             tracker=rlm.hypotheses_updater.evidence_slope_trackers[graph_id],
+            init_hyp_space=init_hyp_space,
         )
 
     def _initial_count(self, rlm, pose_defined):
@@ -176,6 +178,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
             evidence_slope_threshold=0.0,
             pose_defined=pose_defined,
             graph_id=graph_id,
+            init_hyp_space=True,
         )
         self.assertEqual(len(hypotheses_selection.maintain_ids), 0)
         self.assertEqual(
@@ -202,12 +205,13 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         resampling_multipliers = [0.5, 1, 2]
 
         for resampling_multiplier in resampling_multipliers:
-            hypotheses_selection, informed_count = self.run_sample_count(
+            _, informed_count = self.run_sample_count(
                 rlm=rlm,
                 resampling_multiplier=resampling_multiplier,
                 evidence_slope_threshold=0.0,
                 pose_defined=pose_defined,
                 graph_id=graph_id,
+                init_hyp_space=False,
             )
             self.assertEqual(graph_num_nodes * resampling_multiplier, informed_count)
 
@@ -237,12 +241,13 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         expected_count = before_count + (
             graph_num_nodes * self._num_hyps_multiplier(rlm, pose_defined)
         )
-        hypotheses_selection, informed_count = self.run_sample_count(
+        _, informed_count = self.run_sample_count(
             rlm=rlm,
             resampling_multiplier=resampling_multiplier,
             evidence_slope_threshold=0.0,
             pose_defined=pose_defined,
             graph_id=graph_id,
+            init_hyp_space=False,
         )
         self.assertEqual(expected_count, before_count + informed_count)
 
