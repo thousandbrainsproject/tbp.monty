@@ -40,6 +40,7 @@ SENSOR_ID = "sensor_id_0"
 SENSORS = ["depth"]
 EXPECTED_STATES = np.random.rand(DATASET_LEN, 64, 64, 1)
 
+
 class HabitatDataTest(unittest.TestCase):
     def setUp(self):
         self.camera_dist_config = AgentConfig(

@@ -37,6 +37,7 @@ SemanticID = NewType("SemanticID", int)
 VectorXYZ = Tuple[float, float, float]
 QuaternionWXYZ = Tuple[float, float, float, float]
 
+
 @deprecated("Use `ActionSampler` instead.")
 @dataclass
 class ObjectInfo:

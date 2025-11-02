@@ -120,6 +120,7 @@ class HabitatAgent:
 
         return obs_by_sensor
 
+
 def action_space(
     action_space_type: Literal["absolute_only", "distant_agent", "surface_agent"],
     agent_id: str,
