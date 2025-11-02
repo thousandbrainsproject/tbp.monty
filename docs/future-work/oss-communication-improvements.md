@@ -4,16 +4,19 @@ description: Things we would like to do for the open-source community or general
 ---
 These are the things we would like to do and you can help us with:
 
-- [Organize & start podcast series](oss-communication-improvements/organize-start-podcast-series.md) #oss
-- [Make more condensed videos about the project & Monty](oss-communication-improvements/make-more-condensed-videos-about-the-project-monty) #oss
-- [Find forum questions themes & improve docs](oss-communication-improvements/find-forum-questions-themes-improve-docs.md) #oss #documentation
-- [Share interesting content](oss-communication-improvements/share-interesting-content.md) #oss #social-media
-- [Build getting started tutorial](oss-communication-improvements/build-getting-started-tutorial.md) #oss #tutorial
-- [Find university departments for engagement](oss-communication-improvements/find-university-departments-for-engagement.md) #oss #research
-- [Auto-display contributors in README](oss-communication-improvements/auto-display-contributors-in-readme.md) #oss #infrastructure
-- [Insert glossary terms in docs](oss-communication-improvements/insert-glossary-terms-in-docs.md) #oss #documentation
-- [Become a forum moderator](oss-communication-improvements/become-a-forum-moderator.md) #oss #community
-- [Organize local meetup](oss-communication-improvements/organize-local-meetup.md) #oss #community
-- [Robust docs preview cleanup](oss-communication-improvements/robust-docs-preview-cleanup.md) #oss #infrastructure
+- [Auto-Display Contributors in README](oss-communication-improvements/auto-display-contributors-in-readme.md)
+- [Become a Forum Moderator](oss-communication-improvements/become-a-forum-moderator.md)
+- [Better Documentation Platform](oss-communication-improvements/better-documentation-platform.md)
+- [Better Website Platform](oss-communication-improvements/better-website-platform.md)
+- [Build Getting Started Tutorial](oss-communication-improvements/build-getting-started-tutorial.md)
+- [Find Forum Questions Themes & Improve Docs](oss-communication-improvements/find-forum-questions-themes-improve-docs.md)
+- [Find University Departments for Engagement](oss-communication-improvements/find-university-departments-for-engagement.md)
+- [Future Work Widget](oss-communication-improvements/future-work-widget.md)
+- [Insert Glossary Terms in Docs](oss-communication-improvements/insert-glossary-terms-in-docs.md)
+- [Make More Condensed Videos About the Project & Monty](oss-communication-improvements/make-more-condensed-videos-about-the-project-monty.md)
+- [Organize Local Meetup](oss-communication-improvements/organize-local-meetup.md)
+- [Organize & Start Podcast Series](oss-communication-improvements/organize-start-podcast-series.md)
+- [Robust Docs Preview Cleanup](oss-communication-improvements/robust-docs-preview-cleanup.md)
+- [Share Interesting Content](oss-communication-improvements/share-interesting-content.md)
 
 !snippet[../snippets/contributing-tasks.md]
