@@ -142,8 +142,6 @@ class HabitatEnvironment(EmbodiedEnvironment):
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: SemanticID | None = None,
-        enable_physics=False,
-        object_to_avoid=False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectID:
         return self._env.add_object(
@@ -152,8 +150,6 @@ class HabitatEnvironment(EmbodiedEnvironment):
             rotation,
             scale,
             semantic_id,
-            enable_physics,
-            object_to_avoid,
             primary_target_object,
         ).object_id
 

@@ -69,8 +69,6 @@ class MuJoCoSimulator(Simulator):
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: SemanticID | None = None,
-        enable_physics: bool = False,
-        object_to_avoid: bool = False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectInfo:
         obj_name = f"{name}_{self._object_count}"
