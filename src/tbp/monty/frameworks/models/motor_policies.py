@@ -17,16 +17,7 @@ import logging
 import math
 import os
 from dataclasses import dataclass, field
-from typing import (
-    Any,
-    Dict,
-    List,
-    Literal,
-    Mapping,
-    Tuple,
-    Type,
-    cast,
-)
+from typing import Any, Literal, Mapping, cast
 
 import numpy as np
 import quaternion as qt
@@ -150,8 +141,8 @@ class BasePolicy(MotorPolicy):
     def __init__(
         self,
         rng,
-        action_sampler_args: Dict,
-        action_sampler_class: Type[ActionSampler],
+        action_sampler_args: dict,
+        action_sampler_class: type[ActionSampler],
         agent_id: AgentID,
         switch_frequency,
         file_name=None,
@@ -379,7 +370,7 @@ class PositioningProcedureResult:
     For more on the terminated/truncated terminology, see https://farama.org/Gymnasium-Terminated-Truncated-Step-API.
     """
 
-    actions: List[Action] = field(default_factory=list)
+    actions: list[Action] = field(default_factory=list)
     """Actions to take."""
     success: bool = False
     """Whether the procedure succeeded in its positioning goal."""
@@ -506,7 +497,7 @@ class GetGoodView(PositioningProcedure):
 
     def compute_look_amounts(
         self, relative_location: np.ndarray, state: MotorSystemState | None = None
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """Compute the amount to look down and left given a relative location.
 
         This function computes the amount needed to look down and left in order
@@ -547,7 +538,7 @@ class GetGoodView(PositioningProcedure):
     def find_location_to_look_at(
         self,
         sem3d_obs: np.ndarray,
-        image_shape: Tuple[int, int],
+        image_shape: tuple[int, int],
         state: MotorSystemState | None = None,
     ) -> np.ndarray:
         """Find the location to look at in the observation.
@@ -688,7 +679,7 @@ class GetGoodView(PositioningProcedure):
 
     def orient_to_object(
         self, observation: Mapping, state: MotorSystemState | None = None
-    ) -> List[Action]:
+    ) -> list[Action]:
         """Rotate sensors so that they are centered on the object using the view finder.
 
         The view finder needs to be in the same position as the sensor patch
@@ -1487,7 +1478,7 @@ class SurfacePolicy(InformedPolicy):
 
         return tuple(direction)
 
-    def horizontal_distances(self, rotation_degrees: float) -> Tuple[float, float]:
+    def horizontal_distances(self, rotation_degrees: float) -> tuple[float, float]:
         """Compute the horizontal and forward distances to move to.
 
         Compensate for a given rotation of a certain angle.
@@ -1509,7 +1500,7 @@ class SurfacePolicy(InformedPolicy):
 
         return move_left_distance, move_forward_distance
 
-    def vertical_distances(self, rotation_degrees: float) -> Tuple[float, float]:
+    def vertical_distances(self, rotation_degrees: float) -> tuple[float, float]:
         """Compute the down and forward distances to move to.
 
         Compensate for a given rotation of a certain angle.
@@ -1589,7 +1580,7 @@ class SurfacePolicy(InformedPolicy):
 ###
 
 
-def read_action_file(file: str) -> List[Action]:
+def read_action_file(file: str) -> list[Action]:
     """Load a file with one action per line.
 
     Args:
@@ -1606,7 +1597,7 @@ def read_action_file(file: str) -> List[Action]:
     return [cast(Action, json.loads(line, cls=ActionJSONDecoder)) for line in lines]
 
 
-def write_action_file(actions: List[Action], file: str) -> None:
+def write_action_file(actions: list[Action], file: str) -> None:
     """Write a list of actions to a file, one per line.
 
     Should be readable by read_action_file.

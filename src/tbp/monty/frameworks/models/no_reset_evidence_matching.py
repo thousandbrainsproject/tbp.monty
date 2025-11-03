@@ -6,8 +6,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-
-from typing import List
+from __future__ import annotations
 
 import numpy as np
 
@@ -115,7 +114,7 @@ class NoResetEvidenceGraphLM(TheoreticalLimitLMLoggingMixin, EvidenceGraphLM):
         self.evidence = {}
         self.last_location = {}
 
-    def _add_displacements(self, obs: List[State]) -> List[State]:
+    def _add_displacements(self, obs: list[State]) -> list[State]:
         """Add displacements to the current observation.
 
         For each input channel, this function computes the displacement vector by

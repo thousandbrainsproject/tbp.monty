@@ -6,6 +6,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import pytest
 
@@ -18,7 +19,7 @@ import copy
 import shutil
 import tempfile
 import unittest
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 
@@ -146,7 +147,7 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         )
 
     def assert_dicts_equal(
-        self, d1: Dict[Any, np.ndarray], d2: Dict[Any, np.ndarray], msg: str
+        self, d1: dict[Any, np.ndarray], d2: dict[Any, np.ndarray], msg: str
     ) -> None:
         """Asserts that two dictionaries containing NumPy arrays are equal.
 

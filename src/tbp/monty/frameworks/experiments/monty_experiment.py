@@ -14,7 +14,7 @@ import datetime
 import logging
 import os
 import pprint
-from typing import Any, Dict, Literal
+from typing import Any, Literal
 
 import numpy as np
 import torch
@@ -57,7 +57,7 @@ class MontyExperiment:
     the outermost loops for training and evaluating (including run epoch and episode)
     """
 
-    def __init__(self, config: Dataclass | Dict[str, Any]) -> None:
+    def __init__(self, config: Dataclass | dict[str, Any]) -> None:
         """Initialize the experiment based on the provided configuration.
 
         Args:
@@ -73,7 +73,7 @@ class MontyExperiment:
         if self.show_sensor_output:
             self.live_plotter = LivePlotter()
 
-    def setup_experiment(self, config: Dict[str, Any]) -> None:
+    def setup_experiment(self, config: dict[str, Any]) -> None:
         """Set up the basic elements of a Monty experiment and initialize counters.
 
         Args:
@@ -316,7 +316,7 @@ class MontyExperiment:
             args.update(target=target)
         return args
 
-    def init_loggers(self, logging_config: Dict[str, Any]) -> None:
+    def init_loggers(self, logging_config: dict[str, Any]) -> None:
         """Initialize logger with specified log level.
 
         Args:
@@ -358,7 +358,7 @@ class MontyExperiment:
         logger.info("logger initialized")
         logger.debug(pprint.pformat(self.config))
 
-    def init_monty_data_loggers(self, logging_config: Dict[str, Any]) -> None:
+    def init_monty_data_loggers(self, logging_config: dict[str, Any]) -> None:
         """Initialize Monty data loggers.
 
         Args:

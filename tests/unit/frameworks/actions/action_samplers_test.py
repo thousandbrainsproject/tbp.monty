@@ -11,7 +11,6 @@
 from __future__ import annotations
 
 import unittest
-from typing import List, Type
 
 from numpy.random import Generator, default_rng
 from typing_extensions import Protocol
@@ -97,7 +96,7 @@ class FakeSampler(ActionSampler):
     def __init__(
         self,
         rng: Generator | None = None,
-        actions: List[Type[Action]] | None = None,
+        actions: list[type[Action]] | None = None,
     ):
         super().__init__(rng=rng, actions=actions)
 

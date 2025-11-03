@@ -7,8 +7,9 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 
@@ -233,15 +234,15 @@ class GoalState(State):
 
     def __init__(
         self,
-        location: Optional[np.ndarray],
-        morphological_features: Optional[Dict[str, Any]],
-        non_morphological_features: Optional[Dict[str, Any]],
+        location: np.ndarray | None,
+        morphological_features: dict[str, Any] | None,
+        non_morphological_features: dict[str, Any] | None,
         confidence: float,
         use_state: bool,
         sender_id: str,
         sender_type: str,
-        goal_tolerances: Optional[Dict[str, Any]],
-        info: Optional[Dict[str, Any]] = None,
+        goal_tolerances: dict[str, Any] | None,
+        info: dict[str, Any] | None = None,
     ):
         """Initialize a goal state.
 
@@ -330,7 +331,7 @@ class GoalState(State):
         assert isinstance(self.info, dict), "info must be a dictionary"
 
 
-def encode_goal_state(goal_state: GoalState) -> Dict[str, Any]:
+def encode_goal_state(goal_state: GoalState) -> dict[str, Any]:
     """Encode a goal state into a dictionary.
 
     Args:

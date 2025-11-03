@@ -13,14 +13,7 @@ import copy
 import os
 from dataclasses import dataclass, field
 from itertools import product
-from typing import (
-    TYPE_CHECKING,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-)
+from typing import TYPE_CHECKING, Callable, Iterable, Mapping
 
 import numpy as np
 import wandb
@@ -84,7 +77,7 @@ monty_logs_dir = os.getenv("MONTY_LOGS")
 @dataclass
 class LoggingConfig:
     monty_log_level: str = "DETAILED"
-    monty_handlers: List = field(
+    monty_handlers: list = field(
         default_factory=lambda: [
             BasicCSVStatsHandler,
             DetailedJSONHandler,
@@ -108,13 +101,13 @@ class LoggingConfig:
 @dataclass
 class WandbLoggingConfig(LoggingConfig):
     monty_log_level: str = "BASIC"
-    monty_handlers: List = field(
+    monty_handlers: list = field(
         default_factory=lambda: [
             BasicCSVStatsHandler,
             ReproduceEpisodeHandler,
         ]
     )
-    wandb_handlers: List = field(
+    wandb_handlers: list = field(
         default_factory=lambda: [
             BasicWandbTableStatsHandler,
             BasicWandbChartStatsHandler,
@@ -125,24 +118,24 @@ class WandbLoggingConfig(LoggingConfig):
 
 @dataclass
 class CSVLoggingConfig(LoggingConfig):
-    monty_handlers: List = field(
+    monty_handlers: list = field(
         default_factory=lambda: [
             BasicCSVStatsHandler,
         ]
     )
-    wandb_handlers: List = field(default_factory=list)
+    wandb_handlers: list = field(default_factory=list)
 
 
 @dataclass
 class DetailedWandbLoggingConfig(LoggingConfig):
-    monty_handlers: List = field(
+    monty_handlers: list = field(
         default_factory=lambda: [
             BasicCSVStatsHandler,
             DetailedJSONHandler,
             ReproduceEpisodeHandler,
         ]
     )
-    wandb_handlers: List = field(
+    wandb_handlers: list = field(
         default_factory=lambda: [
             BasicWandbTableStatsHandler,
             BasicWandbChartStatsHandler,
@@ -157,14 +150,14 @@ class EvalLoggingConfig(LoggingConfig):
     output_dir: str = os.path.expanduser(
         os.path.join(monty_logs_dir, "projects/feature_eval_runs/logs")
     )
-    monty_handlers: List = field(
+    monty_handlers: list = field(
         default_factory=lambda: [
             BasicCSVStatsHandler,
             # DetailedJSONHandler,
             ReproduceEpisodeHandler,
         ]
     )
-    wandb_handlers: List = field(
+    wandb_handlers: list = field(
         default_factory=lambda: [
             BasicWandbTableStatsHandler,
             BasicWandbChartStatsHandler,
@@ -179,13 +172,13 @@ class EvalEvidenceLMLoggingConfig(LoggingConfig):
     output_dir: str = os.path.expanduser(
         os.path.join(monty_logs_dir, "projects/evidence_eval_runs/logs")
     )
-    monty_handlers: List = field(
+    monty_handlers: list = field(
         default_factory=lambda: [
             BasicCSVStatsHandler,
             ReproduceEpisodeHandler,
         ]
     )
-    wandb_handlers: List = field(
+    wandb_handlers: list = field(
         default_factory=lambda: [
             BasicWandbTableStatsHandler,
             BasicWandbChartStatsHandler,
@@ -204,13 +197,13 @@ class ParallelEvidenceLMLoggingConfig(LoggingConfig):
     output_dir: str = os.path.expanduser(
         os.path.join(monty_logs_dir, "projects/evidence_eval_runs/logs")
     )
-    monty_handlers: List = field(
+    monty_handlers: list = field(
         default_factory=lambda: [
             BasicCSVStatsHandler,
             ReproduceEpisodeHandler,
         ]
     )
-    wandb_handlers: List = field(
+    wandb_handlers: list = field(
         default_factory=lambda: [
             BasicWandbTableStatsHandler,
             # Note that parallel runs will log a table to wandb no matter if
@@ -227,7 +220,7 @@ class ParallelEvidenceLMLoggingConfig(LoggingConfig):
 
 @dataclass
 class DetailedEvidenceLMLoggingConfig(EvalEvidenceLMLoggingConfig):
-    monty_handlers: List = field(
+    monty_handlers: list = field(
         default_factory=lambda: [
             BasicCSVStatsHandler,
             DetailedJSONHandler,
@@ -244,7 +237,7 @@ class DetailedEvidenceLMLoggingConfig(EvalEvidenceLMLoggingConfig):
 class PretrainLoggingConfig(LoggingConfig):
     monty_log_level: str = "SILENT"
     python_log_level: str = "WARNING"
-    monty_handlers: List = field(default_factory=list)
+    monty_handlers: list = field(default_factory=list)
 
 
 # -----
@@ -255,7 +248,7 @@ class PretrainLoggingConfig(LoggingConfig):
 @dataclass
 class MotorSystemConfig:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=BasePolicy,
             policy_args=make_base_policy_config(
@@ -269,7 +262,7 @@ class MotorSystemConfig:
 @dataclass
 class MotorSystemConfigRelNoTrans:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=BasePolicy,
             policy_args=make_base_policy_config(
@@ -283,7 +276,7 @@ class MotorSystemConfigRelNoTrans:
 @dataclass
 class MotorSystemConfigInformedNoTrans:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=InformedPolicy,
             policy_args=make_informed_policy_config(
@@ -299,7 +292,7 @@ class MotorSystemConfigInformedNoTrans:
 @dataclass
 class MotorSystemConfigInformedNoTransStepS3:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=InformedPolicy,
             policy_args=make_informed_policy_config(
@@ -315,7 +308,7 @@ class MotorSystemConfigInformedNoTransStepS3:
 @dataclass
 class MotorSystemConfigInformedNoTransStepS1:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=InformedPolicy,
             policy_args=make_informed_policy_config(
@@ -331,7 +324,7 @@ class MotorSystemConfigInformedNoTransStepS1:
 @dataclass
 class MotorSystemConfigInformedNoTransStepS6:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=InformedPolicy,
             policy_args=make_informed_policy_config(
@@ -347,7 +340,7 @@ class MotorSystemConfigInformedNoTransStepS6:
 @dataclass
 class MotorSystemConfigInformedNoTransStepS20:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=InformedPolicy,
             policy_args=make_informed_policy_config(
@@ -363,7 +356,7 @@ class MotorSystemConfigInformedNoTransStepS20:
 @dataclass
 class MotorSystemConfigInformedNoTransCloser:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=InformedPolicy,
             policy_args=make_informed_policy_config(
@@ -380,7 +373,7 @@ class MotorSystemConfigInformedNoTransCloser:
 @dataclass
 class MotorSystemConfigInformedNoTransFurtherAway:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=InformedPolicy,
             policy_args=make_informed_policy_config(
@@ -397,7 +390,7 @@ class MotorSystemConfigInformedNoTransFurtherAway:
 @dataclass
 class MotorSystemConfigNaiveScanSpiral:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=NaiveScanPolicy,
             policy_args=make_naive_scan_policy_config(step_size=5),
@@ -408,7 +401,7 @@ class MotorSystemConfigNaiveScanSpiral:
 @dataclass
 class MotorSystemConfigSurface:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=SurfacePolicy,
             policy_args=make_surface_policy_config(
@@ -423,7 +416,7 @@ class MotorSystemConfigSurface:
 @dataclass
 class MotorSystemConfigCurvatureInformedSurface:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=SurfacePolicyCurvatureInformed,
             policy_args=make_curv_surface_policy_config(
@@ -445,7 +438,7 @@ class MotorSystemConfigCurvatureInformedSurface:
 @dataclass
 class MotorSystemConfigInformedGoalStateDriven:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=InformedPolicy,
             policy_args=make_informed_policy_config(
@@ -461,7 +454,7 @@ class MotorSystemConfigInformedGoalStateDriven:
 @dataclass
 class MotorSystemConfigInformedGoalStateDrivenFartherAway:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=InformedPolicy,
             policy_args=make_informed_policy_config(
@@ -480,7 +473,7 @@ class MotorSystemConfigInformedGoalStateDrivenFartherAway:
 @dataclass
 class MotorSystemConfigCurInformedSurfaceGoalStateDriven:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=SurfacePolicyCurvatureInformed,
             policy_args=make_curv_surface_policy_config(
@@ -538,20 +531,20 @@ class MontyConfig:
     """
 
     monty_class: Monty
-    learning_module_configs: Dict
-    sensor_module_configs: Dict
-    motor_system_config: Dict
-    sm_to_agent_dict: Dict
-    sm_to_lm_matrix: Dict
-    lm_to_lm_matrix: Dict
-    lm_to_lm_vote_matrix: Dict
-    monty_args: Dict | MontyArgs
+    learning_module_configs: dict
+    sensor_module_configs: dict
+    motor_system_config: dict
+    sm_to_agent_dict: dict
+    sm_to_lm_matrix: dict
+    lm_to_lm_matrix: dict
+    lm_to_lm_vote_matrix: dict
+    monty_args: dict | MontyArgs
 
 
 @dataclass
 class PatchAndViewMontyConfig(MontyConfig):
     monty_class: Callable = MontyForGraphMatching
-    learning_module_configs: dataclass | Dict = field(
+    learning_module_configs: dataclass | dict = field(
         default_factory=lambda: dict(
             learning_module_0=dict(
                 learning_module_class=DisplacementGraphLM,
@@ -559,7 +552,7 @@ class PatchAndViewMontyConfig(MontyConfig):
             )
         )
     )
-    sensor_module_configs: dataclass | Dict = field(
+    sensor_module_configs: dataclass | dict = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
                 sensor_module_class=HabitatSM,
@@ -597,21 +590,21 @@ class PatchAndViewMontyConfig(MontyConfig):
             ),
         )
     )
-    motor_system_config: dataclass | Dict = field(
+    motor_system_config: dataclass | dict = field(
         default_factory=MotorSystemConfigInformedNoTrans
     )
-    sm_to_agent_dict: Dict = field(
+    sm_to_agent_dict: dict = field(
         default_factory=lambda: dict(
             patch=AgentID("agent_id_0"),
             view_finder=AgentID("agent_id_0"),
         )
     )
-    sm_to_lm_matrix: List = field(
+    sm_to_lm_matrix: list = field(
         default_factory=lambda: [[0]],  # View finder (sm1) not connected to lm
     )
-    lm_to_lm_matrix: List | None = None
-    lm_to_lm_vote_matrix: List | None = None
-    monty_args: Dict | dataclass = field(default_factory=MontyArgs)
+    lm_to_lm_matrix: list | None = None
+    lm_to_lm_vote_matrix: list | None = None
+    monty_args: dict | dataclass = field(default_factory=MontyArgs)
 
 
 @dataclass
@@ -624,7 +617,7 @@ class PatchAndViewSOTAMontyConfig(PatchAndViewMontyConfig):
     """
 
     monty_class: Callable = MontyForEvidenceGraphMatching
-    sensor_module_configs: dataclass | Dict = field(
+    sensor_module_configs: dataclass | dict = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
                 sensor_module_class=HabitatSM,
@@ -662,7 +655,7 @@ class PatchAndViewSOTAMontyConfig(PatchAndViewMontyConfig):
             ),
         )
     )
-    motor_system_config: dataclass | Dict = field(
+    motor_system_config: dataclass | dict = field(
         default_factory=MotorSystemConfigInformedGoalStateDriven
     )
 
@@ -678,14 +671,14 @@ class PatchAndViewFartherAwaySOTAMontyConfig(PatchAndViewSOTAMontyConfig):
     Useful for testing how the policy deals with multiple objects
     """
 
-    motor_system_config: dataclass | Dict = field(
+    motor_system_config: dataclass | dict = field(
         default_factory=MotorSystemConfigInformedGoalStateDrivenFartherAway
     )
 
 
 @dataclass
 class SurfaceAndViewMontyConfig(PatchAndViewMontyConfig):
-    sensor_module_configs: dataclass | Dict = field(
+    sensor_module_configs: dataclass | dict = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
                 sensor_module_class=HabitatSM,
@@ -723,21 +716,21 @@ class SurfaceAndViewMontyConfig(PatchAndViewMontyConfig):
             ),
         )
     )
-    motor_system_config: dataclass | Dict = field(
+    motor_system_config: dataclass | dict = field(
         default_factory=MotorSystemConfigSurface
     )
-    sm_to_agent_dict: Dict = field(
+    sm_to_agent_dict: dict = field(
         default_factory=lambda: dict(
             patch=AgentID("agent_id_0"),
             view_finder=AgentID("agent_id_0"),
         )
     )
-    sm_to_lm_matrix: List = field(
+    sm_to_lm_matrix: list = field(
         default_factory=lambda: [[0]],  # View finder (sm1) not connected to lm
     )
-    lm_to_lm_matrix: List | None = None
-    lm_to_lm_vote_matrix: List | None = None
-    monty_args: Dict | dataclass = field(default_factory=MontyArgs)
+    lm_to_lm_matrix: list | None = None
+    lm_to_lm_vote_matrix: list | None = None
+    monty_args: dict | dataclass = field(default_factory=MontyArgs)
 
 
 @dataclass
@@ -750,7 +743,7 @@ class SurfaceAndViewSOTAMontyConfig(SurfaceAndViewMontyConfig):
     """
 
     monty_class: Callable = MontyForEvidenceGraphMatching
-    sensor_module_configs: dataclass | Dict = field(
+    sensor_module_configs: dataclass | dict = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
                 sensor_module_class=HabitatSM,
@@ -792,14 +785,14 @@ class SurfaceAndViewSOTAMontyConfig(SurfaceAndViewMontyConfig):
             ),
         )
     )
-    motor_system_config: dataclass | Dict = field(
+    motor_system_config: dataclass | dict = field(
         default_factory=MotorSystemConfigCurInformedSurfaceGoalStateDriven
     )
 
 
 @dataclass
 class PatchAndViewFeatureChangeConfig(PatchAndViewMontyConfig):
-    sensor_module_configs: dataclass | Dict = field(
+    sensor_module_configs: dataclass | dict = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
                 sensor_module_class=HabitatSM,
@@ -844,7 +837,7 @@ class PatchAndViewFeatureChangeConfig(PatchAndViewMontyConfig):
             ),
         )
     )
-    motor_system_config: dataclass | Dict = field(
+    motor_system_config: dataclass | dict = field(
         default_factory=MotorSystemConfigNaiveScanSpiral
     )
 
@@ -867,7 +860,7 @@ features = [
 @dataclass
 class TwoLMMontyConfig(MontyConfig):
     monty_class: Callable = MontyForGraphMatching
-    learning_module_configs: dataclass | Dict = field(
+    learning_module_configs: dataclass | dict = field(
         default_factory=lambda: dict(
             learning_module_0=dict(
                 learning_module_class=DisplacementGraphLM,
@@ -879,7 +872,7 @@ class TwoLMMontyConfig(MontyConfig):
             ),
         )
     )
-    sensor_module_configs: dataclass | Dict = field(
+    sensor_module_configs: dataclass | dict = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
                 sensor_module_class=HabitatSM,
@@ -908,28 +901,28 @@ class TwoLMMontyConfig(MontyConfig):
             ),
         )
     )
-    motor_system_config: dataclass | Dict = field(
+    motor_system_config: dataclass | dict = field(
         default_factory=MotorSystemConfigInformedNoTrans
     )
-    sm_to_agent_dict: Dict = field(
+    sm_to_agent_dict: dict = field(
         default_factory=lambda: dict(
             patch_0=AgentID("agent_id_0"),
             patch_1=AgentID("agent_id_0"),
             view_finder=AgentID("agent_id_0"),
         )
     )
-    sm_to_lm_matrix: List = field(
+    sm_to_lm_matrix: list = field(
         default_factory=lambda: [[0], [1]],  # View finder (sm2) not connected to lm
     )
-    lm_to_lm_matrix: List | None = None
-    lm_to_lm_vote_matrix: List = field(default_factory=lambda: [[1], [0]])
-    monty_args: Dict | dataclass = field(default_factory=MontyArgs)
+    lm_to_lm_matrix: list | None = None
+    lm_to_lm_vote_matrix: list = field(default_factory=lambda: [[1], [0]])
+    monty_args: dict | dataclass = field(default_factory=MontyArgs)
 
 
 @dataclass
 class TwoLMStackedMontyConfig(TwoLMMontyConfig):
     monty_class: Callable = MontyForEvidenceGraphMatching
-    learning_module_configs: dataclass | Dict = field(
+    learning_module_configs: dataclass | dict = field(
         default_factory=lambda: dict(
             learning_module_0=dict(
                 learning_module_class=DisplacementGraphLM,
@@ -941,7 +934,7 @@ class TwoLMStackedMontyConfig(TwoLMMontyConfig):
             ),
         )
     )
-    sensor_module_configs: dataclass | Dict = field(
+    sensor_module_configs: dataclass | dict = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
                 sensor_module_class=HabitatSM,
@@ -1006,21 +999,21 @@ class TwoLMStackedMontyConfig(TwoLMMontyConfig):
             ),
         )
     )
-    sm_to_lm_matrix: List = field(
+    sm_to_lm_matrix: list = field(
         default_factory=lambda: [
             [0],
             [1],
         ],  # View finder (sm2) not connected to lm
     )
     # First LM only gets sensory input, second gets input from first + sensor
-    lm_to_lm_matrix: List | None = field(default_factory=lambda: [[], [0]])
-    lm_to_lm_vote_matrix: List | None = None
+    lm_to_lm_matrix: list | None = field(default_factory=lambda: [[], [0]])
+    lm_to_lm_vote_matrix: list | None = None
 
 
 @dataclass
 class FiveLMMontyConfig(MontyConfig):
     monty_class: Callable = MontyForGraphMatching
-    learning_module_configs: dataclass | Dict = field(
+    learning_module_configs: dataclass | dict = field(
         default_factory=lambda: dict(
             learning_module_0=dict(
                 learning_module_class=DisplacementGraphLM,
@@ -1044,7 +1037,7 @@ class FiveLMMontyConfig(MontyConfig):
             ),
         )
     )
-    sensor_module_configs: dataclass | Dict = field(
+    sensor_module_configs: dataclass | dict = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
                 sensor_module_class=HabitatSM,
@@ -1097,10 +1090,10 @@ class FiveLMMontyConfig(MontyConfig):
             ),
         )
     )
-    motor_system_config: dataclass | Dict = field(
+    motor_system_config: dataclass | dict = field(
         default_factory=MotorSystemConfigInformedNoTrans
     )
-    sm_to_agent_dict: Dict = field(
+    sm_to_agent_dict: dict = field(
         default_factory=lambda: dict(
             patch_0=AgentID("agent_id_0"),
             patch_1=AgentID("agent_id_0"),
@@ -1110,7 +1103,7 @@ class FiveLMMontyConfig(MontyConfig):
             view_finder=AgentID("agent_id_0"),
         )
     )
-    sm_to_lm_matrix: List = field(
+    sm_to_lm_matrix: list = field(
         default_factory=lambda: [
             [0],
             [1],
@@ -1119,10 +1112,10 @@ class FiveLMMontyConfig(MontyConfig):
             [4],
         ],  # View finder (sm2) not connected to lm
     )
-    lm_to_lm_matrix: List | None = None
+    lm_to_lm_matrix: list | None = None
     # lm_to_lm_vote_matrix: Optional[List] = None
     # All LMs connect to each other
-    lm_to_lm_vote_matrix: List = field(
+    lm_to_lm_vote_matrix: list = field(
         default_factory=lambda: [
             [1, 2, 3, 4],
             [0, 2, 3, 4],
@@ -1131,12 +1124,12 @@ class FiveLMMontyConfig(MontyConfig):
             [0, 1, 2, 3],
         ]
     )
-    monty_args: Dict | dataclass = field(default_factory=MontyArgs)
+    monty_args: dict | dataclass = field(default_factory=MontyArgs)
 
 
 @dataclass
 class FiveLMMontySOTAConfig(FiveLMMontyConfig):
-    motor_system_config: dataclass | Dict = field(
+    motor_system_config: dataclass | dict = field(
         default_factory=MotorSystemConfigInformedGoalStateDriven
     )
 
@@ -1146,7 +1139,7 @@ Multi-LM Config Utils.
 """
 
 
-def make_multi_lm_flat_dense_connectivity(n_lms: int) -> Dict:
+def make_multi_lm_flat_dense_connectivity(n_lms: int) -> dict:
     """Create flat, dense connectivity matrices for a multi-LM experiment.
 
     Generates connectivity matrices for a `MontyConfig` with multiple sensor
@@ -1332,7 +1325,7 @@ def make_multi_lm_monty_config(
 def get_possible_3d_rotations(
     degrees: Iterable[Number],
     displacement: Number = 0,
-) -> List[np.ndarray]:
+) -> list[np.ndarray]:
     """Get list of 24 unique 3d rotations that tile the space. Used for configs.
 
     Args:
@@ -1364,7 +1357,7 @@ def get_possible_3d_rotations(
     return unique_poses
 
 
-def get_cube_face_and_corner_views_rotations() -> List[np.ndarray]:
+def get_cube_face_and_corner_views_rotations() -> list[np.ndarray]:
     """Get 14 rotations that correspond to the 6 cube faces and 8 cube corners.
 
     If we imagine an object enclosed in an invisible cube, then we can form 6 unique

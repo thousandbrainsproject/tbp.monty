@@ -14,8 +14,9 @@ See Also:
     https://github.com/facebookresearch/tacto
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Dict, List
 
 import numpy as np
 from habitat_sim.sensor import CameraSensorSpec, SensorSpec, SensorType
@@ -44,9 +45,9 @@ class TactoSensor(SensorConfig):
         config: Tacto Sensor specification (DIGIT, OMNITACT)
     """
 
-    resolution: List[float] = field(default_factory=lambda: [32.0, 48.0])
+    resolution: list[float] = field(default_factory=lambda: [32.0, 48.0])
     config: TactoSensorSpec = DIGIT
-    _depths: Dict = field(default_factory=dict, init=False)
+    _depths: dict = field(default_factory=dict, init=False)
 
     def __post_init__(self):
         # Curved gel surface
@@ -68,7 +69,7 @@ class TactoSensor(SensorConfig):
         for name in self.config.camera:
             self._depths[name] = depth
 
-    def get_specs(self) -> List[SensorSpec]:
+    def get_specs(self) -> list[SensorSpec]:
         # rotation = Rotation.from_quat(self.rotation)
         # origin = np.array(self.position)
         specs = []
