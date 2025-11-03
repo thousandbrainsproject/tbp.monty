@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import uuid
 from collections import defaultdict
-from typing import List, Tuple
+from typing import Tuple
 
 import habitat_sim
 import numpy as np
@@ -62,7 +62,7 @@ class HabitatAgent:
         self.position = position
         self.rotation = rotation
         self.height = height
-        self.sensors: List[SensorConfig] = []
+        self.sensors: list[SensorConfig] = []
 
     def get_spec(self) -> AgentConfiguration:
         """Returns a habitat-sim agent configuration.
@@ -249,18 +249,18 @@ class MultiSensorAgent(HabitatAgent, ActionSpaceMixin):
     def __init__(
         self,
         agent_id: AgentID | None,
-        sensor_ids: Tuple[str],
+        sensor_ids: tuple[str],
         position: Vector3 = (0.0, 1.5, 0.0),  # Agent position
         rotation: Quaternion = (1.0, 0.0, 0.0, 0.0),
         height: float = 0.0,
         rotation_step: float = 0.0,
         translation_step: float = 0.0,
         action_space_type: str = "distant_agent",
-        resolutions: Tuple[Size] = ((16, 16),),
-        positions: Tuple[Vector3] = ((0.0, 0.0, 0.0),),
-        rotations: Tuple[Quaternion] = ((1.0, 0.0, 0.0, 0.0),),
-        zooms: Tuple[float] = (1.0,),
-        semantics: Tuple[bool] = (False,),
+        resolutions: tuple[Size] = ((16, 16),),
+        positions: tuple[Vector3] = ((0.0, 0.0, 0.0),),
+        rotations: tuple[Quaternion] = ((1.0, 0.0, 0.0, 0.0),),
+        zooms: tuple[float] = (1.0,),
+        semantics: tuple[bool] = (False,),
     ):
         super().__init__(agent_id, position, rotation, height)
         if sensor_ids is None:
@@ -359,7 +359,7 @@ class SingleSensorAgent(HabitatAgent, ActionSpaceMixin):
         semantic: bool = False,
         rotation_step: float = 0.0,
         translation_step: float = 0.0,
-        action_space: Tuple = None,
+        action_space: tuple = None,
         action_space_type: str = "distant_agent",
     ):
         """Initialize agent runtime state.

@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Literal, Tuple, Type
+from typing import Any, Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -106,11 +106,11 @@ class ResamplingHypothesesUpdater:
         max_match_distance: float,
         tolerances: dict,
         evidence_threshold_config: Literal["all"],
-        feature_evidence_calculator: Type[FeatureEvidenceCalculator] = (
+        feature_evidence_calculator: type[FeatureEvidenceCalculator] = (
             DefaultFeatureEvidenceCalculator
         ),
         feature_evidence_increment: int = 1,
-        features_for_matching_selector: Type[FeaturesForMatchingSelector] = (
+        features_for_matching_selector: type[FeaturesForMatchingSelector] = (
             DefaultFeaturesForMatchingSelector
         ),
         hypotheses_count_multiplier: float = 1.0,
@@ -388,7 +388,7 @@ class ResamplingHypothesesUpdater:
         graph_id: str,
         mapper: ChannelMapper,
         tracker: EvidenceSlopeTracker,
-    ) -> Tuple[int, int]:
+    ) -> tuple[int, int]:
         """Calculates the number of existing and informed hypotheses needed.
 
         Args:

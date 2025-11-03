@@ -399,7 +399,6 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             self.env.add_object(
                 name=new_obj_label,
                 **new_init_params,
-                object_to_avoid=True,
                 primary_target_object=primary_target_obj,
             )
 
