@@ -15,7 +15,7 @@ import re
 import shutil
 import time
 from pathlib import Path
-from typing import Iterable, List, Mapping
+from typing import Iterable, Mapping
 
 import numpy as np
 import pandas as pd
@@ -261,7 +261,7 @@ def collect_detailed_episodes_names(parallel_dirs):
     return filenames
 
 
-def post_parallel_eval(configs: List[Mapping], base_dir: str) -> None:
+def post_parallel_eval(configs: list[Mapping], base_dir: str) -> None:
     """Post-execution cleanup after running evaluation in parallel.
 
     Logs are consolidated across parallel runs and saved to disk.
@@ -317,7 +317,7 @@ def post_parallel_eval(configs: List[Mapping], base_dir: str) -> None:
         shutil.rmtree(pdir)
 
 
-def post_parallel_train(configs: List[Mapping], base_dir: str) -> None:
+def post_parallel_train(configs: list[Mapping], base_dir: str) -> None:
     """Post-execution cleanup after running training in parallel.
 
     Object models are consolidated across parallel runs and saved to disk.
@@ -367,7 +367,7 @@ def post_parallel_train(configs: List[Mapping], base_dir: str) -> None:
 
 
 def run_episodes_parallel(
-    configs: List[Mapping],
+    configs: list[Mapping],
     num_parallel: int,
     experiment_name: str,
     train: bool = True,
@@ -476,7 +476,7 @@ def run_episodes_parallel(
         f.write(f"total_time: {total_time}")
 
 
-def parse_episode_spec(episode_spec: str | None, total: int) -> List[int]:
+def parse_episode_spec(episode_spec: str | None, total: int) -> list[int]:
     """Parses a zero-based episode selection string into episode indices.
 
     Converts a human-friendly selection string into a sorted list of unique,
@@ -569,7 +569,7 @@ def filter_episode_configs(configs: list[dict], episode_spec: str | None) -> lis
 
 def generate_parallel_train_configs(
     exp: Mapping, experiment_name: str
-) -> List[Mapping]:
+) -> list[Mapping]:
     """Generate configs for training episodes in parallel.
 
     Create a config for each object in the experiment. Unlike with parallel eval
@@ -625,7 +625,7 @@ def generate_parallel_train_configs(
     return new_configs
 
 
-def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> List[Mapping]:
+def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> list[Mapping]:
     """Generate configs for evaluation episodes in parallel.
 
     Create a config for each object and rotation in the experiment. Unlike with parallel

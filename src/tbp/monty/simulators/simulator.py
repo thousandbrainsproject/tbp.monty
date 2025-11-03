@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Dict, Protocol, Sequence
+from typing import Protocol, Sequence
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
@@ -45,8 +45,6 @@ class Simulator(Protocol):
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: SemanticID | None = None,
-        enable_physics: bool = False,
-        object_to_avoid: bool = False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectInfo:
         """Add new object to simulated environment.
@@ -60,9 +58,6 @@ class Simulator(Protocol):
             rotation: Initial orientation of the object.
             scale: Initial object scale.
             semantic_id: Optional override for the object's semantic ID.
-            enable_physics: Whether to enable physics on the object.
-            object_to_avoid: If True, ensure the object is not colliding with
-              other objects.
             primary_target_object: ID of the primary target object. If not None, the
                 added object will be positioned so that it does not obscure the initial
                 view of the primary target object (which avoiding collision alone cannot
@@ -92,7 +87,7 @@ class Simulator(Protocol):
         """Get agent and sensor states."""
         ...
 
-    def apply_actions(self, actions: Sequence[Action]) -> Dict[str, Dict]:
+    def apply_actions(self, actions: Sequence[Action]) -> dict[str, dict]:
         """Execute the given actions in the environment.
 
         Args:

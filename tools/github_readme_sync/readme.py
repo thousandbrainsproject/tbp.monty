@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import csv
 import html
@@ -16,7 +17,7 @@ import os
 import re
 from collections import OrderedDict
 from copy import deepcopy
-from typing import Any, List, Tuple
+from typing import Any
 from urllib.parse import parse_qs
 
 import nh3
@@ -64,13 +65,13 @@ class ReadMe:
     def __init__(self, version: str):
         self.version = version
 
-    def get_categories(self) -> List[Any]:
+    def get_categories(self) -> list[Any]:
         categories = get(f"{PREFIX}/categories", {"x-readme-version": self.version})
         if not categories:
             return []
         return sorted(categories, key=lambda x: x["order"])
 
-    def get_category_docs(self, category: Any) -> List[Any]:
+    def get_category_docs(self, category: Any) -> list[Any]:
         response = get(
             f"{PREFIX}/categories/{category['slug']}/docs",
             {"x-readme-version": self.version},
@@ -169,7 +170,7 @@ class ReadMe:
                 f"Invalid alignment value: {align_value}. Must be 'left' or 'right'"
             )
 
-    def create_category_if_not_exists(self, slug: str, title: str) -> Tuple[str, bool]:
+    def create_category_if_not_exists(self, slug: str, title: str) -> tuple[str, bool]:
         category = get(
             f"{PREFIX}/categories/{slug}", {"x-readme-version": self.version}
         )
@@ -266,7 +267,7 @@ class ReadMe:
 
     def create_or_update_doc(
         self, order: int, category_id: str, doc: dict, parent_id: str, file_path: str
-    ) -> Tuple[str, bool]:
+    ) -> tuple[str, bool]:
         markdown = self.process_markdown(doc["body"], file_path, doc["slug"])
 
         create_doc_request = {
