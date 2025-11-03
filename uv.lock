@@ -5031,6 +5031,12 @@ dev = [
     { name = "unittest-parametrize", version = "1.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "unittest-parametrize", version = "1.6.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
 ]
+future-work-widget-tool = [
+    { name = "eval-type-backport" },
+    { name = "nh3" },
+    { name = "pydantic", version = "2.10.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
+    { name = "pydantic", version = "2.11.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
+]
 generate-api-docs-tool = [
     { name = "docutils", version = "0.20.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
     { name = "docutils", version = "0.21.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
@@ -5078,6 +5084,7 @@ requires-dist = [
     { name = "colorama", marker = "extra == 'github-readme-sync-tool'" },
     { name = "deptry", marker = "extra == 'dev'" },
     { name = "docutils", marker = "extra == 'generate-api-docs-tool'", specifier = ">=0.17" },
+    { name = "eval-type-backport", marker = "extra == 'future-work-widget-tool'" },
     { name = "gym", marker = "extra == 'real-robots'" },
     { name = "habitat-sim", marker = "python_full_version == '3.9.*' and extra == 'simulator-habitat'" },
     { name = "importlib-resources" },
@@ -5087,6 +5094,7 @@ requires-dist = [
     { name = "mujoco", marker = "extra == 'simulator-mujoco'" },
     { name = "mypy", marker = "extra == 'dev'", specifier = "==1.11.2" },
     { name = "myst-parser", marker = "extra == 'generate-api-docs-tool'" },
+    { name = "nh3", marker = "extra == 'future-work-widget-tool'" },
     { name = "nh3", marker = "extra == 'github-readme-sync-tool'" },
     { name = "numpy" },
     { name = "numpy-quaternion", specifier = "==2023.0.3" },
@@ -5094,6 +5102,7 @@ requires-dist = [
     { name = "pandas" },
     { name = "parameterized", marker = "extra == 'dev'", specifier = "==0.9.0" },
     { name = "pillow" },
+    { name = "pydantic", marker = "extra == 'future-work-widget-tool'", specifier = ">=2.0.0" },
     { name = "pydata-sphinx-theme", marker = "extra == 'generate-api-docs-tool'" },
     { name = "pytest", marker = "extra == 'dev'", specifier = "==7.1.1" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = "==3.0.0" },
@@ -5128,7 +5137,7 @@ requires-dist = [
     { name = "vedo", marker = "extra == 'analysis'" },
     { name = "wandb" },
 ]
-provides-extras = ["simulator-habitat", "simulator-mujoco", "analysis", "build", "dev", "generate-api-docs-tool", "github-readme-sync-tool", "print-version-tool", "real-robots"]
+provides-extras = ["simulator-habitat", "simulator-mujoco", "analysis", "build", "dev", "generate-api-docs-tool", "github-readme-sync-tool", "future-work-widget-tool", "print-version-tool", "real-robots"]
 
 [[package]]
 name = "text-unidecode"
