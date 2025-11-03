@@ -7,9 +7,9 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
-from numbers import Number
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 import quaternion as qt
@@ -17,6 +17,9 @@ import scipy
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.models.states import State
+
+if TYPE_CHECKING:
+    from numbers import Number
 
 __all__ = [
     "AddNoiseToRawDepthImage",
@@ -315,7 +318,7 @@ class DepthTo3DLocations:
         self.clip_value = clip_value
         self.depth_clip_sensors = depth_clip_sensors
 
-    def __call__(self, observations: dict, state: Optional[State] = None) -> dict:
+    def __call__(self, observations: dict, state: State | None = None) -> dict:
         """Apply the depth-to-3D-locations transform to sensor observations.
 
         Applies spatial transforms to the observations and generates a mask used
@@ -524,7 +527,7 @@ class DepthTo3DLocations:
         semantic_patch: np.ndarray,
         min_depth_range: Number,
         default_on_surface_th: Number,
-    ) -> Tuple[Number, bool]:
+    ) -> tuple[Number, bool]:
         """Return a depth threshold if we have a bimodal depth distribution.
 
         If the depth values are in a large enough range (> min_depth_range) we may
