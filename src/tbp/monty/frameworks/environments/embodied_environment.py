@@ -38,7 +38,6 @@ VectorXYZ = Tuple[float, float, float]
 QuaternionWXYZ = Tuple[float, float, float, float]
 
 
-@deprecated("Use `ActionSampler` instead.")
 @dataclass
 class ObjectInfo:
     """Contains the identifying information of an object created in the environment."""
@@ -47,6 +46,7 @@ class ObjectInfo:
     semantic_id: SemanticID | None
 
 
+@deprecated("Use `ActionSampler` instead.")
 class ActionSpace(collections.abc.Container):
     """Represents the environment action space."""
 
