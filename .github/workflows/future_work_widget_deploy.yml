@@ -59,7 +59,7 @@ jobs:
           (conda env list | grep tbp.monty) && conda remove --name tbp.monty --all --yes || true
           conda env create
           source activate tbp.monty
-          pip install -e .[dev,github_readme_sync_tool,future_work_widget]
+          pip install -e .[dev,github_readme_sync_tool,future_work_widget_tool]
       - name: Build future work widget
         working-directory: tbp.monty
         run: |
