@@ -5,14 +5,10 @@ In the future this will change, but for now, avoid trying to use `uv` with this 
 
 ## Setup Notes
 
-Some notes on how to set up this environment. These aren't as simple as I'd like because of having to build versions for different platforms.
+Some notes on how to set up this environment.
 
 ```sh
 # The --seed is needed so we can build the torch packages
-uv venv -p 3.2. --seed
-# have to install torch separate from the rest
-# because torch-scatter, etc. have to build without
-# isolation
-uv pip install torch==1.13.1
+uv venv -p 3.9.22 --seed
 uv sync --extra dev --extra simulator_mujoco
 ```
