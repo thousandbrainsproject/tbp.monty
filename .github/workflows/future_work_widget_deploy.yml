@@ -68,7 +68,7 @@ jobs:
           python -m tools.github_readme_sync.cli generate-index docs "${{ runner.temp }}/index.json"
           mkdir -p "${{ runner.temp }}/future-work-widget"
           cp -r tools/future_work_widget/app/* "${{ runner.temp }}/future-work-widget/"
-          python -m tools.future_work_widget.cli build "${{ runner.temp }}/index.json" "${{ runner.temp }}/future-work-widget"
+          python -m tools.future_work_widget.cli "${{ runner.temp }}/index.json" "${{ runner.temp }}/future-work-widget"
           ls -lR "${{ runner.temp }}"/future-work-widget
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
