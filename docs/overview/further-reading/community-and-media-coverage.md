@@ -30,6 +30,9 @@ You can also read articles on the newsroom page for higher level coverage of the
 **Cortical Comedy: How Your Brain's Voting System Creates the Experience of Funny**, By Greg Robinson
 <https://gregrobison.medium.com/cortical-comedy-how-your-brains-voting-system-creates-the-experience-of-funny-607aceac3296>
 
+**Embodied Intelligence: How Neuroscience, Predictive Learning, and 3D Simulation Are Converging to Create AI That Acts in the World**, By Greg Robinson
+<https://gregrobison.medium.com/embodied-intelligence-how-neuroscience-predictive-learning-and-3d-simulation-are-converging-to-c266a62954f9>
+
 # Videos
 
 **Cortical Columns**, By Artem Kirsanov

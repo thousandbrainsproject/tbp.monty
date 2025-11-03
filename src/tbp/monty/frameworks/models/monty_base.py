@@ -186,8 +186,8 @@ class MontyBase(Monty):
         ):
             self.deal_with_time_out()
             return True
-        else:
-            return False
+
+        return False
 
     def deal_with_time_out(self):
         """Call any functions and logging in case of a time out."""
@@ -217,10 +217,7 @@ class MontyBase(Monty):
         else:
             sensory_inputs_from_lms = []
         # Combine sensory inputs from SMs and LMs to LM i
-        sensory_inputs = self._combine_inputs(
-            sensory_inputs_from_sms, sensory_inputs_from_lms
-        )
-        return sensory_inputs
+        return self._combine_inputs(sensory_inputs_from_sms, sensory_inputs_from_lms)
 
     def _combine_inputs(self, inputs_from_sms, inputs_from_lms) -> dict | None:
         """Combine all inputs to an LM into one dict.
@@ -420,8 +417,7 @@ class MontyBase(Monty):
         # the agent (actuator) this sensor is attached to
         agent_id = self.sm_to_agent_dict[sensor_module_id]
         agent_obs = observations[agent_id]
-        sensor_obs = agent_obs[sensor_module_id]
-        return sensor_obs
+        return agent_obs[sensor_module_id]
 
     def get_agent_state(self):
         """Get state of agent (dict).
@@ -449,8 +445,10 @@ class MontyBase(Monty):
         if self.step_type == "matching_step":
             if self.experiment_mode == "train":
                 return self.min_train_steps
-            elif self.experiment_mode == "eval":
+
+            if self.experiment_mode == "eval":
                 return self.min_eval_steps
+
         elif self.step_type == "exploratory_step":
             return self.num_exploratory_steps
 
@@ -458,7 +456,7 @@ class MontyBase(Monty):
     def step_type_count(self):
         if self.step_type == "matching_step":
             return self.matching_steps
-        elif self.step_type == "exploratory_step":
+        if self.step_type == "exploratory_step":
             return self.exploratory_steps
 
     @property

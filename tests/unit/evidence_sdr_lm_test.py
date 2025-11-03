@@ -7,13 +7,12 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-
+from __future__ import annotations
 
 import copy
 import shutil
 import tempfile
 import unittest
-from typing import List
 
 import numpy as np
 
@@ -359,7 +358,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTestCases.BaseGraphTest):
             sender_type="SM",
         )
 
-    def get_rectangle_obs(self) -> List[State]:
+    def get_rectangle_obs(self) -> list[State]:
         """Helper function to create observations for a rectangle object.
 
         Returns:
@@ -391,7 +390,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTestCases.BaseGraphTest):
             State(**fo_5),
         ]
 
-    def get_rectangle_long_obs(self) -> List[State]:
+    def get_rectangle_long_obs(self) -> list[State]:
         """Helper function to create observations for a long rectangle object.
 
         Returns:
@@ -431,7 +430,7 @@ class EvidenceSDRIntegrationTest(BaseGraphTestCases.BaseGraphTest):
             State(**fo_7),
         ]
 
-    def get_triangle_obs(self) -> List[State]:
+    def get_triangle_obs(self) -> list[State]:
         """Helper function to create observations for a traingle object.
 
         Returns:

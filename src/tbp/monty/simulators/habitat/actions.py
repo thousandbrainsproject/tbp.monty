@@ -7,8 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-
-from typing import List, Optional
+from __future__ import annotations
 
 import attr
 import habitat_sim.utils as hab_utils
@@ -44,8 +43,8 @@ class ActuationVecSpec(ActuationSpec):
     specifying absolute rotation
     """
 
-    amount: List[List[float]]
-    constraint: Optional[float] = None
+    amount: list[list[float]]
+    constraint: float | None = None
 
 
 def _move_along_diagonal(

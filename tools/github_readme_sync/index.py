@@ -13,7 +13,6 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Dict, List
 
 import nh3
 from slugify import slugify
@@ -113,7 +112,7 @@ def generate_index(docs_dir: str, output_file_path: str) -> str:
     return output_file_path
 
 
-def process_markdown_files(docs_dir: str) -> List[Dict]:
+def process_markdown_files(docs_dir: str) -> list[dict]:
     """Process all markdown files in docs directory and extract front-matter.
 
     Args:
@@ -180,7 +179,7 @@ def process_markdown_files(docs_dir: str) -> List[Dict]:
     return entries
 
 
-def generate_path_components(file_path: Path, docs_root: Path) -> Dict[str, str]:
+def generate_path_components(file_path: Path, docs_root: Path) -> dict[str, str]:
     """Generate path components for a file relative to docs root.
 
     Returns:

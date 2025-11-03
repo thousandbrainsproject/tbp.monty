@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import csv
 import html
@@ -16,7 +17,7 @@ import os
 import re
 from collections import OrderedDict
 from copy import deepcopy
-from typing import Any, List, Optional, Tuple
+from typing import Any
 from urllib.parse import parse_qs
 
 import nh3
@@ -64,13 +65,13 @@ class ReadMe:
     def __init__(self, version: str):
         self.version = version
 
-    def get_categories(self) -> List[Any]:
+    def get_categories(self) -> list[Any]:
         categories = get(f"{PREFIX}/categories", {"x-readme-version": self.version})
         if not categories:
             return []
         return sorted(categories, key=lambda x: x["order"])
 
-    def get_category_docs(self, category: Any) -> List[Any]:
+    def get_category_docs(self, category: Any) -> list[Any]:
         response = get(
             f"{PREFIX}/categories/{category['slug']}/docs",
             {"x-readme-version": self.version},
@@ -169,7 +170,7 @@ class ReadMe:
                 f"Invalid alignment value: {align_value}. Must be 'left' or 'right'"
             )
 
-    def create_category_if_not_exists(self, slug: str, title: str) -> Tuple[str, bool]:
+    def create_category_if_not_exists(self, slug: str, title: str) -> tuple[str, bool]:
         category = get(
             f"{PREFIX}/categories/{slug}", {"x-readme-version": self.version}
         )
@@ -266,7 +267,7 @@ class ReadMe:
 
     def create_or_update_doc(
         self, order: int, category_id: str, doc: dict, parent_id: str, file_path: str
-    ) -> Tuple[str, bool]:
+    ) -> tuple[str, bool]:
         markdown = self.process_markdown(doc["body"], file_path, doc["slug"])
 
         create_doc_request = {
@@ -311,8 +312,7 @@ class ReadMe:
         body = self.correct_file_locations(body)
         body = self.convert_note_tags(body)
         body = self.parse_images(body)
-        body = self.convert_cloudinary_videos(body)
-        return body
+        return self.convert_cloudinary_videos(body)
 
     def sanitize_html(self, body: str) -> str:
         allowed_attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
@@ -343,11 +343,10 @@ class ReadMe:
         relative_path = relative_path + "snippets/edit-this-page.md"
         body = body + f"\n\n!snippet[{relative_path}]"
         body = self.insert_markdown_snippet(body, file_path)
-        body = body.replace(
+        return body.replace(
             "!!LINK!!",
             f"https://github.com/thousandbrainsproject/tbp.monty/edit/main/{file_path}/{filename}.md",
         )
-        return body
 
     def correct_image_locations(self, body: str) -> str:
         repo = os.getenv("IMAGE_PATH")
@@ -378,8 +377,7 @@ class ReadMe:
                         new_body = new_body.replace(img_tag, new_img_tag)
 
         # Process regular markdown images
-        new_body = re.sub(regex_image_path, replace_image_path, new_body)
-        return new_body
+        return re.sub(regex_image_path, replace_image_path, new_body)
 
     def correct_file_locations(self, body: str) -> str:
         def replace_path(match):
@@ -470,7 +468,7 @@ class ReadMe:
 
     def convert_cloudinary_videos(self, markdown_text: str) -> str:
         def replace_video(match):
-            title, full_url, cloud_id, version, filename = match.groups()
+            _, _, cloud_id, version, filename = match.groups()
             # Replace the cloud ID with the environment variable
             new_url = f"https://res.cloudinary.com/{cloud_id}/video/upload/v{version}/{filename}"
             block = {

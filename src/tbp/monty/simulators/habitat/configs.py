@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Mapping
+from typing import Callable, Mapping
 
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.config_utils.make_dataset_configs import (
     FiveLMMountConfig,
     MultiLMMountConfig,
@@ -75,8 +76,8 @@ __all__ = [
 class EnvInitArgs:
     """Args for :class:`HabitatEnvironment`."""
 
-    agents: List[AgentConfig]
-    objects: List[ObjectConfig] = field(
+    agents: list[AgentConfig]
+    objects: list[ObjectConfig] = field(
         default_factory=lambda: [ObjectConfig("coneSolid", position=(0.0, 1.5, -0.1))]
     )
     scene_id: int | None = field(default=None)
@@ -88,12 +89,12 @@ class EnvInitArgs:
 class EnvInitArgsSinglePTZ(EnvInitArgs):
     """Use this to make a sim with a cone and a single PTZCameraAgent."""
 
-    agents: List[AgentConfig] = field(
+    agents: list[AgentConfig] = field(
         default_factory=lambda: [
             AgentConfig(
                 SingleSensorAgent,
                 dict(
-                    agent_id="agent_id_0",
+                    agent_id=AgentID("agent_id_0"),
                     sensor_id="sensor_id_0",
                     resolution=(320, 240),
                 ),
@@ -106,7 +107,7 @@ class EnvInitArgsSinglePTZ(EnvInitArgs):
 class EnvInitArgsSimpleMount(EnvInitArgs):
     """Use this to make a sim with a cone and a single mount agent with two cameras."""
 
-    agents: List[AgentConfig] = field(
+    agents: list[AgentConfig] = field(
         default_factory=lambda: [
             AgentConfig(MultiSensorAgent, TwoCameraMountConfig().__dict__)
         ]
@@ -115,7 +116,7 @@ class EnvInitArgsSimpleMount(EnvInitArgs):
 
 @dataclass
 class EnvInitArgsPatchViewMount(EnvInitArgs):
-    agents: List[AgentConfig] = field(
+    agents: list[AgentConfig] = field(
         default_factory=lambda: [
             AgentConfig(MultiSensorAgent, PatchAndViewFinderMountConfig().__dict__)
         ]
@@ -124,7 +125,7 @@ class EnvInitArgsPatchViewMount(EnvInitArgs):
 
 @dataclass
 class EnvInitArgsSurfaceViewMount(EnvInitArgs):
-    agents: List[AgentConfig] = field(
+    agents: list[AgentConfig] = field(
         default_factory=lambda: [
             AgentConfig(MultiSensorAgent, SurfaceAndViewFinderMountConfig().__dict__)
         ]
@@ -138,7 +139,7 @@ class EnvInitArgsMontyWorldPatchViewMount(EnvInitArgsPatchViewMount):
 
 @dataclass
 class EnvInitArgsMontyWorldSurfaceViewMount(EnvInitArgsMontyWorldPatchViewMount):
-    agents: List[AgentConfig] = field(
+    agents: list[AgentConfig] = field(
         default_factory=lambda: [
             AgentConfig(MultiSensorAgent, SurfaceAndViewFinderMountConfig().__dict__)
         ]
@@ -147,7 +148,7 @@ class EnvInitArgsMontyWorldSurfaceViewMount(EnvInitArgsMontyWorldPatchViewMount)
 
 @dataclass
 class EnvInitArgsPatchViewMountLowRes(EnvInitArgs):
-    agents: List[AgentConfig] = field(
+    agents: list[AgentConfig] = field(
         default_factory=lambda: [
             AgentConfig(
                 MultiSensorAgent, PatchAndViewFinderMountLowResConfig().__dict__
@@ -165,7 +166,7 @@ class SinglePTZHabitatDatasetArgs:
     """
 
     env_init_func: Callable = field(default=HabitatEnvironment)
-    env_init_args: Dict | dataclass = field(
+    env_init_args: dict | dataclass = field(
         default_factory=lambda: EnvInitArgsSinglePTZ().__dict__
     )
     transform: Callable | list | None = field(default=None)
@@ -180,7 +181,7 @@ class SimpleMountHabitatDatasetArgs:
     """
 
     env_init_func: Callable = field(default=HabitatEnvironment)
-    env_init_args: Dict = field(
+    env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsSimpleMount().__dict__
     )
     transform: Callable | list | None = field(default=None)
@@ -189,7 +190,7 @@ class SimpleMountHabitatDatasetArgs:
 @dataclass
 class PatchViewFinderMountHabitatDatasetArgs:
     env_init_func: Callable = field(default=HabitatEnvironment)
-    env_init_args: Dict = field(
+    env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsPatchViewMount().__dict__
     )
     transform: Callable | list | None = None
@@ -198,9 +199,9 @@ class PatchViewFinderMountHabitatDatasetArgs:
     def __post_init__(self):
         agent_args = self.env_init_args["agents"][0].agent_args
         self.transform = [
-            MissingToMaxDepth(agent_id=agent_args["agent_id"], max_depth=1),
+            MissingToMaxDepth(agent_id=AgentID(agent_args["agent_id"]), max_depth=1),
             DepthTo3DLocations(
-                agent_id=agent_args["agent_id"],
+                agent_id=AgentID(agent_args["agent_id"]),
                 sensor_ids=agent_args["sensor_ids"],
                 resolutions=agent_args["resolutions"],
                 world_coord=True,
@@ -214,7 +215,7 @@ class PatchViewFinderMountHabitatDatasetArgs:
 @dataclass
 class NoisyPatchViewFinderMountHabitatDatasetArgs:
     env_init_func: Callable = field(default=HabitatEnvironment)
-    env_init_args: Dict = field(
+    env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsPatchViewMount().__dict__
     )
     transform: Callable | list | None = None
@@ -222,15 +223,15 @@ class NoisyPatchViewFinderMountHabitatDatasetArgs:
     def __post_init__(self):
         agent_args = self.env_init_args["agents"][0].agent_args
         self.transform = [
-            MissingToMaxDepth(agent_id=agent_args["agent_id"], max_depth=1),
+            MissingToMaxDepth(agent_id=AgentID(agent_args["agent_id"]), max_depth=1),
             AddNoiseToRawDepthImage(
-                agent_id=agent_args["agent_id"],
+                agent_id=AgentID(agent_args["agent_id"]),
                 sigma=0.001,
             ),  # add gaussian noise with 0.001 std to depth image
             # Uncomment line below to enable smoothing of sensor patch depth
-            # GaussianSmoothing(agent_id=agent_args["agent_id"]),
+            # GaussianSmoothing(agent_id=AgentID(agent_args["agent_id"])),
             DepthTo3DLocations(
-                agent_id=agent_args["agent_id"],
+                agent_id=AgentID(agent_args["agent_id"]),
                 sensor_ids=agent_args["sensor_ids"],
                 resolutions=agent_args["resolutions"],
                 world_coord=True,
@@ -250,7 +251,7 @@ class EnvInitArgsShapenetPatchViewMount(EnvInitArgsPatchViewMount):
 class PatchViewFinderLowResMountHabitatDatasetArgs(
     PatchViewFinderMountHabitatDatasetArgs
 ):
-    env_init_args: Dict = field(
+    env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsPatchViewMountLowRes().__dict__
     )
 
@@ -259,7 +260,7 @@ class PatchViewFinderLowResMountHabitatDatasetArgs(
 class PatchViewFinderShapenetMountHabitatDatasetArgs(
     PatchViewFinderMountHabitatDatasetArgs
 ):
-    env_init_args: Dict = field(
+    env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsShapenetPatchViewMount().__dict__
     )
 
@@ -268,23 +269,23 @@ class PatchViewFinderShapenetMountHabitatDatasetArgs(
 class PatchViewFinderMontyWorldMountHabitatDatasetArgs(
     PatchViewFinderMountHabitatDatasetArgs
 ):
-    env_init_args: Dict = field(
+    env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsMontyWorldPatchViewMount().__dict__
     )
 
 
 @dataclass
 class SurfaceViewFinderMountHabitatDatasetArgs(PatchViewFinderMountHabitatDatasetArgs):
-    env_init_args: Dict = field(
+    env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsSurfaceViewMount().__dict__
     )
 
     def __post_init__(self):
         agent_args = self.env_init_args["agents"][0].agent_args
         self.transform = [
-            MissingToMaxDepth(agent_id=agent_args["agent_id"], max_depth=1),
+            MissingToMaxDepth(agent_id=AgentID(agent_args["agent_id"]), max_depth=1),
             DepthTo3DLocations(
-                agent_id=agent_args["agent_id"],
+                agent_id=AgentID(agent_args["agent_id"]),
                 sensor_ids=agent_args["sensor_ids"],
                 resolutions=agent_args["resolutions"],
                 world_coord=True,
@@ -301,7 +302,7 @@ class SurfaceViewFinderMountHabitatDatasetArgs(PatchViewFinderMountHabitatDatase
 class SurfaceViewFinderMontyWorldMountHabitatDatasetArgs(
     SurfaceViewFinderMountHabitatDatasetArgs
 ):
-    env_init_args: Dict = field(
+    env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsMontyWorldSurfaceViewMount().__dict__
     )
 
@@ -310,22 +311,22 @@ class SurfaceViewFinderMontyWorldMountHabitatDatasetArgs(
 class NoisySurfaceViewFinderMountHabitatDatasetArgs(
     PatchViewFinderMountHabitatDatasetArgs
 ):
-    env_init_args: Dict = field(
+    env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsSurfaceViewMount().__dict__
     )
 
     def __post_init__(self):
         agent_args = self.env_init_args["agents"][0].agent_args
         self.transform = [
-            MissingToMaxDepth(agent_id=agent_args["agent_id"], max_depth=1),
+            MissingToMaxDepth(agent_id=AgentID(agent_args["agent_id"]), max_depth=1),
             AddNoiseToRawDepthImage(
-                agent_id=agent_args["agent_id"],
+                agent_id=AgentID(agent_args["agent_id"]),
                 sigma=0.001,
             ),  # add gaussian noise with 0.001 std to depth image
             # Uncomment line below to enable smoothing of sensor patch depth
-            # GaussianSmoothing(agent_id=agent_args["agent_id"]),
+            # GaussianSmoothing(agent_id=AgentID(agent_args["agent_id"])),
             DepthTo3DLocations(
-                agent_id=agent_args["agent_id"],
+                agent_id=AgentID(agent_args["agent_id"]),
                 sensor_ids=agent_args["sensor_ids"],
                 resolutions=agent_args["resolutions"],
                 world_coord=True,
@@ -340,7 +341,7 @@ class NoisySurfaceViewFinderMountHabitatDatasetArgs(
 
 @dataclass
 class EnvInitArgsMultiLMMount(EnvInitArgs):
-    agents: List[AgentConfig] = field(
+    agents: list[AgentConfig] = field(
         default_factory=lambda: [
             AgentConfig(MultiSensorAgent, MultiLMMountConfig().__dict__)
         ]
@@ -350,7 +351,7 @@ class EnvInitArgsMultiLMMount(EnvInitArgs):
 @dataclass
 class MultiLMMountHabitatDatasetArgs:
     env_init_func: Callable = field(default=HabitatEnvironment)
-    env_init_args: Dict = field(
+    env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsMultiLMMount().__dict__
     )
     transform: Callable | list | None = None
@@ -358,9 +359,9 @@ class MultiLMMountHabitatDatasetArgs:
     def __post_init__(self):
         agent_args = self.env_init_args["agents"][0].agent_args
         self.transform = [
-            MissingToMaxDepth(agent_id=agent_args["agent_id"], max_depth=1),
+            MissingToMaxDepth(agent_id=AgentID(agent_args["agent_id"]), max_depth=1),
             DepthTo3DLocations(
-                agent_id=agent_args["agent_id"],
+                agent_id=AgentID(agent_args["agent_id"]),
                 sensor_ids=agent_args["sensor_ids"],
                 resolutions=agent_args["resolutions"],
                 world_coord=True,
@@ -373,7 +374,7 @@ class MultiLMMountHabitatDatasetArgs:
 
 @dataclass
 class EnvInitArgsTwoLMDistantStackedMount(EnvInitArgs):
-    agents: List[AgentConfig] = field(
+    agents: list[AgentConfig] = field(
         default_factory=lambda: [
             AgentConfig(MultiSensorAgent, TwoLMStackedDistantMountConfig().__dict__)
         ]
@@ -382,14 +383,14 @@ class EnvInitArgsTwoLMDistantStackedMount(EnvInitArgs):
 
 @dataclass
 class TwoLMStackedDistantMountHabitatDatasetArgs(MultiLMMountHabitatDatasetArgs):
-    env_init_args: Dict = field(
+    env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsTwoLMDistantStackedMount().__dict__
     )
 
 
 @dataclass
 class EnvInitArgsTwoLMSurfaceStackedMount(EnvInitArgs):
-    agents: List[AgentConfig] = field(
+    agents: list[AgentConfig] = field(
         default_factory=lambda: [
             AgentConfig(MultiSensorAgent, TwoLMStackedSurfaceMountConfig().__dict__)
         ]
@@ -398,14 +399,14 @@ class EnvInitArgsTwoLMSurfaceStackedMount(EnvInitArgs):
 
 @dataclass
 class TwoLMStackedSurfaceMountHabitatDatasetArgs(MultiLMMountHabitatDatasetArgs):
-    env_init_args: Dict = field(
+    env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsTwoLMSurfaceStackedMount().__dict__
     )
 
 
 @dataclass
 class EnvInitArgsFiveLMMount(EnvInitArgs):
-    agents: List[AgentConfig] = field(
+    agents: list[AgentConfig] = field(
         default_factory=lambda: [
             AgentConfig(MultiSensorAgent, FiveLMMountConfig().__dict__)
         ]
@@ -414,14 +415,14 @@ class EnvInitArgsFiveLMMount(EnvInitArgs):
 
 @dataclass
 class FiveLMMountHabitatDatasetArgs(MultiLMMountHabitatDatasetArgs):
-    env_init_args: Dict = field(
+    env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsFiveLMMount().__dict__
     )
 
 
 @dataclass
 class EnvInitArgsPatchViewFinderMultiObjectMount(EnvInitArgs):
-    agents: List[AgentConfig] = field(
+    agents: list[AgentConfig] = field(
         default_factory=lambda: [
             AgentConfig(
                 MultiSensorAgent, PatchAndViewFinderMultiObjectMountConfig().__dict__
@@ -433,7 +434,7 @@ class EnvInitArgsPatchViewFinderMultiObjectMount(EnvInitArgs):
 @dataclass
 class PatchViewFinderMultiObjectMountHabitatDatasetArgs:
     env_init_func: Callable = field(default=HabitatEnvironment)
-    env_init_args: Dict = field(
+    env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsPatchViewFinderMultiObjectMount().__dict__
     )
     transform: Callable | list | None = None
@@ -442,9 +443,9 @@ class PatchViewFinderMultiObjectMountHabitatDatasetArgs:
     def __post_init__(self):
         agent_args = self.env_init_args["agents"][0].agent_args
         self.transform = [
-            MissingToMaxDepth(agent_id=agent_args["agent_id"], max_depth=1),
+            MissingToMaxDepth(agent_id=AgentID(agent_args["agent_id"]), max_depth=1),
             DepthTo3DLocations(
-                agent_id=agent_args["agent_id"],
+                agent_id=AgentID(agent_args["agent_id"]),
                 sensor_ids=agent_args["sensor_ids"],
                 resolutions=agent_args["resolutions"],
                 world_coord=True,
@@ -486,5 +487,4 @@ def make_multi_sensor_habitat_dataset_args(
     env_init_args = EnvInitArgsMultiLMMount()
     env_init_args.agents = [AgentConfig(MultiSensorAgent, mount_config)]
     env_init_args = env_init_args.__dict__
-    dataset_args = MultiLMMountHabitatDatasetArgs(env_init_args=env_init_args)
-    return dataset_args
+    return MultiLMMountHabitatDatasetArgs(env_init_args=env_init_args)

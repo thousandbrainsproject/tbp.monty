@@ -7,8 +7,9 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 
@@ -82,7 +83,7 @@ class State:
                         repr_string += f"           {vector}\n"
                 else:
                     repr_string += f"       {feature}: {feat_val}\n"
-        repr_string += f"   Non-Morphological Features: \n"
+        repr_string += "   Non-Morphological Features: \n"
         if self.non_morphological_features is not None:
             for feature in self.non_morphological_features:
                 feat_val = self.non_morphological_features[feature]
@@ -147,8 +148,8 @@ class State:
         """
         if self.sender_type == "SM":
             return self.get_nth_pose_vector(0)
-        else:
-            raise ValueError("Sender type must be SM to get surface normal.")
+
+        raise ValueError("Sender type must be SM to get surface normal.")
 
     def get_pose_vectors(self):
         """Return the pose vectors."""
@@ -162,8 +163,8 @@ class State:
         """
         if self.sender_type == "SM":
             return self.get_nth_pose_vector(1), self.get_nth_pose_vector(2)
-        else:
-            raise ValueError("Sender type must be SM to get curvature directions.")
+
+        raise ValueError("Sender type must be SM to get curvature directions.")
 
     def get_on_object(self):
         """Return whether we think we are on the object or not.
@@ -172,10 +173,10 @@ class State:
         """
         if "on_object" in self.morphological_features.keys():
             return self.morphological_features["on_object"]
-        else:
-            # TODO: Use depth values to estimate on_object (either threshold or large
-            # displacement)
-            return True
+
+        # TODO: Use depth values to estimate on_object (either threshold or large
+        # displacement)
+        return True
 
     def _check_all_attributes(self):
         assert "pose_vectors" in self.morphological_features.keys(), (
@@ -233,15 +234,15 @@ class GoalState(State):
 
     def __init__(
         self,
-        location: Optional[np.ndarray],
-        morphological_features: Optional[Dict[str, Any]],
-        non_morphological_features: Optional[Dict[str, Any]],
+        location: np.ndarray | None,
+        morphological_features: dict[str, Any] | None,
+        non_morphological_features: dict[str, Any] | None,
         confidence: float,
         use_state: bool,
         sender_id: str,
         sender_type: str,
-        goal_tolerances: Optional[Dict[str, Any]],
-        info: Optional[Dict[str, Any]] = None,
+        goal_tolerances: dict[str, Any] | None,
+        info: dict[str, Any] | None = None,
     ):
         """Initialize a goal state.
 
@@ -292,7 +293,7 @@ class GoalState(State):
             )
             f"{self.morphological_features.keys()}"
             assert np.any(
-                self.morphological_features["pose_vectors"] == np.nan
+                np.isnan(self.morphological_features["pose_vectors"])
             ) or self.morphological_features["pose_vectors"].shape == (
                 3,
                 3,
@@ -330,7 +331,7 @@ class GoalState(State):
         assert isinstance(self.info, dict), "info must be a dictionary"
 
 
-def encode_goal_state(goal_state: GoalState) -> Dict[str, Any]:
+def encode_goal_state(goal_state: GoalState) -> dict[str, Any]:
     """Encode a goal state into a dictionary.
 
     Args:

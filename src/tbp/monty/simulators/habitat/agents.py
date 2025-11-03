@@ -7,15 +7,18 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT..
+from __future__ import annotations
 
 import uuid
 from collections import defaultdict
-from typing import List, Tuple
+from typing import Tuple
 
 import habitat_sim
 import numpy as np
 import quaternion as qt
 from habitat_sim.agent import ActionSpec, ActuationSpec, AgentConfiguration, AgentState
+
+from tbp.monty.frameworks.agents import AgentID
 
 from .sensors import RGBDSensorConfig, SemanticSensorConfig, SensorConfig
 
@@ -48,18 +51,18 @@ class HabitatAgent:
 
     def __init__(
         self,
-        agent_id: str,
+        agent_id: AgentID | None,
         position: Vector3 = (0.0, 1.5, 0.0),
         rotation: Quaternion = (1.0, 0.0, 0.0, 0.0),
         height: float = 0.0,
     ):
         if agent_id is None:
-            agent_id = uuid.uuid4().hex
+            agent_id = AgentID(uuid.uuid4().hex)
         self.agent_id = agent_id
         self.position = position
         self.rotation = rotation
         self.height = height
-        self.sensors: List[SensorConfig] = []
+        self.sensors: list[SensorConfig] = []
 
     def get_spec(self) -> AgentConfiguration:
         """Returns a habitat-sim agent configuration.
@@ -245,19 +248,19 @@ class MultiSensorAgent(HabitatAgent, ActionSpaceMixin):
 
     def __init__(
         self,
-        agent_id: str,
-        sensor_ids: Tuple[str],
+        agent_id: AgentID | None,
+        sensor_ids: tuple[str],
         position: Vector3 = (0.0, 1.5, 0.0),  # Agent position
         rotation: Quaternion = (1.0, 0.0, 0.0, 0.0),
         height: float = 0.0,
         rotation_step: float = 0.0,
         translation_step: float = 0.0,
         action_space_type: str = "distant_agent",
-        resolutions: Tuple[Size] = ((16, 16),),
-        positions: Tuple[Vector3] = ((0.0, 0.0, 0.0),),
-        rotations: Tuple[Quaternion] = ((1.0, 0.0, 0.0, 0.0),),
-        zooms: Tuple[float] = (1.0,),
-        semantics: Tuple[bool] = (False,),
+        resolutions: tuple[Size] = ((16, 16),),
+        positions: tuple[Vector3] = ((0.0, 0.0, 0.0),),
+        rotations: tuple[Quaternion] = ((1.0, 0.0, 0.0, 0.0),),
+        zooms: tuple[float] = (1.0,),
+        semantics: tuple[bool] = (False,),
     ):
         super().__init__(agent_id, position, rotation, height)
         if sensor_ids is None:
@@ -308,8 +311,7 @@ class MultiSensorAgent(HabitatAgent, ActionSpaceMixin):
 
     def get_spec(self):
         spec = super().get_spec()
-        spec = self.get_action_space(spec)
-        return spec
+        return self.get_action_space(spec)
 
     def initialize(self, simulator):
         """Initialize agent runtime state.
@@ -346,7 +348,7 @@ class SingleSensorAgent(HabitatAgent, ActionSpaceMixin):
 
     def __init__(
         self,
-        agent_id: str,
+        agent_id: AgentID | None,
         sensor_id: str,
         agent_position: Vector3 = (0.0, 1.5, 0.0),
         sensor_position: Vector3 = (0.0, 0.0, 0.0),
@@ -357,7 +359,7 @@ class SingleSensorAgent(HabitatAgent, ActionSpaceMixin):
         semantic: bool = False,
         rotation_step: float = 0.0,
         translation_step: float = 0.0,
-        action_space: Tuple = None,
+        action_space: tuple = None,
         action_space_type: str = "distant_agent",
     ):
         """Initialize agent runtime state.
@@ -407,8 +409,7 @@ class SingleSensorAgent(HabitatAgent, ActionSpaceMixin):
 
     def get_spec(self):
         spec = super().get_spec()
-        spec = self.get_action_space(spec)
-        return spec
+        return self.get_action_space(spec)
 
     def initialize(self, simulator):
         """Initialize agent runtime state.

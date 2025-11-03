@@ -103,14 +103,14 @@ There are a range of graph plotting utils in the `plot_utils.py` file. Additiona
 
 ```python Pretrained Models
 import matplotlib.pyplot as plt
-from tbp.monty.frameworks.utils.plot_utils import plot_graph
+from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 # Visualize the object called 'mug' from the pretrained graphs loaded above from pretrained_dict
 plot_graph(lm_models['pretrained'][0]['mug']['patch'], rotation=120)
 plt.show()
 ```
 ```python Learning from Scratch Data
-from tbp.monty.frameworks.utils.plot_utils import plot_graph
+from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 # Visualize how the graph for the first object learned (new_object0) looks in epoch 3 in LM_0
 plot_graph(lm_models['3']['LM_0']['new_object0']['patch'])
@@ -163,7 +163,7 @@ Since Monty is a sensorimotor framework, everything happens as a timeseries of s
 Data generated from an experiment using the EvidenceLM (currently the default setup) is best plotted using a loop, as shown below.
 
 ```python
-from tbp.monty.frameworks.utils.plot_utils import (show_initial_hypotheses,
+from tbp.monty.frameworks.utils.plot_utils_dev import (show_initial_hypotheses,
                                                          plot_evidence_at_step)
 
 episode = 0

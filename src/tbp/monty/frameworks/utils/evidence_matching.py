@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Dict, List, Optional, Tuple
 from typing import OrderedDict as OrderedDictType
 
 import numpy as np
@@ -34,7 +33,7 @@ class ChannelMapper:
 
     """
 
-    def __init__(self, channel_sizes: Optional[Dict[str, int]] = None) -> None:
+    def __init__(self, channel_sizes: dict[str, int] | None = None) -> None:
         """Initializes the ChannelMapper with an ordered dictionary of channel sizes.
 
         Args:
@@ -45,7 +44,7 @@ class ChannelMapper:
         )
 
     @property
-    def channels(self) -> List[str]:
+    def channels(self) -> list[str]:
         """Returns the existing channel names.
 
         Returns:
@@ -76,7 +75,7 @@ class ChannelMapper:
 
         return self.channel_sizes[channel_name]
 
-    def channel_range(self, channel_name: str) -> Tuple[int, int]:
+    def channel_range(self, channel_name: str) -> tuple[int, int]:
         """Returns the start and end indices of the given channel.
 
         Args:
@@ -133,7 +132,7 @@ class ChannelMapper:
         self.channel_sizes[channel_name] = new_size
 
     def add_channel(
-        self, channel_name: str, size: int, position: Optional[int] = None
+        self, channel_name: str, size: int, position: int | None = None
     ) -> None:
         """Adds a new channel at a specified position (default is at the end).
 
@@ -501,11 +500,14 @@ def evidence_update_threshold(
 
     if type(evidence_threshold_config) in [int, float]:
         return evidence_threshold_config
-    elif evidence_threshold_config == "mean":
+
+    if evidence_threshold_config == "mean":
         return np.mean(evidence_all_channels)
-    elif evidence_threshold_config == "median":
+
+    if evidence_threshold_config == "median":
         return np.median(evidence_all_channels)
-    elif isinstance(
+
+    if isinstance(
         evidence_threshold_config, str
     ) and evidence_threshold_config.endswith("%"):
         percentage_str = evidence_threshold_config.strip("%")
@@ -515,17 +517,19 @@ def evidence_update_threshold(
         )
         x_percent_of_max = max_global_evidence * (percentage / 100)
         return max_global_evidence - x_percent_of_max
-    elif evidence_threshold_config == "x_percent_threshold":
+
+    if evidence_threshold_config == "x_percent_threshold":
         x_percent_of_max = max_global_evidence / 100 * x_percent_threshold
         return max_global_evidence - x_percent_of_max
-    elif evidence_threshold_config == "all":
+
+    if evidence_threshold_config == "all":
         return np.min(evidence_all_channels)
-    else:
-        raise InvalidEvidenceThresholdConfig(
-            "evidence_threshold_config not in "
-            "[int, float, '[int]%', 'mean', "
-            "'median', 'all', 'x_percent_threshold']"
-        )
+
+    raise InvalidEvidenceThresholdConfig(
+        "evidence_threshold_config not in "
+        "[int, float, '[int]%', 'mean', "
+        "'median', 'all', 'x_percent_threshold']"
+    )
 
 
 class InvalidEvidenceThresholdConfig(ValueError):
