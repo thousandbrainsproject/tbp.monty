@@ -384,7 +384,9 @@ jobs:
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
         continue-on-error: true
-        run: uv sync --locked --extra dev --extra simulator_mujoco
+        run: |
+          uv venv --seed
+          uv sync --locked --extra dev --extra simulator_mujoco
       - name: Run tests
         if: ${{ needs.should_run_monty.outputs.should_run_monty == 'true' }}
         working-directory: tbp.monty
