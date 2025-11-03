@@ -1,5 +1,4 @@
 # Copyright 2025 Thousand Brains Project
-# Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -8,150 +7,148 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import json
-import logging
-from pathlib import Path
-from typing import Any, Dict, Optional
+from __future__ import annotations
 
-from .validator import RecordValidator
+import json
+from pathlib import Path
+
+from pydantic import BaseModel
+from pydantic import ValidationError as PydanticValidationError
+
+from tools.future_work_widget.validator import (
+    ErrorDetail,
+    FutureWorkIndex,
+    load_allowed_values,
+)
+
+
+class BuildResult(BaseModel):
+    success: bool
+    future_work_items: int | None = None
+    total_items: int | None = None
+    errors: list[ErrorDetail] | None = None
+    error_message: str | None = None
 
 
 def build(
-    index_file: str,
-    output_dir: str,
-    docs_snippets_dir: Optional[str] = None,
-) -> Dict[str, Any]:
+    index_file: Path,
+    output_dir: Path,
+    docs_snippets_dir: Path,
+) -> BuildResult:
     """Build the future work widget data.
 
     Args:
         index_file: Path to the index.json file to process
         output_dir: Path to the output directory to create and save data.json
-        docs_snippets_dir: Optional path to docs/snippets directory for
-            validation files
+        docs_snippets_dir: Path to docs/snippets directory for validation files
 
     Returns:
-        Dict with keys:
-        - success: bool indicating if build was successful
-        - processed_items: int number of items processed
-        - total_items: int total number of items found
-        - errors: list of error dicts with file/line/message info
-        - error_message: str summary error message (only if success=False)
+        BuildResult with validation/build status and details
     """
     try:
-        logging.info(f"Building widget from {index_file}")
+        error_message = _validate_params(index_file, output_dir, docs_snippets_dir)
+        if error_message is not None:
+            return BuildResult(success=False, error_message=error_message)
 
-        index_path = Path(index_file)
-        if not index_path.exists():
-            return {
-                "success": False,
-                "processed_items": 0,
-                "total_items": 0,
-                "errors": [
-                    {
-                        "message": f"Index file not found: {index_file}",
-                        "file": index_file,
-                        "line": 1,
-                        "field": None,
-                        "level": "error",
-                        "title": "FileNotFoundError",
-                        "annotation_level": "failure",
-                    }
-                ],
-                "error_message": f"Index file not found: {index_file}",
-            }
+        with open(index_file, encoding="utf-8") as f:
+            raw_data = json.load(f)
 
-        with open(index_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        total_items = len(raw_data)
+        future_work_items = [
+            item
+            for item in raw_data
+            if item.get("path1") == "future-work" and "path2" in item
+        ]
 
-        if not isinstance(data, list):
-            return {
-                "success": False,
-                "processed_items": 0,
-                "total_items": 0,
-                "errors": [
-                    {
-                        "message": "Index file must contain a JSON array",
-                        "file": index_file,
-                        "line": 1,
-                        "field": None,
-                        "level": "error",
-                        "title": "TypeError",
-                        "annotation_level": "failure",
-                    }
-                ],
-                "error_message": "Index file must contain a JSON array",
-            }
+        allowed_values = load_allowed_values(docs_snippets_dir)
 
-        validator = RecordValidator(docs_snippets_dir)
-        future_work_items = []
+        try:
+            index = FutureWorkIndex.model_validate(
+                future_work_items, context={"allowed_values": allowed_values}
+            )
+        except PydanticValidationError as e:
+            return _return_error_result(e, future_work_items, total_items)
+        else:
+            data_file = output_dir / "data.json"
+            with open(data_file, "w", encoding="utf-8") as f:
+                f.write(index.model_dump_json(indent=2, by_alias=True))
 
-        for item in data:
-            validated_item = validator.validate(item)
-            if validated_item is not None:
-                future_work_items.append(validated_item)
+            return BuildResult(
+                success=True,
+                future_work_items=len(index.root),
+                total_items=total_items,
+            )
 
-        errors = validator.get_errors()
-        if errors:
-            error_details = "; ".join([error.message for error in errors])
-            return {
-                "success": False,
-                "processed_items": len(future_work_items),
-                "total_items": len(data),
-                "errors": [
-                    {
-                        "message": error.message,
-                        "file": error.file_path,
-                        "line": error.line_number,
-                        "field": error.field,
-                        "level": "error",
-                        "title": f"Validation Error in {Path(error.file_path).name}",
-                        "annotation_level": "failure",
-                    }
-                    for error in errors
-                ],
-                "error_message": (
-                    f"Validation failed with {len(errors)} error(s): {error_details}"
-                ),
-            }
-
-        logging.info(
-            f"Found {len(future_work_items)} future-work items out of "
-            f"{len(data)} total items"
+    except Exception as e:  # noqa: BLE001
+        return BuildResult(
+            success=False,
+            error_message=f"Unexpected error during build: {e}",
         )
 
-        output_path = Path(output_dir)
-        output_path.mkdir(parents=True, exist_ok=True)
 
-        data_file = output_path / "data.json"
-        with open(data_file, "w", encoding="utf-8") as f:
-            json.dump(future_work_items, f, indent=2, ensure_ascii=False)
+def _validate_params(
+    index_file: Path,
+    output_dir: Path,
+    docs_snippets_dir: Path,
+) -> str | None:
+    """Validate input paths and setup output directory.
 
-        logging.info(
-            f"Generated data.json with {len(future_work_items)} items in {output_dir}"
+    Returns:
+        None if all validations pass, otherwise error message string
+    """
+    if not index_file.exists():
+        return f"Index file not found: {index_file}"
+
+    if not docs_snippets_dir.exists():
+        return f"Docs snippets directory not found: {docs_snippets_dir}"
+
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+    except (OSError, PermissionError) as e:
+        return f"Failed to create output directory {output_dir}: {e}"
+
+    return None
+
+
+def _return_error_result(
+    exc: PydanticValidationError,
+    filtered_data: list[dict],
+    total_items: int,
+) -> BuildResult:
+    errors = []
+    for error in exc.errors():
+        loc = error["loc"]
+        if loc and isinstance(loc[0], int):
+            record_index = loc[0]
+            file_path = filtered_data[record_index].get("path", "unknown")
+        else:
+            file_path = "unknown"
+
+        field_parts = [str(item) for item in loc[1:]]
+        field = ".".join(field_parts) if len(loc) > 1 else "unknown"
+
+        title = (
+            f"Validation Error in {Path(file_path).name}"
+            if file_path != "unknown"
+            else "Validation Error"
         )
 
-        return {
-            "success": True,
-            "processed_items": len(future_work_items),
-            "total_items": len(data),
-            "errors": [],
-        }
+        errors.append(
+            ErrorDetail(
+                message=error["msg"],
+                file=file_path,
+                line=1,
+                field=field,
+                level="error",
+                title=title,
+                annotation_level="failure",
+            )
+        )
 
-    except Exception as e:
-        return {
-            "success": False,
-            "processed_items": 0,
-            "total_items": 0,
-            "errors": [
-                {
-                    "message": str(e),
-                    "file": "unknown",
-                    "line": 1,
-                    "field": None,
-                    "level": "error",
-                    "title": f"Build Error: {type(e).__name__}",
-                    "annotation_level": "failure",
-                }
-            ],
-            "error_message": f"Unexpected error: {e}",
-        }
+    return BuildResult(
+        success=False,
+        future_work_items=0,
+        total_items=total_items,
+        errors=errors,
+        error_message=f"Validation failed with {len(errors)} error(s)",
+    )

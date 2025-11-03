@@ -439,7 +439,7 @@ class EvidenceGraphLM(GraphLM):
         # object_loc_rel_body = (
         #     self.buffer.get_current_location(input_channel="first") - mlh["location"]
         # )
-        hypothesized_state = State(
+        return State(
             # Same as input location from patch (rel body)
             # NOTE: Just for common format at the moment, movement information will be
             # taken from the sensor. For higher level LMs, we may want to transmit the
@@ -467,7 +467,6 @@ class EvidenceGraphLM(GraphLM):
             sender_id=self.learning_module_id,
             sender_type="LM",
         )
-        return hypothesized_state
 
     # ------------------ Getters & Setters ---------------------
     def set_detected_object(self, terminal_state):
@@ -569,11 +568,11 @@ class EvidenceGraphLM(GraphLM):
                     }
                     self.buffer.add_overall_stats(symmetry_stats)
                 return pose_and_scale
-            else:
-                logger.debug(f"object {object_id} detected but pose not resolved yet.")
-                return None
-        else:
+
+            logger.debug(f"object {object_id} detected but pose not resolved yet.")
             return None
+
+        return None
 
     def get_current_mlh(self):
         """Return the current most likely hypothesis of the learning module.
@@ -990,8 +989,7 @@ class EvidenceGraphLM(GraphLM):
             np.max(np.nan_to_num(differences)) <= self.pose_similarity_threshold
         )
 
-        pose_is_unique = location_unique and rotation_unique
-        return pose_is_unique
+        return location_unique and rotation_unique
 
     def _check_for_symmetry(self, possible_object_hypotheses_ids, increment_evidence):
         """Check whether the most likely hypotheses stayed the same over the past steps.
@@ -1032,8 +1030,8 @@ class EvidenceGraphLM(GraphLM):
                 f"Symmetry detected for hypotheses {possible_object_hypotheses_ids}"
             )
             return True
-        else:
-            return False
+
+        return False
 
     def _enough_symmetry_evidence_accumulated(self):
         """Check if enough evidence for symmetry has been accumulated.
@@ -1056,10 +1054,10 @@ class EvidenceGraphLM(GraphLM):
         """
         if pose is None:
             return np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-        else:
-            # Equivalent to applying the pose rotation to the rf spanning unit vectors
-            # -> pose.as_matrix().dot(pose_vectors.T).T
-            return pose.as_matrix().T
+
+        # Equivalent to applying the pose rotation to the rf spanning unit vectors
+        # -> pose.as_matrix().dot(pose_vectors.T).T
+        return pose.as_matrix().T
 
     def _object_id_to_features(self, object_id):
         """Turn object ID into features that express object similarity.
@@ -1069,8 +1067,7 @@ class EvidenceGraphLM(GraphLM):
         """
         # TODO H: Make this based on object similarity
         # For now just taking sum of character ids in object name
-        id_feature = sum(ord(i) for i in object_id)
-        return id_feature
+        return sum(ord(i) for i in object_id)
 
     def _fill_feature_weights_with_default(self, default: int) -> None:
         for input_channel, channel_tolerances in self.tolerances.items():
@@ -1150,14 +1147,13 @@ class EvidenceGraphLM(GraphLM):
         Returns:
             The most likely hypothesis dictionary.
         """
-        mlh_dict = {
+        return {
             "graph_id": graph_id,
             "location": self.possible_locations[graph_id][mlh_id],
             "rotation": Rotation.from_matrix(self.possible_poses[graph_id][mlh_id]),
             "scale": self.get_object_scale(graph_id),
             "evidence": self.evidence[graph_id][mlh_id],
         }
-        return mlh_dict
 
     def _calculate_most_likely_hypothesis(self, graph_id=None):
         """Return pose with highest evidence count.
@@ -1190,10 +1186,7 @@ class EvidenceGraphLM(GraphLM):
         return mlh
 
     def _get_node_distance_weights(self, distances):
-        node_distance_weights = (
-            self.max_match_distance - distances
-        ) / self.max_match_distance
-        return node_distance_weights
+        return (self.max_match_distance - distances) / self.max_match_distance
 
     # ----------------------- Logging --------------------------
     def _add_votes_to_buffer_stats(self, vote_data):

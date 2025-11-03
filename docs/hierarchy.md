@@ -61,6 +61,7 @@
 - [why-contribute](contributing/why-contribute.md)
 - [contributing](contributing/contributing.md)
 - [documentation](contributing/documentation.md)
+  - [future-work-widget-metadata](contributing/documentation/future-work-widget-metadata.md)
 - [contributing-tutorials](contributing/contributing-tutorials.md)
 - [comment-on-issues](contributing/comment-on-issues.md)
 - [request-for-comments-rfc](contributing/request-for-comments-rfc.md)

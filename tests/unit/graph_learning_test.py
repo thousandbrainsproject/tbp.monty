@@ -24,7 +24,7 @@ import unittest
 from dataclasses import dataclass, field
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -78,7 +78,7 @@ from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 @dataclass
 class MotorSystemConfigFixed:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=InformedPolicy,
             policy_args=make_informed_policy_config(
@@ -94,7 +94,7 @@ class MotorSystemConfigFixed:
 @dataclass
 class MotorSystemConfigOffObject:
     motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: Dict | Dataclass = field(
+    motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=InformedPolicy,
             policy_args=make_informed_policy_config(
@@ -112,7 +112,7 @@ class EpisodeObservations:
     """An episode of observations for a single named object."""
 
     name: str
-    observations: List[Any]
+    observations: list[Any]
 
     def __len__(self):
         return len(self.observations)
@@ -128,7 +128,7 @@ class TrainedGraphLM:
     """
 
     learning_module: GraphLM
-    episodes: List[EpisodeObservations]
+    episodes: list[EpisodeObservations]
 
     @property
     def mode(self) -> str:
@@ -1425,7 +1425,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         )
         return graph_lm
 
-    def get_5lm_gm_with_fake_objects(self, objects) -> List[TrainedGraphLM]:
+    def get_5lm_gm_with_fake_objects(self, objects) -> list[TrainedGraphLM]:
         graph_lms = []
         for lm in range(5):
             graph_lm = FeatureGraphLM(

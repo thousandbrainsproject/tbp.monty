@@ -34,6 +34,7 @@ if __name__ == "__main__":
     cmd_parser = create_cmd_parser_parallel(experiments=NAMES)
     cmd_args = cmd_parser.parse_args()
     experiment = cmd_args.experiment
+    episodes = cmd_args.episodes
     num_parallel = cmd_args.num_parallel
     quiet_habitat_logs = cmd_args.quiet_habitat_logs
     print_cfg = cmd_args.print_cfg
@@ -49,6 +50,7 @@ if __name__ == "__main__":
         all_configs=CONFIGS,
         exp=CONFIGS[experiment],
         experiment=experiment,
+        episodes=episodes,
         num_parallel=num_parallel,
         quiet_habitat_logs=quiet_habitat_logs,
         print_cfg=print_cfg,

@@ -1,5 +1,4 @@
 # Copyright 2025 Thousand Brains Project
-# Copyright 2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -7,89 +6,49 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+
+from __future__ import annotations
+
 import argparse
-import json
 import logging
-import os
 import sys
 from pathlib import Path
-
-from .build import build
-
-sys.path.append(str(Path(__file__).resolve().parent.parent))
-from github_readme_sync.colors import RED, RESET
 
 monty_root = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(monty_root))
 
+# Note: this tool requires this specific import order so don't remove
+# the noqa: E402 comments
+from tools.future_work_widget.build import build  # noqa: E402
+
+logger = logging.getLogger(__name__)
+
 
 def main():
+    logging.basicConfig(format="%(message)s", level=logging.INFO, stream=sys.stdout)
     parser = argparse.ArgumentParser(
-        description="CLI tool to manage future work widget."
+        description="Build the data and package the future work widget."
     )
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    # build
-    build_parser = subparsers.add_parser(
-        "build", help="Build the data and package the widget"
-    )
-    build_parser.add_argument("index_file", help="The index.json file to process")
-    build_parser.add_argument(
+    parser.add_argument("index_file", help="The JSON file to validate and transform")
+    parser.add_argument(
         "output_dir", help="The output directory to create and save data.json"
     )
-    build_parser.add_argument(
+    parser.add_argument(
         "--docs-snippets-dir",
-        help="Path to docs/snippets directory for validation files",
-        default="docs/snippets",
-    )
-    build_parser.add_argument(
-        "--json",
-        action="store_true",
-        help="Output validation results in JSON format for CI/CD integration",
+        help="Optional path to a snippets directory for validation files",
+        default=Path("docs/snippets"),
     )
 
     args = parser.parse_args()
 
-    initialize()
+    index_file = Path(args.index_file)
+    output_dir = Path(args.output_dir)
+    docs_snippets_dir = Path(args.docs_snippets_dir)
 
-    if args.command == "build":
-        docs_snippets_dir = args.docs_snippets_dir
+    result = build(index_file, output_dir, docs_snippets_dir)
 
-        if args.json:
-            logging.getLogger().setLevel(logging.CRITICAL)
-
-        result = build(args.index_file, args.output_dir, docs_snippets_dir)
-
-        if args.json:
-            print(json.dumps(result, indent=2))
-        elif not result["success"]:
-            error_count = len(result["errors"])
-            print(
-                f"{RED}Error: Validation failed with {error_count} error(s):{RESET}",
-                file=sys.stderr,
-            )
-            print(file=sys.stderr)
-
-            for i, error in enumerate(result["errors"], 1):
-                file_path = error["file"]
-                line = error["line"]
-                message = error["message"]
-
-                print(f"{file_path}:{line}", file=sys.stderr)
-                print(f"{message}", file=sys.stderr)
-                if i < error_count:
-                    print(file=sys.stderr)
-
-        sys.exit(0 if result["success"] else 1)
-
-
-def initialize():
-    env_log_level = os.getenv("LOG_LEVEL")
-
-    if env_log_level is None:
-        logging.basicConfig(level=logging.INFO, format="%(message)s")
-    else:
-        logging.basicConfig(level=env_log_level.upper(), format="%(message)s")
+    logger.info(result.model_dump_json(exclude_none=True, indent=2))
+    sys.exit(0 if result.success else 1)
 
 
 if __name__ == "__main__":

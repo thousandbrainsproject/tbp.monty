@@ -7,9 +7,9 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Type
 
 from tbp.monty.frameworks.actions.action_samplers import (
     ActionSampler,
@@ -32,25 +32,26 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
+from tbp.monty.frameworks.agents import AgentID
 
 
 @dataclass
 class BasePolicyConfig:
     """Config for BasePolicy."""
 
-    action_sampler_args: Dict
-    action_sampler_class: Type[ActionSampler]
-    agent_id: str
-    file_name: Optional[str] = None
+    action_sampler_args: dict
+    action_sampler_class: type[ActionSampler]
+    agent_id: AgentID
+    file_name: str | None = None
     switch_frequency: float = 0.05
 
 
 @dataclass
 class InformedPolicyConfig:
-    action_sampler_args: Dict
-    action_sampler_class: Type[ActionSampler]
-    agent_id: str
-    file_name: Optional[str] = None
+    action_sampler_args: dict
+    action_sampler_class: type[ActionSampler]
+    agent_id: AgentID
+    file_name: str | None = None
     good_view_percentage: float = 0.5
     desired_object_distance: float = 0.03
     use_goal_state_driven_actions: bool = False
@@ -79,7 +80,7 @@ class SurfaceCurveInformedPolicyConfig(SurfacePolicyConfig):
     min_heading_steps: int = 12
 
 
-def generate_action_list(action_space_type) -> List[Action]:
+def generate_action_list(action_space_type) -> list[Action]:
     """Generate an action list based on a given action space type.
 
     Args:
@@ -139,8 +140,8 @@ def generate_action_list(action_space_type) -> List[Action]:
 
 def make_base_policy_config(
     action_space_type: str,
-    action_sampler_class: Type[ActionSampler],
-    agent_id: str = "agent_id_0",
+    action_sampler_class: type[ActionSampler],
+    agent_id: AgentID = AgentID("agent_id_0"),
 ):
     """Generates a config that will apply for the BasePolicy class.
 
@@ -164,11 +165,11 @@ def make_base_policy_config(
 
 def make_informed_policy_config(
     action_space_type: str,
-    action_sampler_class: Type[ActionSampler],
+    action_sampler_class: type[ActionSampler],
     good_view_percentage: float = 0.5,
     use_goal_state_driven_actions: bool = False,
     file_name: str = None,
-    agent_id: str = "agent_id_0",
+    agent_id: AgentID = AgentID("agent_id_0"),
     switch_frequency: float = 1.0,
     **kwargs,
 ):
@@ -214,7 +215,10 @@ def make_informed_policy_config(
     )
 
 
-def make_naive_scan_policy_config(step_size: float, agent_id="agent_id_0"):
+def make_naive_scan_policy_config(
+    step_size: float,
+    agent_id: AgentID = AgentID("agent_id_0"),
+):
     """Simliar to InformedPolicyConfigGenerator, but for NaiveScanPolicyConfig.
 
     Currently less flexible than the other two classes above, because this is currently
@@ -242,10 +246,10 @@ def make_surface_policy_config(
     desired_object_distance: float,
     alpha: float,
     use_goal_state_driven_actions: bool = False,
-    action_sampler_class: Type[ActionSampler] = ConstantSampler,
+    action_sampler_class: type[ActionSampler] = ConstantSampler,
     action_space_type: str = "surface_agent",
     file_name: str = None,
-    agent_id: str = "agent_id_0",
+    agent_id: AgentID = AgentID("agent_id_0"),
     **kwargs,
 ):
     """Similar to BasePolicyConfigGenerator, but for InformedPolicy class.
@@ -297,10 +301,10 @@ def make_curv_surface_policy_config(
     min_general_steps,
     min_heading_steps,
     use_goal_state_driven_actions=False,
-    action_sampler_class: Type[ActionSampler] = ConstantSampler,
+    action_sampler_class: type[ActionSampler] = ConstantSampler,
     action_space_type="surface_agent",
     file_name=None,
-    agent_id="agent_id_0",
+    agent_id: AgentID = AgentID("agent_id_0"),
     **kwargs,
 ):
     """For the SurfacePolicyCurvatureInformed policy.

@@ -42,7 +42,7 @@ The observations should be returned as a nested dictionary with one entry per ag
 
 ```python
 obs = {
-	"agent_id_0": {
+	AgentID("agent_id_0"): {
     	"patch_0": {
         	"depth": depth_sensed_by_patch_0,
         	"rgba": rgba_sensed_by_patch_0
@@ -60,7 +60,7 @@ Related to defining how actions change observations, you will also need to defin
 For example, if you have one agent with two sensors, the state dictionary could look like this:
 ```python
 state = {
-	"agent_id_0": {
+	AgentID("agent_id_0"): {
 		"position": current_agent_location,
 		"rotation": current_agent_orientation,
     	"sensors": {

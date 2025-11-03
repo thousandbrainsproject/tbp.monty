@@ -58,8 +58,7 @@ class EvidenceGraphMemory(GraphMemory):
         )
         node_directions = all_node_r_features["pose_vectors"]
         num_nodes = len(node_directions)
-        node_directions = node_directions.reshape((num_nodes, 3, 3))
-        return node_directions
+        return node_directions.reshape((num_nodes, 3, 3))
 
     # ======================= Private ==========================
 
@@ -130,7 +129,7 @@ class EvidenceGraphMemory(GraphMemory):
             graph_id: name of new graph.
             input_channel: ?
         """
-        logger.info(f"Adding a new graph to memory.")
+        logger.info("Adding a new graph to memory.")
 
         model = GridObjectModel(
             object_id=graph_id,

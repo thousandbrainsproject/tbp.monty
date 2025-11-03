@@ -26,6 +26,12 @@ from tbp.monty.frameworks.actions.actions import (
     SetAgentPose,
     SetSensorRotation,
 )
+from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.environments.embodied_environment import (
+    EmbodiedEnvironment,
+    ObjectID,
+    SemanticID,
+)
 from tbp.monty.frameworks.models.motor_policies import (
     GetGoodView,
     InformedPolicy,
@@ -38,8 +44,6 @@ from tbp.monty.frameworks.models.motor_system_state import (
     MotorSystemState,
     ProprioceptiveState,
 )
-
-from .embodied_environment import EmbodiedEnvironment
 
 __all__ = [
     "EnvironmentDataLoader",
@@ -119,14 +123,14 @@ class EnvironmentDataLoader:
             # Return first observation after 'reset' before any action is applied
             self._counter += 1
             return self._observation
-        else:
-            actions = self.motor_system()
-            self._observation, proprioceptive_state = self.step(actions)
-            self.motor_system._state = (
-                MotorSystemState(proprioceptive_state) if proprioceptive_state else None
-            )
-            self._counter += 1
-            return self._observation
+
+        actions = self.motor_system()
+        self._observation, proprioceptive_state = self.step(actions)
+        self.motor_system._state = (
+            MotorSystemState(proprioceptive_state) if proprioceptive_state else None
+        )
+        self._counter += 1
+        return self._observation
 
     def reset(self):
         observation = self.env.reset()
@@ -290,11 +294,11 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         starting_integer = 1  # Start at 1 so that we can distinguish on-object semantic
         # IDs (>0) from being off object (semantic_id == 0 in Habitat by default)
         self.semantic_id_to_label = {
-            i + starting_integer: label
+            SemanticID(i + starting_integer): label
             for i, label in enumerate(self.source_object_list)
         }
         self.semantic_label_to_id = {
-            label: i + starting_integer
+            label: SemanticID(i + starting_integer)
             for i, label in enumerate(self.source_object_list)
         }
 
@@ -363,13 +367,16 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         logger.info(f"New primary target: {pformat(self.primary_target)}")
 
     def add_distractor_objects(
-        self, primary_target_obj, init_params, primary_target_name
+        self,
+        primary_target_obj: ObjectID,
+        init_params,
+        primary_target_name,
     ):
         """Add arbitrarily many "distractor" objects to the environment.
 
         Args:
-            primary_target_obj : the Habitat object which is the primary target in
-                the scene
+            primary_target_obj : The ID of the object which is the primary target in
+                the scene.
             init_params: parameters used to initialize the object, e.g.
                 orientation; for now, these are identical to the primary target
                 except for the object ID
@@ -392,7 +399,6 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             self.env.add_object(
                 name=new_obj_label,
                 **new_init_params,
-                object_to_avoid=True,
                 primary_target_object=primary_target_obj,
             )
 
@@ -427,7 +433,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
 
         # Check if any LM's have output a goal-state (such as hypothesis-testing
         # goal-state)
-        elif (
+        if (
             isinstance(self.motor_system._policy, InformedPolicy)
             and self.motor_system._policy.use_goal_state_driven_actions
             and self.motor_system._policy.driving_goal_state is not None
@@ -435,65 +441,64 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
             return self.execute_jump_attempt()
 
         # NOTE: terminal conditions are now handled in experiment.run_episode loop
+        attempting_to_find_object = False
+        actions = []
+        try:
+            actions = self.motor_system()
+        except ObjectNotVisible:
+            # Note: Only SurfacePolicy raises ObjectNotVisible.
+            attempting_to_find_object = True
+            actions = [
+                self.motor_system._policy.touch_object(
+                    self._observation,
+                    view_sensor_id="view_finder",
+                    state=self.motor_system._state,
+                )
+            ]
         else:
-            attempting_to_find_object = False
-            actions = []
-            try:
-                actions = self.motor_system()
-            except ObjectNotVisible:
-                # Note: Only SurfacePolicy raises ObjectNotVisible.
-                attempting_to_find_object = True
-                actions = [
-                    self.motor_system._policy.touch_object(
-                        self._observation,
-                        view_sensor_id="view_finder",
-                        state=self.motor_system._state,
-                    )
-                ]
-            else:
-                # TODO: Encapsulate this reset inside TouchObject positioning
-                #       procedure once it exists.
-                #       This is a hack to reset the current touch_object
-                #       positioning procedure state so that the next time
-                #       SurfacePolicy falls off the object, it will try to find
-                #       the object using its full repertoire of actions.
-                self.motor_system._policy.touch_search_amount = 0
+            # TODO: Encapsulate this reset inside TouchObject positioning
+            #       procedure once it exists.
+            #       This is a hack to reset the current touch_object
+            #       positioning procedure state so that the next time
+            #       SurfacePolicy falls off the object, it will try to find
+            #       the object using its full repertoire of actions.
+            self.motor_system._policy.touch_search_amount = 0
 
-            self._observation, proprioceptive_state = self.step(actions)
-            motor_system_state = MotorSystemState(proprioceptive_state)
+        self._observation, proprioceptive_state = self.step(actions)
+        motor_system_state = MotorSystemState(proprioceptive_state)
 
-            # TODO: Refactor this so that all of this is contained within the
-            #       SurfacePolicy and/or positioning procedure.
-            if isinstance(self.motor_system._policy, SurfacePolicy):
-                # When we are attempting to find the object, we are always performing
-                # a motor-only step.
+        # TODO: Refactor this so that all of this is contained within the
+        #       SurfacePolicy and/or positioning procedure.
+        if isinstance(self.motor_system._policy, SurfacePolicy):
+            # When we are attempting to find the object, we are always performing
+            # a motor-only step.
+            motor_system_state[self.motor_system._policy.agent_id][
+                "motor_only_step"
+            ] = attempting_to_find_object
+
+            if (
+                not attempting_to_find_object
+                and actions
+                and actions[0].name != OrientVertical.action_name()
+            ):
+                # We are not attempting to find the object, which means that we
+                # are executing the SurfacePolicy.dynamic_call action cycle.
+                # Out of the four actions in the
+                # MoveForward->OrientHorizontal->OrientVertical->MoveTangentially
+                # "subroutine" defined in SurfacePolicy.dynamic_call, we only
+                # want to send data to the learning module after taking the
+                # OrientVertical action. The other three actions in the cycle
+                # are motor-only to keep the surface agent on the object.
                 motor_system_state[self.motor_system._policy.agent_id][
                     "motor_only_step"
-                ] = attempting_to_find_object
+                ] = True
 
-                if (
-                    not attempting_to_find_object
-                    and actions
-                    and actions[0].name != OrientVertical.action_name()
-                ):
-                    # We are not attempting to find the object, which means that we
-                    # are executing the SurfacePolicy.dynamic_call action cycle.
-                    # Out of the four actions in the
-                    # MoveForward->OrientHorizontal->OrientVertical->MoveTangentially
-                    # "subroutine" defined in SurfacePolicy.dynamic_call, we only
-                    # want to send data to the learning module after taking the
-                    # OrientVertical action. The other three actions in the cycle
-                    # are motor-only to keep the surface agent on the object.
-                    motor_system_state[self.motor_system._policy.agent_id][
-                        "motor_only_step"
-                    ] = True
+        self.motor_system._state = motor_system_state
 
-            self.motor_system._state = motor_system_state
+        if not attempting_to_find_object:
+            self._counter += 1
 
-            if not attempting_to_find_object:
-                self._counter += 1
-
-            return self._observation
+        return self._observation
 
     def pre_episode(self):
         super().pre_episode()
@@ -603,7 +608,7 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         """
         self.get_good_view("view_finder")
         for patch_id in ("patch", "patch_0"):
-            if patch_id in self._observation["agent_id_0"].keys():
+            if patch_id in self._observation[AgentID("agent_id_0")]:
                 on_target_object = self.get_good_view(
                     patch_id,
                     allow_translation=False,  # only orientation movements
