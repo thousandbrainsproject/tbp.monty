@@ -239,7 +239,6 @@ ignore = [
     "EM101", # EM101: Exception must not use a string literal, assign to variable first
     "EM102", # EM102: Exception must not use an f-string literal, assign to variable first
     "F403", # F403: from {name} import * used; unable to detect undefined names
-    "FA100", # FA100: Add `from __future__ import annotations` to simplify
     "FBT001", # FBT001: Boolean-typed positional argument in function definition
     "FBT002", # FBT002: Boolean default positional argument in function definition
     "FBT003", # FBT003: Boolean positional value in function call
@@ -298,7 +297,6 @@ ignore = [
     "TD004", # TD004: Missing colon in TODO
     "TD005", # TD005: Missing issue description after `TODO`
     "TRY003", # TRY003: Avoid specifying long messages outside the exception class
-    "UP006", # UP006: Use `type` instead of `Type` for type annotation
 ]
 
 [tool.ruff.lint.flake8-bugbear]

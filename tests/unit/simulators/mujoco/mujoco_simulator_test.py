@@ -6,9 +6,10 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
 import xml.etree.ElementTree as ET
-from typing import List
-from xml.etree.ElementTree import Element
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
@@ -16,6 +17,9 @@ from mujoco import MjSpec
 from unittest_parametrize import ParametrizedTestCase, param, parametrize
 
 from tbp.monty.simulators.mujoco.simulator import MuJoCoSimulator
+
+if TYPE_CHECKING:
+    from xml.etree.ElementTree import Element
 
 # Parameters for add primitive object tests
 SHAPES = ["box", "capsule", "cylinder", "ellipsoid", "sphere"]
@@ -110,7 +114,7 @@ class MuJoCoSimulatorTestCase(ParametrizedTestCase):
         assert len(sim.spec.geoms) == count
 
     @staticmethod
-    def parse_spec_geoms(spec: MjSpec) -> List[Element]:
+    def parse_spec_geoms(spec: MjSpec) -> list[Element]:
         spec_xml = spec.to_xml()
         parsed_xml = ET.fromstring(spec_xml)  # noqa: S314
         world_body = parsed_xml.find("worldbody")

@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Dict, Sequence
+from typing import Sequence
 
 from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
 
@@ -69,8 +69,6 @@ class MuJoCoSimulator(Simulator):
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: SemanticID | None = None,
-        enable_physics: bool = False,
-        object_to_avoid: bool = False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectInfo:
         obj_name = f"{name}_{self._object_count}"
@@ -152,7 +150,7 @@ class MuJoCoSimulator(Simulator):
     def states(self) -> None:
         pass
 
-    def apply_actions(self, actions: Sequence[Action]) -> Dict[str, Dict]:
+    def apply_actions(self, actions: Sequence[Action]) -> dict[str, dict]:
         return {}
 
     def reset(self) -> None:
