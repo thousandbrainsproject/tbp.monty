@@ -14,7 +14,7 @@ import copy
 import json
 import logging
 import time
-from typing import Any, Callable, Dict, Type
+from typing import Any, Callable
 
 import numpy as np
 import quaternion
@@ -588,13 +588,13 @@ class FeatureAtLocationBuffer(BaseBuffer):
 class BufferEncoder(json.JSONEncoder):
     """Encoder to turn the buffer into a JSON compliant format."""
 
-    _encoders: Dict[type, Callable | json.JSONEncoder] = {}
+    _encoders: dict[type, Callable | json.JSONEncoder] = {}
 
     @classmethod
     def register(
         cls,
         obj_type: type,
-        encoder: Callable | Type[json.JSONEncoder],
+        encoder: Callable | type[json.JSONEncoder],
     ) -> None:
         """Register an encoder.
 

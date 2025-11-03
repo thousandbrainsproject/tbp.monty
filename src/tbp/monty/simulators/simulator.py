@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Dict, Protocol, Sequence
+from typing import Protocol, Sequence
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
@@ -97,7 +97,7 @@ class Simulator(Protocol):
         """Get agent and sensor states."""
         ...
 
-    def apply_actions(self, actions: Sequence[Action]) -> Dict[str, Dict]:
+    def apply_actions(self, actions: Sequence[Action]) -> dict[str, dict]:
         """Execute the given actions in the environment.
 
         Args:

@@ -12,7 +12,7 @@ from __future__ import annotations
 import abc
 import collections.abc
 from dataclasses import dataclass
-from typing import Any, Dict, NewType, Sequence, Tuple
+from typing import Any, NewType, Sequence, Tuple
 
 from tbp.monty.frameworks.actions.actions import Action
 
@@ -96,7 +96,7 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def step(self, actions: Sequence[Action]) -> Dict[Any, Dict]:
+    def step(self, actions: Sequence[Action]) -> dict[Any, dict]:
         """Apply the given actions to the environment.
 
         Args:

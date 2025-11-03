@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Dict, List, Tuple
 from typing import OrderedDict as OrderedDictType
 
 import numpy as np
@@ -34,7 +33,7 @@ class ChannelMapper:
 
     """
 
-    def __init__(self, channel_sizes: Dict[str, int] | None = None) -> None:
+    def __init__(self, channel_sizes: dict[str, int] | None = None) -> None:
         """Initializes the ChannelMapper with an ordered dictionary of channel sizes.
 
         Args:
@@ -45,7 +44,7 @@ class ChannelMapper:
         )
 
     @property
-    def channels(self) -> List[str]:
+    def channels(self) -> list[str]:
         """Returns the existing channel names.
 
         Returns:
@@ -76,7 +75,7 @@ class ChannelMapper:
 
         return self.channel_sizes[channel_name]
 
-    def channel_range(self, channel_name: str) -> Tuple[int, int]:
+    def channel_range(self, channel_name: str) -> tuple[int, int]:
         """Returns the start and end indices of the given channel.
 
         Args:

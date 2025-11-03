@@ -8,7 +8,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Dict, Sequence
+from typing import Sequence
 
 from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
 
@@ -152,7 +152,7 @@ class MuJoCoSimulator(Simulator):
     def states(self) -> None:
         pass
 
-    def apply_actions(self, actions: Sequence[Action]) -> Dict[str, Dict]:
+    def apply_actions(self, actions: Sequence[Action]) -> dict[str, dict]:
         return {}
 
     def reset(self) -> None:

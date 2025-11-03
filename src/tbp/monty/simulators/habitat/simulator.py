@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Sequence
+from typing import Any, Sequence
 
 import habitat_sim
 import magnum as mn
@@ -108,7 +108,7 @@ class HabitatSim(HabitatActuator):
 
     def __init__(
         self,
-        agents: List[HabitatAgent],
+        agents: list[HabitatAgent],
         data_path: str | None = None,
         scene_id: str | None = None,
         seed: int = 42,
@@ -521,7 +521,7 @@ class HabitatSim(HabitatActuator):
         agent_index = self._agent_id_to_index[agent_id]
         return self._sim.get_agent(agent_index)
 
-    def apply_actions(self, actions: Sequence[Action]) -> Dict[str, Dict]:
+    def apply_actions(self, actions: Sequence[Action]) -> dict[str, dict]:
         """Execute given actions in the environment.
 
         Args:
