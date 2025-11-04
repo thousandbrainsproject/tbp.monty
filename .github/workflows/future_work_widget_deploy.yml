@@ -1,0 +1,88 @@
+name: Future Work Widget Deploy
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.run_id }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/future-work/**'
+      - 'docs/snippets/**'
+      - 'tools/future_work_widget/**'
+      - '.github/workflows/future_work_widget_deploy.yml'
+
+jobs:
+  install_monty:
+    name: install-monty
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    outputs:
+      conda_env_cache_key_sha: ${{ steps.install_monty.outputs.conda_env_cache_key_sha }}
+    steps:
+      - name: Checkout tbp.monty
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
+      - name: Install Monty
+        id: install_monty
+        uses: ./tbp.monty/.github/actions/install_monty
+        with:
+          working_directory: tbp.monty
+  future_work_widget_deploy:
+    name: future-work-widget-deploy
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    needs:
+      - install_monty
+    steps:
+      - name: Restore cache
+        id: restore_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/miniconda
+          key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
+      - name: Checkout tbp.monty
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
+      - name: Install Monty
+        if: steps.restore_cache.outputs.cache-hit != 'true'
+        uses: ./tbp.monty/.github/actions/install_monty
+        with:
+          working_directory: tbp.monty
+      - name: Install additional dependencies
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          pip install -e .[github_readme_sync_tool,future_work_widget_tool]
+      - name: Build future work widget
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          python -m tools.github_readme_sync.cli generate-index docs "${{ runner.temp }}/index.json"
+          mkdir -p "${{ runner.temp }}/future-work-widget"
+          cp -r tools/future_work_widget/app/* "${{ runner.temp }}/future-work-widget/"
+          python -m tools.future_work_widget.cli "${{ runner.temp }}/index.json" "${{ runner.temp }}/future-work-widget"
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.FUTURE_WORK_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.FUTURE_WORK_SECRET_ACCESS_KEY }}
+          aws-region: ${{ 'us-east-1' }}
+      - name: Upload future work widget to S3
+        run: |
+          # Called twice to prevent downtime during deployment.
+          # First sync to ensure new files are uploaded.
+          # Second sync to delete any files that are no longer in the source directory.
+          aws s3 sync "${{ runner.temp }}/future-work-widget/" s3://${{ secrets.FUTURE_WORK_S3_BUCKET_NAME }}/
+          aws s3 sync "${{ runner.temp }}/future-work-widget/" s3://${{ secrets.FUTURE_WORK_S3_BUCKET_NAME }}/ --delete
