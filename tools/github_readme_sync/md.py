@@ -21,11 +21,11 @@ def process_markdown(body: str, slug: str) -> dict:
     if "description" in frontmatter:
         doc["description"] = frontmatter.get("description", "")
 
-    body_parts = body.split("---\n", maxsplit=2)
-    if len(body_parts) > 2:
-        doc["body"] = body_parts[2]
+    body = body.split("---\n", maxsplit=2)
+    if len(body) > 2:
+        doc["body"] = body[2]
     else:
-        doc["body"] = body_parts[0]
+        doc["body"] = body[0]
 
     return doc
 

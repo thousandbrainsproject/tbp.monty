@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+
 import argparse
 import logging
 import os
@@ -111,7 +112,7 @@ def main():
     elif args.command == "upload":
         check_env()
         hierarchy = check_hierarchy_file(args.folder)
-        upload(hierarchy, args.folder, ReadMe(args.version))
+        upload(hierarchy, args.folder, rdme=ReadMe(args.version))
 
     elif args.command == "check-external":
         check_readme_api_key()

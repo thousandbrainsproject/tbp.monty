@@ -11,10 +11,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import List, Optional
-
-DEFAULT_IGNORE_DIRS = [".pytest_cache", ".github", ".git", "figures", "snippets"]
-DEFAULT_IGNORE_FILES = ["hierarchy.md"]
 
 DEFAULT_IGNORE_DIRS = ["figures", "snippets"]
 DEFAULT_IGNORE_FILES = ["hierarchy.md"]
