@@ -33,15 +33,13 @@ jobs:
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source ~/miniconda/etc/profile.d/conda.sh
-          conda activate tbp.monty
+          source activate tbp.monty
           pip install -e .[github_readme_sync_tool,future_work_widget_tool]
       - name: Build future work widget
         working-directory: tbp.monty
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
-          source ~/miniconda/etc/profile.d/conda.sh
-          conda activate tbp.monty
+          source activate tbp.monty
           python -m tools.github_readme_sync.cli generate-index docs "${{ runner.temp }}/index.json"
           mkdir -p "${{ runner.temp }}/future-work-widget"
           cp -r tools/future_work_widget/app/* "${{ runner.temp }}/future-work-widget/"
