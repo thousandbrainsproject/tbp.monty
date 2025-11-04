@@ -26,6 +26,7 @@ jobs:
           lfs: true
           path: tbp.monty
       - name: Install Monty
+        id: install_monty
         uses: ./tbp.monty/.github/actions/install_monty
         with:
           working_directory: tbp.monty
