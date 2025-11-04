@@ -45,7 +45,7 @@ regex_cloudinary_video = re.compile(
     re.IGNORECASE,
 )
 regex_youtube_link = re.compile(
-    r"\[(.*?)\]\((https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]{11})(?:[&?][^\)]*)?)\)",
+    r"\[(.*?)\]\((?:https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]{11})(?:[&?][^\)]*)?)\)",
     re.IGNORECASE,
 )
 regex_markdown_snippet = re.compile(r"!snippet\[(.*?)\]")
@@ -316,8 +316,7 @@ class ReadMe:
         body = self.convert_note_tags(body)
         body = self.parse_images(body)
         body = self.convert_cloudinary_videos(body)
-        body = self.convert_youtube_videos(body)
-        return body
+        return self.convert_youtube_videos(body)
 
     def sanitize_html(self, body: str) -> str:
         allowed_attributes = deepcopy(nh3.ALLOWED_ATTRIBUTES)
@@ -492,7 +491,7 @@ class ReadMe:
 
     def convert_youtube_videos(self, markdown_text: str) -> str:
         def replace_youtube(match):
-            title, full_url, video_id = match.groups()
+            title, video_id = match.groups()
             youtube_url = f"https://www.youtube.com/watch?v={video_id}"
             embed_url = f"https://www.youtube.com/embed/{video_id}?feature=oembed"
             thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
