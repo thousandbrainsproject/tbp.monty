@@ -4,7 +4,7 @@ rfc: https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0015_futu
 estimated-scope: medium
 improved-metric: community-engagement
 output-type: documentation
-skills: github-actions, ython, github-readme-sync-tool, s3, javascript, html, css
+skills: github-actions, python, github-readme-sync-tool, s3, javascript, html, css
 contributor: codeallthethingz
 status: in-progress
 ---

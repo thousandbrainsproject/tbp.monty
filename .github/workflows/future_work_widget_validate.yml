@@ -1,0 +1,92 @@
+name: Future Work Widget Validate
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  pull-requests: write
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - future-work-action # TODO: change back to main before merging
+    paths:
+      - 'docs/future-work/**'
+      - 'docs/snippets/**'
+      - 'tools/future_work_widget/**'
+      - '.github/workflows/future_work_widget_validate.yml'
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tbp.monty
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          lfs: true
+          path: pr_code
+      - name: Install Monty
+        uses: ./tbp.monty/.github/actions/install_monty
+        with:
+          working_directory: tbp.monty
+      - name: Install additional dependencies
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          pip install -e .[github_readme_sync_tool,future_work_widget_tool]
+      - name: Build future work widget
+        working-directory: tbp.monty
+        id: build
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          python -m tools.github_readme_sync.cli generate-index ../pr_code/docs "${{ runner.temp }}/index.json"
+          mkdir -p "${{ runner.temp }}/future-work-widget"
+          cp -r tools/future_work_widget/app/* "${{ runner.temp }}/future-work-widget/"
+          python -m tools.future_work_widget.cli "${{ runner.temp }}/index.json" "${{ runner.temp }}/future-work-widget" > "${{ runner.temp }}/build_result.json" 2>&1 || true
+      - name: Annotate errors
+        if: always()
+        working-directory: tbp.monty
+        run: |
+          if [ -f "${{ runner.temp }}/build_result.json" ]; then
+            if jq -e '.errors' "${{ runner.temp }}/build_result.json" > /dev/null 2>&1; then
+              jq -c '.errors[]' "${{ runner.temp }}/build_result.json" | while read -r error; do
+                file=$(echo "$error" | jq -r '.file')
+                line=$(echo "$error" | jq -r '.line')
+                title=$(echo "$error" | jq -r '.title')
+                message=$(echo "$error" | jq -r '.message')
+                annotation_level=$(echo "$error" | jq -r '.annotation_level')
+                if [ "$annotation_level" = "failure" ]; then
+                  echo "::error file=$file,line=$line,title=$title::$message"
+                elif [ "$annotation_level" = "warning" ]; then
+                  echo "::warning file=$file,line=$line,title=$title::$message"
+                else
+                  echo "::notice file=$file,line=$line,title=$title::$message"
+                fi
+              done
+            fi
+          fi
+      - name: Check build result
+        if: always()
+        working-directory: tbp.monty
+        run: |
+          if [ -f "${{ runner.temp }}/build_result.json" ]; then
+            success=$(jq -r '.success // false' "${{ runner.temp }}/build_result.json")
+            if [ "$success" != "true" ]; then
+              echo "Build failed"
+              exit 1
+            fi
+          fi
+
