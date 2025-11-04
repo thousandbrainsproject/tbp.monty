@@ -5,7 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
+  pull_request: # TODO: chhange back to push before merging
     branches:
       - future-work-action # TODO: change back to main before merging
     paths:
