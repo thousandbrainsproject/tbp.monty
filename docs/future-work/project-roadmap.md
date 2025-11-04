@@ -6,12 +6,15 @@ description: An overview of tasks we plan to work on or would welcome contributi
 
 Here is a high-level overview table of tasks on our roadmap.
 
+
+TODO: this iframe is currently pointing to a vercel deployment while we work out the design kinks.
+
 [block:embed]
 {
   "html": false,
-  "url": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,rfc,status,skills",
+  "url": "https://app-psi-orpin.vercel.app/index.html?columns=title,estimated-scope,rfc,status,skills",
   "provider": "futureworkwidget.thousandbrains.ai",
-  "href": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,rfc,status,skills",
+  "href": "https://app-psi-orpin.vercel.app//index.html?columns=title,estimated-scope,rfc,status,skills",
   "typeOfEmbed": "iframe",
   "height": "800px",
   "iframe": true
