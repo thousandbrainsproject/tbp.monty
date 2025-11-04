@@ -4,40 +4,46 @@ description: An overview of tasks we plan to work on or would welcome contributi
 ---
 # Tasks on Our Roadmap
 
-We have a high-level overview table of tasks on our roadmap in our [project planning spreadsheet](https://docs.google.com/spreadsheets/d/1HlKqhMzYWxpW6_D0LtDd5qEuWRYHl6xMfxbIZ76lzng/edit?usp=sharing).
+Here is a high-level overview table of tasks on our roadmap.
 
-![Screenshot of our overview sheet. For an up-to-date view, just go to the sheet https://docs.google.com/spreadsheets/d/1HlKqhMzYWxpW6_D0LtDd5qEuWRYHl6xMfxbIZ76lzng/edit?usp=sharing](../figures/future-work/monty_tasks.png)
-
+[block:embed]
+{
+  "html": false,
+  "url": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,rfc,status,skills",
+  "provider": "futureworkwidget.thousandbrains.ai",
+  "href": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,rfc,status,skills",
+  "typeOfEmbed": "iframe",
+  "height": "800px",
+  "iframe": true
+}
+[/block]
 
 
 These are tasks where we have a rough idea of how we want to achieve them but we haven't necessarily scheduled when we will work on them or who will work on them. **We welcome anyone who would like to pick up one of these tasks and contribute to it.**
 
 Tasks are categorized in two ways:
 
-- **Which part of Monty does it touch?** This is represented in the columns, and is organized into Sensor Module, Learning Module, Motor System, Voting, Hierarchy, Environment, Framework, and Open-Source/Communication. 
-- **Which capabilitie(s) does it improve?** This is represented by hashtags (#) at the end of the task description. We keep track of the progress on the capabilities in the column on the right. Each task should improve at least one capability but can contribute to multiple.
+- **Which part of Monty does it touch?** This is represented in the columns, and is organized into Sensor Module, Learning Module, Motor System, Voting, Hierarchy, Environment, Framework, and Open-Source/Communication.
 
-Tasks that are done have a check mark next to them and are shaded in green. When a task gets checked off, it will add progress to the corresponding capabilities on the right.
+Tasks that are done have a completed next to them and are shaded in green. When a task gets checked off, it will add progress to the corresponding capabilities on the right.
 
 # What the TBP Team is Working On
 
-Some of the tasks are under active development by our team or scheduled to be tackled by us soon. Those are shaded in color. Below the main table, you can find a **list of our past and current milestones** with more detailed descriptions, timeline, and who is working on it. The colors of the milestones correspond to the colors in the main table.
-
-**Tasks that are actively worked on have a little player icon on them.** Each member of our TBP team has an icon and we drag it to the task they are currently working on. This way we can get a quick impression of which parts and capabilities are currently being worked on at a glance.
+Some of the tasks are under active development by our team or scheduled to be tackled by us soon. Those have a GitHub avatar icon in the status column.
 
 We also have two stars that mark the current top two priorities of the TBP team.
 
 ## Current Quarterly Goals
-To get a more concrete idea of our goals and roadmap for Q2 - 2025, have a look at this video:
+To get a more concrete idea of our goals and roadmap for Q3 - 2025, have a look at this video:
 [block:embed]
 {
-  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2F4by5MeJ1IT8%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D4by5MeJ1IT8&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2F4by5MeJ1IT8%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
-  "url": "https://www.youtube.com/watch?v=4by5MeJ1IT8",
+  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2F3LN5SeSJhOg%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3D3LN5SeSJhOg&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2F3LN5SeSJhOg%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
+  "url": "https://www.youtube.com/watch?v=3LN5SeSJhOg",
   "title": "2025/04 - Q2 Roadmap",
   "favicon": "https://www.youtube.com/favicon.ico",
-  "image": "https://i.ytimg.com/vi/4by5MeJ1IT8/hqdefault.jpg",
+  "image": "https://i.ytimg.com/vi/3LN5SeSJhOg/hqdefault.jpg",
   "provider": "https://www.youtube.com/",
-  "href": "https://www.youtube.com/watch?v=4by5MeJ1IT8",
+  "href": "https://www.youtube.com/watch?v=3LN5SeSJhOg",
   "typeOfEmbed": "youtube"
 }
 [/block]
@@ -58,7 +64,7 @@ Once you have a concrete idea of how you would like to tackle a task (whether it
 
 # Tasks That Are Not on This Sheet
 
-Obviously, this table doesn't cover everything we want the system to eventually be able to do or all the ideas you might be coming up with. 
+Obviously, this table doesn't cover everything we want the system to eventually be able to do or all the ideas you might be coming up with.
 
 This **table only contains tasks where we already have a more concrete idea of how we want to implement them**. There are many topics where we are still actively brainstorming for solutions. We have a **[collection of open questions here](../how-monty-works/open-questions.md).** And if you are interested in our thoughts on them, the best place is to watch our meeting recordings on [our YouTube channel](https://www.youtube.com/@thousandbrainsproject).
 
