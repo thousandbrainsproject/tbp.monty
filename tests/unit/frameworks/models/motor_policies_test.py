@@ -6,9 +6,9 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import unittest
-from typing import Dict
 
 import numpy as np
 
@@ -31,7 +31,7 @@ class BasePolicyTest(unittest.TestCase):
             "position": (0.0, 0.0, 0.0),
             "rotation": (1.0, 0.0, 0.0, 0.0),
         }
-        self.agent_sensors: Dict[str, SensorState] = {
+        self.agent_sensors: dict[str, SensorState] = {
             f"sensor_id_{self.rng.randint(0, 999_999_999)}": self.default_sensor_state,
         }
         self.default_agent_state: AgentState = {

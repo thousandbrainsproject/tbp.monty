@@ -6,6 +6,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import pytest
 
@@ -19,7 +20,6 @@ import shutil
 import tempfile
 from pathlib import Path
 from pprint import pprint
-from typing import Set
 from unittest import TestCase
 
 import pytest
@@ -107,7 +107,7 @@ class ProfileExperimentMixinTest(TestCase):
     def tearDown(self):
         shutil.rmtree(self.output_dir)
 
-    def get_profile_files(self) -> Set[str]:
+    def get_profile_files(self) -> set[str]:
         """Helper to get the files in the profile directory in a set.
 
         Returns:

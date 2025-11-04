@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Type
 
 from tbp.monty.frameworks.actions.action_samplers import (
     ActionSampler,
@@ -40,8 +39,8 @@ from tbp.monty.frameworks.agents import AgentID
 class BasePolicyConfig:
     """Config for BasePolicy."""
 
-    action_sampler_args: Dict
-    action_sampler_class: Type[ActionSampler]
+    action_sampler_args: dict
+    action_sampler_class: type[ActionSampler]
     agent_id: AgentID
     file_name: str | None = None
     switch_frequency: float = 0.05
@@ -49,8 +48,8 @@ class BasePolicyConfig:
 
 @dataclass
 class InformedPolicyConfig:
-    action_sampler_args: Dict
-    action_sampler_class: Type[ActionSampler]
+    action_sampler_args: dict
+    action_sampler_class: type[ActionSampler]
     agent_id: AgentID
     file_name: str | None = None
     good_view_percentage: float = 0.5
@@ -81,7 +80,7 @@ class SurfaceCurveInformedPolicyConfig(SurfacePolicyConfig):
     min_heading_steps: int = 12
 
 
-def generate_action_list(action_space_type) -> List[Action]:
+def generate_action_list(action_space_type) -> list[Action]:
     """Generate an action list based on a given action space type.
 
     Args:
@@ -141,7 +140,7 @@ def generate_action_list(action_space_type) -> List[Action]:
 
 def make_base_policy_config(
     action_space_type: str,
-    action_sampler_class: Type[ActionSampler],
+    action_sampler_class: type[ActionSampler],
     agent_id: AgentID = AgentID("agent_id_0"),
 ):
     """Generates a config that will apply for the BasePolicy class.
@@ -166,7 +165,7 @@ def make_base_policy_config(
 
 def make_informed_policy_config(
     action_space_type: str,
-    action_sampler_class: Type[ActionSampler],
+    action_sampler_class: type[ActionSampler],
     good_view_percentage: float = 0.5,
     use_goal_state_driven_actions: bool = False,
     file_name: str = None,
@@ -247,7 +246,7 @@ def make_surface_policy_config(
     desired_object_distance: float,
     alpha: float,
     use_goal_state_driven_actions: bool = False,
-    action_sampler_class: Type[ActionSampler] = ConstantSampler,
+    action_sampler_class: type[ActionSampler] = ConstantSampler,
     action_space_type: str = "surface_agent",
     file_name: str = None,
     agent_id: AgentID = AgentID("agent_id_0"),
@@ -302,7 +301,7 @@ def make_curv_surface_policy_config(
     min_general_steps,
     min_heading_steps,
     use_goal_state_driven_actions=False,
-    action_sampler_class: Type[ActionSampler] = ConstantSampler,
+    action_sampler_class: type[ActionSampler] = ConstantSampler,
     action_space_type="surface_agent",
     file_name=None,
     agent_id: AgentID = AgentID("agent_id_0"),

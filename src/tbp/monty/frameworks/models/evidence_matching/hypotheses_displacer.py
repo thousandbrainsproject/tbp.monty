@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Protocol, Type
+from typing import Protocol
 
 import numpy as np
 
@@ -80,7 +80,7 @@ class DefaultHypothesesDisplacer:
         max_match_distance: float,
         tolerances: dict,
         use_features_for_matching: dict[str, bool],
-        feature_evidence_calculator: Type[
+        feature_evidence_calculator: type[
             FeatureEvidenceCalculator
         ] = DefaultFeatureEvidenceCalculator,
         feature_evidence_increment: int = 1,

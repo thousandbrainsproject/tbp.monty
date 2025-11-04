@@ -7,11 +7,11 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import copy
 import logging
 import sys
-from typing import List
 
 import numpy as np
 import torch
@@ -251,7 +251,7 @@ def non_singular_mat(a):
     return False
 
 
-def get_more_directions_in_plane(vecs, n_poses) -> List[np.ndarray]:
+def get_more_directions_in_plane(vecs, n_poses) -> list[np.ndarray]:
     """Get a list of unit vectors, evenly spaced in a plane orthogonal to vecs[0].
 
     This is used to sample possible poses orthogonal to the surface normal when the

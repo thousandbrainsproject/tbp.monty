@@ -27,9 +27,12 @@ dependencies = [
     'scipy>=1.10.1', # imported via conda (conda-forge::scipy)
     'sympy', # imported via conda (conda-forge::sympy)
     'torch==1.13.1', # imported via conda (pytorch::pytorch)
-    'torch-geometric==2.1.0.post1', # imported via conda (pyg::pyg)
-    'torch-sparse==0.6.15', # imported via conda (pytorch::pytorch-sparse)
-    'torch-scatter==2.0.9', # imported via conda (pytorch::pytorch-scatter)
+    'torch-geometric==2.1.0.post1;python_version=="3.8"', # imported via conda (pyg::pyg)
+    'torch-sparse==0.6.15;python_version=="3.8"', # imported via conda (pytorch::pytorch-sparse)
+    'torch-scatter==2.0.9;python_version=="3.8"', # imported via conda (pytorch::pytorch-scatter)
+    'torch-geometric>=2.1.0.post1;python_version=="3.9"', # for uv environment
+    'torch-sparse>=0.6.15;python_version=="3.9"', # for uv environment
+    'torch-scatter>=2.0.9;python_version=="3.9"', # for uv environment
     'tqdm', # imported via conda (conda-forge::tqdm)
     'typing-extensions',
     'wandb', # imported via conda (conda-forge::wandb)
@@ -46,7 +49,9 @@ simulator_habitat = [
     # HabitatSim is only installable via conda. These dependencies are listed here for
     # documentation and consistency.
     # NOTE: The version constraint is to prevent `uv` from failing trying to check all
-    # optional dependency sets are valid.
+    # optional dependency sets are valid. This is because there isn't a version of
+    # HabitatSim on PyPI that works for 3.8, and so it tries to solve for a 3.8 environment
+    # and fails.
     'habitat_sim;python_version=="3.9"', # imported via conda (aihabitat::habitat-sim)
 ]
 simulator_mujoco = [
@@ -95,6 +100,11 @@ github_readme_sync_tool = [
     'markdown2',
     'python-slugify',
     'nh3'
+]
+future_work_widget_tool = [
+    'nh3',
+    'pydantic>=2.0.0',
+    'eval_type_backport', # Needed to make pydantic work with future annotations, can be removed when we get to python 3.10
 ]
 print_version_tool = [
     'semver'
@@ -234,7 +244,6 @@ ignore = [
     "EM101", # EM101: Exception must not use a string literal, assign to variable first
     "EM102", # EM102: Exception must not use an f-string literal, assign to variable first
     "F403", # F403: from {name} import * used; unable to detect undefined names
-    "FA100", # FA100: Add `from __future__ import annotations` to simplify
     "FBT001", # FBT001: Boolean-typed positional argument in function definition
     "FBT002", # FBT002: Boolean default positional argument in function definition
     "FBT003", # FBT003: Boolean positional value in function call
@@ -293,11 +302,13 @@ ignore = [
     "TD004", # TD004: Missing colon in TODO
     "TD005", # TD005: Missing issue description after `TODO`
     "TRY003", # TRY003: Avoid specifying long messages outside the exception class
-    "UP006", # UP006: Use `type` instead of `Type` for type annotation
 ]
 
 [tool.ruff.lint.flake8-bugbear]
-extend-immutable-calls = ["tbp.monty.frameworks.agents.AgentID"]
+extend-immutable-calls = [
+    "tbp.monty.frameworks.agents.AgentID",
+    "tbp.monty.frameworks.environments.embodied_environment.SemanticID"
+]
 
 [tool.ruff.lint.flake8-comprehensions]
 # Our configurations use this all the time
@@ -324,5 +335,4 @@ namespaces = true
 'tbp.monty.simulators.resources' = ['*.json', '*.yml', '*.txt']
 
 [tool.uv]
-# Extra index for PyTorch extensions
-find-links = ["https://data.pyg.org/whl/torch-1.13.1+cpu.html"]
+no-build-isolation-package = ["torch-scatter", "torch-sparse"]
