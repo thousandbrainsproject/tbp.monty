@@ -62,20 +62,59 @@ jobs:
           pip install -e .[dev,github_readme_sync_tool,future_work_widget_tool]
       - name: Build future work widget
         working-directory: tbp.monty
+        id: build
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
           python -m tools.github_readme_sync.cli generate-index docs "${{ runner.temp }}/index.json"
           mkdir -p "${{ runner.temp }}/future-work-widget"
           cp -r tools/future_work_widget/app/* "${{ runner.temp }}/future-work-widget/"
-          python -m tools.future_work_widget.cli "${{ runner.temp }}/index.json" "${{ runner.temp }}/future-work-widget"
+          python -m tools.future_work_widget.cli "${{ runner.temp }}/index.json" "${{ runner.temp }}/future-work-widget" > "${{ runner.temp }}/build_result.json" 2>&1 || true
+      - name: Annotate errors
+        if: always()
+        working-directory: tbp.monty
+        run: |
+          if [ -f "${{ runner.temp }}/build_result.json" ]; then
+            if jq -e '.errors' "${{ runner.temp }}/build_result.json" > /dev/null 2>&1; then
+              jq -c '.errors[]' "${{ runner.temp }}/build_result.json" | while read -r error; do
+                file=$(echo "$error" | jq -r '.file')
+                line=$(echo "$error" | jq -r '.line')
+                title=$(echo "$error" | jq -r '.title')
+                message=$(echo "$error" | jq -r '.message')
+                annotation_level=$(echo "$error" | jq -r '.annotation_level')
+                if [ "$annotation_level" = "failure" ]; then
+                  echo "::error file=$file,line=$line,title=$title::$message"
+                elif [ "$annotation_level" = "warning" ]; then
+                  echo "::warning file=$file,line=$line,title=$title::$message"
+                else
+                  echo "::notice file=$file,line=$line,title=$title::$message"
+                fi
+              done
+            fi
+          fi
+      - name: Check build result
+        if: always()
+        working-directory: tbp.monty
+        run: |
+          if [ -f "${{ runner.temp }}/build_result.json" ]; then
+            success=$(jq -r '.success // false' "${{ runner.temp }}/build_result.json")
+            if [ "$success" != "true" ]; then
+              echo "Build failed"
+              exit 1
+            fi
+          fi
       - name: Configure AWS credentials
+        if: success()
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.FUTURE_WORK_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.FUTURE_WORK_SECRET_ACCESS_KEY }}
           aws-region: ${{ 'us-east-1' }}
       - name: Upload future work widget to S3
+        if: success()
         run: |
+          # Called twice to prevent downtime during deployment.
+          # First sync to ensure new files are uploaded.
+          # Second sync to delete any files that are no longer in the source directory.
           aws s3 sync "${{ runner.temp }}/future-work-widget/" s3://${{ secrets.FUTURE_WORK_S3_BUCKET_NAME }}/
           aws s3 sync "${{ runner.temp }}/future-work-widget/" s3://${{ secrets.FUTURE_WORK_S3_BUCKET_NAME }}/ --delete
