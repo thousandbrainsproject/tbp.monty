@@ -78,4 +78,4 @@ jobs:
           aws-region: ${{ 'us-east-1' }}
       - name: Upload future work widget to S3
         run: |
-          aws s3 sync "${{ runner.temp }}/future-work-widget/" s3://${{ secrets.FUTURE_WORK_S3_BUCKET_NAME }}/future-work-widget/ --delete
+          aws s3 sync "${{ runner.temp }}/future-work-widget/" s3://${{ secrets.FUTURE_WORK_S3_BUCKET_NAME }}/ --delete
