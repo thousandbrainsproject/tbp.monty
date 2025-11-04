@@ -42,6 +42,7 @@ from tbp.monty.frameworks.actions.actions import (
     VectorXYZ,
 )
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.environments.embodied_environment import SemanticID
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
@@ -460,7 +461,7 @@ class GetGoodView(PositioningProcedure):
         good_view_percentage: float,
         multiple_objects_present: bool,
         sensor_id: str,
-        target_semantic_id: int,
+        target_semantic_id: SemanticID,
         allow_translation: bool = True,
         max_orientation_attempts: int = 1,
         **kwargs,
@@ -1612,7 +1613,9 @@ def write_action_file(actions: list[Action], file: str) -> None:
         )
 
 
-def get_perc_on_obj_semantic(semantic_obs, semantic_id=0):
+def get_perc_on_obj_semantic(
+    semantic_obs, semantic_id: SemanticID | Literal["any"] = "any"
+):
     """Get the percentage of pixels in the observation that land on the target object.
 
     If a semantic ID is provided, then only pixels on the target object are counted;
@@ -1623,13 +1626,14 @@ def get_perc_on_obj_semantic(semantic_obs, semantic_id=0):
 
     Args:
         semantic_obs: Semantic image observation.
-        semantic_id: Semantic ID of the target object.
+        semantic_id: Semantic ID of the target object. If "any", then pixels belonging
+            to any object are counted. Defaults to "any".
 
     Returns:
         perc_on_obj: Percentage of pixels on the object.
     """
     res = semantic_obs.shape[0] * semantic_obs.shape[1]
-    if semantic_id == 0:
+    if semantic_id == "any":
         csum = np.sum(semantic_obs >= 1)
     else:
         # Count only pixels on the target (e.g. primary target) object
