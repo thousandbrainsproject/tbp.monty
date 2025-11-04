@@ -67,14 +67,7 @@ jobs:
                 line=$(echo "$error" | jq -r '.line')
                 title=$(echo "$error" | jq -r '.title')
                 message=$(echo "$error" | jq -r '.message')
-                annotation_level=$(echo "$error" | jq -r '.annotation_level')
-                if [ "$annotation_level" = "failure" ]; then
-                  echo "::error file=$file,line=$line,title=$title::$message"
-                elif [ "$annotation_level" = "warning" ]; then
-                  echo "::warning file=$file,line=$line,title=$title::$message"
-                else
-                  echo "::notice file=$file,line=$line,title=$title::$message"
-                fi
+                echo "::error file=$file,line=$line,title=$title::$message"
               done
             fi
           fi
