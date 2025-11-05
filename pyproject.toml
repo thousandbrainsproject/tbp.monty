@@ -27,9 +27,12 @@ dependencies = [
     'scipy>=1.10.1', # imported via conda (conda-forge::scipy)
     'sympy', # imported via conda (conda-forge::sympy)
     'torch==1.13.1', # imported via conda (pytorch::pytorch)
-    'torch-geometric==2.1.0.post1', # imported via conda (pyg::pyg)
-    'torch-sparse==0.6.15', # imported via conda (pytorch::pytorch-sparse)
-    'torch-scatter==2.0.9', # imported via conda (pytorch::pytorch-scatter)
+    'torch-geometric==2.1.0.post1;python_version=="3.8"', # imported via conda (pyg::pyg)
+    'torch-sparse==0.6.15;python_version=="3.8"', # imported via conda (pytorch::pytorch-sparse)
+    'torch-scatter==2.0.9;python_version=="3.8"', # imported via conda (pytorch::pytorch-scatter)
+    'torch-geometric>=2.1.0.post1;python_version=="3.9"', # for uv environment
+    'torch-sparse>=0.6.15;python_version=="3.9"', # for uv environment
+    'torch-scatter>=2.0.9;python_version=="3.9"', # for uv environment
     'tqdm', # imported via conda (conda-forge::tqdm)
     'typing-extensions',
     'wandb', # imported via conda (conda-forge::wandb)
@@ -46,7 +49,9 @@ simulator_habitat = [
     # HabitatSim is only installable via conda. These dependencies are listed here for
     # documentation and consistency.
     # NOTE: The version constraint is to prevent `uv` from failing trying to check all
-    # optional dependency sets are valid.
+    # optional dependency sets are valid. This is because there isn't a version of
+    # HabitatSim on PyPI that works for 3.8, and so it tries to solve for a 3.8 environment
+    # and fails.
     'habitat_sim;python_version=="3.9"', # imported via conda (aihabitat::habitat-sim)
 ]
 simulator_mujoco = [
@@ -330,5 +335,4 @@ namespaces = true
 'tbp.monty.simulators.resources' = ['*.json', '*.yml', '*.txt']
 
 [tool.uv]
-# Extra index for PyTorch extensions
-find-links = ["https://data.pyg.org/whl/torch-1.13.1+cpu.html"]
+no-build-isolation-package = ["torch-scatter", "torch-sparse"]
