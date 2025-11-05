@@ -1,8 +1,8 @@
 monty_log_level: DETAILED
-# monty_handlers:
-#   - ${experiment.logging.handlers.basic_csv_stats}
-#   - ${experiment.logging.handlers.detailed_json}
-#   - ${experiment.logging.handlers.reproduce_episode}
+monty_handlers:
+  - _target_: tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler
+  - _target_: tbp.monty.frameworks.loggers.monty_handlers.DetailedJSONHandler
+  - _target_: tbp.monty.frameworks.loggers.monty_handlers.ReproduceEpisodeHandler
 wandb_handlers: []
 python_log_level: INFO
 python_log_to_file: true

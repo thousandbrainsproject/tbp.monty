@@ -83,6 +83,8 @@ class MontyExperiment:
         if self.show_sensor_output:
             self.live_plotter = LivePlotter()
 
+        logger.info(self.config)
+
     def setup_experiment(self, config: dict[str, Any]) -> None:
         """Set up the basic elements of a Monty experiment and initialize counters.
 
