@@ -285,16 +285,11 @@ class HabitatSim(HabitatActuator):
                 primary_obj_bb=primary_target_bb,
             )
 
-        # Update object-specific physics
-        # This physics setting will persist into the environment e.g. during inference
-        if primary_target_object is not None:
-            obj.motion_type = habitat_sim.physics.MotionType.DYNAMIC
-        else:
-            # Set the motion-type to kinematic
-            # (i.e. only a user-specified force/motion will affect the object), rather
-            # than dynamic (i.e. object subject to forces like gravity, friction, and
-            # collision detection according to physics simulations)
-            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+        # Set the motion-type to kinematic
+        # (i.e. only a user-specified force/motion will affect the object), rather
+        # than dynamic (i.e. object subject to forces like gravity, friction, and
+        # collision detection according to physics simulations)
+        obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
 
         # Update semantic id
         if semantic_id is not None:
