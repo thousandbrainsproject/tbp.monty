@@ -1,0 +1,6 @@
+_target_: src.tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+defaults:
+  - /experiment_args: eval
+
+model_name_or_path: "path/to/model"
+n_eval_epochs: 14 # TODO: maybe link to get_cube_face_and_corner_views_rotations()

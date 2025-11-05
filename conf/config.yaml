@@ -1,0 +1,2 @@
+defaults:
+  - benchmarks/ycb/base_config_10distinctobj_dist_agent

@@ -7,7 +7,8 @@ max_eval_steps: 500
 # episode steps that can be taken before timing out, regardless of e.g. whether LMs
 # receive sensory information and therefore perform a true matching step (due to
 # e.g. being off the object)
-max_total_steps: ${4 * max_train_steps + max_eval_steps}
+# heuristic is 4 * max_train_steps + max_eval_steps
+max_total_steps: 4500
 n_train_epochs: 3
 n_eval_epochs: 3
 model_name_or_path: ""
