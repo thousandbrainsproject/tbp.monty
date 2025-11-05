@@ -370,10 +370,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         Returns:
             Whether the GSG should generate a new output goal-state.
         """
-        if output_goal_achieved:
-            return True
-
-        return False
+        return bool(output_goal_achieved)
 
     def _check_keep_current_output_goal(self) -> bool:
         """Should we keep our current goal?

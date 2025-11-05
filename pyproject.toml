@@ -284,7 +284,6 @@ ignore = [
     "S311", # S311: Standard pseudo-random generators are not suitable for cryptographic purposes
     "S605", # S605: Starting a process with a shell, possible injection detected
     "SIM102", # SIM102: Use a single `if` statement instead of nested `if` statements
-    "SIM103", # SIM103: Return the condition {condition} directly
     "SIM108", # SIM108: Use ternary operator {contents} instead of if-else-block
     "SIM117", # SIM117: Use a single `with` statement with multiple contexts instead of nested `with` statements
     "SIM118", # SIM118: Use `key in dict` instead of `key in dict.keys()`
