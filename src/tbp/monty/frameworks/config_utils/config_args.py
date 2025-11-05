@@ -92,7 +92,7 @@ class LoggingConfig:
         os.path.join(monty_logs_dir, "projects/monty_runs/")
     )
     run_name: str = ""
-    resume_wandb_run: bool | str = False
+    resume_wandb_run: bool = False
     wandb_id: str = field(default_factory=wandb.util.generate_id)
     wandb_group: str = "debugging"
     log_parallel_wandb: bool = False

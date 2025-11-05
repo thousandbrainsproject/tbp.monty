@@ -85,7 +85,7 @@ class ProfileExperimentMixinTest(TestCase):
         base = dict(
             experiment_class=ProfiledExperiment,
             experiment_args=DebugExperimentArgs(),
-            logging_config=LoggingConfig(
+            logging=LoggingConfig(
                 output_dir=self.output_dir, python_log_level="DEBUG"
             ),
             monty_config=FakeSingleCameraMontyConfig(),

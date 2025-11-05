@@ -69,7 +69,7 @@ dist_agent_5lm_2obj_train = dict(
         n_train_epochs=len(train_rotations),
     ),
     # Specify logging config.
-    logging_config=PretrainLoggingConfig(
+    logging=PretrainLoggingConfig(
         output_dir=project_dir,
         run_name=model_name,
     ),
@@ -274,7 +274,7 @@ dist_agent_5lm_2obj_eval = dict(
         min_lms_match=3,   # Terminate when 3 learning modules makes a decision.
     ),
     # Specify logging config.
-    logging_config=EvalLoggingConfig(
+    logging=EvalLoggingConfig(
         output_dir=os.path.join(project_dir, model_name),
         run_name="eval",
         monty_handlers=[BasicCSVStatsHandler],

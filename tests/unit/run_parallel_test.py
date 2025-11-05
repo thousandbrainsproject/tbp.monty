@@ -63,7 +63,7 @@ class RunParallelTest(unittest.TestCase):
             experiment_args=SupervisedPretrainingExperimentArgs(
                 n_train_epochs=len(self.train_rotations),
             ),
-            logging_config=PretrainLoggingConfig(output_dir=self.output_dir),
+            logging=PretrainLoggingConfig(output_dir=self.output_dir),
             monty_config=PatchAndViewMontyConfig(
                 motor_system_config=MotorSystemConfigFixed(),
                 monty_args=MontyArgs(num_exploratory_steps=10),
@@ -97,7 +97,7 @@ class RunParallelTest(unittest.TestCase):
         self.eval_config = copy.deepcopy(self.supervised_pre_training)
         self.eval_config.update(
             experiment_class=MontyObjectRecognitionExperiment,
-            logging_config=LoggingConfig(
+            logging=LoggingConfig(
                 output_dir=os.path.join(self.output_dir, "eval")
             ),
             experiment_args=ExperimentArgs(
@@ -132,15 +132,15 @@ class RunParallelTest(unittest.TestCase):
         self.eval_config_lt = copy.deepcopy(self.eval_config)
         self.eval_config_lt["experiment_args"].n_eval_epochs = 2
         self.output_dir_lt = os.path.join(self.output_dir, "lt")
-        self.eval_config_lt["logging_config"].output_dir = self.output_dir_lt
-        os.makedirs(self.eval_config_lt["logging_config"].output_dir)
+        self.eval_config_lt["logging"].output_dir = self.output_dir_lt
+        os.makedirs(self.eval_config_lt["logging"].output_dir)
 
         # This tests that parallel code can handle n_eval_epochs > len(rotations)
         self.eval_config_gt = copy.deepcopy(self.eval_config)
         self.eval_config_gt["experiment_args"].n_eval_epochs = 4
         self.output_dir_gt = os.path.join(self.output_dir, "gt")
-        self.eval_config_gt["logging_config"].output_dir = self.output_dir_gt
-        os.makedirs(self.eval_config_gt["logging_config"].output_dir)
+        self.eval_config_gt["logging"].output_dir = self.output_dir_gt
+        os.makedirs(self.eval_config_gt["logging"].output_dir)
 
     def check_reproducibility_logs(self, serial_repro_dir, parallel_repro_dir):
         s_param_files = [i for i in os.listdir(serial_repro_dir) if "target" in i]

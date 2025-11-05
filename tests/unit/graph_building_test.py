@@ -65,7 +65,7 @@ class GraphLearningTest(unittest.TestCase):
             experiment_args=SupervisedPretrainingExperimentArgs(
                 n_train_epochs=len(self.habitat_learned_rotations),
             ),
-            logging_config=PretrainLoggingConfig(output_dir=self.habitat_save_path),
+            logging=PretrainLoggingConfig(output_dir=self.habitat_save_path),
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=10),
                 learning_module_configs=dict(
@@ -100,7 +100,7 @@ class GraphLearningTest(unittest.TestCase):
             experiment_args=ExperimentArgs(
                 model_name_or_path=self.habitat_save_path + "/pretrained",
             ),
-            logging_config=LoggingConfig(output_dir=self.output_dir),
+            logging=LoggingConfig(output_dir=self.output_dir),
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20),
                 learning_module_configs=dict(

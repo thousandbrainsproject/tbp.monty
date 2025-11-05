@@ -116,7 +116,7 @@ class MontyRunTest(unittest.TestCase):
                     n_train_epochs=TRAIN_EPOCHS,
                     n_eval_epochs=EVAL_EPOCHS,
                 ),
-                "logging_config": LoggingConfig(
+                "logging": LoggingConfig(
                     output_dir=self.output_dir,
                     monty_log_level="TEST",
                     monty_handlers=[],
@@ -136,7 +136,7 @@ class MontyRunTest(unittest.TestCase):
                     n_train_epochs=TRAIN_EPOCHS,
                     n_eval_epochs=EVAL_EPOCHS,
                 ),
-                "logging_config": LoggingConfig(
+                "logging": LoggingConfig(
                     output_dir=self.output_dir,
                     monty_log_level="TEST",
                     monty_handlers=[],
@@ -159,7 +159,7 @@ class MontyRunTest(unittest.TestCase):
         main(all_configs=self.CONFIGS)
 
         output_dir = os.path.join(
-            self.CONFIGS["test_1"]["logging_config"].output_dir, "test_1"
+            self.CONFIGS["test_1"]["logging"].output_dir, "test_1"
         )
         with open(os.path.join(output_dir, "fake_log.pkl"), "rb") as f:
             exp_log = pickle.load(f)
@@ -170,7 +170,7 @@ class MontyRunTest(unittest.TestCase):
         main(all_configs=self.CONFIGS, experiments=["test_1"])
 
         output_dir = os.path.join(
-            self.CONFIGS["test_1"]["logging_config"].output_dir, "test_1"
+            self.CONFIGS["test_1"]["logging"].output_dir, "test_1"
         )
         with open(os.path.join(output_dir, "fake_log.pkl"), "rb") as f:
             exp_log = pickle.load(f)
@@ -181,7 +181,7 @@ class MontyRunTest(unittest.TestCase):
         main(all_configs=self.CONFIGS, experiments=["test_1", "test_2"])
 
         output_dir_1 = os.path.join(
-            self.CONFIGS["test_1"]["logging_config"].output_dir, "test_1"
+            self.CONFIGS["test_1"]["logging"].output_dir, "test_1"
         )
         with open(os.path.join(output_dir_1, "fake_log.pkl"), "rb") as f:
             exp_log_1 = pickle.load(f)
@@ -189,7 +189,7 @@ class MontyRunTest(unittest.TestCase):
         self.assertListEqual(exp_log_1, EXPECTED_LOG)
 
         output_dir_2 = os.path.join(
-            self.CONFIGS["test_2"]["logging_config"].output_dir, "test_2"
+            self.CONFIGS["test_2"]["logging"].output_dir, "test_2"
         )
         with open(os.path.join(output_dir_2, "fake_log.pkl"), "rb") as f:
             exp_log_2 = pickle.load(f)
@@ -199,7 +199,7 @@ class MontyRunTest(unittest.TestCase):
     def test_run(self):
         run(config=self.CONFIGS["test_1"])
 
-        output_dir = os.path.join(self.CONFIGS["test_1"]["logging_config"].output_dir)
+        output_dir = os.path.join(self.CONFIGS["test_1"]["logging"].output_dir)
         with open(os.path.join(output_dir, "fake_log.pkl"), "rb") as f:
             exp_log = pickle.load(f)
 

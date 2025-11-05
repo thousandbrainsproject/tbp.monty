@@ -201,7 +201,7 @@ surf_agent_2obj_eval = dict(
         max_total_steps=5000,
         show_sensor_output=True,  # live visualization of Monty's observations and MLH
     ),
-    logging_config=EvalLoggingConfig(
+    logging=EvalLoggingConfig(
         output_dir=output_dir,
         run_name=run_name,
         wandb_handlers=[],  # remove this line if you, additionally, want to log to WandB.

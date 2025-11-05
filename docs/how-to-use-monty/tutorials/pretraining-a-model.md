@@ -22,7 +22,7 @@ Monty experiments are defined using a nested dictionary. These dictionaries defi
 
 - `experiment_class`: `MontyExperiment` Manages the highest-level calls to the environment and Monty model.
 - `experiment_args`: `ExperimentArgs` Arguments supplied to the experiment class.
-- `logging_config`: `LoggingConfig` Specifies which loggers should be used.
+- `logging`: `LoggingConfig` Specifies which loggers should be used.
 - `monty_config`: `MontyConfig`
   - `monty_class`: `Monty` The type of Monty model to use, e.g. for evidence-based graph matching: `MontyForEvidenceGraphMatching`.
   - `monty_args`: `MontyArgs` Arguments supplied to the Monty class.
@@ -132,7 +132,7 @@ surf_agent_2obj_train = dict(
         n_train_epochs=len(train_rotations),
     ),
     # Specify logging config.
-    logging_config=PretrainLoggingConfig(
+    logging=PretrainLoggingConfig(
         output_dir=project_dir,
         run_name=model_name,
         wandb_handlers=[],

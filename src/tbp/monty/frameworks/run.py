@@ -94,14 +94,14 @@ def main(all_configs, experiments=None):
 
         # Update run_name and output dir with experiment name
         # NOTE: wandb args are further processed in monty_experiment
-        if not exp_config["logging_config"]["run_name"]:
-            exp_config["logging_config"]["run_name"] = experiment
-        exp_config["logging_config"]["output_dir"] = os.path.join(
-            exp_config["logging_config"]["output_dir"],
-            exp_config["logging_config"]["run_name"],
+        if not exp_config["logging"]["run_name"]:
+            exp_config["logging"]["run_name"] = experiment
+        exp_config["logging"]["output_dir"] = os.path.join(
+            exp_config["logging"]["output_dir"],
+            exp_config["logging"]["run_name"],
         )
         # If we are not running in parallel, this should always be False
-        exp_config["logging_config"]["log_parallel_wandb"] = False
+        exp_config["logging"]["log_parallel_wandb"] = False
         print_config(exp_config)
 
         # Print config without running experiment
@@ -109,7 +109,7 @@ def main(all_configs, experiments=None):
             if cmd_args.print_config:
                 continue
 
-        os.makedirs(exp_config["logging_config"]["output_dir"], exist_ok=True)
+        os.makedirs(exp_config["logging"]["output_dir"], exist_ok=True)
         start_time = time.time()
         run(exp_config)
         logger.info(f"Done running {experiment} in {time.time() - start_time} seconds")

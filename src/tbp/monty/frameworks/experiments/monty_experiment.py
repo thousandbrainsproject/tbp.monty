@@ -18,6 +18,7 @@ from typing import Any, Literal, Mapping
 
 import numpy as np
 import torch
+import wandb
 from typing_extensions import Self
 
 from tbp.monty.frameworks.environments.embodied_data import (
@@ -91,13 +92,13 @@ class MontyExperiment:
         Args:
             config: config specifying variables of the experiment.
         """
-        self.init_loggers(self.config["logging_config"])
+        self.init_loggers(self.config["logging"])
         self.model = self.init_model(
             monty_config=config["monty_config"],
             model_path=self.model_path,
         )
         self.load_dataloaders(config)
-        self.init_monty_data_loggers(self.config["logging_config"])
+        self.init_monty_data_loggers(self.config["logging"])
         self.init_counters()
 
     def init_model(self, monty_config, model_path=None):

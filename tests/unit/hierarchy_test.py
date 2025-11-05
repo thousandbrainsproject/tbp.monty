@@ -70,7 +70,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
             experiment_args=ExperimentArgs(
                 max_train_steps=30, max_eval_steps=30, max_total_steps=60
             ),
-            logging_config=LoggingConfig(output_dir=self.output_dir),
+            logging=LoggingConfig(output_dir=self.output_dir),
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
@@ -192,7 +192,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
                 max_eval_steps=30,
                 max_total_steps=60,
             ),
-            logging_config=PretrainLoggingConfig(
+            logging=PretrainLoggingConfig(
                 output_dir=self.output_dir,
                 python_log_level="INFO",
             ),
@@ -233,7 +233,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
                 n_eval_epochs=2,
                 model_name_or_path=os.path.join(self.output_dir, "pretrained"),
             ),
-            logging_config=LoggingConfig(
+            logging=LoggingConfig(
                 output_dir=self.output_dir,
                 python_log_level="INFO",
             ),

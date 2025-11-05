@@ -47,7 +47,7 @@ from tbp.monty.simulators.habitat.configs import (
 
 first_experiment = dict(
     experiment_class=MontySupervisedObjectPretrainingExperiment,
-    logging_config=LoggingConfig(),
+    logging=LoggingConfig(),
     experiment_args=SupervisedPretrainingExperimentArgs(
         do_eval=False,
         max_train_steps=1,

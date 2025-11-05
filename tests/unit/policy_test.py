@@ -111,7 +111,7 @@ class PolicyTest(unittest.TestCase):
                 max_eval_steps=30,
                 max_total_steps=60,
             ),
-            logging_config=LoggingConfig(
+            logging=LoggingConfig(
                 output_dir=self.output_dir,
             ),
             monty_config=PatchAndViewMontyConfig(

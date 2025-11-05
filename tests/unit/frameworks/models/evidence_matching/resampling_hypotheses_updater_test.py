@@ -86,7 +86,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
             experiment_args=SupervisedPretrainingExperimentArgs(
                 n_train_epochs=3,
             ),
-            logging_config=PretrainLoggingConfig(
+            logging=PretrainLoggingConfig(
                 output_dir=self.output_dir,
             ),
             monty_config=PatchAndViewMontyConfig(

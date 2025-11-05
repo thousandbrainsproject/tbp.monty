@@ -39,8 +39,8 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         # place and models in another. Changing the config ensures every reference to
         # output_dir has "pretrained" added to it
         config = config_to_dict(config)
-        output_dir = config["logging_config"]["output_dir"]
-        config["logging_config"]["output_dir"] = os.path.join(output_dir, "pretrained")
+        output_dir = config["logging"]["output_dir"]
+        config["logging"]["output_dir"] = os.path.join(output_dir, "pretrained")
         self.first_epoch_object_location = {}
         super().__init__(config)
 

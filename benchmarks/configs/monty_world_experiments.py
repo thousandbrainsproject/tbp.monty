@@ -66,7 +66,7 @@ world_image_on_scanned_model = dict(
         max_eval_steps=500,
         show_sensor_output=False,
     ),
-    logging_config=ParallelEvidenceLMLoggingConfig(wandb_group="benchmark_experiments"),
+    logging=ParallelEvidenceLMLoggingConfig(wandb_group="benchmark_experiments"),
     monty_config=PatchAndViewMontyConfig(
         learning_module_configs=default_evidence_1lm_config,
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
@@ -95,7 +95,7 @@ world_image_from_stream_on_scanned_model.update(
     dataset_args=WorldImageFromStreamDatasetArgs(),
     eval_dataloader_class=ED.SaccadeOnImageFromStreamDataLoader,
     eval_dataloader_args={},
-    logging_config=EvalEvidenceLMLoggingConfig(
+    logging=EvalEvidenceLMLoggingConfig(
         wandb_handlers=[], python_log_level="INFO"
     ),
 )

@@ -256,7 +256,7 @@ base_config_10distinctobj_dist_agent = dict(
         n_eval_epochs=len(test_rotations_all),
     ),
     ## TODO
-    logging_config=ParallelEvidenceLMLoggingConfig(
+    logging=ParallelEvidenceLMLoggingConfig(
         wandb_group="benchmark_experiments",
         # Comment in for quick debugging (turns of wandb and increases logging)
         # wandb_handlers=[],
@@ -509,7 +509,7 @@ surf_agent_unsupervised_10distinctobj.update(
         max_train_steps=4000,
         max_total_steps=4000,
     ),
-    logging_config=CSVLoggingConfig(python_log_level="INFO"),
+    logging=CSVLoggingConfig(python_log_level="INFO"),
     monty_config=SurfaceAndViewMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=1000, min_train_steps=100),
         learning_module_configs=default_lfs_lm,

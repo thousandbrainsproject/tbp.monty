@@ -153,7 +153,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             ),
             # NOTE: could make unit tests faster by setting monty_log_level="BASIC" for
             # some of them.
-            logging_config=LoggingConfig(
+            logging=LoggingConfig(
                 output_dir=self.output_dir, python_log_level="DEBUG"
             ),
             monty_config=PatchAndViewMontyConfig(
@@ -200,7 +200,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 max_train_steps=50,
                 max_total_steps=200,
             ),
-            logging_config=LoggingConfig(output_dir=self.output_dir),
+            logging=LoggingConfig(output_dir=self.output_dir),
             monty_config=PatchAndViewMontyConfig(
                 monty_class=MontyForEvidenceGraphMatching,
                 monty_args=MontyFeatureGraphArgs(
@@ -223,7 +223,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             experiment_args=ExperimentArgs(
                 max_train_steps=2, max_eval_steps=2, max_total_steps=35
             ),
-            logging_config=LoggingConfig(
+            logging=LoggingConfig(
                 output_dir=self.output_dir,
             ),
             monty_config=PatchAndViewMontyConfig(
@@ -386,7 +386,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 max_total_steps=60,
                 min_lms_match=5,
             ),
-            logging_config=LoggingConfig(
+            logging=LoggingConfig(
                 output_dir=self.output_dir, python_log_level="DEBUG"
             ),
             monty_config=FiveLMMontyConfig(
@@ -403,7 +403,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
 
         evidence_5lm_basic_logging = copy.deepcopy(evidence_5lm_config)
         evidence_5lm_basic_logging.update(
-            logging_config=LoggingConfig(
+            logging=LoggingConfig(
                 output_dir=self.output_dir,
                 python_log_level="INFO",
                 monty_log_level="BASIC",

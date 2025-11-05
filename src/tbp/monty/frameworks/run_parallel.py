@@ -71,18 +71,18 @@ RE_SINGLE = re.compile(r"^\d+$")  # "N"
 
 
 def single_train(config):
-    os.makedirs(config["logging_config"]["output_dir"], exist_ok=True)
+    os.makedirs(config["logging"]["output_dir"], exist_ok=True)
     with config["experiment_class"](config) as exp:
         print("---------training---------")
         exp.train()
 
 
 def single_evaluate(config):
-    os.makedirs(config["logging_config"]["output_dir"], exist_ok=True)
+    os.makedirs(config["logging"]["output_dir"], exist_ok=True)
     with config["experiment_class"](config) as exp:
         print("---------evaluating---------")
         exp.evaluate()
-        if config["logging_config"]["log_parallel_wandb"]:
+        if config["logging"]["log_parallel_wandb"]:
             return get_episode_stats(exp, "eval")
 
 
@@ -271,9 +271,9 @@ def post_parallel_eval(configs: list[Mapping], base_dir: str) -> None:
         base_dir: Directory where parallel logs are stored.
     """
     print("Executing post parallel evaluation cleanup")
-    parallel_dirs = [cfg["logging_config"]["output_dir"] for cfg in configs]
+    parallel_dirs = [cfg["logging"]["output_dir"] for cfg in configs]
 
-    logging_config = configs[0]["logging_config"]
+    logging_config = configs[0]["logging"]
     save_per_episode = logging_config.get("detailed_save_per_episode")
 
     # Loop over types of loggers, figure out how to clean up each one
@@ -304,7 +304,7 @@ def post_parallel_eval(configs: list[Mapping], base_dir: str) -> None:
             move_reproducibility_data(base_dir, parallel_dirs)
             continue
 
-    if configs[0]["logging_config"]["python_log_to_file"]:
+    if configs[0]["logging"]["python_log_to_file"]:
         filename = "log.txt"
         filenames = [os.path.join(pdir, filename) for pdir in parallel_dirs]
         outfile = os.path.join(base_dir, filename)
@@ -327,7 +327,7 @@ def post_parallel_train(configs: list[Mapping], base_dir: str) -> None:
         base_dir: Directory where parallel logs are stored.
     """
     print("Executing post parallel training cleanup")
-    parallel_dirs = [cfg["logging_config"]["output_dir"] for cfg in configs]
+    parallel_dirs = [cfg["logging"]["output_dir"] for cfg in configs]
     pretraining = False
     if issubclass(
         configs[0]["experiment_class"], MontySupervisedObjectPretrainingExperiment
@@ -335,7 +335,7 @@ def post_parallel_train(configs: list[Mapping], base_dir: str) -> None:
         parallel_dirs = [os.path.join(pdir, "pretrained") for pdir in parallel_dirs]
         pretraining = True
 
-    if configs[0]["logging_config"]["python_log_to_file"]:
+    if configs[0]["logging"]["python_log_to_file"]:
         filename = "log.txt"
         filenames = [os.path.join(pdir, filename) for pdir in parallel_dirs]
         outfile = os.path.join(base_dir, filename)
@@ -347,7 +347,7 @@ def post_parallel_train(configs: list[Mapping], base_dir: str) -> None:
     config = configs[0]
     with config["experiment_class"](config) as exp:
         exp.model.load_state_dict_from_parallel(parallel_dirs, True)
-        output_dir = os.path.dirname(configs[0]["logging_config"]["output_dir"])
+        output_dir = os.path.dirname(configs[0]["logging"]["output_dir"])
         if issubclass(
             configs[0]["experiment_class"], MontySupervisedObjectPretrainingExperiment
         ):
@@ -392,13 +392,13 @@ def run_episodes_parallel(
         f" with {num_parallel} episodes in parallel --------"
     )
     start_time = time.time()
-    if configs[0]["logging_config"]["log_parallel_wandb"]:
+    if configs[0]["logging"]["log_parallel_wandb"]:
         run = wandb.init(
             name=experiment_name,
-            group=configs[0]["logging_config"]["wandb_group"],
+            group=configs[0]["logging"]["wandb_group"],
             project="Monty",
             config=configs[0],
-            id=configs[0]["logging_config"]["wandb_id"],
+            id=configs[0]["logging"]["wandb_id"],
         )
     print(f"Wandb setup took {time.time() - start_time} seconds")
     start_time = time.time()
@@ -414,7 +414,7 @@ def run_episodes_parallel(
                 # NOTE: since we don't use wandb logging for training right now
                 # it is also not covered here. Might want to add that in the future.
                 p.map(single_train, configs)
-            elif configs[0]["logging_config"]["log_parallel_wandb"]:
+            elif configs[0]["logging"]["log_parallel_wandb"]:
                 all_episode_stats = {}
                 for result in p.imap(single_evaluate, configs):
                     run.log(result)
@@ -436,12 +436,12 @@ def run_episodes_parallel(
     end_time = time.time()
     total_time = end_time - start_time
 
-    output_dir = configs[0]["logging_config"]["output_dir"]
+    output_dir = configs[0]["logging"]["output_dir"]
     base_dir = os.path.dirname(output_dir)
 
     if train:
         post_parallel_train(configs, base_dir)
-        if configs[0]["logging_config"]["log_parallel_wandb"]:
+        if configs[0]["logging"]["log_parallel_wandb"]:
             csv_path = os.path.join(base_dir, "train_stats.csv")
             if os.path.exists(csv_path):
                 train_stats = pd.read_csv(csv_path)
@@ -451,7 +451,7 @@ def run_episodes_parallel(
                 print(f"No csv table found at {csv_path} to log to wandb")
     else:
         post_parallel_eval(configs, base_dir)
-        if configs[0]["logging_config"]["log_parallel_wandb"]:
+        if configs[0]["logging"]["log_parallel_wandb"]:
             csv_path = os.path.join(base_dir, "eval_stats.csv")
             if os.path.exists(csv_path):
                 eval_stats = pd.read_csv(csv_path)
@@ -464,7 +464,7 @@ def run_episodes_parallel(
         f"Total time for {len(configs)} running {num_parallel} episodes in parallel: "
         f"{total_time}"
     )
-    if configs[0]["logging_config"]["log_parallel_wandb"]:
+    if configs[0]["logging"]["log_parallel_wandb"]:
         run.finish()
 
     print(f"Done running parallel experiments in {end_time - start_time} seconds")
@@ -604,13 +604,13 @@ def generate_parallel_train_configs(
         )
 
         # Save results in parallel subdir of output_dir, update run_name
-        output_dir = obj_config["logging_config"]["output_dir"]
+        output_dir = obj_config["logging"]["output_dir"]
         run_name = os.path.join(f"{experiment_name}-parallel_train_episode_{obj}")
-        obj_config["logging_config"]["run_name"] = run_name
-        obj_config["logging_config"]["output_dir"] = os.path.join(
+        obj_config["logging"]["run_name"] = run_name
+        obj_config["logging"]["output_dir"] = os.path.join(
             output_dir, experiment_name, run_name
         )
-        obj_config["logging_config"]["wandb_handlers"] = []
+        obj_config["logging"]["wandb_handlers"] = []
 
         # Object id, pose parameters for single episode
         obj_config["train_dataloader_args"].update(
@@ -663,22 +663,22 @@ def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> list[M
             )
 
             # Save results in parallel subdir of output_dir, update run_name
-            output_dir = new_config["logging_config"]["output_dir"]
+            output_dir = new_config["logging"]["output_dir"]
             run_name = os.path.join(
                 f"{experiment_name}-parallel_eval_episode_{episode_count}"
             )
-            new_config["logging_config"]["run_name"] = run_name
-            new_config["logging_config"]["output_dir"] = os.path.join(
+            new_config["logging"]["run_name"] = run_name
+            new_config["logging"]["output_dir"] = os.path.join(
                 output_dir, experiment_name, run_name
             )
-            if len(new_config["logging_config"]["wandb_handlers"]) > 0:
-                new_config["logging_config"]["wandb_handlers"] = []
-                new_config["logging_config"]["log_parallel_wandb"] = True
-                new_config["logging_config"]["experiment_name"] = experiment_name
+            if len(new_config["logging"]["wandb_handlers"]) > 0:
+                new_config["logging"]["wandb_handlers"] = []
+                new_config["logging"]["log_parallel_wandb"] = True
+                new_config["logging"]["experiment_name"] = experiment_name
             else:
-                new_config["logging_config"]["log_parallel_wandb"] = False
+                new_config["logging"]["log_parallel_wandb"] = False
 
-            new_config["logging_config"]["episode_id_parallel"] = episode_count
+            new_config["logging"]["episode_id_parallel"] = episode_count
 
             new_config["eval_dataloader_args"].update(
                 object_names=[obj],
@@ -777,8 +777,8 @@ def main(
     exp = exp if is_unittest else all_configs[experiment]
     exp = config_to_dict(exp)
 
-    if len(exp["logging_config"]["run_name"]) > 0:
-        experiment = exp["logging_config"]["run_name"]
+    if len(exp["logging"]["run_name"]) > 0:
+        experiment = exp["logging"]["run_name"]
 
     # Simplifying assumption: let's only deal with the main type of exp which involves
     # per object dataloaders, otherwise hard to figure out what all goes into an exp

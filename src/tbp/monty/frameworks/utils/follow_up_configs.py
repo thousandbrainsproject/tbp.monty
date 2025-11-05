@@ -28,18 +28,18 @@ def recover_output_dir(config, config_name):
     Returns:
         output_dir: Path to output directory.
     """
-    output_dir = config["logging_config"]["output_dir"]
-    if not config["logging_config"]["run_name"]:
-        output_dir = os.path.join(config["logging_config"]["output_dir"], config_name)
+    output_dir = config["logging"]["output_dir"]
+    if not config["logging"]["run_name"]:
+        output_dir = os.path.join(config["logging"]["output_dir"], config_name)
 
     return output_dir
 
 
 def recover_run_name(config, config_name):
-    if not config["logging_config"]["run_name"]:
+    if not config["logging"]["run_name"]:
         return config_name
 
-    return config["logging_config"]["run_name"]
+    return config["logging"]["run_name"]
 
 
 def recover_wandb_id(output_dir):
@@ -47,7 +47,7 @@ def recover_wandb_id(output_dir):
     config_file_name = os.path.join(output_dir, "0", "config.pt")
     cfg = torch.load(config_file_name)
     config = config_to_dict(cfg)
-    return config["logging_config"]["wandb_id"]
+    return config["logging"]["wandb_id"]
 
 
 def create_eval_episode_config(
@@ -83,8 +83,8 @@ def create_eval_episode_config(
     new_config = copy.deepcopy(config_to_dict(parent_config))
 
     # Determine parent output_dir, run_name, based on how run.py modifies on the fly
-    output_dir = new_config["logging_config"]["output_dir"]
-    run_name = new_config["logging_config"]["run_name"]
+    output_dir = new_config["logging"]["output_dir"]
+    run_name = new_config["logging"]["run_name"]
     wandb_id = None
     if update_run_dir:
         output_dir = recover_output_dir(new_config, parent_config_name)
@@ -120,24 +120,24 @@ def create_eval_episode_config(
     # 3) Update logging config
     # First, make sure the detailed handlers are in there
     # TODO: update handlers used here as more sophisticated ones get made
-    if DetailedJSONHandler not in new_config["logging_config"]["monty_handlers"]:
-        new_config["logging_config"]["monty_handlers"].append(DetailedJSONHandler)
+    if DetailedJSONHandler not in new_config["logging"]["monty_handlers"]:
+        new_config["logging"]["monty_handlers"].append(DetailedJSONHandler)
     if (
         DetailedWandbMarkedObsHandler
-        not in new_config["logging_config"]["wandb_handlers"]
+        not in new_config["logging"]["wandb_handlers"]
     ):
-        new_config["logging_config"]["wandb_handlers"].append(
+        new_config["logging"]["wandb_handlers"].append(
             DetailedWandbMarkedObsHandler
         )
 
     # Second, update the output directory, run_name, set resume to True
     new_output_dir = os.path.join(output_dir, f"eval_episode_{episode}_rerun")
     os.makedirs(new_output_dir, exist_ok=True)
-    new_config["logging_config"]["output_dir"] = new_output_dir
-    new_config["logging_config"]["run_name"] = run_name
-    new_config["logging_config"]["resume_wandb_run"] = True
-    new_config["logging_config"]["wandb_id"] = wandb_id
-    new_config["logging_config"]["monty_log_level"] = "DETAILED"
+    new_config["logging"]["output_dir"] = new_output_dir
+    new_config["logging"]["run_name"] = run_name
+    new_config["logging"]["resume_wandb_run"] = True
+    new_config["logging"]["wandb_id"] = wandb_id
+    new_config["logging"]["monty_log_level"] = "DETAILED"
 
     # 4) Make sure this config is set to only run for one episode
     new_config["experiment_args"]["n_eval_epochs"] = 1
@@ -158,8 +158,8 @@ def create_eval_config_multiple_episodes(
     ###
 
     # Recover output dir based on how run.py modifies on the fly
-    output_dir = new_config["logging_config"]["output_dir"]
-    run_name = new_config["logging_config"]["run_name"]
+    output_dir = new_config["logging"]["output_dir"]
+    run_name = new_config["logging"]["run_name"]
     wandb_id = None
     if update_run_dir:
         output_dir = recover_output_dir(new_config, parent_config_name)
@@ -176,19 +176,19 @@ def create_eval_config_multiple_episodes(
     # Update the output directory to be a "rerun" subdir
     new_output_dir = os.path.join(output_dir, "eval_rerun_episodes")
     os.makedirs(new_output_dir, exist_ok=True)
-    new_config["logging_config"]["output_dir"] = new_output_dir
-    new_config["logging_config"]["run_name"] = run_name
-    new_config["logging_config"]["resume_wandb_run"] = True
-    new_config["logging_config"]["wandb_id"] = wandb_id
-    new_config["logging_config"]["monty_log_level"] = "DETAILED"
+    new_config["logging"]["output_dir"] = new_output_dir
+    new_config["logging"]["run_name"] = run_name
+    new_config["logging"]["resume_wandb_run"] = True
+    new_config["logging"]["wandb_id"] = wandb_id
+    new_config["logging"]["monty_log_level"] = "DETAILED"
 
     # Turn training off; this feature is only intended for eval episodes
     new_config["experiment_args"]["do_train"] = False
     new_config["experiment_args"]["n_eval_epochs"] = 1
 
     # Add detailed handlers
-    if DetailedJSONHandler not in new_config["logging_config"]["monty_handlers"]:
-        new_config["logging_config"]["monty_handlers"].append(DetailedJSONHandler)
+    if DetailedJSONHandler not in new_config["logging"]["monty_handlers"]:
+        new_config["logging"]["monty_handlers"].append(DetailedJSONHandler)
 
     ###
     # Accumulate episode-specific data: actions and object params

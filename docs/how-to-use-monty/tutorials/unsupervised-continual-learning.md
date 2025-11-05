@@ -122,7 +122,7 @@ surf_agent_2obj_unsupervised = dict(
         max_train_steps=2000,
         max_total_steps=5000,
     ),
-    logging_config=CSVLoggingConfig(
+    logging=CSVLoggingConfig(
         python_log_level="INFO",
         output_dir=project_dir,
         run_name=model_name,

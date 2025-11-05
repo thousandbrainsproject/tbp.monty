@@ -76,7 +76,7 @@ supervised_pre_training_base = dict(
     experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=len(train_rotations_all),
     ),
-    logging_config=PretrainLoggingConfig(
+    logging=PretrainLoggingConfig(
         output_dir=fe_pretrain_dir,
         python_log_level="INFO",
     ),
@@ -199,7 +199,7 @@ only_surf_agent_training_10obj.update(
         motor_system_config=MotorSystemConfigCurvatureInformedSurface(),
     ),
     dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(),
-    logging_config=PretrainLoggingConfig(
+    logging=PretrainLoggingConfig(
         output_dir=fe_pretrain_dir,
         run_name="surf_agent_1lm_10distinctobj",
     ),
@@ -212,7 +212,7 @@ only_surf_agent_training_10obj.update(
 
 only_surf_agent_training_10simobj = copy.deepcopy(only_surf_agent_training_10obj)
 only_surf_agent_training_10simobj.update(
-    logging_config=PretrainLoggingConfig(
+    logging=PretrainLoggingConfig(
         output_dir=fe_pretrain_dir,
         run_name="surf_agent_1lm_10similarobj",
     ),
@@ -224,7 +224,7 @@ only_surf_agent_training_10simobj.update(
 
 only_surf_agent_training_allobj = copy.deepcopy(only_surf_agent_training_10obj)
 only_surf_agent_training_allobj.update(
-    logging_config=PretrainLoggingConfig(
+    logging=PretrainLoggingConfig(
         output_dir=fe_pretrain_dir,
         run_name=f"surf_agent_1lm_{len(SHUFFLED_YCB_OBJECTS)}obj",
     ),
@@ -238,7 +238,7 @@ only_surf_agent_training_allobj.update(
 
 only_surf_agent_training_numenta_lab_obj = copy.deepcopy(only_surf_agent_training_10obj)
 only_surf_agent_training_numenta_lab_obj.update(
-    logging_config=PretrainLoggingConfig(
+    logging=PretrainLoggingConfig(
         output_dir=fe_pretrain_dir,
         run_name="surf_agent_1lm_numenta_lab_obj",
     ),

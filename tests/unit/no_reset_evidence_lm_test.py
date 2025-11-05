@@ -98,7 +98,7 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             experiment_args=SupervisedPretrainingExperimentArgs(
                 n_train_epochs=3,
             ),
-            logging_config=PretrainLoggingConfig(
+            logging=PretrainLoggingConfig(
                 output_dir=self.output_dir,
             ),
             monty_config=PatchAndViewMontyConfig(
@@ -123,7 +123,7 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             ),
             # NOTE: could make unit tests faster by setting monty_log_level="BASIC" for
             # some of them.
-            logging_config=LoggingConfig(
+            logging=LoggingConfig(
                 output_dir=self.output_dir, python_log_level="DEBUG", monty_handlers=[]
             ),
             monty_config=PatchAndViewMontyConfig(

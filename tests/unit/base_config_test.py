@@ -49,7 +49,7 @@ class BaseConfigTest(unittest.TestCase):
         base = dict(
             experiment_class=MontyExperiment,
             experiment_args=DebugExperimentArgs(),
-            logging_config=LoggingConfig(
+            logging=LoggingConfig(
                 output_dir=self.output_dir, python_log_level="DEBUG"
             ),
             monty_config=FakeSingleCameraMontyConfig(),
@@ -214,7 +214,7 @@ class BaseConfigTest(unittest.TestCase):
     def test_logging_info_level(self) -> None:
         """Check that if we set logging level to info, debug logs do not show up."""
         base_config = copy.deepcopy(self.base_config)
-        base_config["logging_config"].python_log_level = logging.INFO
+        base_config["logging"].python_log_level = logging.INFO
         with MontyExperiment(base_config) as exp:
             # Add some stuff to the logs, verify it shows up
             debug_message = "DEBUG is in the log"

@@ -168,7 +168,7 @@ infer_comp_base_config = dict(
         n_eval_epochs=N_EVAL_EPOCHS,
         min_lms_match=1,
     ),
-    logging_config=ParallelEvidenceLMLoggingConfig(
+    logging=ParallelEvidenceLMLoggingConfig(
         wandb_group="benchmark_experiments",
         # Comment in for quick debugging (turns of wandb and increases logging)
         # wandb_handlers=[],

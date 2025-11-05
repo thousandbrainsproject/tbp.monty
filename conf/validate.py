@@ -19,7 +19,10 @@ def validate(cfg: DictConfig):
     OmegaConf.to_object(cfg)
     print(OmegaConf.to_yaml(cfg))
 
-    hydra.utils.instantiate(cfg.experiment)
+    app = hydra.utils.instantiate(cfg.experiment)
+
+    # app.setup_experiment(cfg)
+    app.init_loggers(cfg.experiment.config.logging)
 
     print("done")
 

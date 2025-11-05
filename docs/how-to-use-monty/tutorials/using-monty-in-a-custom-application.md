@@ -120,7 +120,7 @@ omniglot_training = dict(
 	experiment_args=SupervisedPretrainingExperimentArgs(
     	n_train_epochs=1,
 	),
-	logging_config=PretrainLoggingConfig(
+	logging=PretrainLoggingConfig(
     	output_dir=pretrain_dir,
 	),
 	monty_config=PatchAndViewMontyConfig(
@@ -149,7 +149,7 @@ omniglot_inference = dict(
         do_train=False,
         n_eval_epochs=1,
     ),
-    logging_config=LoggingConfig(),
+    logging=LoggingConfig(),
     monty_config=PatchAndViewMontyConfig(
         monty_class=MontyForEvidenceGraphMatching,
         learning_module_configs=dict(
@@ -317,7 +317,7 @@ monty_meets_world_2dimage_inference = dict(
     	model_name_or_path=model_path_numenta_lab_obj,
     	n_eval_epochs=1,
 	),
-	logging_config=ParallelEvidenceLMLoggingConfig(wandb_group="benchmark_experiments"),
+	logging=ParallelEvidenceLMLoggingConfig(wandb_group="benchmark_experiments"),
 	monty_config=PatchAndViewMontyConfig(
     	learning_module_configs=default_evidence_1lm_config,
     	monty_args=MontyArgs(min_eval_steps=min_eval_steps),
@@ -375,7 +375,7 @@ model_path_numenta_lab_obj = os.path.join(
 )
 ```
 
-To run the experiment, call `python benchmarks/run.py -e monty_meets_world_2dimage_inference`. If you don't want to log to wandb, add ` wandb_handlers=[]` to the `logging_config`. If you just want to run a quick test on a few of the images, simply adjust the `scenes` and `versions` parameters in the `eval_dataloader_args`.
+To run the experiment, call `python benchmarks/run.py -e monty_meets_world_2dimage_inference`. If you don't want to log to wandb, add ` wandb_handlers=[]` to the `logging`. If you just want to run a quick test on a few of the images, simply adjust the `scenes` and `versions` parameters in the `eval_dataloader_args`.
 
 # Other Things You May Need to Customize
 If your application uses sensors different from our commonly used cameras and depth sensors, or you want to extract specific features from your sensory input, you will need to define a custom sensor module. The sensor module receives the raw observations from the dataloader and converts them into the CMP, which contains features at poses. For more details on converting raw observations into the CMP, see our [documentation on sensor modules](https://thousandbrainsproject.readme.io/docs/observations-transforms-sensor-modules).

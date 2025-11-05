@@ -170,7 +170,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             experiment_args=ExperimentArgs(
                 max_train_steps=30, max_eval_steps=30, max_total_steps=60
             ),
-            logging_config=LoggingConfig(output_dir=self.output_dir),
+            logging=LoggingConfig(output_dir=self.output_dir),
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
@@ -333,7 +333,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         feature_pred_tests_time_out.update(
             # Use more steps on first two epochs to build models of 2 objects
             experiment_args=ExperimentArgs(max_train_steps=30, max_total_steps=60),
-            logging_config=LoggingConfig(
+            logging=LoggingConfig(
                 output_dir=self.output_dir,
             ),
             monty_config=PatchAndViewMontyConfig(
@@ -393,7 +393,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         feature_pred_tests_confused = copy.deepcopy(fixed_actions_feat)
         feature_pred_tests_confused.update(
             experiment_args=ExperimentArgs(n_train_epochs=1),
-            logging_config=LoggingConfig(
+            logging=LoggingConfig(
                 output_dir=self.output_dir,
             ),
             monty_config=PatchAndViewMontyConfig(
@@ -431,7 +431,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 max_train_steps=50,
                 max_total_steps=200,
             ),
-            logging_config=LoggingConfig(output_dir=self.output_dir),
+            logging=LoggingConfig(output_dir=self.output_dir),
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyFeatureGraphArgs(
                     num_exploratory_steps=20, min_train_steps=12
@@ -505,7 +505,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 n_eval_epochs=3,
                 min_lms_match=3,
             ),
-            logging_config=LoggingConfig(
+            logging=LoggingConfig(
                 output_dir=self.output_dir, python_log_level="DEBUG"
             ),
             monty_config=FiveLMMontyConfig(
@@ -564,7 +564,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 n_eval_epochs=3,
                 min_lms_match=3,
             ),
-            logging_config=LoggingConfig(
+            logging=LoggingConfig(
                 output_dir=self.output_dir, python_log_level="DEBUG"
             ),
             monty_config=FiveLMMontyConfig(
@@ -831,10 +831,10 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         # Detailed wandb logging should be automatically built in, though we will remove
         # it to avoid logging tests to wandb
         self.assertEqual(
-            eval_cfg_2["logging_config"]["wandb_handlers"][-1],
+            eval_cfg_2["logging"]["wandb_handlers"][-1],
             DetailedWandbMarkedObsHandler,
         )
-        eval_cfg_2["logging_config"]["wandb_handlers"].pop()
+        eval_cfg_2["logging"]["wandb_handlers"].pop()
 
         # check that the object being used is the same one from original exp
         self.assertEqual(
@@ -1100,7 +1100,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         print("Loading a saved checkpoint")
         cfg2 = copy.deepcopy(self.fixed_actions_feat)
         cfg2["experiment_args"].model_name_or_path = os.path.join(
-            config["logging_config"].output_dir,
+            config["logging"].output_dir,
             "2",  # latest checkpoint
         )
         with MontyObjectRecognitionExperiment(cfg2) as exp2:

@@ -52,7 +52,7 @@ class SensorModuleTest(unittest.TestCase):
         base = dict(
             experiment_class=MontyObjectRecognitionExperiment,
             experiment_args=ExperimentArgs(),
-            logging_config=LoggingConfig(output_dir=self.output_dir),
+            logging=LoggingConfig(output_dir=self.output_dir),
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
@@ -112,7 +112,7 @@ class SensorModuleTest(unittest.TestCase):
         feature_change_sensor_config = copy.deepcopy(base)
         feature_change_sensor_config.update(
             experiment_args=ExperimentArgs(n_train_epochs=1, n_eval_epochs=1),
-            logging_config=LoggingConfig(output_dir=self.output_dir),
+            logging=LoggingConfig(output_dir=self.output_dir),
             monty_config=PatchAndViewFeatureChangeConfig(
                 monty_args=MontyArgs(num_exploratory_steps=100)
             ),

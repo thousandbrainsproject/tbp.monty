@@ -56,7 +56,7 @@ from tbp.monty.simulators.habitat.configs import (  # noqa: E402
 
 first_experiment = dict(
     experiment_class=MontyExperiment,
-    logging_config=LoggingConfig(
+    logging=LoggingConfig(
         log_parallel_wandb=False,
         run_name="test",
         output_dir=os.path.expanduser(

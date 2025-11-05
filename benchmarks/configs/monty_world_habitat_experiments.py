@@ -59,7 +59,7 @@ randrot_noise_sim_on_scan_monty_world = dict(
         n_eval_epochs=10,
         max_eval_steps=500,
     ),
-    logging_config=ParallelEvidenceLMLoggingConfig(wandb_group="benchmark_experiments"),
+    logging=ParallelEvidenceLMLoggingConfig(wandb_group="benchmark_experiments"),
     monty_config=PatchAndViewMontyConfig(
         sensor_module_configs=dict(
             sensor_module_0=default_all_noisy_sensor_module,
