@@ -19,6 +19,9 @@ def validate(cfg: DictConfig):
     OmegaConf.to_object(cfg)
     print(OmegaConf.to_yaml(cfg))
 
+    hydra.utils.instantiate(cfg.experiment)
+
+    print("done")
 
 if __name__ == "__main__":
     setup_env()

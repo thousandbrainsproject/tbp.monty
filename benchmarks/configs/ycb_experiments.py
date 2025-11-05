@@ -255,6 +255,7 @@ base_config_10distinctobj_dist_agent = dict(
         model_name_or_path=model_path_10distinctobj,
         n_eval_epochs=len(test_rotations_all),
     ),
+    ## TODO
     logging_config=ParallelEvidenceLMLoggingConfig(
         wandb_group="benchmark_experiments",
         # Comment in for quick debugging (turns of wandb and increases logging)

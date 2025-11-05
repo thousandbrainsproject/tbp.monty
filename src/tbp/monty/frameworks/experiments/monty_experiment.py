@@ -14,7 +14,7 @@ import datetime
 import logging
 import os
 import pprint
-from typing import Any, Literal
+from typing import Any, Literal, Mapping
 
 import numpy as np
 import torch
@@ -39,8 +39,6 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.dataclass_utils import (
-    Dataclass,
-    config_to_dict,
     get_subset_of_args,
 )
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
@@ -57,18 +55,30 @@ class MontyExperiment:
     the outermost loops for training and evaluating (including run epoch and episode)
     """
 
-    def __init__(self, config: Dataclass | dict[str, Any]) -> None:
+    def __init__(self, config: Mapping) -> None:
         """Initialize the experiment based on the provided configuration.
 
         Args:
             config: config specifying variables of the experiment.
         """
-        # Copy the config and store it so we can modify it freely
-        config = copy.deepcopy(config)
-        config = config_to_dict(config)
         self.config = config
 
-        self.unpack_experiment_args(config["experiment_args"])
+        self.do_train = config["do_train"]
+        self.do_eval = config["do_eval"]
+        self.max_eval_steps = config["max_eval_steps"]
+        self.max_train_steps = config["max_train_steps"]
+        self.max_total_steps = config["max_total_steps"]
+        self.n_eval_epochs = config["n_eval_epochs"]
+        self.n_train_epochs = config["n_train_epochs"]
+        self.model_path = config["model_name_or_path"]
+        self.min_lms_match = config["min_lms_match"]
+        self.rng = np.random.RandomState(config["seed"])
+        self.show_sensor_output = config["show_sensor_output"]
+        self.supervised_lm_ids = config["supervised_lm_ids"]
+        if self.supervised_lm_ids == "all":
+            self.supervised_lm_ids = list(
+                self.config["monty_config"]["learning_module_configs"].keys()
+            )
 
         if self.show_sensor_output:
             self.live_plotter = LivePlotter()
@@ -87,28 +97,6 @@ class MontyExperiment:
         self.load_dataloaders(config)
         self.init_monty_data_loggers(self.config["logging_config"])
         self.init_counters()
-
-    ####
-    # Methods for setting up an experiment
-    ####
-
-    def unpack_experiment_args(self, experiment_args):
-        self.do_train = experiment_args["do_train"]
-        self.do_eval = experiment_args["do_eval"]
-        self.max_eval_steps = experiment_args["max_eval_steps"]
-        self.max_train_steps = experiment_args["max_train_steps"]
-        self.max_total_steps = experiment_args["max_total_steps"]
-        self.n_eval_epochs = experiment_args["n_eval_epochs"]
-        self.n_train_epochs = experiment_args["n_train_epochs"]
-        self.model_path = experiment_args["model_name_or_path"]
-        self.min_lms_match = experiment_args["min_lms_match"]
-        self.rng = np.random.RandomState(experiment_args["seed"])
-        self.show_sensor_output = experiment_args["show_sensor_output"]
-        self.supervised_lm_ids = experiment_args["supervised_lm_ids"]
-        if self.supervised_lm_ids == "all":
-            self.supervised_lm_ids = list(
-                self.config["monty_config"]["learning_module_configs"].keys()
-            )
 
     def init_model(self, monty_config, model_path=None):
         """Initialize the Monty model.
