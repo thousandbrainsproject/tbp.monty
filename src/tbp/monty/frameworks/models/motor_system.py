@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Mapping
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
@@ -53,12 +53,15 @@ class MotorSystem:
         """
         self._policy.set_experiment_mode(mode)
 
-    def __call__(self) -> list[Action]:
+    def __call__(self, observation: Mapping) -> list[Action]:
         """Defines the structure for __call__.
 
         Delegates to the motor policy.
 
+        Args:
+            observation: The current observation to pass to the motor policy.
+
         Returns:
-            The action to take.
+            The actions to take.
         """
-        return self._policy(self._state)
+        return self._policy(observation, self._state)

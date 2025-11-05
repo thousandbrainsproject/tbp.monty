@@ -13,6 +13,8 @@ from __future__ import annotations
 from json import JSONDecoder, JSONEncoder
 from typing import Any, Generator, Tuple
 
+import numpy as np
+import quaternion
 from typing_extensions import (
     Protocol,  # Enables default __init__ in Protocol classes
     runtime_checkable,  # For JSONEncoder instance checks
@@ -539,6 +541,10 @@ class ActionJSONEncoder(JSONEncoder):
     def default(self, obj: Any) -> Any:
         if isinstance(obj, Action):
             return dict(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, quaternion.quaternion):
+            return quaternion.as_euler_angles(obj).tolist()
         return super().default(obj)
 
 

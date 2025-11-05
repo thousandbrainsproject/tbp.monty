@@ -167,8 +167,9 @@ class EmbodiedDataTest(unittest.TestCase):
         self.assertSequenceEqual(action_space_dist, EXPECTED_ACTIONS_DIST)
         self.assertIn(action_space_dist.sample(), EXPECTED_ACTIONS_DIST)
 
+        obs_dist, _ = dataloader_dist.reset()
         for i in range(1, DATASET_LEN):
-            obs_dist, _ = dataloader_dist.step(motor_system_dist())
+            obs_dist, _ = dataloader_dist.step(motor_system_dist(obs_dist))
             print(obs_dist)
             self.assertTrue(
                 np.all(obs_dist[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
@@ -178,7 +179,7 @@ class EmbodiedDataTest(unittest.TestCase):
         self.assertTrue(
             np.all(initial_state[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[0])
         )
-        obs_dist, _ = dataloader_dist.step(motor_system_dist())
+        obs_dist, _ = dataloader_dist.step(motor_system_dist(initial_state))
         self.assertFalse(
             np.all(
                 obs_dist[AGENT_ID][SENSOR_ID]["sensor"]
@@ -210,8 +211,9 @@ class EmbodiedDataTest(unittest.TestCase):
         self.assertSequenceEqual(action_space_abs, EXPECTED_ACTIONS_ABS)
         self.assertIn(action_space_abs.sample(), EXPECTED_ACTIONS_ABS)
 
+        obs_abs, _ = dataloader_abs.reset()
         for i in range(1, DATASET_LEN):
-            obs_abs, _ = dataloader_abs.step(motor_system_abs())
+            obs_abs, _ = dataloader_abs.step(motor_system_abs(obs_abs))
             self.assertTrue(
                 np.all(obs_abs[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
             )
@@ -220,7 +222,7 @@ class EmbodiedDataTest(unittest.TestCase):
         self.assertTrue(
             np.all(initial_state[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[0])
         )
-        obs_abs, _ = dataloader_abs.step(motor_system_abs())
+        obs_abs, _ = dataloader_abs.step(motor_system_abs(initial_state))
         self.assertFalse(
             np.all(
                 obs_abs[AGENT_ID][SENSOR_ID]["sensor"]
