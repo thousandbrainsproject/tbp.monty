@@ -10,8 +10,9 @@
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
-from tbp.monty.frameworks.loggers.exp_logger import TestLogger
+from tbp.monty.frameworks.loggers.exp_logger import BaseMontyLogger, TestLogger
 from tbp.monty.frameworks.models.abstract_monty_classes import Monty
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.communication_utils import get_first_sensory_state
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class MontyBase(Monty):
-    LOGGING_REGISTRY = dict(TEST=TestLogger)
+    LOGGING_REGISTRY: ClassVar[dict[str, type[BaseMontyLogger]]] = {"TEST": TestLogger}
 
     def __init__(
         self,
