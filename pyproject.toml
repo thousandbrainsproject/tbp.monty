@@ -21,6 +21,7 @@ dependencies = [
     'importlib_resources', # imported via conda (conda-forge::importlib_resources)
     'matplotlib>=3.7.3', # imported via conda (conda-forge::matplotlib)
     'numpy', # imported via conda (conda-forge::numpy)
+    'omegaconf>=2.3.0',
     'pandas', # imported via conda (conda-forge::pandas)
     'pillow', # imported via conda (conda-forge::pillow)
     'pydantic>=2.10.6',

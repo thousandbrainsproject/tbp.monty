@@ -7,13 +7,19 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-
 import hydra
+from omegaconf import DictConfig, OmegaConf
+
+from tbp.monty.frameworks.run_env import setup_env
 
 
 @hydra.main(config_path=".", config_name="config", version_base=None)
-def validate(cfg):
-    print(cfg)
+def validate(cfg: DictConfig):
+    # Force interpolation of the config to get errors
+    OmegaConf.to_object(cfg)
+    print(OmegaConf.to_yaml(cfg))
+
 
 if __name__ == "__main__":
+    setup_env()
     validate()

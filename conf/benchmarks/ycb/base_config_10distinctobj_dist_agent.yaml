@@ -2,5 +2,5 @@ _target_: src.tbp.monty.frameworks.experiments.object_recognition_experiments.Mo
 defaults:
   - /experiment_args: eval
 
-model_name_or_path: "path/to/model"
+model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
 n_eval_epochs: 14 # TODO: maybe link to get_cube_face_and_corner_views_rotations()
