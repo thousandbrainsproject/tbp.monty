@@ -1,5 +1,6 @@
 defaults:
   - config/eval
+  - config/logging/defaults
 
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 config:

@@ -1,0 +1,15 @@
+monty_log_level: DETAILED
+# monty_handlers:
+#   - ${experiment.logging.handlers.basic_csv_stats}
+#   - ${experiment.logging.handlers.detailed_json}
+#   - ${experiment.logging.handlers.reproduce_episode}
+wandb_handlers: []
+python_log_level: INFO
+python_log_to_file: true
+python_log_to_stderr: true
+output_dir: ${oc.env:MONTY_LOGS}/projects/monty_runs/
+run_name: ""
+resume_wandb_run: false # TODO: or a string 🤷
+wandb_id: "" # TODO: wandb.util.generate_id()
+wandb_group: "debugging"
+log_parallel_wandb: false
