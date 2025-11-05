@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import json
 
@@ -38,10 +39,10 @@ class WandbWrapper(MontyHandler):
         self,
         wandb_handlers: list,
         run_name: str,
-        wandb_group: str = None,
-        config: dict = None,
+        wandb_group: str | None = None,
+        config: dict | None = None,
         resume_wandb_run: bool = False,
-        wandb_id: str = None,
+        wandb_id: str | None = None,
     ):
         self.name = run_name
         self.group = wandb_group

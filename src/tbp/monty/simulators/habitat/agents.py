@@ -359,7 +359,7 @@ class SingleSensorAgent(HabitatAgent, ActionSpaceMixin):
         semantic: bool = False,
         rotation_step: float = 0.0,
         translation_step: float = 0.0,
-        action_space: tuple = None,
+        action_space: tuple | None = None,
         action_space_type: str = "distant_agent",
     ):
         """Initialize agent runtime state.

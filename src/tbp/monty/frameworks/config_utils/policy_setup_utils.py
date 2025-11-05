@@ -168,7 +168,7 @@ def make_informed_policy_config(
     action_sampler_class: type[ActionSampler],
     good_view_percentage: float = 0.5,
     use_goal_state_driven_actions: bool = False,
-    file_name: str = None,
+    file_name: str | None = None,
     agent_id: AgentID = AgentID("agent_id_0"),
     switch_frequency: float = 1.0,
     **kwargs,
@@ -248,7 +248,7 @@ def make_surface_policy_config(
     use_goal_state_driven_actions: bool = False,
     action_sampler_class: type[ActionSampler] = ConstantSampler,
     action_space_type: str = "surface_agent",
-    file_name: str = None,
+    file_name: str | None = None,
     agent_id: AgentID = AgentID("agent_id_0"),
     **kwargs,
 ):

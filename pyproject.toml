@@ -276,7 +276,6 @@ ignore = [
     "PTH123", # PTH123: `open()` should be replaced by `Path.open()`
     "RET503", # RET503: Missing explicit `return` at the end of function able to return non-`None` value
     "RUF005", # RUF005: Consider {expression} instead of concatenation
-    "RUF013", # RUF013: PEP 484 prohibits implicit `Optional`
     "RUF015", # RUF015: Prefer next({iterable}) over single element slice
     "S101", # S101: Use of `assert` detected
     "S104", # S104: Possible binding to all interfaces
