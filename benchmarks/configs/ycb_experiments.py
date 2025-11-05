@@ -255,13 +255,13 @@ base_config_10distinctobj_dist_agent = dict(
         model_name_or_path=model_path_10distinctobj,
         n_eval_epochs=len(test_rotations_all),
     ),
-    ## TODO
     logging=ParallelEvidenceLMLoggingConfig(
         wandb_group="benchmark_experiments",
         # Comment in for quick debugging (turns of wandb and increases logging)
         # wandb_handlers=[],
         # python_log_level="DEBUG",
     ),
+    ## TODO
     monty_config=PatchAndViewSOTAMontyConfig(
         learning_module_configs=lower_max_nneighbors_1lm_config,
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
