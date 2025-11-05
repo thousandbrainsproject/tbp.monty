@@ -30,7 +30,7 @@ def get_version():
 def parse_version(version, part):
     parsed_version = semver.VersionInfo.parse(version)
 
-    if part == "full" or part == "":
+    if part in {"full", ""}:
         return str(parsed_version)
 
     if part == "major":

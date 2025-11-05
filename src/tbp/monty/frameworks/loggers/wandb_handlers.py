@@ -179,7 +179,7 @@ class DetailedWandbTableStatsHandler(BasicWandbTableStatsHandler):
             if a is not None:
                 o = {}
                 for key, value in dict(a).items():
-                    if key == "action" or key == "agent_id":
+                    if key in {"action", "agent_id"}:
                         continue  # don't duplicate action or agent_id in "params"
                     if isinstance(value, np.ndarray):
                         o[key] = value.tolist()
