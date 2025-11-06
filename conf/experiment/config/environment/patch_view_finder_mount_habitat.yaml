@@ -1,10 +1,20 @@
 defaults:
   - init_args/patch_view_mount@env_init_args
 
-env_init_func: ${monty.class:tbp.monty.simulators.habitat.HabitatEnvironment}
+env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
+# TODO: Currently hardcoded, should come from patch_view_mount
 transform:
-- _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
-  # TODO: will this even work?
-  agent_id: ${init_args.agents[0].agent_args.agent_id}
-  max_depth: 1
+  - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+    agent_id: ${monty.agent_id:agent_id_0}
+    max_depth: 1
+  - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+    agent_id: ${monty.agent_id:agent_id_0}
+    sensor_ids:
+      - patch
+      - view_finder
+    resolutions: [[64, 64], [64, 64]]
+    world_coord: true
+    zooms: [10.0, 1.0]
+    get_all_points: true
+    use_semantic_sensor: false
 rng: null

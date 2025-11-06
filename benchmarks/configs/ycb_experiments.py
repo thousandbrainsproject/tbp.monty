@@ -265,8 +265,8 @@ base_config_10distinctobj_dist_agent = dict(
         learning_module_configs=lower_max_nneighbors_1lm_config,
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
     ),
-    ## TODO
     env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(),
+    ## TODO
     eval_env_interface_class=ED.InformedEnvironmentInterface,
     eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),

@@ -6,6 +6,7 @@ defaults:
   - config/monty/learning_modules/lower_max_nneighbors_1lm@config.monty_config.learning_module_configs
   - config/monty/args/clear_monty_args@config.monty_config
   - config/monty/args/defaults@config.monty_config.monty_args
+  - config/environment/patch_view_finder_mount_habitat@config.env_interface_config
 
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 config:

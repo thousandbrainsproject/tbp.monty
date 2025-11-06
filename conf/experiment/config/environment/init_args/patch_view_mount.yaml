@@ -1,7 +1,6 @@
 defaults:
   - defaults
-  # TODO: will this even work?
-  - agents/patch_and_view_finder@agents[0].agent_args
+  - agents/patch_and_view_finder@agents.agent_args
 
 agents:
-- agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
+  agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
