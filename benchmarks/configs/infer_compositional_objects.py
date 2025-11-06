@@ -19,11 +19,11 @@ from benchmarks.configs.defaults import (
 )
 from benchmarks.configs.names import CompositionalInferenceExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
+    CUBE_FACE_AND_CORNER_VIEW_ROTATIONS,
     MontyArgs,
     MotorSystemConfigInformedGoalStateDriven,
     ParallelEvidenceLMLoggingConfig,
     TwoLMStackedMontyConfig,
-    CUBE_FACE_AND_CORNER_VIEW_ROTATIONS,
 )
 from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     EnvironmentInterfacePerObjectArgs,

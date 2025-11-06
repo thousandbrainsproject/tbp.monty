@@ -212,7 +212,7 @@ class MontyExperiment:
         )
 
         # Initialize train environment interface if needed
-        if config["experiment_args"]["do_train"]:
+        if config["do_train"]:
             env_interface_class = config["train_env_interface_class"]
             env_interface_args = dict(
                 env=self.env,
@@ -227,7 +227,7 @@ class MontyExperiment:
             self.train_env_interface = None
 
         # Initialize eval environment interfaces if needed
-        if config["experiment_args"]["do_eval"]:
+        if config["do_eval"]:
             env_interface_class = config["eval_env_interface_class"]
             env_interface_args = dict(
                 env=self.env,
