@@ -18,7 +18,6 @@ from typing import Any, Literal, Mapping
 
 import numpy as np
 import torch
-import wandb
 from typing_extensions import Self
 
 from tbp.monty.frameworks.environments.embodied_data import (

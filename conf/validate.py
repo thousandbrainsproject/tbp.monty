@@ -14,6 +14,7 @@ import hydra
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.run_env import setup_env
 
 
@@ -35,6 +36,11 @@ def validate(cfg: DictConfig):
     print("done")
 
 
+def agent_id_resolver(agent_id: str) -> AgentID:
+    """Returns an AgentID new type from a string."""
+    return AgentID(agent_id)
+
+
 def monty_class_resolver(class_name: str) -> type:
     """Returns a class object by fully qualified path.
 
@@ -46,6 +52,7 @@ def monty_class_resolver(class_name: str) -> type:
     klass = parts[-1]
     module_obj = importlib.import_module(module)
     return getattr(module_obj, klass)
+
 
 def ndarray_resolver(list_or_tuple: list | tuple) -> np.ndarray:
     """Returns a numpy array from a list or tuple."""
@@ -63,6 +70,7 @@ def numpy_list_eval_resolver(expr_list: list) -> list[float]:
 
 if __name__ == "__main__":
     setup_env()
+    OmegaConf.register_new_resolver("monty.agent_id", agent_id_resolver)
     OmegaConf.register_new_resolver("monty.class", monty_class_resolver)
     OmegaConf.register_new_resolver("np.array", ndarray_resolver)
     OmegaConf.register_new_resolver("np.ones", ones_resolver)

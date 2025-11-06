@@ -10,7 +10,4 @@ motor_system_args:
     action_sampler_args:
       rotation_degrees: 5.0
     use_goal_state_driven_actions: true
-    agent_id:
-      _target_: tbp.monty.frameworks.agents.AgentID
-      _args_:
-        - agent_id_0
+    agent_id: ${monty.agent_id:agent_id_0}

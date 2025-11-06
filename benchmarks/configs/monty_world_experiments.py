@@ -95,9 +95,7 @@ world_image_from_stream_on_scanned_model.update(
     env_interface_config=WorldImageFromStreamEnvironmentInterfaceConfig(),
     eval_env_interface_class=ED.SaccadeOnImageFromStreamEnvironmentInterface,
     eval_env_interface_args={},
-    logging=EvalEvidenceLMLoggingConfig(
-        wandb_handlers=[], python_log_level="INFO"
-    ),
+    logging=EvalEvidenceLMLoggingConfig(wandb_handlers=[], python_log_level="INFO"),
 )
 
 

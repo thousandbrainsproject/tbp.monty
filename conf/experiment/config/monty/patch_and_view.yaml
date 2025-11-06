@@ -36,14 +36,8 @@ sensor_module_configs:
       sensor_module_id: view_finder
       save_raw_obs: True
 sm_to_agent_dict:
-  patch:
-    _target_: tbp.monty.frameworks.agents.AgentID
-    _args_:
-      - agent_id_0
-  view_finder:
-    _target_: tbp.monty.frameworks.agents.AgentID
-    _args_:
-      - agent_id_0
+  patch: ${monty.agent_id:agent_id_0}
+  view_finder: ${monty.agent_id:agent_id_0}
 sm_to_lm_matrix:
   - [0]
 lm_to_lm_matrix: null
