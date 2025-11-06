@@ -116,7 +116,7 @@ class MontyExperiment:
             TypeError: If `motor_system_class` is not a subclass of `MotorSystem` or
                 `policy_class` is not a subclass of `MotorPolicy`.
         """
-        # Need to make sure it's a dict before .pop()ing items from it.
+        # Make monty_config a dict from a DictConfig, so we can edit it.
         monty_config = dict(copy.deepcopy(monty_config))
 
         # Create learning modules
