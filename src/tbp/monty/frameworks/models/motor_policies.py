@@ -1593,7 +1593,7 @@ def read_action_file(file: str) -> list[Action]:
         file_read = f.read()
 
     lines = [line.strip() for line in file_read.split("\n") if line.strip()]
-    return [cast(Action, json.loads(line, cls=ActionJSONDecoder)) for line in lines]
+    return [cast("Action", json.loads(line, cls=ActionJSONDecoder)) for line in lines]
 
 
 def write_action_file(actions: list[Action], file: str) -> None:
