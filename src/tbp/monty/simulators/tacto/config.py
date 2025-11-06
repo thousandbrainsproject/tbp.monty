@@ -25,9 +25,9 @@ from importlib_resources import files
 from tbp.monty.simulators.resources import tacto
 
 __all__ = [
-    "TactoSensorSpec",
     "DIGIT",
     "OMNITACT",
+    "TactoSensorSpec",
 ]
 
 
