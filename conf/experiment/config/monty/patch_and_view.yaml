@@ -1,5 +1,4 @@
 defaults:
-  - defaults
   - motor_system/informed_no_trans@motor_system_config
   - args/defaults@monty_args
 
