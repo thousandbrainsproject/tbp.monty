@@ -153,9 +153,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             ),
             # NOTE: could make unit tests faster by setting monty_log_level="BASIC" for
             # some of them.
-            logging=LoggingConfig(
-                output_dir=self.output_dir, python_log_level="DEBUG"
-            ),
+            logging=LoggingConfig(output_dir=self.output_dir, python_log_level="DEBUG"),
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
@@ -386,9 +384,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 max_total_steps=60,
                 min_lms_match=5,
             ),
-            logging=LoggingConfig(
-                output_dir=self.output_dir, python_log_level="DEBUG"
-            ),
+            logging=LoggingConfig(output_dir=self.output_dir, python_log_level="DEBUG"),
             monty_config=FiveLMMontyConfig(
                 monty_args=MontyFeatureGraphArgs(num_exploratory_steps=30),
                 # has custom evidence voting method

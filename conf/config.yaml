@@ -2,3 +2,5 @@ defaults:
   - benchmarks: defaults
   - benchmarks/ycb: defaults
   - experiment: MISSING
+
+quiet_habitat_logs: null

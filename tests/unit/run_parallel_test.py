@@ -97,9 +97,7 @@ class RunParallelTest(unittest.TestCase):
         self.eval_config = copy.deepcopy(self.supervised_pre_training)
         self.eval_config.update(
             experiment_class=MontyObjectRecognitionExperiment,
-            logging=LoggingConfig(
-                output_dir=os.path.join(self.output_dir, "eval")
-            ),
+            logging=LoggingConfig(output_dir=os.path.join(self.output_dir, "eval")),
             experiment_args=ExperimentArgs(
                 do_eval=True,
                 do_train=False,

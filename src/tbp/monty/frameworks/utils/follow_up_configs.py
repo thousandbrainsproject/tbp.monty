@@ -122,13 +122,8 @@ def create_eval_episode_config(
     # TODO: update handlers used here as more sophisticated ones get made
     if DetailedJSONHandler not in new_config["logging"]["monty_handlers"]:
         new_config["logging"]["monty_handlers"].append(DetailedJSONHandler)
-    if (
-        DetailedWandbMarkedObsHandler
-        not in new_config["logging"]["wandb_handlers"]
-    ):
-        new_config["logging"]["wandb_handlers"].append(
-            DetailedWandbMarkedObsHandler
-        )
+    if DetailedWandbMarkedObsHandler not in new_config["logging"]["wandb_handlers"]:
+        new_config["logging"]["wandb_handlers"].append(DetailedWandbMarkedObsHandler)
 
     # Second, update the output directory, run_name, set resume to True
     new_output_dir = os.path.join(output_dir, f"eval_episode_{episode}_rerun")

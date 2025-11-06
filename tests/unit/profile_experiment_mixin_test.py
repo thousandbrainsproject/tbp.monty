@@ -85,9 +85,7 @@ class ProfileExperimentMixinTest(TestCase):
         base = dict(
             experiment_class=ProfiledExperiment,
             experiment_args=DebugExperimentArgs(),
-            logging=LoggingConfig(
-                output_dir=self.output_dir, python_log_level="DEBUG"
-            ),
+            logging=LoggingConfig(output_dir=self.output_dir, python_log_level="DEBUG"),
             monty_config=FakeSingleCameraMontyConfig(),
             env_interface_config=SinglePTZHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsSinglePTZ(data_path=None).__dict__

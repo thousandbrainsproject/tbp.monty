@@ -505,9 +505,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 n_eval_epochs=3,
                 min_lms_match=3,
             ),
-            logging=LoggingConfig(
-                output_dir=self.output_dir, python_log_level="DEBUG"
-            ),
+            logging=LoggingConfig(output_dir=self.output_dir, python_log_level="DEBUG"),
             monty_config=FiveLMMontyConfig(
                 monty_args=MontyFeatureGraphArgs(num_exploratory_steps=10),
                 motor_system_config=MotorSystemConfigFixed(),
@@ -564,9 +562,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 n_eval_epochs=3,
                 min_lms_match=3,
             ),
-            logging=LoggingConfig(
-                output_dir=self.output_dir, python_log_level="DEBUG"
-            ),
+            logging=LoggingConfig(output_dir=self.output_dir, python_log_level="DEBUG"),
             monty_config=FiveLMMontyConfig(
                 monty_args=MontyFeatureGraphArgs(num_exploratory_steps=10),
                 motor_system_config=MotorSystemConfigFixed(),
