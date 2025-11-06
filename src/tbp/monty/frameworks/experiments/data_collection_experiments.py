@@ -30,7 +30,7 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
     def run_episode(self):
         """Episode that checks the terminal states of an object recognition episode."""
         self.pre_episode()
-        for step, observation in tqdm(enumerate(self.dataloader)):
+        for step, observation in tqdm(enumerate(self.env_interface)):
             if step > self.max_steps:
                 break
             if self.show_sensor_output:
@@ -48,7 +48,7 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
         )
         # Add the object and action to the observation dict
         self.model.sensor_modules[0].processed_obs[-1]["object"] = (
-            self.dataloader.primary_target["object"]
+            self.env_interface.primary_target["object"]
         )
         self.model.sensor_modules[0].processed_obs[-1]["action"] = (
             None
@@ -68,7 +68,7 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
     def pre_episode(self):
         """Pre episode where we pass target object to the model for logging."""
         self.model.pre_episode()
-        self.dataloader.pre_episode()
+        self.env_interface.pre_episode()
         self.max_steps = self.max_train_steps
         self.logger_handler.pre_episode(self.logger_args)
         if self.show_sensor_output:
@@ -79,7 +79,7 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
             self.model.sensor_modules[0].processed_obs[:-1],
             os.path.join(self.output_dir, f"observations{self.train_episodes}.pt"),
         )
-        self.dataloader.post_episode()
+        self.env_interface.post_episode()
         self.train_episodes += 1
 
     def post_epoch(self):

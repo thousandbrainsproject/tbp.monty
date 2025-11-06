@@ -14,6 +14,8 @@ import collections.abc
 from dataclasses import dataclass
 from typing import Any, NewType, Sequence, Tuple
 
+from typing_extensions import deprecated
+
 from tbp.monty.frameworks.actions.actions import Action
 
 __all__ = [
@@ -44,6 +46,7 @@ class ObjectInfo:
     semantic_id: SemanticID | None
 
 
+@deprecated("Use `ActionSampler` instead.")
 class ActionSpace(collections.abc.Container):
     """Represents the environment action space."""
 
@@ -54,12 +57,6 @@ class ActionSpace(collections.abc.Container):
 
 
 class EmbodiedEnvironment(abc.ABC):
-    @property
-    @abc.abstractmethod
-    def action_space(self):
-        """Returns list of all possible actions available in the environment."""
-        pass
-
     @abc.abstractmethod
     def add_object(
         self,

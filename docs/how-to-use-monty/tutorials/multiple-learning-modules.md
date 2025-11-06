@@ -31,10 +31,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PretrainLoggingConfig,
     get_cube_face_and_corner_views_rotations,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataloaderPerObjectArgs,
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
+    EnvironmentInterfacePerObjectArgs,
     PredefinedObjectInitializer,
-    get_env_dataloader_per_object_by_idx,
     SupervisedPretrainingExperimentArgs,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
@@ -46,7 +45,7 @@ from tbp.monty.frameworks.experiments import (
 )
 from tbp.monty.frameworks.models.motor_policies import NaiveScanPolicy
 from tbp.monty.simulators.habitat.configs import (
-    FiveLMMountHabitatDatasetArgs,
+    FiveLMMountHabitatEnvInterfaceConfig,
 )
 
 # Specify directory where an output directory will be created.
@@ -85,16 +84,13 @@ dist_agent_5lm_2obj_train = dict(
         ),
     ),
     # Set up the environment and agent.
-    dataset_args=FiveLMMountHabitatDatasetArgs(),
-    # Set up the training dataloader.
-    train_dataloader_class=ED.InformedEnvironmentDataLoader,
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    env_interface_config=FiveLMMountHabitatEnvInterfaceConfig(),
+    # Set up the training environment interface.
+    train_env_interface_class=ED.InformedEnvironmentInterface,
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=object_names,
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations),
     ),
-    # Set up the evaluation dataloader. Unused, but required.
-    eval_dataloader_class=ED.InformedEnvironmentDataLoader,  # just placeholder
-    eval_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=1),
 )
 ```
 Finally, add your experiment to `MyExperiments` at the bottom of the file:
@@ -136,7 +132,7 @@ If you've read the previous tutorials, much of this should look familiar. As in 
 
 We have also specified that we want to use a `MotorSystemConfigNaiveScanSpiral` for the motor system. This is a *learning-focused* motor policy that directs the agent to look across the object surface in a spiraling motion. That way, we can ensure efficient coverage of the entire object (of what is visible from the current perspective) during learning.
 
-Finally, we have also set the `dataset_args` to `FiveLMMountHabitatDatasetArgs`. This specifies that we have five `HabitatSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see the `FiveLMMountConfig` in `tbp/monty/frameworks/config_utils/make_dataset_configs.py`.
+Finally, we have also set the `env_interface_config` to `FiveLMMountHabitatEnvInterfaceConfig`. This specifies that we have five `HabitatSM` sensor modules (and a view finder) mounted onto a single distant agent. By default, the sensor modules cover three nearby regions and otherwise vary by resolution and zoom factor. For the exact specifications, see the `FiveLMMountConfig` in `tbp/monty/frameworks/config_utils/make_env_interface_configs.py`.
 
 Before running this experiment, you will need to declare your experiment name as part of the `MyExperiments` dataclass in the `benchmarks/configs/names.py` file:
 
@@ -170,11 +166,10 @@ from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
     MotorSystemConfigInformedGoalStateDriven,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataloaderPerObjectArgs,
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
+    EnvironmentInterfacePerObjectArgs,
     EvalExperimentArgs,
     PredefinedObjectInitializer,
-    get_env_dataloader_per_object_by_idx,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
@@ -191,7 +186,7 @@ from tbp.monty.frameworks.models.goal_state_generation import (
     EvidenceGoalStateGenerator,
 )
 from tbp.monty.simulators.habitat.configs import (
-    FiveLMMountHabitatDatasetArgs,
+    FiveLMMountHabitatEnvInterfaceConfig,
 )
 
 """
@@ -291,13 +286,10 @@ dist_agent_5lm_2obj_eval = dict(
         motor_system_config=MotorSystemConfigInformedGoalStateDriven(),
     ),
     # Set up the environment and agent.
-    dataset_args=FiveLMMountHabitatDatasetArgs(),
-    # Set up the training dataloader. Unused, but must be included.
-    train_dataloader_class=ED.InformedEnvironmentDataLoader,
-    train_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=1),
+    env_interface_config=FiveLMMountHabitatEnvInterfaceConfig(),
     # Set up the evaluation dataloader.
-    eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-    eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    eval_env_interface_class=ED.InformedEnvironmentInterface,
+    eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=object_names,
         object_init_sampler=PredefinedObjectInitializer(rotations=test_rotations),
     ),
@@ -336,7 +328,7 @@ Lastly, note that `num_steps` is not the same for all learning modules in an epi
 Now you've seen how to set up and run a multi-LM models for both pretraining and evaluation. At present, Monty only supports distant agents with multi-LM models because the current infrastructure doesn't support multiple independently moving agents. We plan to support multiple surface-agent systems in the future.
 
 # Visualizing Learned Object Models (Optional)
-During pretraining, each learning module learns its own object models independently of the other LMs. To visualize the models learned by each LM, create and a script with the code below. The location and name of the script is unimportant so long as it can find and import Monty. 
+During pretraining, each learning module learns its own object models independently of the other LMs. To visualize the models learned by each LM, create and a script with the code below. The location and name of the script is unimportant so long as it can find and import Monty.
 ```python
 import os
 import matplotlib.pyplot as plt
