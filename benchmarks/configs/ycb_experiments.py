@@ -27,6 +27,7 @@ from benchmarks.configs.defaults import (
 )
 from benchmarks.configs.names import YcbExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
+    CUBE_FACE_AND_CORNER_VIEW_ROTATIONS,
     CSVLoggingConfig,
     FiveLMMontySOTAConfig,
     MontyArgs,
@@ -36,7 +37,6 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PatchAndViewSOTAMontyConfig,
     SurfaceAndViewMontyConfig,
     SurfaceAndViewSOTAMontyConfig,
-    get_cube_face_and_corner_views_rotations,
 )
 from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     EnvironmentInterfaceMultiObjectArgs,
@@ -109,7 +109,8 @@ and docs/overview/benchmark-experiments.md
 
 # 14 unique rotations that give good views of the object. Same rotations used
 # for supervised pretraining.
-test_rotations_all = get_cube_face_and_corner_views_rotations()
+test_rotations_all = CUBE_FACE_AND_CORNER_VIEW_ROTATIONS
+
 
 # Limited number of rotations to use for quicker evaluation when doing longer
 # runs with all 77 YCB objects.
@@ -266,10 +267,9 @@ base_config_10distinctobj_dist_agent = dict(
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
     ),
     env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(),
-    ## TODO
     eval_env_interface_class=ED.InformedEnvironmentInterface,
     eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
+        object_names=DISTINCT_OBJECTS,
         object_init_sampler=PredefinedObjectInitializer(rotations=test_rotations_all),
     ),
 )

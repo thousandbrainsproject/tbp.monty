@@ -17,11 +17,11 @@ from benchmarks.configs.names import CompositionalLearningExperiments
 from benchmarks.configs.pretraining_experiments import supervised_pre_training_base
 from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
 from tbp.monty.frameworks.config_utils.config_args import (
+    CUBE_FACE_AND_CORNER_VIEW_ROTATIONS,
     MontyArgs,
     MotorSystemConfigInformedGoalStateDriven,
     MotorSystemConfigNaiveScanSpiral,
     TwoLMStackedMontyConfig,
-    get_cube_face_and_corner_views_rotations,
 )
 from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     EnvironmentInterfacePerObjectArgs,
@@ -56,7 +56,7 @@ from tbp.monty.simulators.habitat.configs import (
 )
 
 # FOR SUPERVISED PRETRAINING: 14 unique rotations that give good views of the object.
-train_rotations_all = get_cube_face_and_corner_views_rotations()
+train_rotations_all = CUBE_FACE_AND_CORNER_VIEW_ROTATIONS
 N_TRAIN_EPOCHS = len(train_rotations_all)
 
 monty_models_dir = os.getenv("MONTY_MODELS", "")

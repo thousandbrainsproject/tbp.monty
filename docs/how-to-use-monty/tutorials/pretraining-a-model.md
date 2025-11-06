@@ -51,11 +51,11 @@ from dataclasses import asdict
 
 from benchmarks.configs.names import MyExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
+    CUBE_FACE_AND_CORNER_VIEW_ROTATIONS,
     MontyArgs,
     MotorSystemConfigCurvatureInformedSurface,
     PatchAndViewMontyConfig,
     PretrainLoggingConfig,
-    get_cube_face_and_corner_views_rotations,
 )
 from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     EnvironmentInterfacePerObjectArgs,
@@ -105,16 +105,16 @@ Training
 # 'capsule3DSolid', 'cubeSolid', etc.).
 object_names = ["mug", "banana"]
 # Get predefined object rotations that give good views of the object from 14 angles.
-train_rotations = get_cube_face_and_corner_views_rotations()
+train_rotations = CUBE_FACE_AND_CORNER_VIEW_ROTATIONS
 ```
-The function `get_cube_face_and_corner_views_rotations()` is used in our pretraining
+The constant `CUBE_FACE_AND_CORNER_VIEW_ROTATIONS` is used in our pretraining
 and many of our benchmark experiments since the rotations it returns provide a good set
 of views from all around the object. Its name comes from picturing an imaginary cube
 surrounding an object. If we look at the object from each of the cube's faces, we
 get 6 unique views that typically cover most of the object's surface. We can also look
 at the object from each of the cube's 8 corners which provides an extra set of views
 that help fill in any gaps. The 14 rotations provided by
-`get_cube_face_and_corner_views_rotations` will rotate the object as if an observer
+`CUBE_FACE_AND_CORNER_VIEW_ROTATIONS` will rotate the object as if an observer
 were looking at the object from each of the cube's faces and corners like so:
 
 ![learned_models](../../figures/how-to-use-monty/cube_face_and_corner_views_spam.png)

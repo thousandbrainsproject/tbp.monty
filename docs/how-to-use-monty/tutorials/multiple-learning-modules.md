@@ -25,11 +25,11 @@ from dataclasses import asdict
 
 from benchmarks.configs.names import MyExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
+    CUBE_FACE_AND_CORNER_VIEW_ROTATIONS,
     FiveLMMontyConfig,
     MontyArgs,
     MotorSystemConfigNaiveScanSpiral,
     PretrainLoggingConfig,
-    get_cube_face_and_corner_views_rotations,
 )
 from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     EnvironmentInterfacePerObjectArgs,
@@ -56,7 +56,7 @@ model_name = "dist_agent_5lm_2obj"
 
 # Specify the objects to train on and 14 unique object poses.
 object_names = ["mug", "banana"]
-train_rotations = get_cube_face_and_corner_views_rotations()
+train_rotations = CUBE_FACE_AND_CORNER_VIEW_ROTATIONS
 
 # The config dictionary for the pretraining experiment.
 dist_agent_5lm_2obj_train = dict(

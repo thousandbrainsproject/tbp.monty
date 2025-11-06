@@ -7,11 +7,13 @@ defaults:
   - config/monty/args/clear_monty_args@config.monty_config
   - config/monty/args/defaults@config.monty_config.monty_args
   - config/environment/patch_view_finder_mount_habitat@config.env_interface_config
+  - config/environment_interface/per_object@config.eval_env_interface_args
+  - config/environment_interface/ycb/distinct_objects@config.eval_env_interface_args
 
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 config:
   model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
-  n_eval_epochs: 14 # TODO: maybe link to get_cube_face_and_corner_views_rotations()
+  n_eval_epochs: ${benchmarks.ycb.test_rotations_count}
   logging:
     wandb_group: benchmark_experiments
     # Comment in for quick debugging (turns of wandb and increases logging)
@@ -20,3 +22,8 @@ config:
   monty_config:
     monty_args:
       min_eval_steps: ${benchmarks.min_eval_steps}
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  eval_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      rotations: ${benchmarks.ycb.test_rotations_all}

@@ -23,7 +23,7 @@ from tbp.monty.frameworks.config_utils.config_args import (
     MotorSystemConfigInformedGoalStateDriven,
     ParallelEvidenceLMLoggingConfig,
     TwoLMStackedMontyConfig,
-    get_cube_face_and_corner_views_rotations,
+    CUBE_FACE_AND_CORNER_VIEW_ROTATIONS,
 )
 from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     EnvironmentInterfacePerObjectArgs,
@@ -54,7 +54,7 @@ from tbp.monty.simulators.habitat.configs import (
 
 # 14 unique rotations that give good views of the object. Same rotations used
 # for supervised pretraining.
-test_rotations_all = get_cube_face_and_corner_views_rotations()
+test_rotations_all = CUBE_FACE_AND_CORNER_VIEW_ROTATIONS
 # test_rotations_all = [[0.0, 0.0, 0.0]]
 N_EVAL_EPOCHS = len(test_rotations_all)
 

@@ -1,3 +1,4 @@
 defaults:
   - benchmarks: defaults
+  - benchmarks/ycb: defaults
   - experiment: MISSING
