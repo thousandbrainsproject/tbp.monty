@@ -1,0 +1,6 @@
+# Everything is weighted 1, except for saturation and value which are not used.
+patch:
+  # Weighting saturation and value less since these might change under different
+  # lighting conditions. In the future we can extract better features in the SM
+  # such as relative value changes.
+  hsv: ${np.array:[1, 0.5, 0.5]}

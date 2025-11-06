@@ -6,9 +6,12 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
+
 import importlib
 
 import hydra
+import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
 from tbp.monty.frameworks.run_env import setup_env
@@ -24,6 +27,10 @@ def validate(cfg: DictConfig):
 
     # app.setup_experiment(cfg)
     app.init_loggers(cfg.experiment.config.logging)
+    app.init_model(
+        monty_config=cfg.experiment.config.monty_config,
+        model_path=cfg.experiment.config.model_name_or_path,
+    )
 
     print("done")
 
@@ -40,8 +47,24 @@ def monty_class_resolver(class_name: str) -> type:
     module_obj = importlib.import_module(module)
     return getattr(module_obj, klass)
 
+def ndarray_resolver(list_or_tuple: list | tuple) -> np.ndarray:
+    """Returns a numpy array from a list or tuple."""
+    return np.array(list_or_tuple)
+
+
+def ones_resolver(n: int) -> np.ndarray:
+    """Returns a numpy array of ones."""
+    return np.ones(n)
+
+
+def numpy_list_eval_resolver(expr_list: list) -> list[float]:
+    return [eval(item) for item in expr_list]  # noqa: S307
+
 
 if __name__ == "__main__":
     setup_env()
     OmegaConf.register_new_resolver("monty.class", monty_class_resolver)
+    OmegaConf.register_new_resolver("np.array", ndarray_resolver)
+    OmegaConf.register_new_resolver("np.ones", ones_resolver)
+    OmegaConf.register_new_resolver("np.list_eval", numpy_list_eval_resolver)
     validate()

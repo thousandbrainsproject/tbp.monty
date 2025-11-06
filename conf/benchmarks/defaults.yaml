@@ -1,1 +1,11 @@
+# NOTE: maybe lower once we have better policies
+# Is not really nescessary for good performance but makes sure we don't just overfit
+# on the first few points.
+min_eval_steps: 20
+
+# v6 : Using TLS for surface normal estimation
+# v7 : Updated for State class support + using new feature names like pose_vectors
+# v8 : Using separate graph per input channel
+# v9 : Using models trained on 14 unique rotations
+# v10 : Using models trained without the semantic sensor
 pretrained_dir: "${oc.env:MONTY_MODELS}/pretrained_ycb_v10"
