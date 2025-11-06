@@ -1,0 +1,10 @@
+defaults:
+  - init_args/patch_view_mount@env_init_args
+
+env_init_func: ${monty.class:tbp.monty.simulators.habitat.HabitatEnvironment}
+transform:
+- _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+  # TODO: will this even work?
+  agent_id: ${init_args.agents[0].agent_args.agent_id}
+  max_depth: 1
+rng: null
