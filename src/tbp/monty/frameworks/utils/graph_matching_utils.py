@@ -167,18 +167,13 @@ def get_initial_possible_poses(initial_possible_pose_type) -> list[Rotation] | N
     return initial_possible_poses
 
 
-def add_pose_features_to_tolerances(tolerances, default_tolerances=20) -> dict:
-    """Add default `pose_vectors` tolerances if not set.
+def convert_tolerances_pose_features_to_radians(tolerances) -> dict:
+    """Convert degree tolerances for pose features to radians.
 
     Returns:
-        Tolerances dictionary with added pose_vectors if not set.
+        Tolerances dictionary with pose_vectors converted to radians.
     """
-    for input_channel in tolerances.keys():
-        if "pose_vectors" not in tolerances[input_channel].keys():
-            # NOTE: assumes that there are 3 pose vectors
-            tolerances[input_channel]["pose_vectors"] = np.ones(3) * default_tolerances
-
-        # Turn degree tolerances into radians
+    for input_channel in tolerances:
         tolerances[input_channel]["pose_vectors"] = [
             math.radians(deg) for deg in tolerances[input_channel]["pose_vectors"]
         ]

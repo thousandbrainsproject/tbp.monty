@@ -18,7 +18,7 @@ from sklearn.neighbors import KDTree
 
 from tbp.monty.frameworks.models.graph_matching import GraphLM, GraphMemory
 from tbp.monty.frameworks.utils.graph_matching_utils import (
-    add_pose_features_to_tolerances,
+    convert_tolerances_pose_features_to_radians,
     get_initial_possible_poses,
     get_unique_paths,
     possible_sensed_directions,
@@ -80,7 +80,7 @@ class FeatureGraphLM(GraphLM):
         )
         # make sure we extract pose dependent features because they
         # are nescessary for the algorithm to work.
-        self.tolerances = add_pose_features_to_tolerances(tolerances)
+        self.tolerances = convert_tolerances_pose_features_to_radians(tolerances)
         self.max_match_distance = max_match_distance
         self.path_similarity_threshold = path_similarity_threshold
         self.pose_similarity_threshold = pose_similarity_threshold

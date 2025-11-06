@@ -38,7 +38,7 @@ from tbp.monty.frameworks.utils.evidence_matching import (
     evidence_update_threshold,
 )
 from tbp.monty.frameworks.utils.graph_matching_utils import (
-    add_pose_features_to_tolerances,
+    convert_tolerances_pose_features_to_radians,
     get_scaled_evidences,
 )
 
@@ -213,7 +213,7 @@ class EvidenceGraphLM(GraphLM):
         self.use_multithreading = use_multithreading
 
         # TODO make sure we always extract pose features and remove this
-        self.tolerances = add_pose_features_to_tolerances(tolerances)
+        self.tolerances = convert_tolerances_pose_features_to_radians(tolerances)
         # TODO: not ideal solution
         self.graph_memory.features_to_use = self.tolerances
         # Set feature weights to 1 if not otherwise specified
