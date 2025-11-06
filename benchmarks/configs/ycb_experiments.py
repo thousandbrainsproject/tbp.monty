@@ -261,11 +261,11 @@ base_config_10distinctobj_dist_agent = dict(
         # wandb_handlers=[],
         # python_log_level="DEBUG",
     ),
-    ## TODO
     monty_config=PatchAndViewSOTAMontyConfig(
         learning_module_configs=lower_max_nneighbors_1lm_config,
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
     ),
+    ## TODO
     dataset_args=PatchViewFinderMountHabitatDatasetArgs(),
     eval_dataloader_class=ED.InformedEnvironmentDataLoader,
     eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
