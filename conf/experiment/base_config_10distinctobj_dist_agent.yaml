@@ -2,11 +2,9 @@ defaults:
   - config/eval
   - config/logging/parallel_evidence_lm
   - config/monty/patch_and_view_sota@config.monty_config
-  # FIXME: Problem is that below line MERGES the lower_max_nneighbors_1lm learning_module_configs
-  #        with the above monty_config.learning_module_configs. We want to OVERRIDE instead of MERGE.
+  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
   - config/monty/learning_modules/lower_max_nneighbors_1lm@config.monty_config.learning_module_configs
-  # FIXME: Problem is that below line MERGES the monty_args with the above monty_config.monty_args.
-  #        We want to OVERRIDE instead of MERGE.
+  - config/monty/args/clear_monty_args@config.monty_config
   - config/monty/args/defaults@config.monty_config.monty_args
 
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
