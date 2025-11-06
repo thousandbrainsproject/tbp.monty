@@ -25,16 +25,9 @@ def validate(cfg: DictConfig):
     print(OmegaConf.to_yaml(cfg))
 
     app = hydra.utils.instantiate(cfg.experiment)
-
-    app.setup_experiment(cfg.experiment.config)
-    # app.init_loggers(cfg.experiment.config.logging)
-    # app.init_model(
-    #     monty_config=cfg.experiment.config.monty_config,
-    #     model_path=cfg.experiment.config.model_name_or_path,
-    # )
-    # app.load_environment_interfaces(cfg.experiment.config)
-    # # app.init_monty_data_loggers(cfg.experiment.config.logging)
-    # # app.init_counters()
+    with app:
+        # exercise .setup_experiment method
+        pass
 
     print("done")
 
