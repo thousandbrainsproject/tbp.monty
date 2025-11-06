@@ -270,7 +270,7 @@ class PredefinedObjectInitializer(DefaultObjectInitializer):
         quat_rotation = scipy_to_numpy_quat(q)
         return dict(
             rotation=quat_rotation,
-            euler_rotation=self.rotations[mod_counter % len(self.rotations)],
+            euler_rotation=list(self.rotations[mod_counter % len(self.rotations)]),
             quat_rotation=q,
             position=self.positions[mod_counter % len(self.positions)],
             scale=self.scales[mod_counter % len(self.scales)],

@@ -14,10 +14,11 @@ import datetime
 import logging
 import os
 import pprint
-from typing import Any, Literal, Mapping
+from typing import Any, Literal
 
 import numpy as np
 import torch
+from omegaconf import DictConfig
 from typing_extensions import Self
 
 from tbp.monty.frameworks.environments.embodied_data import (
@@ -56,7 +57,7 @@ class MontyExperiment:
     and episode).
     """
 
-    def __init__(self, config: Mapping) -> None:
+    def __init__(self, config: DictConfig) -> None:
         """Initialize the experiment based on the provided configuration.
 
         Args:
