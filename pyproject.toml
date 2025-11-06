@@ -235,8 +235,6 @@ ignore = [
     "ANN204", # ANN204: Missing return type annotation for special method
     "ANN206", # ANN206: Missing return type annotation for classmethod
     "ANN401", # ANN401: Dynamically typed expressions (typing.Any) are disallowed in {name}
-    # TODO: Address ARG002 right away
-    "ARG002", # ARG002: Unused method argument
     "COM812", # COM812: Trailing comma missing
     "DTZ005", # DTZ005: `datetime.datetime.now()` called without a `tz` argument
     "EM101", # EM101: Exception must not use a string literal, assign to variable first

@@ -571,7 +571,7 @@ class GraphLM(LearningModule):
 
         if initialize_base_modules:
             self.graph_memory = GraphMemory(k=None, graph_delta_thresholds=None)
-            self.gsg = GraphGoalStateGenerator(self, gsg_args=None)
+            self.gsg = GraphGoalStateGenerator(self)
             self.gsg.reset()
 
         self.mode = None  # initialize to neither training nor testing
@@ -840,7 +840,7 @@ class GraphLM(LearningModule):
             all_poses = poses
         return all_poses
 
-    def get_object_scale(self, object_id):
+    def get_object_scale(self, _object_id):
         """Get object scale. TODO: implement solution for detecting scale.
 
         Returns:
