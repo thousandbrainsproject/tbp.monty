@@ -19,6 +19,9 @@ config:
     # Comment in for quick debugging (turns of wandb and increases logging)
     # wandb_handlers: []
     # python_log_level: DEBUG
+    # FIXME?: we want to actually concatentate with logging/defaults.yaml output_dir
+    output_dir: ${oc.env:MONTY_LOGS}/projects/monty_runs/base_config_10distinctobj_dist_agent
+    run_name: base_config_10distinctobj_dist_agent
   monty_config:
     monty_args:
       min_eval_steps: ${benchmarks.min_eval_steps}

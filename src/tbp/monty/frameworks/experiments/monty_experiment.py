@@ -425,7 +425,8 @@ class MontyExperiment:
             )
             self.monty_logger = BaseMontyLogger(handlers=[])
 
-        if "log_parallel_wandb" in logging_config.keys():
+        # if "log_parallel_wandb" in logging_config.keys():
+        if os.environ.get("MONTY_PARALLEL_WANDB_LOGGING", "0") == "1":
             self.monty_logger.use_parallel_wandb_logging = logging_config[
                 "log_parallel_wandb"
             ]
