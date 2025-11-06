@@ -14,7 +14,7 @@ import unittest
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     make_sensor_positions_on_grid,
 )
 from tbp.monty.frameworks.models.states import State
