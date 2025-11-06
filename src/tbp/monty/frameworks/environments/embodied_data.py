@@ -46,18 +46,18 @@ from tbp.monty.frameworks.models.motor_system_state import (
 )
 
 __all__ = [
-    "EnvironmentDataLoader",
-    "EnvironmentDataLoaderPerObject",
-    "InformedEnvironmentDataLoader",
-    "OmniglotDataLoader",
-    "SaccadeOnImageDataLoader",
-    "SaccadeOnImageFromStreamDataLoader",
+    "EnvironmentInterface",
+    "EnvironmentInterfacePerObject",
+    "InformedEnvironmentInterface",
+    "OmniglotEnvironmentInterface",
+    "SaccadeOnImageEnvironmentInterface",
+    "SaccadeOnImageFromStreamEnvironmentInterface",
 ]
 
 logger = logging.getLogger(__name__)
 
 
-class EnvironmentDataLoader:
+class EnvironmentInterface:
     """Provides an interface to an embodied environment.
 
     The observations are based on the actions returned by the `motor_system`.
@@ -158,7 +158,7 @@ class EnvironmentDataLoader:
     def pre_episode(self):
         self.motor_system.pre_episode()
 
-        # Reset the data loader state.
+        # Reset the environment interface state.
         self._observation, proprioceptive_state = self.reset()
         self.motor_system._state = (
             MotorSystemState(proprioceptive_state) if proprioceptive_state else None
@@ -175,10 +175,10 @@ class EnvironmentDataLoader:
         pass
 
 
-class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
-    """Dataloader for testing on environment with one "primary target" object.
+class EnvironmentInterfacePerObject(EnvironmentInterface):
+    """Interface for testing on environment with one "primary target" object.
 
-    Dataloader for testing on environment where we load one "primary target" object
+    Interface for testing on environment where we load one "primary target" object
     at a time; in addition, one can optionally load other "distractor" objects to the
     environment
 
@@ -198,7 +198,7 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
         *args,
         **kwargs,
     ):
-        """Initialize dataloader.
+        """Initialize environment interface.
 
         Args:
             object_names: list of objects if doing a simple experiment with primary
@@ -218,8 +218,8 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             **kwargs: ?
 
         See Also:
-            tbp.monty.frameworks.make_dataset_configs
-            :class:`EnvironmentDataLoaderPerObjectTrainArgs`
+            tbp.monty.frameworks.make_env_interface_configs
+            :class:`EnvironmentInterfacePerObjectTrainArgs`
 
         Raises:
             TypeError: If `object_names` is not a list or dictionary
@@ -403,10 +403,10 @@ class EnvironmentDataLoaderPerObject(EnvironmentDataLoader):
             )
 
 
-class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
-    """Dataloader that supports a policy which makes use of previous observation(s).
+class InformedEnvironmentInterface(EnvironmentInterfacePerObject):
+    """Env interface that supports a policy which makes use of previous observation(s).
 
-    Extension of the EnvironmentDataLoader where the actions can be informed by the
+    Extension of the EnvironmentInterface where the actions can be informed by the
     observations. It passes the observation to the InformedPolicy class (which is an
     extension of the BasePolicy). This policy can then make use of the observation
     to decide on the next action.
@@ -414,15 +414,15 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
     Also has the following, additional functionality; TODO refactor/separate these
     out as appropriate
 
-    i) this dataloader allows for early stopping by adding the set_done
+    i) this environment interface allows for early stopping by adding the set_done
     method which can for example be called when the object is recognized.
 
     ii) the motor_only_step can be set such that the sensory module can
     later determine whether perceptual data should be sent to the learning module,
     or just fed back to the motor policy.
 
-    iii) Handles different data-loader updates depending on whether the policy is
-    based on the surface-agent or touch-agent
+    iii) Handles different environment interface updates depending on whether the policy
+    is based on the surface-agent or touch-agent
 
     iv) Supports hypothesis-testing "jump" policy
     """
@@ -795,8 +795,8 @@ class InformedEnvironmentDataLoader(EnvironmentDataLoaderPerObject):
         # if we're inside the object, then we don't want to do this
 
 
-class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
-    """Dataloader for Omniglot dataset."""
+class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
+    """Environment interface for Omniglot dataset."""
 
     def __init__(
         self,
@@ -811,7 +811,7 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         *args,
         **kwargs,
     ):
-        """Initialize dataloader.
+        """Initialize environment interface.
 
         Args:
             alphabets: List of alphabets.
@@ -903,8 +903,8 @@ class OmniglotDataLoader(EnvironmentDataLoaderPerObject):
         }
 
 
-class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
-    """Dataloader for moving over a 2D image with depth channel."""
+class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
+    """Environment interface for moving over a 2D image with depth channel."""
 
     def __init__(
         self,
@@ -918,7 +918,7 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         *args,
         **kwargs,
     ):
-        """Initialize dataloader.
+        """Initialize environment interface.
 
         Args:
             scenes: List of scenes
@@ -1011,8 +1011,8 @@ class SaccadeOnImageDataLoader(EnvironmentDataLoaderPerObject):
         }
 
 
-class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
-    """Dataloader for moving over a 2D image with depth channel."""
+class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInterface):
+    """Environment interface for moving over a 2D image with depth channel."""
 
     def __init__(
         self,
@@ -1023,7 +1023,7 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
         *args,
         **kwargs,
     ):
-        """Initialize dataloader.
+        """Initialize environment interface.
 
         Args:
             env: An instance of a class that implements :class:`EmbodiedEnvironment`.
@@ -1041,7 +1041,6 @@ class SaccadeOnImageFromStreamDataLoader(SaccadeOnImageDataLoader):
             raise TypeError(
                 f"motor_system must be an instance of MotorSystem, got {motor_system}"
             )
-        # TODO: call super init instead of duplication code & generally clean up more
         self.env = env
         self.rng = rng
         self.motor_system = motor_system

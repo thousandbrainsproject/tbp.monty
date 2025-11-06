@@ -37,9 +37,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
     MontyFeatureGraphArgs,
     PatchAndViewMontyConfig,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataLoaderPerObjectEvalArgs,
-    EnvironmentDataLoaderPerObjectTrainArgs,
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
+    EnvironmentInterfacePerObjectEvalArgs,
+    EnvironmentInterfacePerObjectTrainArgs,
     ExperimentArgs,
     PredefinedObjectInitializer,
 )
@@ -64,9 +64,9 @@ from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsFiveLMMount,
     EnvInitArgsPatchViewMount,
-    FiveLMMountHabitatDatasetArgs,
-    NoisyPatchViewFinderMountHabitatDatasetArgs,
-    PatchViewFinderMountHabitatDatasetArgs,
+    FiveLMMountHabitatEnvInterfaceConfig,
+    NoisyPatchViewFinderMountHabitatEnvInterfaceConfig,
+    PatchViewFinderMountHabitatEnvInterfaceConfig,
 )
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
@@ -159,16 +159,16 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             monty_config=PatchAndViewMontyConfig(
                 monty_args=MontyArgs(num_exploratory_steps=20)
             ),
-            dataset_args=PatchViewFinderMountHabitatDatasetArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
-            train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_class=ED.InformedEnvironmentInterface,
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
-            eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
+            eval_env_interface_class=ED.InformedEnvironmentInterface,
+            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
                 object_names=["capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -209,8 +209,8 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 motor_system_config=MotorSystemConfigOffObject(),
                 learning_module_configs=default_evidence_lm_config,
             ),
-            train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_class=ED.InformedEnvironmentInterface,
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=["capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     rotations=[[0, 0, 0]],
@@ -396,7 +396,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 motor_system_config=MotorSystemConfigFixed(),
                 learning_module_configs=default_5lm_lmconfig,
             ),
-            dataset_args=FiveLMMountHabitatDatasetArgs(
+            env_interface_config=FiveLMMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsFiveLMMount(data_path=None).__dict__,
             ),
         )
@@ -596,7 +596,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                     )
                 ),
             ),
-            dataset_args=NoisyPatchViewFinderMountHabitatDatasetArgs(
+            env_interface_config=NoisyPatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
         )

@@ -446,7 +446,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
     def reset(self):
         """Reset environment and extract image patch.
 
-        TODO: clean up. Do we need this? No reset required in this dataloader, maybe
+        TODO: clean up. Do we need this? No reset required in this env interface, maybe
         indicate this better here.
 
         Returns:
