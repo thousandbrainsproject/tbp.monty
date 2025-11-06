@@ -29,6 +29,7 @@ __all__ = [
     "MultiSensorAgent",
 ]
 
+ActionSpaceName = Literal["absolute_only", "distant_agent", "surface_agent"]
 Vector3 = Tuple[float, float, float]
 Quaternion = Tuple[float, float, float, float]
 Size = Tuple[int, int]
@@ -122,7 +123,7 @@ class HabitatAgent:
 
 
 def action_space(
-    action_space_type: Literal["absolute_only", "distant_agent", "surface_agent"],
+    action_space_type: ActionSpaceName,
     agent_id: str,
     translation_step: float,
     rotation_step: float,
@@ -265,9 +266,7 @@ class MultiSensorAgent(HabitatAgent):
         height: float = 0.0,
         rotation_step: float = 0.0,
         translation_step: float = 0.0,
-        action_space_type: Literal[
-            "absolute_only", "distant_agent", "surface_agent"
-        ] = "distant_agent",
+        action_space_type: ActionSpaceName = "distant_agent",
         resolutions: tuple[Size] = ((16, 16),),
         positions: tuple[Vector3] = ((0.0, 0.0, 0.0),),
         rotations: tuple[Quaternion] = ((1.0, 0.0, 0.0, 0.0),),
@@ -280,9 +279,7 @@ class MultiSensorAgent(HabitatAgent):
         self.sensor_ids = sensor_ids
         self.rotation_step = rotation_step
         self.translation_step = translation_step
-        self.action_space_type: Literal[
-            "absolute_only", "distant_agent", "surface_agent"
-        ] = action_space_type
+        self.action_space_type: ActionSpaceName = action_space_type
         self.resolutions = resolutions
         self.positions = positions
         self.rotations = rotations
@@ -379,9 +376,7 @@ class SingleSensorAgent(HabitatAgent):
         semantic: bool = False,
         rotation_step: float = 0.0,
         translation_step: float = 0.0,
-        action_space_type: Literal[
-            "absolute_only", "distant_agent", "surface_agent"
-        ] = "distant_agent",
+        action_space_type: ActionSpaceName = "distant_agent",
     ):
         """Initialize agent runtime state.
 
@@ -399,9 +394,7 @@ class SingleSensorAgent(HabitatAgent):
         self.semantic = semantic
         self.rotation_step = rotation_step
         self.translation_step = translation_step
-        self.action_space_type: Literal[
-            "absolute_only", "distant_agent", "surface_agent"
-        ] = action_space_type
+        self.action_space_type: ActionSpaceName = action_space_type
 
         # Add RGBD Camera
         effective_sensor_position = (
