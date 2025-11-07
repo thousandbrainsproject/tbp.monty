@@ -1,4 +1,5 @@
 # Copyright 2025 Thousand Brains Project
+# Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -16,7 +17,7 @@ import re
 import shutil
 import time
 from pathlib import Path
-from typing import Iterable, Mapping
+from typing import Any, Iterable, Mapping
 
 import hydra
 import numpy as np
@@ -638,7 +639,8 @@ def run_episodes_parallel(
         f" with {num_parallel} episodes in parallel --------"
     )
     start_time = time.time()
-    if experiments[0]["config"]["logging"]["log_parallel_wandb"]:
+    log_parallel_wandb = experiments[0]["config"]["logging"]["log_parallel_wandb"]
+    if log_parallel_wandb:
         run = wandb.init(
             name=experiment_name,
             group=experiments[0]["config"]["logging"]["wandb_group"],
@@ -646,16 +648,17 @@ def run_episodes_parallel(
             config=experiments[0],
             id=hydra.utils.instantiate(experiments[0]["config"]["logging"]["wandb_id"]),
         )
+    print(f"Wandb setup took {time.time() - start_time} seconds")
+    start_time = time.time()
     with mp.Pool(num_parallel) as p:
         if train:
             # NOTE: since we don't use wandb logging for training right now
             # it is also not covered here. Might want to add that in the future.
             p.map(single_train, experiments)
-        elif experiments[0]["config"]["logging"]["log_parallel_wandb"]:
-            all_episode_stats = {}
+        elif log_parallel_wandb:
+            all_episode_stats: dict[str, list[Any]] = {}
             for result in p.imap(single_evaluate, experiments):
-                if run is not None:
-                    run.log(result)
+                run.log(result)
                 if not all_episode_stats:  # first episode
                     for key in list(result.keys()):
                         all_episode_stats[key] = [result[key]]
@@ -668,18 +671,18 @@ def run_episodes_parallel(
             # log this here additionally.
             overall_stats["overall/parallel_run_time"] = time.time() - start_time
             overall_stats["overall/num_processes"] = num_parallel
-            if run is not None:
-                run.log(overall_stats)
+            run.log(overall_stats)
         else:
             p.map(single_evaluate, experiments)
     end_time = time.time()
     total_time = end_time - start_time
+
     output_dir = experiments[0]["config"]["logging"]["output_dir"]
     base_dir = os.path.dirname(output_dir)
 
     if train:
         post_parallel_train(experiments, base_dir)
-        if experiments[0]["config"]["logging"]["log_parallel_wandb"]:
+        if log_parallel_wandb:
             csv_path = os.path.join(base_dir, "train_stats.csv")
             if os.path.exists(csv_path):
                 train_stats = pd.read_csv(csv_path)
@@ -690,13 +693,12 @@ def run_episodes_parallel(
                 print(f"No csv table found at {csv_path} to log to wandb")
     else:
         post_parallel_eval(experiments, base_dir)
-        if experiments[0]["config"]["logging"]["log_parallel_wandb"]:
+        if log_parallel_wandb:
             csv_path = os.path.join(base_dir, "eval_stats.csv")
             if os.path.exists(csv_path):
                 eval_stats = pd.read_csv(csv_path)
                 eval_table = wandb.Table(dataframe=eval_stats)
-                if run is not None:
-                    run.log({"eval_stats": eval_table})
+                run.log({"eval_stats": eval_table})
             else:
                 print(f"No csv table found at {csv_path} to log to wandb")
 
@@ -704,7 +706,7 @@ def run_episodes_parallel(
         f"Total time for {len(experiments)} running {num_parallel} episodes in "
         f"parallel: {total_time}"
     )
-    if run is not None:
+    if log_parallel_wandb:
         run.finish()
 
     print(f"Done running parallel experiments in {end_time - start_time} seconds")
