@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import importlib
 import logging
 import os
 import pprint
@@ -27,7 +26,6 @@ import torch.multiprocessing as mp
 import wandb
 from omegaconf import DictConfig, OmegaConf
 
-from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     PredefinedObjectInitializer,
 )
@@ -38,6 +36,7 @@ from tbp.monty.frameworks.experiments.pretraining_experiments import (
     MontySupervisedObjectPretrainingExperiment,
 )
 from tbp.monty.frameworks.experiments.profile import ProfileExperimentMixin
+from tbp.monty.frameworks.hydra import register_resolvers
 from tbp.monty.frameworks.loggers.monty_handlers import (
     BasicCSVStatsHandler,
     DetailedJSONHandler,
@@ -55,6 +54,7 @@ RE_OPEN_RIGHT = re.compile(r"^(\d+):$")  # "N:"
 RE_CLOSED = re.compile(r"^(\d+)\s*:\s*(\d+)$")  # "A:B"
 RE_SINGLE = re.compile(r"^\d+$")  # "N"
 
+
 def mv_files(filenames: Iterable[Path], outdir: Path):
     outdir = Path(outdir)
     outdir.mkdir(parents=True, exist_ok=True)
@@ -68,6 +68,7 @@ def mv_files(filenames: Iterable[Path], outdir: Path):
 
         src.replace(dest)
 
+
 def cat_files(filenames, outfile):
     if os.path.exists(outfile):
         print(f"Removing existing file before writing new one: {outfile}")
@@ -77,10 +78,12 @@ def cat_files(filenames, outfile):
     for file in filenames:
         os.system(f"cat {file} >> {outfile}")
 
+
 def cat_csv(filenames, outfile):
     dfs = [pd.read_csv(file) for file in filenames]
     df = pd.concat(dfs)
     df.to_csv(outfile, index=False)
+
 
 def sample_params_to_init_args(params):
     new_params = {}
@@ -89,6 +92,7 @@ def sample_params_to_init_args(params):
     new_params["rotations"] = [params["euler_rotation"]]
 
     return new_params
+
 
 def post_parallel_log_cleanup(filenames, outfile, cat_fn):
     existing_files = [f for f in filenames if os.path.exists(f)]
@@ -102,6 +106,7 @@ def post_parallel_log_cleanup(filenames, outfile, cat_fn):
     for f in existing_files:
         if os.path.exists(f):
             os.remove(f)
+
 
 def post_parallel_profile_cleanup(parallel_dirs, base_dir, mode):
     profile_dirs = [os.path.join(i, "profile") for i in parallel_dirs]
@@ -130,6 +135,7 @@ def post_parallel_profile_cleanup(parallel_dirs, base_dir, mode):
     post_parallel_log_cleanup(setup_csvs, setup_outfile, cat_fn=cat_csv)
     post_parallel_log_cleanup(overall_csvs, overall_outfile, cat_fn=cat_csv)
 
+
 def move_reproducibility_data(base_dir, parallel_dirs):
     outdir = os.path.join(base_dir, "reproduce_episode_data")
     if os.path.exists(outdir):
@@ -154,6 +160,7 @@ def move_reproducibility_data(base_dir, parallel_dirs):
             os.path.join(outdir, target_file)
         )
 
+
 def print_config(config):
     """Print config with nice formatting if config_args.print_config is True."""
     print("\n\n")
@@ -162,45 +169,6 @@ def print_config(config):
     print(pprint.pformat(config))
     print("-" * 100)
 
-
-def agent_id_resolver(agent_id: str) -> AgentID:
-    """Returns an AgentID new type from a string."""
-    return AgentID(agent_id)
-
-
-def monty_class_resolver(class_name: str) -> type:
-    """Returns a class object by fully qualified path.
-
-    TODO: This is an interim solution to retrieve my_class in
-      the my_class(**my_args) pattern.
-    """
-    parts = class_name.split(".")
-    module = ".".join(parts[:-1])
-    klass = parts[-1]
-    module_obj = importlib.import_module(module)
-    return getattr(module_obj, klass)
-
-
-def ndarray_resolver(list_or_tuple: list | tuple) -> np.ndarray:
-    """Returns a numpy array from a list or tuple."""
-    return np.array(list_or_tuple)
-
-
-def ones_resolver(n: int) -> np.ndarray:
-    """Returns a numpy array of ones."""
-    return np.ones(n)
-
-
-def numpy_list_eval_resolver(expr_list: list) -> list[float]:
-    return [eval(item) for item in expr_list]  # noqa: S307
-
-
-def register_resolvers() -> None:
-    OmegaConf.register_new_resolver("monty.agent_id", agent_id_resolver)
-    OmegaConf.register_new_resolver("monty.class", monty_class_resolver)
-    OmegaConf.register_new_resolver("np.array", ndarray_resolver)
-    OmegaConf.register_new_resolver("np.ones", ones_resolver)
-    OmegaConf.register_new_resolver("np.list_eval", numpy_list_eval_resolver)
 
 def parse_episode_spec(episode_spec: str | None, total: int) -> list[int]:
     """Parses a zero-based episode selection string into episode indices.
