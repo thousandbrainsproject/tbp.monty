@@ -1,0 +1,4 @@
+defaults:
+  - /experiment/config/monty/args/defaults@monty_args
+
+monty_class: ${monty.class:tbp.monty.frameworks.models.monty_base.MontyBase}

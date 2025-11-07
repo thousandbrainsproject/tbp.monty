@@ -1,0 +1,10 @@
+defaults:
+  - /experiment/config/debug
+  - /experiment/config/logging/defaults
+  - config/monty/fake_single_camera@config.monty_config
+
+_target_: tbp.monty.frameworks.experiments.monty_experiment.MontyExperiment
+
+config:
+  logging:
+    python_log_level: DEBUG

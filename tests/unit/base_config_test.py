@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+import hydra
 import pytest
 
 pytest.importorskip(
@@ -80,10 +81,14 @@ class BaseConfigTest(unittest.TestCase):
         This could be part of the setUp method, but it's easier to debug if
         something breaks the setup_experiment method if there's a separate test for it.
         """
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with MontyExperiment(base_config):
-            pass
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            pprint("...parsing experiment...")
+            base_config = hydra.compose(
+                config_name="tests",
+                overrides=["test=base", f"config.logging.output_dir={self.output_dir}"],
+            )
+            with MontyExperiment(base_config):
+                pass
 
     # @unittest.skip("debugging")
     def test_can_run_episode(self):
