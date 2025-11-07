@@ -68,7 +68,7 @@ from tbp.monty.simulators.habitat.configs import (
     NoisyPatchViewFinderMountHabitatEnvInterfaceConfig,
     PatchViewFinderMountHabitatEnvInterfaceConfig,
 )
-from tests.unit.resources.unit_test_utils import BaseGraphTestCases
+from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 
 @dataclass
@@ -103,7 +103,7 @@ class MotorSystemConfigOffObject:
     )
 
 
-class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
+class EvidenceLMTest(BaseGraphTest):
     def setUp(self):
         """Code that gets executed before every test."""
         super().setUp()
