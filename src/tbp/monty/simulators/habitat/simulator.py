@@ -492,13 +492,9 @@ class HabitatSim(HabitatActuator):
         return rigid_mgr.get_num_objects()
 
     @property
-    def action_space(self):
-        """Returns a set with all available actions.
-
-        All available actions are those registered by all agents in the
-        environment.
-        """
-        return set(self._action_space)
+    def action_space(self) -> set[str]:
+        """Return the action space."""
+        return self._action_space
 
     def get_agent(self, agent_id: AgentID):
         """Return habitat agent instance."""

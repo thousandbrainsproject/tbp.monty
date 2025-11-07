@@ -31,9 +31,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PatchAndViewMontyConfig,
     PretrainLoggingConfig,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataLoaderPerObjectEvalArgs,
-    EnvironmentDataLoaderPerObjectTrainArgs,
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
+    EnvironmentInterfacePerObjectEvalArgs,
+    EnvironmentInterfacePerObjectTrainArgs,
     ExperimentArgs,
     PredefinedObjectInitializer,
     SupervisedPretrainingExperimentArgs,
@@ -48,7 +48,7 @@ from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
 from tbp.monty.frameworks.utils.graph_matching_utils import get_correct_k_n
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsPatchViewMount,
-    PatchViewFinderMountHabitatDatasetArgs,
+    PatchViewFinderMountHabitatEnvInterfaceConfig,
 )
 
 
@@ -78,18 +78,18 @@ class GraphLearningTest(unittest.TestCase):
                     )
                 ),
             ),
-            dataset_args=PatchViewFinderMountHabitatDatasetArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
-            train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_class=ED.InformedEnvironmentInterface,
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     rotations=self.habitat_learned_rotations
                 ),
             ),
-            eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
+            eval_env_interface_class=ED.InformedEnvironmentInterface,
+            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
                 object_names=[],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -114,18 +114,18 @@ class GraphLearningTest(unittest.TestCase):
                     )
                 ),
             ),
-            dataset_args=PatchViewFinderMountHabitatDatasetArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
-            train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_class=ED.InformedEnvironmentInterface,
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     rotations=self.habitat_learned_rotations
                 ),
             ),
-            eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
+            eval_env_interface_class=ED.InformedEnvironmentInterface,
+            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -276,7 +276,7 @@ class GraphLearningTest(unittest.TestCase):
 
         self.assertListEqual(
             self.supervised_pre_training_in_habitat[
-                "train_dataloader_args"
+                "train_env_interface_args"
             ].object_names,
             exp.model.learning_modules[0].get_all_known_object_ids(),
             "Object ids of learned objects and graphs in memory.",

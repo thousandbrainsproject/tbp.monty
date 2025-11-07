@@ -21,7 +21,7 @@ Monty Meets World is the code name for our first demo of Monty on real-world dat
 In this application, we wrote a [MontyMeetsWorld iOS app](https://github.com/thousandbrainsproject/monty_lab/tree/main/monty_meets_world ) that runs locally on the iPad (or iPhone). The app has a button that the user can press to take an image with the user-facing TrueDepth camera. When a picture is taken, it is streamed to a server running locally on a laptop, where it gets saved in a dedicated folder. At the same time, Monty is running on the laptop.
 ![Data is recorded from a physical sensor (iPad camera) and streamed to a laptop. The Monty instance runs on the laptop and uses the streamed data to recognize the object.](../../figures/how-to-use-monty/streaming_data_to_monty.png)
 
-Monty is configured to use the `SaccadeOnImageFromStreamDataLoader`. The data loader's `pre_epoch` function calls `switch_to_scene` on the `SaccadeOnImageFromSteamEnvironment`, which does nothing until a new image is found in the dedicated folder. Once it detects that a new image was saved there, it loads this image, and the episode starts. The dataloader then moves a small patch over the image (the same way as in the non-streamed version explained in the [previous tutorial](./using-monty-in-a-custom-application.md)) and sends the observations from the moving patch to Monty until Monty recognizes the object. After that, it ends the current episode and returns to waiting for the next image, which will start the next episode. 
+Monty is configured to use the `SaccadeOnImageFromStreamEnvironmentInterface`. The environment interface's `pre_epoch` function calls `switch_to_scene` on the `SaccadeOnImageFromSteamEnvironment`, which does nothing until a new image is found in the dedicated folder. Once it detects that a new image was saved there, it loads this image, and the episode starts. The environment interface then moves a small patch over the image (the same way as in the non-streamed version explained in the [previous tutorial](./using-monty-in-a-custom-application.md)) and sends the observations from the moving patch to Monty until Monty recognizes the object. After that, it ends the current episode and returns to waiting for the next image, which will start the next episode.
 
 Note that in this example, we are not controlling any external actuators. All of Monty's movements happen virtually by moving a small patch over the larger image. In theory, there is nothing preventing Monty from streaming an action command back to the robot. However, in this case, there isn't an automated way to move an iPad in space. There could be an option to move the iPad manually and send this movement information to Monty along with the sensed image. However, this would require movement tracking of the iPad which was out of the scope of the five-day hackathon when we implemented this.
 ![Custom classes for object recognition in RGBD images streamed from an iOS app.](../../figures/how-to-use-monty/MMW_stream_custom_classes.png#width=500px)
@@ -55,7 +55,7 @@ Monty can use three types of action output to recognize the sensed objects effic
 
 
 > 📘 Follow Along
-> 
+>
 > If you’re curious to see how this was set up, you can check out the [Ultrasound Perception repository](https://github.com/thousandbrainsproject/ultrasound_perception).
 > See the videos and more pictures on the [showcase page](../../community/project-showcase.md#ultrasound_perception)
 
@@ -77,7 +77,7 @@ It was exciting to see Monty, originally tested in simulated environments, start
 
 
 > 📘 Follow Along
-> 
+>
 > If you’re curious to see how this was set up, you can check out the [Everything Is Awesome repository](https://github.com/thousandbrainsproject/everything_is_awesome).
 > We include the parts list, Raspberry Pi setup guides, custom `everything_is_awesome` classes and some project visualizations.
 > See the videos and more pictures on the [showcase page](../../community/project-showcase.md#lego-robot)
@@ -85,4 +85,4 @@ It was exciting to see Monty, originally tested in simulated environments, start
 
 
 # Conclusion
-The current solution for running Monty on robots is to stream the sensor data and action commands back and forth between the robot and a Monty instance running on a laptop. Outside of that, defining a custom data loader and environments for Monty is analogous to how it was outlined in the [previous tutorial](./using-monty-in-a-custom-application.md).
+The current solution for running Monty on robots is to stream the sensor data and action commands back and forth between the robot and a Monty instance running on a laptop. Outside of that, defining a custom environment interface for Monty is analogous to how it was outlined in the [previous tutorial](./using-monty-in-a-custom-application.md).

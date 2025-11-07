@@ -24,8 +24,8 @@ from tbp.monty.frameworks.config_utils.config_args import (
     MotorSystemConfigCurInformedSurfaceGoalStateDriven,
     PatchAndViewSOTAMontyConfig,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataloaderPerObjectArgs,
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
+    EnvironmentInterfacePerObjectArgs,
     EvalExperimentArgs,
     PredefinedObjectInitializer,
 )
@@ -44,7 +44,7 @@ from tbp.monty.frameworks.models.sensor_modules import (
     Probe,
 )
 from tbp.monty.simulators.habitat.configs import (
-    SurfaceViewFinderMountHabitatDatasetArgs,
+    SurfaceViewFinderMountHabitatEnvInterfaceConfig,
 )
 
 """
@@ -161,7 +161,7 @@ learning_module_0 = dict(
         max_match_distance=0.01,  # =1cm
         tolerances=tolerances,
         feature_weights=feature_weights,
-        # Most likely hypothesis needs to have 20% more evidence than the others to 
+        # Most likely hypothesis needs to have 20% more evidence than the others to
         # be considered certain enough to trigger a terminal condition (match).
         x_percent_threshold=20,
         # Update all hypotheses with evidence > 80% of the max hypothesis evidence
@@ -214,15 +214,15 @@ surf_agent_2obj_eval = dict(
         motor_system_config=MotorSystemConfigCurInformedSurfaceGoalStateDriven(),
     ),
     # Set up environment/data
-    dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(),
-    eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-    eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    env_interface_config=SurfaceViewFinderMountHabitatEnvInterfaceConfig(),
+    eval_env_interface_class=ED.InformedEnvironmentInterface,
+    eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=object_names,
         object_init_sampler=PredefinedObjectInitializer(rotations=test_rotations),
     ),
     # Doesn't get used, but currently needs to be set anyways.
-    train_dataloader_class=ED.InformedEnvironmentDataLoader,
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    train_env_interface_class=ED.InformedEnvironmentInterface,
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=object_names,
         object_init_sampler=PredefinedObjectInitializer(rotations=test_rotations),
     ),

@@ -52,7 +52,7 @@ class Monty(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def aggregate_sensory_inputs(self, observation):
-        """Receive data from dataloader/env, organize on a per sensor module basis."""
+        """Receive data from environment, organize on a per sensor module basis."""
         pass
 
     @abc.abstractmethod
