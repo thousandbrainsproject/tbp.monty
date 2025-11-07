@@ -34,7 +34,7 @@ class BaseConfigTest(unittest.TestCase):
             self.base_cfg = hydra.compose(
                 config_name="test",
                 overrides=[
-                    "test=base",
+                    "test=base_config/base",
                     f"test.config.logging.output_dir={self.output_dir}",
                 ],
             )
