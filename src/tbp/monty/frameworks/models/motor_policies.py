@@ -290,7 +290,7 @@ class BasePolicy(MotorPolicy):
 
         # FIXME: "motor_only_step" is not a valid AgentState key (based on type).
         return bool(
-            "motor_only_step" in agent_state.keys() and agent_state["motor_only_step"]
+            "motor_only_step" in agent_state and agent_state["motor_only_step"]
         )
 
     @property
