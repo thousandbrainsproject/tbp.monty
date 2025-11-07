@@ -8,7 +8,7 @@ max_eval_steps: 500
 # receive sensory information and therefore perform a true matching step (due to
 # e.g. being off the object)
 # heuristic is 4 * max_train_steps + max_eval_steps
-max_total_steps: 4500
+max_total_steps: 6000
 n_train_epochs: 3
 n_eval_epochs: 3
 model_name_or_path: ""

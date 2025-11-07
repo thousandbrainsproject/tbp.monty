@@ -29,12 +29,12 @@ sensor_module_configs:
         - mean_curvature
         - gaussian_curvature_sc
         - mean_curvature_sc
-      save_raw_obs: True
+      save_raw_obs: true
   sensor_module_1:
     sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
     sensor_module_args:
       sensor_module_id: view_finder
-      save_raw_obs: True
+      save_raw_obs: true
 sm_to_agent_dict:
   patch: ${monty.agent_id:agent_id_0}
   view_finder: ${monty.agent_id:agent_id_0}
