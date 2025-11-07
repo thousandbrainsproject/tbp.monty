@@ -289,9 +289,7 @@ class BasePolicy(MotorPolicy):
         agent_state = self.get_agent_state(state)
 
         # FIXME: "motor_only_step" is not a valid AgentState key (based on type).
-        return bool(
-            "motor_only_step" in agent_state and agent_state["motor_only_step"]
-        )
+        return bool(agent_state.get("motor_only_step"))
 
     @property
     def last_action(self) -> Action:
