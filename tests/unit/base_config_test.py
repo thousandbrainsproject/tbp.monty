@@ -67,6 +67,17 @@ class BaseConfigTest(unittest.TestCase):
 
         self.base_config = base
 
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            pprint("...parsing experiment...")
+            cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=base",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
+            self.exp = hydra.utils.instantiate(cfg.test)
+
         pprint("\n\nCONFIG:\n\n")
         for key, val in self.base_config.items():
             pprint(f"{key}: {val}")
@@ -81,24 +92,12 @@ class BaseConfigTest(unittest.TestCase):
         This could be part of the setUp method, but it's easier to debug if
         something breaks the setup_experiment method if there's a separate test for it.
         """
-        with hydra.initialize(version_base=None, config_path="../../conf"):
-            pprint("...parsing experiment...")
-            cfg = hydra.compose(
-                config_name="test",
-                overrides=[
-                    "test=base",
-                    f"test.config.logging.output_dir={self.output_dir}",
-                ],
-            )
-            test = hydra.utils.instantiate(cfg.test)
-            with test:
-                pass
+        with self.exp:
+            pass
 
     # @unittest.skip("debugging")
     def test_can_run_episode(self):
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with MontyExperiment(base_config) as exp:
+        with self.exp as exp:
             pprint("...training...")
             exp.model.set_experiment_mode("train")
             exp.env_interface = exp.train_env_interface
