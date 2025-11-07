@@ -364,8 +364,6 @@ def generate_parallel_eval_configs(
         params = sample_params_to_init_args(sampler())
 
         epoch_count += 1
-        if epoch_count >= n_epochs:
-            break
 
     return new_experiments
 
@@ -442,6 +440,10 @@ def single_evaluate(experiment):
         print("---------evaluating---------")
         exp.evaluate()
         if experiment["config"]["logging"]["log_parallel_wandb"]:
+            # WARNING: This relies on logger in the experiment having
+            # `self.use_parallel_wandb_logging` set to True
+            # This way, the logger does not flush its buffer in the
+            # `exp.evaluate()` call above.
             return get_episode_stats(exp, "eval")
 
 def get_episode_stats(exp, mode):
