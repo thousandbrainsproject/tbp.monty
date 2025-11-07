@@ -559,7 +559,8 @@ def post_parallel_eval(experiments: list[Mapping], base_dir: str) -> None:
         outfile = os.path.join(base_dir, filename)
         post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
 
-    if issubclass(experiments[0]["config"]["experiment_class"], ProfileExperimentMixin):
+    exp = hydra.utils.instantiate(experiments[0])
+    if isinstance(exp, ProfileExperimentMixin):
         post_parallel_profile_cleanup(parallel_dirs, base_dir, "evaluate")
 
     for pdir in parallel_dirs:
@@ -577,10 +578,8 @@ def post_parallel_train(experiments: list[Mapping], base_dir: str) -> None:
     print("Executing post parallel training cleanup")
     parallel_dirs = [exp["config"]["logging"]["output_dir"] for exp in experiments]
     pretraining = False
-    if issubclass(
-        experiments[0]["config"]["experiment_class"],
-        MontySupervisedObjectPretrainingExperiment,
-    ):
+    exp = hydra.utils.instantiate(experiments[0])
+    if isinstance(exp, MontySupervisedObjectPretrainingExperiment):
         parallel_dirs = [os.path.join(pdir, "pretrained") for pdir in parallel_dirs]
         pretraining = True
 
@@ -590,17 +589,13 @@ def post_parallel_train(experiments: list[Mapping], base_dir: str) -> None:
         outfile = os.path.join(base_dir, filename)
         post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
 
-    if issubclass(experiments[0]["config"]["experiment_class"], ProfileExperimentMixin):
+    if isinstance(exp, ProfileExperimentMixin):
         post_parallel_profile_cleanup(parallel_dirs, base_dir, "train")
 
-    exp = hydra.utils.instantiate(experiments[0])
     with exp:
         exp.model.load_state_dict_from_parallel(parallel_dirs, True)
         output_dir = os.path.dirname(experiments[0]["config"]["logging"]["output_dir"])
-        if issubclass(
-            experiments[0]["config"]["experiment_class"],
-            MontySupervisedObjectPretrainingExperiment,
-        ):
+        if isinstance(exp, MontySupervisedObjectPretrainingExperiment):
             output_dir = os.path.join(output_dir, "pretrained")
         os.makedirs(output_dir, exist_ok=True)
         saved_model_file = os.path.join(output_dir, "model.pt")
