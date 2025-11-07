@@ -83,11 +83,15 @@ class BaseConfigTest(unittest.TestCase):
         """
         with hydra.initialize(version_base=None, config_path="../../conf"):
             pprint("...parsing experiment...")
-            base_config = hydra.compose(
+            cfg = hydra.compose(
                 config_name="tests",
-                overrides=["test=base", f"config.logging.output_dir={self.output_dir}"],
+                overrides=[
+                    "test=base",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
             )
-            with MontyExperiment(base_config):
+            test = hydra.utils.instantiate(cfg.test)
+            with test:
                 pass
 
     # @unittest.skip("debugging")
