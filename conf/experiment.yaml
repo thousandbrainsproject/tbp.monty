@@ -3,6 +3,7 @@ defaults:
   - benchmarks/ycb: defaults
   # Experiment name
   - experiment: MISSING
+  - _self_
 
 # Which episodes to run (zero-based). Examples: "all" | "3" | "0,3,5:8" | "4:" | ":8".
 episodes: all

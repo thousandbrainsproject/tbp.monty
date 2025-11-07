@@ -18,7 +18,7 @@ from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.run_env import setup_env
 
 
-@hydra.main(config_path=".", config_name="config", version_base=None)
+@hydra.main(config_path=".", config_name="experiment", version_base=None)
 def validate(cfg: DictConfig):
     # Force interpolation of the config to get errors
     OmegaConf.to_object(cfg)

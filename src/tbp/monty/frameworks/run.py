@@ -72,7 +72,7 @@ def register_resolvers() -> None:
     OmegaConf.register_new_resolver("np.list_eval", numpy_list_eval_resolver)
 
 
-@hydra.main(config_path="../../../conf", config_name="config", version_base=None)
+@hydra.main(config_path="../../../conf", config_name="experiment", version_base=None)
 def main(cfg: DictConfig):
     if cfg.quiet_habitat_logs:
         os.environ["MAGNUM_LOG"] = "quiet"

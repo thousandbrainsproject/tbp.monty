@@ -84,7 +84,7 @@ class BaseConfigTest(unittest.TestCase):
         with hydra.initialize(version_base=None, config_path="../../conf"):
             pprint("...parsing experiment...")
             cfg = hydra.compose(
-                config_name="tests",
+                config_name="test",
                 overrides=[
                     "test=base",
                     f"test.config.logging.output_dir={self.output_dir}",
