@@ -73,23 +73,41 @@ class ChannelHypothesesResamplingTelemetry(ChannelHypothesesUpdateTelemetry):
     ages: npt.NDArray[np.int_]
     evidence_slopes: npt.NDArray[np.float64]
     removed_ids: npt.NDArray[np.int_]
+    max_slope: float
 
 
 class ResamplingHypothesesUpdater:
-    """Hypotheses updater that resamples hypotheses at every step.
+    """Hypotheses updater that resamples hypotheses based on prediction error.
 
-    This updater enables updating of the hypothesis space by resampling and rebuilding
-    the hypothesis space at every step. We resample hypotheses from the existing
-    hypothesis space, as well as new hypotheses informed by the sensed pose.
+    This updater enables updating of the hypothesis space by intelligently resampling
+    and rebuilding the hypothesis space when the model's prediction error is high. The
+    prediction error is determined based on the highest evidence slope over all the
+    objects hypothesis spaces. If the hypothesis with the highest slope is unable to
+    accumulate evidence at a high enough slope, a sampling burst is triggered. A
+    sampling burst adds new hypotheses over a specified `sampling_burst_duration`
+    number of consecutive steps to all hypothesis spaces. This burst duration smoothes
+    the effect of sensor noise. Hypotheses are deleted when their smoothed evidence
+    slope is below `evidence_slope_threshold`.
 
-    The resampling process is governed by two main parameters:
+    The resampling process is governed by four main parameters:
       - `resampling_multiplier`: Determines the number of the hypotheses to resample
         as a multiplier of the object graph nodes.
       - `evidence_slope_threshold`: Hypotheses below this threshold are deleted.
+      - `sampling_burst_duration`: The number of consecutive steps in each burst.
+      - `slope_burst_trigger`: The threshold for triggering a sampling burst.
 
     To reproduce the behavior of `DefaultHypothesesUpdater` sampling a fixed number of
-    hypotheses only at the beginning of the episode, you can set
-    `resampling_multiplier=0.0` and `evidence_slope_threshold=-1.0`.
+    hypotheses only at the beginning of the episode, you can set:
+        - `resampling_multiplier=2` (or `umbilical_num_poses` if PC undefined)
+        - `evidence_slope_threshold=-1.0` (no deletion is allowed)
+        - `sampling_burst_duration=1` (sample the full burst over a single step)
+        - `slope_burst_trigger=-1.0` (never trigger additional bursts)
+
+    These parameters will trigger a single-step burst at the first step of the episode.
+    Note that if the PC of the first observation is undetermined,
+    `resampling_multiplier` should be set to `umbilical_num_poses` to reproduce the
+    exact results of `DefaultHypothesesUpdater`. In practice, this is difficult to
+    predict because it relies on the first sampled observation.
     """
 
     def __init__(
@@ -106,8 +124,10 @@ class ResamplingHypothesesUpdater:
         features_for_matching_selector: type[FeaturesForMatchingSelector] = (
             DefaultFeaturesForMatchingSelector
         ),
-        resampling_multiplier: float = 0.1,
-        evidence_slope_threshold: float = 0.3,
+        resampling_multiplier: float = 0.2,
+        evidence_slope_threshold: float = 0.5,
+        sampling_burst_duration: int = 5,
+        slope_burst_trigger: float = 1.0,
         include_telemetry: bool = False,
         initial_possible_poses: Literal["uniform", "informed"]
         | list[Rotation] = "informed",
@@ -144,10 +164,14 @@ class ResamplingHypothesesUpdater:
             resampling_multiplier: Determines the number of the hypotheses to resample
                 as a multiplier of the object graph nodes. Value of 0.0 results in no
                 resampling. Value can be greater than 1 but not to exceed the
-                `num_hyps_per_node` of the current step. Defaults to 0.1.
+                `num_hyps_per_node` of the current step. Defaults to 0.2.
             evidence_slope_threshold: Hypotheses below this threshold are deleted.
                 Expected range matches the range of step evidence change, i.e.,
-                [-1.0, 2.0]. Defaults to 0.0.
+                [-1.0, 2.0]. Defaults to 0.5.
+            sampling_burst_duration: The number of steps in every sampling burst.
+                Defaults to 5.
+            slope_burst_trigger: A threshold below which a sampling burst is triggered.
+                Defaults to 1.0.
             include_telemetry: Flag to control if we want to calculate and return the
                 resampling telemetry in the `update_hypotheses` method. Defaults to
                 False.
@@ -189,6 +213,8 @@ class ResamplingHypothesesUpdater:
         self.features_for_matching_selector = features_for_matching_selector
         self.resampling_multiplier = resampling_multiplier
         self.evidence_slope_threshold = evidence_slope_threshold
+        self.sampling_burst_duration = sampling_burst_duration
+        self.slope_burst_trigger = slope_burst_trigger
         self.graph_memory = graph_memory
         self.include_telemetry = include_telemetry
         self.initial_possible_poses = get_initial_possible_poses(initial_possible_poses)
@@ -221,6 +247,31 @@ class ResamplingHypothesesUpdater:
 
         # Dictionary of resampling telemetry for each channel in each graph_id
         self.resampling_telemetry: dict[str, dict[str, HypothesesUpdateTelemetry]] = {}
+
+        # Trigger a burst at the beginning of the episode
+        self.sampling_burst_steps = self.sampling_burst_duration
+
+    def pre_step(self) -> None:
+        """Runs once per step before updating the hypotheses.
+
+        We calculate the max slope and update resampling parameters before running the
+        hypotheses update loop/threads over all the graph_ids and channels.
+        """
+        self.max_slope = self._max_global_slope()
+
+        if (
+            self.max_slope <= self.slope_burst_trigger
+            and self.sampling_burst_steps == 0
+        ):
+            self.sampling_burst_steps = self.sampling_burst_duration
+
+    def post_step(self) -> None:
+        """Runs once per step after updating the hypotheses.
+
+        We decrement the burst steps by 1 every step for the duration of the burst.
+        """
+        if self.sampling_burst_steps > 0:
+            self.sampling_burst_steps -= 1
 
     def update_hypotheses(
         self,
@@ -285,9 +336,6 @@ class ResamplingHypothesesUpdater:
                 graph_id=graph_id,
                 mapper=mapper,
                 tracker=tracker,
-                init_hyp_space=(
-                    displacements is None or input_channel not in mapper.channels
-                ),
             )
 
             # Sample hypotheses based on their type
@@ -350,6 +398,7 @@ class ResamplingHypothesesUpdater:
                     ages=tracker.hyp_ages(input_channel),
                     evidence_slopes=tracker.calculate_slopes(input_channel),
                     removed_ids=hypotheses_selection.remove_ids,
+                    max_slope=self.max_slope,
                 )
             )
 
@@ -399,7 +448,6 @@ class ResamplingHypothesesUpdater:
         graph_id: str,
         mapper: ChannelMapper,
         tracker: EvidenceSlopeTracker,
-        init_hyp_space: bool,
     ) -> tuple[HypothesesSelection, int]:
         """Calculates the number of existing and informed hypotheses needed.
 
@@ -411,8 +459,6 @@ class ResamplingHypothesesUpdater:
                 evidence, locations, and poses based on the input channel
             tracker: Slope tracker for the evidence values of a
                 graph_id
-            init_hyp_space: Initialize a new hypothesis space. Happens only at the
-                beginning of the episode.
 
         Returns:
             A tuple containing the hypotheses selection and count of new hypotheses
@@ -425,32 +471,33 @@ class ResamplingHypothesesUpdater:
                 is defined as a multiplier of the number of nodes in the object graph.
               - `evidence_slope_threshold`: This dictates how many hypotheses to
                 delete. Hypotheses below this threshold are deleted.
+              - `sampling_burst_steps`: The remaining number of burst steps. This value
+                is decremented in the `post_step` function.
         """
-        graph_num_points = self.graph_memory.get_locations_in_graph(
-            graph_id, input_channel
-        ).shape[0]
-        num_hyps_per_node = self._num_hyps_per_node(channel_features)
+        new_informed = 0
+        if self.sampling_burst_steps > 0:
+            graph_num_points = self.graph_memory.get_locations_in_graph(
+                graph_id, input_channel
+            ).shape[0]
+            num_hyps_per_node = self._num_hyps_per_node(channel_features)
 
-        # If hypothesis space does not exist, we initialize with informed hypotheses.
-        # Should we remove this now that we are resampling? We can sample the
-        # same number of hypotheses during initialization as in every other step.
-        if init_hyp_space:
-            full_informed_count = graph_num_points * num_hyps_per_node
-            return HypothesesSelection(maintain_mask=[]), full_informed_count
+            # This makes sure that we do not request more than the available number of
+            # informed hypotheses
+            resampling_multiplier = min(self.resampling_multiplier, num_hyps_per_node)
 
-        # This makes sure that we do not request more than the available number of
-        # informed hypotheses
-        resampling_multiplier = min(self.resampling_multiplier, num_hyps_per_node)
+            # Calculate the total number of informed hypotheses to be resampled
+            new_informed = round(graph_num_points * resampling_multiplier)
 
-        # Calculate the total number of informed hypotheses to be resampled
-        new_informed = round(graph_num_points * resampling_multiplier)
-
-        # Ensure the `new_informed` is divisible by `num_hyps_per_node`
-        new_informed -= new_informed % num_hyps_per_node
+            # Ensure the `new_informed` is divisible by `num_hyps_per_node`
+            new_informed -= new_informed % num_hyps_per_node
 
         # Returns a selection of hypotheses to maintain/delete
-        hypotheses_selection = tracker.select_hypotheses(
-            slope_threshold=self.evidence_slope_threshold, channel=input_channel
+        hypotheses_selection = (
+            tracker.select_hypotheses(
+                slope_threshold=self.evidence_slope_threshold, channel=input_channel
+            )
+            if input_channel in mapper.channels
+            else HypothesesSelection(maintain_mask=[])
         )
 
         return (
@@ -730,3 +777,26 @@ class ResamplingHypothesesUpdater:
 
         new_ids = np.concatenate(out) if out else np.empty(0, dtype=np.int64)
         return replace(hypotheses_ids, hypotheses_ids=new_ids)
+
+    def _max_global_slope(self) -> float:
+        """Compute the maximum slope over all objects and channels.
+
+        Returns:
+            The maximum global slope if finitie, otherwise float("nan")
+        """
+        max_slope = float("-inf")
+
+        for tr in self.evidence_slope_trackers.values():
+            for ch in tr.evidence_buffer.keys():
+                if tr.total_size(ch) == 0:
+                    continue
+
+                slopes = tr.calculate_slopes(ch)
+                if slopes.size == 0:
+                    continue
+
+                finite_slopes = slopes[np.isfinite(slopes)]
+                if finite_slopes.size:
+                    max_slope = max(max_slope, np.max(finite_slopes))
+
+        return float(max_slope if np.isfinite(max_slope) else "nan")
