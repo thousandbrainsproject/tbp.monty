@@ -585,7 +585,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             hfov=54.201,
             get_all_points=True,
             use_semantic_sensor=False,
-            depth_clip_sensors=(0,),
+            depth_clip_sensors=[0],
             clip_value=1.1,
         )
         obs_3d = transform(obs, state=state)

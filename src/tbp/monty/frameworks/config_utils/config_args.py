@@ -400,6 +400,7 @@ class MotorSystemConfigNaiveScanSpiral:
 
 @dataclass
 class MotorSystemConfigSurface:
+    # conf/experiment/config/monty/motor_system/surface.yaml
     motor_system_class: MotorSystem = MotorSystem
     motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
@@ -472,6 +473,7 @@ class MotorSystemConfigInformedGoalStateDrivenFartherAway:
 # hypothesis-testing jumps
 @dataclass
 class MotorSystemConfigCurInformedSurfaceGoalStateDriven:
+    # conf/experiment/config/monty/motor_system/cur_informed_surface_goal_state_driven.yaml
     motor_system_class: MotorSystem = MotorSystem
     motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(

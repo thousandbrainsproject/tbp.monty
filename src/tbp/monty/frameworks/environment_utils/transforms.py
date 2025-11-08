@@ -252,9 +252,9 @@ class DepthTo3DLocations:
             Default True.
         get_all_points: Whether to return all 3D coordinates or only the ones
             that land on an object.
-        depth_clip_sensors: tuple of sensor indices to which to apply a clipping
+        depth_clip_sensors: List of sensor indices to which to apply a clipping
             transform where all values > clip_value are set to
-            clip_value. Empty tuple ~ apply to none of them.
+            clip_value. Empty list ~ apply to none of them.
         clip_value: depth parameter for the clipping transform
 
     Warning:
@@ -269,7 +269,7 @@ class DepthTo3DLocations:
         zooms=1.0,
         hfov=90.0,
         clip_value=0.05,
-        depth_clip_sensors=(),
+        depth_clip_sensors=None,
         world_coord=True,
         get_all_points=False,
         use_semantic_sensor=False,
@@ -316,7 +316,9 @@ class DepthTo3DLocations:
         self.get_all_points = get_all_points
         self.use_semantic_sensor = use_semantic_sensor
         self.clip_value = clip_value
-        self.depth_clip_sensors = depth_clip_sensors
+        self.depth_clip_sensors = (
+            depth_clip_sensors if depth_clip_sensors is not None else []
+        )
 
     def __call__(self, observations: dict, state: State | None = None) -> dict:
         """Apply the depth-to-3D-locations transform to sensor observations.
@@ -350,7 +352,7 @@ class DepthTo3DLocations:
         a few different code paths. Here is a brief outline of the parameters
         that reflect these factors as they are commonly used in Monty:
          - when using a surface agent, self.depth_clip_sensors is a non-empty
-           tuple. More specifically, we know which sensor is the surface agent
+           list. More specifically, we know which sensor is the surface agent
            since it's index will be in self.depth_clip_sensors. We only apply
            depth clipping to the surface agent.
          - surface agents also have their depth and semantic data clipped to a

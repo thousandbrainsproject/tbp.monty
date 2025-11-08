@@ -1,0 +1,5 @@
+defaults:
+  - informed
+
+desired_object_distance: 0.025
+alpha: 0.1

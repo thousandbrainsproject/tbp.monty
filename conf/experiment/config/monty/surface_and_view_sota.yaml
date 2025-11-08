@@ -1,14 +1,15 @@
 defaults:
-  - patch_and_view
+  - surface_and_view
   - sensor_modules/clear_sensor_module_configs@
   - motor_system/clear_motor_system_config@
-  - motor_system/informed_goal_state_driven@motor_system_config
+  - motor_system/cur_informed_surface_goal_state_driven@motor_system_config
 
 monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
 sensor_module_configs:
   sensor_module_0:
     sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
     sensor_module_args:
+      is_surface_sm: true
       sensor_module_id: patch
       features:
         # morphological features (necessary)
@@ -17,7 +18,10 @@ sensor_module_configs:
         - on_object
         # non-morphological features (optional)
         - object_coverage
+        - min_depth
+        - mean_depth
         - hsv
+        - principal_curvatures
         - principal_curvatures_log
       delta_thresholds:
         on_object: 0
@@ -28,6 +32,8 @@ sensor_module_configs:
         distance: 0.01
       save_raw_obs: false
   sensor_module_1:
+    # No need to extract features from the view finder since it is not
+    # connected to a learning module (just used at beginning of episode)
     sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
     sensor_module_args:
       sensor_module_id: view_finder

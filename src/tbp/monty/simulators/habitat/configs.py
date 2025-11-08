@@ -116,6 +116,7 @@ class EnvInitArgsSimpleMount(EnvInitArgs):
 
 @dataclass
 class EnvInitArgsPatchViewMount(EnvInitArgs):
+    # conf/experiment/config/environment/init_args/patch_view_mount.yaml
     agents: list[AgentConfig] = field(
         default_factory=lambda: [
             AgentConfig(MultiSensorAgent, PatchAndViewFinderMountConfig().__dict__)
@@ -125,6 +126,7 @@ class EnvInitArgsPatchViewMount(EnvInitArgs):
 
 @dataclass
 class EnvInitArgsSurfaceViewMount(EnvInitArgs):
+    # conf/experiment/config/environment/init_args/surface_view_mount.yaml
     agents: list[AgentConfig] = field(
         default_factory=lambda: [
             AgentConfig(MultiSensorAgent, SurfaceAndViewFinderMountConfig().__dict__)
@@ -294,7 +296,7 @@ class SurfaceViewFinderMountHabitatEnvInterfaceConfig(
                 zooms=agent_args["zooms"],
                 get_all_points=True,
                 use_semantic_sensor=False,
-                depth_clip_sensors=(0,),  # comma needed to make it a tuple
+                depth_clip_sensors=[0],
                 clip_value=0.05,
             ),
         ]
@@ -335,7 +337,7 @@ class NoisySurfaceViewFinderMountHabitatEnvInterfaceConfig(
                 zooms=agent_args["zooms"],
                 get_all_points=True,
                 use_semantic_sensor=False,
-                depth_clip_sensors=(0,),  # comma needed to make it a tuple
+                depth_clip_sensors=[0],
                 clip_value=0.05,
             ),
         ]

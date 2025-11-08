@@ -39,6 +39,8 @@ from tbp.monty.frameworks.agents import AgentID
 class BasePolicyConfig:
     """Config for BasePolicy."""
 
+    # conf/experiment/config/monty/motor_system/policy/base.yaml
+
     action_sampler_args: dict
     action_sampler_class: type[ActionSampler]
     agent_id: AgentID
@@ -48,6 +50,7 @@ class BasePolicyConfig:
 
 @dataclass
 class InformedPolicyConfig:
+    # conf/experiment/config/monty/motor_system/policy/informed.yaml
     action_sampler_args: dict
     action_sampler_class: type[ActionSampler]
     agent_id: AgentID
@@ -67,12 +70,14 @@ class NaiveScanPolicyConfig(InformedPolicyConfig):
 
 @dataclass
 class SurfacePolicyConfig(InformedPolicyConfig):
+    # conf/experiment/config/monty/motor_system/policy/surface.yaml
     desired_object_distance: float = 0.025
     alpha: float = 0.1
 
 
 @dataclass
 class SurfaceCurveInformedPolicyConfig(SurfacePolicyConfig):
+    # conf/experiment/config/monty/motor_system/policy/surface_curve_informed.yaml
     desired_object_distance: float = 0.025
     pc_alpha: float = 0.5
     max_pc_bias_steps: int = 32

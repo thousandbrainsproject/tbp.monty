@@ -143,7 +143,7 @@ class OmniglotEnvironmentInterfaceConfig:
                 zooms=1,
                 get_all_points=True,
                 use_semantic_sensor=False,
-                depth_clip_sensors=(0,),
+                depth_clip_sensors=[0],
                 clip_value=1.1,
             ),
         ]
@@ -175,7 +175,7 @@ class WorldImageFromStreamEnvironmentInterfaceConfig:
                 get_all_points=True,
                 hfov=11,
                 use_semantic_sensor=False,
-                depth_clip_sensors=(0,),
+                depth_clip_sensors=[0],
                 clip_value=1.1,
             ),
             # GaussianSmoothing(
@@ -581,6 +581,7 @@ class TwoCameraMountConfig:
 
 @dataclass
 class PatchAndViewFinderMountConfig:
+    # conf/experiment/config/environment/init_args/agents/patch_and_view_finder.yaml
     """Config using view finder to find the object before starting the experiment.
 
     A common default for Viviane's experiments that use the view finder to navigate
@@ -615,6 +616,7 @@ class PatchAndViewFinderMountLowResConfig(PatchAndViewFinderMountConfig):
 
 @dataclass
 class SurfaceAndViewFinderMountConfig(PatchAndViewFinderMountConfig):
+    # conf/experiment/config/environment/init_args/agents/surface_and_view_finder.yaml
     """Use surface agent and view finder to find the object before experiment start.
 
     Adaptation of Viviane's code that use the view finder to navigate so
