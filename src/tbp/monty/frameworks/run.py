@@ -16,7 +16,7 @@ import time
 import hydra
 from omegaconf import DictConfig
 
-from tbp.monty.frameworks.hydra import register_resolvers
+from tbp.monty.hydra import register_resolvers
 
 logger = logging.getLogger(__name__)
 
