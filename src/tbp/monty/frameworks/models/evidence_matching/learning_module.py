@@ -1055,13 +1055,16 @@ class EvidenceGraphLM(GraphLM):
         Returns:
             Whether symmetry was detected.
         """
-        if last_possible_object_hypotheses is None:
+        if (
+            last_possible_object_hypotheses is None
+            or last_possible_object_hypotheses.graph_id != object_id
+        ):
             return False  # need more steps to meet symmetry condition
         logger.debug(
             f"\n\nchecking for symmetry for hp ids {possible_object_hypotheses_ids}"
             f" with last ids {self.last_possible_hypotheses}"
         )
-        if increment_evidence and last_possible_object_hypotheses.graph_id == object_id:
+        if increment_evidence:
             previous_hyps = set(last_possible_object_hypotheses.hypotheses_ids)
             current_hyps = set(possible_object_hypotheses_ids)
             hypothesis_overlap = previous_hyps.intersection(current_hyps)
