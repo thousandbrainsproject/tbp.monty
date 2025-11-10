@@ -120,8 +120,7 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         with MontySupervisedObjectPretrainingExperiment(train_config) as train_exp:
             train_exp.setup_experiment(train_exp.config)
 
-        updater = train_exp.model.learning_modules[0].hypotheses_updater
-        return updater
+        return train_exp.model.learning_modules[0].hypotheses_updater
 
     def get_pretrained_resampling_lm(self):
         train_config = copy.deepcopy(self.pretraining_configs)

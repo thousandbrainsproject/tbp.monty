@@ -482,25 +482,23 @@ class ResamplingHypothesesUpdater:
             # Clear all channel hypotheses from the tracker
             tracker.clear_hyp(input_channel)
 
-            channel_hypotheses = ChannelHypotheses(
+            return ChannelHypotheses(
                 input_channel=input_channel,
                 locations=np.zeros((0, 3)),
                 poses=np.zeros((0, 3, 3)),
                 evidence=np.zeros(0),
             )
-            return channel_hypotheses
 
         # Update tracker by removing the remove_ids
         tracker.remove_hyp(hypotheses_selection.remove_ids, input_channel)
 
         channel_hypotheses = mapper.extract_hypotheses(hypotheses, input_channel)
-        maintained_channel_hypotheses = ChannelHypotheses(
+        return ChannelHypotheses(
             input_channel=channel_hypotheses.input_channel,
             locations=channel_hypotheses.locations[maintain_ids],
             poses=channel_hypotheses.poses[maintain_ids],
             evidence=channel_hypotheses.evidence[maintain_ids],
         )
-        return maintained_channel_hypotheses
 
     def _sample_informed(
         self,
