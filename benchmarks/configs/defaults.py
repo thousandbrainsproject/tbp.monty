@@ -8,6 +8,7 @@
 # https://opensource.org/licenses/MIT.
 
 import os
+from pathlib import Path
 
 import numpy as np
 
@@ -116,13 +117,11 @@ default_evidence_1lm_config = dict(learning_module_0=default_evidence_lm_config)
 # on the first few points.
 min_eval_steps = 20
 
-monty_models_dir = os.getenv("MONTY_MODELS")
+monty_models_dir = Path(os.getenv("MONTY_MODELS"))
 
 # v6 : Using TLS for surface normal estimation
 # v7 : Updated for State class support + using new feature names like pose_vectors
 # v8 : Using separate graph per input channel
 # v9 : Using models trained on 14 unique rotations
 # v10 : Using models trained without the semantic sensor
-pretrained_dir = os.path.expanduser(
-    os.path.join(monty_models_dir, "pretrained_ycb_v10")
-)
+pretrained_dir = monty_models_dir.expanduser() / "pretrained_ycb_v10"

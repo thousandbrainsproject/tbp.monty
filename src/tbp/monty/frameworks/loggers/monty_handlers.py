@@ -309,7 +309,7 @@ class ReproduceEpisodeHandler(MontyHandler):
     def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
         # Set up data directory with reproducibility info for each episode
         if not hasattr(self, "data_dir"):
-            self.data_dir = os.path.join(output_dir, "reproduce_episode_data")
+            self.data_dir = Path(output_dir) / "reproduce_episode_data"
             os.makedirs(self.data_dir, exist_ok=True)
 
         # TODO: store a pointer to the training model
@@ -320,7 +320,7 @@ class ReproduceEpisodeHandler(MontyHandler):
 
         # Write data to action file
         action_file = f"{mode}_episode_{episode}_actions.jsonl"
-        action_file_path = os.path.join(self.data_dir, action_file)
+        action_file_path = self.data_dir / action_file
         actions = data["BASIC"][f"{mode}_actions"][episode]
         with open(action_file_path, "w") as f:
             f.writelines(
@@ -330,7 +330,7 @@ class ReproduceEpisodeHandler(MontyHandler):
 
         # Write data to object params / targets file
         object_file = f"{mode}_episode_{episode}_target.txt"
-        object_file_path = os.path.join(self.data_dir, object_file)
+        object_file_path = self.data_dir / object_file
         target = data["BASIC"][f"{mode}_targets"][episode]
         with open(object_file_path, "w") as f:
             json.dump(target, f, cls=BufferEncoder)
