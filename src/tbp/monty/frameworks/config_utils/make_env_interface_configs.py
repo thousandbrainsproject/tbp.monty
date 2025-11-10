@@ -46,6 +46,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class ExperimentArgs:
+    # conf/experiment/config/defaults.yaml
     do_train: bool = True
     do_eval: bool = True
     show_sensor_output: bool = False
@@ -65,6 +66,7 @@ class ExperimentArgs:
 
 @dataclass
 class DebugExperimentArgs(ExperimentArgs):
+    # conf/experiment/config/debug.yaml
     do_train: bool = True
     do_eval: bool = True
     max_train_steps: int = 50
@@ -76,6 +78,7 @@ class DebugExperimentArgs(ExperimentArgs):
 
 @dataclass
 class EvalExperimentArgs(ExperimentArgs):
+    # conf/experiment/config/eval.yaml
     do_train: bool = False
     n_eval_epochs: int = 1
     python_log_level: str = "DEBUG"
