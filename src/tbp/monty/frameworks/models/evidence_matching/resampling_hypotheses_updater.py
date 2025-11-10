@@ -146,7 +146,8 @@ class ResamplingHypothesesUpdater:
                 resampling. Value can be greater than 1 but not to exceed the
                 `num_hyps_per_node` of the current step. Defaults to 0.1.
             evidence_slope_threshold: Hypotheses below this threshold are deleted.
-                Defaults to 0.0.
+                Expected range matches the range of step evidence change, i.e.,
+                [-1.0, 1.5]. Defaults to 0.0.
             include_telemetry: Flag to control if we want to calculate and return the
                 resampling telemetry in the `update_hypotheses` method. Defaults to
                 False.
