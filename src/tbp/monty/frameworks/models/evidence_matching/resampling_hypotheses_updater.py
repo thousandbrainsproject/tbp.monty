@@ -480,7 +480,6 @@ class ResamplingHypothesesUpdater:
         # Return empty arrays for no hypotheses to sample
         if len(maintain_ids) == 0:
             # Clear all channel hypotheses from the tracker
-            remove_ids = np.arange(tracker.total_size(input_channel))
             tracker.clear_hyp(input_channel)
 
             channel_hypotheses = ChannelHypotheses(
