@@ -315,7 +315,7 @@ randrot_noise_10distinctobj_dist_agent.update(
         monty_args=MontyArgs(min_eval_steps=min_eval_steps),
     ),
     eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
+        object_names=DISTINCT_OBJECTS,
         object_init_sampler=RandomRotationObjectInitializer(),
     ),
 )

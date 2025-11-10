@@ -1,3 +1,18 @@
+default_all_noise_params:
+  features:
+    pose_vectors: 2 # rotate by random degrees along xyz
+    hsv: 0.1 # add gaussian noise with 0.1 std
+    principal_curvatures_log: 0.1
+    pose_fully_defined: 0.01 # flip bool in 1% of cases
+  location: 0.002 # add gaussian noise with 0.002 std
+
+default_sensor_features:
+  - pose_vectors
+  - pose_fully_defined
+  - on_object
+  - hsv
+  - principal_curvatures_log
+
 # NOTE: maybe lower once we have better policies
 # Is not really nescessary for good performance but makes sure we don't just overfit
 # on the first few points.
@@ -8,4 +23,4 @@ min_eval_steps: 20
 # v8 : Using separate graph per input channel
 # v9 : Using models trained on 14 unique rotations
 # v10 : Using models trained without the semantic sensor
-pretrained_dir: "${oc.env:MONTY_MODELS}/pretrained_ycb_v10"
+pretrained_dir: ${oc.env:MONTY_MODELS}/pretrained_ycb_v10
