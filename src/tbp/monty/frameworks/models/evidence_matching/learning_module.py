@@ -15,6 +15,7 @@ import threading
 import time
 
 import numpy as np
+import numpy.typing as npt
 from scipy.spatial import KDTree
 from scipy.spatial.transform import Rotation
 
@@ -1030,10 +1031,10 @@ class EvidenceGraphLM(GraphLM):
 
     def _check_for_symmetry(
         self,
-        object_id,
-        last_possible_object_hypotheses,
-        possible_object_hypotheses_ids,
-        increment_evidence,
+        object_id: str,
+        last_possible_object_hypotheses: ConsistentHypothesesIds | None,
+        possible_object_hypotheses_ids: npt.NDArray[np.int64],
+        increment_evidence: bool,
     ):
         """Check whether the most likely hypotheses stayed the same over the past steps.
 
