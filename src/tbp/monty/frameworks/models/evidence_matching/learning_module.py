@@ -528,14 +528,15 @@ class EvidenceGraphLM(GraphLM):
             )
 
             # Check for symmetry
-            self.last_possible_hypotheses = (
+            last_possible_hypotheses_remapped = (
                 self.hypotheses_updater.remap_hypotheses_ids_to_present(
                     self.last_possible_hypotheses
                 )
             )
             symmetry_detected = self._check_for_symmetry(
-                object_id,
-                possible_object_hypotheses_ids,
+                object_id=object_id,
+                last_possible_object_hypotheses=last_possible_hypotheses_remapped,
+                possible_object_hypotheses_ids=possible_object_hypotheses_ids,
                 # Don't increment symmetry counter if LM didn't process observation
                 increment_evidence=self.buffer.get_last_obs_processed(),
             )
@@ -1028,7 +1029,11 @@ class EvidenceGraphLM(GraphLM):
         return location_unique and rotation_unique
 
     def _check_for_symmetry(
-        self, object_id, possible_object_hypotheses_ids, increment_evidence
+        self,
+        object_id,
+        last_possible_object_hypotheses,
+        possible_object_hypotheses_ids,
+        increment_evidence,
     ):
         """Check whether the most likely hypotheses stayed the same over the past steps.
 
@@ -1039,6 +1044,8 @@ class EvidenceGraphLM(GraphLM):
 
         Args:
             object_id: identifier of the object being checked for symmetry
+            last_possible_object_hypotheses: All the possible hypotheses
+                from the last step.
             possible_object_hypotheses_ids: List of IDs of all possible hypotheses.
             increment_evidence: Whether to increment symmetry evidence or not. We
                 may want this to be False for example if we did not receive a new
@@ -1047,14 +1054,14 @@ class EvidenceGraphLM(GraphLM):
         Returns:
             Whether symmetry was detected.
         """
-        if self.last_possible_hypotheses is None:
+        if last_possible_object_hypotheses is None:
             return False  # need more steps to meet symmetry condition
         logger.debug(
             f"\n\nchecking for symmetry for hp ids {possible_object_hypotheses_ids}"
             f" with last ids {self.last_possible_hypotheses}"
         )
-        if increment_evidence and self.last_possible_hypotheses.graph_id == object_id:
-            previous_hyps = set(self.last_possible_hypotheses.hypotheses_ids)
+        if increment_evidence and last_possible_object_hypotheses.graph_id == object_id:
+            previous_hyps = set(last_possible_object_hypotheses.hypotheses_ids)
             current_hyps = set(possible_object_hypotheses_ids)
             hypothesis_overlap = previous_hyps.intersection(current_hyps)
             if len(hypothesis_overlap) / len(current_hyps) > 0.9:
