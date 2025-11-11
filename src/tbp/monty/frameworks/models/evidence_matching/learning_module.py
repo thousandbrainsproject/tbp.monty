@@ -1211,10 +1211,10 @@ class EvidenceGraphLM(GraphLM):
             # error. This would not be the case if there are no existing hypotheses
             # or if a channel was newly initialized.
             try:
-                displacer_telemetry = (
-                    channel_telemetry.channel_hypothesis_displacer_telemetry
-                )
-                channel_prediction_error = displacer_telemetry.mlh_prediction_error
+                displacer_telemetry = channel_telemetry[
+                    "channel_hypothesis_displacer_telemetry"
+                ]
+                channel_prediction_error = displacer_telemetry["mlh_prediction_error"]
                 prediction_errors.append(channel_prediction_error)
             except AttributeError:
                 # channel_telemetry was missing needed attributes,
