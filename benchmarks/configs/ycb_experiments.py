@@ -453,7 +453,7 @@ base_10multi_distinctobj_dist_agent.update(
     env_interface_config=PatchViewFinderMultiObjectMountHabitatEnvInterfaceConfig(),
     eval_env_interface_args=EnvironmentInterfaceMultiObjectArgs(
         object_names=dict(
-            targets_list=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
+            targets_list=DISTINCT_OBJECTS,
             source_object_list=DISTINCT_OBJECTS,
             num_distractors=10,  # Number of other objects added to the environment
         ),

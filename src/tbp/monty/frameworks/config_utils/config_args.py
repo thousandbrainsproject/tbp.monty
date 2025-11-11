@@ -454,6 +454,7 @@ class MotorSystemConfigInformedGoalStateDriven:
 
 @dataclass
 class MotorSystemConfigInformedGoalStateDrivenFartherAway:
+    # conf/experiment/config/monty/motor_system/informed_goal_state_driven_farther_away.yaml
     motor_system_class: MotorSystem = MotorSystem
     motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
