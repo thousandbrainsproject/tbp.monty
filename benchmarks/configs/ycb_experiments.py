@@ -546,7 +546,7 @@ surf_agent_unsupervised_10distinctobj_noise.update(
 surf_agent_unsupervised_10simobj = copy.deepcopy(surf_agent_unsupervised_10distinctobj)
 surf_agent_unsupervised_10simobj.update(
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(0, 10, object_list=SIMILAR_OBJECTS),
+        object_names=SIMILAR_OBJECTS,
         object_init_sampler=RandomRotationObjectInitializer(),
     ),
 )
