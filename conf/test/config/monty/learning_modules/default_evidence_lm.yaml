@@ -1,0 +1,7 @@
+defaults:
+  - feature_weights/defaults@learning_module_args.feature_weights
+  - tolerances/defaults@learning_module_args.tolerances
+
+learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+learning_module_args:
+  max_match_distance: 0.001
