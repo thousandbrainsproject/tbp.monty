@@ -315,6 +315,7 @@ class SurfaceViewFinderMontyWorldMountHabitatEnvInterfaceConfig(
 class NoisySurfaceViewFinderMountHabitatEnvInterfaceConfig(
     PatchViewFinderMountHabitatEnvInterfaceConfig
 ):
+    # conf/experiment/config/environment/noisy_surface_view_finder_mount_habitat.yaml
     env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsSurfaceViewMount().__dict__
     )
