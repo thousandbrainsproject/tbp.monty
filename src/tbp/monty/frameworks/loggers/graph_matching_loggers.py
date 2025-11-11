@@ -197,10 +197,10 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             self.log(logger_args, output_dir, model)
 
     def post_episode(self, logger_args, output_dir, model):
-        self.update_episode_data(logger_args, output_dir, model)
+        self.update_episode_data(logger_args, model)
         self.log_episode(logger_args, output_dir, model)
 
-    def update_episode_data(self, logger_args, output_dir, model):
+    def update_episode_data(self, logger_args, model):
         """Run get_stats_per_lm and add to overall stats.
 
         Store stats ~
@@ -533,10 +533,10 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
         self.flush()
 
     def post_episode(self, logger_args, output_dir, model):
-        self.update_episode_data(logger_args, output_dir, model)
+        self.update_episode_data(logger_args, model)
         self.log_episode(logger_args, output_dir, model)
 
-    def update_episode_data(self, logger_args, output_dir, model):
+    def update_episode_data(self, logger_args, model):
         """Add episode data to overall buffer_data dict.
 
         Store stats ~
@@ -545,7 +545,7 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
                     stats
         """
         # update train / eval stats
-        super().update_episode_data(logger_args, output_dir, model)
+        super().update_episode_data(logger_args, model)
 
         episodes = logger_args["train_episodes"] + logger_args["eval_episodes"]
         self.train_episodes_to_total[logger_args["train_episodes"]] = episodes
@@ -613,13 +613,13 @@ class SelectiveEvidenceLogger(BasicGraphMatchingLogger):
         self.flush()
 
     def post_episode(self, logger_args, output_dir, model):
-        self.update_episode_data(logger_args, output_dir, model)
+        self.update_episode_data(logger_args, model)
         self.log_episode(logger_args, output_dir, model)
 
-    def update_episode_data(self, logger_args, output_dir, model):
+    def update_episode_data(self, logger_args, model):
         """Add episode data to overall buffer_data dict."""
         # update train / eval stats
-        super().update_episode_data(logger_args, output_dir, model)
+        super().update_episode_data(logger_args, model)
 
         episodes = logger_args["train_episodes"] + logger_args["eval_episodes"]
         self.train_episodes_to_total[logger_args["train_episodes"]] = episodes
