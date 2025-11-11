@@ -36,15 +36,21 @@ from tbp.monty.frameworks.config_utils.make_dataset_configs import (
 )
 from tbp.monty.frameworks.environments.logos_on_objs import OBJECTS_WITH_LOGOS_LVL1_DISK
 from tbp.monty.frameworks.models.sensor_modules import Probe
+from tbp.monty.frameworks.config_utils.config_args import (
+    DetailedEvidenceLMLoggingConfig,
+)
+from tbp.monty.frameworks.loggers.monty_handlers import (
+    BasicCSVStatsHandler,
+    DetailedJSONHandler,
+    ReproduceEpisodeHandler,
+)
 
 # Custom tolerances without principal_curvatures_log
 CUSTOM_TOLERANCE_VALUES = {
     "hsv": np.array([0.1, 0.2, 0.2]),
 }
 
-CUSTOM_TOLERANCES = {
-    "patch": CUSTOM_TOLERANCE_VALUES
-}
+CUSTOM_TOLERANCES = {"patch": CUSTOM_TOLERANCE_VALUES}
 
 LEARN_POSITIONS = [
     [0.0, 1.5, 0.0],
@@ -54,7 +60,7 @@ LEARN_POSITIONS = [
 
 
 def generate_inference_positions(
-    base_positions, n_samples_per_position=1, sigma=0.01, seed=42
+    base_positions, n_samples_per_position=7, sigma=0.03, seed=42
 ):
     """Generate inference positions by adding Gaussian jitter to base.
 
@@ -164,11 +170,7 @@ disk_learning_control, disk_learning_2d = make_disk_learning_experiment_pair(
 ##############################
 
 
-def make_disk_inference_experiment(
-    model_path,
-    use_2d_sensor=False,
-    debug_subdir=None
-):
+def make_disk_inference_experiment(model_path, use_2d_sensor=False, debug_subdir=None, debug_version=False):
     """Create inference experiment config for disk objects.
 
     Args:
@@ -194,25 +196,42 @@ def make_disk_inference_experiment(
         if "learning_module_args" in lm_config:
             lm_config["learning_module_args"]["tolerances"] = CUSTOM_TOLERANCES
 
-    # Override disk-specific fields
+    # Set save_raw_obs to True for all sensor modules if debugging
+    if debug_version:
+        sensor_module_configs = config["monty_config"].sensor_module_configs
+        for sm_config in sensor_module_configs.values():
+            sm_config["sensor_module_args"]["save_raw_obs"] = True
+        num_eval_steps = 100
+        logging_config = ParallelEvidenceLMLoggingConfig(
+            wandb_group="disk_inference_experiments",
+            monty_handlers=[
+                BasicCSVStatsHandler,
+                DetailedJSONHandler,
+                ReproduceEpisodeHandler,
+            ],
+        )
+    else:
+        sensor_module_configs = config["monty_config"].sensor_module_configs
+        num_eval_steps = 500
+        logging_config = ParallelEvidenceLMLoggingConfig(
+            wandb_group="disk_inference_experiments",
+        )
     config.update(
         experiment_args=EvalExperimentArgs(
             model_name_or_path=model_path,
             n_eval_epochs=len(INFERENCE_POSITIONS),
+            max_eval_steps=num_eval_steps,
         ),
-        logging_config=ParallelEvidenceLMLoggingConfig(
-            wandb_group="disk_inference_experiments",
-        ),
+        logging_config=logging_config,
         monty_config=PatchAndViewSOTAMontyConfig(
             learning_module_configs=learning_module_configs,
-            motor_system_config=make_naive_scan_motor_config(step_size=1),
+            sensor_module_configs=sensor_module_configs,
+            motor_system_config=make_naive_scan_motor_config(step_size=5),
             monty_args=MontyArgs(min_eval_steps=50),
         ),
         dataset_args=make_compositional_dataset_args(),
         eval_dataloader_args=make_object_dataloader_args(
-            OBJECTS_WITH_LOGOS_LVL1_DISK,
-            INFERENCE_POSITIONS,
-            [[0.0, 0.0, 0.0]]
+            OBJECTS_WITH_LOGOS_LVL1_DISK, INFERENCE_POSITIONS, [[0.0, 0.0, 0.0]]
         ),
     )
 
@@ -265,6 +284,12 @@ disk_inference_2d_on_2d = make_disk_inference_experiment(
     debug_subdir="debug_2d_inference_disk_on_2d",
 )
 
+# Make a 3D-on-3D debug experiment for visualization
+debug_control_on_control = make_disk_inference_experiment(
+    model_path=model_path_disk_control,
+    use_2d_sensor=False,
+    debug_version=True,
+)
 
 experiments = DiskExperiments(
     disk_learning_control=disk_learning_control,
@@ -273,5 +298,6 @@ experiments = DiskExperiments(
     disk_inference_control_on_2d=disk_inference_control_on_2d,
     disk_inference_2d_on_control=disk_inference_2d_on_control,
     disk_inference_2d_on_2d=disk_inference_2d_on_2d,
+    debug_control_on_control=debug_control_on_control,
 )
 CONFIGS = asdict(experiments)

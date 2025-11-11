@@ -136,6 +136,7 @@ class DiskExperiments:
     disk_inference_control_on_2d: dict
     disk_inference_2d_on_control: dict
     disk_inference_2d_on_2d: dict
+    debug_control_on_control: dict
 
 
 current_module = sys.modules[__name__]

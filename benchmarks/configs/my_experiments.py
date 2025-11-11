@@ -217,7 +217,9 @@ lvl1_upsidedown_control, lvl1_upsidedown_2d = make_lvl1_experiment_pair(
 )
 
 
-def make_angles_experiment_pair(rotation_name, rotations, debug_subdir=None, step_size=1):
+def make_angles_experiment_pair(
+    rotation_name, rotations, debug_subdir=None, step_size=1
+):
     """Create a pair of ANGLES experiments (control + 2D sensor) with rotations.
 
     Args:
@@ -243,7 +245,9 @@ def make_angles_experiment_pair(rotation_name, rotations, debug_subdir=None, ste
             n_train_epochs=len(ANGLES_POSITIONS) * len(rotations),
         ),
         dataset_args=make_compositional_dataset_args(),
-        train_dataloader_args=make_object_dataloader_args(ANGLES, ANGLES_POSITIONS, rotations),
+        train_dataloader_args=make_object_dataloader_args(
+            ANGLES, ANGLES_POSITIONS, rotations
+        ),
         monty_config=PatchAndViewMontyConfig(
             motor_system_config=make_naive_scan_motor_config(step_size=step_size),
         ),
