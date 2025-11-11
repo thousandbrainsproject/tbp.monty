@@ -3,6 +3,7 @@ defaults:
   - sensor_modules/clear_sensor_module_configs@
   - motor_system/clear_motor_system_config@
   - motor_system/informed_goal_state_driven@motor_system_config
+  - sensor_modules/sensor_module/view_finder_probe@sensor_module_configs.sensor_module_1
 
 monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
 sensor_module_configs:
@@ -26,9 +27,4 @@ sensor_module_configs:
         pose_vectors: ${np.list_eval:[np.pi / 4, np.pi * 2, np.pi * 2]}
         principal_curvatures_log: [2, 2]
         distance: 0.01
-      save_raw_obs: false
-  sensor_module_1:
-    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
-    sensor_module_args:
-      sensor_module_id: view_finder
       save_raw_obs: false

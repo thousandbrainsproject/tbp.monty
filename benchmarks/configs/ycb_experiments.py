@@ -194,6 +194,7 @@ default_5lm_lmconfig = dict(
 )
 
 default_sensor_features_surf_agent = [
+    # conf/experiment/config/monty/sensor_modules/sensor_module/features/default_surf_agent.yaml
     "pose_vectors",
     "pose_fully_defined",
     "on_object",

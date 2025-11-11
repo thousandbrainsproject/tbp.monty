@@ -1,6 +1,7 @@
 defaults:
   - motor_system/informed_no_trans@motor_system_config
   - args/defaults@monty_args
+  - sensor_modules/sensor_module/view_finder_probe@sensor_module_configs.sensor_module_1
 
 monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
 learning_module_configs:
@@ -31,9 +32,7 @@ sensor_module_configs:
         - mean_curvature_sc
       save_raw_obs: true
   sensor_module_1:
-    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
     sensor_module_args:
-      sensor_module_id: view_finder
       save_raw_obs: true
 sm_to_agent_dict:
   patch: ${monty.agent_id:agent_id_0}

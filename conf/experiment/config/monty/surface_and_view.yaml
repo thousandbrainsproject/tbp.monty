@@ -3,6 +3,7 @@ defaults:
   - sensor_modules/clear_sensor_module_configs@
   - motor_system/clear_motor_system_config@
   - motor_system/surface@motor_system_config
+  - sensor_modules/sensor_module/view_finder_probe@sensor_module_configs.sensor_module_1
 
 sensor_module_configs:
   sensor_module_0:
@@ -28,9 +29,7 @@ sensor_module_configs:
         - mean_curvature_sc
       save_raw_obs: true
   sensor_module_1:
-    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
     sensor_module_args:
-      sensor_module_id: view_finder
       save_raw_obs: true
 sm_to_agent_dict:
   patch: ${monty.agent_id:agent_id_0}
