@@ -426,7 +426,7 @@ randrot_noise_10simobj_dist_agent.update(
         n_eval_epochs=10,  # number of random rotations to test for each object
     ),
     eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(0, 10, object_list=SIMILAR_OBJECTS),
+        object_names=SIMILAR_OBJECTS,
         object_init_sampler=RandomRotationObjectInitializer(),
     ),
 )
