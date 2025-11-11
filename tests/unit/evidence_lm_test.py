@@ -216,6 +216,14 @@ class EvidenceLMTest(BaseGraphTest):
                     f"+{actions_file_name_selector}={self.fixed_actions_path}",
                 ],
             )
+            self.fixed_possible_poses_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=evidence_lm/no_features",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                    f"+{actions_file_name_selector}={self.fixed_actions_path}",
+                ],
+            )
 
         # --- Old Configs ---
 
@@ -978,7 +986,7 @@ class EvidenceLMTest(BaseGraphTest):
 
     def test_fixed_initial_poses(self):
         """Test same scenario as test_fixed_actions_evidence with predefined poses."""
-        exp = hydra.utils.instantiate(self.no_features_cfg.test)
+        exp = hydra.utils.instantiate(self.fixed_possible_poses_cfg.test)
         with exp:
             exp.train()
 
@@ -1552,20 +1560,15 @@ class EvidenceLMTest(BaseGraphTest):
 
     def test_can_run_with_no_features(self):
         """Standard evaluation setup but using only pose features."""
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.no_features_evidence)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.no_features_cfg.test)
+        with exp:
             exp.train()
-            pprint("...loading and checking train statistics...")
 
             train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
             self.check_train_results(train_stats)
 
-            pprint("...evaluating...")
             exp.evaluate()
 
-        pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
 
         self.check_eval_results(eval_stats)
