@@ -93,7 +93,7 @@ if __name__ == "__main__":
 
     # Pickle these configs in the follow_ups directory
     follow_up_dir = pathlib.Path(__file__).parent / "configs/follow_ups"
-    follow_up_name = "_".join([experiment, follow_up_suffix])
+    follow_up_name = f"{experiment}_{follow_up_suffix}"
     file_path = os.path.join(follow_up_dir, follow_up_name + ".pkl")
     with open(file_path, "wb") as f:
         pickle.dump(follow_up_config, f)

@@ -6,6 +6,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import pytest
 
@@ -19,26 +20,25 @@ import shutil
 import tempfile
 from pathlib import Path
 from pprint import pprint
-from typing import Set
 from unittest import TestCase
 
 import pytest
 
 from tbp.monty.frameworks.config_utils.config_args import LoggingConfig
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     DebugExperimentArgs,
-    EnvironmentDataLoaderPerObjectEvalArgs,
-    EnvironmentDataLoaderPerObjectTrainArgs,
+    EnvironmentInterfacePerObjectEvalArgs,
+    EnvironmentInterfacePerObjectTrainArgs,
     NotYCBEvalObjectList,
     NotYCBTrainObjectList,
 )
 from tbp.monty.frameworks.environments.embodied_data import (
-    EnvironmentDataLoaderPerObject,
+    EnvironmentInterfacePerObject,
 )
 from tbp.monty.frameworks.experiments import MontyExperiment, ProfileExperimentMixin
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsSinglePTZ,
-    SinglePTZHabitatDatasetArgs,
+    SinglePTZHabitatEnvInterfaceConfig,
 )
 from tests.unit.frameworks.config_utils.fakes.config_args import (
     FakeSingleCameraMontyConfig,
@@ -89,15 +89,15 @@ class ProfileExperimentMixinTest(TestCase):
                 output_dir=self.output_dir, python_log_level="DEBUG"
             ),
             monty_config=FakeSingleCameraMontyConfig(),
-            dataset_args=SinglePTZHabitatDatasetArgs(
+            env_interface_config=SinglePTZHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsSinglePTZ(data_path=None).__dict__
             ),
-            train_dataloader_class=EnvironmentDataLoaderPerObject,
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_class=EnvironmentInterfacePerObject,
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=NotYCBTrainObjectList().objects,
             ),
-            eval_dataloader_class=EnvironmentDataLoaderPerObject,
-            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
+            eval_env_interface_class=EnvironmentInterfacePerObject,
+            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
                 object_names=NotYCBEvalObjectList().objects,
             ),
         )
@@ -107,7 +107,7 @@ class ProfileExperimentMixinTest(TestCase):
     def tearDown(self):
         shutil.rmtree(self.output_dir)
 
-    def get_profile_files(self) -> Set[str]:
+    def get_profile_files(self) -> set[str]:
         """Helper to get the files in the profile directory in a set.
 
         Returns:
@@ -139,7 +139,7 @@ class ProfileExperimentMixinTest(TestCase):
         with ProfiledExperiment(base_config) as exp:
             pprint("...training...")
             exp.model.set_experiment_mode("train")
-            exp.dataloader = exp.train_dataloader
+            exp.env_interface = exp.train_env_interface
             exp.run_episode()
 
         self.assertSetEqual(

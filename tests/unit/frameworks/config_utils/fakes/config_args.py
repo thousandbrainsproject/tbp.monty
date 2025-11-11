@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List
+from typing import Callable
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.config_utils.config_args import (
@@ -26,7 +26,7 @@ from tests.unit.frameworks.models.fakes.sensor_modules import FakeSensorModule
 @dataclass
 class FakeSingleCameraMontyConfig(MontyConfig):
     monty_class: Callable = MontyBase
-    learning_module_configs: dataclass | Dict = field(
+    learning_module_configs: dataclass | dict = field(
         default_factory=lambda: dict(
             learning_module_1=dict(
                 learning_module_class=FakeLearningModule,
@@ -34,7 +34,7 @@ class FakeSingleCameraMontyConfig(MontyConfig):
             )
         )
     )
-    sensor_module_configs: dataclass | Dict = field(
+    sensor_module_configs: dataclass | dict = field(
         default_factory=lambda: dict(
             sensor_module_0=dict(
                 sensor_module_class=FakeSensorModule,
@@ -42,11 +42,11 @@ class FakeSingleCameraMontyConfig(MontyConfig):
             ),
         )
     )
-    motor_system_config: dataclass | Dict = field(default_factory=MotorSystemConfig)
-    sm_to_agent_dict: Dict = field(
+    motor_system_config: dataclass | dict = field(default_factory=MotorSystemConfig)
+    sm_to_agent_dict: dict = field(
         default_factory=lambda: dict(sensor_id_0=AgentID("agent_id_0"))
     )
-    sm_to_lm_matrix: List = field(default_factory=lambda: [[0]])
-    lm_to_lm_matrix: List | None = None
-    lm_to_lm_vote_matrix: List | None = None
-    monty_args: Dict | MontyArgs = field(default_factory=MontyArgs)
+    sm_to_lm_matrix: list = field(default_factory=lambda: [[0]])
+    lm_to_lm_matrix: list | None = None
+    lm_to_lm_vote_matrix: list | None = None
+    monty_args: dict | MontyArgs = field(default_factory=MontyArgs)

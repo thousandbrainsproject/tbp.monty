@@ -146,7 +146,7 @@ Since Monty is a sensorimotor framework, everything happens as a timeseries of s
 >     max_total_steps=5000,
 > ),
 > logging_config=DetailedEvidenceLMLoggingConfig(), # <--- Setting the detailed logger
-> eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+> eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
 >     object_names=get_object_names_by_idx(
 >         0, 1, object_list=DISTINCT_OBJECTS # <--- Only testing one object
 >     ),

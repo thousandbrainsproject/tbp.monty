@@ -12,7 +12,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Protocol, TypedDict
+from typing import Any, ClassVar, Protocol, TypedDict
 
 import numpy as np
 import quaternion
@@ -104,7 +104,7 @@ class HabitatObservationProcessorTelemetry:
 class HabitatObservationProcessor:
     """Processes Habitat observations into a Cortical Message."""
 
-    CURVATURE_FEATURES = [
+    CURVATURE_FEATURES: ClassVar[list[str]] = [
         "principal_curvatures",
         "principal_curvatures_log",
         "gaussian_curvature",
@@ -114,7 +114,7 @@ class HabitatObservationProcessor:
         "curvature_for_TM",
     ]
 
-    POSSIBLE_FEATURES = [
+    POSSIBLE_FEATURES: ClassVar[list[str]] = [
         "on_object",
         "object_coverage",
         "min_depth",
