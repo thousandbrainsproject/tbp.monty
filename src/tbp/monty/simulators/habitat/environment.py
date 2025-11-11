@@ -10,11 +10,10 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Dict, List, Sequence, Type
+from typing import Sequence
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
-    ActionSpace,
     EmbodiedEnvironment,
     ObjectID,
     QuaternionWXYZ,
@@ -31,7 +30,6 @@ from tbp.monty.simulators.habitat import (
 
 __all__ = [
     "AgentConfig",
-    "HabitatActionSpace",
     "HabitatEnvironment",
     "MultiSensorAgentArgs",
     "ObjectConfig",
@@ -74,19 +72,8 @@ MultiSensorAgentArgs.__module__ = __name__
 class AgentConfig:
     """Agent configuration used by :class:`HabitatEnvironment`."""
 
-    agent_type: Type[HabitatAgent]
-    agent_args: dict | Type[HabitatAgentArgs]
-
-
-class HabitatActionSpace(tuple, ActionSpace):
-    """`ActionSpace` wrapper for Habitat's `AgentConfiguration`.
-
-    Wraps :class:`habitat_sim.agent.AgentConfiguration` action space as monty
-    :class:`.ActionSpace`.
-    """
-
-    def sample(self):
-        return self.rng.choice(self)
+    agent_type: type[HabitatAgent]
+    agent_args: dict | type[HabitatAgentArgs]
 
 
 class HabitatEnvironment(EmbodiedEnvironment):
@@ -102,8 +89,8 @@ class HabitatEnvironment(EmbodiedEnvironment):
 
     def __init__(
         self,
-        agents: List[dict | AgentConfig],
-        objects: List[dict | ObjectConfig] | None = None,
+        agents: list[dict | AgentConfig],
+        objects: list[dict | ObjectConfig] | None = None,
         scene_id: str | None = None,
         seed: int = 42,
         data_path: str | None = None,
@@ -131,10 +118,6 @@ class HabitatEnvironment(EmbodiedEnvironment):
                 obj_dict = asdict(obj) if is_dataclass(obj) else obj
                 self._env.add_object(**obj_dict)
 
-    @property
-    def action_space(self):
-        return HabitatActionSpace(self._env.action_space)
-
     def add_object(
         self,
         name: str,
@@ -142,8 +125,6 @@ class HabitatEnvironment(EmbodiedEnvironment):
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: SemanticID | None = None,
-        enable_physics=False,
-        object_to_avoid=False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectID:
         return self._env.add_object(
@@ -152,12 +133,10 @@ class HabitatEnvironment(EmbodiedEnvironment):
             rotation,
             scale,
             semantic_id,
-            enable_physics,
-            object_to_avoid,
             primary_target_object,
         ).object_id
 
-    def step(self, actions: Sequence[Action]) -> Dict[str, Dict]:
+    def step(self, actions: Sequence[Action]) -> dict[str, dict]:
         return self._env.apply_actions(actions)
 
     def remove_all_objects(self) -> None:

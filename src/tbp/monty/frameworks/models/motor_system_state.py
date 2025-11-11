@@ -33,7 +33,7 @@ class AgentState(TypedDict):
     TODO: Change into dataclass
     """
 
-    sensors: Dict[str, SensorState]
+    sensors: dict[str, SensorState]
     """The proprioceptive state of the agent's sensors."""
     position: Any  # TODO: Stop using magnum.Vector3 and decide on Monty standard
     """The agent's position relative to some global reference frame."""

@@ -27,9 +27,12 @@ dependencies = [
     'scipy>=1.10.1', # imported via conda (conda-forge::scipy)
     'sympy', # imported via conda (conda-forge::sympy)
     'torch==1.13.1', # imported via conda (pytorch::pytorch)
-    'torch-geometric==2.1.0.post1', # imported via conda (pyg::pyg)
-    'torch-sparse==0.6.15', # imported via conda (pytorch::pytorch-sparse)
-    'torch-scatter==2.0.9', # imported via conda (pytorch::pytorch-scatter)
+    'torch-geometric==2.1.0.post1;python_version=="3.8"', # imported via conda (pyg::pyg)
+    'torch-sparse==0.6.15;python_version=="3.8"', # imported via conda (pytorch::pytorch-sparse)
+    'torch-scatter==2.0.9;python_version=="3.8"', # imported via conda (pytorch::pytorch-scatter)
+    'torch-geometric>=2.1.0.post1;python_version=="3.9"', # for uv environment
+    'torch-sparse>=0.6.15;python_version=="3.9"', # for uv environment
+    'torch-scatter>=2.0.9;python_version=="3.9"', # for uv environment
     'tqdm', # imported via conda (conda-forge::tqdm)
     'typing-extensions',
     'wandb', # imported via conda (conda-forge::wandb)
@@ -46,7 +49,9 @@ simulator_habitat = [
     # HabitatSim is only installable via conda. These dependencies are listed here for
     # documentation and consistency.
     # NOTE: The version constraint is to prevent `uv` from failing trying to check all
-    # optional dependency sets are valid.
+    # optional dependency sets are valid. This is because there isn't a version of
+    # HabitatSim on PyPI that works for 3.8, and so it tries to solve for a 3.8 environment
+    # and fails.
     'habitat_sim;python_version=="3.9"', # imported via conda (aihabitat::habitat-sim)
 ]
 simulator_mujoco = [
@@ -239,11 +244,9 @@ ignore = [
     "EM101", # EM101: Exception must not use a string literal, assign to variable first
     "EM102", # EM102: Exception must not use an f-string literal, assign to variable first
     "F403", # F403: from {name} import * used; unable to detect undefined names
-    "FA100", # FA100: Add `from __future__ import annotations` to simplify
     "FBT001", # FBT001: Boolean-typed positional argument in function definition
     "FBT002", # FBT002: Boolean default positional argument in function definition
     "FBT003", # FBT003: Boolean positional value in function call
-    "FLY002", # FLY002: Consider {expression} instead of string join
     "G003", # G003: Logging statement uses `+`
     "G004", # G004: Logging statement uses f-string
     "N804", # N804: First argument of a class method should be named `cls`
@@ -253,13 +256,11 @@ ignore = [
     "PERF401", # PERF401: Use a list comprehension to create a transformed list
     "PERF402", # PERF402: Use `list` or `list.copy` to create a copy of a list
     "PIE790", # PIE790: Unnecessary pass statement
-    "PLE0302", # PLE0302: The special method `__getitem__` expects 2 parameters, 1 was given
     "PLR0911", # PLR0911: Too many return statements
     "PLR0912", # PLR0912: Too many branches
     "PLR0913", # PLR0913: Too many arguments in function definition
     "PLR0915", # PLR0915: Too many statements
     "PLR1704", # PLR1704: Redefining argument with the local name
-    "PLR1714", # PLR1714: Consider merging multiple comparisons: {expression}. Use a set if the elements are hashable.
     "PLR1730", # PLR1730: Replace `if` statement with {replacement}
     "PLR2004", # PLR2004: Magic value used in comparison, consider replacing {value} with a constant variable
     "PT009", # PT009: Use a regular `assert` instead of unittest-style `assertEqual`
@@ -275,8 +276,6 @@ ignore = [
     "PTH123", # PTH123: `open()` should be replaced by `Path.open()`
     "RET503", # RET503: Missing explicit `return` at the end of function able to return non-`None` value
     "RUF005", # RUF005: Consider {expression} instead of concatenation
-    "RUF012", # RUF012: Mutable class attributes should be annotated with `typing.ClassVar`
-    "RUF013", # RUF013: PEP 484 prohibits implicit `Optional`
     "RUF015", # RUF015: Prefer next({iterable}) over single element slice
     "S101", # S101: Use of `assert` detected
     "S104", # S104: Possible binding to all interfaces
@@ -284,7 +283,6 @@ ignore = [
     "S311", # S311: Standard pseudo-random generators are not suitable for cryptographic purposes
     "S605", # S605: Starting a process with a shell, possible injection detected
     "SIM102", # SIM102: Use a single `if` statement instead of nested `if` statements
-    "SIM103", # SIM103: Return the condition {condition} directly
     "SIM108", # SIM108: Use ternary operator {contents} instead of if-else-block
     "SIM117", # SIM117: Use a single `with` statement with multiple contexts instead of nested `with` statements
     "SIM118", # SIM118: Use `key in dict` instead of `key in dict.keys()`
@@ -298,11 +296,13 @@ ignore = [
     "TD004", # TD004: Missing colon in TODO
     "TD005", # TD005: Missing issue description after `TODO`
     "TRY003", # TRY003: Avoid specifying long messages outside the exception class
-    "UP006", # UP006: Use `type` instead of `Type` for type annotation
 ]
 
 [tool.ruff.lint.flake8-bugbear]
-extend-immutable-calls = ["tbp.monty.frameworks.agents.AgentID"]
+extend-immutable-calls = [
+    "tbp.monty.frameworks.agents.AgentID",
+    "tbp.monty.frameworks.environments.embodied_environment.SemanticID"
+]
 
 [tool.ruff.lint.flake8-comprehensions]
 # Our configurations use this all the time
@@ -329,5 +329,4 @@ namespaces = true
 'tbp.monty.simulators.resources' = ['*.json', '*.yml', '*.txt']
 
 [tool.uv]
-# Extra index for PyTorch extensions
-find-links = ["https://data.pyg.org/whl/torch-1.13.1+cpu.html"]
+no-build-isolation-package = ["torch-scatter", "torch-sparse"]

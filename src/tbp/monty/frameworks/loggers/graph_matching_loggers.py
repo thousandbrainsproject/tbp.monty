@@ -460,7 +460,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                     (stats["num_confused_per_lm"] + stats["num_confused_mlh_per_lm"])
                     / (stats["num_episodes"] * len(self.lms))
                 ) * 100
-            elif p == "correct_mlh" or p == "confused_mlh":
+            elif p in {"correct_mlh", "confused_mlh"}:
                 # skip because they are already included in correct and confused stats
                 pass
             else:

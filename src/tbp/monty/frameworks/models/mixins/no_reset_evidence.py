@@ -88,7 +88,7 @@ class TheoreticalLimitLMLoggingMixin:
                 f"EvidenceGraphLM, got {cls.__bases__}"
             )
 
-    def _add_detailed_stats(self, stats: Dict[str, Any]) -> Dict[str, Any]:
+    def _add_detailed_stats(self, stats: dict[str, Any]) -> dict[str, Any]:
         """Add detailed statistics to the logging dictionary.
 
         This includes metrics like the max evidence score per object, the theoretical

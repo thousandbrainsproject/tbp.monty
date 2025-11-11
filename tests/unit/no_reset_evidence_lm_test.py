@@ -6,6 +6,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import pytest
 
@@ -18,7 +19,7 @@ import copy
 import shutil
 import tempfile
 import unittest
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 
@@ -28,9 +29,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PatchAndViewMontyConfig,
     PretrainLoggingConfig,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataLoaderPerObjectEvalArgs,
-    EnvironmentDataLoaderPerObjectTrainArgs,
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
+    EnvironmentInterfacePerObjectEvalArgs,
+    EnvironmentInterfacePerObjectTrainArgs,
     ExperimentArgs,
     PredefinedObjectInitializer,
     SupervisedPretrainingExperimentArgs,
@@ -52,7 +53,7 @@ from tbp.monty.frameworks.models.no_reset_evidence_matching import (
 )
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsPatchViewMount,
-    PatchViewFinderMountHabitatDatasetArgs,
+    PatchViewFinderMountHabitatEnvInterfaceConfig,
 )
 from tests.unit.resources.unit_test_utils import BaseGraphTestCases
 
@@ -105,11 +106,11 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 monty_args=MontyFeatureGraphArgs(num_exploratory_steps=20),
                 learning_module_configs=default_evidence_lm_config,
             ),
-            dataset_args=PatchViewFinderMountHabitatDatasetArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
-            train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_class=ED.InformedEnvironmentInterface,
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -130,23 +131,23 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 monty_args=MontyFeatureGraphArgs(num_exploratory_steps=20),
                 learning_module_configs=default_unsupervised_evidence_lm_config,
             ),
-            dataset_args=PatchViewFinderMountHabitatDatasetArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
-            train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_class=ED.InformedEnvironmentInterface,
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
-            eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
+            eval_env_interface_class=ED.InformedEnvironmentInterface,
+            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
                 object_names=["capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
         )
 
     def assert_dicts_equal(
-        self, d1: Dict[Any, np.ndarray], d2: Dict[Any, np.ndarray], msg: str
+        self, d1: dict[Any, np.ndarray], d2: dict[Any, np.ndarray], msg: str
     ) -> None:
         """Asserts that two dictionaries containing NumPy arrays are equal.
 

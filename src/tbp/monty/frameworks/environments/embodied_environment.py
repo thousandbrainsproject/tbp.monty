@@ -12,7 +12,9 @@ from __future__ import annotations
 import abc
 import collections.abc
 from dataclasses import dataclass
-from typing import Any, Dict, NewType, Sequence, Tuple
+from typing import Any, NewType, Sequence, Tuple
+
+from typing_extensions import deprecated
 
 from tbp.monty.frameworks.actions.actions import Action
 
@@ -44,6 +46,7 @@ class ObjectInfo:
     semantic_id: SemanticID | None
 
 
+@deprecated("Use `ActionSampler` instead.")
 class ActionSpace(collections.abc.Container):
     """Represents the environment action space."""
 
@@ -54,12 +57,6 @@ class ActionSpace(collections.abc.Container):
 
 
 class EmbodiedEnvironment(abc.ABC):
-    @property
-    @abc.abstractmethod
-    def action_space(self):
-        """Returns list of all possible actions available in the environment."""
-        pass
-
     @abc.abstractmethod
     def add_object(
         self,
@@ -68,8 +65,6 @@ class EmbodiedEnvironment(abc.ABC):
         rotation: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0),
         scale: VectorXYZ = (1.0, 1.0, 1.0),
         semantic_id: SemanticID | None = None,
-        enable_physics: bool | None = False,
-        object_to_avoid=False,
         primary_target_object: ObjectID | None = None,
     ) -> ObjectID:
         """Add an object to the environment.
@@ -81,10 +76,6 @@ class EmbodiedEnvironment(abc.ABC):
                 (1,0,0,0).
             scale: The scale of the object to add. Defaults to (1,1,1).
             semantic_id: Optional override for the object semantic ID. Defaults to None.
-            enable_physics: Whether to enable physics on the object. Defaults to False.
-            object_to_avoid: If True, run collision checks to ensure the object will not
-                collide with any other objects in the scene. If collision is detected,
-                the object will be moved. Defaults to False.
             primary_target_object: The ID of the primary target object. If not None, the
                 added object will be positioned so that it does not obscure the initial
                 view of the primary target object (which avoiding collision alone cannot
@@ -96,7 +87,7 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def step(self, actions: Sequence[Action]) -> Dict[Any, Dict]:
+    def step(self, actions: Sequence[Action]) -> dict[Any, dict]:
         """Apply the given actions to the environment.
 
         Args:

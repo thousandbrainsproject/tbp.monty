@@ -17,16 +17,7 @@ import logging
 import math
 import os
 from dataclasses import dataclass, field
-from typing import (
-    Any,
-    Dict,
-    List,
-    Literal,
-    Mapping,
-    Tuple,
-    Type,
-    cast,
-)
+from typing import Any, Literal, Mapping, cast
 
 import numpy as np
 import quaternion as qt
@@ -51,6 +42,7 @@ from tbp.monty.frameworks.actions.actions import (
     VectorXYZ,
 )
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.environments.embodied_environment import SemanticID
 from tbp.monty.frameworks.models.motor_system_state import AgentState, MotorSystemState
 from tbp.monty.frameworks.utils.spatial_arithmetics import get_angle_beefed_up
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
@@ -150,8 +142,8 @@ class BasePolicy(MotorPolicy):
     def __init__(
         self,
         rng,
-        action_sampler_args: Dict,
-        action_sampler_class: Type[ActionSampler],
+        action_sampler_args: dict,
+        action_sampler_class: type[ActionSampler],
         agent_id: AgentID,
         switch_frequency,
         file_name=None,
@@ -264,7 +256,7 @@ class BasePolicy(MotorPolicy):
                 self.action_list = read_action_file(file_name)
 
     ###
-    # Other required abstract methods, methods called by Monty or Dataloader
+    # Other required abstract methods, methods called by Monty or Environment Interface
     ###
 
     def get_agent_state(self, state: MotorSystemState) -> AgentState:
@@ -296,10 +288,8 @@ class BasePolicy(MotorPolicy):
         """
         agent_state = self.get_agent_state(state)
 
-        if "motor_only_step" in agent_state.keys() and agent_state["motor_only_step"]:
-            return True
-
-        return False
+        # FIXME: "motor_only_step" is not a valid AgentState key (based on type).
+        return bool(agent_state.get("motor_only_step"))
 
     @property
     def last_action(self) -> Action:
@@ -339,7 +329,7 @@ class JumpToGoalStateMixin:
 
         Take the current driving goal state (in CMP format), and derive the
         corresponding Habitat compatible goal-state to pass through the Embodied
-        Dataloader.
+        Environment Interface.
 
         Returns:
             target_loc: Target location.
@@ -379,7 +369,7 @@ class PositioningProcedureResult:
     For more on the terminated/truncated terminology, see https://farama.org/Gymnasium-Terminated-Truncated-Step-API.
     """
 
-    actions: List[Action] = field(default_factory=list)
+    actions: list[Action] = field(default_factory=list)
     """Actions to take."""
     success: bool = False
     """Whether the procedure succeeded in its positioning goal."""
@@ -469,7 +459,7 @@ class GetGoodView(PositioningProcedure):
         good_view_percentage: float,
         multiple_objects_present: bool,
         sensor_id: str,
-        target_semantic_id: int,
+        target_semantic_id: SemanticID,
         allow_translation: bool = True,
         max_orientation_attempts: int = 1,
         **kwargs,
@@ -506,7 +496,7 @@ class GetGoodView(PositioningProcedure):
 
     def compute_look_amounts(
         self, relative_location: np.ndarray, state: MotorSystemState | None = None
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """Compute the amount to look down and left given a relative location.
 
         This function computes the amount needed to look down and left in order
@@ -547,7 +537,7 @@ class GetGoodView(PositioningProcedure):
     def find_location_to_look_at(
         self,
         sem3d_obs: np.ndarray,
-        image_shape: Tuple[int, int],
+        image_shape: tuple[int, int],
         state: MotorSystemState | None = None,
     ) -> np.ndarray:
         """Find the location to look at in the observation.
@@ -688,7 +678,7 @@ class GetGoodView(PositioningProcedure):
 
     def orient_to_object(
         self, observation: Mapping, state: MotorSystemState | None = None
-    ) -> List[Action]:
+    ) -> list[Action]:
         """Rotate sensors so that they are centered on the object using the view finder.
 
         The view finder needs to be in the same position as the sensor patch
@@ -1013,7 +1003,7 @@ class NaiveScanPolicy(InformedPolicy):
             StopIteration: If the spiral has completed.
         """
         if self.steps_per_action * self.fixed_amount >= 90:
-            # Raise "StopIteration" to notify the dataloader we need to stop
+            # Raise "StopIteration" to notify the environment interface we need to stop
             # the experiment. This exception is automatically handled by any
             # python loop statements using iterators.
             # See https://docs.python.org/3/library/exceptions.html#StopIteration
@@ -1117,7 +1107,7 @@ class SurfacePolicy(InformedPolicy):
         cannot sense the object, e.g. because it has fallen off its surface.
 
         Currently uses the raw observations returned from the viewfinder via the
-        dataloader, and not the extracted features from the sensor module.
+        environment interface, and not the extracted features from the sensor module.
         TODO M refactor this so that all sensory processing is done in the sensor
         module.
 
@@ -1272,7 +1262,7 @@ class SurfacePolicy(InformedPolicy):
             self.attempting_to_find_object = True
             raise ObjectNotVisible  # Will result in moving to try to find the object
             # This is determined by some logic in embodied_data.py, in particular
-            # the next method of InformedEnvironmentDataLoader
+            # the next method of InformedEnvironmentInterface
 
         if self.last_surface_policy_action is None:
             logger.debug(
@@ -1487,7 +1477,7 @@ class SurfacePolicy(InformedPolicy):
 
         return tuple(direction)
 
-    def horizontal_distances(self, rotation_degrees: float) -> Tuple[float, float]:
+    def horizontal_distances(self, rotation_degrees: float) -> tuple[float, float]:
         """Compute the horizontal and forward distances to move to.
 
         Compensate for a given rotation of a certain angle.
@@ -1509,7 +1499,7 @@ class SurfacePolicy(InformedPolicy):
 
         return move_left_distance, move_forward_distance
 
-    def vertical_distances(self, rotation_degrees: float) -> Tuple[float, float]:
+    def vertical_distances(self, rotation_degrees: float) -> tuple[float, float]:
         """Compute the down and forward distances to move to.
 
         Compensate for a given rotation of a certain angle.
@@ -1589,7 +1579,7 @@ class SurfacePolicy(InformedPolicy):
 ###
 
 
-def read_action_file(file: str) -> List[Action]:
+def read_action_file(file: str) -> list[Action]:
     """Load a file with one action per line.
 
     Args:
@@ -1606,7 +1596,7 @@ def read_action_file(file: str) -> List[Action]:
     return [cast(Action, json.loads(line, cls=ActionJSONDecoder)) for line in lines]
 
 
-def write_action_file(actions: List[Action], file: str) -> None:
+def write_action_file(actions: list[Action], file: str) -> None:
     """Write a list of actions to a file, one per line.
 
     Should be readable by read_action_file.
@@ -1621,7 +1611,9 @@ def write_action_file(actions: List[Action], file: str) -> None:
         )
 
 
-def get_perc_on_obj_semantic(semantic_obs, semantic_id=0):
+def get_perc_on_obj_semantic(
+    semantic_obs, semantic_id: SemanticID | Literal["any"] = "any"
+):
     """Get the percentage of pixels in the observation that land on the target object.
 
     If a semantic ID is provided, then only pixels on the target object are counted;
@@ -1632,13 +1624,14 @@ def get_perc_on_obj_semantic(semantic_obs, semantic_id=0):
 
     Args:
         semantic_obs: Semantic image observation.
-        semantic_id: Semantic ID of the target object.
+        semantic_id: Semantic ID of the target object. If "any", then pixels belonging
+            to any object are counted. Defaults to "any".
 
     Returns:
         perc_on_obj: Percentage of pixels on the object.
     """
     res = semantic_obs.shape[0] * semantic_obs.shape[1]
-    if semantic_id == 0:
+    if semantic_id == "any":
         csum = np.sum(semantic_obs >= 1)
     else:
         # Count only pixels on the target (e.g. primary target) object
@@ -2292,7 +2285,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         """
         assert np.linalg.norm(rotated_locs[-1]) == 0, "Should be centered to 0"
 
-        if (
+        return (
             (
                 get_angle_beefed_up(self.tangential_vec, rotated_locs[ii])
                 <= np.pi / self.conflict_divisor
@@ -2311,10 +2304,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                 # (4mm), so this seems like a reasonable estimate
                 np.linalg.norm(rotated_locs[ii], ord=2) <= 0.025
             )
-        ):
-            return True
-
-        return False
+        )
 
     def attempt_conflict_resolution(self, vec_copy):
         """Try to define direction vector that avoids revisiting previous locations."""

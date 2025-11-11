@@ -25,8 +25,8 @@ from tbp.monty.frameworks.config_utils.config_args import (
     TwoLMStackedMontyConfig,
     get_cube_face_and_corner_views_rotations,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataloaderPerObjectArgs,
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
+    EnvironmentInterfacePerObjectArgs,
     EvalExperimentArgs,
     PredefinedObjectInitializer,
     get_object_names_by_idx,
@@ -49,7 +49,7 @@ from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsTwoLMDistantStackedMount,
-    TwoLMStackedDistantMountHabitatDatasetArgs,
+    TwoLMStackedDistantMountHabitatEnvInterfaceConfig,
 )
 
 # 14 unique rotations that give good views of the object. Same rotations used
@@ -179,13 +179,13 @@ infer_comp_base_config = dict(
         learning_module_configs=two_stacked_constrained_lms_inference_config,
         motor_system_config=MotorSystemConfigInformedGoalStateDriven(),
     ),
-    dataset_args=TwoLMStackedDistantMountHabitatDatasetArgs(
+    env_interface_config=TwoLMStackedDistantMountHabitatEnvInterfaceConfig(
         env_init_args=EnvInitArgsTwoLMDistantStackedMount(
             data_path=os.path.join(os.environ["MONTY_DATA"], "compositional_objects")
         ).__dict__,
     ),
-    eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-    eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    eval_env_interface_class=ED.InformedEnvironmentInterface,
+    eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(
             0, len(OBJECTS_WITH_LOGOS_LVL1), object_list=OBJECTS_WITH_LOGOS_LVL1
         ),
@@ -234,7 +234,7 @@ infer_comp_lvl2_with_comp_models.update(
         model_name_or_path=model_path_compositional_models_lvl2,
         n_eval_epochs=N_EVAL_EPOCHS,
     ),
-    eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(
             0, len(OBJECTS_WITH_LOGOS_LVL2), object_list=OBJECTS_WITH_LOGOS_LVL2
         ),
@@ -252,7 +252,7 @@ infer_comp_lvl3_with_comp_models.update(
         model_name_or_path=model_path_compositional_models_lvl3,
         n_eval_epochs=N_EVAL_EPOCHS,
     ),
-    eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(
             0, len(OBJECTS_WITH_LOGOS_LVL3), object_list=OBJECTS_WITH_LOGOS_LVL3
         ),
@@ -269,7 +269,7 @@ infer_comp_lvl4_with_comp_models.update(
         model_name_or_path=model_path_compositional_models_lvl4,
         n_eval_epochs=N_EVAL_EPOCHS,
     ),
-    eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=get_object_names_by_idx(
             0, len(OBJECTS_WITH_LOGOS_LVL4), object_list=OBJECTS_WITH_LOGOS_LVL4
         ),
