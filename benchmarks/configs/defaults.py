@@ -69,6 +69,7 @@ default_tolerances = {
 }  # features where weight is not specified default weight to 1
 
 default_evidence_lm_config = dict(
+    # conf/experiment/config/monty/learning_modules/learning_module/default_evidence.yaml
     learning_module_class=EvidenceGraphLM,
     learning_module_args=dict(
         # mmd of 0.015 get higher performance but slower run time

@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import importlib
+import os
 
 import hydra
 import numpy as np
@@ -23,6 +24,9 @@ def validate(cfg: DictConfig):
     # Force interpolation of the config to get errors
     OmegaConf.to_object(cfg)
     print(OmegaConf.to_yaml(cfg))
+
+    os.environ["MAGNUM_LOG"] = "quiet"
+    os.environ["HABITAT_SIM_LOG"] = "quiet"
 
     app = hydra.utils.instantiate(cfg.experiment)
     with app:

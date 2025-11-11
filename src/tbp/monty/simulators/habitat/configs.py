@@ -345,6 +345,7 @@ class NoisySurfaceViewFinderMountHabitatEnvInterfaceConfig(
 
 @dataclass
 class EnvInitArgsMultiLMMount(EnvInitArgs):
+    # conf/experiment/config/environment/init_args/multi_lm_mount.yaml
     agents: list[AgentConfig] = field(
         default_factory=lambda: [
             AgentConfig(MultiSensorAgent, MultiLMMountConfig().__dict__)
@@ -354,6 +355,7 @@ class EnvInitArgsMultiLMMount(EnvInitArgs):
 
 @dataclass
 class MultiLMMountHabitatEnvInterfaceConfig:
+    # conf/experiment/config/environment/multi_lm_mount_habitat.yaml
     env_init_func: Callable = field(default=HabitatEnvironment)
     env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsMultiLMMount().__dict__
@@ -414,6 +416,7 @@ class TwoLMStackedSurfaceMountHabitatEnvInterfaceConfig(
 
 @dataclass
 class EnvInitArgsFiveLMMount(EnvInitArgs):
+    # conf/experiment/config/environment/init_args/five_lm_mount.yaml
     agents: list[AgentConfig] = field(
         default_factory=lambda: [
             AgentConfig(MultiSensorAgent, FiveLMMountConfig().__dict__)
@@ -423,6 +426,7 @@ class EnvInitArgsFiveLMMount(EnvInitArgs):
 
 @dataclass
 class FiveLMMountHabitatEnvInterfaceConfig(MultiLMMountHabitatEnvInterfaceConfig):
+    # conf/experiment/config/environment/five_lm_mount_habitat.yaml
     env_init_args: dict = field(
         default_factory=lambda: EnvInitArgsFiveLMMount().__dict__
     )

@@ -1,5 +1,5 @@
 defaults:
-  - default_evidence_lm
+  - default_evidence
 
 learning_module_args:
   gsg_args:
