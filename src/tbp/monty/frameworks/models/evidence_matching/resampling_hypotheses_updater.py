@@ -357,10 +357,12 @@ class ResamplingHypothesesUpdater:
         # TODO: make this nicer like dependent on log_level.
         if not self.include_telemetry:
             updater_telemetry = {
-                k: ChannelHypothesesUpdateTelemetry(
-                    channel_hypothesis_displacer_telemetry=v[
-                        "channel_hypothesis_displacer_telemetry"
-                    ]
+                k: asdict(
+                    ChannelHypothesesUpdateTelemetry(
+                        channel_hypothesis_displacer_telemetry=v[
+                            "channel_hypothesis_displacer_telemetry"
+                        ]
+                    )
                 )
                 for k, v in resampling_telemetry.items()
             }
