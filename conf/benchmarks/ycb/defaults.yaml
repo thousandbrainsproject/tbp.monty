@@ -16,3 +16,9 @@ test_rotations_all:
   - [325, 135, 0]
   - [35, 225, 0]
   - [325, 225, 0]
+
+test_rotations_3_count: 3 # Surprise!
+test_rotations_3:
+  - [0, 0, 0]
+  - [0, 90, 0]
+  - [0, 180, 0]
