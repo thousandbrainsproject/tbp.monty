@@ -440,6 +440,8 @@ class ResamplingHypothesesUpdater:
 
         # Calculate the total number of informed hypotheses to be resampled
         new_informed = round(graph_num_points * resampling_multiplier)
+
+        # Ensure the `new_informed` is divisible by `num_hyps_per_node`
         new_informed -= new_informed % num_hyps_per_node
 
         # Returns a selection of hypotheses to maintain/delete
