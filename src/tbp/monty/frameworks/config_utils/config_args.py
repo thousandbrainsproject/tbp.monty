@@ -118,6 +118,7 @@ class WandbLoggingConfig(LoggingConfig):
 
 @dataclass
 class CSVLoggingConfig(LoggingConfig):
+    # conf/experiment/config/logging/csv.yaml
     monty_handlers: list = field(
         default_factory=lambda: [
             BasicCSVStatsHandler,

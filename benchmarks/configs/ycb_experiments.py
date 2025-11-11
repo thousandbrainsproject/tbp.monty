@@ -518,7 +518,7 @@ surf_agent_unsupervised_10distinctobj.update(
     env_interface_config=SurfaceViewFinderMountHabitatEnvInterfaceConfig(),
     train_env_interface_class=ED.InformedEnvironmentInterface,
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
+        object_names=DISTINCT_OBJECTS,
         object_init_sampler=RandomRotationObjectInitializer(),
     ),
 )
