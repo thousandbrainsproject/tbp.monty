@@ -1216,7 +1216,7 @@ class EvidenceGraphLM(GraphLM):
                 ]
                 channel_prediction_error = displacer_telemetry["mlh_prediction_error"]
                 prediction_errors.append(channel_prediction_error)
-            except AttributeError:
+            except KeyError:
                 # channel_telemetry was missing needed attributes,
                 # so skip adding prediction errors
                 pass
