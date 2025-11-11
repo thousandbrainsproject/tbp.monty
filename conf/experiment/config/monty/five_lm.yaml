@@ -4,7 +4,6 @@ defaults:
   - sensor_modules/sensor_module/features/multi_lm_to_extract@sensor_module_configs.sensor_module_2.sensor_module_args
   - sensor_modules/sensor_module/features/multi_lm_to_extract@sensor_module_configs.sensor_module_3.sensor_module_args
   - sensor_modules/sensor_module/features/multi_lm_to_extract@sensor_module_configs.sensor_module_4.sensor_module_args
-  - sensor_modules/sensor_module/view_finder_probe@sensor_module_configs.sensor_module_5
   - motor_system/informed_no_trans@motor_system_config
   - args/defaults@monty_args
 
@@ -60,6 +59,11 @@ sensor_module_configs:
     sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
     sensor_module_args:
       sensor_module_id: patch_4
+      save_raw_obs: false
+  sensor_module_5:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+    sensor_module_args:
+      sensor_module_id: view_finder
       save_raw_obs: false
 sm_to_agent_dict:
   patch_0: ${monty.agent_id:agent_id_0}

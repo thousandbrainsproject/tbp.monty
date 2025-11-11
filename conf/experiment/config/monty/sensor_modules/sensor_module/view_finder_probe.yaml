@@ -1,4 +1,0 @@
-sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
-sensor_module_args:
-  sensor_module_id: view_finder
-  save_raw_obs: false

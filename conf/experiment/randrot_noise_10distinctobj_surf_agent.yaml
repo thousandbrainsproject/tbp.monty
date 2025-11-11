@@ -10,7 +10,6 @@ defaults:
   - config/monty/args/defaults@config.monty_config.monty_args
   - config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
   - config/monty/sensor_modules/sensor_module/default_all_noisy_surf_agent@config.monty_config.sensor_module_configs.sensor_module_0
-  - config/monty/sensor_modules/sensor_module/view_finder_probe@config.monty_config.sensor_module_configs.sensor_module_1
   - config/environment/clear_env_interface_config@config
   - config/environment/surface_view_finder_mount_habitat@config.env_interface_config
 
@@ -23,5 +22,7 @@ config:
       min_eval_steps: ${benchmarks.min_eval_steps}
     sensor_module_configs:
       sensor_module_1:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
         sensor_module_args:
+          sensor_module_id: view_finder
           save_raw_obs: true
