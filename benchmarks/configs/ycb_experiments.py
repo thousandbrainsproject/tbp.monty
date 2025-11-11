@@ -368,7 +368,7 @@ randrot_10distinctobj_surf_agent.update(
         max_total_steps=5000,
     ),
     eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
+        object_names=DISTINCT_OBJECTS,
         object_init_sampler=RandomRotationObjectInitializer(),
     ),
 )
