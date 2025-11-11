@@ -1137,7 +1137,6 @@ class GraphMemory(LMMemory):
         object_location_rel_body,
         location_rel_model,
         object_rotation,
-        object_scale,
     ):
         """Determine how to update memory and call corresponding function."""
         if graph_id is None:
@@ -1166,7 +1165,6 @@ class GraphMemory(LMMemory):
                         object_location_rel_body,
                         location_rel_model,
                         object_rotation,
-                        object_scale=object_scale,
                     )
                 else:
                     logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
@@ -1385,7 +1383,6 @@ class GraphMemory(LMMemory):
         object_location_rel_body,
         location_rel_model,
         object_rotation,
-        object_scale,
     ):
         """Add new observations into an existing graph.
 
@@ -1397,7 +1394,6 @@ class GraphMemory(LMMemory):
             object_location_rel_body: location of object relative to body.
             location_rel_model: location of last observation relative to object model
             object_rotation: detected rotation of object model relative to world.
-            object_scale: detected scale of object model relative to world. Not used.
         """
         logger.info(f"Updating existing graph for {graph_id}")
 
