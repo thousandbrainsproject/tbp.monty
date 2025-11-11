@@ -285,7 +285,9 @@ class ResamplingHypothesesUpdater:
                 graph_id=graph_id,
                 mapper=mapper,
                 tracker=tracker,
-                init_hyp_space=(displacements is None),
+                init_hyp_space=(
+                    displacements is None or input_channel not in mapper.channels
+                ),
             )
 
             # Sample hypotheses based on their type
