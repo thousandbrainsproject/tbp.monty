@@ -1347,7 +1347,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         # Based on most recent observation, propose the most misaligned graph
         # sub-regions
         graph_lm.gsg.focus_on_pose = focus_on_pose
-        target_loc_id, _ = graph_lm.gsg._compute_graph_mismatch()
+        target_loc_id = graph_lm.gsg._compute_graph_mismatch()
 
         target_graph = graph_lm.get_graph(target_object)
         first_input_channel = graph_lm.get_input_channels_in_graph(target_object)[0]
