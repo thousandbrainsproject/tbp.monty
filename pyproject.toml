@@ -224,7 +224,6 @@ ignore = [
     "T203", # T203: pprint found
     # TODO: ruff=0.11.4 upgrade introduced the errors ignored below, resolve these
     "LOG015", # LOG015: root-logger-call,
-    "PTH208", # PTH208: os-listdir
     ###
     # TODO: ruff=0.7.1 migration introduced errors ignored below, resolve these
     "ANN001", # ANN001: Missing type annotation for function argument
