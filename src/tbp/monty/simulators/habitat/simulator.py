@@ -46,8 +46,7 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.simulators import resources
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
-
-from .agents import HabitatAgent
+from tbp.monty.simulators.habitat.agents import HabitatAgent
 
 __all__ = [
     "PRIMITIVE_OBJECT_TYPES",
@@ -496,7 +495,7 @@ class HabitatSim(HabitatActuator):
         """Return the action space."""
         return self._action_space
 
-    def get_agent(self, agent_id: AgentID):
+    def get_agent(self, agent_id: AgentID) -> habitat_sim.Agent:
         """Return habitat agent instance."""
         agent_index = self._agent_id_to_index[agent_id]
         return self._sim.get_agent(agent_index)
