@@ -17,8 +17,50 @@ config:
   max_total_steps: 60
   min_lms_match: 5
   monty_config:
+    monty_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.model.MontyForEvidenceGraphMatching}
     monty_args:
       num_exploratory_steps: 30
+    learning_module_configs:
+      learning_module_0:
+        learning_module_args:
+          tolerances:
+            patch_0:
+              hsv: ${np.array:[0.1, 1, 1]}
+              # We need to set curvature tolerance lower since different object
+              # views of sphere are too similar otherwise.
+              principal_curvatures_log: ${np.array:[0.1, 0.1]}
+      learning_module_1:
+        learning_module_args:
+          tolerances:
+            patch_1:
+              hsv: ${np.array:[0.1, 1, 1]}
+              # We need to set curvature tolerance lower since different object
+              # views of sphere are too similar otherwise.
+              principal_curvatures_log: ${np.array:[0.1, 0.1]}
+      learning_module_2:
+        learning_module_args:
+          tolerances:
+            patch_2:
+              hsv: ${np.array:[0.1, 1, 1]}
+              # We need to set curvature tolerance lower since different object
+              # views of sphere are too similar otherwise.
+              principal_curvatures_log: ${np.array:[0.1, 0.1]}
+      learning_module_3:
+        learning_module_args:
+          tolerances:
+            patch_3:
+              hsv: ${np.array:[0.1, 1, 1]}
+              # We need to set curvature tolerance lower since different object
+              # views of sphere are too similar otherwise.
+              principal_curvatures_log: ${np.array:[0.1, 0.1]}
+      learning_module_4:
+        learning_module_args:
+          tolerances:
+            patch_4:
+              hsv: ${np.array:[0.1, 1, 1]}
+              # We need to set curvature tolerance lower since different object
+              # views of sphere are too similar otherwise.
+              principal_curvatures_log: ${np.array:[0.1, 0.1]}
   env_interface_config:
     env_init_args:
       data_path: null
