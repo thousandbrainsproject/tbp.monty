@@ -224,6 +224,14 @@ class EvidenceLMTest(BaseGraphTest):
                     f"+{actions_file_name_selector}={self.fixed_actions_path}",
                 ],
             )
+            self.five_lm_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=evidence_lm/five_lm",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                    f"+{actions_file_name_selector}={self.fixed_actions_path}",
+                ],
+            )
 
         # --- Old Configs ---
 
@@ -251,55 +259,6 @@ class EvidenceLMTest(BaseGraphTest):
                 object_names=["capsule3DSolid"],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
-        )
-
-        no_features_evidence = copy.deepcopy(base)
-        no_features_evidence.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_class=MontyForEvidenceGraphMatching,
-                monty_args=MontyArgs(num_exploratory_steps=10),
-                motor_system_config=MotorSystemConfigFixed(),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=EvidenceGraphLM,
-                        learning_module_args=dict(
-                            max_match_distance=0.001,
-                            tolerances={"patch": {}},
-                            feature_weights={},
-                        ),
-                    )
-                ),
-            )
-        )
-
-        fixed_possible_poses_evidence = copy.deepcopy(base)
-        fixed_possible_poses_evidence.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_class=MontyForEvidenceGraphMatching,
-                monty_args=MontyArgs(num_exploratory_steps=10),
-                motor_system_config=MotorSystemConfigFixed(),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=EvidenceGraphLM,
-                        learning_module_args=dict(
-                            max_match_distance=0.001,
-                            tolerances={"patch": default_tolerances},
-                            feature_weights={
-                                "patch": {
-                                    "hsv": np.array([1, 0, 0]),
-                                }
-                            },
-                            hypotheses_updater_args=dict(
-                                initial_possible_poses=[
-                                    [0, 0, 0],
-                                    [45, 0, 0],
-                                    [90, 0, 0],
-                                ],
-                            ),
-                        ),
-                    )
-                ),
-            )
         )
 
         default_multi_lm_tolerances = {
@@ -613,8 +572,6 @@ class EvidenceLMTest(BaseGraphTest):
         Could also be nice to sort these tests some time.
         """
 
-        self.fixed_possible_poses_evidence = fixed_possible_poses_evidence
-        self.no_features_evidence = no_features_evidence
         self.no_multithreding_5lm_evidence = no_multithreding_5lm_evidence
         self.evidence_5lm_config = evidence_5lm_config
         self.evidence_5lm_basic_logging = evidence_5lm_basic_logging
@@ -1575,33 +1532,26 @@ class EvidenceLMTest(BaseGraphTest):
 
     def test_5lm_evidence_experiment(self):
         """Test 5 evidence LMs voting with two evaluation settings."""
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.evidence_5lm_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.five_lm_cfg.test)
+        with exp:
             exp.train()
 
             train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
             print(train_stats)
             self.check_train_results(train_stats, num_lms=5)
 
-            pprint("...evaluating...")
             exp.logger_handler.pre_eval(exp.logger_args)
             exp.model.set_experiment_mode("eval")
             for _ in range(exp.n_eval_epochs):
                 exp.run_epoch()
             exp.logger_handler.post_eval(exp.logger_args)
-            pprint("...loading and checking eval statistics...")
             eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
             self.check_eval_results(eval_stats, num_lms=5)
 
-            pprint("checking that evaluation also works with larger mmd.")
             for lm in exp.model.learning_modules:
                 lm.max_match_distance = 0.01
-            pprint("...evaluating...")
             exp.evaluate()
 
-        pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
 
         self.check_eval_results(eval_stats, num_lms=5)
