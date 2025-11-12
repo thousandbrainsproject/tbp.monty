@@ -186,9 +186,7 @@ infer_comp_base_config = dict(
     ),
     eval_env_interface_class=ED.InformedEnvironmentInterface,
     eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(
-            0, len(OBJECTS_WITH_LOGOS_LVL1), object_list=OBJECTS_WITH_LOGOS_LVL1
-        ),
+        object_names=OBJECTS_WITH_LOGOS_LVL1,
         object_init_sampler=PredefinedObjectInitializer(
             rotations=test_rotations_all,
         ),
