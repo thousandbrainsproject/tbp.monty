@@ -50,8 +50,8 @@ from tbp.monty.simulators.habitat.actuator import HabitatActuator
 from .agents import HabitatAgent
 
 __all__ = [
-    "HabitatSim",
     "PRIMITIVE_OBJECT_TYPES",
+    "HabitatSim",
 ]
 
 from tbp.monty.frameworks.environments.embodied_environment import (

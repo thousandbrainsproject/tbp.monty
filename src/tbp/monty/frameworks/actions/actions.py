@@ -20,7 +20,7 @@ from typing_extensions import (
 
 from tbp.monty.frameworks.agents import AgentID
 
-__all__ = [
+__all__ = [  # noqa: RUF022
     # Actions
     "Action",
     "LookDown",

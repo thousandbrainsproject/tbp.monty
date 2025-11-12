@@ -78,7 +78,7 @@ class LookDownTest(unittest.TestCase):
 
     def test_json_serialization(self) -> None:
         s = json.dumps(self.action, cls=ActionJSONEncoder)
-        action = cast(LookUp, json.loads(s, cls=ActionJSONDecoder))
+        action = cast("LookUp", json.loads(s, cls=ActionJSONDecoder))
         self.assertEqual(self.action.agent_id, action.agent_id)
         self.assertEqual(self.action.rotation_degrees, action.rotation_degrees)
         self.assertEqual(self.action.constraint_degrees, action.constraint_degrees)
@@ -126,7 +126,7 @@ class LookUpTest(unittest.TestCase):
 
     def test_json_serialization(self) -> None:
         s = json.dumps(self.action, cls=ActionJSONEncoder)
-        action = cast(LookUp, json.loads(s, cls=ActionJSONDecoder))
+        action = cast("LookUp", json.loads(s, cls=ActionJSONDecoder))
         self.assertEqual(self.action.agent_id, action.agent_id)
         self.assertEqual(self.action.rotation_degrees, action.rotation_degrees)
         self.assertEqual(self.action.constraint_degrees, action.constraint_degrees)
@@ -165,7 +165,7 @@ class MoveForwardTest(unittest.TestCase):
 
     def test_json_serialization(self) -> None:
         s = json.dumps(self.action, cls=ActionJSONEncoder)
-        action = cast(MoveForward, json.loads(s, cls=ActionJSONDecoder))
+        action = cast("MoveForward", json.loads(s, cls=ActionJSONDecoder))
         self.assertEqual(self.action.agent_id, action.agent_id)
         self.assertEqual(self.action.distance, action.distance)
 
@@ -207,7 +207,7 @@ class MoveTangentiallyTest(unittest.TestCase):
 
     def test_json_serialization(self) -> None:
         s = json.dumps(self.action, cls=ActionJSONEncoder)
-        action = cast(MoveTangentially, json.loads(s, cls=ActionJSONDecoder))
+        action = cast("MoveTangentially", json.loads(s, cls=ActionJSONDecoder))
         self.assertEqual(self.action.agent_id, action.agent_id)
         self.assertEqual(self.action.distance, action.distance)
         self.assertEqual(self.action.direction, action.direction)
@@ -265,7 +265,7 @@ class OrientHorizontalTest(unittest.TestCase):
 
     def test_json_serialization(self) -> None:
         s = json.dumps(self.action, cls=ActionJSONEncoder)
-        action = cast(OrientHorizontal, json.loads(s, cls=ActionJSONDecoder))
+        action = cast("OrientHorizontal", json.loads(s, cls=ActionJSONDecoder))
         self.assertEqual(self.action.agent_id, action.agent_id)
         self.assertEqual(self.action.rotation_degrees, action.rotation_degrees)
         self.assertEqual(self.action.left_distance, action.left_distance)
@@ -317,7 +317,7 @@ class OrientVerticalTest(unittest.TestCase):
 
     def test_json_serialization(self) -> None:
         s = json.dumps(self.action, cls=ActionJSONEncoder)
-        action = cast(OrientVertical, json.loads(s, cls=ActionJSONDecoder))
+        action = cast("OrientVertical", json.loads(s, cls=ActionJSONDecoder))
         self.assertEqual(self.action.agent_id, action.agent_id)
         self.assertEqual(self.action.rotation_degrees, action.rotation_degrees)
         self.assertEqual(self.action.down_distance, action.down_distance)
@@ -358,7 +358,7 @@ class SetAgentPitchTest(unittest.TestCase):
 
     def test_json_serialization(self) -> None:
         s = json.dumps(self.action, cls=ActionJSONEncoder)
-        action = cast(SetAgentPitch, json.loads(s, cls=ActionJSONDecoder))
+        action = cast("SetAgentPitch", json.loads(s, cls=ActionJSONDecoder))
         self.assertEqual(self.action.agent_id, action.agent_id)
         self.assertEqual(self.action.pitch_degrees, action.pitch_degrees)
 
@@ -400,7 +400,7 @@ class SetAgentPoseTest(unittest.TestCase):
 
     def test_json_serialization(self) -> None:
         s = json.dumps(self.action, cls=ActionJSONEncoder)
-        action = cast(SetAgentPose, json.loads(s, cls=ActionJSONDecoder))
+        action = cast("SetAgentPose", json.loads(s, cls=ActionJSONDecoder))
         self.assertEqual(self.action.agent_id, action.agent_id)
         self.assertEqual(self.action.location, action.location)
         self.assertEqual(self.action.rotation_quat, action.rotation_quat)
@@ -449,7 +449,7 @@ class SetSensorPitchTest(unittest.TestCase):
 
     def test_json_serialization(self) -> None:
         s = json.dumps(self.action, cls=ActionJSONEncoder)
-        action = cast(SetSensorPitch, json.loads(s, cls=ActionJSONDecoder))
+        action = cast("SetSensorPitch", json.loads(s, cls=ActionJSONDecoder))
         self.assertEqual(self.action.agent_id, action.agent_id)
         self.assertEqual(self.action.pitch_degrees, action.pitch_degrees)
 
@@ -491,7 +491,7 @@ class SetSensorPoseTest(unittest.TestCase):
 
     def test_json_serialization(self) -> None:
         s = json.dumps(self.action, cls=ActionJSONEncoder)
-        action = cast(SetSensorPose, json.loads(s, cls=ActionJSONDecoder))
+        action = cast("SetSensorPose", json.loads(s, cls=ActionJSONDecoder))
         self.assertEqual(self.action.agent_id, action.agent_id)
         self.assertEqual(self.action.location, action.location)
         self.assertEqual(self.action.rotation_quat, action.rotation_quat)
@@ -542,7 +542,7 @@ class SetSensorRotationTest(unittest.TestCase):
 
     def test_json_serialization(self) -> None:
         s = json.dumps(self.action, cls=ActionJSONEncoder)
-        action = cast(SetSensorRotation, json.loads(s, cls=ActionJSONDecoder))
+        action = cast("SetSensorRotation", json.loads(s, cls=ActionJSONDecoder))
         self.assertEqual(self.action.agent_id, action.agent_id)
         self.assertEqual(self.action.rotation_quat, action.rotation_quat)
 
@@ -584,7 +584,7 @@ class SetYawTest(unittest.TestCase):
 
     def test_json_serialization(self) -> None:
         s = json.dumps(self.action, cls=ActionJSONEncoder)
-        action = cast(SetYaw, json.loads(s, cls=ActionJSONDecoder))
+        action = cast("SetYaw", json.loads(s, cls=ActionJSONDecoder))
         self.assertEqual(self.action.agent_id, action.agent_id)
         self.assertEqual(self.action.rotation_degrees, action.rotation_degrees)
 
@@ -621,7 +621,7 @@ class TurnLeftTest(unittest.TestCase):
 
     def test_json_serialization(self) -> None:
         s = json.dumps(self.action, cls=ActionJSONEncoder)
-        action = cast(TurnLeft, json.loads(s, cls=ActionJSONDecoder))
+        action = cast("TurnLeft", json.loads(s, cls=ActionJSONDecoder))
         self.assertEqual(self.action.agent_id, action.agent_id)
         self.assertEqual(self.action.rotation_degrees, action.rotation_degrees)
 
@@ -658,7 +658,7 @@ class TurnRightTest(unittest.TestCase):
 
     def test_json_serialization(self) -> None:
         s = json.dumps(self.action, cls=ActionJSONEncoder)
-        action = cast(TurnRight, json.loads(s, cls=ActionJSONDecoder))
+        action = cast("TurnRight", json.loads(s, cls=ActionJSONDecoder))
         self.assertEqual(self.action.agent_id, action.agent_id)
         self.assertEqual(self.action.rotation_degrees, action.rotation_degrees)
 
