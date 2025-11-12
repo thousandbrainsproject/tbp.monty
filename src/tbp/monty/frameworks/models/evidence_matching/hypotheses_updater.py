@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any, Dict, Literal, Optional, Protocol
 
 import numpy as np
@@ -266,8 +266,10 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 )
 
             hypotheses_updates.append(channel_possible_hypotheses)
-            telemetry[input_channel] = ChannelHypothesesUpdateTelemetry(
-                channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry
+            telemetry[input_channel] = asdict(
+                ChannelHypothesesUpdateTelemetry(
+                    channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry
+                )
             )
 
         return hypotheses_updates, telemetry
