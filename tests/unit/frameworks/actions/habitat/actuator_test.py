@@ -49,7 +49,7 @@ from tests.unit.frameworks.actions.fakes.action import FakeAction
 
 
 class FakeHabitat(HabitatActuator):
-    def get_agent(self, agent_id: AgentID) -> Agent:
+    def get_agent(self, agent_id: AgentID) -> Agent | None:
         return None
 
 
