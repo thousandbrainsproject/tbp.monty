@@ -394,7 +394,7 @@ class MotorSystemConfigNaiveScanSpiral:
     motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
             policy_class=NaiveScanPolicy,
-            policy_args=make_naive_scan_policy_config(step_size=5),
+            policy_args=make_naive_scan_policy_config(fixed_amount=5),
         )
     )
 

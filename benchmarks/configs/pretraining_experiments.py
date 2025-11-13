@@ -120,17 +120,13 @@ supervised_pre_training_base = dict(
                 # any three of the LM types.
             )
         ),
-        motor_system_config=MotorSystemConfigNaiveScanSpiral(
-            motor_system_args=dict(
-                policy_class=NaiveScanPolicy,
-                policy_args=make_naive_scan_policy_config(step_size=5),
-            )
-        ),  # use spiral policy for more even object coverage during learning
+        # use spiral policy for more even object coverage during learning
+        motor_system_config=MotorSystemConfigNaiveScanSpiral(),
     ),
     env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(),
     train_env_interface_class=ED.InformedEnvironmentInterface,
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
+        object_names=DISTINCT_OBJECTS,
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations_all),
     ),
 )
@@ -258,7 +254,7 @@ supervised_pre_training_5lms.update(
         motor_system_config=MotorSystemConfigNaiveScanSpiral(
             motor_system_args=dict(
                 policy_class=NaiveScanPolicy,
-                policy_args=make_naive_scan_policy_config(step_size=5),
+                policy_args=make_naive_scan_policy_config(fixed_amount=5),
             )
         ),
     ),

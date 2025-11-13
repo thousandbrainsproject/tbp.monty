@@ -144,6 +144,7 @@ def generate_action_list(action_space_type) -> list[Action]:
 
 
 def make_base_policy_config(
+    # conf/experiment/config/monty/motor_system/policy/base.yaml
     action_space_type: str,
     action_sampler_class: type[ActionSampler],
     agent_id: AgentID = AgentID("agent_id_0"),
@@ -169,6 +170,7 @@ def make_base_policy_config(
 
 
 def make_informed_policy_config(
+    # conf/experiment/config/monty/motor_system/policy/informed.yaml
     action_space_type: str,
     action_sampler_class: type[ActionSampler],
     good_view_percentage: float = 0.5,
@@ -221,7 +223,8 @@ def make_informed_policy_config(
 
 
 def make_naive_scan_policy_config(
-    step_size: float,
+    # conf/experiment/config/monty/motor_system/policy/naive_scan.yaml
+    fixed_amount: float,
     agent_id: AgentID = AgentID("agent_id_0"),
 ):
     """Simliar to InformedPolicyConfigGenerator, but for NaiveScanPolicyConfig.
@@ -230,7 +233,7 @@ def make_naive_scan_policy_config(
     only used with one set of parameters
 
     Args:
-        step_size: Fixed amount to move the agent
+        fixed_amount: Fixed amount to move the agent
         agent_id: Agent name. Defaults to "agent_id_0".
 
     Returns:
@@ -243,11 +246,12 @@ def make_naive_scan_policy_config(
         action_sampler_class=ConstantSampler,
         agent_id=agent_id,
         switch_frequency=1,
-        fixed_amount=step_size,
+        fixed_amount=fixed_amount,
     )
 
 
 def make_surface_policy_config(
+    # conf/experiment/config/monty/motor_system/policy/surface.yaml
     desired_object_distance: float,
     alpha: float,
     use_goal_state_driven_actions: bool = False,
@@ -299,6 +303,7 @@ def make_surface_policy_config(
 
 
 def make_curv_surface_policy_config(
+    # conf/experiment/config/monty/motor_system/policy/surface_curve_informed.yaml
     desired_object_distance,
     alpha,
     pc_alpha,

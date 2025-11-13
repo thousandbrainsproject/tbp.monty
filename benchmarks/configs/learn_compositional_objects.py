@@ -152,7 +152,7 @@ supervised_pre_training_flat_objects_wo_logos.update(
         motor_system_config=MotorSystemConfigNaiveScanSpiral(
             motor_system_args=dict(
                 policy_class=NaiveScanPolicy,
-                policy_args=make_naive_scan_policy_config(step_size=5),
+                policy_args=make_naive_scan_policy_config(fixed_amount=5),
             )
         ),  # use spiral policy for more even object coverage during learning
     ),
@@ -195,7 +195,7 @@ supervised_pre_training_logos_after_flat_objects.update(
         motor_system_config=MotorSystemConfigNaiveScanSpiral(
             motor_system_args=dict(
                 policy_class=NaiveScanPolicy,
-                policy_args=make_naive_scan_policy_config(step_size=1),
+                policy_args=make_naive_scan_policy_config(fixed_amount=1),
             )
         ),  # use spiral policy for more even object coverage during learning
     ),
@@ -283,7 +283,7 @@ supervised_pre_training_objects_with_logos_lvl1_comp_models.update(
         motor_system_config=MotorSystemConfigNaiveScanSpiral(
             motor_system_args=dict(
                 policy_class=NaiveScanPolicy,
-                policy_args=make_naive_scan_policy_config(step_size=5),
+                policy_args=make_naive_scan_policy_config(fixed_amount=5),
             )
         ),  # use spiral policy for more even object coverage during learning
     ),
