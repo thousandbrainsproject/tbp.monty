@@ -6,8 +6,8 @@ defaults:
 
 config:
   model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_77obj/pretrained/
-  n_eval_epochs: ${benchmarks.ycb.test_rotations_3_count}
+  n_eval_epochs: ${benchmarks.test_rotations_3_count}
   eval_env_interface_args:
     object_init_sampler:
       _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
-      rotations: ${benchmarks.ycb.test_rotations_3}
+      rotations: ${benchmarks.test_rotations_3}

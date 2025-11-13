@@ -4,4 +4,4 @@ defaults:
 _target_: ${monty.class:tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment}
 config:
   model_name_or_path: ${benchmarks.pretrained_dir}/supervised_pre_training_objects_with_logos_lvl1_comp_models/pretrained/
-  n_eval_epochs: ${benchmarks.ycb.test_rotations_count}
+  n_eval_epochs: ${benchmarks.test_rotations_count}

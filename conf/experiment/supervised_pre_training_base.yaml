@@ -15,7 +15,7 @@ defaults:
 
 _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
 config:
-  n_train_epochs: ${benchmarks.ycb.test_rotations_count}
+  n_train_epochs: ${benchmarks.test_rotations_count}
   logging:
     output_dir: ${oc.env:MONTY_MODELS}/pretrained_ycb_v10
     python_log_level: INFO
@@ -59,4 +59,4 @@ config:
   train_env_interface_args:
     object_init_sampler:
       _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
-      rotations: ${benchmarks.ycb.test_rotations_all}
+      rotations: ${benchmarks.test_rotations_all}

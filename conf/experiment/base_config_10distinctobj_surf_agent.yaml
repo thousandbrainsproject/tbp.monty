@@ -14,7 +14,7 @@ defaults:
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 config:
   model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
-  n_eval_epochs: ${benchmarks.ycb.test_rotations_count}
+  n_eval_epochs: ${benchmarks.test_rotations_count}
   max_total_steps: 5000 # x4 max_eval_steps for surface-policy, x2.5 for feature-change SM
   logging:
     run_name: base_config_10distinctobj_surf_agent
