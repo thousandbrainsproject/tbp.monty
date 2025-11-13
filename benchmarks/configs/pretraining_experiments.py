@@ -251,12 +251,7 @@ supervised_pre_training_5lms = copy.deepcopy(supervised_pre_training_base)
 supervised_pre_training_5lms.update(
     monty_config=FiveLMMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=500),
-        motor_system_config=MotorSystemConfigNaiveScanSpiral(
-            motor_system_args=dict(
-                policy_class=NaiveScanPolicy,
-                policy_args=make_naive_scan_policy_config(fixed_amount=5),
-            )
-        ),
+        motor_system_config=MotorSystemConfigNaiveScanSpiral(),
     ),
     env_interface_config=FiveLMMountHabitatEnvInterfaceConfig(),
 )
