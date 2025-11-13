@@ -308,6 +308,7 @@ class MotorSystemConfigInformedNoTransStepS3:
 
 @dataclass
 class MotorSystemConfigInformedNoTransStepS1:
+    # conf/experiment/config/monty/motor_system/informed_no_trans_step_s1.yaml
     motor_system_class: MotorSystem = MotorSystem
     motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
