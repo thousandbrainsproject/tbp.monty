@@ -2,6 +2,7 @@ defaults:
   - config/eval
   - config/logging/clear_logging@config
   - config/logging/parallel_evidence_lm@config.logging
+  - config/monty/clear_monty_config@config
   - config/monty/patch_and_view@config.monty_config
   - config/monty/args/clear_monty_args@config.monty_config
   - config/monty/args/defaults@config.monty_config.monty_args
@@ -9,31 +10,27 @@ defaults:
   - config/monty/learning_modules/default_evidence_1lm@config.monty_config.learning_module_configs
   - config/monty/motor_system/clear_motor_system_config@config.monty_config
   - config/monty/motor_system/informed_no_trans_step_s20@config.monty_config.motor_system_config
-  - config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
-  - config/monty/sensor_modules/sensor_module/default_all_noisy@config.monty_config.sensor_module_configs.sensor_module_0
   - config/environment/clear_env_interface_config@config
-  - config/environment/patch_view_finder_monty_world_mount_habitat@config.env_interface_config
+  - config/environment/world_image@config.env_interface_config
+  - config/environment/init_args/clear_env_init_args@config.env_interface_config
+  - config/environment/init_args/monty_world_standard_scenes@config.env_interface_config.env_init_args
   - config/environment_interface/clear_eval_env_interface_args@config.eval_env_interface_args
-  - config/environment_interface/per_object@config.eval_env_interface_args
-  - config/environment_interface/numenta/objects@config.eval_env_interface_args.object_names
+  - config/environment_interface/world_image@config.eval_env_interface_args
 
 _target_: ${monty.class:tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment}
 config:
   model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/
-  n_eval_epochs: 10
+  n_eval_epochs: 1
   max_eval_steps: 500
+  show_sensor_output: false
   logging:
     wandb_group: benchmark_experiments
   monty_config:
     monty_args:
       min_eval_steps: ${benchmarks.min_eval_steps}
-    sensor_module_configs:
-      sensor_module_1:
-        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
-        sensor_module_args:
-          sensor_module_id: view_finder
-          save_raw_obs: false
-  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.SaccadeOnImageEnvironmentInterface}
   eval_env_interface_args:
-    object_init_sampler:
-      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.RandomRotationObjectInitializer
+    # list(np.repeat(range(12), 4))
+    scenes: [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11]
+    # list(np.tile(range(4), 12))
+    versions: [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]
