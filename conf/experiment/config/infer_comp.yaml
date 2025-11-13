@@ -16,7 +16,7 @@ defaults:
   - environment_interface/clear_parent_to_child_mapping@eval_env_interface_args
   - environment_interface/logos_on_objs/parent_to_child_mapping@eval_env_interface_args.parent_to_child_mapping
 
-n_eval_epochs: ${benchmarks.rotations_count}
+n_eval_epochs: ${benchmarks.rotations_all_count}
 min_lms_match: 1
 logging:
   wandb_group: benchmark_experiments

@@ -13,7 +13,7 @@ defaults:
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 config:
   model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
-  n_eval_epochs: ${benchmarks.rotations_count}
+  n_eval_epochs: ${benchmarks.rotations_all_count}
   logging:
     wandb_group: benchmark_experiments
     # Comment in for quick debugging (turns of wandb and increases logging)
