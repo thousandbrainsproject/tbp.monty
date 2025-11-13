@@ -8,15 +8,19 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import importlib
 import os
 
 import hydra
-import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
-from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.run_env import setup_env
+from tbp.monty.hydra import (
+    agent_id_resolver,
+    monty_class_resolver,
+    ndarray_resolver,
+    numpy_list_eval_resolver,
+    ones_resolver,
+)
 
 
 @hydra.main(config_path=".", config_name="experiment", version_base=None)
@@ -34,38 +38,6 @@ def validate(cfg: DictConfig):
         pass
 
     print("done")
-
-
-def agent_id_resolver(agent_id: str) -> AgentID:
-    """Returns an AgentID new type from a string."""
-    return AgentID(agent_id)
-
-
-def monty_class_resolver(class_name: str) -> type:
-    """Returns a class object by fully qualified path.
-
-    TODO: This is an interim solution to retrieve my_class in
-      the my_class(**my_args) pattern.
-    """
-    parts = class_name.split(".")
-    module = ".".join(parts[:-1])
-    klass = parts[-1]
-    module_obj = importlib.import_module(module)
-    return getattr(module_obj, klass)
-
-
-def ndarray_resolver(list_or_tuple: list | tuple) -> np.ndarray:
-    """Returns a numpy array from a list or tuple."""
-    return np.array(list_or_tuple)
-
-
-def ones_resolver(n: int) -> np.ndarray:
-    """Returns a numpy array of ones."""
-    return np.ones(n)
-
-
-def numpy_list_eval_resolver(expr_list: list) -> list[float]:
-    return [eval(item) for item in expr_list]  # noqa: S307
 
 
 if __name__ == "__main__":
