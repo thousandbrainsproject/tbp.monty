@@ -7,11 +7,8 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-from typing import Mapping
 
-import hydra
 import pytest
-from omegaconf import OmegaConf
 
 pytest.importorskip(
     "habitat_sim",
@@ -23,6 +20,10 @@ import os
 import shutil
 import tempfile
 import unittest
+from typing import Mapping
+
+import hydra
+from omegaconf import OmegaConf
 
 
 class BaseConfigTest(unittest.TestCase):
