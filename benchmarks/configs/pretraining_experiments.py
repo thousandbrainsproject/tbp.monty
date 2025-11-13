@@ -134,9 +134,6 @@ supervised_pre_training_base = dict(
 
 only_surf_agent_training_10obj = copy.deepcopy(supervised_pre_training_base)
 only_surf_agent_training_10obj.update(
-    experiment_args=SupervisedPretrainingExperimentArgs(
-        n_train_epochs=len(train_rotations_all),
-    ),
     monty_config=SurfaceAndViewMontyConfig(
         monty_args=MontyFeatureGraphArgs(num_exploratory_steps=1000),
         learning_module_configs=dict(
@@ -201,7 +198,7 @@ only_surf_agent_training_10obj.update(
     ),
     train_env_interface_class=ED.InformedEnvironmentInterface,
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(0, 10, object_list=DISTINCT_OBJECTS),
+        object_names=DISTINCT_OBJECTS,
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations_all),
     ),
 )
