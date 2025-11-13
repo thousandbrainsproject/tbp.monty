@@ -9,7 +9,9 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
+import hydra
 import pytest
+from omegaconf import DictConfig
 
 pytest.importorskip(
     "habitat_sim",
@@ -72,7 +74,7 @@ from tbp.monty.simulators.habitat.configs import (
     PatchViewFinderMountHabitatEnvInterfaceConfig,
     SurfaceViewFinderMountHabitatEnvInterfaceConfig,
 )
-from tests.unit.resources.unit_test_utils import BaseGraphTestCases
+from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 
 @dataclass
@@ -157,13 +159,44 @@ class TrainedGraphLM:
         self.learning_module.pre_episode(primary_target)
 
 
-class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
+class GraphLearningTest(BaseGraphTest):
     def setUp(self):
         """Code that gets executed before every test."""
         super().setUp()
 
         self.output_dir = tempfile.mkdtemp()
         self.compositional_save_path = tempfile.mkdtemp()
+
+        actions_file_name_selector = ".".join(
+            [
+                "test",
+                "config",
+                "monty_config",
+                "motor_system_config",
+                "motor_system_args",
+                "policy_args",
+                "file_name",
+            ]
+        )
+
+        def hydra_config(
+            test_name: str, action_file_name: Path | None = None
+        ) -> DictConfig:
+            overrides = [
+                f"test=graph_learning/{test_name}",
+                f"test.config.logging.output_dir={self.output_dir}",
+            ]
+            if action_file_name:
+                overrides.append(f"{actions_file_name_selector}={action_file_name}")
+
+            return hydra.compose(config_name="test", overrides=overrides)
+
+        # --- Hydra Configs ---
+
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            self.base_cfg = hydra_config("base")
+
+        # --- Original Configs ---
 
         base = dict(
             experiment_class=MontyObjectRecognitionExperiment,
@@ -608,26 +641,21 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         This could be part of the setUp method, but it's easier to debug if something
         breaks the setup_experiment method if there's a separate test for it.
         """
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with MontyObjectRecognitionExperiment(base_config):
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             pass
 
     def test_can_run_train_episode(self):
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with MontyObjectRecognitionExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
-            pprint("...training...")
             exp.pre_epoch()
             exp.run_episode()
 
     def test_right_data_in_buffer(self):
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with MontyObjectRecognitionExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
-            pprint("...training...")
             exp.pre_epoch()
             exp.pre_episode()
             for step, observation in enumerate(exp.env_interface):
@@ -674,11 +702,10 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                     break
 
     def test_can_run_eval_episode(self):
-        pprint("...parsing experiment...")
         base_config = copy.deepcopy(self.base_config)
-        with MontyObjectRecognitionExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("eval")
-            pprint("...training...")
             exp.pre_epoch()
             exp.run_episode()
 
