@@ -210,7 +210,7 @@ only_surf_agent_training_10simobj.update(
         run_name="surf_agent_1lm_10similarobj",
     ),
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(0, 10, object_list=SIMILAR_OBJECTS),
+        object_names=SIMILAR_OBJECTS,
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations_all),
     ),
 )
