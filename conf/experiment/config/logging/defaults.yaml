@@ -7,7 +7,7 @@ wandb_handlers: []
 python_log_level: INFO
 python_log_to_file: true
 python_log_to_stderr: true
-output_dir: ${oc.env:MONTY_LOGS}/projects/monty_runs/
+output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs/}
 run_name: ""
 resume_wandb_run: false
 wandb_id:

@@ -8,7 +8,7 @@ defaults:
 
 config:
   logging:
-    output_dir: ${oc.env:MONTY_MODELS}/pretrained_ycb_v10
+    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v10}
     run_name: surf_agent_1lm_10similarobj
   train_env_interface_args:
     object_init_sampler:

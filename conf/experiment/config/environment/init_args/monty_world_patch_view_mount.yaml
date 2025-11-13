@@ -1,4 +1,4 @@
 defaults:
   - patch_view_mount
 
-data_path: ${oc.env:MONTY_DATA}/numenta_lab
+data_path: ${path.expanduser:${oc.env:MONTY_DATA}/numenta_lab}

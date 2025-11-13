@@ -28,7 +28,7 @@ monty_config:
     min_eval_steps: ${benchmarks.min_eval_steps}
 env_interface_config:
   env_init_args:
-    data_path: ${oc.env:MONTY_DATA}/compositional_objects
+    data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects}
 eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
 eval_env_interface_args:
   object_init_sampler:

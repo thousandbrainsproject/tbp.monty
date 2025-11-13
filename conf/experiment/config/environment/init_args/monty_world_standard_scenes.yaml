@@ -1,1 +1,1 @@
-data_path: ${oc.env:MONTY_DATA}/worldimages/standard_scenes/
+data_path: ${path.expanduser::MONTY_DATA}/worldimages/standard_scenes/}

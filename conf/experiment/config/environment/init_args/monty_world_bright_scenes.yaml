@@ -1,1 +1,1 @@
-data_path: ${oc.env:MONTY_DATA}/worldimages/bright_scenes/
+data_path: ${path.expanduser:${oc.env:MONTY_DATA}/worldimages/bright_scenes/}

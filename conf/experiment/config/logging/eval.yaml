@@ -1,7 +1,7 @@
 defaults:
   - defaults
 
-output_dir: ${oc.env:MONTY_LOGS}/projects/feature_eval_runs/logs
+output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/feature_eval_runs/logs}
 monty_handlers:
   - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
   # - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.DetailedJSONHandler}

@@ -61,7 +61,7 @@ config:
           sensor_module_id: view_finder
           save_raw_obs: true
   logging:
-    output_dir: ${oc.env:MONTY_MODELS}/pretrained_ycb_v10
+    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v10}
     run_name: surf_agent_1lm_10distinctobj
   train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
   train_env_interface_args:
