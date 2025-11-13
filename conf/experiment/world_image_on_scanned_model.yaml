@@ -17,7 +17,7 @@ defaults:
   - config/environment_interface/clear_eval_env_interface_args@config.eval_env_interface_args
   - config/environment_interface/world_image@config.eval_env_interface_args
 
-_target_: ${monty.class:tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment}
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 config:
   model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/
   n_eval_epochs: 1
