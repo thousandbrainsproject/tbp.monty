@@ -259,9 +259,7 @@ supervised_pre_training_5lms.update(
 supervised_pre_training_5lms_all_objects = copy.deepcopy(supervised_pre_training_5lms)
 supervised_pre_training_5lms_all_objects.update(
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(
-            0, len(SHUFFLED_YCB_OBJECTS), object_list=SHUFFLED_YCB_OBJECTS
-        ),
+        object_names=SHUFFLED_YCB_OBJECTS,
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations_all),
     ),
 )
