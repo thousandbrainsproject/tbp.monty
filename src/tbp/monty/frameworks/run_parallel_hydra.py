@@ -255,12 +255,15 @@ def parse_episode_spec(episode_spec: str | None, total: int) -> list[int]:
 
     return sorted(selected)
 
+
 def filter_episode_configs(configs: list[dict], episode_spec: str | None) -> list[dict]:
     idxs = parse_episode_spec(episode_spec, len(configs))
     return [cfg for i, cfg in enumerate(configs) if i in idxs]
 
+
 def generate_parallel_eval_configs(
-    experiment: DictConfig, name: str,
+    experiment: DictConfig,
+    name: str,
 ) -> list[Mapping]:
     """Generate configs for evaluation episodes in parallel.
 
@@ -274,9 +277,9 @@ def generate_parallel_eval_configs(
     Returns:
         List of configs for evaluation episodes.
     """
-    sampler = hydra.utils.instantiate(experiment.config["eval_env_interface_args"][
-        "object_init_sampler"
-    ])
+    sampler = hydra.utils.instantiate(
+        experiment.config["eval_env_interface_args"]["object_init_sampler"]
+    )
     sampler.rng = np.random.RandomState(experiment.config["seed"])
     object_names = experiment.config["eval_env_interface_args"]["object_names"]
     # sampler_params = sampler.all_combinations_of_params()
@@ -302,9 +305,7 @@ def generate_parallel_eval_configs(
 
             # Save results in parallel subdir of output_dir, update run_name
             output_dir = new_experiment["config"]["logging"]["output_dir"]
-            run_name = os.path.join(
-                f"{name}-parallel_eval_episode_{episode_count}"
-            )
+            run_name = os.path.join(f"{name}-parallel_eval_episode_{episode_count}")
             new_experiment["config"]["logging"]["run_name"] = run_name
             new_experiment["config"]["logging"]["output_dir"] = os.path.join(
                 output_dir, name, run_name
@@ -335,9 +336,8 @@ def generate_parallel_eval_configs(
 
     return new_experiments
 
-def generate_parallel_train_configs(
-    experiment: DictConfig, name: str
-) -> list[Mapping]:
+
+def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[Mapping]:
     """Generate configs for training episodes in parallel.
 
     Create a config for each object in the experiment. Unlike with parallel eval
@@ -358,9 +358,9 @@ def generate_parallel_train_configs(
         AND poses.
 
     """
-    sampler = hydra.utils.instantiate(experiment.config["train_env_interface_args"][
-        "object_init_sampler"
-    ])
+    sampler = hydra.utils.instantiate(
+        experiment.config["train_env_interface_args"]["object_init_sampler"]
+    )
     sampler.rng = np.random.RandomState(experiment.config["seed"])
     object_names = experiment.config["train_env_interface_args"]["object_names"]
     new_experiments = []
@@ -369,9 +369,7 @@ def generate_parallel_train_configs(
         new_experiment: Mapping = OmegaConf.to_object(experiment)  # type: ignore[assignment]
 
         # No eval
-        new_experiment["config"].update(
-            do_eval=False, do_train=True, n_train_epochs=1
-        )
+        new_experiment["config"].update(do_eval=False, do_train=True, n_train_epochs=1)
 
         # Save results in parallel subdir of output_dir, update run_name
         output_dir = new_experiment["config"]["logging"]["output_dir"]
@@ -394,12 +392,14 @@ def generate_parallel_train_configs(
 
     return new_experiments
 
+
 def single_train(experiment):
     os.makedirs(experiment["config"]["logging"]["output_dir"], exist_ok=True)
     exp = hydra.utils.instantiate(experiment)
     with exp:
         print("---------training---------")
         exp.train()
+
 
 def single_evaluate(experiment):
     os.makedirs(experiment["config"]["logging"]["output_dir"], exist_ok=True)
@@ -414,6 +414,7 @@ def single_evaluate(experiment):
             # `exp.evaluate()` call above.
             return get_episode_stats(exp, "eval")
 
+
 def get_episode_stats(exp, mode):
     eval_stats = exp.monty_logger.get_formatted_overall_stats(mode, 0)
     exp.monty_logger.flush()
@@ -423,6 +424,7 @@ def get_episode_stats(exp, mode):
         if key.startswith("overall"):
             del eval_stats[key]
     return eval_stats
+
 
 def get_overall_stats(stats):
     overall_stats = {}
@@ -474,11 +476,13 @@ def get_overall_stats(stats):
 
     return overall_stats
 
+
 def collect_detailed_episodes_names(parallel_dirs):
     filenames = []
     for pdir in parallel_dirs:
         filenames.extend(list((Path(pdir) / "detailed_run_stats").glob("*.json")))
     return filenames
+
 
 def post_parallel_eval(experiments: list[Mapping], base_dir: str) -> None:
     """Post-execution cleanup after running evaluation in parallel.
@@ -536,6 +540,7 @@ def post_parallel_eval(experiments: list[Mapping], base_dir: str) -> None:
     for pdir in parallel_dirs:
         shutil.rmtree(pdir)
 
+
 def post_parallel_train(experiments: list[Mapping], base_dir: str) -> None:
     """Post-execution cleanup after running training in parallel.
 
@@ -579,6 +584,7 @@ def post_parallel_train(experiments: list[Mapping], base_dir: str) -> None:
         for pdir in pdirs:
             print(f"Removing directory: {pdir}")
             shutil.rmtree(pdir)
+
 
 def run_episodes_parallel(
     experiments: list[Mapping],
@@ -681,6 +687,7 @@ def run_episodes_parallel(
         f.write(f"experiment: {experiment_name}\n")
         f.write(f"num_parallel: {num_parallel}\n")
         f.write(f"total_time: {total_time}")
+
 
 @hydra.main(config_path="../../../conf", config_name="experiment", version_base=None)
 def main(cfg: DictConfig):

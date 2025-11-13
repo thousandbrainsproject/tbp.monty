@@ -45,7 +45,8 @@ def ones_resolver(n: int) -> np.ndarray:
 
 
 def numpy_list_eval_resolver(expr_list: list) -> list[float]:
-    return [eval(item) for item in expr_list]  # noqa: S307
+    # call str() on each item so we can use number literals
+    return [eval(str(item)) for item in expr_list]  # noqa: S307
 
 
 def register_resolvers() -> None:
