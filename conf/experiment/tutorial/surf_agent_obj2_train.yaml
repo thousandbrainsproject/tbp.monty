@@ -16,7 +16,7 @@ _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervis
 config:
   n_train_epochs: ${benchmarks.rotations_all}
   logging:
-    output_dir: ~/tbp/result/monty/projects
+    output_dir: ${path.expanduser:"~/tbp/result/monty/projects"}
     run_name: surf_agent_1lm_2obj
     wandb_handlers: []
   monty_config:

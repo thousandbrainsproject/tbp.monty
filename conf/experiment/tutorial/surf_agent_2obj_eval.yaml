@@ -15,13 +15,13 @@ defaults:
 _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 config:
   # load the pre-trained models from this path; this needs to be the same name as used for pretraining
-  model_name_or_path: ~/tbp/results/monty/projects/surf_agent_1lm_obj/pretrained
+  model_name_or_path: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_1lm_obj/pretrained"}
   n_eval_epochs: ${benchmarks.rotations_all_count}
   max_total_steps: 5000
   show_sensor_output: true # live visualization of Monty's observations and MLH
   logging:
     # where to save eval logs
-    output_dir: ~/tbp/results/monty/projects/surf_agent_1lm_obj
+    output_dir: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_1lm_obj"}
     run_name: eval
     wandb_handlers: [] # remove this line if you, additionally, want to log to WandB
   monty_config:

@@ -14,13 +14,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 from tbp.monty.frameworks.run_env import setup_env
-from tbp.monty.hydra import (
-    agent_id_resolver,
-    monty_class_resolver,
-    ndarray_resolver,
-    numpy_list_eval_resolver,
-    ones_resolver,
-)
+from tbp.monty.hydra import register_resolvers
 
 
 @hydra.main(config_path=".", config_name="experiment", version_base=None)
@@ -42,9 +36,5 @@ def validate(cfg: DictConfig):
 
 if __name__ == "__main__":
     setup_env()
-    OmegaConf.register_new_resolver("monty.agent_id", agent_id_resolver)
-    OmegaConf.register_new_resolver("monty.class", monty_class_resolver)
-    OmegaConf.register_new_resolver("np.array", ndarray_resolver)
-    OmegaConf.register_new_resolver("np.ones", ones_resolver)
-    OmegaConf.register_new_resolver("np.list_eval", numpy_list_eval_resolver)
+    register_resolvers()
     validate()

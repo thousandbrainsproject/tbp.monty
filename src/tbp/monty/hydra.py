@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import importlib
+from pathlib import Path
 
 import numpy as np
 from omegaconf import OmegaConf
@@ -48,6 +49,10 @@ def numpy_list_eval_resolver(expr_list: list) -> list[float]:
     # call str() on each item so we can use number literals
     return [eval(str(item)) for item in expr_list]  # noqa: S307
 
+def path_expanduser_resolver(path: str) -> str:
+    """Returns a path with ~ expanded to the user's home directory."""
+    return str(Path(path).expanduser())
+
 
 def register_resolvers() -> None:
     OmegaConf.register_new_resolver("monty.agent_id", agent_id_resolver)
@@ -55,3 +60,4 @@ def register_resolvers() -> None:
     OmegaConf.register_new_resolver("np.array", ndarray_resolver)
     OmegaConf.register_new_resolver("np.ones", ones_resolver)
     OmegaConf.register_new_resolver("np.list_eval", numpy_list_eval_resolver)
+    OmegaConf.register_new_resolver("path.expanduser", path_expanduser_resolver)
