@@ -219,12 +219,10 @@ only_surf_agent_training_allobj = copy.deepcopy(only_surf_agent_training_10obj)
 only_surf_agent_training_allobj.update(
     logging=PretrainLoggingConfig(
         output_dir=fe_pretrain_dir,
-        run_name=f"surf_agent_1lm_{len(SHUFFLED_YCB_OBJECTS)}obj",
+        run_name="surf_agent_1lm_77obj",
     ),
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(
-            0, len(SHUFFLED_YCB_OBJECTS), object_list=SHUFFLED_YCB_OBJECTS
-        ),
+        object_names=SHUFFLED_YCB_OBJECTS,
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations_all),
     ),
 )
