@@ -18,7 +18,6 @@ from scipy.spatial.transform import Rotation
 from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
 )
-from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
 
 from .monty_experiment import MontyExperiment
 

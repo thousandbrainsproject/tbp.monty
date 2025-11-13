@@ -109,7 +109,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
         data_path: str | None = None,
     ):
         super().__init__()
-        # TODO: Change the rest of the code to expect a single agent
+        # TODO: Change the configuration to configure multiple agents
         agents = [agents]
         self._agents = []
         for config in agents:
