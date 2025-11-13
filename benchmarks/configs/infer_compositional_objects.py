@@ -264,9 +264,7 @@ infer_comp_lvl4_with_comp_models.update(
         n_eval_epochs=N_EVAL_EPOCHS,
     ),
     eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(
-            0, len(OBJECTS_WITH_LOGOS_LVL4), object_list=OBJECTS_WITH_LOGOS_LVL4
-        ),
+        object_names=OBJECTS_WITH_LOGOS_LVL4,
         object_init_sampler=PredefinedObjectInitializer(
             rotations=test_rotations_all,
         ),
