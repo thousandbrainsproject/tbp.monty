@@ -1,6 +1,5 @@
 defaults:
   - benchmarks: defaults
-  - benchmarks/ycb: defaults
   # Experiment name
   - experiment: MISSING
   - _self_
