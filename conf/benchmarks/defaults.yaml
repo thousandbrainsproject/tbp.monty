@@ -27,8 +27,8 @@ pretrained_dir: ${oc.env:MONTY_MODELS}/pretrained_ycb_v10
 
 # 14 unique rotations that give good views of the object. Same rotations used
 # for supervised pretraining.
-test_rotations_count: 14
-test_rotations_all:
+rotations_count: 14
+rotations_all:
   - [0, 0, 0]
   - [0, 90, 0]
   - [0, 180, 0]
@@ -44,8 +44,8 @@ test_rotations_all:
   - [35, 225, 0]
   - [325, 225, 0]
 
-test_rotations_3_count: 3 # Surprise!
-test_rotations_3:
+rotations_3_count: 3 # Surprise!
+rotations_3:
   - [0, 0, 0]
   - [0, 90, 0]
   - [0, 180, 0]

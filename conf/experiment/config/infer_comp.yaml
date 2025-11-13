@@ -16,7 +16,7 @@ defaults:
   - environment_interface/clear_parent_to_child_mapping@eval_env_interface_args
   - environment_interface/logos_on_objs/parent_to_child_mapping@eval_env_interface_args.parent_to_child_mapping
 
-n_eval_epochs: ${benchmarks.test_rotations_count}
+n_eval_epochs: ${benchmarks.rotations_count}
 min_lms_match: 1
 logging:
   wandb_group: benchmark_experiments
@@ -33,4 +33,4 @@ eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodi
 eval_env_interface_args:
   object_init_sampler:
     _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
-    rotations: ${benchmarks.test_rotations_all}
+    rotations: ${benchmarks.rotations_all}

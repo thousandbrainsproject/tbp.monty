@@ -21,4 +21,4 @@ config:
       num_distractors: 10
     object_init_sampler:
       _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
-      rotations: ${benchmarks.test_rotations_all}
+      rotations: ${benchmarks.rotations_all}
