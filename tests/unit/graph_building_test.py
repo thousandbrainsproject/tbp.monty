@@ -31,7 +31,7 @@ from tbp.monty.frameworks.experiments import (
 from tbp.monty.frameworks.utils.graph_matching_utils import get_correct_k_n
 
 
-class GraphLearningTest(unittest.TestCase):
+class GraphBuildingTest(unittest.TestCase):
     def setUp(self):
         """Code that gets executed before every test."""
         self.output_dir = tempfile.mkdtemp()
@@ -44,7 +44,7 @@ class GraphLearningTest(unittest.TestCase):
             return hydra.compose(
                 config_name="test",
                 overrides=[
-                    f"test=graph_learning/{test_name}",
+                    f"test=graph_building/{test_name}",
                     f"test.config.logging.output_dir={self.habitat_save_path}",
                 ],
             )
@@ -53,7 +53,7 @@ class GraphLearningTest(unittest.TestCase):
             return hydra.compose(
                 config_name="test",
                 overrides=[
-                    f"test=graph_learning/{test_name}",
+                    f"test=graph_building/{test_name}",
                     f"test.config.logging.output_dir={self.habitat_save_path}",
                     f"test.config.model_name_or_path={self.model_load_path}",
                 ],

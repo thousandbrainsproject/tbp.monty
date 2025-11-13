@@ -1,5 +1,5 @@
 defaults:
-  - /test/graph_learning/supervised_pre_training@
+  - /test/graph_building/supervised_pre_training@
   - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
 
 config:

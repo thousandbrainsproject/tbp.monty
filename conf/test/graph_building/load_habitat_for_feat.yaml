@@ -1,5 +1,5 @@
 defaults:
-  - /test/graph_learning/load_habitat@
+  - /test/graph_building/load_habitat@
   - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
 
 config:
