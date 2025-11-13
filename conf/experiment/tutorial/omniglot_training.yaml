@@ -12,7 +12,7 @@ _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervis
 config:
   n_train_epochs: 1
   logging:
-    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/omniglot}}
+    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/omniglot}
   monty_config:
     sensor_module_configs:
       sensor_module_0:
