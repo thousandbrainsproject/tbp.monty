@@ -235,7 +235,7 @@ only_surf_agent_training_numenta_lab_obj.update(
     ),
     env_interface_config=SurfaceViewFinderMontyWorldMountHabitatEnvInterfaceConfig(),
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(0, 12, object_list=NUMENTA_OBJECTS),
+        object_names=NUMENTA_OBJECTS,
         object_init_sampler=PredefinedObjectInitializer(rotations=train_rotations_all),
     ),
 )
