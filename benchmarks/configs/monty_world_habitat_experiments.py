@@ -80,7 +80,7 @@ randrot_noise_sim_on_scan_monty_world = dict(
     env_interface_config=PatchViewFinderMontyWorldMountHabitatEnvInterfaceConfig(),
     eval_env_interface_class=ED.InformedEnvironmentInterface,
     eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(0, 12, object_list=NUMENTA_OBJECTS),
+        object_names=NUMENTA_OBJECTS,
         object_init_sampler=RandomRotationObjectInitializer(),
     ),
 )

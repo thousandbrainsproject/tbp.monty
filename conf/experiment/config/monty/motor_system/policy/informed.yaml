@@ -4,3 +4,4 @@ desired_object_distance: 0.03
 use_goal_state_driven_actions: false
 switch_frequency: 1.0
 min_perc_on_obj: 0.25
+agent_id: ${monty.agent_id:agent_id_0}
