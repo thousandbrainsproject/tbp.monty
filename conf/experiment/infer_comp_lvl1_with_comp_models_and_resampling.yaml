@@ -9,7 +9,7 @@ defaults:
   - config/monty/motor_system/clear_motor_system_config@config.monty_config
   - config/monty/motor_system/informed_goal_state_driven@config.monty_config.motor_system_config
 
-_target_: ${monty.class:tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment}
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 config:
   model_name_or_path: ${benchmarks.pretrained_dir}/supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling/pretrained/
   n_eval_epochs: ${benchmarks.rotations_count}
