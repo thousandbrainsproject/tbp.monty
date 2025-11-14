@@ -1,6 +1,5 @@
 defaults:
   - supervised_pre_training_flat_objects_wo_logos
-  - config/clear_config@config
   - config/supervised_pretraining@config
   - config/monty/clear_monty_config@config
   - config/monty/two_lm_stacked@config.monty_config
