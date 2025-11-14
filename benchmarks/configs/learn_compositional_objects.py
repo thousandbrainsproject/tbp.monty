@@ -327,9 +327,7 @@ supervised_pre_training_objects_with_logos_lvl3_comp_models = copy.deepcopy(
 
 supervised_pre_training_objects_with_logos_lvl3_comp_models.update(
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(
-            0, len(OBJECTS_WITH_LOGOS_LVL3), object_list=OBJECTS_WITH_LOGOS_LVL3
-        ),
+        object_names=OBJECTS_WITH_LOGOS_LVL3,
         object_init_sampler=PredefinedObjectInitializer(
             rotations=train_rotations_all,
         ),
