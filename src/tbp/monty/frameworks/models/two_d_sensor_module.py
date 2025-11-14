@@ -308,6 +308,7 @@ class TwoDPoseSM(SensorModule):
         )
         state.morphological_features["pose_fully_defined"] = True
         state.morphological_features["pose_from_edge"] = True
+        state.non_morphological_features["pose_fully_defined"] = True
 
         if "edge_strength" in self.features:
             state.non_morphological_features["edge_strength"] = edge_strength
@@ -331,8 +332,8 @@ class TwoDPoseSM(SensorModule):
         4. Transform the resulting tangent vector back to world coordinates
 
         An edge in the image lies on the projection of a 3D curve on the surface.
-        Since the surface is locally planar, the edge must be tangent to that surface. 
-        By building a tangent basis aligned with the image axes, we can "lift" the 2D 
+        Since the surface is locally planar, the edge must be tangent to that surface.
+        By building a tangent basis aligned with the image axes, we can "lift" the 2D
         edge angle back to 3D.
 
         Args:

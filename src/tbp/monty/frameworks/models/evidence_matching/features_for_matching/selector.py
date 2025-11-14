@@ -36,9 +36,9 @@ class DefaultFeaturesForMatchingSelector:
             ):
                 use_features[input_channel] = False
             else:
+                # Check if there are any non-morphological features (excluding pose_vectors and pose_fully_defined)
                 non_morphological_features = {
-                    k
-                    for k in feature_weights[input_channel].keys()
+                    k for k in feature_weights[input_channel].keys() 
                     if k not in ["pose_vectors", "pose_fully_defined"]
                 }
                 feature_weights_provided = len(non_morphological_features) > 0
