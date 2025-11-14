@@ -19,6 +19,7 @@ from typing import Any, Callable
 import numpy as np
 import quaternion
 import torch
+from omegaconf import DictConfig, ListConfig, OmegaConf
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import Action, ActionJSONEncoder
@@ -683,3 +684,5 @@ BufferEncoder.register(
     quaternion.quaternion, lambda obj: quaternion.as_float_array(obj)
 )
 BufferEncoder.register(Action, ActionJSONEncoder)
+BufferEncoder.register(DictConfig, lambda obj: OmegaConf.to_object(obj))
+BufferEncoder.register(ListConfig, lambda obj: OmegaConf.to_object(obj))

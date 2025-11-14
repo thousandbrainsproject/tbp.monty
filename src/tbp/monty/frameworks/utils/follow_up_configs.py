@@ -8,11 +8,15 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+from __future__ import annotations
+
 import copy
 import json
 import os
+from pathlib import Path
 
 import torch
+from omegaconf import DictConfig, OmegaConf, open_dict
 
 from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     PredefinedObjectInitializer,
@@ -48,6 +52,84 @@ def recover_wandb_id(output_dir):
     cfg = torch.load(config_file_name)
     config = config_to_dict(cfg)
     return config["logging"]["wandb_id"]
+
+
+def create_eval_episode_hydra_cfg(
+    parent_config: DictConfig, episode: int
+) -> DictConfig:
+    """Returns a new Hydra config that runs only that episode with detailed logging.
+
+    This doesn't support the `update_run_dir` option that the function below does.
+    """
+    new_cfg = copy.deepcopy(parent_config)
+    # Make an alias for the actual config to shorten how far we need to dig into
+    # the object tree
+    exp_cfg = new_cfg.test.config
+
+    output_dir = exp_cfg.logging.output_dir
+    # 1) Use a policy that uses exact actions from previous episode
+    motor_system_cfg = exp_cfg.monty_config.motor_system_config
+    motor_system_cfg.motor_system_args.policy_args.file_name = str(
+        Path(output_dir)
+        / "reproduce_episode_data"
+        / f"eval_episode_{episode}_actions.jsonl"
+    )
+    # 2) Load object params from this episode into environment interface config
+    object_params_file = (
+        Path(output_dir)
+        / "reproduce_episode_data"
+        / f"eval_episode_{episode}_target.txt"
+    )
+    with open(object_params_file) as f:
+        target_data = json.load(f)
+
+    exp_cfg.eval_env_interface_args.object_names = [
+        target_data["primary_target_object"]
+    ]
+
+    # Need to create the config that Hydra expects using fully qualified
+    # class names instead of sticking the class instance on the config.
+    def class_path(klass: type) -> str:
+        """Returns the fully qualified class path for a class."""
+        return f"{klass.__module__}.{klass.__name__}"
+
+    def monty_class(klass: type) -> str:
+        """Returns the ${monty.class:...} resolver expression for a class."""
+        return f"${{monty.class:{class_path(klass)}}}"
+
+    exp_cfg.eval_env_interface_args.object_init_sampler = {
+        "_target_": class_path(PredefinedObjectInitializer),
+        "positions": [target_data["primary_target_position"]],
+        "rotations": [target_data["primary_target_rotation_euler"]],
+        # FIXME: target_scale is a float, need an array of floats for this
+    }
+    # 3) Update logging config
+    # We have to convert the handlers from the config into a format that will match
+    # the values we can look things up with.
+    # TODO: update handlers used here as more sophisticated ones get made
+    monty_handlers = OmegaConf.to_object(exp_cfg.logging.monty_handlers)
+    if DetailedJSONHandler not in monty_handlers:
+        exp_cfg.logging.monty_handlers.append(monty_class(DetailedJSONHandler))
+    wandb_handlers = OmegaConf.to_object(exp_cfg.logging.wandb_handlers)
+    if DetailedWandbMarkedObsHandler not in wandb_handlers:
+        exp_cfg.logging.wandb_handlers.append(
+            monty_class(DetailedWandbMarkedObsHandler)
+        )
+    # Second, update the output directory, run_name, set resume to True
+    new_output_dir = Path(output_dir) / f"eval_episode_{episode}_rerun"
+    new_output_dir.mkdir(exist_ok=True)
+    exp_cfg.logging.output_dir = str(new_output_dir)
+    exp_cfg.logging.resume_wandb_run = True
+    exp_cfg.logging.wandb_id = None
+    exp_cfg.logging.monty_log_level = "DETAILED"
+    # 4) Make sure this config is set to only run for one episode
+    exp_cfg.n_eval_epochs = 1
+    exp_cfg.do_train = False
+
+    # We've been using exp_cfg for convenience to shorten how far we
+    # need to dig into the object tree, but we want to return the top
+    # of the new config.
+    return new_cfg
 
 
 def create_eval_episode_config(
@@ -139,6 +221,98 @@ def create_eval_episode_config(
     new_config["experiment_args"]["do_train"] = False
 
     return new_config
+
+
+def create_eval_multiple_episodes_hydra_cfg(
+    parent_config: DictConfig, episodes: list[int]
+) -> DictConfig:
+    """Returns a new Hydra config that runs only the episodes specified.
+
+    This doesn't support the `update_run_dir` option that the function below does.
+    """
+    new_cfg = copy.deepcopy(parent_config)
+    # Make an alias for the actual config to shorten how far we need to dig into
+    # the object tree
+    exp_cfg = new_cfg.test.config
+
+    output_dir = exp_cfg.logging.output_dir
+
+    # Add notes to indicate which episodes of the parent experiment were rerun.
+    # This field might not exist to open the DictConfig up for adding keys
+    with open_dict(new_cfg):
+        exp_cfg.notes = {"rerun_episodes": episodes}
+
+    # Update the output directory to be a "rerun" subdir
+    new_output_dir = Path(output_dir) / "eval_rerun_episodes"
+    new_output_dir.mkdir(exist_ok=True)
+    exp_cfg.logging.output_dir = new_output_dir
+    exp_cfg.logging.resume_wandb_run = False
+    exp_cfg.logging.wandb_id = None
+    exp_cfg.logging.monty_log_level = "DETAILED"
+
+    # Turn training off; this feature is only intended for eval episodes
+    exp_cfg.do_train = False
+    exp_cfg.n_eval_epochs = 1
+
+    # Add detailed handlers
+
+    # Need to create the config that Hydra expects using fully qualified
+    # class names instead of sticking the class instance on the config.
+    def class_path(klass: type) -> str:
+        """Returns the fully qualified class path for a class."""
+        return f"{klass.__module__}.{klass.__name__}"
+
+    def monty_class(klass: type) -> str:
+        """Returns the ${monty.class:...} resolver expression for a class."""
+        return f"${{monty.class:{class_path(klass)}}}"
+
+    monty_handlers = OmegaConf.to_object(exp_cfg.logging.monty_handlers)
+    if DetailedJSONHandler not in monty_handlers:
+        exp_cfg.logging.monty_handlers.append(monty_class(DetailedJSONHandler))
+
+    file_names_per_episode = {}
+    target_objects = []
+    target_positions = []
+    target_rotations = []
+    for episode_counter, episode in enumerate(episodes):
+        # Get actions from this episode
+        motor_file = (
+            Path(output_dir)
+            / "reproduce_episode_data"
+            / f"eval_episode_{episode}_actions.jsonl"
+        )
+
+        # Get object params from this episode
+        object_params_file = (
+            Path(output_dir)
+            / "reproduce_episode_data"
+            / f"eval_episode_{episode}_target.txt"
+        )
+        with open(object_params_file) as f:
+            target_data = json.load(f)
+
+        # Update accumulators
+        file_names_per_episode[episode_counter] = str(motor_file)
+        target_objects.append(target_data["primary_target_object"])
+        target_positions.append(target_data["primary_target_position"])
+        target_rotations.append(target_data["primary_target_rotation_euler"])
+
+    # Update config with episode-specific data
+    exp_cfg.eval_env_interface_args.object_names = target_objects
+    exp_cfg.eval_env_interface_args.object_init_sampler = {
+        "_target_": class_path(PredefinedObjectInitializer),
+        "positions": target_positions,
+        "rotations": target_rotations,
+        "change_every_episode": True,
+    }
+    motor_system_cfg = exp_cfg.monty_config.motor_system_config
+    # This field might not exist to open the DictConfig up for adding keys
+    with open_dict(new_cfg):
+        motor_system_cfg.motor_system_args.policy_args.file_names_per_episode = (
+            file_names_per_episode
+        )
+
+    return new_cfg
 
 
 def create_eval_config_multiple_episodes(

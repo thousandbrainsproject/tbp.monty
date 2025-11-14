@@ -59,8 +59,8 @@ from tbp.monty.frameworks.models.graph_matching import GraphLM
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 from tbp.monty.frameworks.utils.follow_up_configs import (
-    create_eval_config_multiple_episodes,
-    create_eval_episode_config,
+    create_eval_episode_hydra_cfg,
+    create_eval_multiple_episodes_hydra_cfg,
 )
 from tbp.monty.frameworks.utils.logging_utils import (
     deserialize_json_chunks,
@@ -166,35 +166,30 @@ class GraphLearningTest(BaseGraphTest):
 
         self.output_dir = tempfile.mkdtemp()
         self.compositional_save_path = tempfile.mkdtemp()
-
-        actions_file_name_selector = ".".join(
-            [
-                "test",
-                "config",
-                "monty_config",
-                "motor_system_config",
-                "motor_system_args",
-                "policy_args",
-                "file_name",
-            ]
+        self.fixed_actions_path = (
+            Path(__file__).parent / "resources" / "fixed_test_actions.jsonl"
         )
-
-        def hydra_config(
-            test_name: str, action_file_name: Path | None = None
-        ) -> DictConfig:
-            overrides = [
-                f"test=graph_learning/{test_name}",
-                f"test.config.logging.output_dir={self.output_dir}",
-            ]
-            if action_file_name:
-                overrides.append(f"{actions_file_name_selector}={action_file_name}")
-
-            return hydra.compose(config_name="test", overrides=overrides)
 
         # --- Hydra Configs ---
 
         with hydra.initialize(version_base=None, config_path="../../conf"):
-            self.base_cfg = hydra_config("base")
+            self.base_cfg = self._hydra_config("base")
+            self.surface_agent_eval_cfg = self._hydra_config("surface_agent_eval")
+            self.ppf_pred_cfg = self._hydra_config("ppf_pred")
+            self.disp_pred_cfg = self._hydra_config("disp_pred")
+            self.feature_pred_cfg = self._hydra_config("feature_pred")
+            self.fixed_actions_disp_cfg = self._hydra_config(
+                "fixed_actions_disp", self.fixed_actions_path
+            )
+            self.fixed_actions_ppf_cfg = self._hydra_config(
+                "fixed_actions_ppf", self.fixed_actions_path
+            )
+            self.fixed_actions_feat_cfg = self._hydra_config(
+                "fixed_actions_feat", self.fixed_actions_path
+            )
+            self.feature_pred_time_out_cfg = self._hydra_config(
+                "feature_pred_time_out", self.fixed_actions_path
+            )
 
         # --- Original Configs ---
 
@@ -635,6 +630,41 @@ class GraphLearningTest(BaseGraphTest):
         """Code that gets executed after every test."""
         shutil.rmtree(self.output_dir)
 
+    def _hydra_config(
+        self,
+        test_name: str,
+        action_file_name: Path | None = None,
+        extra_overrides: list[str] | None = None,
+    ) -> DictConfig:
+        """Return a Hydra configuration from the specified test name.
+
+        Args:
+            test_name: the name of the test config to load
+            action_file_name: Optional path to a file of actions to use
+            extra_overrides: Optional list of extra overrides to add
+        """
+        actions_file_name_selector = ".".join(
+            [
+                "test",
+                "config",
+                "monty_config",
+                "motor_system_config",
+                "motor_system_args",
+                "policy_args",
+                "file_name",
+            ]
+        )
+
+        overrides = [
+            f"test=graph_learning/{test_name}",
+            f"test.config.logging.output_dir={self.output_dir}",
+        ]
+        if action_file_name:
+            overrides.append(f"{actions_file_name_selector}={action_file_name}")
+        if extra_overrides:
+            overrides += extra_overrides
+        return hydra.compose(config_name="test", overrides=overrides)
+
     def test_can_initialize(self):
         """Canary to confirm we can initialize an experiment.
 
@@ -702,7 +732,6 @@ class GraphLearningTest(BaseGraphTest):
                     break
 
     def test_can_run_eval_episode(self):
-        base_config = copy.deepcopy(self.base_config)
         exp = hydra.utils.instantiate(self.base_cfg.test)
         with exp:
             exp.model.set_experiment_mode("eval")
@@ -710,39 +739,28 @@ class GraphLearningTest(BaseGraphTest):
             exp.run_episode()
 
     def test_can_run_eval_episode_with_surface_agent(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.surface_agent_eval_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.surface_agent_eval_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("eval")
-            pprint("...training...")
             exp.pre_epoch()
             exp.run_episode()
 
     def test_can_run_ppf_experiment(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.ppf_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.ppf_pred_cfg.test)
+        with exp:
             exp.train()
-            pprint("...evaluating...")
             exp.evaluate()
 
     def test_can_run_disp_experiment(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.disp_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.disp_pred_cfg.test)
+        with exp:
             exp.train()
-            pprint("...evaluating...")
             exp.evaluate()
 
     def test_can_run_feature_experiment(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.feature_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.feature_pred_cfg.test)
+        with exp:
             exp.train()
-            pprint("...evaluating...")
             exp.evaluate()
 
     def test_fixed_actions_disp(self):
@@ -762,90 +780,57 @@ class GraphLearningTest(BaseGraphTest):
         Followed by three eval episodes on capsule3DSolid (same rotation sequence so
         the first and third episode should recognize the capsule).
         """
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_actions_disp)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.fixed_actions_disp_cfg.test)
+        with exp:
             exp.train()
-            pprint("...loading and checking train statistics...")
             train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
             self.check_train_results(train_stats)
-
-            pprint("...evaluating...")
             exp.evaluate()
 
-        pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
-
         self.check_eval_results(eval_stats)
 
     def test_fixed_actions_ppf(self):
         """Like test_fixed_actions_disp but using point pair features for matching."""
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_actions_ppf)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.fixed_actions_disp_cfg.test)
+        with exp:
             exp.train()
-            pprint("...loading and checking train statistics...")
             train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
-
             self.check_train_results(train_stats)
-
-            pprint("...evaluating...")
             exp.evaluate()
 
-        pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
-
         self.check_eval_results(eval_stats)
 
     def test_fixed_actions_feat(self):
         """Like test_fixed_actions_disp but using point pair features for matching."""
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_actions_feat)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.fixed_actions_feat_cfg.test)
+        with exp:
             exp.train()
-            pprint("...loading and checking train statistics...")
-
             train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
-
             self.check_train_results(train_stats)
-
-            pprint("...evaluating...")
             exp.evaluate()
 
-        pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
-
         self.check_eval_results(eval_stats)
 
     def test_reproduce_single_episode(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_actions_feat)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.fixed_actions_feat_cfg.test)
+        with exp:
             exp.train()
 
         # Create a separate experiment for evaluation to mimic the us case of re-running
         # eval episodes from a pretrained model
-        eval_cfg_1 = copy.deepcopy(config)
-        eval_cfg_1["experiment_args"].model_name_or_path = os.path.join(
-            exp.output_dir,
-            "2",  # latest checkpoint
-        )
-        with MontyObjectRecognitionExperiment(eval_cfg_1) as eval_exp_1:
-            # TODO: update so it only runs one episode
-            pprint("...evaluating (first time) ...")
+        eval_cfg_1 = copy.deepcopy(self.fixed_actions_feat_cfg)
+        eval_cfg_1.test.config.model_name_or_path = str(Path(self.output_dir) / "2")
+        # update so it only runs one episode
+        eval_cfg_1.test.config.n_eval_epochs = 1
+        eval_exp_1 = hydra.utils.instantiate(eval_cfg_1.test)
+        with eval_exp_1:
             eval_exp_1.evaluate()
 
-        # Create detailed follow up experiment
-        eval_cfg_2 = create_eval_episode_config(
-            parent_config=eval_exp_1.config,  # already converted to dict in exp
-            parent_config_name="eval_cfg_1",
-            episode=0,
-            update_run_dir=False,  # we are running direct; no run.py
-        )
+        # Create detailed follow-up experiment
+        eval_cfg_2 = create_eval_episode_hydra_cfg(parent_config=eval_cfg_1, episode=0)
 
         ###
         # Check that the arguments for the new experiment are correct
@@ -854,20 +839,20 @@ class GraphLearningTest(BaseGraphTest):
         # Detailed wandb logging should be automatically built in, though we will remove
         # it to avoid logging tests to wandb
         self.assertEqual(
-            eval_cfg_2["logging"]["wandb_handlers"][-1],
+            eval_cfg_2.test.config.logging.wandb_handlers[-1],
             DetailedWandbMarkedObsHandler,
         )
-        eval_cfg_2["logging"]["wandb_handlers"].pop()
+        eval_cfg_2.test.config.logging.wandb_handlers = []
 
         # check that the object being used is the same one from original exp
         self.assertEqual(
-            eval_cfg_1["eval_env_interface_args"].object_names,
-            eval_cfg_2["eval_env_interface_args"]["object_names"],
+            eval_cfg_1.test.config.eval_env_interface_args.object_names,
+            eval_cfg_2.test.config.eval_env_interface_args.object_names,
         )
 
         # If we made it this far, we have the correct parameters. Now run the experiment
-        with MontyObjectRecognitionExperiment(eval_cfg_2) as eval_exp_2:
-            pprint("...evaluating (second time) ...")
+        eval_exp_2 = hydra.utils.instantiate(eval_cfg_2.test)
+        with eval_exp_2:
             eval_exp_2.evaluate()
 
         ###
@@ -918,33 +903,23 @@ class GraphLearningTest(BaseGraphTest):
         self.compare_sensor_module_logs(original_detailed_stats, new_detailed_stats)
 
     def test_reproduce_multiple_episodes(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_actions_feat)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.fixed_actions_feat_cfg.test)
+        with exp:
             exp.train()
 
         # Create a separate experiment for evaluation to mimic the us case of re-running
         # eval episodes from a pretrained model
-        eval_cfg_1 = copy.deepcopy(config)
-        eval_cfg_1["experiment_args"].model_name_or_path = os.path.join(
-            exp.output_dir,
-            "2",  # latest checkpoint
-        )
-        with MontyObjectRecognitionExperiment(eval_cfg_1) as eval_exp_1:
-            pprint("...evaluating (first time) ...")
+        eval_cfg_1 = copy.deepcopy(self.fixed_actions_feat_cfg)
+        eval_cfg_1.test.config.model_name_or_path = str(Path(exp.output_dir) / "2")
+
+        eval_exp_1 = hydra.utils.instantiate(eval_cfg_1.test)
+        with eval_exp_1:
             eval_exp_1.evaluate()
 
-        # Create detailed follow up experiment
-        eval_cfg_2 = create_eval_config_multiple_episodes(
-            parent_config=eval_exp_1.config,  # already converted to dict in exp
-            parent_config_name="eval_cfg_1",
-            episodes=[
-                0,
-                1,
-                2,
-            ],  # 3 episodes total, one episode for each of 3 epochs
-            update_run_dir=False,  # we are running direct; no run.py
+        # Create detailed follow-up experiment
+        eval_cfg_2 = create_eval_multiple_episodes_hydra_cfg(
+            parent_config=eval_cfg_1,
+            episodes=[0, 1, 2],
         )
 
         ###
@@ -959,20 +934,20 @@ class GraphLearningTest(BaseGraphTest):
         # capsule3DSolid is used as the lone eval object; make sure it is listed once
         # per episode
         self.assertEqual(
-            eval_cfg_2["eval_env_interface_args"]["object_names"],
+            eval_cfg_2.test.config.eval_env_interface_args.object_names,
             ["capsule3DSolid", "capsule3DSolid", "capsule3DSolid"],
         )
 
         # Original sampler had just first two rotations, should cycle back to the first
         # on the third episode
         self.assertEqual(
-            eval_cfg_2["eval_env_interface_args"]["object_init_sampler"].rotations,
+            eval_cfg_2.test.config.eval_env_interface_args.object_init_sampler.rotations,
             [[0.0, 0.0, 0.0], [45.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
         )
 
         # If we made it this far, we have the correct parameters. Now run the experiment
-        with MontyObjectRecognitionExperiment(eval_cfg_2) as eval_exp_2:
-            pprint("...evaluating (second time) ...")
+        eval_exp_2 = hydra.utils.instantiate(eval_cfg_2.test)
+        with eval_exp_2:
             eval_exp_2.evaluate()
 
         ###
@@ -1024,29 +999,24 @@ class GraphLearningTest(BaseGraphTest):
 
     def test_reproduce_single_episode_with_multiple_episode_function(self):
         """Verify create_eval_config_multiple_episodes for a single episode."""
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_actions_feat)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.fixed_actions_feat_cfg.test)
+        with exp:
             exp.train()
 
         # Create a separate experiment for evaluation to mimic the us case of re-running
         # eval episodes from a pretrained model
-        eval_cfg_1 = copy.deepcopy(config)
-        eval_cfg_1["experiment_args"].model_name_or_path = os.path.join(
-            exp.output_dir,
-            "2",  # latest checkpoint
+        eval_cfg_1 = copy.deepcopy(self.fixed_actions_feat_cfg)
+        eval_cfg_1.test.config.model_name_or_path = str(
+            Path(exp.output_dir) / "2",  # latest checkpoint
         )
-        with MontyObjectRecognitionExperiment(eval_cfg_1) as eval_exp_1:
-            pprint("...evaluating (first time) ...")
+
+        eval_exp_1 = hydra.utils.instantiate(eval_cfg_1.test)
+        with eval_exp_1:
             eval_exp_1.evaluate()
 
-        # Create detailed follow up experiment
-        eval_cfg_2 = create_eval_config_multiple_episodes(
-            parent_config=eval_exp_1.config,  # already converted to dict in exp
-            parent_config_name="eval_cfg_1",
-            episodes=[0],
-            update_run_dir=False,  # we are running direct; no run.py
+        # Create detailed follow-up experiment
+        eval_cfg_2 = create_eval_multiple_episodes_hydra_cfg(
+            parent_config=eval_cfg_1, episodes=[0]
         )
 
         ###
@@ -1055,13 +1025,13 @@ class GraphLearningTest(BaseGraphTest):
 
         # check that the object being used is the same one from original exp
         self.assertEqual(
-            eval_cfg_1["eval_env_interface_args"].object_names,
-            eval_cfg_2["eval_env_interface_args"]["object_names"],
+            eval_cfg_1.test.config.eval_env_interface_args.object_names,
+            eval_cfg_2.test.config.eval_env_interface_args.object_names,
         )
 
         # If we made it this far, we have the correct parameters. Now run the experiment
-        with MontyObjectRecognitionExperiment(eval_cfg_2) as eval_exp_2:
-            pprint("...evaluating (second time) ...")
+        eval_exp_2 = hydra.utils.instantiate(eval_cfg_2.test)
+        with eval_exp_2:
             eval_exp_2.evaluate()
 
         ###
@@ -1113,20 +1083,17 @@ class GraphLearningTest(BaseGraphTest):
 
     def test_save_and_load(self):
         # Move this to graph_building_test.py?
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_actions_ppf)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.fixed_actions_ppf_cfg.test)
+        with exp:
             exp.train()
 
         # We are training for 3 epochs by default, load most recent indexing from 0
-        print("Loading a saved checkpoint")
-        cfg2 = copy.deepcopy(self.fixed_actions_feat)
-        cfg2["experiment_args"].model_name_or_path = os.path.join(
-            config["logging"].output_dir,
-            "2",  # latest checkpoint
+        cfg2 = copy.deepcopy(self.fixed_actions_ppf_cfg)
+        cfg2.test.config.model_name_or_path = str(
+            Path(exp.output_dir) / "2",  # latest checkpoint
         )
-        with MontyObjectRecognitionExperiment(cfg2) as exp2:
+        exp2 = hydra.utils.instantiate(cfg2.test)
+        with exp2:
             graph_memory_1 = exp.model.learning_modules[
                 0
             ].graph_memory.get_all_models_in_memory()
@@ -1151,11 +1118,9 @@ class GraphLearningTest(BaseGraphTest):
         (Episode 3: object is too similar with tolerances, will also detect time_out)
         Episodes 4 and 5: Increased curvature tolerance -> detect time_out
         """
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.feature_pred_tests_time_out)
-        with MontyObjectRecognitionExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.feature_pred_time_out_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
-            pprint("...training...")
             for e in range(6):
                 if e % 2 == 0:
                     exp.pre_epoch()
@@ -1172,7 +1137,6 @@ class GraphLearningTest(BaseGraphTest):
                 if e % 2 == 1:
                     exp.post_epoch()
 
-        pprint("...check time out logging...")
         train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
         self.assertEqual(
             train_stats["primary_performance"][2],

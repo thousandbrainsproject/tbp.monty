@@ -26,7 +26,7 @@ config:
       - cubeSolid
     object_init_sampler:
       _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
-  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterfacePerObject}
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
   eval_env_interface_args:
     object_names:
       - capsule3DSolid
