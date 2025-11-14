@@ -5,6 +5,8 @@ defaults:
   - config/environment_interface/ycb/shuffled_objects@config.train_env_interface_args.object_names
 
 config:
+  logging:
+    run_name: supervised_pre_training_5lms_all_objects
   train_env_interface_args:
     object_init_sampler:
       _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer

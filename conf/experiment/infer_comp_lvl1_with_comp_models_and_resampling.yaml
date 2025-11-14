@@ -13,6 +13,8 @@ _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyO
 config:
   model_name_or_path: ${benchmarks.pretrained_dir}/supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling/pretrained/
   n_eval_epochs: ${benchmarks.rotations_all_count}
+  logging:
+    run_name: infer_comp_lvl1_with_comp_models_and_resampling
   monty_config:
     monty_args:
       min_eval_steps: ${benchmarks.min_eval_steps}

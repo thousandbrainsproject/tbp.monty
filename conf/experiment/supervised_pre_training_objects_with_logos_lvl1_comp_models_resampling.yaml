@@ -10,6 +10,8 @@ defaults:
   - config/monty/motor_system/informed_goal_state_driven@config.monty_config.motor_system_config
 
 config:
+  logging:
+    run_name: supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling
   monty_config:
     monty_args:
       num_exploratory_steps: 0

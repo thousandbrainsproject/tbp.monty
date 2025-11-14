@@ -23,6 +23,7 @@ config:
   n_eval_epochs: 10
   max_eval_steps: 500
   logging:
+    run_name: randrot_noise_sim_on_scan_monty_world
     wandb_group: benchmark_experiments
   monty_config:
     monty_args:

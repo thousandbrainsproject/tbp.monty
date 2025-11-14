@@ -7,6 +7,8 @@ defaults:
 config:
   model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_77obj/pretrained/
   n_eval_epochs: 3
+  logging:
+    run_name: randrot_noise_77obj_dist_agent
   eval_env_interface_args:
     object_init_sampler:
       _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.RandomRotationObjectInitializer

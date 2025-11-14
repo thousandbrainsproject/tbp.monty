@@ -7,8 +7,10 @@ defaults:
   - config/logging/eval_evidence_lm@config.logging
 
 config:
+
   eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.SaccadeOnImageFromStreamEnvironmentInterface}
   eval_env_interface_args: {}
   logging:
-    wandb_handlers: []
     python_log_level: INFO
+    run_name: world_image_from_stream_on_scanned_model
+    wandb_handlers: []

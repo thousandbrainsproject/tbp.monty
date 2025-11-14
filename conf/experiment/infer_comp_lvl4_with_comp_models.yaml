@@ -10,6 +10,8 @@ _target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyO
 config:
   model_name_or_path: ${benchmarks.pretrained_dir}/supervised_pre_training_objects_with_logos_lvl4_comp_models/pretrained/
   n_eval_epochs: ${benchmarks.rotations_all_count}
+  logging:
+    run_name: infer_comp_lvl4_with_comp_models
   eval_env_interface_args:
     object_init_sampler:
       _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer

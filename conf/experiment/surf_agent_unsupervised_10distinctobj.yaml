@@ -21,6 +21,7 @@ config:
   max_total_steps: 4000
   logging:
     python_log_level: INFO
+    run_name: surf_agent_unsupervised_10distinctobj
   monty_config:
     monty_args:
       num_exploratory_steps: 1000

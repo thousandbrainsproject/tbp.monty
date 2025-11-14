@@ -10,6 +10,8 @@ defaults:
   - config/monty/sensor_modules/sensor_module/default_all_noisy_surf_agent@config.monty_config.sensor_module_configs.sensor_module_0
 
 config:
+  logging:
+    run_name: surf_agent_unsupervised_10distinctobj_noise
   monty_config:
     monty_args:
       num_exploratory_steps: 1000

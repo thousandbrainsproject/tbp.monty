@@ -19,6 +19,7 @@ config:
   logging:
     output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v10}
     python_log_level: INFO
+    run_name: supervised_pre_training_base
   monty_config:
     monty_args:
       num_exploratory_steps: 500

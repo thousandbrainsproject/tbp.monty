@@ -22,6 +22,8 @@ config:
   # only learn child objects in lm_0 at first so they can be used as input when
   # LM_1 is learning.
   supervised_lm_ids: ["learning_module_0"]
+  logging:
+    run_name: supervised_pre_training_flat_objects_wo_logos
   monty_config:
     monty_args:
       num_exploratory_steps: 1000

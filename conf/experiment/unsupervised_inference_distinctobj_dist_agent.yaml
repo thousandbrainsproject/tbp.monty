@@ -3,6 +3,8 @@ defaults:
 
 config:
   max_eval_steps: 100
+  logging:
+    run_name: unsupervised_inference_distinctobj_dist_agent
   monty_config:
     learning_module_configs:
       learning_module_0:

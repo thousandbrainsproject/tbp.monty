@@ -7,6 +7,8 @@ defaults:
 config:
   model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10similarobj/pretrained/
   n_eval_epochs: 10 # number of random rotations to test for each object
+  logging:
+    run_name: randrot_noise_10simobj_dist_agent
   eval_env_interface_args:
     object_init_sampler:
       _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.RandomRotationObjectInitializer

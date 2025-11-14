@@ -24,6 +24,7 @@ config:
   max_eval_steps: 500
   show_sensor_output: false
   logging:
+    run_name: world_image_on_scanned_model
     wandb_group: benchmark_experiments
   monty_config:
     monty_args:
