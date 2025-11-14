@@ -3,6 +3,7 @@ wandb/
 
 # Custom
 results/
+sandbox/detailed_stats_episode_0_schema.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
