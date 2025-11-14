@@ -9,30 +9,17 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 from typing import (
     TYPE_CHECKING,
-    Any,
     Callable,
     Literal,
-    Mapping,
-    Sequence,
 )
 
 import numpy as np
-from numpy.typing import ArrayLike
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.environment_utils.transforms import (
-    DepthTo3DLocations,
-)
-from tbp.monty.frameworks.environments.two_d_data import (
-    OmniglotEnvironment,
-    SaccadeOnImageEnvironment,
-    SaccadeOnImageFromStreamEnvironment,
-)
 from tbp.monty.frameworks.environments.ycb import SHUFFLED_YCB_OBJECTS
 from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
 
@@ -77,126 +64,13 @@ class DebugExperimentArgs(ExperimentArgs):
 
 
 @dataclass
-class EvalExperimentArgs(ExperimentArgs):
-    # conf/experiment/config/eval.yaml
-    do_train: bool = False
-    n_eval_epochs: int = 1
-    python_log_level: str = "DEBUG"
-
-
-@dataclass
 class SupervisedPretrainingExperimentArgs(ExperimentArgs):
     do_eval: bool = False
     supervised_lm_ids: list[str] | Literal["all"] = "all"
 
 
-# Data-set containing RGBD images of real-world objects taken with a mobile device
-@dataclass
-class EnvInitArgsMontyWorldStandardScenes:
-    data_path: str = os.path.join(
-        os.environ["MONTY_DATA"], "worldimages/standard_scenes/"
-    )
-
-
-@dataclass
-class EnvInitArgsMontyWorldBrightScenes:
-    data_path: str = os.path.join(
-        os.environ["MONTY_DATA"], "worldimages/bright_scenes/"
-    )
-
-
-@dataclass
-class EnvInitArgsMontyWorldDarkScenes:
-    data_path: str = os.path.join(os.environ["MONTY_DATA"], "worldimages/dark_scenes/")
-
-
-# Data-set where a hand is prominently visible holding (and thereby partially
-# occluding) the objects
-@dataclass
-class EnvInitArgsMontyWorldHandIntrusionScenes:
-    data_path: str = os.path.join(
-        os.environ["MONTY_DATA"], "worldimages/hand_intrusion_scenes/"
-    )
-
-
-# Data-set where there are two objects in the image; the target class is in the centre
-# of the image; of the 4 images per target, the first two images contain similar objects
-# (e.g. another type of mug), while the last two images contain distinct objects (such
-# as a book if the target is a type of mug)
-@dataclass
-class EnvInitArgsMontyWorldMultiObjectScenes:
-    data_path: str = os.path.join(
-        os.environ["MONTY_DATA"], "worldimages/multi_object_scenes/"
-    )
-
-
-@dataclass
-class OmniglotEnvironmentInterfaceConfig:
-    env_init_func: Callable = field(default=OmniglotEnvironment)
-    env_init_args: dict = field(default_factory=dict)
-    transform: Callable | list | None = None
-
-    def __post_init__(self):
-        self.transform = [
-            DepthTo3DLocations(
-                agent_id=AgentID("agent_id_0"),
-                sensor_ids=["patch"],
-                resolutions=np.array([[10, 10]]),
-                world_coord=True,
-                zooms=1,
-                get_all_points=True,
-                use_semantic_sensor=False,
-                depth_clip_sensors=[0],
-                clip_value=1.1,
-            ),
-        ]
-
-
-@dataclass
-class WorldImageEnvironmentInterfaceConfig:
-    env_init_func: Callable = field(default=SaccadeOnImageEnvironment)
-    env_init_args: dict = field(
-        default_factory=lambda: EnvInitArgsMontyWorldStandardScenes().__dict__
-    )
-    transform: Callable | list | None = None
-
-
-@dataclass
-class WorldImageFromStreamEnvironmentInterfaceConfig:
-    env_init_func: Callable = field(default=SaccadeOnImageFromStreamEnvironment)
-    env_init_args: dict = field(default_factory=dict)
-    transform: Callable | list | None = None
-
-    def __post_init__(self):
-        self.transform = [
-            DepthTo3DLocations(
-                agent_id=AgentID("agent_id_0"),
-                sensor_ids=["patch"],
-                resolutions=np.array([[64, 64]]),
-                world_coord=True,
-                zooms=1,
-                get_all_points=True,
-                hfov=11,
-                use_semantic_sensor=False,
-                depth_clip_sensors=[0],
-                clip_value=1.1,
-            ),
-            # GaussianSmoothing(
-            #     agent_id=AgentID("agent_id_0"),
-            #     sigma=8,
-            #     kernel_width=10
-            # ),
-        ]
-
-
-@dataclass
 class DefaultTrainObjectList:
     objects: list[str] = field(default_factory=lambda: SHUFFLED_YCB_OBJECTS[0:2])
-
-
-@dataclass
-class DefaultEvalObjectList:
-    objects: list[str] = field(default_factory=lambda: SHUFFLED_YCB_OBJECTS[2:6])
 
 
 @dataclass
@@ -353,233 +227,9 @@ class EnvironmentInterfacePerObjectEvalArgs(EnvironmentInterfacePerObjectArgs):
 
 
 @dataclass
-class FixedRotationEnvironmentInterfacePerObjectTrainArgs(
-    EnvironmentInterfacePerObjectArgs
-):
-    object_names: list = field(default_factory=lambda: DefaultTrainObjectList().objects)
-    object_init_sampler: Callable = field(
-        default_factory=lambda: PredefinedObjectInitializer()
-    )
-
-
-@dataclass
-class FixedRotationEnvironmentInterfacePerObjectEvalArgs(
-    EnvironmentInterfacePerObjectArgs
-):
-    object_names: list = field(default_factory=lambda: DefaultTrainObjectList().objects)
-    object_init_sampler: Callable = field(
-        default_factory=lambda: PredefinedObjectInitializer()
-    )
-
-
-@dataclass
 class EnvironmentInterfaceMultiObjectArgs:
     object_names: dict  # Note Dict and not List
     object_init_sampler: Callable
-
-
-def get_object_names_by_idx(
-    start, stop, list_of_indices=None, object_list=SHUFFLED_YCB_OBJECTS
-):
-    if isinstance(list_of_indices, list):
-        if len(list_of_indices) > 0:
-            return [object_list[i] for i in list_of_indices]
-
-    else:
-        return object_list[start:stop]
-
-
-def get_env_interface_per_object_by_idx(start, stop, list_of_indices=None):
-    return EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(start, stop, list_of_indices),
-        object_init_sampler=PredefinedObjectInitializer(),
-    )
-
-
-@dataclass
-class OmniglotEnvironmentInterfaceArgs:
-    """Set basic debug args to load 3 characters of 2 alphabets in 1 version."""
-
-    alphabets: list = field(default_factory=lambda: [0, 0, 0, 1, 1, 1])
-    characters: list = field(default_factory=lambda: [1, 2, 3, 1, 2, 3])
-    versions: list = field(default_factory=lambda: [1, 1, 1, 1, 1, 1])
-
-
-@dataclass
-class WorldImageEnvironmentInterfaceArgs:
-    """Set basic debug args to load 1 scene (Numenta mug) in 4 versions."""
-
-    scenes: list = field(default_factory=lambda: [0, 0, 0, 0])
-    versions: list = field(default_factory=lambda: [0, 1, 2, 3])
-
-
-def get_omniglot_train_env_interface(num_versions, alphabet_ids, data_path=None):
-    """Generate OmniglotEnvironmentInterfaceArgs automatically for training.
-
-    Args:
-        num_versions: Number of versions to show for each character (starting at 1).
-        alphabet_ids: IDs of alphabets to show. All characters within an
-            alphabet will be presented which may be a variable amount.
-        data_path: path to the omniglot dataset. If none its set to
-            ~/tbp/data/omniglot/python/
-
-    Returns:
-        OmniglotEnvironmentInterfaceArgs for training.
-    """
-    if data_path is None:
-        data_path = os.path.join(os.environ["MONTY_DATA"], "omniglot/python/")
-    if os.path.exists(data_path):
-        alphabet_folders = [
-            a for a in os.listdir(data_path + "images_background") if a[0] != "."
-        ]
-    else:
-        # Use placeholder here to pass Circle CI config check.
-        return OmniglotEnvironmentInterfaceArgs()
-    all_alphabet_idx = []
-    all_character_idx = []
-    all_version_idx = []
-    for a_idx in alphabet_ids:
-        alphabet = alphabet_folders[a_idx]
-        characters_in_a = list(os.listdir(data_path + "images_background/" + alphabet))
-        for c_idx, character in enumerate(characters_in_a):
-            versions_of_char = list(
-                os.listdir(
-                    data_path + "images_background/" + alphabet + "/" + character
-                )
-            )
-            for v_idx in range(len(versions_of_char)):
-                if v_idx < num_versions:
-                    all_alphabet_idx.append(a_idx)
-                    all_character_idx.append(c_idx + 1)
-                    all_version_idx.append(v_idx + 1)
-
-    return OmniglotEnvironmentInterfaceArgs(
-        alphabets=all_alphabet_idx,
-        characters=all_character_idx,
-        versions=all_version_idx,
-    )
-
-
-def get_omniglot_eval_env_interface(
-    start_at_version, alphabet_ids, num_versions=None, data_path=None
-):
-    """Generate OmniglotEnvironmentInterfaceArgs automatically for evaluation.
-
-    Args:
-        start_at_version: Version number of character to start at. Then shows all
-            the remaining versions.
-        alphabet_ids: IDs of alphabets to test. Tests all characters within
-            the alphabet.
-        num_versions: Number of versions of each character to test. If None, all
-            versions are shown.
-        data_path: path to the omniglot dataset. If none its set to
-            ~/tbp/data/omniglot/python/
-
-    Returns:
-        OmniglotEnvironmentInterfaceArgs for evaluation.
-    """
-    if data_path is None:
-        data_path = os.path.join(os.environ["MONTY_DATA"], "omniglot/python/")
-    if os.path.exists(data_path):
-        alphabet_folders = [
-            a for a in os.listdir(data_path + "images_background") if a[0] != "."
-        ]
-    else:
-        # Use placeholder here to pass Circle CI config check.
-        return OmniglotEnvironmentInterfaceArgs()
-    all_alphabet_idx = []
-    all_character_idx = []
-    all_version_idx = []
-    for a_idx in alphabet_ids:
-        alphabet = alphabet_folders[a_idx]
-        characters_in_a = list(os.listdir(data_path + "images_background/" + alphabet))
-        for c_idx, character in enumerate(characters_in_a):
-            if num_versions is None:
-                versions_of_char = list(
-                    os.listdir(
-                        data_path + "images_background/" + alphabet + "/" + character
-                    )
-                )
-                num_versions = len(versions_of_char) - start_at_version
-
-            for v_idx in range(num_versions + start_at_version):
-                if v_idx >= start_at_version:
-                    all_alphabet_idx.append(a_idx)
-                    all_character_idx.append(c_idx + 1)
-                    all_version_idx.append(v_idx + 1)
-
-    return OmniglotEnvironmentInterfaceArgs(
-        alphabets=all_alphabet_idx,
-        characters=all_character_idx,
-        versions=all_version_idx,
-    )
-
-
-@dataclass
-class SensorAgentMapping:
-    agent_ids: list[AgentID]
-    sensor_ids: list[str]
-    sensor_to_agent: dict[str, AgentID]
-
-
-@dataclass
-class SingleSensorAgentMapping(SensorAgentMapping):
-    """Mapping for a sim with a single agent and single sensor."""
-
-    agent_ids: list[AgentID] = field(default_factory=lambda: [AgentID("agent_id_0")])
-    sensor_ids: list[str] = field(default_factory=lambda: ["sensor_id_0"])
-    sensor_to_agent: dict[str, AgentID] = field(
-        default_factory=lambda: dict(sensor_id_0=AgentID("agent_id_0"))
-    )
-
-
-@dataclass
-class SimpleMountSensorAgentMapping(SensorAgentMapping):
-    """Mapping for a sim with a single mount agent with two sensors."""
-
-    agent_ids: list[AgentID] = field(default_factory=lambda: [AgentID("agent_id_0")])
-    sensor_ids: list[str] = field(
-        default_factory=lambda: ["sensor_id_0", "sensor_id_1"]
-    )
-    sensor_to_agent: dict[str, AgentID] = field(
-        default_factory=lambda: dict(
-            sensor_id_0=AgentID("agent_id_0"), sensor_id_1=AgentID("agent_id_0")
-        )
-    )
-
-
-@dataclass
-class PatchAndViewSensorAgentMapping(SensorAgentMapping):
-    agent_ids: list[AgentID] = field(default_factory=lambda: [AgentID("agent_id_0")])
-    sensor_ids: list[str] = field(default_factory=lambda: ["patch", "view_finder"])
-    sensor_to_agent: dict[str, AgentID] = field(
-        default_factory=lambda: dict(
-            patch=AgentID("agent_id_0"), view_finder=AgentID("agent_id_0")
-        )
-    )
-
-
-@dataclass
-class TwoCameraMountConfig:
-    agent_id: AgentID | None = field(default=None)
-    sensor_ids: list[str] | None = field(default=None)
-    resolutions: list[list[int | float]] = field(
-        default_factory=lambda: [[16, 16], [16, 16]]
-    )
-    positions: list[list[int | float]] = field(
-        default_factory=lambda: [[0.0, 0.0, 0.0], [0.02, 0.0, 0.0]]
-    )
-    rotations: list[list[int | float]] = field(
-        default_factory=lambda: [[1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]]
-    )
-    semantics: list[list[int | float]] = field(default_factory=lambda: [False, False])
-    zooms: list[float] = field(default_factory=lambda: [1.0, 1.0])
-
-    def __post_init__(self):
-        if self.agent_id is None and self.sensor_ids is None:
-            sensor_agent_mapping = SimpleMountSensorAgentMapping()
-            self.agent_id = sensor_agent_mapping.agent_ids[0]
-            self.sensor_ids = sensor_agent_mapping.sensor_ids
 
 
 @dataclass
@@ -608,13 +258,6 @@ class PatchAndViewFinderMountConfig:
     )
     semantics: list[list[int | float]] = field(default_factory=lambda: [False, False])
     zooms: list[float] = field(default_factory=lambda: [10.0, 1.0])
-
-
-@dataclass
-class PatchAndViewFinderMountLowResConfig(PatchAndViewFinderMountConfig):
-    resolutions: list[list[int | float]] = field(
-        default_factory=lambda: [[5, 5], [64, 64]]
-    )
 
 
 @dataclass
@@ -709,11 +352,6 @@ class TwoLMStackedDistantMountConfig:
         default_factory=lambda: [False, False, False]
     )
     zooms: list[float] = field(default_factory=lambda: [10.0, 5.0, 1.0])
-
-
-@dataclass
-class TwoLMStackedSurfaceMountConfig(TwoLMStackedDistantMountConfig):
-    action_space_type: str = "surface_agent"
 
 
 @dataclass
@@ -898,126 +536,3 @@ def make_sensor_positions_on_grid(
         positions = np.vstack([positions, positions[0].reshape(1, -1)])
 
     return positions
-
-
-def make_multi_sensor_mount_config(
-    n_sensors: int,
-    agent_id: AgentID = AgentID("agent_id_0"),
-    sensor_ids: Sequence[str] | None = None,
-    height: Number = 0.0,
-    position: ArrayLike = (0, 1.5, 0.2),  # agent position
-    resolutions: ArrayLike | None = None,
-    positions: ArrayLike | None = None,
-    rotations: ArrayLike | None = None,
-    semantics: ArrayLike | None = None,
-    zooms: ArrayLike | None = None,
-) -> Mapping[str, Any]:
-    """Generate a multi-sensor mount configuration.
-
-    Creates a multi-sensor, single-agent mount config. Its primary use is in generating
-    a `MultiLMMountHabitatEnvInterfaceConfig` config. Defaults are reasonable and
-    reflect current common practices.
-
-    Note:
-        `n_sensors` indicates the number of non-view-finder sensors. However, the
-        arrays generated for `sensor_ids`, `resolutions`, `positions`, `rotations`,
-        `semantics`, and `zooms` will have length `n_sensors + 1` to accommodate a
-        view finder. As such, arguments supplied for these arrays must also have length
-        `n_sensors + 1`, where the view finder's values come last.
-
-    Args:
-        n_sensors: Number of sensors, not including the view finder.
-        agent_id: ID of the agent. Defaults to "agent_id_0".
-        sensor_ids: IDs of the sensor modules. Defaults to
-            `["patch_0", "patch_1", ... "patch_{n_sms - 1}", "view_finder"]`.
-        height: Height of the agent. Defaults to 0.0.
-        position: Position of the agent. Defaults to [0, 1.5, 0.2].
-        resolutions: Resolutions of the sensors. Defaults to (64, 64) for all
-            sensors.
-        positions: Positions of the sensors. If not provided, calls
-            `make_sensor_positions_on_grid` with its default arguments.
-        rotations: Rotations of the sensors. Defaults to [1, 0, 0, 0] for all sensors.
-        semantics: Defaults to `False` for all sensors.
-        zooms: Zooms of the sensors. Defaults to 10.0 for all sensors except for the
-          except for the view finder (which has a zoom of 1.0)
-
-    Returns:
-        A dictionary representing a complete multi-sensor mount config. Arrays are
-        converted to lists.
-
-    """
-    assert n_sensors > 0, "n_sensors must be a positive integer"
-    arr_len = n_sensors + 1
-
-    # Initialize with agent info, then add sensor info.
-    mount_config = {
-        "agent_id": agent_id,
-        "height": float(height),
-        "position": np.asarray(position),
-    }
-
-    # sensor IDs.
-    if sensor_ids is None:
-        sensor_ids = np.array(
-            [f"patch_{i}" for i in range(n_sensors)] + ["view_finder"], dtype=object
-        )
-    else:
-        sensor_ids = np.array(sensor_ids, dtype=object)
-    assert sensor_ids.shape == (arr_len,), f"`sensor_ids` must have length {arr_len}"
-    mount_config["sensor_ids"] = sensor_ids
-
-    # sensor resolutions
-    if resolutions is None:
-        resolutions = np.full([arr_len, 2], 64)
-    else:
-        resolutions = np.asarray(resolutions)
-    assert resolutions.shape == (
-        arr_len,
-        2,
-    ), f"`resolutions` must have shape ({arr_len}, 2)"
-    mount_config["resolutions"] = resolutions
-
-    # sensor positions
-    if positions is None:
-        positions = make_sensor_positions_on_grid(
-            n_sensors=n_sensors,
-            add_view_finder=True,
-        )
-    else:
-        positions = np.asarray(positions)
-    assert positions.shape == (
-        arr_len,
-        3,
-    ), f"`positions` must have shape ({arr_len}, 3)"
-    mount_config["positions"] = positions
-
-    # sensor rotations
-    if rotations is None:
-        rotations = np.zeros([arr_len, 4])
-        rotations[:, 0] = 1.0
-    else:
-        rotations = np.asarray(rotations)
-    assert rotations.shape == (
-        arr_len,
-        4,
-    ), f"`rotations` must have shape ({arr_len}, 4)"
-    mount_config["rotations"] = rotations
-
-    # sensor semantics
-    if semantics is None:
-        semantics = np.zeros(arr_len, dtype=bool)
-    else:
-        semantics = np.asarray(semantics, dtype=bool)
-    assert semantics.shape == (arr_len,), f"`semantics` must have shape ({arr_len},)"
-    mount_config["semantics"] = semantics
-
-    # sensor zooms
-    if zooms is None:
-        zooms = 10.0 * np.ones(arr_len)
-        zooms[-1] = 1.0  # view finder
-    else:
-        zooms = np.asarray(zooms)
-    assert zooms.shape == (arr_len,), f"`zooms` must have shape ({arr_len},)"
-    mount_config["zooms"] = zooms
-
-    return mount_config

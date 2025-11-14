@@ -14,16 +14,6 @@ from tbp.monty.frameworks.models.evidence_matching.learning_module import (
 )
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
 
-default_all_noise_params = {
-    "features": {
-        "pose_vectors": 2,  # rotate by random degrees along xyz
-        "hsv": 0.1,  # add gaussian noise with 0.1 std
-        "principal_curvatures_log": 0.1,
-        "pose_fully_defined": 0.01,  # flip bool in 1% of cases
-    },
-    "location": 0.002,  # add gaussian noise with 0.002 std
-}
-
 # Everything is weighted 1, except for saturation and value which are not used.
 default_feature_weights = {
     "patch": {

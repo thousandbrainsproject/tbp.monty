@@ -35,28 +35,6 @@ __all__ = [
     "SaccadeOnImageEnvironment",
     "SaccadeOnImageFromStreamEnvironment",
 ]
-
-# Listing Numenta objects here since they were used in the iPad demo which uses the
-# SaccadeOnImageEnvironment (or SaccadeOnImageFromStreamEnvironment). However, these
-# objects can also be tested in simulation in habitat since we created 3D meshes of
-# them. Instructions for download + links can be found here:
-# https://thousandbrainsproject.readme.io/docs/benchmark-experiments#monty-meets-world
-NUMENTA_OBJECTS = [
-    "numenta_mug",
-    "terracotta_mug",
-    "montys_brain",
-    "montys_heart",
-    "ramen_pack",
-    "kashmiri_chilli",
-    "chip_pack",
-    "harissa_oil",
-    "cocktail_bitters",
-    "cocktail_bible",
-    "thousand_brains_jp",
-    "hot_sauce",
-]
-
-
 class TwoDDataActionSpace(tuple, ActionSpace):
     """Action space for 2D data environments."""
 

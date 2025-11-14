@@ -117,17 +117,6 @@ class WandbLoggingConfig(LoggingConfig):
 
 
 @dataclass
-class CSVLoggingConfig(LoggingConfig):
-    # conf/experiment/config/logging/csv.yaml
-    monty_handlers: list = field(
-        default_factory=lambda: [
-            BasicCSVStatsHandler,
-        ]
-    )
-    wandb_handlers: list = field(default_factory=list)
-
-
-@dataclass
 class DetailedWandbLoggingConfig(LoggingConfig):
     monty_handlers: list = field(
         default_factory=lambda: [
@@ -166,72 +155,6 @@ class EvalLoggingConfig(LoggingConfig):
         ]
     )
     wandb_group: str = "gm_eval_runs"
-
-
-@dataclass
-class EvalEvidenceLMLoggingConfig(LoggingConfig):
-    output_dir: str = os.path.expanduser(
-        os.path.join(monty_logs_dir, "projects/evidence_eval_runs/logs")
-    )
-    monty_handlers: list = field(
-        default_factory=lambda: [
-            BasicCSVStatsHandler,
-            ReproduceEpisodeHandler,
-        ]
-    )
-    wandb_handlers: list = field(
-        default_factory=lambda: [
-            BasicWandbTableStatsHandler,
-            BasicWandbChartStatsHandler,
-            # DetailedWandbMarkedObsHandler,
-        ]
-    )
-    wandb_group: str = "evidence_eval_runs"
-    monty_log_level: str = "BASIC"
-
-
-@dataclass
-class ParallelEvidenceLMLoggingConfig(LoggingConfig):
-    # Config useful for running parallel experiments
-    # on lambda-node, i.e. has appropriate wandb flags
-    # and parsimonious Python logging
-    output_dir: str = os.path.expanduser(
-        os.path.join(monty_logs_dir, "projects/evidence_eval_runs/logs")
-    )
-    monty_handlers: list = field(
-        default_factory=lambda: [
-            BasicCSVStatsHandler,
-            ReproduceEpisodeHandler,
-        ]
-    )
-    wandb_handlers: list = field(
-        default_factory=lambda: [
-            BasicWandbTableStatsHandler,
-            # Note that parallel runs will log a table to wandb no matter if
-            # this logger is specified or not
-            BasicWandbChartStatsHandler,
-        ]
-    )
-    wandb_group: str = "parallel_eval_runs"  # User to set appropriately
-    monty_log_level: str = "BASIC"
-
-    python_log_level: str = "WARNING"
-    log_parallel_wandb: bool = True
-
-
-@dataclass
-class DetailedEvidenceLMLoggingConfig(EvalEvidenceLMLoggingConfig):
-    monty_handlers: list = field(
-        default_factory=lambda: [
-            BasicCSVStatsHandler,
-            DetailedJSONHandler,
-            ReproduceEpisodeHandler,
-        ]
-    )
-    wandb_handlers: list = field(default_factory=list)
-    monty_log_level: str = "DETAILED"
-    detailed_episodes_to_save: str = "all"
-    detailed_save_per_episode: bool = False
 
 
 @dataclass
@@ -613,75 +536,6 @@ class PatchAndViewMontyConfig(MontyConfig):
 
 
 @dataclass
-class PatchAndViewSOTAMontyConfig(PatchAndViewMontyConfig):
-    """The best existing combination of sensor module and policy attributes.
-
-    Uses the best existing combination of sensor module and policy attributes,
-    including the feature-change sensor module, and the hypothesis-testing action
-    policy.
-    """
-
-    monty_class: Callable = MontyForEvidenceGraphMatching
-    sensor_module_configs: dataclass | dict = field(
-        default_factory=lambda: dict(
-            sensor_module_0=dict(
-                sensor_module_class=HabitatSM,
-                sensor_module_args=dict(
-                    sensor_module_id="patch",
-                    features=[
-                        # morphological features (nescessarry)
-                        "pose_vectors",
-                        "pose_fully_defined",
-                        "on_object",
-                        # non-morphological features (optional)
-                        "object_coverage",
-                        "hsv",
-                        "principal_curvatures_log",
-                    ],
-                    delta_thresholds={
-                        "on_object": 0,
-                        "n_steps": 20,
-                        "hsv": [0.1, 0.1, 0.1],
-                        "pose_vectors": [np.pi / 4, np.pi * 2, np.pi * 2],
-                        "principal_curvatures_log": [2, 2],
-                        "distance": 0.01,
-                    },
-                    save_raw_obs=False,
-                ),
-            ),
-            sensor_module_1=dict(
-                # No need to extract features from the view finder since it is not
-                # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=Probe,
-                sensor_module_args=dict(
-                    sensor_module_id="view_finder",
-                    save_raw_obs=False,
-                ),
-            ),
-        )
-    )
-    motor_system_config: dataclass | dict = field(
-        default_factory=MotorSystemConfigInformedGoalStateDriven
-    )
-
-
-@dataclass
-class PatchAndViewFartherAwaySOTAMontyConfig(PatchAndViewSOTAMontyConfig):
-    """PatchAndViewSOTAMontyConfig with a farther away target object and "saccades".
-
-    Uses the best existing combination of sensor module and policy attributes,
-    including the feature-change sensor module, and the hypothesis-testing action
-    policy, but while maintaining a larger distance to the target object, and performing
-    larger "saccades".
-    Useful for testing how the policy deals with multiple objects
-    """
-
-    motor_system_config: dataclass | dict = field(
-        default_factory=MotorSystemConfigInformedGoalStateDrivenFartherAway
-    )
-
-
-@dataclass
 class SurfaceAndViewMontyConfig(PatchAndViewMontyConfig):
     sensor_module_configs: dataclass | dict = field(
         default_factory=lambda: dict(
@@ -736,63 +590,6 @@ class SurfaceAndViewMontyConfig(PatchAndViewMontyConfig):
     lm_to_lm_matrix: list | None = None
     lm_to_lm_vote_matrix: list | None = None
     monty_args: dict | dataclass = field(default_factory=MontyArgs)
-
-
-@dataclass
-class SurfaceAndViewSOTAMontyConfig(SurfaceAndViewMontyConfig):
-    """The best existing combination of sensor module and policy attributes.
-
-    Uses the best existing combination of sensor module and policy attributes,
-    including the feature-change sensor module, the curvature-informed surface policy,
-    and the hypothesis-testing action policy.
-    """
-
-    monty_class: Callable = MontyForEvidenceGraphMatching
-    sensor_module_configs: dataclass | dict = field(
-        default_factory=lambda: dict(
-            sensor_module_0=dict(
-                sensor_module_class=HabitatSM,
-                sensor_module_args=dict(
-                    sensor_module_id="patch",
-                    features=[
-                        # morphological features (nescessarry)
-                        "pose_vectors",
-                        "pose_fully_defined",
-                        "on_object",
-                        # non-morphological features (optional)
-                        "object_coverage",
-                        "min_depth",
-                        "mean_depth",
-                        "hsv",
-                        "principal_curvatures",
-                        "principal_curvatures_log",
-                    ],
-                    delta_thresholds={
-                        "on_object": 0,
-                        "n_steps": 20,
-                        "hsv": [0.1, 0.1, 0.1],
-                        "pose_vectors": [np.pi / 4, np.pi * 2, np.pi * 2],
-                        "principal_curvatures_log": [2, 2],
-                        "distance": 0.01,
-                    },
-                    is_surface_sm=True,
-                    save_raw_obs=False,
-                ),
-            ),
-            sensor_module_1=dict(
-                # No need to extract features from the view finder since it is not
-                # connected to a learning module (just used at beginning of episode)
-                sensor_module_class=Probe,
-                sensor_module_args=dict(
-                    sensor_module_id="view_finder",
-                    save_raw_obs=False,
-                ),
-            ),
-        )
-    )
-    motor_system_config: dataclass | dict = field(
-        default_factory=MotorSystemConfigCurInformedSurfaceGoalStateDriven
-    )
 
 
 @dataclass
