@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 
 import os
-import random
 import unittest
 from pathlib import Path
 
@@ -27,7 +26,6 @@ from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageFromStreamEnvironmentInterface,
 )
 from tbp.monty.frameworks.environments.embodied_environment import (
-    ActionSpace,
     EmbodiedEnvironment,
     ObjectID,
 )
@@ -49,29 +47,12 @@ POSSIBLE_ACTIONS_DIST = [
     f"{AGENT_ID}.turn_right",
 ]
 POSSIBLE_ACTIONS_ABS = [f"{AGENT_ID}.set_yaw", f"{AGENT_ID}.set_sensor_pitch"]
-EXPECTED_ACTIONS_DIST = [
-    POSSIBLE_ACTIONS_DIST[i]
-    for i in np.random.randint(0, len(POSSIBLE_ACTIONS_DIST), 100)
-]
-EXPECTED_ACTIONS_ABS = [
-    POSSIBLE_ACTIONS_ABS[i]
-    for i in np.random.randint(0, len(POSSIBLE_ACTIONS_ABS), 100)
-]
 EXPECTED_STATES = np.random.rand(NUM_STEPS)
-
-
-class FakeActionSpace(tuple, ActionSpace):
-    def sample(self):
-        return random.choice(self)
 
 
 class FakeEnvironmentRel(EmbodiedEnvironment):
     def __init__(self):
         self._current_state = 0
-
-    @property
-    def action_space(self):
-        return FakeActionSpace(EXPECTED_ACTIONS_DIST)
 
     def add_object(self, *args, **kwargs) -> ObjectID:
         return ObjectID(-1)
@@ -105,10 +86,6 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
 class FakeEnvironmentAbs(EmbodiedEnvironment):
     def __init__(self):
         self._current_state = 0
-
-    @property
-    def action_space(self):
-        return FakeActionSpace(EXPECTED_ACTIONS_ABS)
 
     def add_object(self, *args, **kwargs) -> ObjectID:
         return ObjectID(-1)
@@ -162,11 +139,6 @@ class EmbodiedDataTest(unittest.TestCase):
             motor_system=motor_system_dist,
         )
 
-        action_space_dist = env_interface_dist.action_space
-        self.assertIsInstance(action_space_dist, ActionSpace)
-        self.assertSequenceEqual(action_space_dist, EXPECTED_ACTIONS_DIST)
-        self.assertIn(action_space_dist.sample(), EXPECTED_ACTIONS_DIST)
-
         for i in range(1, NUM_STEPS):
             obs_dist, _ = env_interface_dist.step(motor_system_dist())
             print(obs_dist)
@@ -204,11 +176,6 @@ class EmbodiedDataTest(unittest.TestCase):
             rng=rng,
             motor_system=motor_system_abs,
         )
-
-        action_space_abs = env_interface_abs.action_space
-        self.assertIsInstance(action_space_abs, ActionSpace)
-        self.assertSequenceEqual(action_space_abs, EXPECTED_ACTIONS_ABS)
-        self.assertIn(action_space_abs.sample(), EXPECTED_ACTIONS_ABS)
 
         for i in range(1, NUM_STEPS):
             obs_abs, _ = env_interface_abs.step(motor_system_abs())

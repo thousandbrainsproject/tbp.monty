@@ -9,12 +9,11 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-import abc
 import copy
 import json
 import logging
 import time
-from typing import Any, Callable
+from typing import Any, Callable, ClassVar
 
 import numpy as np
 import quaternion
@@ -27,25 +26,7 @@ from tbp.monty.frameworks.actions.actions import Action, ActionJSONEncoder
 logger = logging.getLogger(__name__)
 
 
-class BaseBuffer:
-    @abc.abstractclassmethod
-    def __len__(self):
-        pass
-
-    @abc.abstractclassmethod
-    def append(self):
-        pass
-
-    @abc.abstractclassmethod
-    def __getitem__(self):
-        pass
-
-    @abc.abstractclassmethod
-    def reset(self):
-        pass
-
-
-class FeatureAtLocationBuffer(BaseBuffer):
+class FeatureAtLocationBuffer:
     """Buffer which stores features at locations coming into one LM. Also stores stats.
 
     Used for building graph models and logging detailed stats about an episode. The
@@ -589,7 +570,7 @@ class FeatureAtLocationBuffer(BaseBuffer):
 class BufferEncoder(json.JSONEncoder):
     """Encoder to turn the buffer into a JSON compliant format."""
 
-    _encoders: dict[type, Callable | json.JSONEncoder] = {}
+    _encoders: ClassVar[dict[type, Callable | json.JSONEncoder]] = {}
 
     @classmethod
     def register(

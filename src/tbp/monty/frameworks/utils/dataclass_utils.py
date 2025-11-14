@@ -30,10 +30,10 @@ class Dataclass(Protocol):
 
 
 __all__ = [
+    "Dataclass",
     "as_dataclass_dict",
     "create_dataclass_args",
     "from_dataclass_dict",
-    "Dataclass",
 ]
 
 # Keeps track of the dataclass type in a serializable dataclass dict

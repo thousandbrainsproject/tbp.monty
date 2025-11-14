@@ -136,13 +136,6 @@ class MuJoCoSimulator(Simulator):
         return self._object_count
 
     @property
-    def action_space(self) -> None:
-        pass
-
-    def get_agent(self, agent_id: AgentID) -> None:
-        pass
-
-    @property
     def observations(self) -> None:
         pass
 

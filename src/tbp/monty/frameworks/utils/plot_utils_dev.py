@@ -158,7 +158,7 @@ def get_action_name(
     else:
         action = action_stats[step - 1]
         if action[0] is not None:
-            a = cast(Action, action[0])
+            a = cast("Action", action[0])
             d = dict(a)
             del d["action"]  # don't duplicate action in "params"
             del d["agent_id"]  # don't duplicate agent_id in "params"

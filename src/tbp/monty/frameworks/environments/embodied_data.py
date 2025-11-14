@@ -106,10 +106,6 @@ class EnvironmentInterface:
         )
         self._counter = 0
 
-    @property
-    def action_space(self):
-        return self.env.action_space
-
     def __iter__(self) -> Self:
         """Implement the iterator protocol.
 

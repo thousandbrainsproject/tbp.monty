@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import ClassVar
 
 import numpy as np
 import torch
@@ -36,16 +37,16 @@ logger = logging.getLogger(__name__)
 class MontyForGraphMatching(MontyBase):
     """General Monty model for recognizing object using graphs."""
 
-    LOGGING_REGISTRY = dict(
+    LOGGING_REGISTRY: ClassVar[dict[str, type[BaseMontyLogger]]] = {
         # Don't do any formal logging, just save models. Used for pretraining.
-        SILENT=BaseMontyLogger,
+        "SILENT": BaseMontyLogger,
         # Log things like basic stats.csv files, data to reproduce experiments
-        BASIC=BasicGraphMatchingLogger,
+        "BASIC": BasicGraphMatchingLogger,
         # Utter deforestation
-        DETAILED=DetailedGraphMatchingLogger,
-        # Save specific stats nescessary for object similarity analysis.
-        SELECTIVE=SelectiveEvidenceLogger,
-    )
+        "DETAILED": DetailedGraphMatchingLogger,
+        # Save specific stats necessary for object similarity analysis.
+        "SELECTIVE": SelectiveEvidenceLogger,
+    }
 
     def __init__(self, *args, **kwargs):
         """Initialize and reset LM."""
