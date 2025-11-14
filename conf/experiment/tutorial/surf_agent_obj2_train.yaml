@@ -17,7 +17,7 @@ config:
   n_train_epochs: ${benchmarks.rotations_all}
   logging:
     output_dir: ${path.expanduser:"~/tbp/result/monty/projects"}
-    run_name: surf_agent_1lm_2obj
+    run_name: surf_agent_1lm_2obj_train
     wandb_handlers: []
   monty_config:
     monty_args:

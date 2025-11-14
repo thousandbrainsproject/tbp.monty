@@ -13,6 +13,7 @@ config:
   n_train_epochs: 1
   logging:
     output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/omniglot}
+    run_name: omniglot_training
   monty_config:
     sensor_module_configs:
       sensor_module_0:

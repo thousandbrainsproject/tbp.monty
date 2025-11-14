@@ -20,6 +20,7 @@ config:
   model_name_or_path: ${path.expanduser:${benchmarks.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/}
   n_eval_epochs: 1
   logging:
+    run_name: monty_meets_world_2dimage_inference
     wandb_group: benchmark_experiments
   monty_config:
     monty_args:

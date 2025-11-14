@@ -12,6 +12,8 @@ config:
   do_eval: false
   max_train_steps: 1
   n_train_epochs: 1
+  logging:
+    run_name: first_experiment
   train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterfacePerObject}
   train_env_interface_args:
     object_init_sampler:

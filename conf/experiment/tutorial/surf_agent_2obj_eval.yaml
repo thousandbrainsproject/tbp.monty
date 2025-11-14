@@ -22,7 +22,7 @@ config:
   logging:
     # where to save eval logs
     output_dir: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_1lm_obj"}
-    run_name: eval
+    run_name: surf_agent_2obj_eval
     wandb_handlers: [] # remove this line if you, additionally, want to log to WandB
   monty_config:
     monty_args:
