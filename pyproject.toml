@@ -309,6 +309,13 @@ allow-dict-calls-with-keyword-arguments = true
 [tool.ruff.lint.flake8-copyright]
 author = "Thousand Brains Project"
 
+[tool.ruff.lint.isort]
+# wandb creates a folder called 'wandb' during local runs (not logged in)
+# this needs to be added to prevent isort from incorrectly sorting
+# It can be removed when a fix for this is released:
+# https://github.com/astral-sh/ruff/issues/10519
+known-third-party = ["wandb"]
+
 [tool.ruff.lint.mccabe]
 max-complexity = 18
 
