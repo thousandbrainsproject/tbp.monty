@@ -149,7 +149,6 @@ class ResamplingHypothesesUpdaterTest(TestCase):
         evidence_slope_threshold,
         pose_defined,
         graph_id,
-        init_hyp_space,
     ):
         rlm.hypotheses_updater.resampling_multiplier = resampling_multiplier
         rlm.hypotheses_updater.evidence_slope_threshold = evidence_slope_threshold
@@ -160,30 +159,6 @@ class ResamplingHypothesesUpdaterTest(TestCase):
             graph_id=graph_id,
             mapper=rlm.channel_hypothesis_mapping[graph_id],
             tracker=rlm.hypotheses_updater.evidence_slope_trackers[graph_id],
-            init_hyp_space=init_hyp_space,
-        )
-
-    def _initial_count(self, rlm, pose_defined):
-        """This tests that the initial requested number of hypotheses is correct.
-
-        In order to initialize a hypothesis space, the `_sample_count` should request
-        that all resampled hypotheses be of the type informed. This tests the informed
-        sampling with defined and undefined poses.
-        """
-        graph_id = "capsule3DSolid"
-        hypotheses_selection, informed_count = self.run_sample_count(
-            rlm=rlm,
-            resampling_multiplier=0.1,
-            evidence_slope_threshold=0.0,
-            pose_defined=pose_defined,
-            graph_id=graph_id,
-            init_hyp_space=True,
-        )
-        self.assertEqual(len(hypotheses_selection.maintain_ids), 0)
-        self.assertEqual(
-            informed_count,
-            self._graph_node_count(rlm, graph_id)
-            * self._num_hyps_multiplier(rlm, pose_defined),
         )
 
     def _resampling_multiplier(self, rlm):
@@ -210,7 +185,6 @@ class ResamplingHypothesesUpdaterTest(TestCase):
                 evidence_slope_threshold=0.0,
                 pose_defined=pose_defined,
                 graph_id=graph_id,
-                init_hyp_space=False,
             )
             self.assertEqual(graph_num_nodes * resampling_multiplier, informed_count)
 
@@ -246,7 +220,6 @@ class ResamplingHypothesesUpdaterTest(TestCase):
             evidence_slope_threshold=0.0,
             pose_defined=pose_defined,
             graph_id=graph_id,
-            init_hyp_space=False,
         )
         self.assertEqual(expected_count, before_count + informed_count)
 
@@ -262,10 +235,6 @@ class ResamplingHypothesesUpdaterTest(TestCase):
             - Testing the resampling multiplier parameter maximum limit
         """
         rlm = self.get_pretrained_resampling_lm()
-
-        # test initial count
-        self._initial_count(rlm, pose_defined=True)
-        self._initial_count(rlm, pose_defined=False)
 
         # test count multiplier
         self._resampling_multiplier(rlm)
