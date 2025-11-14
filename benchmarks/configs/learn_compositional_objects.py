@@ -149,12 +149,8 @@ supervised_pre_training_flat_objects_wo_logos.update(
     monty_config=TwoLMStackedMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=1000),
         learning_module_configs=two_stacked_constrained_lms_config,
-        motor_system_config=MotorSystemConfigNaiveScanSpiral(
-            motor_system_args=dict(
-                policy_class=NaiveScanPolicy,
-                policy_args=make_naive_scan_policy_config(fixed_amount=5),
-            )
-        ),  # use spiral policy for more even object coverage during learning
+        # use spiral policy for more even object coverage during learning
+        motor_system_config=MotorSystemConfigNaiveScanSpiral(),
     ),
     env_interface_config=TwoLMStackedDistantMountHabitatEnvInterfaceConfig(
         env_init_args=EnvInitArgsTwoLMDistantStackedMount(
@@ -162,9 +158,7 @@ supervised_pre_training_flat_objects_wo_logos.update(
         ).__dict__,
     ),
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(
-            0, len(FLAT_OBJECTS_WITHOUT_LOGOS), object_list=FLAT_OBJECTS_WITHOUT_LOGOS
-        ),
+        object_names=FLAT_OBJECTS_WITHOUT_LOGOS,
         object_init_sampler=PredefinedObjectInitializer(
             rotations=train_rotations_all,
         ),
