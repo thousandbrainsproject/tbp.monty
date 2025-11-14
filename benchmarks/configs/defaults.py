@@ -7,15 +7,12 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import os
-
 import numpy as np
 
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
-from tbp.monty.frameworks.models.sensor_modules import HabitatSM
 
 default_all_noise_params = {
     "features": {
@@ -26,28 +23,6 @@ default_all_noise_params = {
     },
     "location": 0.002,  # add gaussian noise with 0.002 std
 }
-
-default_sensor_features = [
-    "pose_vectors",
-    "pose_fully_defined",
-    "on_object",
-    "hsv",
-    "principal_curvatures_log",
-]
-
-default_all_noisy_sensor_module = dict(
-    sensor_module_class=HabitatSM,
-    sensor_module_args=dict(
-        sensor_module_id="patch",
-        features=default_sensor_features,
-        save_raw_obs=False,
-        delta_thresholds={
-            "on_object": 0,
-            "distance": 0.01,
-        },
-        noise_params=default_all_noise_params,
-    ),
-)
 
 # Everything is weighted 1, except for saturation and value which are not used.
 default_feature_weights = {
@@ -108,22 +83,4 @@ default_evidence_lm_config = dict(
             max_nneighbors=10
         ),
     ),
-)
-
-default_evidence_1lm_config = dict(learning_module_0=default_evidence_lm_config)
-
-# NOTE: maybe lower once we have better policies
-# Is not really nescessary for good performance but makes sure we don't just overfit
-# on the first few points.
-min_eval_steps = 20
-
-monty_models_dir = os.getenv("MONTY_MODELS")
-
-# v6 : Using TLS for surface normal estimation
-# v7 : Updated for State class support + using new feature names like pose_vectors
-# v8 : Using separate graph per input channel
-# v9 : Using models trained on 14 unique rotations
-# v10 : Using models trained without the semantic sensor
-pretrained_dir = os.path.expanduser(
-    os.path.join(monty_models_dir, "pretrained_ycb_v10")
 )
