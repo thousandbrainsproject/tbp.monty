@@ -194,7 +194,7 @@ supervised_pre_training_logos_after_flat_objects.update(
         ),  # use spiral policy for more even object coverage during learning
     ),
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(0, len(LOGOS), object_list=LOGOS),
+        object_names=LOGOS,
         object_init_sampler=PredefinedObjectInitializer(
             positions=LOGO_POSITIONS,
             rotations=LOGO_ROTATIONS,
