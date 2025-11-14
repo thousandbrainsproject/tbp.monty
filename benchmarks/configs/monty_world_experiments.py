@@ -98,44 +98,9 @@ world_image_from_stream_on_scanned_model.update(
     logging=EvalEvidenceLMLoggingConfig(wandb_handlers=[], python_log_level="INFO"),
 )
 
-
-bright_world_image_on_scanned_model = copy.deepcopy(world_image_on_scanned_model)
-bright_world_image_on_scanned_model.update(
-    env_interface_config=WorldImageEnvironmentInterfaceConfig(
-        env_init_args=EnvInitArgsMontyWorldBrightScenes()
-    ),
-)
-
-dark_world_image_on_scanned_model = copy.deepcopy(world_image_on_scanned_model)
-dark_world_image_on_scanned_model.update(
-    env_interface_config=WorldImageEnvironmentInterfaceConfig(
-        env_init_args=EnvInitArgsMontyWorldDarkScenes()
-    ),
-)
-
-hand_intrusion_world_image_on_scanned_model = copy.deepcopy(
-    world_image_on_scanned_model
-)
-hand_intrusion_world_image_on_scanned_model.update(
-    env_interface_config=WorldImageEnvironmentInterfaceConfig(
-        env_init_args=EnvInitArgsMontyWorldHandIntrusionScenes()
-    ),
-)
-
-multi_object_world_image_on_scanned_model = copy.deepcopy(world_image_on_scanned_model)
-multi_object_world_image_on_scanned_model.update(
-    env_interface_config=WorldImageEnvironmentInterfaceConfig(
-        env_init_args=EnvInitArgsMontyWorldMultiObjectScenes()
-    ),
-)
-
 experiments = MontyWorldExperiments(
     world_image_from_stream_on_scanned_model=world_image_from_stream_on_scanned_model,
     # ------------- Experiments for Benchmarks Table -------------
     world_image_on_scanned_model=world_image_on_scanned_model,
-    dark_world_image_on_scanned_model=dark_world_image_on_scanned_model,
-    bright_world_image_on_scanned_model=bright_world_image_on_scanned_model,
-    hand_intrusion_world_image_on_scanned_model=hand_intrusion_world_image_on_scanned_model,
-    multi_object_world_image_on_scanned_model=multi_object_world_image_on_scanned_model,
 )
 CONFIGS = asdict(experiments)
