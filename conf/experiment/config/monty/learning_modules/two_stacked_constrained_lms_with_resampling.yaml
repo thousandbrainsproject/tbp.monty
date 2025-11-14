@@ -1,0 +1,18 @@
+defaults:
+  - two_stacked_constrained_lms
+  - learning_module/clear_gsg_args@learning_module_0.learning_module_args
+
+learning_module_0:
+  learning_module_args:
+    hypotheses_updater_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater.ResamplingHypothesesUpdater}
+    evidence_threshold_config: all
+    object_evidence_threshold: 1
+    gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+    gsg_args:
+      goal_tolerances:
+        location: 0.15
+      elapsed_steps_factor: 10
+      min_post_goal_success_steps: 20
+      x_percent_scale_factor: 0.75
+      desired_object_distance: 0.03
+      wait_growth_multiplier: 1 # Since learning, enable more frequent jumps
