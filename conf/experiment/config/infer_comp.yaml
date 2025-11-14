@@ -1,5 +1,5 @@
 defaults:
-  - defaults
+  - eval
   - logging/parallel_evidence_lm@logging
   - monty/two_lm_stacked@monty_config
   - monty/args/clear_monty_args@monty_config
