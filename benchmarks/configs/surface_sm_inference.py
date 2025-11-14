@@ -153,6 +153,16 @@ def make_disk_learning_experiment_pair(run_name, rotations):
             ),
         ),
     )
+    # Enable raw RGB saving for the 2D sensor module
+    sensor_2d_config["monty_config"].sensor_module_configs[
+        "sensor_module_0"
+    ]["sensor_module_args"]["save_raw_rgb"] = True
+    sensor_2d_config["monty_config"].sensor_module_configs[
+        "sensor_module_0"
+    ]["sensor_module_args"]["raw_rgb_base_dir"] = os.path.join(
+        os.path.expanduser("~"),
+        f"tbp/data/{run_name}_RGB",
+    )
 
     return control_config, sensor_2d_config
 
@@ -162,7 +172,7 @@ def make_disk_learning_experiment_pair(run_name, rotations):
 #############################
 
 disk_learning_control, disk_learning_2d = make_disk_learning_experiment_pair(
-    "standard", [[0.0, 0.0, 0.0]]
+    "tbp_numenta_disks", [[0.0, 0.0, 0.0]]
 )
 
 ##############################

@@ -37,6 +37,14 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
     LearningModule,
     SensorModule,
 )
+
+# Import TwoDPoseSM for type checking
+try:
+    from tbp.monty.frameworks.models.two_d_sensor_module import TwoDPoseSM
+
+    _2D_SENSOR_AVAILABLE = True
+except ImportError:
+    _2D_SENSOR_AVAILABLE = False
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.dataclass_utils import (
@@ -474,6 +482,14 @@ class MontyExperiment:
         """Call pre_episode on elements in experiment and set mode."""
         self.model.pre_episode()
         self.env_interface.pre_episode()
+
+        # Increment episode counter for TwoDPoseSM sensor modules if available
+        if _2D_SENSOR_AVAILABLE:
+            for sm in self.model.sensor_modules:
+                if isinstance(sm, TwoDPoseSM):
+                    if sm.debug_visualize or sm.save_raw_rgb:
+                        sm.episode_counter += 1
+                        sm.step_counter = 0
 
         self.max_steps = self.max_train_steps
         if self.model.experiment_mode != "train":

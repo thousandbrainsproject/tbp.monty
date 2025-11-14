@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Tuple
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 
 DEFAULT_WINDOW_SIGMA = 1.0
@@ -183,6 +184,10 @@ def draw_2d_pose_on_patch(
             tipLength=0.3,
         )
 
+    # If no edge and no label text provided, use "No Edge" as default
+    if edge_direction is None and label_text is None:
+        label_text = "No Edge"
+
     cv2.circle(patch_with_pose, (center_x, center_y), 3, (255, 0, 0), -1)
 
     if label_text:
@@ -219,3 +224,17 @@ def draw_2d_pose_on_patch(
         )
 
     return patch_with_pose
+
+
+def save_raw_rgb_patch(patch: np.ndarray, filepath: str) -> None:
+    """Save raw RGB patch without any annotations.
+
+    This function saves the RGB patch as-is, without drawing any pose arrows,
+    text, or other annotations. Useful for creating datasets to test different
+    edge detection methods.
+
+    Args:
+        patch: RGB patch of shape (H, W, 3) to save.
+        filepath: Path where the image should be saved.
+    """
+    plt.imsave(filepath, patch)

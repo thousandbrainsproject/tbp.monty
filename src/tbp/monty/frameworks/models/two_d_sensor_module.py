@@ -35,6 +35,7 @@ from tbp.monty.frameworks.utils.edge_detection_utils import (
     compute_edge_features_at_center,
     draw_2d_pose_on_patch,
     project_onto_tangent_plane,
+    save_raw_rgb_patch,
 )
 
 logger = logging.getLogger(__name__)
@@ -58,6 +59,8 @@ class TwoDPoseSM(SensorModule):
         delta_thresholds: dict[str, Any] | None = None,
         debug_visualize=False,
         debug_save_dir=None,
+        save_raw_rgb: bool = False,
+        raw_rgb_base_dir: str | None = None,
     ):
         """Initialize 2D Sensor Module.
 
@@ -80,6 +83,11 @@ class TwoDPoseSM(SensorModule):
                 Defaults to None.
             debug_visualize: Whether to save debug visualizations of edge detection.
             debug_save_dir: Directory to save debug visualizations.
+            save_raw_rgb: Whether to save raw RGB patches without annotations.
+            raw_rgb_base_dir: Directory for saving raw RGB images. Images will be
+                saved directly in this directory with filenames
+                ep{episode:02d}_step{step:03d}.png. If None, defaults to
+                current_working_directory/raw_rgb.
         """
         self.sensor_module_id = sensor_module_id
         self.save_raw_obs = save_raw_obs
@@ -122,9 +130,6 @@ class TwoDPoseSM(SensorModule):
         self.debug_visualize = debug_visualize
         self.debug_save_dir = debug_save_dir
         if self.debug_visualize:
-            # Information to name debug visualizations pngs
-            self.episode_counter = 0
-            self.step_counter = 0
             self.debug_counter = 0
 
             if self.debug_save_dir:
@@ -132,6 +137,20 @@ class TwoDPoseSM(SensorModule):
             else:
                 self.debug_save_dir = Path.cwd() / "debug_visualizations"
             self.debug_save_dir.mkdir(parents=True, exist_ok=True)
+
+        self.save_raw_rgb = save_raw_rgb
+        self.raw_rgb_base_dir = raw_rgb_base_dir
+        if self.save_raw_rgb:
+            if self.raw_rgb_base_dir:
+                self.raw_rgb_base_dir = Path(self.raw_rgb_base_dir)
+            else:
+                self.raw_rgb_base_dir = Path.cwd() / "raw_rgb"
+            self.raw_rgb_base_dir.mkdir(parents=True, exist_ok=True)
+
+        # Initialize counters if either debug_visualize or save_raw_rgb is enabled
+        if self.debug_visualize or self.save_raw_rgb:
+            self.episode_counter = 0
+            self.step_counter = 0
 
     def pre_episode(self):
         """Reset buffer and is_exploring flag."""
@@ -143,6 +162,9 @@ class TwoDPoseSM(SensorModule):
         self.states = []
         self.visited_locs = []
         self.visited_normals = []
+        if self.debug_visualize or self.save_raw_rgb:
+            self.episode_counter += 1
+            self.step_counter = 0
 
     def update_state(self, state):
         """Update information about the sensor's location and rotation."""
@@ -159,6 +181,7 @@ class TwoDPoseSM(SensorModule):
             "location": agent_position + sensor_position,
             "rotation": agent_rotation * sensor_rotation,
         }
+
 
     def state_dict(self):
         state_dict = self._snapshot_telemetry.state_dict()
@@ -203,6 +226,9 @@ class TwoDPoseSM(SensorModule):
 
         observed_state, telemetry = self._habitat_observation_processor.process(data)
 
+        # Save raw RGB patch if enabled and conditions are met
+        self._save_raw_rgb_if_needed(data, observed_state)
+
         if observed_state.use_state and observed_state.get_on_object():
             observed_state = self.extract_2d_edge(
                 observed_state,
@@ -227,6 +253,42 @@ class TwoDPoseSM(SensorModule):
             self.visited_normals.append(telemetry.visited_normal)
 
         return observed_state
+
+    def _save_raw_rgb_if_needed(
+        self, data: dict[str, Any], observed_state: State
+    ) -> None:
+        """Save raw RGB patch if saving is enabled and conditions are met.
+
+        Args:
+            data: Raw observation data containing 'rgba' key.
+            observed_state: Processed state from observation processor.
+        """
+        if not (
+            self.save_raw_rgb
+            and not self.is_exploring
+            and observed_state.get_on_object()
+        ):
+            return
+
+        # Extract RGB patch from RGBA if needed
+        if data["rgba"].shape[2] == 4:
+            patch = data["rgba"][:, :, :3]
+        else:
+            patch = data["rgba"]
+
+        # Create directory if it doesn't exist
+        self.raw_rgb_base_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate filename: ep{episode:02d}_step{step:03d}.png
+        # Uses same counters as debug_visualize
+        filename = (
+            f"ep{self.episode_counter:02d}_"
+            f"step{self.step_counter:03d}.png"
+        )
+        filepath = self.raw_rgb_base_dir / filename
+        save_raw_rgb_patch(patch, str(filepath))
+
+        self.step_counter += 1
 
     def extract_2d_edge(
         self,
@@ -271,7 +333,7 @@ class TwoDPoseSM(SensorModule):
             coherence > coherence_threshold
         )
 
-        if self.debug_visualize and has_edge:
+        if self.debug_visualize:
             angle_deg = np.degrees(edge_orientation)
             label_text = f"{angle_deg:.1f}"
             patch_with_debug = draw_2d_pose_on_patch(
@@ -279,8 +341,8 @@ class TwoDPoseSM(SensorModule):
             )
 
             filename = (
-                f"ep{self.episode_counter:04d}_"
-                f"step{self.step_counter:04d}_"
+                f"ep{self.episode_counter:02d}_"
+                f"step{self.step_counter:03d}_"
                 f"{self.debug_counter:04d}.png"
             )
             filepath = self.debug_save_dir / filename
