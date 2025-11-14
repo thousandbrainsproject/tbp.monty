@@ -218,11 +218,7 @@ supervised_pre_training_curved_objects_after_flat_and_logo.update(
         ),
     ),
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
-        object_names=get_object_names_by_idx(
-            0,
-            len(CURVED_OBJECTS_WITHOUT_LOGOS),
-            object_list=CURVED_OBJECTS_WITHOUT_LOGOS,
-        ),
+        object_names=CURVED_OBJECTS_WITHOUT_LOGOS,
         object_init_sampler=PredefinedObjectInitializer(
             rotations=train_rotations_all,
         ),
