@@ -125,6 +125,8 @@ def visualize_point_cloud_interactive(
                 * 'edge_tangent': (N,3) directly
                 * optional 'edge_strength': (N,) to prioritize which lines to draw
                 * optional 'rgba': (N,3 or 4)
+                * optional 'hsv': (N,3) HSV color values
+                * optional 'pose_fully_defined': (N,) binary or NaN indicating if pose is fully defined
         title: window title.
         arrow_scale: length (in world units) of each tangent line.
         mesh: optional trimesh.Trimesh or trimesh.Scene to render alongside.
@@ -138,6 +140,9 @@ def visualize_point_cloud_interactive(
     points = np.asarray(model_data["points"], float)
     features = model_data["features"]
 
+    # Debug: print available features
+    print(f"[viz] Available features: {list(features.keys())}")
+
     # State variables for surface normal arrows
     surface_normals_visible = False
     surface_normal_arrows = []
@@ -147,49 +152,86 @@ def visualize_point_cloud_interactive(
     mesh_objects = []
 
     # State variables for color mode
-    # 0 = Hue (full saturation), 1 = HSV->RGB (actual values), 2 = RGBA
-    color_mode = 0 if "hsv" in features else 2
+    # Build list of available color modes
+    available_color_modes = []
+    mode_names = []
+    if "hsv" in features:
+        available_color_modes.append("hue")
+        mode_names.append(" Hue ")
+        available_color_modes.append("hsv")
+        mode_names.append(" HSV→RGB ")
+    if "rgba" in features:
+        available_color_modes.append("rgba")
+        mode_names.append(" RGBA ")
+    if "pose_fully_defined" in features:
+        available_color_modes.append("pose_fully_defined")
+        mode_names.append(" Pose Defined ")
+
+    # Debug: print available color modes
+    print(f"[viz] Available color modes: {available_color_modes}")
+    print(f"[viz] Mode names: {mode_names}")
+
+    # Default to first available mode
+    color_mode_idx = 0
     point_cloud_obj = None
 
+    def _get_colors_for_mode(mode_name, n_points):
+        """Get colors for the specified mode."""
+        if mode_name == "hue" and "hsv" in features:
+            hsv_data = features["hsv"]
+            hue = hsv_data[:, 0]
+            hsv_for_display = np.zeros((n_points, 3))
+            hsv_for_display[:, 0] = hue
+            hsv_for_display[:, 1] = 1.0
+            hsv_for_display[:, 2] = 1.0
+            rgb_colors = hsv_to_rgb(hsv_for_display)
+            return (rgb_colors * 255).astype(np.uint8).tolist()
+        elif mode_name == "hsv" and "hsv" in features:
+            hsv_data = features["hsv"]
+            rgb_colors = hsv_to_rgb(hsv_data)
+            return (rgb_colors * 255).astype(np.uint8).tolist()
+        elif mode_name == "rgba" and "rgba" in features:
+            return features["rgba"][:, :3].astype(np.uint8).tolist()
+        elif mode_name == "pose_fully_defined" and "pose_fully_defined" in features:
+            pfd = np.asarray(features["pose_fully_defined"], float).reshape(-1)
+            n_pfd = len(pfd)
+            n_common = min(n_pfd, n_points)
+
+            colors = np.zeros((n_points, 3), dtype=np.uint8)
+            # Default all to gray (for any points beyond pfd length)
+            colors.fill(128)
+
+            # Map: 1 -> green, 0 -> red, NaN -> gray
+            for i in range(n_common):
+                val = pfd[i]
+                if np.isnan(val):
+                    colors[i] = [128, 128, 128]  # gray
+                elif np.isclose(val, 1.0, atol=1e-6):
+                    colors[i] = [0, 255, 0]  # green
+                elif np.isclose(val, 0.0, atol=1e-6):
+                    colors[i] = [255, 0, 0]  # red
+                else:
+                    colors[i] = [128, 128, 128]  # gray (default for unexpected values)
+
+            return colors.tolist()
+        return None
+
     def toggle_color_mode_callback(button, _event):
-        """Toggle between hue, HSV->RGB, and RGBA coloring."""
-        nonlocal color_mode, point_cloud_obj
+        """Cycle through available color modes."""
+        nonlocal color_mode_idx, point_cloud_obj
 
-        # Cycle through available modes
-        if "hsv" in features and "rgba" in features:
-            color_mode = (color_mode + 1) % 3
-        elif "hsv" in features:
-            color_mode = (color_mode + 1) % 2
-        elif "rgba" in features:
-            color_mode = 2
+        if available_color_modes:
+            color_mode_idx = (color_mode_idx + 1) % len(available_color_modes)
+            button.switch()
 
-        button.switch()
-
-        if point_cloud_obj is not None:
-            if color_mode == 0 and "hsv" in features:
-                # Mode 0: Hue only (full saturation and value)
-                hsv_data = features["hsv"]
-                hue = hsv_data[:, 0]
-                n_points = len(hue)
-                hsv_for_display = np.zeros((n_points, 3))
-                hsv_for_display[:, 0] = hue
-                hsv_for_display[:, 1] = 1.0
-                hsv_for_display[:, 2] = 1.0
-                rgb_colors = hsv_to_rgb(hsv_for_display)
-                colors = (rgb_colors * 255).astype(np.uint8).tolist()
-                point_cloud_obj.pointcolors = colors
-            elif color_mode == 1 and "hsv" in features:
-                # Mode 1: Full HSV to RGB conversion
-                hsv_data = features["hsv"]
-                rgb_colors = hsv_to_rgb(hsv_data)
-                colors = (rgb_colors * 255).astype(np.uint8).tolist()
-                point_cloud_obj.pointcolors = colors
-            elif color_mode == 2 and "rgba" in features:
-                # Mode 2: RGBA coloring
-                colors = features["rgba"][:, :3].astype(np.uint8).tolist()
-                point_cloud_obj.pointcolors = colors
-
-        plotter.render()
+            if point_cloud_obj is not None:
+                n_points = len(points)
+                colors = _get_colors_for_mode(
+                    available_color_modes[color_mode_idx], n_points
+                )
+                if colors is not None:
+                    point_cloud_obj.pointcolors = colors
+                    plotter.render()
 
     def toggle_surface_normals_callback(button, _event):
         """Toggle visibility of surface normal arrows."""
@@ -224,30 +266,13 @@ def visualize_point_cloud_interactive(
     plotter = Plotter(size=(1400, 1000), title=title or "Learned Point Cloud")
 
     # ----- Point colors -----
-    if "hsv" in features:
-        # Use hue component from HSV
-        hsv_data = features["hsv"]
-        hue = hsv_data[:, 0]  # Extract hue (first channel)
-
-        # Convert hue to RGB colors for visualization
-        # Create HSV array with full saturation and value to show pure hue colors
-        n_points = len(hue)
-        hsv_for_display = np.zeros((n_points, 3))
-        hsv_for_display[:, 0] = hue  # Hue
-        hsv_for_display[:, 1] = 1.0  # Full saturation
-        hsv_for_display[:, 2] = 1.0  # Full value/brightness
-
-        # Convert to RGB (0-255 range for vedo)
-        rgb_colors = hsv_to_rgb(hsv_for_display)
-        colors = (rgb_colors * 255).astype(np.uint8).tolist()
-
+    n_points = len(points)
+    if available_color_modes:
+        # Use the default (first) color mode
+        colors = _get_colors_for_mode(available_color_modes[color_mode_idx], n_points)
         point_cloud_obj = Points(points, r=10)
-        point_cloud_obj.pointcolors = colors
-        plotter.add(point_cloud_obj)
-    elif "rgba" in features and features["rgba"].shape[1] >= 3:
-        colors = features["rgba"][:, :3].astype(np.uint8).tolist()
-        point_cloud_obj = Points(points, r=10)
-        point_cloud_obj.pointcolors = colors
+        if colors is not None:
+            point_cloud_obj.pointcolors = colors
         plotter.add(point_cloud_obj)
     else:
         point_cloud_obj = Points(points, r=10).color("gray")
@@ -344,22 +369,20 @@ def visualize_point_cloud_interactive(
         )
 
     # ----- Add color mode toggle button -----
-    if "hsv" in features and "rgba" in features:
+    if available_color_modes:
+        print(
+            f"[viz] Creating color mode button with {len(mode_names)} states: {mode_names}"
+        )
         color_mode_button = plotter.add_button(
             toggle_color_mode_callback,
             pos=(0.85, 0.19),
-            states=[" Hue ", " HSV→RGB ", " RGBA "],
+            states=mode_names,
             size=20,
             font="Calco",
         )
-    elif "hsv" in features:
-        color_mode_button = plotter.add_button(
-            toggle_color_mode_callback,
-            pos=(0.85, 0.19),
-            states=[" Hue ", " HSV→RGB "],
-            size=20,
-            font="Calco",
-        )
+        print("[viz] Color mode button created successfully")
+    else:
+        print("[viz] No color modes available, skipping color mode button")
 
     # ----- Axes & camera -----
     plotter.show(
