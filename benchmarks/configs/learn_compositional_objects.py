@@ -268,12 +268,8 @@ supervised_pre_training_objects_with_logos_lvl1_comp_models.update(
     monty_config=TwoLMStackedMontyConfig(
         monty_args=MontyArgs(num_exploratory_steps=1000, min_train_steps=100),
         learning_module_configs=two_stacked_constrained_lms_config,
-        motor_system_config=MotorSystemConfigNaiveScanSpiral(
-            motor_system_args=dict(
-                policy_class=NaiveScanPolicy,
-                policy_args=make_naive_scan_policy_config(fixed_amount=5),
-            )
-        ),  # use spiral policy for more even object coverage during learning
+        # use spiral policy for more even object coverage during learning
+        motor_system_config=MotorSystemConfigNaiveScanSpiral(),
     ),
 )
 
