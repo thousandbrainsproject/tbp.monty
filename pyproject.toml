@@ -225,8 +225,6 @@ ignore = [
     # TODO: ruff=0.11.4 upgrade introduced the errors ignored below, resolve these
     "LOG015", # LOG015: root-logger-call,
     "PTH208", # PTH208: os-listdir
-    "RUF022", # RUF022: unsorted-dunder-all
-    "TC006", # TC006: runtime-cast-value
     ###
     # TODO: ruff=0.7.1 migration introduced errors ignored below, resolve these
     "ANN001", # ANN001: Missing type annotation for function argument
@@ -310,6 +308,13 @@ allow-dict-calls-with-keyword-arguments = true
 
 [tool.ruff.lint.flake8-copyright]
 author = "Thousand Brains Project"
+
+[tool.ruff.lint.isort]
+# wandb creates a folder called 'wandb' during local runs (not logged in)
+# this needs to be added to prevent isort from incorrectly sorting
+# It can be removed when a fix for this is released:
+# https://github.com/astral-sh/ruff/issues/10519
+known-third-party = ["wandb"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 18
