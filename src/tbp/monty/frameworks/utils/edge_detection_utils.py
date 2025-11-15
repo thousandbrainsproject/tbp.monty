@@ -132,6 +132,108 @@ def compute_edge_features_at_center(
     return edge_strength, coherence, float(tangent_theta)
 
 
+def compute_edge_features_center_weighted(
+    patch: np.ndarray,
+    win_sigma: float = DEFAULT_WINDOW_SIGMA,
+    ksize: int = DEFAULT_KERNEL_SIZE,
+    radius: float = 14.0,
+    sigma_r: float = 7.0,
+    c_min: float = 0.75,
+    e_min: float = 0.01,
+) -> Tuple[float, float, float]:
+    """Compute edge features using center-weighted, global-aware structure tensor.
+
+    This function aggregates structure tensor components over a center-biased
+    neighborhood, giving higher weight to pixels closer to the center and pixels
+    with stronger gradients. It applies energy and coherence thresholds to reject
+    weak or cluttered edges.
+
+    Args:
+        patch: RGB or grayscale image patch
+        win_sigma: Standard deviation for Gaussian window smoothing
+        ksize: Kernel size for Gaussian blur
+        radius: Radius of influence around center in pixels
+            (e.g., 12-16 for 64x64 patch)
+        sigma_r: Radial falloff parameter for center weighting (typically radius/2)
+        c_min: Minimum coherence threshold to accept edge (0.7-0.8 recommended)
+        e_min: Minimum local gradient energy threshold to accept as real edge
+
+    Returns:
+        Tuple of (edge_strength, coherence, tangent_theta):
+            - edge_strength: Magnitude of dominant eigenvalue (0.0 if no edge)
+            - coherence: Edge quality metric in [0, 1] (0.0 if no edge)
+            - tangent_theta: Edge tangent angle in [0, 2*pi) radians (0.0 if no edge)
+    """
+    # Step 1: Compute gradients and local tensor components
+    img_bgr = cv2.cvtColor(patch, cv2.COLOR_RGB2BGR)
+    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY).astype(np.float32) / 255.0
+
+    Ix = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=SOBEL_KERNEL_SIZE)  # noqa: N806
+    Iy = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=SOBEL_KERNEL_SIZE)  # noqa: N806
+
+    Jxx = Ix * Ix  # noqa: N806
+    Jyy = Iy * Iy  # noqa: N806
+    Jxy = Ix * Iy  # noqa: N806
+
+    # Optional Gaussian blur to suppress noise
+    Jxx = cv2.GaussianBlur(Jxx, (ksize, ksize), win_sigma)  # noqa: N806
+    Jyy = cv2.GaussianBlur(Jyy, (ksize, ksize), win_sigma)  # noqa: N806
+    Jxy = cv2.GaussianBlur(Jxy, (ksize, ksize), win_sigma)  # noqa: N806
+
+    # Step 2: Center-weighted aggregation
+    r0, c0 = get_patch_center(*gray.shape)
+    h, w = gray.shape
+
+    # Compute distance from center for all pixels
+    rows, cols = np.meshgrid(np.arange(h), np.arange(w), indexing="ij")
+    d_squared = (rows - r0) ** 2 + (cols - c0) ** 2
+    d = np.sqrt(d_squared)
+
+    # Radial weight: Gaussian falloff from center
+    w_r = np.exp(-(d_squared) / (2.0 * sigma_r**2))
+    # Set weight to 0 for pixels beyond radius
+    w_r[d > radius] = 0.0
+
+    # Gradient energy weight: favor pixels with stronger gradients
+    g = Ix**2 + Iy**2  # gradient energy at each pixel
+
+    # Combined weight: radial * gradient energy
+    w = w_r * g
+
+    # Aggregate tensor components
+    total_weight = np.sum(w)  # total weight
+    if total_weight < EPSILON:
+        # No significant weights, return no edge
+        return 0.0, 0.0, 0.0
+
+    Jxx_bar = np.sum(w * Jxx) / (total_weight + EPSILON)  # noqa: N806
+    Jyy_bar = np.sum(w * Jyy) / (total_weight + EPSILON)  # noqa: N806
+    Jxy_bar = np.sum(w * Jxy) / (total_weight + EPSILON)  # noqa: N806
+
+    # Step 3: Compute eigenvalues, edge strength, coherence, orientation
+    disc = np.sqrt((Jxx_bar - Jyy_bar) ** 2 + 4.0 * (Jxy_bar**2))
+    lam1 = 0.5 * (Jxx_bar + Jyy_bar + disc)
+    lam2 = 0.5 * (Jxx_bar + Jyy_bar - disc)
+
+    edge_strength = np.sqrt(max(lam1, 0.0))
+    coherence = (lam1 - lam2) / (lam1 + lam2 + EPSILON)
+
+    gradient_theta = 0.5 * np.arctan2(2.0 * Jxy_bar, (Jxx_bar - Jyy_bar + EPSILON))
+    tangent_theta = gradient_to_tangent_angle(gradient_theta)
+
+    # Step 4: Energy and coherence rejection
+    # Compute local gradient energy (using total weight as proxy)
+    # Area of circular window: π * radius²
+    area_window = np.pi * radius**2
+    local_energy = total_weight / (area_window + EPSILON)
+
+    # Reject if energy too low or coherence too low
+    if local_energy < e_min or coherence < c_min:
+        return 0.0, 0.0, 0.0
+
+    return float(edge_strength), float(coherence), float(tangent_theta)
+
+
 def draw_2d_pose_on_patch(
     patch: np.ndarray,
     edge_direction: float | None = None,
