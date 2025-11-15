@@ -234,6 +234,206 @@ def compute_edge_features_center_weighted(
     return float(edge_strength), float(coherence), float(tangent_theta)
 
 
+def compute_edge_features_at_center_histogram(
+    patch: np.ndarray,
+    r_max: float = 16.0,
+    tau_mag_ratio: float = 0.1,
+    n_bins: int = 36,
+    d_min: float = 0.5,
+    delta_theta: float = np.pi / 12,
+    n_min_candidates: int = 10,
+    n_min_consistent: int = 15,
+    d_inlier: float = 1.5,
+    n_min_inlier: int = 10,
+    f_min: float = 0.5,
+    d_center_max: float = 2.0,
+    win_sigma: float = DEFAULT_WINDOW_SIGMA,
+    ksize: int = 3,
+) -> Tuple[float, float, float]:
+    """Compute edge features at center using orientation histogram + line-fit method.
+
+    This function uses gradients around the center to find a dominant orientation
+    via histogram of gradient directions, fits a line with that orientation through
+    nearby edge pixels, and validates that the line passes close to the center with
+    sufficient support.
+
+    Args:
+        patch: RGB or grayscale image patch
+        r_max: Radius for neighborhood selection in pixels
+            (default: 16.0 for 64x64 patches)
+        tau_mag_ratio: Gradient magnitude threshold ratio (default: 0.1 * G_max)
+        n_bins: Number of histogram bins (default: 36, 10° per bin)
+        d_min: Minimum dominance ratio threshold (default: 0.5)
+        delta_theta: Orientation tolerance in radians (default: π/12 = 15°)
+        n_min_candidates: Minimum candidate pixels before histogram (default: 10)
+        n_min_consistent: Minimum orientation-consistent pixels (default: 15)
+        d_inlier: Line inlier distance threshold in pixels (default: 1.5)
+        n_min_inlier: Minimum number of inliers (default: 10)
+        f_min: Minimum inlier fraction (default: 0.5)
+        d_center_max: Maximum distance from center to line in pixels (default: 2.0)
+        win_sigma: Standard deviation for Gaussian blur (default: 1.0)
+        ksize: Gaussian blur kernel size (default: 3x3)
+
+    Returns:
+        Tuple of (edge_strength, coherence, tangent_theta):
+            - edge_strength: Average gradient magnitude of inliers (0.0 if no edge)
+            - coherence: Combined dominance ratio and inlier fraction in [0, 1]
+                (0.0 if no edge)
+            - tangent_theta: Edge tangent angle in [0, 2*pi) radians (0.0 if no edge)
+    """
+    # Step 0: Preprocessing
+    img_bgr = cv2.cvtColor(patch, cv2.COLOR_RGB2BGR)
+    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY).astype(np.float32) / 255.0
+
+    # Optional Gaussian blur to suppress noise
+    if win_sigma > 0 and ksize > 0:
+        gray = cv2.GaussianBlur(gray, (ksize, ksize), win_sigma)
+
+    # Step 1: Compute gradients
+    Ix = cv2.Sobel(gray, cv2.CV_32F, 1, 0, ksize=SOBEL_KERNEL_SIZE)  # noqa: N806
+    Iy = cv2.Sobel(gray, cv2.CV_32F, 0, 1, ksize=SOBEL_KERNEL_SIZE)  # noqa: N806
+
+    # Gradient magnitude
+    g_mag = np.sqrt(Ix**2 + Iy**2)  # noqa: N806
+
+    # Gradient orientation (normal direction), mapped to [0, π)
+    theta_g = np.arctan2(Iy, Ix) % np.pi
+
+    # Step 2: Select local edge pixels near center
+    h, w = gray.shape
+    r0, c0 = get_patch_center(h, w)
+
+    # Compute distance from center for all pixels
+    rows, cols = np.meshgrid(np.arange(h), np.arange(w), indexing="ij")
+    d = np.sqrt((rows - r0) ** 2 + (cols - c0) ** 2)
+
+    # Keep pixels within r_max
+    mask_distance = d <= r_max
+
+    # Compute gradient magnitude threshold
+    g_max = np.max(g_mag)  # noqa: N806
+    tau_mag = tau_mag_ratio * g_max
+
+    # Keep pixels with sufficient gradient magnitude
+    mask_magnitude = g_mag >= tau_mag
+
+    # Combined mask for candidate edge pixels
+    mask_candidates = mask_distance & mask_magnitude
+
+    # Get candidate pixel indices and values
+    candidate_rows = rows[mask_candidates]
+    candidate_cols = cols[mask_candidates]
+    candidate_g = g_mag[mask_candidates]  # noqa: N806
+    candidate_theta_g = theta_g[mask_candidates]
+
+    n_candidates = len(candidate_rows)
+
+    # Reject if too few candidates
+    if n_candidates < n_min_candidates:
+        return 0.0, 0.0, 0.0
+
+    # Step 3: Orientation histogram
+    # Create histogram weighted by gradient magnitude
+    bin_edges = np.linspace(0, np.pi, n_bins + 1)
+    h_hist, _ = np.histogram(  # noqa: N806
+        candidate_theta_g, bins=bin_edges, weights=candidate_g
+    )
+
+    # Circular smoothing: h_smooth[k] = h_hist[k-1] + 2*h_hist[k] + h_hist[k+1] (mod B)
+    h_smooth = np.zeros_like(h_hist, dtype=np.float64)  # noqa: N806
+    for k in range(n_bins):
+        k_prev = (k - 1) % n_bins
+        k_next = (k + 1) % n_bins
+        h_smooth[k] = h_hist[k_prev] + 2.0 * h_hist[k] + h_hist[k_next]
+
+    # Find peak
+    k_max = int(np.argmax(h_smooth))
+    w_max = h_smooth[k_max]
+    w_total = np.sum(h_smooth)  # noqa: N806
+
+    # Check dominance ratio
+    if w_total < EPSILON:
+        return 0.0, 0.0, 0.0
+
+    dominance = w_max / w_total  # noqa: N806
+
+    # Reject if dominance too low
+    if dominance < d_min:
+        return 0.0, 0.0, 0.0
+
+    # Compute dominant gradient orientation
+    theta_g_star = (k_max + 0.5) * np.pi / n_bins
+
+    # Convert to tangent orientation
+    tangent_theta_star = gradient_to_tangent_angle(theta_g_star)
+
+    # Step 4: Select pixels consistent with dominant orientation
+    # Compute angular difference (circular distance on [0, π))
+    delta_theta_array = np.abs(candidate_theta_g - theta_g_star)
+    # Handle circular wrapping
+    delta_theta_array = np.minimum(delta_theta_array, np.pi - delta_theta_array)
+
+    # Keep pixels within orientation tolerance
+    mask_consistent = delta_theta_array <= delta_theta
+
+    consistent_rows = candidate_rows[mask_consistent]
+    consistent_cols = candidate_cols[mask_consistent]
+    consistent_g = candidate_g[mask_consistent]  # noqa: N806
+
+    n_consistent = len(consistent_rows)
+
+    # Reject if too few orientation-consistent pixels
+    if n_consistent < n_min_consistent:
+        return 0.0, 0.0, 0.0
+
+    # Step 5: Fit line with fixed orientation
+    # Normal unit vector (perpendicular to tangent)
+    n = np.array([-np.sin(tangent_theta_star), np.cos(tangent_theta_star)])
+
+    # For each orientation-consistent pixel, compute projection onto normal
+    # Convert pixel coordinates to (x, y) where x=col, y=row
+    pixel_coords = np.column_stack([consistent_cols, consistent_rows])
+    s_i = np.dot(pixel_coords, n)
+
+    # Fit line offset: b = mean(s_i)
+    b = np.mean(s_i)
+
+    # Step 6: Check support & distance to line
+    # Compute distance to line for each pixel
+    d_i = np.abs(s_i - b)
+
+    # Count inliers
+    mask_inliers = d_i <= d_inlier
+    n_inliers = np.sum(mask_inliers)
+
+    # Reject if too few inliers or inlier fraction too low
+    if n_inliers < n_min_inlier:
+        return 0.0, 0.0, 0.0
+
+    inlier_fraction = n_inliers / n_consistent
+    if inlier_fraction < f_min:
+        return 0.0, 0.0, 0.0
+
+    # Check center distance to line
+    center_coord = np.array([c0, r0])
+    d_center = np.abs(np.dot(center_coord, n) - b)
+
+    # Reject if line doesn't pass near center
+    if d_center > d_center_max:
+        return 0.0, 0.0, 0.0
+
+    # Step 7: Compute outputs
+    # Edge strength: average gradient magnitude of inliers
+    inlier_g = consistent_g[mask_inliers]  # noqa: N806
+    edge_strength = float(np.mean(inlier_g))
+
+    # Coherence: combination of dominance ratio and inlier fraction
+    # Normalize to [0, 1] by taking geometric mean or weighted combination
+    coherence = float(np.sqrt(dominance * inlier_fraction))
+
+    return edge_strength, coherence, float(tangent_theta_star)
+
+
 def draw_2d_pose_on_patch(
     patch: np.ndarray,
     edge_direction: float | None = None,
