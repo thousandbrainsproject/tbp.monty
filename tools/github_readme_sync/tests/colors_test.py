@@ -13,7 +13,21 @@ import os
 import unittest
 from unittest import mock
 
+import pytest
+
 from tools.github_readme_sync import colors  # Import the colors module initially
+
+
+@pytest.fixture
+def isatty_true():
+    with mock.patch("sys.stdout.isatty", return_value=True):
+        yield
+
+
+@pytest.fixture
+def isatty_false():
+    with mock.patch("sys.stdout.isatty", return_value=False):
+        yield
 
 
 class TestColors(unittest.TestCase):
@@ -45,9 +59,9 @@ class TestColors(unittest.TestCase):
         self.assertNotEqual(colors.RESET, "")
 
     @mock.patch.dict(os.environ, {"CI": "false"})
-    @mock.patch("sys.stdout.isatty", return_value=True)
+    @pytest.mark.usefixtures("isatty_true")
     @mock.patch("sys.platform", "linux")
-    def test_colors_enabled_on_linux_with_tty(self, mock_isatty):
+    def test_colors_enabled_on_linux_with_tty(self):
         # Reload colors module after changing the environment
         importlib.reload(colors)
         self.assertTrue(colors._supports_color())
@@ -60,9 +74,9 @@ class TestColors(unittest.TestCase):
         self.assertNotEqual(colors.RESET, "")
 
     @mock.patch.dict(os.environ, {"CI": "false"})
-    @mock.patch("sys.stdout.isatty", return_value=False)
+    @pytest.mark.usefixtures("isatty_false")
     @mock.patch("sys.platform", "linux")
-    def test_colors_disabled_on_linux_without_tty(self, mock_isatty):
+    def test_colors_disabled_on_linux_without_tty(self):
         # Reload colors module after changing the environment
         importlib.reload(colors)
         self.assertFalse(colors._supports_color())
