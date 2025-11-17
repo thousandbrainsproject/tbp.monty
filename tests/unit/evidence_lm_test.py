@@ -21,7 +21,6 @@ import os
 import shutil
 import tempfile
 import unittest
-from dataclasses import dataclass, field
 from pathlib import Path
 from pprint import pprint
 
@@ -30,52 +29,11 @@ import numpy as np
 import pandas as pd
 from omegaconf import DictConfig
 
-from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
-from tbp.monty.frameworks.config_utils.config_args import (
-    InformedPolicy,
-)
-from tbp.monty.frameworks.config_utils.policy_setup_utils import (
-    make_informed_policy_config,
-)
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
-from tbp.monty.frameworks.models.motor_system import MotorSystem
-from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 from tests.unit.resources.unit_test_utils import BaseGraphTest
-
-
-@dataclass
-class MotorSystemConfigFixed:
-    motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: dict | Dataclass = field(
-        default_factory=lambda: dict(
-            policy_class=InformedPolicy,
-            policy_args=make_informed_policy_config(
-                action_space_type="distant_agent_no_translation",
-                action_sampler_class=ConstantSampler,
-                rotation_degrees=5.0,
-                file_name=Path(__file__).parent / "resources/fixed_test_actions.jsonl",
-            ),
-        )
-    )
-
-
-@dataclass
-class MotorSystemConfigOffObject:
-    motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: dict | Dataclass = field(
-        default_factory=lambda: dict(
-            policy_class=InformedPolicy,
-            policy_args=make_informed_policy_config(
-                action_space_type="distant_agent_no_translation",
-                action_sampler_class=ConstantSampler,
-                file_name=Path(__file__).parent
-                / "resources/fixed_test_actions_off_object.jsonl",
-            ),
-        )
-    )
 
 
 class EvidenceLMTest(BaseGraphTest):
@@ -99,7 +57,7 @@ class EvidenceLMTest(BaseGraphTest):
 
         # Generate the override string for setting the actions file name.
         # We're doing this because the string is too long otherwise.
-        actions_file_name_selector = ".".join(
+        actions_file_name_selector = ".".join(  # noqa: FLY002
             [
                 "test",
                 "config",
@@ -114,6 +72,12 @@ class EvidenceLMTest(BaseGraphTest):
         def hydra_config(
             test_name: str, action_file_name: Path | None = None
         ) -> DictConfig:
+            """Return a Hydra configuration from the specified test name.
+
+            Args:
+                test_name: the name of the test config to load
+                action_file_name: Optional path to a file of actions to use
+            """
             overrides = [
                 f"test=evidence_lm/{test_name}",
                 f"test.config.logging.output_dir={self.output_dir}",
