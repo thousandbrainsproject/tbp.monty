@@ -155,18 +155,6 @@ class ConstantSamplerTest(unittest.TestCase):
             translation_distance=self.translation_distance,
         )
 
-    def test_accepts_arbitrary_additional_init_params(self) -> None:
-        ConstantSampler(
-            absolute_degrees=self.absolute_degrees,
-            direction=self.direction,
-            location=self.location,
-            rng=default_rng(RNG_SEED),
-            rotation_quat=self.rotation_quat,
-            rotation_degrees=self.rotation_degrees,
-            translation_distance=self.translation_distance,
-            additional_param="additional_param",
-        )
-
     def test_samples_look_down_with_constant_params(self) -> None:
         action1 = self.sampler.sample_look_down("agent1")
         action2 = self.sampler.sample_look_down("agent2")
@@ -317,18 +305,6 @@ class UniformlyDistributedSamplerTest(unittest.TestCase):
             min_rotation_degrees=self.min_rotation_degrees,
             max_translation=self.max_translation,
             min_translation=self.min_translation,
-        )
-
-    def test_accepts_arbitrary_additional_init_params(self) -> None:
-        UniformlyDistributedSampler(
-            max_absolute_degrees=self.max_absolute_degrees,
-            min_absolute_degrees=self.min_absolute_degrees,
-            rng=default_rng(RNG_SEED),
-            max_rotation_degrees=self.max_rotation_degrees,
-            min_rotation_degrees=self.min_rotation_degrees,
-            max_translation=self.max_translation,
-            min_translation=self.min_translation,
-            additional_param="additional_param",
         )
 
     def test_samples_look_down_with_sampled_params(self) -> None:

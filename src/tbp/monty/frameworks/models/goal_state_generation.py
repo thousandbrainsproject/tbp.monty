@@ -40,7 +40,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
     Note all goal-states conform to the State-class cortical messaging protocol (CMP).
     """
 
-    def __init__(self, parent_lm, goal_tolerances=None, **kwargs) -> None:
+    def __init__(self, parent_lm, goal_tolerances=None, **_kwargs) -> None:
         """Initialize the GSG.
 
         Args:
@@ -181,7 +181,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         """
         return
 
-    def _generate_goal_state(self, observations):
+    def _generate_goal_state(self, _observations):
         """Generate a new goal-state to send out to other LMs and/or motor actuators.
 
         Given the driving goal-state, and information from the parent LM of the GSG

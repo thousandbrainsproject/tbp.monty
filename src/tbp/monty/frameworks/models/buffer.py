@@ -427,7 +427,6 @@ class FeatureAtLocationBuffer:
             features=self.get_all_features_on_object(),
             object_location_rel_body=self.stats["detected_location_rel_body"],
             location_rel_model=self.stats["detected_location_on_model"],
-            object_scale=self.stats["detected_scale"],
         )
 
     def get_first_sensory_input_channel(self):
