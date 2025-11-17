@@ -12,8 +12,9 @@ import os
 import shutil
 import tempfile
 import unittest
-from pprint import pprint
+from pathlib import Path
 
+import hydra
 import numpy as np
 import pandas as pd
 import pytest
@@ -55,15 +56,48 @@ from tbp.monty.simulators.habitat.configs import (
     PatchViewFinderMountHabitatEnvInterfaceConfig,
     TwoLMStackedDistantMountHabitatEnvInterfaceConfig,
 )
-from tests.unit.resources.unit_test_utils import BaseGraphTestCases
+from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 
-class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
+class HierarchyTest(BaseGraphTest):
     def setUp(self):
         """Code that gets executed before every test."""
         super().setUp()
 
         self.output_dir = tempfile.mkdtemp()
+        self.model_path = Path(self.output_dir) / "pretrained"
+
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            self.two_lms_heterarchy_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=hierarchy/two_lms_heterarchy",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
+            self.two_lms_constrained_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=hierarchy/two_lms_constrained",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
+            self.two_lms_semisupervised_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=hierarchy/two_lms_semisupervised",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                    f"test.config.model_name_or_path={self.model_path}",
+                ],
+            )
+            self.two_lms_eval_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=hierarchy/two_lms_eval",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                    f"test.config.model_name_or_path={self.model_path}",
+                ],
+            )
 
         base = dict(
             experiment_class=MontyObjectRecognitionExperiment,
@@ -295,10 +329,8 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
         of this longer run if we already have it? Maybe in the future we want to change
         this but this is my current reasoning.
         """
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.two_lms_heterarchy_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.two_lms_heterarchy_cfg.test)
+        with exp:
             exp.train()
             train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
             self.check_hierarchical_lm_train_results(train_stats)
@@ -306,7 +338,6 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
             models = load_models_from_dir(exp.output_dir)
             self.check_hierarchical_models(models)
 
-            pprint("...evaluating...")
             exp.evaluate()
             eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
             self.check_hierarchical_lm_eval_results(eval_stats)
@@ -328,9 +359,8 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
         - Extending a graph with a new input channel
         - logging prediction errors
         """
-        pprint("...supervised training...")
-        config = copy.deepcopy(self.two_stacked_constrained_config)
-        with MontySupervisedObjectPretrainingExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.two_lms_constrained_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
             exp.train()
             # check that both LMs have learned both objects.
@@ -349,9 +379,8 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
                     f"objects: {learned_objects}",
                 )
 
-        pprint("...semisupervised training...")
-        config = copy.deepcopy(self.two_stacked_semisupervised_lms_config)
-        with MontySupervisedObjectPretrainingExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.two_lms_semisupervised_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
             # check that models for both objects are loaded into memory correctly.
             for lm_idx, lm in enumerate(exp.model.learning_modules):
@@ -390,11 +419,9 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
                     f"graph: {updated_graph} with keys: {updated_graph.keys()}",
                 )
 
-        pprint("...evaluating LM with compositional models...")
-        config = copy.deepcopy(self.two_stacked_lms_eval_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.two_lms_eval_cfg.test)
+        with exp:
             exp.evaluate()
-            pprint("... loading and checking eval statistics...")
             eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
             episode = 0
             num_lms = len(exp.model.learning_modules)
