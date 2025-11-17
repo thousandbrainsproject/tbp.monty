@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -426,9 +427,9 @@ def get_omniglot_train_env_interface(num_versions, alphabet_ids, data_path=None)
     if data_path is None:
         data_path = os.path.join(os.environ["MONTY_DATA"], "omniglot/python/")
     if os.path.exists(data_path):
-        alphabet_folders = [
-            a for a in os.listdir(data_path + "images_background") if a[0] != "."
-        ]
+        data_path = Path(data_path)
+        images_path = data_path / "images_background"
+        alphabet_folders = sorted(images_path.glob("[!.]*"))
     else:
         # Use placeholder here to pass Circle CI config check.
         return OmniglotEnvironmentInterfaceArgs()
@@ -436,14 +437,9 @@ def get_omniglot_train_env_interface(num_versions, alphabet_ids, data_path=None)
     all_character_idx = []
     all_version_idx = []
     for a_idx in alphabet_ids:
-        alphabet = alphabet_folders[a_idx]
-        characters_in_a = list(os.listdir(data_path + "images_background/" + alphabet))
-        for c_idx, character in enumerate(characters_in_a):
-            versions_of_char = list(
-                os.listdir(
-                    data_path + "images_background/" + alphabet + "/" + character
-                )
-            )
+        characters_in_a = alphabet_folders[a_idx].iterdir()
+        for c_idx, char_path in enumerate(sorted(characters_in_a)):
+            versions_of_char = list(char_path.iterdir())
             for v_idx in range(len(versions_of_char)):
                 if v_idx < num_versions:
                     all_alphabet_idx.append(a_idx)
@@ -478,25 +474,21 @@ def get_omniglot_eval_env_interface(
     if data_path is None:
         data_path = os.path.join(os.environ["MONTY_DATA"], "omniglot/python/")
     if os.path.exists(data_path):
-        alphabet_folders = [
-            a for a in os.listdir(data_path + "images_background") if a[0] != "."
-        ]
+        data_path = Path(data_path)
+        images_path = data_path / "images_background"
+        alphabet_folders = sorted(images_path.glob("[!.]*"))
     else:
         # Use placeholder here to pass Circle CI config check.
         return OmniglotEnvironmentInterfaceArgs()
+
     all_alphabet_idx = []
     all_character_idx = []
     all_version_idx = []
     for a_idx in alphabet_ids:
-        alphabet = alphabet_folders[a_idx]
-        characters_in_a = list(os.listdir(data_path + "images_background/" + alphabet))
-        for c_idx, character in enumerate(characters_in_a):
+        characters_in_a = alphabet_folders[a_idx].iterdir()
+        for c_idx, char_path in enumerate(sorted(characters_in_a)):
             if num_versions is None:
-                versions_of_char = list(
-                    os.listdir(
-                        data_path + "images_background/" + alphabet + "/" + character
-                    )
-                )
+                versions_of_char = list(char_path.iterdir())
                 num_versions = len(versions_of_char) - start_at_version
 
             for v_idx in range(num_versions + start_at_version):
