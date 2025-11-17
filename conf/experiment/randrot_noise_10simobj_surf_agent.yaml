@@ -7,6 +7,7 @@ defaults:
 config:
   model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10similarobj/pretrained/
   n_eval_epochs: 10 # number of random rotations to test for each object
+  max_total_steps: 6000
   logging:
     run_name: randrot_noise_10simobj_surf_agent
   eval_env_interface_args:
