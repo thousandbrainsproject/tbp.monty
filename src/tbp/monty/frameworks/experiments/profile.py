@@ -10,6 +10,7 @@
 
 import cProfile
 import os
+from pathlib import Path
 
 import pandas as pd
 import wandb
@@ -119,15 +120,10 @@ class ProfileExperimentMixin:
     def close(self):
         # If wandb is in use, send tables to wandb
         if len(self.wandb_handlers) > 0:
-            profile_files = os.listdir(self.profile_dir)
-            profile_paths = [
-                os.path.join(self.profile_dir, file) for file in profile_files
-            ]
-            csv_files = [i for i in profile_paths if i.endswith(".csv")]
-
-            for csv in csv_files:
+            profile_path = Path(self.profile_dir)
+            for csv in profile_path.glob("*.csv"):
                 df = pd.read_csv(csv)
-                basename = os.path.basename(csv)
+                basename = csv.name
                 table = wandb.Table(dataframe=df)
                 wandb.log({basename: table})
 

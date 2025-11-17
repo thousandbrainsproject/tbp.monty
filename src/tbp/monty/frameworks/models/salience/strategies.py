@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Protocol
 
 import numpy as np
+from typing_extensions import override
 
 
 class SalienceStrategy(Protocol):
@@ -18,5 +19,6 @@ class SalienceStrategy(Protocol):
 
 
 class UniformSalienceStrategy(SalienceStrategy):
+    @override
     def __call__(self, rgba: np.ndarray, depth: np.ndarray) -> np.ndarray:
         return np.ones_like(depth)
