@@ -1,7 +1,7 @@
 learning_module_0:
   learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
   learning_module_args:
-    max_match_distance: 0.001
+    max_match_distance: 0.01
     tolerances:
       patch_0:
         hsv: ${np.array:[0.1, 1, 1]}
