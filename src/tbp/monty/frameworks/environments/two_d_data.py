@@ -27,6 +27,13 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     EmbodiedEnvironment,
     ObjectID,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    AgentObservations,
+    Modality,
+    Observations,
+    SensorID,
+    SensorObservations,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +106,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         #      interface and how the class hierarchy is defined and used.
         raise NotImplementedError("OmniglotEnvironment does not support adding objects")
 
-    def step(self, actions: Sequence[Action]) -> dict:
+    def step(self, actions: Sequence[Action]) -> Observations:
         """Retrieve the next observation.
 
         Since the omniglot dataset includes stroke information (the order in which
@@ -118,10 +125,12 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             each step.
 
         Returns:
-            The observation.
+            The observations.
         """
+        obs = self._observation()
+
         if not actions:
-            return self._observation()
+            return obs
 
         for action in actions:
             amount = 1
@@ -132,7 +141,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
 
         return obs
 
-    def _observation(self) -> dict:
+    def _observation(self) -> Observations:
         query_loc = self.locations[self.step_num % self.max_steps]
         patch = self.get_image_patch(
             self.current_image,
@@ -140,21 +149,29 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             self.patch_size,
         )
         depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
-        return {
-            AgentID("agent_id_0"): {
-                "patch": {
-                    "depth": depth,
-                    "semantic": np.array(~patch, dtype=int),
-                    "rgba": np.stack(
-                        [depth, depth, depth], axis=2
-                    ),  # TODO: placeholder
-                },
-                "view_finder": {
-                    "depth": self.current_image,
-                    "semantic": np.array(~patch, dtype=int),
-                },
+        return Observations(
+            {
+                AgentID("agent_id_0"): AgentObservations(
+                    {
+                        SensorID("patch"): SensorObservations(
+                            {
+                                Modality("depth"): depth,
+                                Modality("semantic"): np.array(~patch, dtype=int),
+                                Modality("rgba"): np.stack(
+                                    [depth, depth, depth], axis=2
+                                ),
+                            }
+                        ),
+                        SensorID("view_finder"): SensorObservations(
+                            {
+                                Modality("depth"): self.current_image,
+                                Modality("semantic"): np.array(~patch, dtype=int),
+                            }
+                        ),
+                    }
+                )
             }
-        }
+        )
 
     def get_state(self):
         loc = self.locations[self.step_num % self.max_steps]
@@ -189,27 +206,35 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             "OmniglotEnvironment does not support removing all objects"
         )
 
-    def reset(self):
+    def reset(self) -> Observations:
         self.step_num = 0
         patch = self.get_image_patch(
             self.current_image, self.locations[self.step_num], self.patch_size
         )
         depth = 1.2 - gaussian_filter(np.array(~patch, dtype=float), sigma=0.5)
-        return {
-            AgentID("agent_id_0"): {
-                "patch": {
-                    "depth": depth,
-                    "semantic": np.array(~patch, dtype=int),
-                    "rgba": np.stack(
-                        [depth, depth, depth], axis=2
-                    ),  # TODO: placeholder
-                },
-                "view_finder": {
-                    "depth": self.current_image,
-                    "semantic": np.array(~patch, dtype=int),
-                },
+        return Observations(
+            {
+                AgentID("agent_id_0"): AgentObservations(
+                    {
+                        SensorID("patch"): SensorObservations(
+                            {
+                                Modality("depth"): depth,
+                                Modality("semantic"): np.array(~patch, dtype=int),
+                                Modality("rgba"): np.stack(
+                                    [depth, depth, depth], axis=2
+                                ),
+                            }
+                        ),
+                        SensorID("view_finder"): SensorObservations(
+                            {
+                                Modality("depth"): self.current_image,
+                                Modality("semantic"): np.array(~patch, dtype=int),
+                            }
+                        ),
+                    }
+                )
             }
-        }
+        )
 
     def load_new_character_data(self):
         img_char_dir = os.path.join(
@@ -323,7 +348,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             "SaccadeOnImageEnvironment does not support adding objects"
         )
 
-    def step(self, actions: Sequence[Action]) -> dict:
+    def step(self, actions: Sequence[Action]) -> Observations:
         """Retrieve the next observation.
 
         Args:
@@ -351,29 +376,39 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
 
         return obs
 
-    def _observation(self) -> dict:
+    def _observation(self) -> Observations:
         (
             depth_patch,
             rgb_patch,
             depth3d_patch,
             sensor_frame_patch,
         ) = self.get_image_patch(self.current_loc)
-        return {
-            AgentID("agent_id_0"): {
-                "patch": {
-                    "depth": depth_patch,
-                    "rgba": rgb_patch,
-                    "semantic_3d": depth3d_patch,
-                    "sensor_frame_data": sensor_frame_patch,
-                    "world_camera": self.world_camera,
-                    "pixel_loc": self.current_loc,  # Save pixel loc for plotting
-                },
-                "view_finder": {
-                    "depth": self.current_depth_image,
-                    "rgba": self.current_rgb_image,
-                },
+        return Observations(
+            {
+                AgentID("agent_id_0"): AgentObservations(
+                    {
+                        SensorID("patch"): SensorObservations(
+                            {
+                                Modality("depth"): depth_patch,
+                                Modality("rgba"): rgb_patch,
+                                Modality("semantic_3d"): depth3d_patch,
+                                Modality("sensor_frame_data"): sensor_frame_patch,
+                                Modality("world_camera"): self.world_camera,
+                                Modality(
+                                    "pixel_loc"
+                                ): self.current_loc,  # Save pixel loc for plotting
+                            }
+                        ),
+                        SensorID("view_finder"): SensorObservations(
+                            {
+                                Modality("depth"): self.current_depth_image,
+                                Modality("rgba"): self.current_rgb_image,
+                            }
+                        ),
+                    }
+                )
             }
-        }
+        )
 
     def get_state(self):
         """Get agent state.
@@ -427,7 +462,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             "SaccadeOnImageEnvironment does not support removing all objects"
         )
 
-    def reset(self):
+    def reset(self) -> Observations:
         """Reset environment and extract image patch.
 
         TODO: clean up. Do we need this? No reset required in this env interface, maybe
@@ -444,22 +479,30 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         ) = self.get_image_patch(
             self.current_loc,
         )
-        return {
-            AgentID("agent_id_0"): {
-                "patch": {
-                    "depth": depth_patch,
-                    "rgba": rgb_patch,
-                    "semantic_3d": depth3d_patch,
-                    "sensor_frame_data": sensor_frame_patch,
-                    "world_camera": self.world_camera,
-                    "pixel_loc": self.current_loc,
-                },
-                "view_finder": {
-                    "depth": self.current_depth_image,
-                    "rgba": self.current_rgb_image,
-                },
+        return Observations(
+            {
+                AgentID("agent_id_0"): AgentObservations(
+                    {
+                        SensorID("patch"): SensorObservations(
+                            {
+                                Modality("depth"): depth_patch,
+                                Modality("rgba"): rgb_patch,
+                                Modality("semantic_3d"): depth3d_patch,
+                                Modality("sensor_frame_data"): sensor_frame_patch,
+                                Modality("world_camera"): self.world_camera,
+                                Modality("pixel_loc"): np.array(self.current_loc),
+                            }
+                        ),
+                        SensorID("view_finder"): SensorObservations(
+                            {
+                                Modality("depth"): self.current_depth_image,
+                                Modality("rgba"): self.current_rgb_image,
+                            }
+                        ),
+                    }
+                )
             }
-        }
+        )
 
     def load_new_scene_data(self):
         """Load depth and rgb data for next scene environment.

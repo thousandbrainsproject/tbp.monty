@@ -12,11 +12,12 @@ from __future__ import annotations
 import abc
 import collections.abc
 from dataclasses import dataclass
-from typing import Any, NewType, Sequence, Tuple
+from typing import NewType, Sequence, Tuple
 
 from typing_extensions import deprecated
 
 from tbp.monty.frameworks.actions.actions import Action
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 
 __all__ = [
     "ActionSpace",
@@ -87,7 +88,7 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def step(self, actions: Sequence[Action]) -> dict[Any, dict]:
+    def step(self, actions: Sequence[Action]) -> Observations:
         """Apply the given actions to the environment.
 
         Args:
@@ -118,10 +119,11 @@ class EmbodiedEnvironment(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def reset(self):
+    def reset(self) -> Observations:
         """Reset enviroment to its initial state.
 
-        Return the environment's initial observations.
+        Returns:
+            The environment's initial observations.
         """
         pass
 

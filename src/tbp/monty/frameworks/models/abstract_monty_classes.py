@@ -290,7 +290,7 @@ class ObjectModel(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def update_model(self, obersevations):
+    def update_model(self, observations):
         """Update an existing model with new observations."""
         pass
 

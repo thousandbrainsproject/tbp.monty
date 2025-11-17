@@ -33,11 +33,18 @@ from tbp.monty.frameworks.environments.two_d_data import (
     SaccadeOnImageEnvironment,
     SaccadeOnImageFromStreamEnvironment,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import (
+    AgentObservations,
+    Modality,
+    Observations,
+    SensorID,
+    SensorObservations,
+)
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 
 AGENT_ID = AgentID("agent_id_0")
-SENSOR_ID = "sensor_id_0"
+SENSOR_ID = SensorID("sensor_id_0")
 NUM_STEPS = 10
 POSSIBLE_ACTIONS_DIST = [
     f"{AGENT_ID}.look_down",
@@ -57,13 +64,19 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
     def add_object(self, *args, **kwargs) -> ObjectID:
         return ObjectID(-1)
 
-    def step(self, actions):
+    def step(self, actions) -> Observations:
         self._current_state += 1
-        return {
-            f"{AGENT_ID}": {
-                f"{SENSOR_ID}": {"sensor": EXPECTED_STATES[self._current_state]}
+        return Observations(
+            {
+                AgentID(AGENT_ID): AgentObservations(
+                    {
+                        SensorID(SENSOR_ID): SensorObservations(
+                            {Modality("sensor"): EXPECTED_STATES[self._current_state]}
+                        )
+                    }
+                )
             }
-        }
+        )
 
     def get_state(self):
         return None
@@ -71,13 +84,19 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
     def remove_all_objects(self):
         pass
 
-    def reset(self):
+    def reset(self) -> Observations:
         self._current_state = 0
-        return {
-            f"{AGENT_ID}": {
-                f"{SENSOR_ID}": {"sensor": EXPECTED_STATES[self._current_state]}
+        return Observations(
+            {
+                AgentID(AGENT_ID): AgentObservations(
+                    {
+                        SensorID(SENSOR_ID): SensorObservations(
+                            {Modality("sensor"): EXPECTED_STATES[self._current_state]}
+                        )
+                    }
+                )
             }
-        }
+        )
 
     def close(self):
         self._current_state = None
@@ -90,13 +109,19 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
     def add_object(self, *args, **kwargs) -> ObjectID:
         return ObjectID(-1)
 
-    def step(self, actions):
+    def step(self, actions) -> Observations:
         self._current_state += 1
-        return {
-            f"{AGENT_ID}": {
-                f"{SENSOR_ID}": {"sensor": EXPECTED_STATES[self._current_state]}
+        return Observations(
+            {
+                AgentID(AGENT_ID): AgentObservations(
+                    {
+                        SensorID(SENSOR_ID): SensorObservations(
+                            {Modality("sensor"): EXPECTED_STATES[self._current_state]}
+                        )
+                    }
+                )
             }
-        }
+        )
 
     def get_state(self):
         return None
@@ -146,15 +171,18 @@ class EmbodiedDataTest(unittest.TestCase):
                 np.all(obs_dist[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[i])
             )
 
-        initial_state, _ = env_interface_dist.reset()
+        initial_obs, _ = env_interface_dist.reset()
         self.assertTrue(
-            np.all(initial_state[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[0])
+            np.all(
+                initial_obs[AGENT_ID][SENSOR_ID][Modality("sensor")]
+                == EXPECTED_STATES[0]
+            )
         )
         obs_dist, _ = env_interface_dist.step(motor_system_dist())
         self.assertFalse(
             np.all(
-                obs_dist[AGENT_ID][SENSOR_ID]["sensor"]
-                == initial_state[AGENT_ID][SENSOR_ID]["sensor"]
+                obs_dist[AGENT_ID][SENSOR_ID][Modality("sensor")]
+                == initial_obs[AGENT_ID][SENSOR_ID][Modality("sensor")]
             )
         )
 
@@ -185,13 +213,16 @@ class EmbodiedDataTest(unittest.TestCase):
 
         initial_state, _ = env_interface_abs.reset()
         self.assertTrue(
-            np.all(initial_state[AGENT_ID][SENSOR_ID]["sensor"] == EXPECTED_STATES[0])
+            np.all(
+                initial_state[AGENT_ID][SENSOR_ID][Modality("sensor")]
+                == EXPECTED_STATES[0]
+            )
         )
         obs_abs, _ = env_interface_abs.step(motor_system_abs())
         self.assertFalse(
             np.all(
-                obs_abs[AGENT_ID][SENSOR_ID]["sensor"]
-                == initial_state[AGENT_ID][SENSOR_ID]["sensor"]
+                obs_abs[AGENT_ID][SENSOR_ID][Modality("sensor")]
+                == initial_state[AGENT_ID][SENSOR_ID][Modality("sensor")]
             )
         )
 
