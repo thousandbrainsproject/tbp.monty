@@ -4,6 +4,7 @@ defaults:
   - /experiment/config/logging/clear_logging@config
   - /experiment/config/logging/defaults@config.logging
 
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
 config:
   do_train: false
   min_lms_match: 1
