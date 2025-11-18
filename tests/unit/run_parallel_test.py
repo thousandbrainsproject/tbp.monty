@@ -56,7 +56,7 @@ from tests.unit.graph_learning_test import MotorSystemConfigFixed
 
 class RunParallelTest(unittest.TestCase):
     def setUp(self):
-        self.output_dir = tempfile.mkdtemp()
+        self.output_dir = Path(tempfile.mkdtemp())
         self.train_rotations = [[0.0, 0.0, 0.0], [0.0, 45.0, 0.0], [0.0, 135.0, 0.0]]
         self.eval_rotations = [[0.0, 30.0, 0.0], [0.0, 60.0, 0.0], [0.0, 90.0, 0.0]]
         self.supervised_pre_training = dict(
@@ -98,15 +98,13 @@ class RunParallelTest(unittest.TestCase):
         self.eval_config = copy.deepcopy(self.supervised_pre_training)
         self.eval_config.update(
             experiment_class=MontyObjectRecognitionExperiment,
-            logging_config=LoggingConfig(
-                output_dir=os.path.join(self.output_dir, "eval")
-            ),
+            logging_config=LoggingConfig(output_dir=self.output_dir / "eval"),
             experiment_args=ExperimentArgs(
                 do_eval=True,
                 do_train=False,
                 # Tests the usual case: n_eval_epochs = len(eval_rotations)
                 n_eval_epochs=len(self.eval_rotations),
-                model_name_or_path=os.path.join(self.output_dir, "pretrained"),
+                model_name_or_path=self.output_dir / "pretrained",
             ),
             eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
@@ -132,29 +130,26 @@ class RunParallelTest(unittest.TestCase):
         # This tests that parallel code can handle n_eval_epochs < len(rotations)
         self.eval_config_lt = copy.deepcopy(self.eval_config)
         self.eval_config_lt["experiment_args"].n_eval_epochs = 2
-        self.output_dir_lt = os.path.join(self.output_dir, "lt")
+        self.output_dir_lt = self.output_dir / "lt"
         self.eval_config_lt["logging_config"].output_dir = self.output_dir_lt
         os.makedirs(self.eval_config_lt["logging_config"].output_dir)
 
         # This tests that parallel code can handle n_eval_epochs > len(rotations)
         self.eval_config_gt = copy.deepcopy(self.eval_config)
         self.eval_config_gt["experiment_args"].n_eval_epochs = 4
-        self.output_dir_gt = os.path.join(self.output_dir, "gt")
+        self.output_dir_gt = self.output_dir / "gt"
         self.eval_config_gt["logging_config"].output_dir = self.output_dir_gt
         os.makedirs(self.eval_config_gt["logging_config"].output_dir)
 
     def check_reproducibility_logs(self, serial_repro_dir, parallel_repro_dir):
-        s_param_files = sorted(p.name for p in Path(serial_repro_dir).glob("*target*"))
-        p_param_files = sorted(
-            p.name for p in Path(parallel_repro_dir).glob("*target*")
-        )
+        s_param_files = sorted(serial_repro_dir.glob("*target*"))
+        p_param_files = sorted(parallel_repro_dir.glob("*target*"))
 
         # Same param files for each episode. No more, no less.
-        self.assertEqual(set(s_param_files), set(p_param_files))
-        for file in s_param_files:
-            pfile = os.path.join(parallel_repro_dir, file)
-            sfile = os.path.join(serial_repro_dir, file)
-
+        self.assertEqual(
+            {p.name for p in s_param_files}, {p.name for p in p_param_files}
+        )
+        for sfile, pfile in zip(s_param_files, p_param_files):
             with open(pfile) as f:
                 ptarget = f.read()
 
@@ -204,16 +199,12 @@ class RunParallelTest(unittest.TestCase):
         # Compare results
         ###
         parallel_model = torch.load(
-            os.path.join(
-                self.output_dir,
-                "unittest_supervised_pre_training",
-                "pretrained",
-                "model.pt",
-            )
+            self.output_dir
+            / "unittest_supervised_pre_training"
+            / "pretrained"
+            / "model.pt"
         )
-        serial_model = torch.load(
-            os.path.join(self.output_dir, "pretrained", "model.pt")
-        )
+        serial_model = torch.load(self.output_dir / "pretrained" / "model.pt")
 
         # Same objects
         self.assertEqual(
@@ -265,10 +256,10 @@ class RunParallelTest(unittest.TestCase):
             is_unittest=True,
         )
 
-        eval_dir = os.path.join(self.output_dir, "eval")
-        parallel_eval_dir = os.path.join(eval_dir, "unittest_eval_eq")
-        serial_repro_dir = os.path.join(eval_dir, "reproduce_episode_data")
-        parallel_repro_dir = os.path.join(parallel_eval_dir, "reproduce_episode_data")
+        eval_dir = self.output_dir / "eval"
+        parallel_eval_dir = eval_dir / "unittest_eval_eq"
+        serial_repro_dir = eval_dir / "reproduce_episode_data"
+        parallel_repro_dir = parallel_eval_dir / "reproduce_episode_data"
 
         # Check that reproducibility logger has same files for both
         self.check_reproducibility_logs(serial_repro_dir, parallel_repro_dir)
@@ -278,8 +269,8 @@ class RunParallelTest(unittest.TestCase):
         # you don't know the execution order so it will have the same data, just
         # different order
 
-        scsv = pd.read_csv(os.path.join(eval_dir, "eval_stats.csv"))
-        pcsv = pd.read_csv(os.path.join(parallel_eval_dir, "eval_stats.csv"))
+        scsv = pd.read_csv(eval_dir / "eval_stats.csv")
+        pcsv = pd.read_csv(parallel_eval_dir / "eval_stats.csv")
 
         # We have to drop these columns because they are not the same in the parallel
         # and serial runs. In particular, 'stepwise_performance' and
@@ -314,17 +305,15 @@ class RunParallelTest(unittest.TestCase):
         )
 
         eval_dir_lt = self.output_dir_lt
-        parallel_eval_dir_lt = os.path.join(eval_dir_lt, "unittest_eval_lt")
-        serial_repro_dir_lt = os.path.join(eval_dir_lt, "reproduce_episode_data")
-        parallel_repro_dir_lt = os.path.join(
-            parallel_eval_dir_lt, "reproduce_episode_data"
-        )
+        parallel_eval_dir_lt = eval_dir_lt / "unittest_eval_lt"
+        serial_repro_dir_lt = eval_dir_lt / "reproduce_episode_data"
+        parallel_repro_dir_lt = parallel_eval_dir_lt / "reproduce_episode_data"
 
         # Check that reproducibility logger has same files for both
         self.check_reproducibility_logs(serial_repro_dir_lt, parallel_repro_dir_lt)
 
-        scsv_lt = pd.read_csv(os.path.join(eval_dir_lt, "eval_stats.csv"))
-        pcsv_lt = pd.read_csv(os.path.join(parallel_eval_dir_lt, "eval_stats.csv"))
+        scsv_lt = pd.read_csv(eval_dir_lt / "eval_stats.csv")
+        pcsv_lt = pd.read_csv(parallel_eval_dir_lt / "eval_stats.csv")
 
         # Remove columns that are not the same in the parallel and serial runs.
         for col in ["time", "stepwise_performance", "stepwise_target_object"]:
@@ -351,17 +340,15 @@ class RunParallelTest(unittest.TestCase):
         )
 
         eval_dir_gt = self.output_dir_gt
-        parallel_eval_dir_gt = os.path.join(eval_dir_gt, "unittest_eval_gt")
-        serial_repro_dir_gt = os.path.join(eval_dir_gt, "reproduce_episode_data")
-        parallel_repro_dir_gt = os.path.join(
-            parallel_eval_dir_gt, "reproduce_episode_data"
-        )
+        parallel_eval_dir_gt = eval_dir_gt / "unittest_eval_gt"
+        serial_repro_dir_gt = eval_dir_gt / "reproduce_episode_data"
+        parallel_repro_dir_gt = parallel_eval_dir_gt / "reproduce_episode_data"
 
         # Check that reproducibility logger has same files for both
         self.check_reproducibility_logs(serial_repro_dir_gt, parallel_repro_dir_gt)
 
-        scsv_gt = pd.read_csv(os.path.join(eval_dir_gt, "eval_stats.csv"))
-        pcsv_gt = pd.read_csv(os.path.join(parallel_eval_dir_gt, "eval_stats.csv"))
+        scsv_gt = pd.read_csv(eval_dir_gt / "eval_stats.csv")
+        pcsv_gt = pd.read_csv(parallel_eval_dir_gt / "eval_stats.csv")
 
         for col in ["time", "stepwise_performance", "stepwise_target_object"]:
             scsv_gt.drop(columns=col, inplace=True)

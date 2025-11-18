@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 
 import copy
-import os
 from dataclasses import asdict
 
 import numpy as np
@@ -52,9 +51,8 @@ NOTE these experiments do not currently support running with multi-processing,
 therefore ensure you omit the -m flag when running these
 """
 
-model_path_numenta_lab_obj = os.path.join(
-    pretrained_dir,
-    "surf_agent_1lm_numenta_lab_obj/pretrained/",
+model_path_numenta_lab_obj = (
+    pretrained_dir / "surf_agent_1lm_numenta_lab_obj" / "pretrained"
 )
 
 # Evaluation on real-world depth data, but trained on photogrammetry scanned objects

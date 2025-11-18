@@ -81,11 +81,11 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         self.rotation = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
         self.step_num = 0
         self.state = 0
-        self.data_path = data_path
-        if self.data_path is None:
-            self.data_path = os.path.join(os.environ["MONTY_DATA"], "omniglot/python/")
-        data_path = Path(self.data_path)
-        alphabet_path = data_path / "images_background"
+        if data_path is None:
+            self.data_path = Path(os.environ["MONTY_DATA"]) / "omniglot" / "python"
+        else:
+            self.data_path = Path(data_path)
+        alphabet_path = self.data_path / "images_background"
         self.alphabet_names = [a.name for a in sorted(alphabet_path.glob("[!.]*"))]
         self.current_alphabet = self.alphabet_names[0]
         self.character_id = 1
@@ -213,17 +213,17 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         }
 
     def load_new_character_data(self):
-        img_char_dir = os.path.join(
-            self.data_path,
-            "images_background",
-            self.current_alphabet,
-            "character" + str(self.character_id).zfill(2),
+        img_char_dir = (
+            self.data_path
+            / "images_background"
+            / self.current_alphabet
+            / f"character{self.character_id:02d}"
         )
-        stroke_char_dir = os.path.join(
-            self.data_path,
-            "strokes_background",
-            self.current_alphabet,
-            "character" + str(self.character_id).zfill(2),
+        stroke_char_dir = (
+            self.data_path
+            / "strokes_background"
+            / self.current_alphabet
+            / f"character{self.character_id:02d}"
         )
         first_img_char_child = next(Path(img_char_dir).iterdir()).name
         char_img_names = first_img_char_child.split("_")[0]
@@ -283,13 +283,13 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         # the same. Since we don't use this, value doesn't matter much.
         self.rotation = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
         self.state = 0
-        self.data_path = data_path
-        if self.data_path is None:
-            self.data_path = os.path.join(
-                os.environ["MONTY_DATA"], "worldimages/labeled_scenes/"
+        if data_path is None:
+            self.data_path = (
+                Path(os.environ["MONTY_DATA"]) / "worldimages" / "labeled_scenes"
             )
-        data_path = Path(self.data_path)
-        self.scene_names = [a.name for a in sorted(data_path.glob("[!.]*"))]
+        else:
+            self.data_path = Path(data_path)
+        self.scene_names = [a.name for a in sorted(self.data_path.glob("[!.]*"))]
         self.current_scene = self.scene_names[0]
         self.scene_version = 0
 
@@ -474,10 +474,10 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         """
         # Set data paths
         current_depth_path = (
-            self.data_path + f"{self.current_scene}/depth_{self.scene_version}.data"
+            self.data_path / f"{self.current_scene}" / "depth_{self.scene_version}.data"
         )
         current_rgb_path = (
-            self.data_path + f"{self.current_scene}/rgb_{self.scene_version}.png"
+            self.data_path / f"{self.current_scene}" / "rgb_{self.scene_version}.png"
         )
         # Load & process data
         current_rgb_image = self.load_rgb_data(current_rgb_path)
@@ -694,13 +694,13 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
         # Letters are always presented upright
         self.rotation = qt.from_rotation_vector([np.pi / 2, 0.0, 0.0])
         self.state = 0
-        self.data_path = data_path
-        if self.data_path is None:
-            self.data_path = os.path.join(
-                os.environ["MONTY_DATA"], "worldimages/world_data_stream/"
+        if data_path is None:
+            self.data_path = (
+                Path(os.environ["MONTY_DATA"]) / "worldimages" / "world_data_stream"
             )
-        data_path = Path(self.data_path)
-        self.scene_names = [a.name for a in sorted(data_path.glob("[!.]*"))]
+        else:
+            self.data_path = Path(data_path)
+        self.scene_names = [a.name for a in sorted(self.data_path.glob("[!.]*"))]
         self.current_scene = 0
 
         (
@@ -746,8 +746,8 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
         ) = self.get_3d_scene_point_cloud()
 
     def load_new_scene_data(self):
-        current_depth_path = self.data_path + f"depth_{self.current_scene}.data"
-        current_rgb_path = self.data_path + f"rgb_{self.current_scene}.png"
+        current_depth_path = self.data_path / f"depth_{self.current_scene}.data"
+        current_rgb_path = self.data_path / f"rgb_{self.current_scene}.png"
         # Load rgb image
         wait_count = 0
         while not os.path.exists(current_rgb_path):
