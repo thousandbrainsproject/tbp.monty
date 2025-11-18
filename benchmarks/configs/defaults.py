@@ -124,5 +124,5 @@ monty_models_dir = Path(os.getenv("MONTY_MODELS"))
 # v8 : Using separate graph per input channel
 # v9 : Using models trained on 14 unique rotations
 # v10 : Using models trained without the semantic sensor
-# v11 : v10 trained on AWS
+# v11 : v10 trained on standard TBP benchmark infrastructure as of Nov 2025
 pretrained_dir = monty_models_dir.expanduser() / "pretrained_ycb_v11"
