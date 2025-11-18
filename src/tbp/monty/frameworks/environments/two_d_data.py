@@ -474,10 +474,10 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         """
         # Set data paths
         current_depth_path = (
-            self.data_path / f"{self.current_scene}/depth_{self.scene_version}.data"
+            self.data_path / f"{self.current_scene}" / "depth_{self.scene_version}.data"
         )
         current_rgb_path = (
-            self.data_path / f"{self.current_scene}/rgb_{self.scene_version}.png"
+            self.data_path / f"{self.current_scene}" / "rgb_{self.scene_version}.png"
         )
         # Load & process data
         current_rgb_image = self.load_rgb_data(current_rgb_path)

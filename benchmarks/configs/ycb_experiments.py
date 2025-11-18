@@ -114,7 +114,9 @@ test_rotations_all = get_cube_face_and_corner_views_rotations()
 # runs with all 77 YCB objects.
 test_rotations_3 = test_rotations_all[:3]
 
-model_path_10distinctobj = pretrained_dir / "surf_agent_1lm_10distinctobj/pretrained/"
+model_path_10distinctobj = (
+    pretrained_dir / "surf_agent_1lm_10distinctobj" / "pretrained"
+)
 
 dist_agent_model_path_10distinctobj = (
     pretrained_dir / "supervised_pre_training_base" / "pretrained"
