@@ -17,6 +17,7 @@ pytest.importorskip(
 )
 
 import copy
+import os
 import shutil
 import tempfile
 import unittest
@@ -161,7 +162,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         """Code that gets executed before every test."""
         super().setUp()
 
-        self.output_dir = Path(tempfile.mkdtemp())
+        self.output_dir = tempfile.mkdtemp()
         self.compositional_save_path = tempfile.mkdtemp()
 
         base = dict(
@@ -744,14 +745,14 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             pprint("...training...")
             exp.train()
             pprint("...loading and checking train statistics...")
-            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
+            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
             self.check_train_results(train_stats)
 
             pprint("...evaluating...")
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
 
         self.check_eval_results(eval_stats)
 
@@ -763,7 +764,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             pprint("...training...")
             exp.train()
             pprint("...loading and checking train statistics...")
-            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
+            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
 
             self.check_train_results(train_stats)
 
@@ -771,7 +772,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
 
         self.check_eval_results(eval_stats)
 
@@ -784,7 +785,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             exp.train()
             pprint("...loading and checking train statistics...")
 
-            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
+            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
 
             self.check_train_results(train_stats)
 
@@ -792,7 +793,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
 
         self.check_eval_results(eval_stats)
 
@@ -806,8 +807,10 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         # Create a separate experiment for evaluation to mimic the us case of re-running
         # eval episodes from a pretrained model
         eval_cfg_1 = copy.deepcopy(config)
-        # path to latest checkpoint
-        eval_cfg_1["experiment_args"].model_name_or_path = exp.output_dir / "2"
+        eval_cfg_1["experiment_args"].model_name_or_path = os.path.join(
+            exp.output_dir,
+            "2",  # latest checkpoint
+        )
         with MontyObjectRecognitionExperiment(eval_cfg_1) as eval_exp_1:
             # TODO: update so it only runs one episode
             pprint("...evaluating (first time) ...")
@@ -847,9 +850,9 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         ###
         # Check that basic csv stats are the same
         ###
-        original_eval_stats_file = eval_exp_1.output_dir / "eval_stats.csv"
-        new_eval_stats_file = (
-            eval_exp_1.output_dir / "eval_episode_0_rerun" / "eval_stats.csv"
+        original_eval_stats_file = os.path.join(eval_exp_1.output_dir, "eval_stats.csv")
+        new_eval_stats_file = os.path.join(
+            eval_exp_1.output_dir, "eval_episode_0_rerun", "eval_stats.csv"
         )
 
         original_stats = pd.read_csv(original_eval_stats_file)
@@ -865,9 +868,13 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         ###
 
         # TODO: Once json file i/o code has been updated, only load single episode
-        original_json_file = eval_exp_1.output_dir / "detailed_run_stats.json"
-        new_json_file = (
-            eval_exp_1.output_dir / "eval_episode_0_rerun" / "detailed_run_stats.json"
+        original_json_file = os.path.join(
+            eval_exp_1.output_dir, "detailed_run_stats.json"
+        )
+        new_json_file = os.path.join(
+            eval_exp_1.output_dir,
+            "eval_episode_0_rerun",
+            "detailed_run_stats.json",
         )
 
         original_detailed_stats = deserialize_json_chunks(original_json_file)
@@ -897,8 +904,10 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         # Create a separate experiment for evaluation to mimic the us case of re-running
         # eval episodes from a pretrained model
         eval_cfg_1 = copy.deepcopy(config)
-        # path to latest checkpoint
-        eval_cfg_1["experiment_args"].model_name_or_path = exp.output_dir / "2"
+        eval_cfg_1["experiment_args"].model_name_or_path = os.path.join(
+            exp.output_dir,
+            "2",  # latest checkpoint
+        )
         with MontyObjectRecognitionExperiment(eval_cfg_1) as eval_exp_1:
             pprint("...evaluating (first time) ...")
             eval_exp_1.evaluate()
@@ -946,9 +955,9 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         ###
         # Check that basic csv stats are the same
         ###
-        original_eval_stats_file = eval_exp_1.output_dir / "eval_stats.csv"
-        new_eval_stats_file = (
-            eval_exp_1.output_dir / "eval_rerun_episodes" / "eval_stats.csv"
+        original_eval_stats_file = os.path.join(eval_exp_1.output_dir, "eval_stats.csv")
+        new_eval_stats_file = os.path.join(
+            eval_exp_1.output_dir, "eval_rerun_episodes", "eval_stats.csv"
         )
 
         original_stats = pd.read_csv(original_eval_stats_file)
@@ -964,9 +973,13 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         ###
 
         # TODO: Once json file i/o code has been updated, only load single episode
-        original_json_file = eval_exp_1.output_dir / "detailed_run_stats.json"
-        new_json_file = (
-            eval_exp_1.output_dir / "eval_rerun_episodes" / "detailed_run_stats.json"
+        original_json_file = os.path.join(
+            eval_exp_1.output_dir, "detailed_run_stats.json"
+        )
+        new_json_file = os.path.join(
+            eval_exp_1.output_dir,
+            "eval_rerun_episodes",
+            "detailed_run_stats.json",
         )
 
         original_detailed_stats = deserialize_json_chunks(original_json_file)
@@ -997,8 +1010,10 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         # Create a separate experiment for evaluation to mimic the us case of re-running
         # eval episodes from a pretrained model
         eval_cfg_1 = copy.deepcopy(config)
-        # path to latest checkpoint
-        eval_cfg_1["experiment_args"].model_name_or_path = exp.output_dir / "2"
+        eval_cfg_1["experiment_args"].model_name_or_path = os.path.join(
+            exp.output_dir,
+            "2",  # latest checkpoint
+        )
         with MontyObjectRecognitionExperiment(eval_cfg_1) as eval_exp_1:
             pprint("...evaluating (first time) ...")
             eval_exp_1.evaluate()
@@ -1029,9 +1044,9 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         ###
         # Check that basic csv stats are the same
         ###
-        original_eval_stats_file = eval_exp_1.output_dir / "eval_stats.csv"
-        new_eval_stats_file = (
-            eval_exp_1.output_dir / "eval_rerun_episodes" / "eval_stats.csv"
+        original_eval_stats_file = os.path.join(eval_exp_1.output_dir, "eval_stats.csv")
+        new_eval_stats_file = os.path.join(
+            eval_exp_1.output_dir, "eval_rerun_episodes", "eval_stats.csv"
         )
 
         original_stats = pd.read_csv(original_eval_stats_file)
@@ -1047,9 +1062,13 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         ###
 
         # TODO: Once json file i/o code has been updated, only load single episode
-        original_json_file = eval_exp_1.output_dir / "detailed_run_stats.json"
-        new_json_file = (
-            eval_exp_1.output_dir / "eval_rerun_episodes" / "detailed_run_stats.json"
+        original_json_file = os.path.join(
+            eval_exp_1.output_dir, "detailed_run_stats.json"
+        )
+        new_json_file = os.path.join(
+            eval_exp_1.output_dir,
+            "eval_rerun_episodes",
+            "detailed_run_stats.json",
         )
 
         original_detailed_stats = deserialize_json_chunks(original_json_file)
@@ -1080,9 +1099,10 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         # We are training for 3 epochs by default, load most recent indexing from 0
         print("Loading a saved checkpoint")
         cfg2 = copy.deepcopy(self.fixed_actions_feat)
-        output_dir = Path(config["logging_config"].output_dir)
-        # path to latest checkpoint
-        cfg2["experiment_args"].model_name_or_path = output_dir / "2"
+        cfg2["experiment_args"].model_name_or_path = os.path.join(
+            config["logging_config"].output_dir,
+            "2",  # latest checkpoint
+        )
         with MontyObjectRecognitionExperiment(cfg2) as exp2:
             graph_memory_1 = exp.model.learning_modules[
                 0
@@ -1130,7 +1150,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                     exp.post_epoch()
 
         pprint("...check time out logging...")
-        train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
+        train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
         self.assertEqual(
             train_stats["primary_performance"][2],
             "pose_time_out",
@@ -1187,7 +1207,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             exp.post_epoch()
 
         pprint("...checking run stats...")
-        train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
+        train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
         for i in [0, 1]:
             self.assertEqual(
                 train_stats["primary_performance"][i],
@@ -1343,14 +1363,14 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             exp.train()
             pprint("...loading and checking train statistics...")
 
-            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
+            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
             self.check_train_results(train_stats)
 
             pprint("...evaluating...")
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
         self.check_eval_results(eval_stats)
 
     def gm_learn_object(
@@ -1706,14 +1726,14 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             pprint("...training...")
             exp.train()
 
-            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
+            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
             self.check_multilm_train_results(train_stats, num_lms=5, min_done=3)
 
             pprint("...evaluating...")
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
         self.check_multilm_eval_results(
             eval_stats, num_lms=5, min_done=3, num_episodes=1
         )
@@ -1760,7 +1780,7 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             exp.post_epoch()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
+        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
         # Just testing 1 episode here. Somehow the second rotation doesn't get
         # recognized. Probably just some parameter setting due to flaws in old
         # LM but didn't want to dig too deep into that for now.

@@ -10,7 +10,6 @@
 
 import logging
 import os
-from pathlib import Path
 
 from tools.github_readme_sync.colors import BLUE, CYAN, GRAY, RESET, WHITE
 from tools.github_readme_sync.hierarchy import INDENTATION_UNIT
@@ -124,7 +123,7 @@ def print_child(level: int, doc: dict, created: bool):
 
 
 def load_doc(file_path: str, category_slug: str, child: dict):
-    file_path = Path(file_path) / category_slug / f"{child['slug']}.md"
+    file_path = os.path.join(file_path, category_slug, f"{child['slug']}.md")
     if not os.path.exists(file_path):
         raise ValueError(f"File {file_path} does not exist")
 

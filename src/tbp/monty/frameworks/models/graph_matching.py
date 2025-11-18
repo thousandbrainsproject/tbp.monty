@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import ClassVar
 
 import numpy as np
@@ -188,7 +189,7 @@ class MontyForGraphMatching(MontyBase):
     def load_state_dict_from_parallel(self, parallel_dirs, save=False):
         lm_dict = {}
         for pdir in parallel_dirs:
-            state_dict = torch.load(pdir / "model.pt")
+            state_dict = torch.load(os.path.join(pdir, "model.pt"))
             for lm in state_dict["lm_dict"].keys():
                 if lm not in lm_dict:
                     lm_dict[lm] = dict(
@@ -215,10 +216,10 @@ class MontyForGraphMatching(MontyBase):
         # Everything but lm dict for saving new model
         new_state_dict = {k: v for k, v in state_dict.items() if k != "lm_dict"}
         new_state_dict["lm_dict"] = lm_dict
-        load_dir = parallel_dirs[0].parent
+        load_dir = os.path.dirname(parallel_dirs[0])
 
         if save:
-            torch.save(new_state_dict, load_dir / "model.pt")
+            torch.save(new_state_dict, os.path.join(load_dir, "model.pt"))
 
         self.load_state_dict(new_state_dict)
 

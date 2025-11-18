@@ -8,6 +8,7 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -21,7 +22,7 @@ class TestExport(unittest.TestCase):
     def setUp(self):
         # Create a temporary directory for the test
         self.test_dir = tempfile.TemporaryDirectory()
-        self.test_output_dir = Path(self.test_dir.name)
+        self.test_output_dir = self.test_dir.name
 
     def tearDown(self):
         # Clean up the temporary directory after the test
@@ -68,18 +69,22 @@ class TestExport(unittest.TestCase):
         self.assertEqual(hierarchy, expected_hierarchy)
 
         # Assert that the directory structure is created as expected
-        self.assertTrue((self.test_output_dir / "category-1").is_dir())
-        self.assertTrue((self.test_output_dir / "category-2").is_dir())
+        self.assertTrue(Path(os.path.join(self.test_output_dir, "category-1")).is_dir())
+        self.assertTrue(Path(os.path.join(self.test_output_dir, "category-2")).is_dir())
 
         # Assert that the document files are created as expected
-        self.assertTrue((self.test_output_dir / "category-1" / "doc-1.md").is_file())
-        self.assertTrue((self.test_output_dir / "category-2" / "doc-2.md").is_file())
+        self.assertTrue(
+            Path(os.path.join(self.test_output_dir, "category-1", "doc-1.md")).is_file()
+        )
+        self.assertTrue(
+            Path(os.path.join(self.test_output_dir, "category-2", "doc-2.md")).is_file()
+        )
 
         # Assert the content of the files is correct
-        with open(self.test_output_dir / "category-1" / "doc-1.md") as f:
+        with open(os.path.join(self.test_output_dir, "category-1", "doc-1.md")) as f:
             self.assertEqual(f.read(), "Content of Doc 1")
 
-        with open(self.test_output_dir / "category-2" / "doc-2.md") as f:
+        with open(os.path.join(self.test_output_dir, "category-2", "doc-2.md")) as f:
             self.assertEqual(f.read(), "Content of Doc 2")
 
 

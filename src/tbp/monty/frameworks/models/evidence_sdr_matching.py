@@ -11,7 +11,6 @@
 import logging
 import os
 import shutil
-from pathlib import Path
 
 import numpy as np
 from tqdm import tqdm
@@ -47,7 +46,7 @@ class LoggerSDR:
             logger.warning("EvidenceSDR log path is set to None.")
             return
 
-        path = Path(path).expanduser()
+        path = os.path.expanduser(path)
 
         # overwrite existing logs
         if os.path.exists(path):
@@ -76,7 +75,7 @@ class LoggerSDR:
         """
         if hasattr(self, "path"):
             np.save(
-                self.path / f"episode_{self.episode:03d}.npy",
+                os.path.join(self.path, f"episode_{str(self.episode).zfill(3)}.npy"),
                 data,
             )
             self.episode += 1

@@ -9,6 +9,7 @@
 # https://opensource.org/licenses/MIT.
 
 import logging
+import os
 
 import torch
 
@@ -125,8 +126,8 @@ class MontyGeneralizationExperiment(MontyObjectRecognitionExperiment):
 
     def pre_episode(self):
         """Pre episode where we pass target object to the model for logging."""
-        if "model.pt" not in self.model_path.parts:
-            model_path = self.model_path / "model.pt"
+        if "model.pt" not in self.model_path:
+            model_path = os.path.join(self.model_path, "model.pt")
         state_dict = torch.load(model_path)
         print(f"loading models again from {model_path}")
         self.model.load_state_dict(state_dict)
