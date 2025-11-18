@@ -381,9 +381,9 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
         new_experiment["config"]["train_env_interface_args"].update(
             object_names=[obj for _ in range(len(sampler))]
         )
-        new_experiment["config"]["train_env_interface_args"][
-            "object_init_sampler"
-        ].change_every_episode = True
+        new_experiment["config"]["train_env_interface_args"]["object_init_sampler"][
+            "change_every_episode"
+        ] = True
 
         new_experiments.append(new_experiment)
 
