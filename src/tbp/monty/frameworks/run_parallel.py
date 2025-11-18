@@ -353,14 +353,14 @@ def post_parallel_train(configs: list[Mapping], base_dir: str) -> None:
         saved_model_file = os.path.join(output_dir, "model.pt")
         torch.save(exp.model.state_dict(), saved_model_file)
 
-        if pretraining:
-            pdirs = [os.path.dirname(i) for i in parallel_dirs]
-        else:
-            pdirs = parallel_dirs
+    if pretraining:
+        pdirs = [os.path.dirname(i) for i in parallel_dirs]
+    else:
+        pdirs = parallel_dirs
 
-        for pdir in pdirs:
-            print(f"Removing directory: {pdir}")
-            shutil.rmtree(pdir)
+    for pdir in pdirs:
+        print(f"Removing directory: {pdir}")
+        shutil.rmtree(pdir)
 
 
 def run_episodes_parallel(
