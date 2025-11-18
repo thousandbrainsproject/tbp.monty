@@ -13,7 +13,7 @@ defaults:
   - config/environment/two_lm_stacked_distant_mount_habitat@config.env_interface_config
   - config/environment/init_args/clear_env_init_args@config.env_interface_config
   - config/environment/init_args/two_lm_distant_stacked_mount@config.env_interface_config.env_init_args
-  - config/environment_interface/clear_train_env_interface_args@config.train_env_interface_args
+  - config/environment_interface/clear_train_env_interface_args@config
   - config/environment_interface/per_object@config.train_env_interface_args
   - config/environment_interface/logos_on_objs/flat_objects_without_logos@config.train_env_interface_args.object_names
 
