@@ -23,6 +23,10 @@ config:
   monty_config:
     monty_args:
       num_exploratory_steps: 500
+    motor_system_config:
+      motor_system_args:
+        policy_args:
+          fixed_amount: 5
     learning_module_configs:
       learning_module_0:
         learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
