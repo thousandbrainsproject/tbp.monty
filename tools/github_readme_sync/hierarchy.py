@@ -114,8 +114,8 @@ def check_hierarchy_file(folder: str):
             parent_stack[-1]["children"].append(new_doc)
             parent_stack.append(new_doc)
 
-            full_path = folder / ("/".join(el["slug"] for el in parent_stack) + ".md")
-            errors = sanity_check(full_path)
+            slug_path = folder.joinpath(*[el["slug"] for el in parent_stack])
+            errors = sanity_check(slug_path.with_suffix(".md"))
             if errors:
                 link_check_errors.extend(errors)
 
