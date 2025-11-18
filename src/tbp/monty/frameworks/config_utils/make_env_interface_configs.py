@@ -419,7 +419,7 @@ def get_omniglot_train_env_interface(num_versions, alphabet_ids, data_path=None)
     if data_path is None:
         data_path = Path(os.environ["MONTY_DATA"]) / "omniglot/python/"
     if os.path.exists(data_path):
-        images_path = data_path / "images_background"
+        images_path = Path(data_path) / "images_background"
         alphabet_folders = sorted(images_path.glob("[!.]*"))
     else:
         # Use placeholder here to pass Circle CI config check.
@@ -465,7 +465,7 @@ def get_omniglot_eval_env_interface(
     if data_path is None:
         data_path = Path(os.environ["MONTY_DATA"]) / "omniglot/python"
     if os.path.exists(data_path):
-        images_path = data_path / "images_background"
+        images_path = Path(data_path) / "images_background"
         alphabet_folders = sorted(images_path.glob("[!.]*"))
     else:
         # Use placeholder here to pass Circle CI config check.

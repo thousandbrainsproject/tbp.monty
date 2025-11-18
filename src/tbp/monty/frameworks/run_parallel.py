@@ -201,8 +201,8 @@ def post_parallel_log_cleanup(filenames, outfile, cat_fn):
             os.remove(f)
 
 
-def post_parallel_profile_cleanup(parallel_dirs: Iterable[Path], base_dir: Path, mode):
-    profile_dirs = [i / "profile" for i in parallel_dirs]
+def post_parallel_profile_cleanup(parallel_dirs, base_dir, mode):
+    profile_dirs = [Path(i) / "profile" for i in parallel_dirs]
 
     episode_csvs = []
     setup_csvs = []
@@ -226,28 +226,27 @@ def post_parallel_profile_cleanup(parallel_dirs: Iterable[Path], base_dir: Path,
     post_parallel_log_cleanup(overall_csvs, overall_outfile, cat_fn=cat_csv)
 
 
-def move_reproducibility_data(base_dir: Path, parallel_dirs: Iterable[Path]):
-    outdir = base_dir / "reproduce_episode_data"
+def move_reproducibility_data(base_dir, parallel_dirs):
+    outdir = Path(base_dir) / "reproduce_episode_data"
     if os.path.exists(outdir):
         shutil.rmtree(outdir)
 
     os.makedirs(outdir)
-    repro_dirs = [pdir / "reproduce_episode_data" for pdir in parallel_dirs]
+    repro_dirs = [Path(pdir) / "reproduce_episode_data" for pdir in parallel_dirs]
 
     # Headache to accont for the fact that everyone is episode 0
     for cnt, rdir in enumerate(repro_dirs):
         episode0actions = rdir / "eval_episode_0_actions.jsonl"
         episode0target = rdir / "eval_episode_0_target.txt"
-        assert episode0actions.exists()
-        assert episode0target.exists()
+        assert episode0actions.exists() and episode0target.exists()
         episode0actions.rename(outdir / f"eval_episode_{cnt}_actions.jsonl")
         episode0target.rename(outdir / f"eval_episode_{cnt}_target.txt")
 
 
-def collect_detailed_episodes_names(parallel_dirs: Iterable[Path]):
+def collect_detailed_episodes_names(parallel_dirs):
     filenames = []
     for pdir in parallel_dirs:
-        filenames.extend(list((pdir / "detailed_run_stats").glob("*.json")))
+        filenames.extend(list((Path(pdir) / "detailed_run_stats").glob("*.json")))
     return filenames
 
 
