@@ -361,7 +361,10 @@ class EmbodiedDataTest(unittest.TestCase):
         expected_keys = ["depth", "rgba", "pixel_loc"]
 
         data_path = (
-            Path(__file__).parent / "resources/dataloader_test_images/0_numenta_mug"
+            Path(__file__).parent
+            / "resources"
+            / "dataloader_test_images"
+            / "0_numenta_mug"
         )
 
         base_policy_config_rel = make_base_policy_config(

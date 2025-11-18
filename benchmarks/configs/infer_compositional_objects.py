@@ -63,12 +63,14 @@ N_EVAL_EPOCHS = len(test_rotations_all)
 
 model_path_monolithic_models_lvl1 = (
     pretrained_dir
-    / "supervised_pre_training_objects_with_logos_lvl1_monolithic_models/pretrained/"
+    / "supervised_pre_training_objects_with_logos_lvl1_monolithic_models"
+    / "pretrained"
 )
 
 model_path_compositional_models_lvl1 = (
     pretrained_dir
-    / "supervised_pre_training_objects_with_logos_lvl1_comp_models/pretrained/"
+    / "supervised_pre_training_objects_with_logos_lvl1_comp_models"
+    / "pretrained"
 )
 
 model_path_compositional_models_lvl1_resampling = (
@@ -79,17 +81,20 @@ model_path_compositional_models_lvl1_resampling = (
 
 model_path_compositional_models_lvl2 = (
     pretrained_dir
-    / "supervised_pre_training_objects_with_logos_lvl2_comp_models/pretrained/"
+    / "supervised_pre_training_objects_with_logos_lvl2_comp_models"
+    / "pretrained"
 )
 
 model_path_compositional_models_lvl3 = (
     pretrained_dir
-    / "supervised_pre_training_objects_with_logos_lvl3_comp_models/pretrained/"
+    / "supervised_pre_training_objects_with_logos_lvl3_comp_models"
+    / "pretrained"
 )
 
 model_path_compositional_models_lvl4 = (
     pretrained_dir
-    / "supervised_pre_training_objects_with_logos_lvl4_comp_models/pretrained/"
+    / "supervised_pre_training_objects_with_logos_lvl4_comp_models"
+    / "pretrained"
 )
 
 

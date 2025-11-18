@@ -117,19 +117,19 @@ test_rotations_3 = test_rotations_all[:3]
 model_path_10distinctobj = pretrained_dir / "surf_agent_1lm_10distinctobj/pretrained/"
 
 dist_agent_model_path_10distinctobj = (
-    pretrained_dir / "supervised_pre_training_base/pretrained/"
+    pretrained_dir / "supervised_pre_training_base" / "pretrained"
 )
 
-model_path_10simobj = pretrained_dir / "surf_agent_1lm_10similarobj/pretrained/"
+model_path_10simobj = pretrained_dir / "surf_agent_1lm_10similarobj" / "pretrained"
 
 model_path_5lms_10distinctobj = (
-    pretrained_dir / "supervised_pre_training_5lms/pretrained/"
+    pretrained_dir / "supervised_pre_training_5lms" / "pretrained"
 )
 
-model_path_1lm_77obj = pretrained_dir / "surf_agent_1lm_77obj/pretrained/"
+model_path_1lm_77obj = pretrained_dir / "surf_agent_1lm_77obj" / "pretrained"
 
 model_path_5lms_77obj = (
-    pretrained_dir / "supervised_pre_training_5lms_all_objects/pretrained/"
+    pretrained_dir / "supervised_pre_training_5lms_all_objects" / "pretrained"
 )
 
 # Default configs for surface policy which has a different desired object distance

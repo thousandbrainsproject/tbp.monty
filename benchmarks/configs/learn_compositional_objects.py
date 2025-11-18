@@ -184,7 +184,9 @@ supervised_pre_training_logos_after_flat_objects.update(
         n_train_epochs=len(LOGO_POSITIONS) * len(LOGO_ROTATIONS),
         supervised_lm_ids=["learning_module_0"],
         model_name_or_path=(
-            fe_pretrain_dir / "supervised_pre_training_flat_objects_wo_logos/pretrained"
+            fe_pretrain_dir
+            / "supervised_pre_training_flat_objects_wo_logos"
+            / "pretrained"
         ),
     ),
     monty_config=TwoLMStackedMontyConfig(
@@ -218,7 +220,8 @@ supervised_pre_training_curved_objects_after_flat_and_logo.update(
         supervised_lm_ids=["learning_module_0"],
         model_name_or_path=(
             fe_pretrain_dir
-            / "supervised_pre_training_logos_after_flat_objects/pretrained/"
+            / "supervised_pre_training_logos_after_flat_objects"
+            / "pretrained"
         ),
     ),
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
@@ -248,7 +251,8 @@ supervised_pre_training_objects_with_logos_lvl1_monolithic_models.update(
         n_train_epochs=N_TRAIN_EPOCHS,
         model_name_or_path=(
             fe_pretrain_dir
-            / "supervised_pre_training_logos_after_flat_objects/pretrained/"
+            / "supervised_pre_training_logos_after_flat_objects"
+            / "pretrained"
         ),
     ),
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
@@ -270,7 +274,8 @@ supervised_pre_training_objects_with_logos_lvl1_comp_models.update(
         n_train_epochs=N_TRAIN_EPOCHS,
         model_name_or_path=(
             fe_pretrain_dir
-            / "supervised_pre_training_logos_after_flat_objects/pretrained/"
+            / "supervised_pre_training_logos_after_flat_objects"
+            / "pretrained"
         ),
         supervised_lm_ids=["learning_module_1"],
         min_lms_match=2,
@@ -313,7 +318,8 @@ supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling.update(
 
 MODEL_PATH_WITH_ALL_CHILD_OBJECTS = (
     fe_pretrain_dir
-    / "supervised_pre_training_curved_objects_after_flat_and_logo/pretrained/"
+    / "supervised_pre_training_curved_objects_after_flat_and_logo"
+    / "pretrained"
 )
 
 supervised_pre_training_objects_with_logos_lvl2_comp_models = copy.deepcopy(

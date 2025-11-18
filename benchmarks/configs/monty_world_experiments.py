@@ -52,7 +52,7 @@ therefore ensure you omit the -m flag when running these
 """
 
 model_path_numenta_lab_obj = (
-    pretrained_dir / "surf_agent_1lm_numenta_lab_obj/pretrained"
+    pretrained_dir / "surf_agent_1lm_numenta_lab_obj" / "pretrained"
 )
 
 # Evaluation on real-world depth data, but trained on photogrammetry scanned objects

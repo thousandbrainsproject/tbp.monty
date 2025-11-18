@@ -82,7 +82,7 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         self.step_num = 0
         self.state = 0
         if data_path is None:
-            self.data_path = Path(os.environ["MONTY_DATA"]) / "omniglot/python"
+            self.data_path = Path(os.environ["MONTY_DATA"]) / "omniglot" / "python"
         else:
             self.data_path = Path(data_path)
         alphabet_path = self.data_path / "images_background"
@@ -285,7 +285,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         self.state = 0
         if data_path is None:
             self.data_path = (
-                Path(os.environ["MONTY_DATA"]) / "worldimages/labeled_scenes"
+                Path(os.environ["MONTY_DATA"]) / "worldimages" / "labeled_scenes"
             )
         else:
             self.data_path = Path(data_path)
@@ -696,7 +696,7 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
         self.state = 0
         if data_path is None:
             self.data_path = (
-                Path(os.environ["MONTY_DATA"]) / "worldimages/world_data_stream"
+                Path(os.environ["MONTY_DATA"]) / "worldimages" / "world_data_stream"
             )
         else:
             self.data_path = Path(data_path)

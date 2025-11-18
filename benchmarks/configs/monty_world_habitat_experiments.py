@@ -42,7 +42,7 @@ from tbp.monty.simulators.habitat.configs import (
 test_rotations_one = [[0, 0, 0]]
 
 model_path_numenta_lab_obj = (
-    pretrained_dir / "surf_agent_1lm_numenta_lab_obj/pretrained"
+    pretrained_dir / "surf_agent_1lm_numenta_lab_obj" / "pretrained"
 )
 
 # More challenging evaluation on photogrammetry objects; serves as a baseline

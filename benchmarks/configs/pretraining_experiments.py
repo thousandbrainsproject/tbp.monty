@@ -67,7 +67,7 @@ monty_models_dir = Path(os.getenv("MONTY_MODELS", ""))
 fe_pretrain_dir = monty_models_dir.expanduser() / "pretrained_ycb_v10"
 
 pre_surf_agent_visual_training_model_path = (
-    fe_pretrain_dir / "supervised_pre_training_all_objects/pretrained/"
+    fe_pretrain_dir / "supervised_pre_training_all_objects" / "pretrained"
 )
 
 supervised_pre_training_base = dict(

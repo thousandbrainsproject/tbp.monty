@@ -89,7 +89,7 @@ class LoggingConfig:
     python_log_level: str = "INFO"
     python_log_to_file: bool = True
     python_log_to_stderr: bool = True
-    output_dir: Path = monty_logs_dir / "projects/monty_runs"
+    output_dir: Path = monty_logs_dir / "projects" / "monty_runs"
     run_name: str = ""
     resume_wandb_run: bool | str = False
     wandb_id: str = field(default_factory=wandb.util.generate_id)
@@ -146,7 +146,7 @@ class DetailedWandbLoggingConfig(LoggingConfig):
 
 @dataclass
 class EvalLoggingConfig(LoggingConfig):
-    output_dir: Path = monty_logs_dir / "projects/feature_eval_runs/logs"
+    output_dir: Path = monty_logs_dir / "projects" / "feature_eval_runs" / "logs"
     monty_handlers: list = field(
         default_factory=lambda: [
             BasicCSVStatsHandler,
@@ -166,7 +166,7 @@ class EvalLoggingConfig(LoggingConfig):
 
 @dataclass
 class EvalEvidenceLMLoggingConfig(LoggingConfig):
-    output_dir: Path = monty_logs_dir / "projects/evidence_eval_runs/logs"
+    output_dir: Path = monty_logs_dir / "projects" / "evidence_eval_runs" / "logs"
     monty_handlers: list = field(
         default_factory=lambda: [
             BasicCSVStatsHandler,
@@ -189,7 +189,7 @@ class ParallelEvidenceLMLoggingConfig(LoggingConfig):
     # Config useful for running parallel experiments
     # on lambda-node, i.e. has appropriate wandb flags
     # and parsimonious Python logging
-    output_dir: Path = monty_logs_dir / "projects/evidence_eval_runs/logs"
+    output_dir: Path = monty_logs_dir / "projects" / "evidence_eval_runs" / "logs"
     monty_handlers: list = field(
         default_factory=lambda: [
             BasicCSVStatsHandler,
