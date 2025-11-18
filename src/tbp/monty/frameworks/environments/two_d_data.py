@@ -36,6 +36,8 @@ __all__ = [
     "SaccadeOnImageEnvironment",
     "SaccadeOnImageFromStreamEnvironment",
 ]
+
+
 class TwoDDataActionSpace(tuple, ActionSpace):
     """Action space for 2D data environments."""
 
