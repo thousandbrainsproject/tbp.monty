@@ -379,7 +379,7 @@ class MotorSystemConfigInformedGoalStateDriven:
 
 @dataclass
 class MotorSystemConfigInformedGoalStateDrivenFartherAway:
-    # conf/experiment/config/monty/motor_system/informed_goal_state_driven_farther_away.yaml
+    # conf/experiment/config/monty/motor_system/informed_goal_state_driven_farther_away.yaml  # noqa: E501
     motor_system_class: MotorSystem = MotorSystem
     motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
@@ -399,7 +399,7 @@ class MotorSystemConfigInformedGoalStateDrivenFartherAway:
 # hypothesis-testing jumps
 @dataclass
 class MotorSystemConfigCurInformedSurfaceGoalStateDriven:
-    # conf/experiment/config/monty/motor_system/cur_informed_surface_goal_state_driven.yaml
+    # conf/experiment/config/monty/motor_system/cur_informed_surface_goal_state_driven.yaml  # noqa: E501
     motor_system_class: MotorSystem = MotorSystem
     motor_system_args: dict | Dataclass = field(
         default_factory=lambda: dict(
