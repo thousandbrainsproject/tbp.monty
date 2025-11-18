@@ -41,6 +41,13 @@ def create_cmd_parser(experiments: list[str]):
         help="Set logging levels in habitat to quiet",
     )
     parser.add_argument(
+        "-s",
+        "--speedrun",
+        action="store_true",
+        default=False,
+        help="Run a quick version of the experiment for testing purposes",
+    )
+    parser.add_argument(
         "-p",
         "--print_config",
         action="store_true",

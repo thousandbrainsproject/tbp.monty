@@ -22,6 +22,7 @@ sys.path.insert(
 
 from benchmarks.configs.load import load_configs
 from benchmarks.configs.names import NAMES
+from tbp.monty.frameworks.config_utils import shrink_config
 from tbp.monty.frameworks.config_utils.cmd_parser import create_cmd_parser
 from tbp.monty.frameworks.run_env import setup_env
 
@@ -41,4 +42,13 @@ if __name__ == "__main__":
 
     CONFIGS = load_configs(experiments)
 
-    main(all_configs=CONFIGS, experiments=cmd_args.experiments)
+    if cmd_args.speedrun:
+        configs = {
+            env: shrink_config(config)
+            for env, config in CONFIGS.items()
+            if env in experiments
+        }
+    else:
+        configs = CONFIGS
+
+    main(all_configs=configs, experiments=cmd_args.experiments)
