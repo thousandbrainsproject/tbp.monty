@@ -62,7 +62,7 @@ N_TRAIN_EPOCHS = len(train_rotations_all)
 monty_models_dir = os.getenv("MONTY_MODELS", "")
 
 fe_pretrain_dir = os.path.expanduser(
-    os.path.join(monty_models_dir, "pretrained_ycb_v10")
+    os.path.join(monty_models_dir, "pretrained_ycb_v11")
 )
 
 two_stacked_constrained_lms_config = dict(
