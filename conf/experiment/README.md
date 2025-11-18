@@ -1,3 +1,7 @@
+> _CAUTION_
+>
+> Ensure that `config.logging.output_dir` for each pretraining experiment is set to where you want the model to be written to.
+
 ## YCB Experiments
 
 To generate models for the YCB experiments, run the following pretraining:
