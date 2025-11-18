@@ -76,7 +76,7 @@ class LoggerSDR:
         """
         if hasattr(self, "path"):
             np.save(
-                self.path / f"episode_{str(self.episode).zfill(3)}.npy",
+                self.path / f"episode_{self.episode:03d}.npy",
                 data,
             )
             self.episode += 1
