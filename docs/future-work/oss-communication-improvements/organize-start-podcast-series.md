@@ -43,10 +43,8 @@ We  would like to organize and start a podcast series that covers the Thousand B
 ## Interviews
 - Notable authors
 - Neurologists
-- Futurologists
-- AI scientists
-- Ethicists
-- Niels / Viviane on the research roadmap
+- Researchers in related fields
+- TBP team members on various aspects of the project
 - Case studies interviewing people who use our platform
 
 
