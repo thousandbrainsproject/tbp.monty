@@ -440,11 +440,11 @@ def get_omniglot_train_env_interface(num_versions, alphabet_ids, data_path=None)
         characters_in_a = alphabet_folders[a_idx].iterdir()
         for c_idx, char_path in enumerate(sorted(characters_in_a)):
             versions_of_char = list(char_path.iterdir())
-            for v_idx in range(len(versions_of_char)):
-                if v_idx < num_versions:
-                    all_alphabet_idx.append(a_idx)
-                    all_character_idx.append(c_idx + 1)
-                    all_version_idx.append(v_idx + 1)
+            available_versions = min(num_versions, len(versions_of_char))
+            for v_idx in range(available_versions):
+                all_alphabet_idx.append(a_idx)
+                all_character_idx.append(c_idx + 1)
+                all_version_idx.append(v_idx + 1)
 
     return OmniglotEnvironmentInterfaceArgs(
         alphabets=all_alphabet_idx,
@@ -491,11 +491,11 @@ def get_omniglot_eval_env_interface(
                 versions_of_char = list(char_path.iterdir())
                 num_versions = len(versions_of_char) - start_at_version
 
-            for v_idx in range(num_versions + start_at_version):
-                if v_idx >= start_at_version:
-                    all_alphabet_idx.append(a_idx)
-                    all_character_idx.append(c_idx + 1)
-                    all_version_idx.append(v_idx + 1)
+            for version in range(num_versions):
+                v_idx = start_at_version + version
+                all_alphabet_idx.append(a_idx)
+                all_character_idx.append(c_idx + 1)
+                all_version_idx.append(v_idx + 1)
 
     return OmniglotEnvironmentInterfaceArgs(
         alphabets=all_alphabet_idx,
