@@ -9,7 +9,6 @@ These are the things we would like to do and you can help us with:
 - [Better Website Platform](oss-communication-improvements/better-website-platform.md)
 - [Build a Tutorial](oss-communication-improvements/build-a-tutorial.md)
 - [Find Forum Questions Themes & Improve Docs](oss-communication-improvements/find-forum-questions-themes-improve-docs.md)
-- [Find University Departments for Engagement](oss-communication-improvements/find-university-departments-for-engagement.md)
 - [Future Work Widget](oss-communication-improvements/future-work-widget.md)
 - [Insert Glossary Terms in Docs](oss-communication-improvements/insert-glossary-terms-in-docs.md)
 - [Make More Condensed Videos About the Project & Monty](oss-communication-improvements/make-more-condensed-videos-about-the-project-monty.md)

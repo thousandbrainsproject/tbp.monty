@@ -65,6 +65,18 @@ Thank you for being a member of our community. By using Monty, you are already p
 
 If you want to discuss further opportunities, such as mentioning us in a blog post or newspaper article or recording an interview with us, don't hesitate to contact [info@thousandbrains.org](mailto:info@thousandbrains.org).
 
+# Connect Us with Opportunities
+
+If you know of speaking opportunities, academic institutions, research groups, or other venues where the Thousand Brains Project and Monty would be of interest, we'd love your help making connections.
+
+Whether it's a university department, conference, meetup group, or research lab, please feel free to:
+
+- Forward speaking opportunities to us
+- Make introductions on our behalf
+- Connect us with relevant contacts in your network
+
+Please reach out to [info@thousandbrains.org](mailto:info@thousandbrains.org) with any opportunities or introductions.
+
 # Partner With Us
 
 If you are a research lab, government institution, or company and you think a closer collaboration with our team could be mutually beneficial, please reach out to us at [info@thousandbrains.org](mailto:info@thousandbrains.org).
