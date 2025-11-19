@@ -1,0 +1,12 @@
+defaults:
+  - /test/policy/surf_poor_initial_view@
+
+config:
+  train_env_interface_args:
+    object_names:
+      - cubeSolid
+    object_init_sampler:
+      positions:
+        - [-0.1, 1.5, -0.2]
+      rotations:
+        - [45, 45, 45]
