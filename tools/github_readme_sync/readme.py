@@ -18,7 +18,7 @@ import re
 from collections import OrderedDict
 from copy import deepcopy
 from typing import Any
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, quote
 
 import nh3
 import yaml
@@ -472,10 +472,16 @@ class ReadMe:
         delete(f"{PREFIX}/version/v{self.version}")
         logging.info(f"{GREEN}Successfully deleted version {self.version}{RESET}")
 
+    def _should_ignore_video(self, identifier: str, ignore_list: list[str]) -> bool:
+        return identifier in ignore_list
+
+    def _create_video_block(self, block_type: str, block_data: dict[str, Any]) -> str:
+        return f"[block:{block_type}]\n{json.dumps(block_data, indent=2)}\n[/block]"
+
     def convert_cloudinary_videos(self, markdown_text: str) -> str:
         def replace_video(match):
             _, _, cloud_id, version, filename = match.groups()
-            if filename in IGNORE_CLOUDINARY:
+            if self._should_ignore_video(filename, IGNORE_CLOUDINARY):
                 return match.group(0)
             new_url = f"https://res.cloudinary.com/{cloud_id}/video/upload/v{version}/{filename}"
             block = {
@@ -488,14 +494,14 @@ class ReadMe:
                     f"Your browser does not support the video tag.</video></div>"
                 )
             }
-            return f"[block:html]\n{json.dumps(block, indent=2)}\n[/block]"
+            return self._create_video_block("html", block)
 
         return regex_cloudinary_video.sub(replace_video, markdown_text)
 
     def convert_youtube_videos(self, markdown_text: str) -> str:
         def replace_youtube(match):
             title, video_id = match.groups()
-            if video_id in IGNORE_YOUTUBE:
+            if self._should_ignore_video(video_id, IGNORE_YOUTUBE):
                 return match.group(0)
             youtube_url = f"https://www.youtube.com/watch?v={video_id}"
             embed_url = f"https://www.youtube.com/embed/{video_id}?feature=oembed"
@@ -504,10 +510,10 @@ class ReadMe:
                 "html": (
                     f'<iframe class="embedly-embed" '
                     f'src="//cdn.embedly.com/widgets/media.html?'
-                    f"src={embed_url.replace(':', '%3A').replace('/', '%2F')}&"
+                    f"src={quote(embed_url, safe='')}&"
                     f"display_name=YouTube&"
-                    f"url={youtube_url.replace(':', '%3A').replace('/', '%2F')}&"
-                    f"image={thumbnail_url.replace(':', '%3A').replace('/', '%2F')}&"
+                    f"url={quote(youtube_url, safe='')}&"
+                    f"image={quote(thumbnail_url, safe='')}&"
                     f'type=text%2Fhtml&schema=youtube" '
                     f'width="854" height="480" scrolling="no" '
                     f'title="YouTube embed" frameborder="0" '
@@ -523,7 +529,7 @@ class ReadMe:
                 "href": youtube_url,
                 "typeOfEmbed": "youtube",
             }
-            return f"[block:embed]\n{json.dumps(block, indent=2)}\n[/block]"
+            return self._create_video_block("embed", block)
 
         return regex_youtube_link.sub(replace_youtube, markdown_text)
 
