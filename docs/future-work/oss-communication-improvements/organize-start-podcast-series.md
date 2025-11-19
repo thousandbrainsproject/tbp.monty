@@ -47,26 +47,6 @@ We  would like to organize and start a podcast series that covers the Thousand B
 - TBP team members on various aspects of the project
 - Case studies interviewing people who use our platform
 
-
-## Episodic Psychological Phenomena
-- Face ↔ Vase
-- Seeing shapes of color when there are only lines of color
-- Confusion / Curiosity
-- Stroop effect
-- Dyslexia
-- Epilepsy
-- Fallacies
-- Stability of perception
-- Cross-modal perception
-- Why couldn’t I learn two keyboard layouts?
-- Patient SB, blind from birth, given sight through surgery, can’t see objects until they’re felt and then can pick them out visually from that point
-- Phantom limb syndrome
-- Prism glasses that invert your vision
-- "The Zone" in athletics
-- Catching a ball
-- Tapping on a table at the same time as tapping on your leg builds a Hebbian response to the table being tapped
-- Imagining throwing free throws in basketball vs training vs nothing
-
 ## Brain Structures Review
 - Neocortex (probably closer to ten minutes for this one)
 - Hippocampus / Entorhinal Cortex
