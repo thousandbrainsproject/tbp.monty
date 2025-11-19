@@ -9,6 +9,8 @@ output-type: documentation
 
 Build an automated system that displays contributors' GitHub avatars on the root README.md file, providing visibility and recognition for community contributors.
 
+Here is an example of how this might look/a possible technology. [All Contributors](https://github.com/all-contributors/all-contributors.github.io?tab=readme-ov-file#contributors-)
+
 ## Requirements
 
 - Automatically display GitHub avatars of contributors
