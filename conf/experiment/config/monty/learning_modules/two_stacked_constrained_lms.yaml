@@ -24,8 +24,8 @@ learning_module_1:
         # in the object label so we keep this tolerance high. This is
         # just until we have added a way to encode object ID with some
         # real similarity measure.
-        learning_module_0:
-          object_id: 1
+      learning_module_0:
+        object_id: 1
     feature_weights:
       learning_module_0:
         object_id: 1
