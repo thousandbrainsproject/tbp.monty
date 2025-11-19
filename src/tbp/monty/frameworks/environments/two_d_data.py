@@ -225,12 +225,13 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             / self.current_alphabet
             / f"character{self.character_id:02d}"
         )
-        first_img_char_child = next(Path(img_char_dir).iterdir()).name
+        first_img_char_child = next(img_char_dir.iterdir()).name
         char_img_names = first_img_char_child.split("_")[0]
-        char_dir = "/" + char_img_names + "_" + str(self.character_version).zfill(2)
-        current_image = load_img(img_char_dir + char_dir + ".png")
-        move_path = load_motor(stroke_char_dir + char_dir + ".txt")
-        logger.info(f"Finished loading new image from {img_char_dir + char_dir}")
+        char_stem = f"{char_img_names}_{self.character_version:02d}"
+        img_file = img_char_dir / f"{char_stem}.png"
+        current_image = load_img(img_file)
+        move_path = load_motor(stroke_char_dir / f"{char_stem}.txt")
+        logger.info(f"Finished loading new image from {img_file}")
         locations = self.motor_to_locations(move_path)
         maxloc = current_image.shape[0] - self.patch_size
         # Don't use locations at the border where patch doesn't fit anymore
