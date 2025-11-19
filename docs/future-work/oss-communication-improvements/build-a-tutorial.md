@@ -3,7 +3,7 @@ title: Build a Tutorial
 rfc: not-required
 estimated-scope: medium
 improved-metric: community-engagement
-skills: video-production, writing, tutorial-creation, documentation
+skills: video-production, writing, python
 output-type: tutorial
 status: evergreen
 ---

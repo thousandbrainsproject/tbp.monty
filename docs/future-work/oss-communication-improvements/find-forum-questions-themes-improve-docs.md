@@ -3,7 +3,7 @@ title: Find Forum Questions Themes & Improve Docs
 rfc: not-required
 estimated-scope: medium
 improved-metric: community-engagement
-skills: data-analysis, documentation-writing, forum-moderation
+skills: data-analysis, writing
 output-type: documentation
 ---
 
