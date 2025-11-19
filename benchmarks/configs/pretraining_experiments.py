@@ -11,6 +11,7 @@
 import copy
 import os
 from dataclasses import asdict
+from pathlib import Path
 
 import numpy as np
 
@@ -61,14 +62,12 @@ from tbp.monty.simulators.habitat.configs import (
 # FOR SUPERVISED PRETRAINING: 14 unique rotations that give good views of the object.
 train_rotations_all = get_cube_face_and_corner_views_rotations()
 
-monty_models_dir = os.getenv("MONTY_MODELS", "")
+monty_models_dir = Path(os.getenv("MONTY_MODELS", ""))
 
-fe_pretrain_dir = os.path.expanduser(
-    os.path.join(monty_models_dir, "pretrained_ycb_v10")
-)
+fe_pretrain_dir = monty_models_dir.expanduser() / "pretrained_ycb_v10"
 
-pre_surf_agent_visual_training_model_path = os.path.join(
-    fe_pretrain_dir, "supervised_pre_training_all_objects/pretrained/"
+pre_surf_agent_visual_training_model_path = (
+    fe_pretrain_dir / "supervised_pre_training_all_objects" / "pretrained"
 )
 
 supervised_pre_training_base = dict(

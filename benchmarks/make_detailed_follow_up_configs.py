@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     if not rerun_episodes:
         # Find all episodes that failed (e.g. time out, confused, not recognized)
-        eval_stats_file = os.path.join(output_dir, "eval_stats.csv")
+        eval_stats_file = output_dir / "eval_stats.csv"
         if not os.path.exists(eval_stats_file):
             raise FileNotFoundError(
                 f"Could not find eval_stats.csv at location {eval_stats_file}"
@@ -92,9 +92,9 @@ if __name__ == "__main__":
     )
 
     # Pickle these configs in the follow_ups directory
-    follow_up_dir = pathlib.Path(__file__).parent / "configs/follow_ups"
+    follow_up_dir = pathlib.Path(__file__).parent / "configs" / "follow_ups"
     follow_up_name = f"{experiment}_{follow_up_suffix}"
-    file_path = os.path.join(follow_up_dir, follow_up_name + ".pkl")
+    file_path = follow_up_dir / f"{follow_up_name}.pkl"
     with open(file_path, "wb") as f:
         pickle.dump(follow_up_config, f)
 

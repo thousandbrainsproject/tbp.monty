@@ -10,6 +10,7 @@
 import copy
 import os
 from dataclasses import asdict
+from pathlib import Path
 
 import numpy as np
 
@@ -60,34 +61,40 @@ N_EVAL_EPOCHS = len(test_rotations_all)
 
 # For an explanation of the different levels of difficulty, see logos_on_objs.py
 
-model_path_monolithic_models_lvl1 = os.path.join(
-    pretrained_dir,
-    "supervised_pre_training_objects_with_logos_lvl1_monolithic_models/pretrained/",
+model_path_monolithic_models_lvl1 = (
+    pretrained_dir
+    / "supervised_pre_training_objects_with_logos_lvl1_monolithic_models"
+    / "pretrained"
 )
 
-model_path_compositional_models_lvl1 = os.path.join(
-    pretrained_dir,
-    "supervised_pre_training_objects_with_logos_lvl1_comp_models/pretrained/",
+model_path_compositional_models_lvl1 = (
+    pretrained_dir
+    / "supervised_pre_training_objects_with_logos_lvl1_comp_models"
+    / "pretrained"
 )
 
-model_path_compositional_models_lvl1_resampling = os.path.join(
-    pretrained_dir,
-    "supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling/pretrained/",
+model_path_compositional_models_lvl1_resampling = (
+    pretrained_dir
+    / "supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling"
+    / "pretrained"
 )
 
-model_path_compositional_models_lvl2 = os.path.join(
-    pretrained_dir,
-    "supervised_pre_training_objects_with_logos_lvl2_comp_models/pretrained/",
+model_path_compositional_models_lvl2 = (
+    pretrained_dir
+    / "supervised_pre_training_objects_with_logos_lvl2_comp_models"
+    / "pretrained"
 )
 
-model_path_compositional_models_lvl3 = os.path.join(
-    pretrained_dir,
-    "supervised_pre_training_objects_with_logos_lvl3_comp_models/pretrained/",
+model_path_compositional_models_lvl3 = (
+    pretrained_dir
+    / "supervised_pre_training_objects_with_logos_lvl3_comp_models"
+    / "pretrained"
 )
 
-model_path_compositional_models_lvl4 = os.path.join(
-    pretrained_dir,
-    "supervised_pre_training_objects_with_logos_lvl4_comp_models/pretrained/",
+model_path_compositional_models_lvl4 = (
+    pretrained_dir
+    / "supervised_pre_training_objects_with_logos_lvl4_comp_models"
+    / "pretrained"
 )
 
 
@@ -181,7 +188,7 @@ infer_comp_base_config = dict(
     ),
     env_interface_config=TwoLMStackedDistantMountHabitatEnvInterfaceConfig(
         env_init_args=EnvInitArgsTwoLMDistantStackedMount(
-            data_path=os.path.join(os.environ["MONTY_DATA"], "compositional_objects")
+            data_path=Path(os.environ["MONTY_DATA"]) / "compositional_objects"
         ).__dict__,
     ),
     eval_env_interface_class=ED.InformedEnvironmentInterface,

@@ -8,10 +8,10 @@
 # https://opensource.org/licenses/MIT.
 
 import copy
-import os
 import shutil
 import tempfile
 import unittest
+from pathlib import Path
 from pprint import pprint
 
 import numpy as np
@@ -63,7 +63,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
         """Code that gets executed before every test."""
         super().setUp()
 
-        self.output_dir = tempfile.mkdtemp()
+        self.output_dir = Path(tempfile.mkdtemp())
 
         base = dict(
             experiment_class=MontyObjectRecognitionExperiment,
@@ -215,7 +215,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
             experiment_args=SupervisedPretrainingExperimentArgs(
                 supervised_lm_ids=["learning_module_1"],
                 min_lms_match=2,
-                model_name_or_path=os.path.join(self.output_dir, "pretrained"),
+                model_name_or_path=self.output_dir / "pretrained",
             ),
             monty_config=TwoLMStackedMontyConfig(
                 # set min_train_steps to 200 to send more observations to LM_1 after
@@ -231,7 +231,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
                 do_train=False,
                 min_lms_match=1,
                 n_eval_epochs=2,
-                model_name_or_path=os.path.join(self.output_dir, "pretrained"),
+                model_name_or_path=self.output_dir / "pretrained",
             ),
             logging_config=LoggingConfig(
                 output_dir=self.output_dir,
@@ -300,15 +300,16 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
         with MontyObjectRecognitionExperiment(config) as exp:
             pprint("...training...")
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            output_dir = Path(exp.output_dir)
+            train_stats = pd.read_csv(output_dir / "train_stats.csv")
             self.check_hierarchical_lm_train_results(train_stats)
 
-            models = load_models_from_dir(exp.output_dir)
+            models = load_models_from_dir(output_dir)
             self.check_hierarchical_models(models)
 
             pprint("...evaluating...")
             exp.evaluate()
-            eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+            eval_stats = pd.read_csv(output_dir / "eval_stats.csv")
             self.check_hierarchical_lm_eval_results(eval_stats)
 
     def test_semisupervised_stacked_lms_experiment(self):
@@ -395,7 +396,7 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
         with MontyObjectRecognitionExperiment(config) as exp:
             exp.evaluate()
             pprint("... loading and checking eval statistics...")
-            eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+            eval_stats = pd.read_csv(Path(exp.output_dir) / "eval_stats.csv")
             episode = 0
             num_lms = len(exp.model.learning_modules)
             for lm_id in range(num_lms):

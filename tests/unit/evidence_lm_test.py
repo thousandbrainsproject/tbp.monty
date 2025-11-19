@@ -17,7 +17,6 @@ pytest.importorskip(
 )
 
 import copy
-import os
 import shutil
 import tempfile
 import unittest
@@ -784,14 +783,14 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.train()
             pprint("...loading and checking train statistics...")
 
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
             self.check_train_results(train_stats)
 
             pprint("...evaluating...")
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
 
         self.check_eval_results(eval_stats)
         for key in [
@@ -912,7 +911,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             pprint("...training...")
             exp.train()
             pprint("...check time out logging...")
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
             self.assertEqual(
                 train_stats["individual_ts_performance"][0],
                 "no_match",
@@ -951,7 +950,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
         for i in range(3):
             self.assertEqual(
                 eval_stats["individual_ts_performance"][i],
@@ -984,7 +983,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.post_epoch()
 
         pprint("...checking run stats...")
-        train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+        train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
         for i in [0, 1]:
             self.assertEqual(
                 train_stats["primary_performance"][i],
@@ -1027,7 +1026,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.train()
             pprint("...loading and checking train statistics...")
 
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
             print(train_stats)
             self.check_train_results(train_stats)
 
@@ -1035,7 +1034,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
 
         self.check_eval_results(eval_stats)
 
@@ -1048,7 +1047,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.train()
             pprint("...loading and checking train statistics...")
 
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
             print(train_stats)
             self.check_train_results(train_stats)
 
@@ -1056,7 +1055,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
 
         self.check_eval_results(eval_stats)
 
@@ -1627,14 +1626,14 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.train()
             pprint("...loading and checking train statistics...")
 
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
             self.check_train_results(train_stats)
 
             pprint("...evaluating...")
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
 
         self.check_eval_results(eval_stats)
 
@@ -1646,7 +1645,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             pprint("...training...")
             exp.train()
 
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
             print(train_stats)
             self.check_train_results(train_stats, num_lms=5)
 
@@ -1657,7 +1656,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
                 exp.run_epoch()
             exp.logger_handler.post_eval(exp.logger_args)
             pprint("...loading and checking eval statistics...")
-            eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+            eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
             self.check_eval_results(eval_stats, num_lms=5)
 
             pprint("checking that evaluation also works with larger mmd.")
@@ -1667,7 +1666,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
 
         self.check_eval_results(eval_stats, num_lms=5)
 
@@ -1679,7 +1678,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             pprint("...training...")
             exp.train()
 
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
             self.check_multilm_train_results(train_stats, num_lms=5, min_done=3)
             # Same as in previous test we make it a bit more difficult during eval
             for lm in exp.model.learning_modules:
@@ -1688,7 +1687,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
 
         self.check_multilm_eval_results(eval_stats, num_lms=5, min_done=3)
 
@@ -1706,7 +1705,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             pprint("...training...")
 
             exp.train()
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
             # Just checking that objects are still recognized correctly when moving off
             # the object.
             self.check_train_results(train_stats, num_lms=5)
@@ -1728,7 +1727,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
 
         self.check_eval_results(eval_stats, num_lms=5)
 
@@ -1811,14 +1810,14 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.train()
             pprint("...loading and checking train statistics...")
 
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
             self.check_train_results(train_stats, num_lms=5)
 
             pprint("...evaluating...")
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
 
         self.check_eval_results(eval_stats, num_lms=5)
 
@@ -1834,14 +1833,14 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.train()
             pprint("...loading and checking train statistics...")
 
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
             self.check_train_results(train_stats, num_lms=5)
 
             pprint("...evaluating...")
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
 
         self.check_eval_results(eval_stats, num_lms=5)
 
@@ -1854,14 +1853,14 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.train()
             pprint("...loading and checking train statistics...")
 
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
             self.check_train_results(train_stats, num_lms=5)
 
             pprint("...evaluating...")
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
 
         self.check_eval_results(eval_stats, num_lms=5)
 
@@ -1881,7 +1880,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.train()
             pprint("...loading and checking train statistics...")
 
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
             # NOTE: This might fail if the model becomes more noise robust or
             # better able to deal with few incomplete objects in memory.
             for i in range(6):
@@ -1896,7 +1895,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
         for i in range(3):
             self.assertEqual(
                 eval_stats["primary_performance"][i],
@@ -1921,7 +1920,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.train()
             pprint("...loading and checking train statistics...")
 
-            train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
+            train_stats = pd.read_csv(exp.output_dir / "train_stats.csv")
             # NOTE: This might fail if the model becomes more noise robust or
             # better able to deal with few incomplete objects in memory.
             for i in range(6):
@@ -1936,7 +1935,7 @@ class EvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
             exp.evaluate()
 
         pprint("...loading and checking eval statistics...")
-        eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
+        eval_stats = pd.read_csv(exp.output_dir / "eval_stats.csv")
         for i in range(3):
             self.assertEqual(
                 eval_stats["primary_performance"][i],

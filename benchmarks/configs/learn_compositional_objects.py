@@ -10,6 +10,7 @@
 import copy
 import os
 from dataclasses import asdict
+from pathlib import Path
 
 import numpy as np
 
@@ -59,11 +60,9 @@ from tbp.monty.simulators.habitat.configs import (
 train_rotations_all = get_cube_face_and_corner_views_rotations()
 N_TRAIN_EPOCHS = len(train_rotations_all)
 
-monty_models_dir = os.getenv("MONTY_MODELS", "")
+monty_models_dir = Path(os.getenv("MONTY_MODELS", ""))
 
-fe_pretrain_dir = os.path.expanduser(
-    os.path.join(monty_models_dir, "pretrained_ycb_v10")
-)
+fe_pretrain_dir = monty_models_dir.expanduser() / "pretrained_ycb_v10"
 
 two_stacked_constrained_lms_config = dict(
     learning_module_0=dict(
@@ -158,7 +157,7 @@ supervised_pre_training_flat_objects_wo_logos.update(
     ),
     env_interface_config=TwoLMStackedDistantMountHabitatEnvInterfaceConfig(
         env_init_args=EnvInitArgsTwoLMDistantStackedMount(
-            data_path=os.path.join(os.environ["MONTY_DATA"], "compositional_objects")
+            data_path=Path(os.environ["MONTY_DATA"]) / "compositional_objects"
         ).__dict__,
     ),
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
@@ -184,9 +183,10 @@ supervised_pre_training_logos_after_flat_objects.update(
     experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=len(LOGO_POSITIONS) * len(LOGO_ROTATIONS),
         supervised_lm_ids=["learning_module_0"],
-        model_name_or_path=os.path.join(
-            fe_pretrain_dir,
-            "supervised_pre_training_flat_objects_wo_logos/pretrained/",
+        model_name_or_path=(
+            fe_pretrain_dir
+            / "supervised_pre_training_flat_objects_wo_logos"
+            / "pretrained"
         ),
     ),
     monty_config=TwoLMStackedMontyConfig(
@@ -218,9 +218,10 @@ supervised_pre_training_curved_objects_after_flat_and_logo.update(
     experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=N_TRAIN_EPOCHS,
         supervised_lm_ids=["learning_module_0"],
-        model_name_or_path=os.path.join(
-            fe_pretrain_dir,
-            "supervised_pre_training_logos_after_flat_objects/pretrained/",
+        model_name_or_path=(
+            fe_pretrain_dir
+            / "supervised_pre_training_logos_after_flat_objects"
+            / "pretrained"
         ),
     ),
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
@@ -248,9 +249,10 @@ supervised_pre_training_objects_with_logos_lvl1_monolithic_models.update(
     # We load the model trained on the individual objects
     experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=N_TRAIN_EPOCHS,
-        model_name_or_path=os.path.join(
-            fe_pretrain_dir,
-            "supervised_pre_training_logos_after_flat_objects/pretrained/",
+        model_name_or_path=(
+            fe_pretrain_dir
+            / "supervised_pre_training_logos_after_flat_objects"
+            / "pretrained"
         ),
     ),
     train_env_interface_args=EnvironmentInterfacePerObjectArgs(
@@ -270,9 +272,10 @@ supervised_pre_training_objects_with_logos_lvl1_comp_models = copy.deepcopy(
 supervised_pre_training_objects_with_logos_lvl1_comp_models.update(
     experiment_args=SupervisedPretrainingExperimentArgs(
         n_train_epochs=N_TRAIN_EPOCHS,
-        model_name_or_path=os.path.join(
-            fe_pretrain_dir,
-            "supervised_pre_training_logos_after_flat_objects/pretrained/",
+        model_name_or_path=(
+            fe_pretrain_dir
+            / "supervised_pre_training_logos_after_flat_objects"
+            / "pretrained"
         ),
         supervised_lm_ids=["learning_module_1"],
         min_lms_match=2,
@@ -313,9 +316,10 @@ supervised_pre_training_objects_with_logos_lvl1_comp_models_resampling.update(
     ),
 )
 
-MODEL_PATH_WITH_ALL_CHILD_OBJECTS = os.path.join(
-    fe_pretrain_dir,
-    "supervised_pre_training_curved_objects_after_flat_and_logo/pretrained/",
+MODEL_PATH_WITH_ALL_CHILD_OBJECTS = (
+    fe_pretrain_dir
+    / "supervised_pre_training_curved_objects_after_flat_and_logo"
+    / "pretrained"
 )
 
 supervised_pre_training_objects_with_logos_lvl2_comp_models = copy.deepcopy(

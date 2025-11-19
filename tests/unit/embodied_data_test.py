@@ -8,7 +8,6 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import os
 import unittest
 from pathlib import Path
 
@@ -310,10 +309,7 @@ class EmbodiedDataTest(unittest.TestCase):
         patch_size = 48
         expected_keys = ["depth", "rgba", "pixel_loc"]
 
-        data_path = "./resources/dataloader_test_images/"
-        data_path = os.path.join(
-            Path(__file__).parent, "resources/dataloader_test_images/"
-        )
+        data_path = Path(__file__).parent / "resources" / "dataloader_test_images"
 
         base_policy_config_rel = make_base_policy_config(
             action_space_type="distant_agent",
@@ -364,10 +360,11 @@ class EmbodiedDataTest(unittest.TestCase):
         patch_size = 48
         expected_keys = ["depth", "rgba", "pixel_loc"]
 
-        data_path = "./resources/dataloader_test_images/"
-        data_path = os.path.join(
-            Path(__file__).parent,
-            "resources/dataloader_test_images/0_numenta_mug/",
+        data_path = (
+            Path(__file__).parent
+            / "resources"
+            / "dataloader_test_images"
+            / "0_numenta_mug"
         )
 
         base_policy_config_rel = make_base_policy_config(
