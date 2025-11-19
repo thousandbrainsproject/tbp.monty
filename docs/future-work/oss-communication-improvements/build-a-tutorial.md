@@ -1,0 +1,31 @@
+---
+title: Build a Tutorial
+rfc: not-required
+estimated-scope: medium
+improved-metric: community-engagement
+skills: video-production, writing, tutorial-creation, documentation
+output-type: tutorial
+---
+
+Create a tutorial with your experience with Monty to accomplish some goal.
+
+## Format Options
+
+The tutorial can be created in either format:
+- YouTube video
+- Blog post
+
+Both formats may potentially become core documentation if they add value to the existing getting started guides.
+
+
+## Potential Tutorial Topics
+
+- Running through the steps to set up Monty on a new configuration of hardware / OS.
+- How to add FLOPs measurements to a Monty experiment.
+- How to create a new dataset.
+- How to use the 2D surface agent.
+- How to add a new type of sensor.
+- How to integrate a new simulator.
+- How to build a new action policy.
+
+If you'd like more ideas on what kind of tutorials might be beneficial, you can message us on the [Discourse forum](https://thousandbrains.discourse.group/).

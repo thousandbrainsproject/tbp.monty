@@ -156,7 +156,7 @@
   - [auto-display-contributors-in-readme](future-work/oss-communication-improvements/auto-display-contributors-in-readme.md)
   - [better-documentation-platform](future-work/oss-communication-improvements/better-documentation-platform.md)
   - [better-website-platform](future-work/oss-communication-improvements/better-website-platform.md)
-  - [build-getting-started-tutorial](future-work/oss-communication-improvements/build-getting-started-tutorial.md)
+  - [build-a-tutorial](future-work/oss-communication-improvements/build-a-tutorial.md)
   - [find-forum-questions-themes-improve-docs](future-work/oss-communication-improvements/find-forum-questions-themes-improve-docs.md)
   - [find-university-departments-for-engagement](future-work/oss-communication-improvements/find-university-departments-for-engagement.md)
   - [future-work-widget](future-work/oss-communication-improvements/future-work-widget.md)
