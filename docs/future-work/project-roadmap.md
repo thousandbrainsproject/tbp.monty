@@ -30,7 +30,7 @@ We also have two stars that mark the current top two priorities of the TBP team.
 ## Current Quarterly Goals
 To get a more concrete idea of our goals and roadmap for Q2 - 2025, have a look at this video:
 
-[2025/04 - Q2 Roadmap](https://www.youtube.com/watch?v=4by5MeJ1IT8)
+[2025/04 - Q4 Roadmap](https://youtu.be/3LN5SeSJhOg)
 
 # How You Can Contribute
 
