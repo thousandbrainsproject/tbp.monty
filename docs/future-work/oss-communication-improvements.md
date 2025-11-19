@@ -5,7 +5,6 @@ description: Things we would like to do for the open-source community or general
 These are the things we would like to do and you can help us with:
 
 - [Auto-Display Contributors in README](oss-communication-improvements/auto-display-contributors-in-readme.md)
-- [Become a Forum Moderator](oss-communication-improvements/become-a-forum-moderator.md)
 - [Better Documentation Platform](oss-communication-improvements/better-documentation-platform.md)
 - [Better Website Platform](oss-communication-improvements/better-website-platform.md)
 - [Build Getting Started Tutorial](oss-communication-improvements/build-getting-started-tutorial.md)

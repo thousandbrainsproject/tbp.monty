@@ -154,7 +154,6 @@
   - [find-faster-alternative-to-kdtree-search](future-work/framework-improvements/find-faster-alternative-to-kdtree-search.md)
 - [oss-communication-improvements](future-work/oss-communication-improvements.md)
   - [auto-display-contributors-in-readme](future-work/oss-communication-improvements/auto-display-contributors-in-readme.md)
-  - [become-a-forum-moderator](future-work/oss-communication-improvements/become-a-forum-moderator.md)
   - [better-documentation-platform](future-work/oss-communication-improvements/better-documentation-platform.md)
   - [better-website-platform](future-work/oss-communication-improvements/better-website-platform.md)
   - [build-getting-started-tutorial](future-work/oss-communication-improvements/build-getting-started-tutorial.md)
