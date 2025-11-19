@@ -158,7 +158,7 @@ def get_action_name(
     else:
         action = action_stats[step - 1]
         if action[0] is not None:
-            a = cast(Action, action[0])
+            a = cast("Action", action[0])
             d = dict(a)
             del d["action"]  # don't duplicate action in "params"
             del d["agent_id"]  # don't duplicate agent_id in "params"
@@ -1189,7 +1189,7 @@ class PolicyPlot:
         for current_step in range(total_steps):
             self.plot_movement_step(current_step)
 
-    def plot_animation(self, zoom=1.0, view=None):
+    def plot_animation(self, _zoom=1.0, view=None):
         """Plot an animation of the episode's full action policy."""
         self.plot_core_object()
         self.derive_policy_details()

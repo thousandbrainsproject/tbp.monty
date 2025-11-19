@@ -13,7 +13,9 @@ import os
 
 import torch
 
-from tbp.monty.frameworks.environments.embodied_data import SaccadeOnImageDataLoader
+from tbp.monty.frameworks.environments.embodied_data import (
+    SaccadeOnImageEnvironmentInterface,
+)
 
 from .monty_experiment import MontyExperiment
 
@@ -45,16 +47,17 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
         between semantic ID to labels, both for logging/evaluation purposes.
         """
         # TODO, eventually it would be better to pass
-        # self.dataloader.semantic_id_to_label via an "Observation" object when this is
-        # eventually implemented, such that we can ensure this information is never
+        # self.env_interface.semantic_id_to_label via an "Observation" object when this
+        # is eventually implemented, such that we can ensure this information is never
         # inappropriately accessed and used
-        if hasattr(self.dataloader, "semantic_id_to_label"):
+        if hasattr(self.env_interface, "semantic_id_to_label"):
             self.model.pre_episode(
-                self.dataloader.primary_target, self.dataloader.semantic_id_to_label
+                self.env_interface.primary_target,
+                self.env_interface.semantic_id_to_label,
             )
         else:
-            self.model.pre_episode(self.dataloader.primary_target)
-        self.dataloader.pre_episode()
+            self.model.pre_episode(self.env_interface.primary_target)
+        self.env_interface.pre_episode()
 
         self.max_steps = self.max_train_steps
         if self.model.experiment_mode != "train":
@@ -68,17 +71,17 @@ class MontyObjectRecognitionExperiment(MontyExperiment):
     def run_episode_steps(self):
         """Runs one episode of the experiment.
 
-        At each step, observations are collected from the dataloader and either passed
-        to the model or sent directly to the motor system. We also check if a terminal
-        condition was reached at each step and increment step counters.
+        At each step, observations are collected from the env_interface and either
+        passed to the model or sent directly to the motor system. We also check if a
+        terminal condition was reached at each step and increment step counters.
 
         Returns:
             The number of total steps taken in the episode.
         """
-        for loader_step, observation in enumerate(self.dataloader):
+        for loader_step, observation in enumerate(self.env_interface):
             if self.show_sensor_output:
                 is_saccade_on_image_data_loader = isinstance(
-                    self.dataloader, SaccadeOnImageDataLoader
+                    self.env_interface, SaccadeOnImageEnvironmentInterface
                 )
                 self.live_plotter.show_observations(
                     *self.live_plotter.hardcoded_assumptions(observation, self.model),
@@ -129,7 +132,7 @@ class MontyGeneralizationExperiment(MontyObjectRecognitionExperiment):
         print(f"loading models again from {model_path}")
         self.model.load_state_dict(state_dict)
         super().pre_episode()
-        target_object = self.dataloader.primary_target["object"]
+        target_object = self.env_interface.primary_target["object"]
         print(f"removing {target_object}")
         for lm in self.model.learning_modules:
             lm.graph_memory.remove_graph_from_memory(target_object)

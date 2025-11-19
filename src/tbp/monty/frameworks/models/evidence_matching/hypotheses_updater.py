@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from typing import Any, Dict, Literal, Optional, Protocol
 
 import numpy as np
@@ -89,7 +89,7 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
         graph_memory: EvidenceGraphMemory,
         max_match_distance: float,
         tolerances: dict,
-        evidence_threshold_config: float | str = "all",
+        evidence_threshold_config: float | str = "all",  # noqa: ARG002
         feature_evidence_calculator: type[FeatureEvidenceCalculator] = (
             DefaultFeatureEvidenceCalculator
         ),
@@ -125,6 +125,8 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 other options set a fixed threshold that does not take MLH evidence into
                 account. In [int, float, '[int]%', 'mean', 'median', 'all',
                 'x_percent_threshold']. Defaults to 'all'.
+                Ignored by the DefaultHypothesesUpdater. Required for
+                compatibility with the HypothesesUpdater protocol.
             feature_evidence_calculator: Class to
                 calculate feature evidence for all nodes. Defaults to the default
                 calculator.
@@ -266,8 +268,10 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
                 )
 
             hypotheses_updates.append(channel_possible_hypotheses)
-            telemetry[input_channel] = ChannelHypothesesUpdateTelemetry(
-                channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry
+            telemetry[input_channel] = asdict(
+                ChannelHypothesesUpdateTelemetry(
+                    channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry
+                )
             )
 
         return hypotheses_updates, telemetry

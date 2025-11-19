@@ -24,7 +24,7 @@ import torch.multiprocessing as mp
 import wandb
 
 from tbp.monty.frameworks.config_utils.cmd_parser import create_cmd_parser_parallel
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     PredefinedObjectInitializer,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED
@@ -202,17 +202,14 @@ def post_parallel_log_cleanup(filenames, outfile, cat_fn):
 
 
 def post_parallel_profile_cleanup(parallel_dirs, base_dir, mode):
-    profile_dirs = [os.path.join(i, "profile") for i in parallel_dirs]
+    profile_dirs = [Path(i) / "profile" for i in parallel_dirs]
 
     episode_csvs = []
     setup_csvs = []
     overall_csvs = []
 
     for profile_dir in profile_dirs:
-        epsd_csvs = [
-            i for i in os.listdir(profile_dir) if "episode" in i and i.endswith(".csv")
-        ]
-        epsd_csv_paths = [os.path.join(profile_dir, i) for i in epsd_csvs]
+        epsd_csv_paths = list(profile_dir.glob("*episode*.csv"))
         setup_csv = os.path.join(profile_dir, "profile-setup_experiment.csv")
         overall_csv = os.path.join(profile_dir, f"profile-{mode}.csv")
 
@@ -241,7 +238,7 @@ def move_reproducibility_data(base_dir, parallel_dirs):
 
     # Headache to accont for the fact that everyone is episode 0
     for cnt, rdir in enumerate(repro_dirs):
-        files = os.listdir(rdir)
+        files = [f.name for f in Path(rdir).iterdir()]
         assert "eval_episode_0_actions.jsonl" in files
         assert "eval_episode_0_target.txt" in files
         action_file = f"eval_episode_{cnt}_actions.jsonl"
@@ -356,14 +353,14 @@ def post_parallel_train(configs: list[Mapping], base_dir: str) -> None:
         saved_model_file = os.path.join(output_dir, "model.pt")
         torch.save(exp.model.state_dict(), saved_model_file)
 
-        if pretraining:
-            pdirs = [os.path.dirname(i) for i in parallel_dirs]
-        else:
-            pdirs = parallel_dirs
+    if pretraining:
+        pdirs = [os.path.dirname(i) for i in parallel_dirs]
+    else:
+        pdirs = parallel_dirs
 
-        for pdir in pdirs:
-            print(f"Removing directory: {pdir}")
-            shutil.rmtree(pdir)
+    for pdir in pdirs:
+        print(f"Removing directory: {pdir}")
+        shutil.rmtree(pdir)
 
 
 def run_episodes_parallel(
@@ -590,9 +587,9 @@ def generate_parallel_train_configs(
         AND poses.
 
     """
-    sampler = exp["train_dataloader_args"]["object_init_sampler"]
+    sampler = exp["train_env_interface_args"]["object_init_sampler"]
     sampler.rng = np.random.RandomState(exp["experiment_args"]["seed"])
-    object_names = exp["train_dataloader_args"]["object_names"]
+    object_names = exp["train_env_interface_args"]["object_names"]
     new_configs = []
 
     for obj in object_names:
@@ -613,10 +610,10 @@ def generate_parallel_train_configs(
         obj_config["logging_config"]["wandb_handlers"] = []
 
         # Object id, pose parameters for single episode
-        obj_config["train_dataloader_args"].update(
+        obj_config["train_env_interface_args"].update(
             object_names=[obj for _ in range(len(sampler))]
         )
-        obj_config["train_dataloader_args"][
+        obj_config["train_env_interface_args"][
             "object_init_sampler"
         ].change_every_episode = True
 
@@ -638,9 +635,9 @@ def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> list[M
     Returns:
         List of configs for evaluation episodes.
     """
-    sampler = exp["eval_dataloader_args"]["object_init_sampler"]
+    sampler = exp["eval_env_interface_args"]["object_init_sampler"]
     sampler.rng = np.random.RandomState(exp["experiment_args"]["seed"])
-    object_names = exp["eval_dataloader_args"]["object_names"]
+    object_names = exp["eval_env_interface_args"]["object_names"]
     # sampler_params = sampler.all_combinations_of_params()
 
     new_configs = []
@@ -680,7 +677,7 @@ def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> list[M
 
             new_config["logging_config"]["episode_id_parallel"] = episode_count
 
-            new_config["eval_dataloader_args"].update(
+            new_config["eval_env_interface_args"].update(
                 object_names=[obj],
                 object_init_sampler=PredefinedObjectInitializer(**params),
             )
@@ -781,11 +778,12 @@ def main(
         experiment = exp["logging_config"]["run_name"]
 
     # Simplifying assumption: let's only deal with the main type of exp which involves
-    # per object dataloaders, otherwise hard to figure out what all goes into an exp
+    # per object environment interfaces, otherwise hard to figure out what all goes into
+    # an exp
     if exp["experiment_args"]["do_train"]:
         assert issubclass(
-            exp["train_dataloader_class"], ED.EnvironmentDataLoaderPerObject
-        ), "parallel experiments only work (for now) with per object dataloaders"
+            exp["train_env_interface_class"], ED.EnvironmentInterfacePerObject
+        ), "parallel experiments only work (for now) with per object env interfaces"
 
         train_configs = generate_parallel_train_configs(exp, experiment)
         train_configs = filter_episode_configs(train_configs, episodes)
@@ -804,8 +802,8 @@ def main(
 
     if exp["experiment_args"]["do_eval"]:
         assert issubclass(
-            exp["eval_dataloader_class"], ED.EnvironmentDataLoaderPerObject
-        ), "parallel experiments only work (for now) with per object dataloaders"
+            exp["eval_env_interface_class"], ED.EnvironmentInterfacePerObject
+        ), "parallel experiments only work (for now) with per object env interfaces"
 
         eval_configs = generate_parallel_eval_configs(exp, experiment)
         eval_configs = filter_episode_configs(eval_configs, episodes)

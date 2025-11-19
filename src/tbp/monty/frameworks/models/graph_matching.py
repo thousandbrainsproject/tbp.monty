@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import ClassVar
 
 import numpy as np
 import torch
@@ -36,16 +37,16 @@ logger = logging.getLogger(__name__)
 class MontyForGraphMatching(MontyBase):
     """General Monty model for recognizing object using graphs."""
 
-    LOGGING_REGISTRY = dict(
+    LOGGING_REGISTRY: ClassVar[dict[str, type[BaseMontyLogger]]] = {
         # Don't do any formal logging, just save models. Used for pretraining.
-        SILENT=BaseMontyLogger,
+        "SILENT": BaseMontyLogger,
         # Log things like basic stats.csv files, data to reproduce experiments
-        BASIC=BasicGraphMatchingLogger,
+        "BASIC": BasicGraphMatchingLogger,
         # Utter deforestation
-        DETAILED=DetailedGraphMatchingLogger,
-        # Save specific stats nescessary for object similarity analysis.
-        SELECTIVE=SelectiveEvidenceLogger,
-    )
+        "DETAILED": DetailedGraphMatchingLogger,
+        # Save specific stats necessary for object similarity analysis.
+        "SELECTIVE": SelectiveEvidenceLogger,
+    }
 
     def __init__(self, *args, **kwargs):
         """Initialize and reset LM."""
@@ -570,7 +571,7 @@ class GraphLM(LearningModule):
 
         if initialize_base_modules:
             self.graph_memory = GraphMemory(k=None, graph_delta_thresholds=None)
-            self.gsg = GraphGoalStateGenerator(self, gsg_args=None)
+            self.gsg = GraphGoalStateGenerator(self)
             self.gsg.reset()
 
         self.mode = None  # initialize to neither training nor testing
@@ -839,7 +840,7 @@ class GraphLM(LearningModule):
             all_poses = poses
         return all_poses
 
-    def get_object_scale(self, object_id):
+    def get_object_scale(self, _object_id):
         """Get object scale. TODO: implement solution for detecting scale.
 
         Returns:
@@ -1136,7 +1137,6 @@ class GraphMemory(LMMemory):
         object_location_rel_body,
         location_rel_model,
         object_rotation,
-        object_scale,
     ):
         """Determine how to update memory and call corresponding function."""
         if graph_id is None:
@@ -1165,7 +1165,6 @@ class GraphMemory(LMMemory):
                         object_location_rel_body,
                         location_rel_model,
                         object_rotation,
-                        object_scale=object_scale,
                     )
                 else:
                     logger.info(f"{graph_id} not in memory ({self.get_memory_ids()})")
@@ -1384,7 +1383,6 @@ class GraphMemory(LMMemory):
         object_location_rel_body,
         location_rel_model,
         object_rotation,
-        object_scale,
     ):
         """Add new observations into an existing graph.
 
@@ -1396,7 +1394,6 @@ class GraphMemory(LMMemory):
             object_location_rel_body: location of object relative to body.
             location_rel_model: location of last observation relative to object model
             object_rotation: detected rotation of object model relative to world.
-            object_scale: detected scale of object model relative to world. Not used.
         """
         logger.info(f"Updating existing graph for {graph_id}")
 

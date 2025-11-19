@@ -51,7 +51,7 @@ class MissingToMaxDepth:
         self.threshold = threshold
         self.needs_rng = False
 
-    def __call__(self, observation, state=None):
+    def __call__(self, observation, _state=None):
         """Replace missing depth values with max_depth.
 
         Args:
@@ -83,7 +83,7 @@ class AddNoiseToRawDepthImage:
         self.sigma = sigma
         self.needs_rng = True
 
-    def __call__(self, observation, state=None):
+    def __call__(self, observation, _state=None):
         """Add gaussian noise to raw sensory input.
 
         Args:
@@ -136,7 +136,7 @@ class GaussianSmoothing:
         self.kernel = self.create_kernel()
         self.needs_rng = False
 
-    def __call__(self, observation, state=None):
+    def __call__(self, observation, _state=None):
         """Apply gaussian smoothing to depth images.
 
         Args:
@@ -373,7 +373,7 @@ class DepthTo3DLocations:
         to the original observations dict.
 
         Args:
-            observations: Observations returned by the data loader.
+            observations: Observations returned by the environment interface.
             state: Optionally supplied CMP-compliant state object.
 
         Returns:

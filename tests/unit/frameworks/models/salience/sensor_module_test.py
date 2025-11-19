@@ -14,6 +14,7 @@ from unittest.mock import MagicMock, patch, sentinel
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 from parameterized import parameterized_class
 
 from tbp.monty.frameworks.models.salience.on_object_observation import (
@@ -25,6 +26,14 @@ from tbp.monty.frameworks.models.salience.sensor_module import (
 from tbp.monty.frameworks.models.states import GoalState
 
 
+@pytest.fixture
+def mocked_object_observation():
+    with patch(
+        "tbp.monty.frameworks.models.salience.sensor_module.on_object_observation"
+    ):
+        yield
+
+
 @parameterized_class(
     ("save_raw_obs", "is_exploring", "should_snapshot"),
     [
@@ -34,7 +43,7 @@ from tbp.monty.frameworks.models.states import GoalState
         (False, True, False),
     ],
 )
-@patch("tbp.monty.frameworks.models.salience.sensor_module.on_object_observation")
+@pytest.mark.usefixtures("mocked_object_observation")
 class HabitatSalienceSMTest(unittest.TestCase):
     def setUp(self) -> None:
         self.sensor_module = HabitatSalienceSM(
@@ -49,10 +58,7 @@ class HabitatSalienceSMTest(unittest.TestCase):
             "location": "i'm a position",
         }
 
-    def test_step_snapshots_raw_observation_as_needed(
-        self,
-        on_object_observation: MagicMock,
-    ) -> None:
+    def test_step_snapshots_raw_observation_as_needed(self) -> None:
         self.sensor_module._save_raw_obs = self.save_raw_obs  # type: ignore[attr-defined]
         self.sensor_module.is_exploring = self.is_exploring  # type: ignore[attr-defined]
         data: dict[str, Any] = MagicMock()
@@ -67,9 +73,10 @@ class HabitatSalienceSMTest(unittest.TestCase):
         else:
             self.sensor_module._snapshot_telemetry.raw_observation.assert_not_called()  # type: ignore[attr-defined]
 
-    def test_step_returns_no_percept(self, on_object_observation: MagicMock) -> None:
+    def test_step_returns_no_percept(self) -> None:
         self.assertIsNone(self.sensor_module.step(MagicMock()))
 
+    @patch("tbp.monty.frameworks.models.salience.sensor_module.on_object_observation")
     def test_step_proposes_goals_properly(
         self, on_object_observation: MagicMock
     ) -> None:

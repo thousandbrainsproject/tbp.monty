@@ -21,6 +21,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from pathlib import Path
 from pprint import pprint
 
 import pandas as pd
@@ -32,9 +33,9 @@ from tbp.monty.frameworks.config_utils.config_args import (
     PatchAndViewMontyConfig,
     PretrainLoggingConfig,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataLoaderPerObjectEvalArgs,
-    EnvironmentDataLoaderPerObjectTrainArgs,
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
+    EnvironmentInterfacePerObjectEvalArgs,
+    EnvironmentInterfacePerObjectTrainArgs,
     ExperimentArgs,
     PredefinedObjectInitializer,
     SupervisedPretrainingExperimentArgs,
@@ -48,7 +49,7 @@ from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphL
 from tbp.monty.frameworks.run_parallel import main as run_parallel
 from tbp.monty.simulators.habitat.configs import (
     EnvInitArgsPatchViewMount,
-    PatchViewFinderMountHabitatDatasetArgs,
+    PatchViewFinderMountHabitatEnvInterfaceConfig,
 )
 from tests.unit.graph_learning_test import MotorSystemConfigFixed
 
@@ -77,18 +78,18 @@ class RunParallelTest(unittest.TestCase):
                     )
                 ),
             ),
-            dataset_args=PatchViewFinderMountHabitatDatasetArgs(
+            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
                 env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
             ),
-            train_dataloader_class=ED.InformedEnvironmentDataLoader,
-            train_dataloader_args=EnvironmentDataLoaderPerObjectTrainArgs(
+            train_env_interface_class=ED.InformedEnvironmentInterface,
+            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     rotations=self.train_rotations
                 ),
             ),
-            eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
+            eval_env_interface_class=ED.InformedEnvironmentInterface,
+            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
                 object_names=[],
                 object_init_sampler=PredefinedObjectInitializer(),
             ),
@@ -107,7 +108,7 @@ class RunParallelTest(unittest.TestCase):
                 n_eval_epochs=len(self.eval_rotations),
                 model_name_or_path=os.path.join(self.output_dir, "pretrained"),
             ),
-            eval_dataloader_args=EnvironmentDataLoaderPerObjectEvalArgs(
+            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
                 object_names=["capsule3DSolid", "cubeSolid"],
                 object_init_sampler=PredefinedObjectInitializer(
                     rotations=self.eval_rotations
@@ -143,8 +144,10 @@ class RunParallelTest(unittest.TestCase):
         os.makedirs(self.eval_config_gt["logging_config"].output_dir)
 
     def check_reproducibility_logs(self, serial_repro_dir, parallel_repro_dir):
-        s_param_files = [i for i in os.listdir(serial_repro_dir) if "target" in i]
-        p_param_files = [i for i in os.listdir(parallel_repro_dir) if "target" in i]
+        s_param_files = sorted(p.name for p in Path(serial_repro_dir).glob("*target*"))
+        p_param_files = sorted(
+            p.name for p in Path(parallel_repro_dir).glob("*target*")
+        )
 
         # Same param files for each episode. No more, no less.
         self.assertEqual(set(s_param_files), set(p_param_files))
@@ -281,8 +284,8 @@ class RunParallelTest(unittest.TestCase):
         # We have to drop these columns because they are not the same in the parallel
         # and serial runs. In particular, 'stepwise_performance' and
         # 'stepwise_target_object' are derived from the mapping between semantic IDs to
-        #  names which depend on the number of objects in the data loader, and data
-        # loaders only have one object in parallel experiments.
+        # names which depend on the number of objects in the environment, and
+        # environments only have one object in parallel experiments.
         for col in ["time", "stepwise_performance", "stepwise_target_object"]:
             scsv.drop(columns=col, inplace=True)
             pcsv.drop(columns=col, inplace=True)

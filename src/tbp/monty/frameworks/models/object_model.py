@@ -76,7 +76,6 @@ class GraphObjectModel(ObjectModel):
         location_rel_model,
         object_location_rel_body,
         object_rotation,
-        object_scale=1,
     ):
         """Add new locations and features into grids and rebuild graph."""
         rf_locations, rf_features = apply_rf_transform_to_points(

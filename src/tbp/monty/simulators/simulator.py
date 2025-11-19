@@ -74,15 +74,6 @@ class Simulator(Protocol):
         ...
 
     @property
-    def action_space(self):
-        """Returns the set of all available actions."""
-        ...
-
-    def get_agent(self, agent_id: AgentID):
-        """Return agent instance."""
-        ...
-
-    @property
     def observations(self):
         """Get sensor observations."""
         ...
