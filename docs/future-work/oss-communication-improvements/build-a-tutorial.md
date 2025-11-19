@@ -29,4 +29,4 @@ Both formats may potentially become core documentation if they add value to the 
 - How to integrate a new simulator.
 - How to build a new action policy.
 
-If you'd like more ideas on what kind of tutorials might be beneficial, you can message us on the [Discourse forum](https://thousandbrains.discourse.group/) and also have a look at the [existing tutorials](../how-to-use-monty/tutorials.md).
+If you'd like more ideas on what kind of tutorials might be beneficial, you can message us on the [Discourse forum](https://thousandbrains.discourse.group/) and also have a look at the [existing tutorials](../../how-to-use-monty/tutorials.md).
