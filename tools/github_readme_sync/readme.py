@@ -25,9 +25,11 @@ import yaml
 
 from tools.github_readme_sync.colors import GRAY, GREEN, RESET
 from tools.github_readme_sync.constants import (
+    IGNORE_CLOUDINARY,
     IGNORE_DOCS,
     IGNORE_IMAGES,
     IGNORE_TABLES,
+    IGNORE_YOUTUBE,
     REGEX_CSV_TABLE,
 )
 from tools.github_readme_sync.req import delete, get, post, put
@@ -473,7 +475,8 @@ class ReadMe:
     def convert_cloudinary_videos(self, markdown_text: str) -> str:
         def replace_video(match):
             _, _, cloud_id, version, filename = match.groups()
-            # Replace the cloud ID with the environment variable
+            if filename in IGNORE_CLOUDINARY:
+                return match.group(0)
             new_url = f"https://res.cloudinary.com/{cloud_id}/video/upload/v{version}/{filename}"
             block = {
                 "html": (
@@ -492,6 +495,8 @@ class ReadMe:
     def convert_youtube_videos(self, markdown_text: str) -> str:
         def replace_youtube(match):
             title, video_id = match.groups()
+            if video_id in IGNORE_YOUTUBE:
+                return match.group(0)
             youtube_url = f"https://www.youtube.com/watch?v={video_id}"
             embed_url = f"https://www.youtube.com/embed/{video_id}?feature=oembed"
             thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"

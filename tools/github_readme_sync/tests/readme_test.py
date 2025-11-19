@@ -566,6 +566,21 @@ This is a test document.""",
         self.assertIn("[block:html]", result)
         self.assertIn("[/block]", result)
 
+    def test_convert_cloudinary_videos_ignores_example_filename(self):
+        input_text = """
+        [Example Video](https://res.cloudinary.com/demo-cloud/video/upload/v12345/example-video.mp4)
+        [Real Video](https://res.cloudinary.com/demo-cloud/video/upload/v67890/test.mp4)
+        """
+
+        result = self.readme.convert_cloudinary_videos(input_text)
+
+        self.assertIn(
+            "[Example Video](https://res.cloudinary.com/demo-cloud/video/upload/v12345/example-video.mp4)",
+            result,
+        )
+        self.assertIn("[block:html]", result)
+        self.assertIn("test.mp4", result)
+
     def test_convert_youtube_videos(self):
         input_text = """
         [First YouTube Video](https://www.youtube.com/watch?v=dQw4w9WgXcQ) Some text
@@ -583,6 +598,21 @@ This is a test document.""",
         self.assertIn('"typeOfEmbed": "youtube"', result)
         self.assertIn("i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg", result)
         self.assertIn("i.ytimg.com/vi/9bZkp7q19f0/hqdefault.jpg", result)
+
+    def test_convert_youtube_videos_ignores_example_video_id(self):
+        input_text = """
+        [Example Video](https://youtu.be/example-video-id)
+        [Real Video](https://youtu.be/dQw4w9WgXcQ)
+        """
+
+        result = self.readme.convert_youtube_videos(input_text)
+
+        self.assertIn("[Example Video](https://youtu.be/example-video-id)", result)
+        self.assertNotIn(
+            '"url": "https://www.youtube.com/watch?v=example-video-id"', result
+        )
+        self.assertIn("[block:embed]", result)
+        self.assertIn('"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"', result)
 
     def test_caption_markdown_images_multiple_per_line(self):
         input_text = (
