@@ -34,6 +34,7 @@ A more filled out example:
 
 ```python
 import os
+from pathlib import Path
 
 from tbp.monty.frameworks.run_env import setup_env
 
@@ -61,9 +62,9 @@ first_experiment = dict(
     logging_config=LoggingConfig(
         log_parallel_wandb=False,
         run_name="test",
-        output_dir=os.path.expanduser(
-            os.path.join(os.getenv("MONTY_LOGS"), "projects/monty_runs/test")
-        ),
+        output_dir=(
+            Path(os.getenv("MONTY_LOGS")) / "projects" / "monty_runs" / "test"
+        ).expanduser(),
     ),
     experiment_args=SupervisedPretrainingExperimentArgs(
         do_eval=False,

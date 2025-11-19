@@ -192,6 +192,7 @@ To test this, go ahead and copy the configs above into the `benchmarks/configs/m
 ```python
 import os
 from dataclasses import asdict
+from pathlib import Path
 
 import numpy as np
 
@@ -224,9 +225,9 @@ from tbp.monty.frameworks.models.sensor_modules import (
 	Probe,
 )
 
-monty_models_dir = os.getenv("MONTY_MODELS")
+monty_models_dir = Path(os.getenv("MONTY_MODELS")).expanduser()
 
-pretrain_dir = os.path.expanduser(os.path.join(monty_models_dir, "omniglot"))
+pretrain_dir = monty_models_dir / "omniglot"
 
 omniglot_sensor_module_config = dict(
 	sensor_module_0=dict(
@@ -348,6 +349,7 @@ For more configs to test on different subsets of the Monty Meets World dataset (
 ```
 import os
 from dataclasses import asdict
+from pathlib import Path
 
 import numpy as np
 
@@ -372,10 +374,7 @@ from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
 from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 
-model_path_numenta_lab_obj = os.path.join(
-	pretrained_dir,
-	"surf_agent_1lm_numenta_lab_obj/pretrained/",
-)
+model_path_numenta_lab_obj = pretrained_dir / "surf_agent_1lm_numenta_lab_obj" / "pretrained"
 ```
 
 To run the experiment, call `python benchmarks/run.py -e monty_meets_world_2dimage_inference`. If you don't want to log to wandb, add ` wandb_handlers=[]` to the `logging_config`. If you just want to run a quick test on a few of the images, simply adjust the `scenes` and `versions` parameters in the `eval_env_interface_args`.
