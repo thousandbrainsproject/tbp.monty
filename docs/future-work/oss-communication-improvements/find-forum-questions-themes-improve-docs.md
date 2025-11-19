@@ -22,5 +22,4 @@ Identify common themes in questions posted on the Thousand Brains Project forum 
 - Spreadsheet with categorized forum questions and identified themes
 - Improved documentation addressing common questions
 - Better user experience as common questions are answered in docs
-- Reduced repetitive questions in the forum
 
