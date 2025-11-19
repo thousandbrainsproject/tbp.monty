@@ -11,6 +11,8 @@
 import os
 import pickle
 
+from typing_extensions import override
+
 """
 Based on https://github.com/huggingface/transformers/blob/1438c487df5ce38a7b2ae30877b3074b96a423dd/src/transformers/trainer_callback.py
 """
@@ -118,6 +120,7 @@ class BaseMontyLogger:
     def post_eval(self, logger_args, output_dir, model):
         pass
 
+    @override
     def close(self, logger_args, output_dir, model):
         for handler in self.handlers:
             handler.close()
@@ -128,30 +131,39 @@ class TestLogger(BaseMontyLogger):
         self.handlers = handlers
         self.log = []
 
+    @override
     def pre_episode(self, logger_args, output_dir, model):
         self.log.append("pre_episode")
 
+    @override
     def post_episode(self, logger_args, output_dir, model):
         self.log.append("post_episode")
 
+    @override
     def pre_epoch(self, logger_args, output_dir, model):
         self.log.append("pre_epoch")
 
+    @override
     def post_epoch(self, logger_args, output_dir, model):
         self.log.append("post_epoch")
 
+    @override
     def pre_train(self, logger_args, output_dir, model):
         self.log.append("pre_train")
 
+    @override
     def post_train(self, logger_args, output_dir, model):
         self.log.append("post_train")
 
+    @override
     def pre_eval(self, logger_args, output_dir, model):
         self.log.append("pre_eval")
 
+    @override
     def post_eval(self, logger_args, output_dir, model):
         self.log.append("post_eval")
 
+    @override
     def close(self, logger_args, output_dir, model):
         with open(os.path.join(output_dir, "fake_log.pkl"), "wb") as f:
             pickle.dump(self.log, f)

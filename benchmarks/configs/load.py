@@ -23,7 +23,7 @@ from benchmarks.configs.names import (
     YcbExperiments,
 )
 
-__all__ = ["load_configs", "load_config"]
+__all__ = ["load_config", "load_configs"]
 
 
 def load_configs(experiments: list[str]) -> dict:

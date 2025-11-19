@@ -19,6 +19,8 @@ from pathlib import Path
 from pprint import pformat
 from typing import Container, Literal
 
+from typing_extensions import override
+
 from tbp.monty.frameworks.actions.actions import ActionJSONEncoder
 from tbp.monty.frameworks.models.buffer import BufferEncoder
 from tbp.monty.frameworks.utils.logging_utils import (
@@ -223,7 +225,9 @@ class BasicCSVStatsHandler(MontyHandler):
         """
         self.reports_per_file = {}
 
+    @override
     def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
+        # episode is ignored when reporting stats to CSV
         # Look for train_stats or eval_stats under BASIC logs
         basic_logs = data["BASIC"]
         mode_key = f"{mode}_stats"
@@ -301,6 +305,7 @@ class ReproduceEpisodeHandler(MontyHandler):
     def log_level(cls):
         return "BASIC"
 
+    @override
     def report_episode(self, data, output_dir, episode, mode="train", **kwargs):
         # Set up data directory with reproducibility info for each episode
         if not hasattr(self, "data_dir"):

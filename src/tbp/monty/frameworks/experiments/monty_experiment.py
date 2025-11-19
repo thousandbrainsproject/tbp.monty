@@ -459,11 +459,11 @@ class MontyExperiment:
     # Methods for running the experiment
     ####
 
-    def pre_step(self, step, observation):
+    def pre_step(self, _step, _observation):
         """Hook for anything you want to do before a step."""
         self.logger_handler.pre_step(self.logger_args)
 
-    def post_step(self, step, observation):
+    def post_step(self, _step, _observation):
         """Hook for anything you want to do after a step."""
         self.logger_handler.post_step(self.logger_args)
 

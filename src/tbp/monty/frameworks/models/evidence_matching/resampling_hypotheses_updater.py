@@ -357,8 +357,10 @@ class ResamplingHypothesesUpdater:
             else:
                 # Still return prediction error.
                 # TODO: make this nicer like dependent on log_level.
-                resampling_telemetry[input_channel] = ChannelHypothesesUpdateTelemetry(
-                    channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry
+                resampling_telemetry[input_channel] = asdict(
+                    ChannelHypothesesUpdateTelemetry(
+                        channel_hypothesis_displacer_telemetry=channel_hypothesis_displacer_telemetry
+                    )
                 )
 
         return hypotheses_updates, resampling_telemetry

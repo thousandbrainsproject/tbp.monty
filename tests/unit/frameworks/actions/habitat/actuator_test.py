@@ -24,6 +24,7 @@ from typing import Any
 from unittest.mock import Mock, patch
 
 from habitat_sim import ActionSpec, Agent, AgentConfiguration
+from typing_extensions import override
 
 from tbp.monty.frameworks.actions.actions import (
     LookDown,
@@ -49,7 +50,8 @@ from tests.unit.frameworks.actions.fakes.action import FakeAction
 
 
 class FakeHabitat(HabitatActuator):
-    def get_agent(self, agent_id: AgentID) -> Agent:
+    @override
+    def get_agent(self, agent_id: AgentID) -> Agent | None:
         return None
 
 
