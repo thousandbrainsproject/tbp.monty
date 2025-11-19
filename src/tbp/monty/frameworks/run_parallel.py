@@ -202,17 +202,14 @@ def post_parallel_log_cleanup(filenames, outfile, cat_fn):
 
 
 def post_parallel_profile_cleanup(parallel_dirs, base_dir, mode):
-    profile_dirs = [os.path.join(i, "profile") for i in parallel_dirs]
+    profile_dirs = [Path(i) / "profile" for i in parallel_dirs]
 
     episode_csvs = []
     setup_csvs = []
     overall_csvs = []
 
     for profile_dir in profile_dirs:
-        epsd_csvs = [
-            i for i in os.listdir(profile_dir) if "episode" in i and i.endswith(".csv")
-        ]
-        epsd_csv_paths = [os.path.join(profile_dir, i) for i in epsd_csvs]
+        epsd_csv_paths = list(profile_dir.glob("*episode*.csv"))
         setup_csv = os.path.join(profile_dir, "profile-setup_experiment.csv")
         overall_csv = os.path.join(profile_dir, f"profile-{mode}.csv")
 
@@ -241,7 +238,7 @@ def move_reproducibility_data(base_dir, parallel_dirs):
 
     # Headache to accont for the fact that everyone is episode 0
     for cnt, rdir in enumerate(repro_dirs):
-        files = os.listdir(rdir)
+        files = [f.name for f in Path(rdir).iterdir()]
         assert "eval_episode_0_actions.jsonl" in files
         assert "eval_episode_0_target.txt" in files
         action_file = f"eval_episode_{cnt}_actions.jsonl"
@@ -356,14 +353,14 @@ def post_parallel_train(configs: list[Mapping], base_dir: str) -> None:
         saved_model_file = os.path.join(output_dir, "model.pt")
         torch.save(exp.model.state_dict(), saved_model_file)
 
-        if pretraining:
-            pdirs = [os.path.dirname(i) for i in parallel_dirs]
-        else:
-            pdirs = parallel_dirs
+    if pretraining:
+        pdirs = [os.path.dirname(i) for i in parallel_dirs]
+    else:
+        pdirs = parallel_dirs
 
-        for pdir in pdirs:
-            print(f"Removing directory: {pdir}")
-            shutil.rmtree(pdir)
+    for pdir in pdirs:
+        print(f"Removing directory: {pdir}")
+        shutil.rmtree(pdir)
 
 
 def run_episodes_parallel(

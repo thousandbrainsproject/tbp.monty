@@ -481,7 +481,7 @@ class EvidenceGraphLM(GraphLM):
         if terminal_state is None:  # at beginning of episode
             graph_id = None
         elif (terminal_state == "no_match") or len(self.get_possible_matches()) == 0:
-            if terminal_state == "time_out" or terminal_state == "pose_time_out":
+            if terminal_state in {"time_out", "pose_time_out"}:
                 # If we have multiple LMs some of them might reach time out but with
                 # no possible matches. In this case we don't want to add a new graph
                 # to their memory.
@@ -493,9 +493,7 @@ class EvidenceGraphLM(GraphLM):
             graph_id = self.get_possible_matches()[0]
         # If we are evaluating and reach a time out, we set the object to the
         # most likely hypothesis (if evidence for it is above object_evidence_threshold)
-        elif self.mode == "eval" and (
-            terminal_state == "time_out" or terminal_state == "pose_time_out"
-        ):
+        elif self.mode == "eval" and terminal_state in {"time_out", "pose_time_out"}:
             mlh = self.get_current_mlh()
             if "evidence" in mlh.keys() and (
                 mlh["evidence"] > self.object_evidence_threshold
@@ -1213,12 +1211,12 @@ class EvidenceGraphLM(GraphLM):
             # error. This would not be the case if there are no existing hypotheses
             # or if a channel was newly initialized.
             try:
-                displacer_telemetry = (
-                    channel_telemetry.channel_hypothesis_displacer_telemetry
-                )
-                channel_prediction_error = displacer_telemetry.mlh_prediction_error
+                displacer_telemetry = channel_telemetry[
+                    "channel_hypothesis_displacer_telemetry"
+                ]
+                channel_prediction_error = displacer_telemetry["mlh_prediction_error"]
                 prediction_errors.append(channel_prediction_error)
-            except AttributeError:
+            except KeyError:
                 # channel_telemetry was missing needed attributes,
                 # so skip adding prediction errors
                 pass

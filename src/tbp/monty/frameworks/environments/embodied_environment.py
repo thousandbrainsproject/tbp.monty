@@ -19,13 +19,13 @@ from typing_extensions import deprecated
 from tbp.monty.frameworks.actions.actions import Action
 
 __all__ = [
-    "EmbodiedEnvironment",
     "ActionSpace",
-    "ObjectInfo",
+    "EmbodiedEnvironment",
     "ObjectID",
+    "ObjectInfo",
+    "QuaternionWXYZ",
     "SemanticID",
     "VectorXYZ",
-    "QuaternionWXYZ",
 ]
 
 ObjectID = NewType("ObjectID", int)

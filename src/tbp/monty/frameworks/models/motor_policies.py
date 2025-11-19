@@ -288,10 +288,8 @@ class BasePolicy(MotorPolicy):
         """
         agent_state = self.get_agent_state(state)
 
-        if "motor_only_step" in agent_state.keys() and agent_state["motor_only_step"]:
-            return True
-
-        return False
+        # FIXME: "motor_only_step" is not a valid AgentState key (based on type).
+        return bool(agent_state.get("motor_only_step"))
 
     @property
     def last_action(self) -> Action:
@@ -1595,7 +1593,7 @@ def read_action_file(file: str) -> list[Action]:
         file_read = f.read()
 
     lines = [line.strip() for line in file_read.split("\n") if line.strip()]
-    return [cast(Action, json.loads(line, cls=ActionJSONDecoder)) for line in lines]
+    return [cast("Action", json.loads(line, cls=ActionJSONDecoder)) for line in lines]
 
 
 def write_action_file(actions: list[Action], file: str) -> None:
@@ -2287,7 +2285,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
         """
         assert np.linalg.norm(rotated_locs[-1]) == 0, "Should be centered to 0"
 
-        if (
+        return (
             (
                 get_angle_beefed_up(self.tangential_vec, rotated_locs[ii])
                 <= np.pi / self.conflict_divisor
@@ -2306,10 +2304,7 @@ class SurfacePolicyCurvatureInformed(SurfacePolicy):
                 # (4mm), so this seems like a reasonable estimate
                 np.linalg.norm(rotated_locs[ii], ord=2) <= 0.025
             )
-        ):
-            return True
-
-        return False
+        )
 
     def attempt_conflict_resolution(self, vec_copy):
         """Try to define direction vector that avoids revisiting previous locations."""

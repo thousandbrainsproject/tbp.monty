@@ -25,8 +25,8 @@ from .sensors import RGBDSensorConfig, SemanticSensorConfig, SensorConfig
 
 __all__ = [
     "HabitatAgent",
-    "SingleSensorAgent",
     "MultiSensorAgent",
+    "SingleSensorAgent",
 ]
 
 ActionSpaceName = Literal["absolute_only", "distant_agent", "surface_agent"]

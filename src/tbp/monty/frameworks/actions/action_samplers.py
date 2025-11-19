@@ -9,7 +9,7 @@
 # https://opensource.org/licenses/MIT.
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Callable
 
 import quaternion as qt
 from numpy import cos, pi, sin, sqrt
@@ -98,7 +98,6 @@ class ConstantSampler(ActionSampler):
         rotation_degrees: float = 5.0,
         rotation_quat: QuaternionWXYZ | None = None,
         translation_distance: float = 0.004,
-        **kwargs: Any,  # Accept arbitrary keyword arguments for compatibility
     ) -> None:
         super().__init__(actions=actions, rng=rng)
         self.absolute_degrees = absolute_degrees
@@ -192,7 +191,6 @@ class UniformlyDistributedSampler(ActionSampler):
         max_translation: float = 0.05,
         min_translation: float = 0.05,
         rng: Generator | None = None,
-        **kwargs: Any,  # Accept arbitrary keyword arguments for compatibility
     ):
         super().__init__(actions=actions, rng=rng)
         self.max_absolute_degrees = max_absolute_degrees

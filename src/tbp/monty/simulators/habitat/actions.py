@@ -18,12 +18,12 @@ from habitat_sim.registry import registry
 from habitat_sim.scene import SceneNode
 
 __all__ = [
-    "SetYaw",
-    "SetSensorPitch",
     "SetAgentPitch",
     "SetAgentPose",
-    "SetSensorRotation",
+    "SetSensorPitch",
     "SetSensorPose",
+    "SetSensorRotation",
+    "SetYaw",
 ]
 
 
