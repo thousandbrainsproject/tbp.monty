@@ -11,6 +11,7 @@
 import http.server
 import os
 import re
+from pathlib import Path
 
 from tbp.monty.frameworks.run_env import setup_env
 
@@ -27,10 +28,8 @@ class MontyRequestHandler(http.server.SimpleHTTPRequestHandler):
         data_type = "depth" if inc_filename == "depth.data" else "rgb"
 
         # check existing filenames in the directory
-        data_path = os.path.join(
-            os.environ["MONTY_DATA"], "worldimages/world_data_stream"
-        )
-        file_list = [f for f in os.listdir(data_path) if not f.startswith(".")]
+        data_path = Path(os.environ["MONTY_DATA"]) / "worldimages" / "world_data_stream"
+        file_list = [f.name for f in data_path.glob("[!.]*")]
         if data_type == "depth":
             match = [re.search("depth_(.*).data", file) for file in file_list]
             match_no_none = [m for m in match if m is not None]

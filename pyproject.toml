@@ -60,8 +60,6 @@ simulator_mujoco = [
 analysis = [
     'ipython',
     'seaborn',
-    'vedo',
-    'trimesh',
 ]
 build = [
     'build'
@@ -224,7 +222,6 @@ ignore = [
     "T203", # T203: pprint found
     # TODO: ruff=0.11.4 upgrade introduced the errors ignored below, resolve these
     "LOG015", # LOG015: root-logger-call,
-    "PTH208", # PTH208: os-listdir
     ###
     # TODO: ruff=0.7.1 migration introduced errors ignored below, resolve these
     "ANN001", # ANN001: Missing type annotation for function argument
@@ -235,8 +232,6 @@ ignore = [
     "ANN204", # ANN204: Missing return type annotation for special method
     "ANN206", # ANN206: Missing return type annotation for classmethod
     "ANN401", # ANN401: Dynamically typed expressions (typing.Any) are disallowed in {name}
-    # TODO: Address ARG002 right away
-    "ARG002", # ARG002: Unused method argument
     "COM812", # COM812: Trailing comma missing
     "DTZ005", # DTZ005: `datetime.datetime.now()` called without a `tz` argument
     "EM101", # EM101: Exception must not use a string literal, assign to variable first
@@ -308,6 +303,13 @@ allow-dict-calls-with-keyword-arguments = true
 
 [tool.ruff.lint.flake8-copyright]
 author = "Thousand Brains Project"
+
+[tool.ruff.lint.isort]
+# wandb creates a folder called 'wandb' during local runs (not logged in)
+# this needs to be added to prevent isort from incorrectly sorting
+# It can be removed when a fix for this is released:
+# https://github.com/astral-sh/ruff/issues/10519
+known-third-party = ["wandb"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 18

@@ -804,8 +804,8 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
         rng,
         transform=None,
         parent_to_child_mapping=None,
-        *args,
-        **kwargs,
+        *_args,
+        **_kwargs,
     ):
         """Initialize environment interface.
 
@@ -821,8 +821,8 @@ class OmniglotEnvironmentInterface(EnvironmentInterfacePerObject):
             parent_to_child_mapping: dictionary mapping parent objects to their child
                 objects. Used for logging.
 
-            *args: Additional arguments
-            **kwargs: Additional keyword arguments
+            *args: Unused?
+            **kwargs: Unused?
 
         Raises:
             TypeError: If `motor_system` is not an instance of `MotorSystem`.
@@ -911,8 +911,8 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
         rng,
         transform=None,
         parent_to_child_mapping=None,
-        *args,
-        **kwargs,
+        *_args,
+        **_kwargs,
     ):
         """Initialize environment interface.
 
@@ -926,8 +926,8 @@ class SaccadeOnImageEnvironmentInterface(EnvironmentInterfacePerObject):
                 the environment.
             parent_to_child_mapping: dictionary mapping parent objects to their child
                 objects. Used for logging.
-            *args: Additional arguments
-            **kwargs: Additional keyword arguments
+            *args: Unused?
+            **kwargs: Unused?
 
         Raises:
             TypeError: If `motor_system` is not an instance of `MotorSystem`.
@@ -1016,8 +1016,8 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
         motor_system: MotorSystem,
         rng,
         transform=None,
-        *args,
-        **kwargs,
+        *_args,
+        **_kwargs,
     ):
         """Initialize environment interface.
 
@@ -1027,8 +1027,8 @@ class SaccadeOnImageFromStreamEnvironmentInterface(SaccadeOnImageEnvironmentInte
             rng: Random number generator to use.
             transform: Callable used to transform the observations returned by
                 the environment.
-            *args: Additional arguments
-            **kwargs: Additional keyword arguments
+            *args: Unused?
+            **kwargs: Unused?
 
         Raises:
             TypeError: If `motor_system` is not an instance of `MotorSystem`.

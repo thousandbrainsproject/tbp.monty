@@ -21,6 +21,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from pathlib import Path
 from pprint import pprint
 
 import pandas as pd
@@ -143,8 +144,10 @@ class RunParallelTest(unittest.TestCase):
         os.makedirs(self.eval_config_gt["logging_config"].output_dir)
 
     def check_reproducibility_logs(self, serial_repro_dir, parallel_repro_dir):
-        s_param_files = [i for i in os.listdir(serial_repro_dir) if "target" in i]
-        p_param_files = [i for i in os.listdir(parallel_repro_dir) if "target" in i]
+        s_param_files = sorted(p.name for p in Path(serial_repro_dir).glob("*target*"))
+        p_param_files = sorted(
+            p.name for p in Path(parallel_repro_dir).glob("*target*")
+        )
 
         # Same param files for each episode. No more, no less.
         self.assertEqual(set(s_param_files), set(p_param_files))

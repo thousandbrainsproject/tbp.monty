@@ -393,7 +393,7 @@ class Probe(SensorModule):
 
     def __init__(
         self,
-        rng,
+        rng,  # noqa: ARG002
         sensor_module_id: str,
         save_raw_obs: bool,
     ):

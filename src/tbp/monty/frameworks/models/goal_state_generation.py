@@ -40,7 +40,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
     Note all goal-states conform to the State-class cortical messaging protocol (CMP).
     """
 
-    def __init__(self, parent_lm, goal_tolerances=None, **kwargs) -> None:
+    def __init__(self, parent_lm, goal_tolerances=None, **_kwargs) -> None:
         """Initialize the GSG.
 
         Args:
@@ -181,7 +181,7 @@ class GraphGoalStateGenerator(GoalStateGenerator):
         """
         return
 
-    def _generate_goal_state(self, observations):
+    def _generate_goal_state(self, _observations):
         """Generate a new goal-state to send out to other LMs and/or motor actuators.
 
         Given the driving goal-state, and information from the parent LM of the GSG
@@ -553,17 +553,14 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             A goal-state for the motor system.
         """
         # Determine where we want to test in the MLH graph
-        target_loc_id, target_separation = self._compute_graph_mismatch()
+        target_loc_id = self._compute_graph_mismatch()
 
         # Get pose information for the target point
         target_info = self._get_target_loc_info(target_loc_id)
 
         # Estimate how important this goal-state will be for the Monty-system as a
         # whole
-        goal_confidence = self._compute_goal_confidence(
-            lm_output_confidence=self.parent_lm.get_output().confidence,
-            separation=target_separation,
-        )
+        goal_confidence = self.parent_lm.get_output().confidence
 
         # Compute the goal-state (for the motor-actuator)
         return self._compute_goal_state_for_target_loc(
@@ -692,11 +689,10 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
         )
 
         target_loc_id = np.argmax(radius_node_dists)
-        target_loc_separation = np.max(radius_node_dists)
 
         self.prev_top_mlhs = [top_mlh, second_mlh_object]
 
-        return target_loc_id, target_loc_separation
+        return target_loc_id
 
     def _get_target_loc_info(self, target_loc_id):
         """Given a target location ID, get the target location and pose vectors.
@@ -725,37 +721,6 @@ class EvidenceGoalStateGenerator(GraphGoalStateGenerator):
             "target_loc": target_loc,
             "target_surface_normal": target_surface_normal,
         }
-
-    def _compute_goal_confidence(
-        self, lm_output_confidence, separation, space_size=1.0, confidence_weighting=0.1
-    ):
-        """Calculate the confidence of the goal-state.
-
-        The confidence is based on the e.g. separation in hypothesis-space between the
-        two MLH, and the confidence associated with the MLH classificaiton of the parent
-        LM. Currently just retuns the confidence of the parent LM but TODO M implement a
-        more sophisticated function.
-
-        TODO M How to normalize the displacement?
-        Could put through a sigmoid, that is perhaps scaled by the size of the object?
-        Could divide by e.g. the size of the object to make it likely to be <1, and
-        then clip it; that way any subtle differences between LMs is likely to be
-        preserved, i.e. rather than them all clipping to 1.0; can then just make
-        sure this value is weighted heavily compared to confidence when computing
-        the overall strenght of the goal-state.
-        - size of the object could be estimated from the minimum and maximum corners
-        - or use the max size of the graph --> Note this doesn't account for the
-        actual size of the object, and these grid-models are not currently used
-
-        Returns:
-            The confidence of the goal-state.
-        """
-        # Provisional implementation:
-        # squashed_displacement = np.clip(separation / space_size, 0, 1)
-        # goal_confidence = squashed_displacement + confidence_weighting
-        # * lm_output_confidence
-
-        return lm_output_confidence
 
     def _compute_goal_state_for_target_loc(
         self, observations, target_info, goal_confidence=1.0

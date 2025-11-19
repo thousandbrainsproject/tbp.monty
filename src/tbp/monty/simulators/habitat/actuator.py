@@ -41,7 +41,7 @@ __all__ = [
 class HabitatActuatorRequirements(Protocol):
     """HabitatActuator requires these to be available when mixed in."""
 
-    def get_agent(self, agent_id: AgentID) -> Agent: ...
+    def get_agent(self, agent_id: AgentID) -> Agent | None: ...
 
 
 class HabitatActuator(HabitatActuatorRequirements):
