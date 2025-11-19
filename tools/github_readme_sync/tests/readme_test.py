@@ -648,24 +648,22 @@ This is a test document.""",
 
     def test_convert_csv_to_html_table_relative_path(self):
         # Create a temporary directory structure
-        with tempfile.TemporaryDirectory() as tmp_dir_str:
-            tmp_dir = Path(tmp_dir_str)
-
+        with tempfile.TemporaryDirectory() as tmp_dir:
             # Create subdirectories
-            data_dir = tmp_dir / "data"
-            docs_dir = tmp_dir / "docs"
+            data_dir = os.path.join(tmp_dir, "data")
+            docs_dir = os.path.join(tmp_dir, "docs")
             os.makedirs(data_dir)
             os.makedirs(docs_dir)
 
             # Create a CSV file in the data directory
-            csv_path = data_dir / "test.csv"
+            csv_path = os.path.join(data_dir, "test.csv")
             with open(csv_path, "w") as f:
                 writer = csv.writer(f)
                 writer.writerow(["Header 1", "Header 2"])
                 writer.writerow(["Value 1", "Value 2"])
 
             # Create a mock markdown file path in the docs directory
-            doc_path = docs_dir / "doc.md"
+            doc_path = os.path.join(docs_dir, "doc.md")
 
             # Test relative path from doc to csv
             result = self.readme.convert_csv_to_html_table(
@@ -683,19 +681,18 @@ This is a test document.""",
             self.assertIn("</table></div>", result)
 
     def test_insert_markdown_snippet(self):
-        with tempfile.TemporaryDirectory() as tmp_dir_str:
-            tmp_dir = Path(tmp_dir_str)
-            docs_dir = tmp_dir / "docs"
-            other_dir = tmp_dir / "other"
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            docs_dir = os.path.join(tmp_dir, "docs")
+            other_dir = os.path.join(tmp_dir, "other")
             os.makedirs(docs_dir)
             os.makedirs(other_dir)
 
-            source_md = other_dir / "source.md"
+            source_md = os.path.join(other_dir, "source.md")
             with open(source_md, "w") as f:
                 f.write(
                     "# Test Header\nThis is test content\n* List item 1\n* List item 2"
                 )
-            doc_path = docs_dir / "doc.md"
+            doc_path = os.path.join(docs_dir, "doc.md")
 
             result = self.readme.insert_markdown_snippet(
                 "!snippet[../../other/source.md]", doc_path

@@ -16,6 +16,7 @@ pytest.importorskip(
 
 import copy
 import logging
+import os
 import shutil
 import tempfile
 import unittest
@@ -204,7 +205,7 @@ class BaseConfigTest(unittest.TestCase):
             logger.info(info_message)
             logger.warning(warning_message)
 
-            with open(exp.output_dir / "log.txt") as f:
+            with open(os.path.join(exp.output_dir, "log.txt")) as f:
                 log = f.read()
 
             self.assertTrue(info_message in log)
@@ -223,7 +224,7 @@ class BaseConfigTest(unittest.TestCase):
             logger.debug(debug_message)
             logger.warning(warning_message)
 
-            with open(exp.output_dir / "log.txt") as f:
+            with open(os.path.join(exp.output_dir, "log.txt")) as f:
                 log = f.read()
 
             self.assertTrue(debug_message not in log)

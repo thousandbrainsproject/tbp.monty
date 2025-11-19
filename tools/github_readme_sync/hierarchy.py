@@ -14,7 +14,6 @@ import os
 import re
 import sys
 import timeit
-from pathlib import Path
 
 import requests
 
@@ -38,8 +37,7 @@ README_URL = "https://thousandbrainsproject.readme.io"
 
 
 def create_hierarchy_file(output_dir, hierarchy):
-    output_dir = Path(output_dir)
-    with open(output_dir / HIERARCHY_FILE, "w") as f:
+    with open(os.path.join(output_dir, HIERARCHY_FILE), "w") as f:
         for category in hierarchy:
             write_category(f, category, 0)
     logging.info(f"{GREEN}Export complete{RESET}")
@@ -70,15 +68,13 @@ def write_document(file, parent_slug, doc, indent_level):
 
 
 def check_hierarchy_file(folder: str):
-    folder = Path(folder)
     hierarchy = []
 
-    hierarchy_file = folder / HIERARCHY_FILE
-    if not os.path.exists(hierarchy_file):
-        logging.error(f"File {hierarchy_file} does not exist")
+    if not os.path.exists(os.path.join(folder, HIERARCHY_FILE)):
+        logging.error(f"File {os.path.join(folder, HIERARCHY_FILE)} does not exist")
         sys.exit(1)
 
-    with open(hierarchy_file) as f:
+    with open(os.path.join(folder, HIERARCHY_FILE)) as f:
         content = f.read()
         content = re.sub(r"<!--.*?-->", "", content, flags=re.DOTALL)
         lines = content.splitlines()
@@ -114,8 +110,10 @@ def check_hierarchy_file(folder: str):
             parent_stack[-1]["children"].append(new_doc)
             parent_stack.append(new_doc)
 
-            slug_path = folder.joinpath(*[el["slug"] for el in parent_stack])
-            errors = sanity_check(slug_path.with_suffix(".md"))
+            full_path = (
+                os.path.join(folder, *(el["slug"] for el in parent_stack)) + ".md"
+            )
+            errors = sanity_check(full_path)
             if errors:
                 link_check_errors.extend(errors)
 
@@ -142,10 +140,9 @@ def sanity_check(path):
 
 
 def check_links(path):
-    path = Path(path)
     with open(path) as f:
         content = f.read()
-    file_name = path.name
+    file_name = path.split("/")[-1]
 
     regex_md_links = r"\[([^\]]*)\]\(([^)]+\.md(?:#[^)]*)?)\)"
     md_link_matches = re.findall(regex_md_links, content)
@@ -163,7 +160,7 @@ def check_links(path):
         f"{YELLOW} {len(table_matches)} tables{RESET}"
     )
 
-    current_dir = path.parent
+    current_dir = os.path.dirname(path)
     errors = []
 
     for match in table_matches:
@@ -171,7 +168,7 @@ def check_links(path):
         if table_name in IGNORE_TABLES:
             continue
 
-        path_to_check = current_dir / match
+        path_to_check = os.path.join(current_dir, match)
         path_to_check = os.path.normpath(path_to_check)
         if not os.path.exists(path_to_check):
             errors.append(f"  CSV {match} does not exist")
@@ -180,7 +177,7 @@ def check_links(path):
         if match[1].startswith(("http://", "https://", "mailto:")):
             continue
 
-        path_to_check = current_dir / match[1].split("#")[0]
+        path_to_check = os.path.join(current_dir, match[1].split("#")[0])
         path_to_check = os.path.normpath(path_to_check)
         if any(placeholder in match[1] for placeholder in IGNORE_DOCS):
             continue
@@ -189,7 +186,7 @@ def check_links(path):
             errors.append(f"  Linked {match[1]} does not exist")
 
     for match in image_link_matches:
-        path_to_check = current_dir / match.split("#")[0]
+        path_to_check = os.path.join(current_dir, match.split("#")[0])
         path_to_check = os.path.normpath(path_to_check)
         if any(placeholder in match for placeholder in IGNORE_IMAGES):
             continue

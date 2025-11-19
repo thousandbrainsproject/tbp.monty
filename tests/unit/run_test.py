@@ -17,13 +17,13 @@ pytest.importorskip(
     reason="Habitat Sim optional dependency not installed.",
 )
 
+import os
 import pathlib
 import pickle
 import shutil
 import sys
 import tempfile
 import unittest
-from pathlib import Path
 from unittest import mock
 
 import magnum as mn
@@ -158,9 +158,10 @@ class MontyRunTest(unittest.TestCase):
         sys.argv = ["monty", "-e", "test_1"]
         main(all_configs=self.CONFIGS)
 
-        output_dir = Path(self.CONFIGS["test_1"]["logging_config"].output_dir)
-
-        with open(output_dir / "test_1" / "fake_log.pkl", "rb") as f:
+        output_dir = os.path.join(
+            self.CONFIGS["test_1"]["logging_config"].output_dir, "test_1"
+        )
+        with open(os.path.join(output_dir, "fake_log.pkl"), "rb") as f:
             exp_log = pickle.load(f)
 
         self.assertListEqual(exp_log, EXPECTED_LOG)
@@ -168,9 +169,10 @@ class MontyRunTest(unittest.TestCase):
     def test_main_with_single_experiment(self):
         main(all_configs=self.CONFIGS, experiments=["test_1"])
 
-        output_dir = Path(self.CONFIGS["test_1"]["logging_config"].output_dir)
-
-        with open(output_dir / "test_1" / "fake_log.pkl", "rb") as f:
+        output_dir = os.path.join(
+            self.CONFIGS["test_1"]["logging_config"].output_dir, "test_1"
+        )
+        with open(os.path.join(output_dir, "fake_log.pkl"), "rb") as f:
             exp_log = pickle.load(f)
 
         self.assertListEqual(exp_log, EXPECTED_LOG)
@@ -178,14 +180,18 @@ class MontyRunTest(unittest.TestCase):
     def test_main_with_multiple_experiment(self):
         main(all_configs=self.CONFIGS, experiments=["test_1", "test_2"])
 
-        output_dir = Path(self.CONFIGS["test_1"]["logging_config"].output_dir)
-
-        with open(output_dir / "test_1" / "fake_log.pkl", "rb") as f:
+        output_dir_1 = os.path.join(
+            self.CONFIGS["test_1"]["logging_config"].output_dir, "test_1"
+        )
+        with open(os.path.join(output_dir_1, "fake_log.pkl"), "rb") as f:
             exp_log_1 = pickle.load(f)
 
         self.assertListEqual(exp_log_1, EXPECTED_LOG)
 
-        with open(output_dir / "test_2" / "fake_log.pkl", "rb") as f:
+        output_dir_2 = os.path.join(
+            self.CONFIGS["test_2"]["logging_config"].output_dir, "test_2"
+        )
+        with open(os.path.join(output_dir_2, "fake_log.pkl"), "rb") as f:
             exp_log_2 = pickle.load(f)
 
         self.assertListEqual(exp_log_2, EXPECTED_LOG)
@@ -193,8 +199,8 @@ class MontyRunTest(unittest.TestCase):
     def test_run(self):
         run(config=self.CONFIGS["test_1"])
 
-        output_dir = Path(self.CONFIGS["test_1"]["logging_config"].output_dir)
-        with open(output_dir / "fake_log.pkl", "rb") as f:
+        output_dir = os.path.join(self.CONFIGS["test_1"]["logging_config"].output_dir)
+        with open(os.path.join(output_dir, "fake_log.pkl"), "rb") as f:
             exp_log = pickle.load(f)
 
         self.assertListEqual(exp_log, EXPECTED_LOG)
@@ -207,9 +213,8 @@ class MontyRunTest(unittest.TestCase):
             # We want the _last_ "tests" index
             base_repo_idx += 1
         base_dir = pathlib.Path(*current_file_path.parts[:base_repo_idx])
-        exp_dir = base_dir / "benchmarks"
-        assert (exp_dir / "configs").exists()
-        sys.path.append(str(exp_dir))
+        exp_dir = os.path.join(str(base_dir), "benchmarks")
+        sys.path.append(exp_dir)
         import configs  # noqa: F401, PLC0415
 
 

@@ -210,16 +210,16 @@ def post_parallel_profile_cleanup(parallel_dirs, base_dir, mode):
 
     for profile_dir in profile_dirs:
         epsd_csv_paths = list(profile_dir.glob("*episode*.csv"))
-        setup_csv = profile_dir / "profile-setup_experiment.csv"
-        overall_csv = profile_dir / f"profile-{mode}.csv"
+        setup_csv = os.path.join(profile_dir, "profile-setup_experiment.csv")
+        overall_csv = os.path.join(profile_dir, f"profile-{mode}.csv")
 
         episode_csvs.extend(epsd_csv_paths)
         setup_csvs.append(setup_csv)
         overall_csvs.append(overall_csv)
 
-    episode_outfile = base_dir / f"profile-{mode}_episodes.csv"
-    setup_outfile = base_dir / "profile-setup_experiment.csv"
-    overall_outfile = base_dir / f"profile-{mode}.csv"
+    episode_outfile = os.path.join(base_dir, f"profile-{mode}_episodes.csv")
+    setup_outfile = os.path.join(base_dir, "profile-setup_experiment.csv")
+    overall_outfile = os.path.join(base_dir, f"profile-{mode}.csv")
 
     post_parallel_log_cleanup(episode_csvs, episode_outfile, cat_fn=cat_csv)
     post_parallel_log_cleanup(setup_csvs, setup_outfile, cat_fn=cat_csv)
@@ -227,20 +227,28 @@ def post_parallel_profile_cleanup(parallel_dirs, base_dir, mode):
 
 
 def move_reproducibility_data(base_dir, parallel_dirs):
-    outdir = Path(base_dir) / "reproduce_episode_data"
+    outdir = os.path.join(base_dir, "reproduce_episode_data")
     if os.path.exists(outdir):
         shutil.rmtree(outdir)
 
     os.makedirs(outdir)
-    repro_dirs = [Path(pdir) / "reproduce_episode_data" for pdir in parallel_dirs]
+    repro_dirs = [
+        os.path.join(pdir, "reproduce_episode_data") for pdir in parallel_dirs
+    ]
 
     # Headache to accont for the fact that everyone is episode 0
     for cnt, rdir in enumerate(repro_dirs):
-        episode0actions = rdir / "eval_episode_0_actions.jsonl"
-        episode0target = rdir / "eval_episode_0_target.txt"
-        assert episode0actions.exists() and episode0target.exists()
-        episode0actions.rename(outdir / f"eval_episode_{cnt}_actions.jsonl")
-        episode0target.rename(outdir / f"eval_episode_{cnt}_target.txt")
+        files = [f.name for f in Path(rdir).iterdir()]
+        assert "eval_episode_0_actions.jsonl" in files
+        assert "eval_episode_0_target.txt" in files
+        action_file = f"eval_episode_{cnt}_actions.jsonl"
+        target_file = f"eval_episode_{cnt}_target.txt"
+        Path(os.path.join(rdir, "eval_episode_0_actions.jsonl")).rename(
+            os.path.join(outdir, action_file)
+        )
+        Path(os.path.join(rdir, "eval_episode_0_target.txt")).rename(
+            os.path.join(outdir, target_file)
+        )
 
 
 def collect_detailed_episodes_names(parallel_dirs):
@@ -260,8 +268,7 @@ def post_parallel_eval(configs: list[Mapping], base_dir: str) -> None:
         base_dir: Directory where parallel logs are stored.
     """
     print("Executing post parallel evaluation cleanup")
-    parallel_dirs = [Path(cfg["logging_config"]["output_dir"]) for cfg in configs]
-    base_dir = Path(base_dir)
+    parallel_dirs = [cfg["logging_config"]["output_dir"] for cfg in configs]
 
     logging_config = configs[0]["logging_config"]
     save_per_episode = logging_config.get("detailed_save_per_episode")
@@ -271,22 +278,22 @@ def post_parallel_eval(configs: list[Mapping], base_dir: str) -> None:
         if issubclass(handler, DetailedJSONHandler):
             if save_per_episode:
                 filenames = collect_detailed_episodes_names(parallel_dirs)
-                outdir = base_dir / "detailed_run_stats"
+                outdir = Path(base_dir) / "detailed_run_stats"
                 maybe_rename_existing_dir(outdir)
                 post_parallel_log_cleanup(filenames, outdir, cat_fn=mv_files)
             else:
                 filename = "detailed_run_stats.json"
-                filenames = [pdir / filename for pdir in parallel_dirs]
-                outfile = base_dir / filename
-                maybe_rename_existing_file(outfile)
+                filenames = [os.path.join(pdir, filename) for pdir in parallel_dirs]
+                outfile = os.path.join(base_dir, filename)
+                maybe_rename_existing_file(Path(outfile))
                 post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
             continue
 
         if issubclass(handler, BasicCSVStatsHandler):
             filename = "eval_stats.csv"
-            filenames = [pdir / filename for pdir in parallel_dirs]
-            outfile = base_dir / filename
-            maybe_rename_existing_file(outfile)
+            filenames = [os.path.join(pdir, filename) for pdir in parallel_dirs]
+            outfile = os.path.join(base_dir, filename)
+            maybe_rename_existing_file(Path(outfile))
             post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_csv)
             continue
 
@@ -296,8 +303,8 @@ def post_parallel_eval(configs: list[Mapping], base_dir: str) -> None:
 
     if configs[0]["logging_config"]["python_log_to_file"]:
         filename = "log.txt"
-        filenames = [pdir / filename for pdir in parallel_dirs]
-        outfile = base_dir / filename
+        filenames = [os.path.join(pdir, filename) for pdir in parallel_dirs]
+        outfile = os.path.join(base_dir, filename)
         post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
 
     if issubclass(configs[0]["experiment_class"], ProfileExperimentMixin):
@@ -317,19 +324,18 @@ def post_parallel_train(configs: list[Mapping], base_dir: str) -> None:
         base_dir: Directory where parallel logs are stored.
     """
     print("Executing post parallel training cleanup")
-    parallel_dirs = [Path(cfg["logging_config"]["output_dir"]) for cfg in configs]
-    base_dir = Path(base_dir)
+    parallel_dirs = [cfg["logging_config"]["output_dir"] for cfg in configs]
     pretraining = False
     if issubclass(
         configs[0]["experiment_class"], MontySupervisedObjectPretrainingExperiment
     ):
-        parallel_dirs = [pdir / "pretrained" for pdir in parallel_dirs]
+        parallel_dirs = [os.path.join(pdir, "pretrained") for pdir in parallel_dirs]
         pretraining = True
 
     if configs[0]["logging_config"]["python_log_to_file"]:
         filename = "log.txt"
-        filenames = [pdir / filename for pdir in parallel_dirs]
-        outfile = base_dir / filename
+        filenames = [os.path.join(pdir, filename) for pdir in parallel_dirs]
+        outfile = os.path.join(base_dir, filename)
         post_parallel_log_cleanup(filenames, outfile, cat_fn=cat_files)
 
     if issubclass(configs[0]["experiment_class"], ProfileExperimentMixin):
@@ -338,13 +344,13 @@ def post_parallel_train(configs: list[Mapping], base_dir: str) -> None:
     config = configs[0]
     with config["experiment_class"](config) as exp:
         exp.model.load_state_dict_from_parallel(parallel_dirs, True)
-        output_dir = Path(configs[0]["logging_config"]["output_dir"]).parent
+        output_dir = os.path.dirname(configs[0]["logging_config"]["output_dir"])
         if issubclass(
             configs[0]["experiment_class"], MontySupervisedObjectPretrainingExperiment
         ):
-            output_dir = output_dir / "pretrained"
+            output_dir = os.path.join(output_dir, "pretrained")
         os.makedirs(output_dir, exist_ok=True)
-        saved_model_file = output_dir / "model.pt"
+        saved_model_file = os.path.join(output_dir, "model.pt")
         torch.save(exp.model.state_dict(), saved_model_file)
 
     if pretraining:
@@ -427,13 +433,13 @@ def run_episodes_parallel(
     end_time = time.time()
     total_time = end_time - start_time
 
-    output_dir = Path(configs[0]["logging_config"]["output_dir"])
-    base_dir = output_dir.parent
+    output_dir = configs[0]["logging_config"]["output_dir"]
+    base_dir = os.path.dirname(output_dir)
 
     if train:
         post_parallel_train(configs, base_dir)
         if configs[0]["logging_config"]["log_parallel_wandb"]:
-            csv_path = base_dir / "train_stats.csv"
+            csv_path = os.path.join(base_dir, "train_stats.csv")
             if os.path.exists(csv_path):
                 train_stats = pd.read_csv(csv_path)
                 train_table = wandb.Table(dataframe=train_stats)
@@ -443,7 +449,7 @@ def run_episodes_parallel(
     else:
         post_parallel_eval(configs, base_dir)
         if configs[0]["logging_config"]["log_parallel_wandb"]:
-            csv_path = base_dir / "eval_stats.csv"
+            csv_path = os.path.join(base_dir, "eval_stats.csv")
             if os.path.exists(csv_path):
                 eval_stats = pd.read_csv(csv_path)
                 eval_table = wandb.Table(dataframe=eval_stats)
@@ -461,7 +467,7 @@ def run_episodes_parallel(
     print(f"Done running parallel experiments in {end_time - start_time} seconds")
 
     # Keep a record of how long everything takes
-    with open(base_dir / "parallel_log.txt", "w") as f:
+    with open(os.path.join(base_dir, "parallel_log.txt"), "w") as f:
         f.write(f"experiment: {experiment_name}\n")
         f.write(f"num_parallel: {num_parallel}\n")
         f.write(f"total_time: {total_time}")
@@ -595,11 +601,11 @@ def generate_parallel_train_configs(
         )
 
         # Save results in parallel subdir of output_dir, update run_name
-        output_dir = Path(obj_config["logging_config"]["output_dir"])
-        run_name = f"{experiment_name}-parallel_train_episode_{obj}"
+        output_dir = obj_config["logging_config"]["output_dir"]
+        run_name = os.path.join(f"{experiment_name}-parallel_train_episode_{obj}")
         obj_config["logging_config"]["run_name"] = run_name
-        obj_config["logging_config"]["output_dir"] = (
-            output_dir / experiment_name / run_name
+        obj_config["logging_config"]["output_dir"] = os.path.join(
+            output_dir, experiment_name, run_name
         )
         obj_config["logging_config"]["wandb_handlers"] = []
 
@@ -654,11 +660,13 @@ def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> list[M
             )
 
             # Save results in parallel subdir of output_dir, update run_name
-            output_dir = Path(new_config["logging_config"]["output_dir"])
-            run_name = f"{experiment_name}-parallel_eval_episode_{episode_count}"
+            output_dir = new_config["logging_config"]["output_dir"]
+            run_name = os.path.join(
+                f"{experiment_name}-parallel_eval_episode_{episode_count}"
+            )
             new_config["logging_config"]["run_name"] = run_name
-            new_config["logging_config"]["output_dir"] = (
-                output_dir / experiment_name / run_name
+            new_config["logging_config"]["output_dir"] = os.path.join(
+                output_dir, experiment_name, run_name
             )
             if len(new_config["logging_config"]["wandb_handlers"]) > 0:
                 new_config["logging_config"]["wandb_handlers"] = []

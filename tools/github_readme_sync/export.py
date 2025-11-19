@@ -11,7 +11,6 @@
 import logging
 import os
 import shutil
-from pathlib import Path
 
 from slugify import slugify
 
@@ -21,7 +20,6 @@ from tools.github_readme_sync.readme import ReadMe
 
 
 def export(output_dir: str, rdme: ReadMe):
-    output_dir = Path(output_dir)
     hierarchy = []
     categories = rdme.get_categories()
 
@@ -42,7 +40,7 @@ def export(output_dir: str, rdme: ReadMe):
             "\n" if i > 0 else "" + f"{BLUE}{slugify(category['title']).upper()}{RESET}"
         )
 
-        category_folder_path = output_dir / slugify(category["title"])
+        category_folder_path = os.path.join(output_dir, slugify(category["title"]))
         os.makedirs(category_folder_path, exist_ok=True)
 
         docs_from_server = rdme.get_category_docs(category)
@@ -70,13 +68,13 @@ def process_doc(*, server_doc, hierarchy_doc, folder_path, indent_level, rdme):
     indent = INDENTATION_UNIT * indent_level
     logging.info(f"{indent}{CYAN}{hierarchy_doc['slug']}{RESET}")
 
-    doc_path = folder_path / f"{hierarchy_doc['slug']}.md"
+    doc_path = os.path.join(folder_path, f"{hierarchy_doc['slug']}.md")
     with open(doc_path, "w") as f:
         f.write(rdme.get_doc_by_slug(server_doc["slug"]))
 
     children = server_doc.get("children", [])
     if children:
-        child_folder_path = folder_path / hierarchy_doc["slug"]
+        child_folder_path = os.path.join(folder_path, hierarchy_doc["slug"])
         os.makedirs(child_folder_path, exist_ok=True)
 
     for child in children:

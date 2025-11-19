@@ -13,7 +13,6 @@ import logging
 import os
 import pprint
 import time
-from pathlib import Path
 
 from tbp.monty.frameworks.config_utils.cmd_parser import create_cmd_parser
 from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
@@ -97,9 +96,9 @@ def main(all_configs, experiments=None):
         # NOTE: wandb args are further processed in monty_experiment
         if not exp_config["logging_config"]["run_name"]:
             exp_config["logging_config"]["run_name"] = experiment
-        exp_config["logging_config"]["output_dir"] = (
-            Path(exp_config["logging_config"]["output_dir"])
-            / exp_config["logging_config"]["run_name"]
+        exp_config["logging_config"]["output_dir"] = os.path.join(
+            exp_config["logging_config"]["output_dir"],
+            exp_config["logging_config"]["run_name"],
         )
         # If we are not running in parallel, this should always be False
         exp_config["logging_config"]["log_parallel_wandb"] = False

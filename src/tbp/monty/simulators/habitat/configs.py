@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Callable, Mapping
 
 from tbp.monty.frameworks.agents import AgentID
@@ -83,7 +82,7 @@ class EnvInitArgs:
     )
     scene_id: int | None = field(default=None)
     seed: int = field(default=42)
-    data_path: str = Path(os.environ["MONTY_DATA"]) / "habitat" / "objects" / "ycb"
+    data_path: str = os.path.join(os.environ["MONTY_DATA"], "habitat/objects/ycb")
 
 
 @dataclass
@@ -135,7 +134,7 @@ class EnvInitArgsSurfaceViewMount(EnvInitArgs):
 
 @dataclass
 class EnvInitArgsMontyWorldPatchViewMount(EnvInitArgsPatchViewMount):
-    data_path: str = Path(os.environ["MONTY_DATA"]) / "numenta_lab"
+    data_path: str = os.path.join(os.environ["MONTY_DATA"], "numenta_lab")
 
 
 @dataclass
@@ -245,7 +244,7 @@ class NoisyPatchViewFinderMountHabitatEnvInterfaceConfig:
 
 @dataclass
 class EnvInitArgsShapenetPatchViewMount(EnvInitArgsPatchViewMount):
-    data_path: str = Path(os.environ["MONTY_DATA"]) / "shapenet"
+    data_path: str = os.path.join(os.environ["MONTY_DATA"], "shapenet")
 
 
 @dataclass

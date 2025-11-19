@@ -91,24 +91,30 @@ class SupervisedPretrainingExperimentArgs(ExperimentArgs):
 # Data-set containing RGBD images of real-world objects taken with a mobile device
 @dataclass
 class EnvInitArgsMontyWorldStandardScenes:
-    data_path = Path(os.environ["MONTY_DATA"]) / "worldimages" / "standard_scenes"
+    data_path: str = os.path.join(
+        os.environ["MONTY_DATA"], "worldimages/standard_scenes/"
+    )
 
 
 @dataclass
 class EnvInitArgsMontyWorldBrightScenes:
-    data_path = Path(os.environ["MONTY_DATA"]) / "worldimages" / "bright_scenes"
+    data_path: str = os.path.join(
+        os.environ["MONTY_DATA"], "worldimages/bright_scenes/"
+    )
 
 
 @dataclass
 class EnvInitArgsMontyWorldDarkScenes:
-    data_path = Path(os.environ["MONTY_DATA"]) / "worldimages" / "dark_scenes"
+    data_path: str = os.path.join(os.environ["MONTY_DATA"], "worldimages/dark_scenes/")
 
 
 # Data-set where a hand is prominently visible holding (and thereby partially
 # occluding) the objects
 @dataclass
 class EnvInitArgsMontyWorldHandIntrusionScenes:
-    data_path = Path(os.environ["MONTY_DATA"]) / "worldimages" / "hand_intrusion_scenes"
+    data_path: str = os.path.join(
+        os.environ["MONTY_DATA"], "worldimages/hand_intrusion_scenes/"
+    )
 
 
 # Data-set where there are two objects in the image; the target class is in the centre
@@ -117,7 +123,9 @@ class EnvInitArgsMontyWorldHandIntrusionScenes:
 # as a book if the target is a type of mug)
 @dataclass
 class EnvInitArgsMontyWorldMultiObjectScenes:
-    data_path = Path(os.environ["MONTY_DATA"]) / "worldimages" / "multi_object_scenes"
+    data_path: str = os.path.join(
+        os.environ["MONTY_DATA"], "worldimages/multi_object_scenes/"
+    )
 
 
 @dataclass
@@ -417,9 +425,10 @@ def get_omniglot_train_env_interface(num_versions, alphabet_ids, data_path=None)
         OmniglotEnvironmentInterfaceArgs for training.
     """
     if data_path is None:
-        data_path = Path(os.environ["MONTY_DATA"]) / "omniglot" / "python"
+        data_path = os.path.join(os.environ["MONTY_DATA"], "omniglot/python/")
     if os.path.exists(data_path):
-        images_path = Path(data_path) / "images_background"
+        data_path = Path(data_path)
+        images_path = data_path / "images_background"
         alphabet_folders = sorted(images_path.glob("[!.]*"))
     else:
         # Use placeholder here to pass Circle CI config check.
@@ -463,9 +472,10 @@ def get_omniglot_eval_env_interface(
         OmniglotEnvironmentInterfaceArgs for evaluation.
     """
     if data_path is None:
-        data_path = Path(os.environ["MONTY_DATA"]) / "omniglot" / "python"
+        data_path = os.path.join(os.environ["MONTY_DATA"], "omniglot/python/")
     if os.path.exists(data_path):
-        images_path = Path(data_path) / "images_background"
+        data_path = Path(data_path)
+        images_path = data_path / "images_background"
         alphabet_folders = sorted(images_path.glob("[!.]*"))
     else:
         # Use placeholder here to pass Circle CI config check.

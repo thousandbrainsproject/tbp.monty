@@ -263,6 +263,7 @@ ignore = [
     "PTH107", # PTH107: `os.remove()` should be replaced by `Path.unlink()`
     "PTH110", # PTH110: `os.path.exists()` should be replaced by `Path.exists()`
     "PTH111", # PTH111: `os.path.expanduser()` should be replaced by `Path.expanduser()`
+    "PTH118", # PTH118: `os.path.join()` should be replaced by `Path` with `/` operator
     "PTH119", # PTH119: `os.path.basename()` should be replaced by `Path.name`
     "PTH120", # PTH120: `os.path.dirname()` should be replaced by `Path.parent`
     "PTH123", # PTH123: `open()` should be replaced by `Path.open()`
