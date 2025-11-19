@@ -25,6 +25,10 @@ We are open to new platform suggestions, but our initial research suggests that 
 A proof of concept was created by modifying the `github_readme_sync` tool and can be viewed here:
 https://github.com/codeallthethingz/tbp.monty/pull/14/files
 
+## Note on Partial Contributions
+
+This is a large task that involves multiple skills and technologies. If you're interested in contributing but don't have expertise in all areas, you can volunteer for part of this task. For example, if you're skilled in HTML and web design, you could design a new page without needing to know S3 or the current readme sync tool. You can partner with a TBP team member to accomplish this task together.
+
 ---
 
 # Requirements
