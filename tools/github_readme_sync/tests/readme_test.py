@@ -578,8 +578,14 @@ This is a test document.""",
             "[Example Video](https://res.cloudinary.com/demo-cloud/video/upload/v12345/example-video.mp4)",
             result,
         )
+        self.assertNotIn(
+            '<source src="https://res.cloudinary.com/demo-cloud/video/upload/v12345/example-video.mp4"',
+            result,
+        )
         self.assertIn("[block:html]", result)
-        self.assertIn("test.mp4", result)
+        self.assertIn(
+            "https://res.cloudinary.com/demo-cloud/video/upload/v67890/test.mp4", result
+        )
 
     def test_convert_youtube_videos(self):
         input_text = """
