@@ -3,8 +3,8 @@ title: Organize & Start Podcast Series
 rfc: required
 estimated-scope: large
 improved-metric: community-engagement
-skills: podcasting, interviewing, writing, video-editing
-output-type: video
+skills: podcasting, interviewing, writing, audio-editing, video-editing
+output-type: audio, podcast
 ---
 
 We  would like to organize and start a podcast series that covers the Thousand Brains Project / Theory or adjacent topics.
