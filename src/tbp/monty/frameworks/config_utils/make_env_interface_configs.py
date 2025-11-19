@@ -58,7 +58,7 @@ class ExperimentArgs:
     # e.g. being off the object)
     n_train_epochs: int = 3
     n_eval_epochs: int = 3
-    model_name_or_path: str = ""
+    model_name_or_path: str | Path = ""
     min_lms_match: int = 1
     seed: int = 42
     supervised_lm_ids: list[str] | Literal["all"] = field(default_factory=list)

@@ -83,7 +83,9 @@ class EnvInitArgs:
     )
     scene_id: int | None = field(default=None)
     seed: int = field(default=42)
-    data_path: str = Path(os.environ["MONTY_DATA"]) / "habitat" / "objects" / "ycb"
+    data_path: str | Path = (
+        Path(os.environ["MONTY_DATA"]) / "habitat" / "objects" / "ycb"
+    )
 
 
 @dataclass
