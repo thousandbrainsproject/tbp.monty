@@ -101,11 +101,17 @@ jobs:
         if: always()
         working-directory: tbp.monty
         run: |
-          if [ -f "${{ runner.temp }}/build_result.json" ]; then
-            success=$(jq -r '.success // false' "${{ runner.temp }}/build_result.json")
-            if [ "$success" != "true" ]; then
-              echo "Build failed"
-              exit 1
-            fi
+          if [ ! -f "${{ runner.temp }}/build_result.json" ]; then
+            echo "Build failed: build_result.json was not created"
+            exit 1
+          fi
+          if ! jq -e . "${{ runner.temp }}/build_result.json" > /dev/null 2>&1; then
+            echo "Build failed: build_result.json contains invalid JSON"
+            exit 1
+          fi
+          success=$(jq -r '.success // false' "${{ runner.temp }}/build_result.json")
+          if [ "$success" != "true" ]; then
+            echo "Build failed"
+            exit 1
           fi
 
