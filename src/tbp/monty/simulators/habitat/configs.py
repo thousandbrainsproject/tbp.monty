@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Mapping
+from typing import Callable, Mapping
 
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
@@ -37,9 +37,6 @@ from tbp.monty.simulators.habitat.environment import (
     HabitatEnvironment,
     ObjectConfig,
 )
-
-if TYPE_CHECKING:
-    from os import PathLike
 
 __all__ = [
     "EnvInitArgs",
@@ -86,7 +83,7 @@ class EnvInitArgs:
     )
     scene_id: int | None = field(default=None)
     seed: int = field(default=42)
-    data_path: str | PathLike = (
+    data_path: str | Path = (
         Path(os.environ["MONTY_DATA"]) / "habitat" / "objects" / "ycb"
     )
 

@@ -39,7 +39,6 @@ from tbp.monty.frameworks.utils.transform_utils import scipy_to_numpy_quat
 
 if TYPE_CHECKING:
     from numbers import Number
-    from os import PathLike
 
 # ---------
 # run / training / eval args
@@ -59,7 +58,7 @@ class ExperimentArgs:
     # e.g. being off the object)
     n_train_epochs: int = 3
     n_eval_epochs: int = 3
-    model_name_or_path: str | PathLike = ""
+    model_name_or_path: str | Path = ""
     min_lms_match: int = 1
     seed: int = 42
     supervised_lm_ids: list[str] | Literal["all"] = field(default_factory=list)
