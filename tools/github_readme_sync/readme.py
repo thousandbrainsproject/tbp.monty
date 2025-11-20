@@ -207,8 +207,8 @@ class ReadMe:
         """
 
         def replace_match(match):
-            csv_path = match.group(1)
-            table_name = os.path.basename(csv_path)
+            csv_path = Path(match.group(1))
+            table_name = csv_path.name
             if table_name in IGNORE_TABLES:
                 return match.group(0)
 

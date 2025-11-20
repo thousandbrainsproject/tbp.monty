@@ -255,7 +255,6 @@ ignore = [
     "PT009", # PT009: Use a regular `assert` instead of unittest-style `assertEqual`
     "PT018", # PT018: Assertion should be broken down into multiple parts
     "PT027", # PT027: Use `pytest.raises` instead of unittest-style `assertRaises`
-    "PTH119", # PTH119: `os.path.basename()` should be replaced by `Path.name`
     "PTH123", # PTH123: `open()` should be replaced by `Path.open()`
     "RET503", # RET503: Missing explicit `return` at the end of function able to return non-`None` value
     "RUF005", # RUF005: Consider {expression} instead of concatenation

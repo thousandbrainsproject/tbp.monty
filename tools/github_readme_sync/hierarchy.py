@@ -10,7 +10,6 @@
 
 import concurrent.futures
 import logging
-import os
 import re
 import sys
 import timeit
@@ -167,7 +166,7 @@ def check_links(path):
     errors = []
 
     for match in table_matches:
-        table_name = os.path.basename(match)
+        table_name = Path(match).name
         if table_name in IGNORE_TABLES:
             continue
 
