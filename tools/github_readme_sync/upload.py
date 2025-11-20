@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 
 import logging
-import os
 from pathlib import Path
 
 from tools.github_readme_sync.colors import BLUE, CYAN, GRAY, RESET, WHITE
@@ -125,7 +124,7 @@ def print_child(level: int, doc: dict, created: bool):
 
 def load_doc(file_path: str, category_slug: str, child: dict):
     file_path = Path(file_path) / category_slug / f"{child['slug']}.md"
-    if not os.path.exists(file_path):
+    if not file_path.exists():
         raise ValueError(f"File {file_path} does not exist")
 
     with open(file_path, encoding="utf-8") as file:

@@ -725,7 +725,7 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
         current_rgb_path = self.data_path / f"rgb_{self.current_scene}.png"
         # Load rgb image
         wait_count = 0
-        while not os.path.exists(current_rgb_path):
+        while not current_rgb_path.exists():
             if wait_count % 10 == 0:
                 # Print every 10 seconds
                 print("Waiting for new RGBD data...")
@@ -743,7 +743,7 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
         height, width, _ = current_rgb_image.shape
 
         # Load depth image
-        while not os.path.exists(current_depth_path):
+        while not current_depth_path.exists():
             print(f"Waiting for new depth data. Looking for {current_depth_path}")
             time.sleep(1)
         load_succeeded = False

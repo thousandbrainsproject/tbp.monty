@@ -74,7 +74,7 @@ def check_hierarchy_file(folder: str):
     hierarchy = []
 
     hierarchy_file = folder / HIERARCHY_FILE
-    if not os.path.exists(hierarchy_file):
+    if not hierarchy_file.exists():
         logging.error(f"File {hierarchy_file} does not exist")
         sys.exit(1)
 
@@ -135,7 +135,7 @@ def extract_slug(line: str):
 
 
 def sanity_check(path):
-    if not os.path.exists(path):
+    if not path.exists():
         return [f"File {path} does not exist"]
 
     return check_links(path)
@@ -163,7 +163,7 @@ def check_links(path):
         f"{YELLOW} {len(table_matches)} tables{RESET}"
     )
 
-    current_dir = path.parent
+    current_dir = path.resolve().parent
     errors = []
 
     for match in table_matches:
@@ -172,8 +172,7 @@ def check_links(path):
             continue
 
         path_to_check = current_dir / match
-        path_to_check = os.path.normpath(path_to_check)
-        if not os.path.exists(path_to_check):
+        if not path_to_check.exists():
             errors.append(f"  CSV {match} does not exist")
 
     for match in md_link_matches:
@@ -181,20 +180,18 @@ def check_links(path):
             continue
 
         path_to_check = current_dir / match[1].split("#")[0]
-        path_to_check = os.path.normpath(path_to_check)
         if any(placeholder in match[1] for placeholder in IGNORE_DOCS):
             continue
-        logging.debug(f"{GREEN}  {path_to_check.split('/')[-1]}{RESET}")
-        if not os.path.exists(path_to_check):
+        logging.debug(f"{GREEN}  {path_to_check.name}{RESET}")
+        if not path_to_check.exists():
             errors.append(f"  Linked {match[1]} does not exist")
 
     for match in image_link_matches:
         path_to_check = current_dir / match.split("#")[0]
-        path_to_check = os.path.normpath(path_to_check)
         if any(placeholder in match for placeholder in IGNORE_IMAGES):
             continue
-        logging.debug(f"{CYAN}  {path_to_check.split('/')[-1]}{RESET}")
-        if not os.path.exists(path_to_check):
+        logging.debug(f"{CYAN}  {path_to_check.name}{RESET}")
+        if not path_to_check.exists():
             errors.append(f"  Image {path_to_check} does not exist")
 
     if errors:

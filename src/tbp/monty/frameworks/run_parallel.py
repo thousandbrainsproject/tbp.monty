@@ -71,7 +71,7 @@ def mv_files(filenames: Iterable[Path], outdir: Path):
 
 def cat_files(filenames, outfile):
     outfile = Path(outfile)
-    if os.path.exists(outfile):
+    if outfile.exists():
         print(f"Removing existing file before writing new one: {outfile}")
         outfile.unlink()
 
@@ -96,7 +96,7 @@ def sample_params_to_init_args(params):
 
 
 def post_parallel_log_cleanup(filenames, outfile, cat_fn):
-    existing_files = [f for f in filenames if os.path.exists(f)]
+    existing_files = [f for f in map(Path, filenames) if f.exists()]
     if len(existing_files) == 0:
         return
 
@@ -105,7 +105,7 @@ def post_parallel_log_cleanup(filenames, outfile, cat_fn):
 
     # Remove json files
     for f in existing_files:
-        Path(f).unlink(missing_ok=True)
+        f.unlink(missing_ok=True)
 
 
 def post_parallel_profile_cleanup(parallel_dirs, base_dir, mode):
@@ -135,7 +135,7 @@ def post_parallel_profile_cleanup(parallel_dirs, base_dir, mode):
 
 def move_reproducibility_data(base_dir, parallel_dirs):
     outdir = Path(base_dir) / "reproduce_episode_data"
-    if os.path.exists(outdir):
+    if outdir.exists():
         shutil.rmtree(outdir)
 
     outdir.mkdir(parents=True)
@@ -649,7 +649,7 @@ def run_episodes_parallel(
         post_parallel_train(experiments, base_dir)
         if log_parallel_wandb:
             csv_path = base_dir / "train_stats.csv"
-            if os.path.exists(csv_path):
+            if csv_path.exists():
                 train_stats = pd.read_csv(csv_path)
                 train_table = wandb.Table(dataframe=train_stats)
                 if run is not None:
@@ -660,7 +660,7 @@ def run_episodes_parallel(
         post_parallel_eval(experiments, base_dir)
         if log_parallel_wandb:
             csv_path = base_dir / "eval_stats.csv"
-            if os.path.exists(csv_path):
+            if csv_path.exists():
                 eval_stats = pd.read_csv(csv_path)
                 eval_table = wandb.Table(dataframe=eval_stats)
                 run.log({"eval_stats": eval_table})

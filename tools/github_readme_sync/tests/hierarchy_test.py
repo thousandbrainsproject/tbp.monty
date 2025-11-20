@@ -10,7 +10,6 @@
 
 import contextlib
 import http.server
-import os
 import socketserver
 import tempfile
 import threading
@@ -63,7 +62,7 @@ class TestHierarchyFile(unittest.TestCase):
         create_hierarchy_file(self.test_dir, hierarchy_structure)
 
         hierarchy_file_path = self.test_dir / HIERARCHY_FILE
-        self.assertTrue(os.path.exists(hierarchy_file_path))
+        self.assertTrue(hierarchy_file_path.exists())
 
         with open(hierarchy_file_path) as f:
             content = f.read()

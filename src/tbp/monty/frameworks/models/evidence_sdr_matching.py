@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 
 import logging
-import os
 import shutil
 from pathlib import Path
 
@@ -50,7 +49,7 @@ class LoggerSDR:
         path = Path(path).expanduser()
 
         # overwrite existing logs
-        if os.path.exists(path):
+        if path.exists():
             shutil.rmtree(path)
         path.mkdir(parents=True)
 

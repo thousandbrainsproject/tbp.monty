@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 
 import logging
-import os
 import shutil
 from pathlib import Path
 
@@ -25,7 +24,7 @@ def export(output_dir: str, rdme: ReadMe):
     hierarchy = []
     categories = rdme.get_categories()
 
-    if os.path.exists(output_dir):
+    if output_dir.exists():
         shutil.rmtree(output_dir)
 
     output_dir.mkdir(exist_ok=True, parents=True)
