@@ -17,7 +17,7 @@ _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervis
 config:
   n_train_epochs: ${benchmarks.rotations_all_count}
   logging:
-    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v10}
+    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
     python_log_level: INFO
     run_name: supervised_pre_training_base
   monty_config:
