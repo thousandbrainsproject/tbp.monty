@@ -15,14 +15,12 @@ pytest.importorskip(
     reason="Habitat Sim optional dependency not installed.",
 )
 
-import copy
 import shutil
 import tempfile
 from pathlib import Path
-from pprint import pprint
 from unittest import TestCase
 
-import pytest
+import hydra
 
 from tbp.monty.frameworks.config_utils.config_args import LoggingConfig
 from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
@@ -82,6 +80,15 @@ class ProfileExperimentMixinTest(TestCase):
     def setUp(self):
         self.output_dir = tempfile.mkdtemp()
 
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            self.base_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=profile/base",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
+
         base = dict(
             experiment_class=ProfiledExperiment,
             experiment_args=DebugExperimentArgs(),
@@ -132,10 +139,8 @@ class ProfileExperimentMixinTest(TestCase):
                 )
 
     def test_run_episode_is_profiled(self) -> None:
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with ProfiledExperiment(base_config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
             exp.env_interface = exp.train_env_interface
             exp.run_episode()
@@ -150,9 +155,8 @@ class ProfileExperimentMixinTest(TestCase):
         self.spot_check_profile_files()
 
     def test_run_train_epoch_is_profiled(self) -> None:
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with ProfiledExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
             exp.run_epoch()
 
@@ -168,9 +172,8 @@ class ProfileExperimentMixinTest(TestCase):
         self.spot_check_profile_files()
 
     def test_run_eval_epoch_is_profiled(self) -> None:
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with ProfiledExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("eval")
             exp.run_epoch()
 
