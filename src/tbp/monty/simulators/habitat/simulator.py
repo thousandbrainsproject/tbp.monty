@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Sequence
+from typing import TYPE_CHECKING, Any, Sequence
 
 import habitat_sim
 import magnum as mn
@@ -47,6 +47,9 @@ from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.simulators import resources
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
 from tbp.monty.simulators.habitat.agents import HabitatAgent
+
+if TYPE_CHECKING:
+    from os import PathLike
 
 __all__ = [
     "PRIMITIVE_OBJECT_TYPES",
@@ -107,7 +110,7 @@ class HabitatSim(HabitatActuator):
     def __init__(
         self,
         agents: list[HabitatAgent],
-        data_path: str | Path | None = None,
+        data_path: str | PathLike | None = None,
         scene_id: str | None = None,
         seed: int = 42,
     ):

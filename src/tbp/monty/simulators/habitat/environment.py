@@ -29,7 +29,7 @@ from tbp.monty.simulators.habitat import (
 )
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from os import PathLike
 
 __all__ = [
     "AgentConfig",
@@ -96,7 +96,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
         objects: list[dict | ObjectConfig] | None = None,
         scene_id: str | None = None,
         seed: int = 42,
-        data_path: str | Path | None = None,
+        data_path: str | PathLike | None = None,
     ):
         super().__init__()
         self._agents = []
