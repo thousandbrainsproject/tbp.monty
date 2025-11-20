@@ -1,6 +1,9 @@
 name: "Install Monty"
 description: "Installs the Monty framework."
 
+strategy:
+  fail-fast: false
+
 inputs:
   working_directory:
     description: "The directory to run the command in."
