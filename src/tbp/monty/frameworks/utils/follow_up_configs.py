@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import copy
 import json
-import os
 from pathlib import Path
 
 import torch
@@ -209,7 +208,7 @@ def create_eval_episode_config(
 
     # Second, update the output directory, run_name, set resume to True
     new_output_dir = output_dir / f"eval_episode_{episode}_rerun"
-    os.makedirs(new_output_dir, exist_ok=True)
+    new_output_dir.mkdir(exist_ok=True, parents=True)
     new_config["logging"]["output_dir"] = new_output_dir
     new_config["logging"]["run_name"] = run_name
     new_config["logging"]["resume_wandb_run"] = True
@@ -344,7 +343,7 @@ def create_eval_config_multiple_episodes(
 
     # Update the output directory to be a "rerun" subdir
     new_output_dir = output_dir / "eval_rerun_episodes"
-    os.makedirs(new_output_dir, exist_ok=True)
+    new_output_dir.mkdir(exist_ok=True, parents=True)
     new_config["logging"]["output_dir"] = new_output_dir
     new_config["logging"]["run_name"] = run_name
     new_config["logging"]["resume_wandb_run"] = True

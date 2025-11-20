@@ -20,11 +20,12 @@ from tools.github_readme_sync.file import find_markdown_files, get_folders
 class TestGetFolders(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
+        temp_dir_path = Path(self.temp_dir)
 
-        os.makedirs(Path(self.temp_dir).joinpath("folder1"))
-        os.makedirs(Path(self.temp_dir).joinpath("folder2"))
-        open(Path(self.temp_dir).joinpath("file1.txt"), "w").close()
-        open(Path(self.temp_dir).joinpath("file2.txt"), "w").close()
+        (temp_dir_path / "folder1").mkdir(parents=True)
+        (temp_dir_path / "folder2").mkdir(parents=True)
+        open(temp_dir_path / "file1.txt", "w").close()
+        open(temp_dir_path / "file2.txt", "w").close()
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)

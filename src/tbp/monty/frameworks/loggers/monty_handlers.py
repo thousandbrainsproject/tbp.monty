@@ -167,7 +167,7 @@ class DetailedJSONHandler(MontyHandler):
             stats: Dictionary containing episode stats keyed by global episode id.
         """
         episodes_dir = Path(output_dir) / "detailed_run_stats"
-        os.makedirs(episodes_dir, exist_ok=True)
+        episodes_dir.mkdir(exist_ok=True, parents=True)
 
         episode_file = episodes_dir / f"episode_{global_episode_id:06d}.json"
         maybe_rename_existing_file(episode_file)
@@ -310,7 +310,7 @@ class ReproduceEpisodeHandler(MontyHandler):
         # Set up data directory with reproducibility info for each episode
         if not hasattr(self, "data_dir"):
             self.data_dir = Path(output_dir) / "reproduce_episode_data"
-            os.makedirs(self.data_dir, exist_ok=True)
+            self.data_dir.mkdir(exist_ok=True, parents=True)
 
         # TODO: store a pointer to the training model
         # something like if train_epochs == 0:

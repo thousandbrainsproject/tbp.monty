@@ -88,7 +88,7 @@ class TestHierarchyFile(unittest.TestCase):
                 f"{DOCUMENT_PREFIX}[doc-1](category-1/doc-1.md)\n"
             )
 
-        os.makedirs(self.test_dir / "category-1")
+        (self.test_dir / "category-1").mkdir(parents=True)
         doc_file = self.test_dir / "category-1" / "doc-1.md"
         with open(doc_file, "w") as f:
             f.write("---\ntitle: Doc 1\n---\nContent")
@@ -104,7 +104,7 @@ class TestHierarchyFile(unittest.TestCase):
                 f"{DOCUMENT_PREFIX}[doc-1](doc-1.md)\n"
             )
 
-        os.makedirs(self.test_dir / "category-1")
+        (self.test_dir / "category-1").mkdir(parents=True)
         doc_file1 = self.test_dir / "category-1" / "doc-1.md"
         with open(doc_file1, "w") as f:
             f.write("---\ntitle: Doc 1\n---\nContent")
@@ -127,7 +127,7 @@ class TestHierarchyFile(unittest.TestCase):
                 f"{DOCUMENT_PREFIX}[doc-1](category-1/doc-1.md)\n"
             )
 
-        os.makedirs(self.test_dir / "category-1")
+        (self.test_dir / "category-1").mkdir(parents=True)
         doc_file = self.test_dir / "category-1" / "doc-1.md"
         with open(doc_file, "w") as f:
             f.write(

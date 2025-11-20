@@ -654,8 +654,8 @@ This is a test document.""",
             # Create subdirectories
             data_dir = tmp_dir / "data"
             docs_dir = tmp_dir / "docs"
-            os.makedirs(data_dir)
-            os.makedirs(docs_dir)
+            data_dir.mkdir(parents=True)
+            docs_dir.mkdir(parents=True)
 
             # Create a CSV file in the data directory
             csv_path = data_dir / "test.csv"
@@ -687,8 +687,8 @@ This is a test document.""",
             tmp_dir = Path(tmp_dir_str)
             docs_dir = tmp_dir / "docs"
             other_dir = tmp_dir / "other"
-            os.makedirs(docs_dir)
-            os.makedirs(other_dir)
+            docs_dir.mkdir(parents=True)
+            other_dir.mkdir(parents=True)
 
             source_md = other_dir / "source.md"
             with open(source_md, "w") as f:

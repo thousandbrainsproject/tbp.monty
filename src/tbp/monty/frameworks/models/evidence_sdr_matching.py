@@ -52,7 +52,7 @@ class LoggerSDR:
         # overwrite existing logs
         if os.path.exists(path):
             shutil.rmtree(path)
-        os.makedirs(path)
+        path.mkdir(parents=True)
 
         self.path = path
         self.episode = 0

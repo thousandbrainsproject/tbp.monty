@@ -46,7 +46,7 @@ def main(cfg: DictConfig):
     )
     cfg.experiment.config.logging.output_dir = str(output_dir)
 
-    os.makedirs(cfg.experiment.config.logging.output_dir, exist_ok=True)
+    output_dir.mkdir(exist_ok=True, parents=True)
     experiment = hydra.utils.instantiate(cfg.experiment)
     start_time = time.time()
     with experiment as exp:

@@ -138,7 +138,7 @@ def move_reproducibility_data(base_dir, parallel_dirs):
     if os.path.exists(outdir):
         shutil.rmtree(outdir)
 
-    os.makedirs(outdir)
+    outdir.mkdir(parents=True)
     repro_dirs = [Path(pdir) / "reproduce_episode_data" for pdir in parallel_dirs]
 
     # Headache to accont for the fact that everyone is episode 0
@@ -381,7 +381,8 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
 
 
 def single_train(experiment):
-    os.makedirs(experiment["config"]["logging"]["output_dir"], exist_ok=True)
+    output_dir = Path(experiment["config"]["logging"]["output_dir"])
+    output_dir.mkdir(exist_ok=True, parents=True)
     exp = hydra.utils.instantiate(experiment)
     with exp:
         print("---------training---------")
@@ -389,7 +390,8 @@ def single_train(experiment):
 
 
 def single_evaluate(experiment):
-    os.makedirs(experiment["config"]["logging"]["output_dir"], exist_ok=True)
+    output_dir = Path(experiment["config"]["logging"]["output_dir"])
+    output_dir.mkdir(exist_ok=True, parents=True)
     exp = hydra.utils.instantiate(experiment)
     with exp:
         print("---------evaluating---------")
@@ -561,10 +563,11 @@ def post_parallel_train(experiments: list[Mapping], base_dir: str) -> None:
     with exp:
         exp.model.load_state_dict_from_parallel(parallel_dirs, True)
         output_dir = os.path.dirname(experiments[0]["config"]["logging"]["output_dir"])
+        output_dir = Path(output_dir)
         if isinstance(exp, MontySupervisedObjectPretrainingExperiment):
-            output_dir = Path(output_dir) / "pretrained"
-        os.makedirs(output_dir, exist_ok=True)
-        saved_model_file = Path(output_dir) / "model.pt"
+            output_dir = output_dir / "pretrained"
+        output_dir.mkdir(exist_ok=True, parents=True)
+        saved_model_file = output_dir / "model.pt"
         torch.save(exp.model.state_dict(), saved_model_file)
 
     if pretraining:

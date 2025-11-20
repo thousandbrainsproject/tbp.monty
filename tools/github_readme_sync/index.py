@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from pathlib import Path
 
 import nh3
@@ -102,7 +101,7 @@ def generate_index(docs_dir: str, output_file_path: str) -> str:
 
     entries = process_markdown_files(docs_dir)
 
-    os.makedirs(Path(output_file_path).parent, exist_ok=True)
+    Path(output_file_path).parent.mkdir(exist_ok=True, parents=True)
     with open(output_file_path, "w", encoding="utf-8") as f:
         json.dump(entries, f, indent=2, ensure_ascii=False)
 

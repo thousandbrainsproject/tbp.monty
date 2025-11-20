@@ -12,7 +12,6 @@ from __future__ import annotations
 import copy
 import datetime
 import logging
-import os
 import pprint
 from pathlib import Path
 from typing import Any, Literal
@@ -326,8 +325,7 @@ class MontyExperiment:
         self.output_dir = Path(logging_config["output_dir"])
         self.run_name = logging_config["run_name"]
 
-        if not os.path.exists(self.output_dir):
-            os.makedirs(self.output_dir)
+        self.output_dir.mkdir(exist_ok=True, parents=True)
 
         # Treat as root logger
         logger.propagate = False
@@ -596,7 +594,7 @@ class MontyExperiment:
         model_state_dict = self.model.state_dict()
         exp_state_dict = self.state_dict()
         output_dir = output_dir if output_dir is not None else self.output_dir
-        os.makedirs(output_dir, exist_ok=True)
+        output_dir.mkdir(exist_ok=True, parents=True)
         # When performing evaluation with parallel runs on a remote server
         # (assumed if we are using parallel wandb logging), then don't save models;
         # these can fill a huge amount of hard-disk memory before they are cleaned up

@@ -9,7 +9,6 @@
 # https://opensource.org/licenses/MIT.
 
 import cProfile
-import os
 from pathlib import Path
 
 import pandas as pd
@@ -72,7 +71,7 @@ class ProfileExperimentMixin:
 
     def make_profile_dir(self):
         self.profile_dir = Path(self.output_dir) / "profile"
-        os.makedirs(self.profile_dir, exist_ok=True)
+        self.profile_dir.mkdir(exist_ok=True, parents=True)
 
     def setup_experiment(self, config):
         filename = "profile-setup_experiment.csv"
