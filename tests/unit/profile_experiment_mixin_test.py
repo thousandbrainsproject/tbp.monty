@@ -22,25 +22,7 @@ from unittest import TestCase
 
 import hydra
 
-from tbp.monty.frameworks.config_utils.config_args import LoggingConfig
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-    DebugExperimentArgs,
-    EnvironmentInterfacePerObjectEvalArgs,
-    EnvironmentInterfacePerObjectTrainArgs,
-    NotYCBEvalObjectList,
-    NotYCBTrainObjectList,
-)
-from tbp.monty.frameworks.environments.embodied_data import (
-    EnvironmentInterfacePerObject,
-)
 from tbp.monty.frameworks.experiments import MontyExperiment, ProfileExperimentMixin
-from tbp.monty.simulators.habitat.configs import (
-    EnvInitArgsSinglePTZ,
-    SinglePTZHabitatEnvInterfaceConfig,
-)
-from tests.unit.frameworks.config_utils.fakes.config_args import (
-    FakeSingleCameraMontyConfig,
-)
 
 
 class InheritanceProfileExperimentMixinTest(TestCase):
@@ -88,26 +70,6 @@ class ProfileExperimentMixinTest(TestCase):
                     f"test.config.logging.output_dir={self.output_dir}",
                 ],
             )
-
-        base = dict(
-            experiment_class=ProfiledExperiment,
-            experiment_args=DebugExperimentArgs(),
-            logging=LoggingConfig(output_dir=self.output_dir, python_log_level="DEBUG"),
-            monty_config=FakeSingleCameraMontyConfig(),
-            env_interface_config=SinglePTZHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsSinglePTZ(data_path=None).__dict__
-            ),
-            train_env_interface_class=EnvironmentInterfacePerObject,
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=NotYCBTrainObjectList().objects,
-            ),
-            eval_env_interface_class=EnvironmentInterfacePerObject,
-            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
-                object_names=NotYCBEvalObjectList().objects,
-            ),
-        )
-
-        self.base_config = base
 
     def tearDown(self):
         shutil.rmtree(self.output_dir)
