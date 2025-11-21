@@ -341,6 +341,7 @@ class GraphLearningTest(BaseGraphTest):
         eval_cfg_1.test.config.n_eval_epochs = 1
         eval_exp_1 = hydra.utils.instantiate(eval_cfg_1.test)
         with eval_exp_1:
+            # TODO: update so it only runs one episode
             eval_exp_1.evaluate()
 
         # Create detailed follow-up experiment
