@@ -1,0 +1,17 @@
+# Config useful for running parallel experiments, i.e. has appropriate wandb flags
+# and parsimonious Python logging
+
+defaults:
+  - defaults
+
+output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/evidence_eval_runs/logs}
+monty_handlers:
+  - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
+  - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.ReproduceEpisodeHandler}
+wandb_handlers:
+  - ${monty.class:tbp.monty.frameworks.loggers.wandb_handlers.BasicWandbTableStatsHandler}
+  - ${monty.class:tbp.monty.frameworks.loggers.wandb_handlers.BasicWandbChartStatsHandler}
+wandb_group: "parallel_eval_runs"
+monty_log_level: "BASIC"
+python_log_level: "WARNING"
+log_parallel_wandb: true

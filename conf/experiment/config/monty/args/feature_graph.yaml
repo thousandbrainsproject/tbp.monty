@@ -1,0 +1,7 @@
+defaults:
+  - defaults
+
+num_exploratory_steps: 1_000
+min_eval_steps: 3
+min_train_steps: 3
+max_total_steps: 2_500

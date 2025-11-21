@@ -1,0 +1,70 @@
+defaults:
+  - supervised_pre_training_base
+  - config/monty/clear_monty_config@config
+  - config/monty/surface_and_view@config.monty_config
+  - config/monty/args/clear_monty_args@config.monty_config
+  - config/monty/args/feature_graph@config.monty_config.monty_args
+  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+  - config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - config/monty/motor_system/curvature_informed_surface@config.monty_config.motor_system_config
+  - config/environment/clear_env_interface_config@config
+  - config/environment/surface_view_finder_mount_habitat@config.env_interface_config
+  - config/logging/clear_logging@config
+  - config/logging/pretrain@config.logging
+  - config/environment_interface/clear_train_env_interface_args@config
+  - config/environment_interface/per_object@config.train_env_interface_args
+  - config/environment_interface/ycb/distinct_objects@config.train_env_interface_args.object_names
+
+config:
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 1000
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+        learning_module_args:
+          k: 10
+          match_attribute: displacement
+          tolerance: ${np.array:[0.0001, 0.0001, 0.0001]}
+          graph_delta_thresholds:
+            patch:
+              distance: 0.01
+              pose_vectors: ${np.list_eval:[np.pi / 8, np.pi * 2, np.pi * 2]}
+              principal_curvatures_log: [1.0, 1.0]
+              hsv: [0.1, 1, 1]
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+        sensor_module_args:
+          is_surface_sm: true
+          sensor_module_id: patch
+          features:
+            - pose_vectors
+            - pose_fully_defined
+            - on_object
+            - object_coverage
+            - rgba
+            - hsv
+            - min_depth
+            - mean_depth
+            - principal_curvatures
+            - principal_curvatures_log
+            - gaussian_curvature
+            - mean_curvature
+            - gaussian_curvature_sc
+            - mean_curvature_sc
+          save_raw_obs: true
+      sensor_module_1:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+        sensor_module_args:
+          sensor_module_id: view_finder
+          save_raw_obs: true
+  logging:
+    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
+    run_name: surf_agent_1lm_10distinctobj
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  train_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      rotations: ${benchmarks.rotations_all}

@@ -1,0 +1,40 @@
+defaults:
+  - config/eval
+  - config/logging/clear_logging@config
+  - config/logging/parallel_evidence_lm@config.logging
+  - config/monty/patch_and_view@config.monty_config
+  - config/monty/args/clear_monty_args@config.monty_config
+  - config/monty/args/defaults@config.monty_config.monty_args
+  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - config/monty/learning_modules/default_evidence_1lm@config.monty_config.learning_module_configs
+  - config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - config/monty/motor_system/informed_no_trans_step_s20@config.monty_config.motor_system_config
+  - config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+  - config/monty/sensor_modules/sensor_module/default_all_noisy@config.monty_config.sensor_module_configs.sensor_module_0
+  - config/environment/clear_env_interface_config@config
+  - config/environment/patch_view_finder_monty_world_mount_habitat@config.env_interface_config
+  - config/environment_interface/clear_eval_env_interface_args@config.eval_env_interface_args
+  - config/environment_interface/per_object@config.eval_env_interface_args
+  - config/environment_interface/numenta/objects@config.eval_env_interface_args.object_names
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+config:
+  model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/
+  n_eval_epochs: 10
+  max_eval_steps: 500
+  logging:
+    run_name: randrot_noise_sim_on_scan_monty_world
+    wandb_group: benchmark_experiments
+  monty_config:
+    monty_args:
+      min_eval_steps: ${benchmarks.min_eval_steps}
+    sensor_module_configs:
+      sensor_module_1:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+        sensor_module_args:
+          sensor_module_id: view_finder
+          save_raw_obs: false
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  eval_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.RandomRotationObjectInitializer

@@ -1,0 +1,54 @@
+defaults:
+  - /test/graph_learning/base@
+  - /experiment/config/monty/clear_monty_config@config
+  - /experiment/config/monty/five_lm@config.monty_config
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - /test/config/monty/learning_modules/multi_lm_feature@config.monty_config.learning_module_configs.learning_module_0
+  - /test/config/monty/learning_modules/multi_lm_feature@config.monty_config.learning_module_configs.learning_module_1
+  - /test/config/monty/learning_modules/multi_lm_feature@config.monty_config.learning_module_configs.learning_module_2
+  - /test/config/monty/learning_modules/multi_lm_feature@config.monty_config.learning_module_configs.learning_module_3
+  - /test/config/monty/learning_modules/multi_lm_feature@config.monty_config.learning_module_configs.learning_module_4
+  - /experiment/config/environment/clear_env_interface_config@config.env_interface_config
+  - /experiment/config/environment/five_lm_mount_habitat@config.env_interface_config
+
+config:
+  min_lms_match: 3
+  logging:
+    python_log_level: DEBUG
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 10
+    learning_module_configs:
+      learning_module_0:
+        learning_module_args:
+          tolerances:
+            patch_0:
+              hsv: [0.1, 1, 1]  # only look at hue
+              principal_curvatures_log: [1, 1]
+      learning_module_1:
+        learning_module_args:
+          tolerances:
+            patch_1:
+              hsv: [0.1, 1, 1]  # only look at hue
+              principal_curvatures_log: [1, 1]
+      learning_module_2:
+        learning_module_args:
+          tolerances:
+            patch_2:
+              hsv: [0.1, 1, 1]  # only look at hue
+              principal_curvatures_log: [1, 1]
+      learning_module_3:
+        learning_module_args:
+          tolerances:
+            patch_3:
+              hsv: [0.1, 1, 1]  # only look at hue
+              principal_curvatures_log: [1, 1]
+      learning_module_4:
+        learning_module_args:
+          tolerances:
+            patch_4:
+              hsv: [0.1, 1, 1]  # only look at hue
+              principal_curvatures_log: [1, 1]
+  env_interface_config:
+    env_init_args:
+      data_path: null
