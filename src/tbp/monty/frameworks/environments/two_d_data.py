@@ -130,9 +130,6 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         """
         obs = self._observation()
 
-        if not actions:
-            return obs
-
         for action in actions:
             amount = 1
             if hasattr(action, "rotation_degrees"):
@@ -360,10 +357,8 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         Returns:
             The observation.
         """
-        if not actions:
-            return self._observation()
+        obs = self._observation()
 
-        obs = {}
         for action in actions:
             if action.name in self._valid_actions:
                 amount = action.rotation_degrees

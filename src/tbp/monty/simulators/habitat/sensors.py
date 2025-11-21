@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Tuple, cast
+from typing import Tuple
 
 import quaternion as qt
 from habitat_sim.sensor import CameraSensorSpec, SensorSpec, SensorType
@@ -52,7 +52,9 @@ class SensorConfig:
         """Returns List of Habitat sensor specs to be passed to `habitat-sim`."""
         return []
 
-    def process_observations(self, sensor_obs: Any) -> SensorObservations:
+    def process_observations(
+        self, sensor_obs: SensorObservations
+    ) -> SensorObservations:
         """Callback used to process habitat raw sensor observations.
 
         Args:
@@ -61,7 +63,7 @@ class SensorConfig:
         Returns:
             The processed observations grouped by agent_id
         """
-        return cast("SensorObservations", sensor_obs)
+        return sensor_obs
 
 
 @dataclass(frozen=True)

@@ -23,6 +23,7 @@ from typing import Any, Sequence
 import habitat_sim
 import magnum as mn
 import numpy as np
+from habitat_sim.simulator import ObservationDict
 from habitat_sim.utils import common as sim_utils
 from importlib_resources import files
 
@@ -561,7 +562,10 @@ class HabitatSim(HabitatActuator):
         obs = self._sim.get_sensor_observations(agent_ids=agent_indices)
         return self.process_observations(obs)
 
-    def process_observations(self, habitat_obs: Any) -> Observations:
+    def process_observations(
+        self,
+        habitat_obs: dict[int, ObservationDict],
+    ) -> Observations:
         """Habitat returns observations grouped by agent_index.
 
         Initially, we group observations by agent_id instead and call all agents
