@@ -116,5 +116,6 @@ class MontyRunTest(unittest.TestCase):
 
         self.assertListEqual(exp_log, EXPECTED_LOG)
 
+
 if __name__ == "__main__":
     unittest.main()
