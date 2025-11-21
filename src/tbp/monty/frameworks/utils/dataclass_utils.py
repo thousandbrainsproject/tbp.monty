@@ -259,7 +259,9 @@ def is_dataclass_instance(obj: Any) -> bool:
 
 
 def get_subset_of_args(arguments, function):
-    dict_args = config_to_dict(arguments)
+    # Convering DictConfig to dict so config_to_dict works (only on dict or dataclass
+    # instances)
+    dict_args = config_to_dict(dict(arguments))
     _fields = extract_fields(function)
     common_fields = {}
     for field in _fields:

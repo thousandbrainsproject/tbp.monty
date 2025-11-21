@@ -18,6 +18,7 @@ from typing import Any, Literal
 
 import numpy as np
 import torch
+from omegaconf import DictConfig
 from typing_extensions import Self
 
 from tbp.monty.frameworks.environments.embodied_data import (
@@ -39,8 +40,6 @@ from tbp.monty.frameworks.models.abstract_monty_classes import (
 from tbp.monty.frameworks.models.motor_policies import MotorPolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.dataclass_utils import (
-    Dataclass,
-    config_to_dict,
     get_subset_of_args,
 )
 from tbp.monty.frameworks.utils.live_plotter import LivePlotter
@@ -58,21 +57,35 @@ class MontyExperiment:
     and episode).
     """
 
-    def __init__(self, config: Dataclass | dict[str, Any]) -> None:
+    def __init__(self, config: DictConfig) -> None:
         """Initialize the experiment based on the provided configuration.
 
         Args:
             config: config specifying variables of the experiment.
         """
-        # Copy the config and store it so we can modify it freely
-        config = copy.deepcopy(config)
-        config = config_to_dict(config)
         self.config = config
 
-        self.unpack_experiment_args(config["experiment_args"])
+        self.do_train = config["do_train"]
+        self.do_eval = config["do_eval"]
+        self.max_eval_steps = config["max_eval_steps"]
+        self.max_train_steps = config["max_train_steps"]
+        self.max_total_steps = config["max_total_steps"]
+        self.n_eval_epochs = config["n_eval_epochs"]
+        self.n_train_epochs = config["n_train_epochs"]
+        self.model_path = config["model_name_or_path"]
+        self.min_lms_match = config["min_lms_match"]
+        self.rng = np.random.RandomState(config["seed"])
+        self.show_sensor_output = config["show_sensor_output"]
+        self.supervised_lm_ids = config["supervised_lm_ids"]
+        if self.supervised_lm_ids == "all":
+            self.supervised_lm_ids = list(
+                self.config["monty_config"]["learning_module_configs"].keys()
+            )
 
         if self.show_sensor_output:
             self.live_plotter = LivePlotter()
+
+        logger.info(self.config)
 
     def setup_experiment(self, config: dict[str, Any]) -> None:
         """Set up the basic elements of a Monty experiment and initialize counters.
@@ -80,36 +93,14 @@ class MontyExperiment:
         Args:
             config: config specifying variables of the experiment.
         """
-        self.init_loggers(self.config["logging_config"])
+        self.init_loggers(self.config["logging"])
         self.model = self.init_model(
             monty_config=config["monty_config"],
             model_path=self.model_path,
         )
         self.load_environment_interfaces(config)
-        self.init_monty_data_loggers(self.config["logging_config"])
+        self.init_monty_data_loggers(self.config["logging"])
         self.init_counters()
-
-    ####
-    # Methods for setting up an experiment
-    ####
-
-    def unpack_experiment_args(self, experiment_args):
-        self.do_train = experiment_args["do_train"]
-        self.do_eval = experiment_args["do_eval"]
-        self.max_eval_steps = experiment_args["max_eval_steps"]
-        self.max_train_steps = experiment_args["max_train_steps"]
-        self.max_total_steps = experiment_args["max_total_steps"]
-        self.n_eval_epochs = experiment_args["n_eval_epochs"]
-        self.n_train_epochs = experiment_args["n_train_epochs"]
-        self.model_path = experiment_args["model_name_or_path"]
-        self.min_lms_match = experiment_args["min_lms_match"]
-        self.rng = np.random.RandomState(experiment_args["seed"])
-        self.show_sensor_output = experiment_args["show_sensor_output"]
-        self.supervised_lm_ids = experiment_args["supervised_lm_ids"]
-        if self.supervised_lm_ids == "all":
-            self.supervised_lm_ids = list(
-                self.config["monty_config"]["learning_module_configs"].keys()
-            )
 
     def init_model(self, monty_config, model_path=None):
         """Initialize the Monty model.
@@ -126,7 +117,8 @@ class MontyExperiment:
             TypeError: If `motor_system_class` is not a subclass of `MotorSystem` or
                 `policy_class` is not a subclass of `MotorPolicy`.
         """
-        monty_config = copy.deepcopy(monty_config)
+        # Make monty_config a dict from a DictConfig, so we can edit it.
+        monty_config = dict(copy.deepcopy(monty_config))
 
         # Create learning modules
         learning_module_configs = monty_config.pop("learning_module_configs")
@@ -221,7 +213,7 @@ class MontyExperiment:
         )
 
         # Initialize train environment interface if needed
-        if config["experiment_args"]["do_train"]:
+        if config["do_train"]:
             env_interface_class = config["train_env_interface_class"]
             env_interface_args = dict(
                 env=self.env,
@@ -236,7 +228,7 @@ class MontyExperiment:
             self.train_env_interface = None
 
         # Initialize eval environment interfaces if needed
-        if config["experiment_args"]["do_eval"]:
+        if config["do_eval"]:
             env_interface_class = config["eval_env_interface_class"]
             env_interface_args = dict(
                 env=self.env,
@@ -384,7 +376,7 @@ class MontyExperiment:
         if len(self.wandb_handlers) > 0:
             wandb_args = get_subset_of_args(logging_config, WandbWrapper.__init__)
             wandb_args.update(
-                config=self.config,
+                config=dict(self.config),
                 run_name=wandb_args["run_name"] + "_" + wandb_args["wandb_id"],
             )
             monty_handlers.append(WandbWrapper(**wandb_args))
@@ -434,7 +426,7 @@ class MontyExperiment:
             )
             self.monty_logger = BaseMontyLogger(handlers=[])
 
-        if "log_parallel_wandb" in logging_config.keys():
+        if "log_parallel_wandb" in logging_config:
             self.monty_logger.use_parallel_wandb_logging = logging_config[
                 "log_parallel_wandb"
             ]

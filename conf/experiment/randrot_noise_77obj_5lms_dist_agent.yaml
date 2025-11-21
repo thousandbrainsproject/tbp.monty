@@ -1,0 +1,15 @@
+defaults:
+  - randrot_noise_10distinctobj_5lms_dist_agent
+  - config/environment_interface/clear_eval_env_interface_args@config
+  - config/environment_interface/per_object@config.eval_env_interface_args
+  - config/environment_interface/ycb/shuffled_objects@config.eval_env_interface_args.object_names
+
+config:
+  model_name_or_path: ${benchmarks.pretrained_dir}/supervised_pre_training_5lms_all_objects/pretrained/
+  n_eval_epochs: 1
+  min_lms_match: 3
+  logging:
+    run_name: randrot_noise_77obj_5lms_dist_agent
+  eval_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.RandomRotationObjectInitializer

@@ -7,8 +7,13 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
+from pathlib import Path
+
+import hydra
 import pytest
+from omegaconf import DictConfig
 
 pytest.importorskip(
     "habitat_sim",
@@ -16,180 +21,52 @@ pytest.importorskip(
 )
 
 
-import copy
 import shutil
 import tempfile
 import unittest
-from pprint import pprint
 
-import numpy as np
-
-from tbp.monty.frameworks.config_utils.config_args import (
-    LoggingConfig,
-    MontyArgs,
-    MontyFeatureGraphArgs,
-    PatchAndViewMontyConfig,
-    PretrainLoggingConfig,
-)
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-    EnvironmentInterfacePerObjectEvalArgs,
-    EnvironmentInterfacePerObjectTrainArgs,
-    ExperimentArgs,
-    PredefinedObjectInitializer,
-    SupervisedPretrainingExperimentArgs,
-)
-from tbp.monty.frameworks.environments import embodied_data as ED
 from tbp.monty.frameworks.experiments import (
-    MontyObjectRecognitionExperiment,
     MontySupervisedObjectPretrainingExperiment,
 )
-from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphLM
-from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
 from tbp.monty.frameworks.utils.graph_matching_utils import get_correct_k_n
-from tbp.monty.simulators.habitat.configs import (
-    EnvInitArgsPatchViewMount,
-    PatchViewFinderMountHabitatEnvInterfaceConfig,
-)
 
 
-class GraphLearningTest(unittest.TestCase):
+class GraphBuildingTest(unittest.TestCase):
     def setUp(self):
         """Code that gets executed before every test."""
         self.output_dir = tempfile.mkdtemp()
         self.habitat_save_path = tempfile.mkdtemp()
         self.mesh_save_path = tempfile.mkdtemp()
-
+        self.model_load_path = Path(self.habitat_save_path) / "pretrained"
         self.habitat_learned_rotations = [[0.0, 0.0, 0.0], [0.0, 45.0, 0.0]]
-        self.supervised_pre_training_in_habitat = dict(
-            experiment_class=MontySupervisedObjectPretrainingExperiment,
-            experiment_args=SupervisedPretrainingExperimentArgs(
-                n_train_epochs=len(self.habitat_learned_rotations),
-            ),
-            logging_config=PretrainLoggingConfig(output_dir=self.habitat_save_path),
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=10),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=DisplacementGraphLM,
-                        learning_module_args=dict(
-                            k=5,
-                            match_attribute="displacement",
-                        ),
-                    )
-                ),
-            ),
-            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
-            ),
-            train_env_interface_class=ED.InformedEnvironmentInterface,
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=["capsule3DSolid", "cubeSolid"],
-                object_init_sampler=PredefinedObjectInitializer(
-                    rotations=self.habitat_learned_rotations
-                ),
-            ),
-            eval_env_interface_class=ED.InformedEnvironmentInterface,
-            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
-                object_names=[],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
-        )
 
-        self.load_habitat_config = dict(
-            experiment_class=MontyObjectRecognitionExperiment,
-            experiment_args=ExperimentArgs(
-                model_name_or_path=self.habitat_save_path + "/pretrained",
-            ),
-            logging_config=LoggingConfig(output_dir=self.output_dir),
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=DisplacementGraphLM,
-                        learning_module_args=dict(
-                            k=5,
-                            match_attribute="displacement",
-                            tolerance=np.ones(3) * 0.0001,
-                        ),
-                    )
-                ),
-            ),
-            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
-            ),
-            train_env_interface_class=ED.InformedEnvironmentInterface,
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=["capsule3DSolid", "cubeSolid"],
-                object_init_sampler=PredefinedObjectInitializer(
-                    rotations=self.habitat_learned_rotations
-                ),
-            ),
-            eval_env_interface_class=ED.InformedEnvironmentInterface,
-            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
-                object_names=["capsule3DSolid", "cubeSolid"],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
-        )
+        def training_config(test_name: str) -> DictConfig:
+            return hydra.compose(
+                config_name="test",
+                overrides=[
+                    f"test=graph_building/{test_name}",
+                    f"test.config.logging.output_dir={self.habitat_save_path}",
+                ],
+            )
 
-        self.load_habitat_for_ppf = copy.deepcopy(self.load_habitat_config)
-        self.load_habitat_for_ppf.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=DisplacementGraphLM,
-                        learning_module_args=dict(
-                            k=5,
-                            match_attribute="PPF",
-                            tolerance=np.ones(4) * 0.001,
-                        ),
-                    )
-                ),
-            ),
-        )
+        def loading_config(test_name: str) -> DictConfig:
+            return hydra.compose(
+                config_name="test",
+                overrides=[
+                    f"test=graph_building/{test_name}",
+                    f"test.config.logging.output_dir={self.habitat_save_path}",
+                    f"test.config.model_name_or_path={self.model_load_path}",
+                ],
+            )
 
-        self.load_habitat_for_feat = copy.deepcopy(self.load_habitat_config)
-        self.load_habitat_for_feat.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyFeatureGraphArgs(num_exploratory_steps=20),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=FeatureGraphLM,
-                        learning_module_args=dict(
-                            max_match_distance=0.01,
-                            tolerances={
-                                "patch": {
-                                    "on_object": 0,
-                                    "rgba": np.ones(4) * 10,
-                                    "principal_curvatures": np.ones(2) * 5,
-                                    "pose_vectors": [
-                                        0.7,
-                                        np.pi * 2,
-                                        np.pi * 2,
-                                    ],  # angular difference
-                                }
-                            },
-                        ),
-                    )
-                ),
-            ),
-        )
-
-        self.spth_feat = copy.deepcopy(self.supervised_pre_training_in_habitat)
-        self.spth_feat.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyFeatureGraphArgs(num_exploratory_steps=10),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=FeatureGraphLM,
-                        learning_module_args=dict(
-                            max_match_distance=None,  # Not matching when supervised
-                            tolerances={"patch": {}},
-                        ),
-                    )
-                ),
-            ),
-        )
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            self.supervised_pre_training_cfg = training_config(
+                "supervised_pre_training"
+            )
+            self.spth_feat_cfg = training_config("spth_feat")
+            self.load_habitat_cfg = loading_config("load_habitat")
+            self.load_habitat_for_ppf_cfg = loading_config("load_habitat_for_ppf")
+            self.load_habitat_for_feat_cfg = loading_config("load_habitat_for_feat")
 
     def tearDown(self):
         """Code that gets executed after every test."""
@@ -237,12 +114,9 @@ class GraphLearningTest(unittest.TestCase):
         Returns:
             The experiment.
         """
-        pprint("...parsing experiment...")
-        config = self.supervised_pre_training_in_habitat
-        with MontySupervisedObjectPretrainingExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.supervised_pre_training_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
-
-            pprint("...training...")
             exp.train()
         return exp
 
@@ -254,11 +128,9 @@ class GraphLearningTest(unittest.TestCase):
         Returns:
             The experiment.
         """
-        pprint("...parsing experiment...")
-        with MontySupervisedObjectPretrainingExperiment(self.spth_feat) as exp:
+        exp = hydra.utils.instantiate(self.spth_feat_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
-
-            pprint("...training...")
             exp.train()
         return exp
 
@@ -272,12 +144,12 @@ class GraphLearningTest(unittest.TestCase):
 
     def test_can_build_graph_habitat_supervised(self):
         exp = self.build_and_save_supervised_graph()
-        pprint("...Checking graphs...")
 
+        cfg_object_names = list(
+            self.supervised_pre_training_cfg.test.config.train_env_interface_args.object_names
+        )
         self.assertListEqual(
-            self.supervised_pre_training_in_habitat[
-                "train_env_interface_args"
-            ].object_names,
+            cfg_object_names,
             exp.model.learning_modules[0].get_all_known_object_ids(),
             "Object ids of learned objects and graphs in memory.",
         )
@@ -304,10 +176,8 @@ class GraphLearningTest(unittest.TestCase):
 
     def test_can_load_disp_graph(self):
         self.build_and_save_supervised_graph()
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.load_habitat_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("checking loaded graphs")
+        exp = hydra.utils.instantiate(self.load_habitat_cfg.test)
+        with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
                     graph_id, input_channel="first"
@@ -316,15 +186,12 @@ class GraphLearningTest(unittest.TestCase):
                     graph,
                     features_to_check=exp.model.sensor_modules[0].features,
                 )
-            pprint("...evaluating on loaded models...")
             exp.evaluate()
 
     def test_can_load_disp_graph_for_ppf_matching(self):
         self.build_and_save_supervised_graph()
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.load_habitat_for_ppf)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("checking loaded graphs")
+        exp = hydra.utils.instantiate(self.load_habitat_for_ppf_cfg.test)
+        with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
                     graph_id, input_channel="first"
@@ -338,15 +205,12 @@ class GraphLearningTest(unittest.TestCase):
                     4,
                     "Edge attributes don't store 4d PPF (should be added when loading)",
                 )
-            pprint("...evaluating on loaded models...")
             exp.evaluate()
 
     def test_can_load_disp_graph_for_feature_matching(self):
         self.build_and_save_supervised_graph()
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.load_habitat_for_feat)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("checking loaded graphs")
+        exp = hydra.utils.instantiate(self.load_habitat_for_feat_cfg.test)
+        with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
                     graph_id, input_channel="first"
@@ -360,14 +224,12 @@ class GraphLearningTest(unittest.TestCase):
                     3,
                     "Edge attributes don't store 3d displacements",
                 )
-            pprint("...evaluating on loaded models...")
             exp.evaluate()
 
     def test_can_extend_and_save_feat_graph(self):
         self.build_and_save_supervised_graph_feat()
-        config = copy.deepcopy(self.load_habitat_for_feat)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("checking loaded graphs")
+        exp = hydra.utils.instantiate(self.load_habitat_for_feat_cfg.test)
+        with exp:
             for graph_id in exp.model.learning_modules[0].get_all_known_object_ids():
                 graph = exp.model.learning_modules[0].get_graph(
                     graph_id, input_channel="first"
@@ -383,7 +245,6 @@ class GraphLearningTest(unittest.TestCase):
                     None,
                     "feature at location graph should not contain edges.",
                 )
-            pprint("...evaluating on loaded models...")
             exp.train()
 
 

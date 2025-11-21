@@ -1,0 +1,11 @@
+defaults:
+  - policy/naive_scan@motor_system_args.policy_args
+  - action_space/distant_agent_no_translation@motor_system_args.policy_args.action_sampler_args
+
+motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+motor_system_args:
+  policy_class: ${monty.class:tbp.monty.frameworks.models.motor_policies.NaiveScanPolicy}
+  policy_args:
+    action_sampler_class: ${monty.class:tbp.monty.frameworks.actions.action_samplers.ConstantSampler}
+    fixed_amount: 5
+    agent_id: ${monty.agent_id:agent_id_0}
