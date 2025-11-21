@@ -1,0 +1,9 @@
+defaults:
+  - evidence_lm/evidence@
+  - /experiment/config/monty/motor_system/informed_no_trans@config.monty_config.motor_system_config
+
+config:
+  monty_config:
+    monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
+    monty_args:
+      num_exploratory_steps: 10

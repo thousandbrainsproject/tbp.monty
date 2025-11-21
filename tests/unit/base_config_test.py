@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+
 import pytest
 
 pytest.importorskip(
@@ -14,31 +15,15 @@ pytest.importorskip(
     reason="Habitat Sim optional dependency not installed.",
 )
 
-import copy
 import logging
 import os
 import shutil
 import tempfile
 import unittest
-from pprint import pprint
+from typing import Mapping
 
-from tbp.monty.frameworks.config_utils.config_args import LoggingConfig
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-    DebugExperimentArgs,
-    EnvironmentInterfacePerObjectEvalArgs,
-    EnvironmentInterfacePerObjectTrainArgs,
-    NotYCBEvalObjectList,
-    NotYCBTrainObjectList,
-)
-from tbp.monty.frameworks.environments import embodied_data as ED
-from tbp.monty.frameworks.experiments import MontyExperiment
-from tbp.monty.simulators.habitat.configs import (
-    EnvInitArgsSinglePTZ,
-    SinglePTZHabitatEnvInterfaceConfig,
-)
-from tests.unit.frameworks.config_utils.fakes.config_args import (
-    FakeSingleCameraMontyConfig,
-)
+import hydra
+from omegaconf import OmegaConf
 
 
 class BaseConfigTest(unittest.TestCase):
@@ -46,31 +31,14 @@ class BaseConfigTest(unittest.TestCase):
         """Code that gets executed before every test."""
         self.output_dir = tempfile.mkdtemp()
 
-        base = dict(
-            experiment_class=MontyExperiment,
-            experiment_args=DebugExperimentArgs(),
-            logging_config=LoggingConfig(
-                output_dir=self.output_dir, python_log_level="DEBUG"
-            ),
-            monty_config=FakeSingleCameraMontyConfig(),
-            env_interface_config=SinglePTZHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsSinglePTZ(data_path=None).__dict__
-            ),
-            train_env_interface_class=ED.EnvironmentInterfacePerObject,
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=NotYCBTrainObjectList().objects,
-            ),
-            eval_env_interface_class=ED.EnvironmentInterfacePerObject,
-            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
-                object_names=NotYCBEvalObjectList().objects,
-            ),
-        )
-
-        self.base_config = base
-
-        pprint("\n\nCONFIG:\n\n")
-        for key, val in self.base_config.items():
-            pprint(f"{key}: {val}")
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            self.base_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=base_config/base",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
 
     def tearDown(self):
         """Code that gets executed after every test."""
@@ -82,43 +50,37 @@ class BaseConfigTest(unittest.TestCase):
         This could be part of the setUp method, but it's easier to debug if
         something breaks the setup_experiment method if there's a separate test for it.
         """
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with MontyExperiment(base_config):
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             pass
 
     # @unittest.skip("debugging")
     def test_can_run_episode(self):
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with MontyExperiment(base_config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
             exp.env_interface = exp.train_env_interface
             exp.run_episode()
 
     # @unittest.skip("speed")
     def test_can_run_train_epoch(self):
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with MontyExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
             exp.run_epoch()
 
     # @unittest.skip("debugging")
     def test_can_run_eval_epoch(self):
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with MontyExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("eval")
             exp.run_epoch()
 
     # @unittest.skip("debugging")
     def test_observation_unpacking(self):
         """Make sure this test uses very small n_actions_per_epoch for speed."""
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with MontyExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             monty_module_sids = {s.sensor_module_id for s in exp.model.sensor_modules}
 
             # Handle the training loop manually for this interim test
@@ -155,11 +117,10 @@ class BaseConfigTest(unittest.TestCase):
     # @unittest.skip("debugging")
     def test_can_save_and_load(self):
         # Make sure deepcopy works (config is serializable)
-        config_1 = copy.deepcopy(self.base_config)
-        self.assertDictEqual(config_1, self.base_config)
+        config_1 = OmegaConf.to_object(self.base_cfg)
 
-        pprint("...parsing experiment in save and load test...")
-        with MontyExperiment(config_1) as exp:
+        exp = hydra.utils.instantiate(config_1["test"])
+        with exp:
             # change something about exp.state that will be saved via state_dict
             new_attr = False
             exp.model.learning_modules[0].test_attr_2 = new_attr
@@ -167,11 +128,13 @@ class BaseConfigTest(unittest.TestCase):
             exp.save_state_dict()
             prev_model = exp.model
 
-        pprint("\n\n\n loading second experiment\n\n\n")
-        # checkpoint_dir = self.exp.experiment_args.output_dir
-        config_2 = copy.deepcopy(self.base_config)
-        config_2["experiment_args"].model_name_or_path = exp.output_dir
-        with MontyExperiment(config_2) as exp_2:
+        config_2: Mapping = OmegaConf.to_object(  # ignore: type[assignment]
+            self.base_cfg
+        )
+        config_2["test"]["config"]["model_name_or_path"] = exp.output_dir
+
+        exp_2 = hydra.utils.instantiate(config_2["test"])
+        with exp_2:
             # Test 1: untouched attributes are saved and loaded correctly
             prev_attr_1_value = prev_model.learning_modules[0].test_attr_1
             new_attr_1_value = exp_2.model.learning_modules[0].test_attr_1
@@ -195,8 +158,8 @@ class BaseConfigTest(unittest.TestCase):
 
     def test_logging_debug_level(self) -> None:
         """Check that logs go to a file, we can load them, and they have basic info."""
-        base_config = copy.deepcopy(self.base_config)
-        with MontyExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             # Add some stuff to the logs, verify it shows up
             info_message = "INFO is in the log"
             warning_message = "WARNING is in the log"
@@ -213,9 +176,11 @@ class BaseConfigTest(unittest.TestCase):
 
     def test_logging_info_level(self) -> None:
         """Check that if we set logging level to info, debug logs do not show up."""
-        base_config = copy.deepcopy(self.base_config)
-        base_config["logging_config"].python_log_level = logging.INFO
-        with MontyExperiment(base_config) as exp:
+        base_config: Mapping = OmegaConf.to_object(self.base_cfg)
+        base_config["test"]["config"]["logging"]["python_log_level"] = logging.INFO
+
+        exp = hydra.utils.instantiate(base_config["test"])
+        with exp:
             # Add some stuff to the logs, verify it shows up
             debug_message = "DEBUG is in the log"
             warning_message = "WARNING is in the log"

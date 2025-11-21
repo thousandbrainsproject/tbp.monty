@@ -1,5 +1,4 @@
 # Copyright 2025 Thousand Brains Project
-# Copyright 2022-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -7,32 +6,19 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
-import copy
 import logging
 import os
 import pprint
 import time
 
-from tbp.monty.frameworks.config_utils.cmd_parser import create_cmd_parser
-from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
+import hydra
+from omegaconf import DictConfig
+
+from tbp.monty.hydra import register_resolvers
 
 logger = logging.getLogger(__name__)
-
-
-def merge_args(config, cmd_args=None):
-    """Override experiment "config" parameters with command line args.
-
-    Returns:
-        Updated config with command line args.
-    """
-    if not cmd_args:
-        return config
-
-    exp_config = copy.deepcopy(config)
-    exp_config.update(cmd_args.__dict__)
-    del exp_config["experiments"]
-    return exp_config
 
 
 def print_config(config):
@@ -44,8 +30,19 @@ def print_config(config):
     print("-" * 100)
 
 
-def run(config):
-    with config["experiment_class"](config) as exp:
+@hydra.main(config_path="../../../conf", config_name="experiment", version_base=None)
+def main(cfg: DictConfig):
+    if cfg.quiet_habitat_logs:
+        os.environ["MAGNUM_LOG"] = "quiet"
+        os.environ["HABITAT_SIM_LOG"] = "quiet"
+
+    print_config(cfg)
+    register_resolvers()
+
+    os.makedirs(cfg.experiment.config.logging.output_dir, exist_ok=True)
+    experiment = hydra.utils.instantiate(cfg.experiment)
+    start_time = time.time()
+    with experiment as exp:
         # TODO: Later will want to evaluate every x episodes or epochs
         # this could probably be solved with just setting the logging freqency
         # Since each trainng loop already does everything that eval does.
@@ -56,60 +53,4 @@ def run(config):
         if exp.do_eval:
             print("---------evaluating---------")
             exp.evaluate()
-
-
-def main(all_configs, experiments=None):
-    """Use this as "main" function when running monty experiments.
-
-    A typical project `run.py` should look like this::
-
-        # Load all experiment configurations from local project
-        from experiments import CONFIGS
-        from tbp.monty.frameworks.run import main
-
-        if __name__ == "__main__":
-            main(all_configs=CONFIGS)
-
-    Args:
-        all_configs: Dict containing all available experiment configurations.
-            Usually each project would have its own list of experiment
-            configurations
-        experiments: Optional list of experiments to run, used to bypass the
-            command line args
-    """
-    cmd_args = None
-    if not experiments:
-        cmd_parser = create_cmd_parser(experiments=list(all_configs.keys()))
-        cmd_args = cmd_parser.parse_args()
-        experiments = cmd_args.experiments
-
-        if cmd_args.quiet_habitat_logs:
-            os.environ["MAGNUM_LOG"] = "quiet"
-            os.environ["HABITAT_SIM_LOG"] = "quiet"
-
-    for experiment in experiments:
-        exp = all_configs[experiment]
-        exp_config = merge_args(exp, cmd_args)  # TODO: is this really even necessary?
-        exp_config = config_to_dict(exp_config)
-
-        # Update run_name and output dir with experiment name
-        # NOTE: wandb args are further processed in monty_experiment
-        if not exp_config["logging_config"]["run_name"]:
-            exp_config["logging_config"]["run_name"] = experiment
-        exp_config["logging_config"]["output_dir"] = os.path.join(
-            exp_config["logging_config"]["output_dir"],
-            exp_config["logging_config"]["run_name"],
-        )
-        # If we are not running in parallel, this should always be False
-        exp_config["logging_config"]["log_parallel_wandb"] = False
-        print_config(exp_config)
-
-        # Print config without running experiment
-        if cmd_args is not None:
-            if cmd_args.print_config:
-                continue
-
-        os.makedirs(exp_config["logging_config"]["output_dir"], exist_ok=True)
-        start_time = time.time()
-        run(exp_config)
-        logger.info(f"Done running {experiment} in {time.time() - start_time} seconds")
+    logger.info(f"Done running {experiment} in {time.time() - start_time} seconds")

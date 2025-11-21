@@ -1,0 +1,5 @@
+defaults:
+  - init_args/single_ptz@env_init_args
+
+env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
+transform: null

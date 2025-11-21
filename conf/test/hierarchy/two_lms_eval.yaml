@@ -1,0 +1,19 @@
+defaults:
+  - /test/hierarchy/two_lms_constrained@
+  - /experiment/config/defaults@config
+  - /experiment/config/logging/clear_logging@config
+  - /experiment/config/logging/defaults@config.logging
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+config:
+  do_train: false
+  min_lms_match: 1
+  n_eval_epochs: 2
+  logging:
+    python_log_level: INFO
+  eval_env_interface_args:
+    object_names:
+      - capsule3DSolid
+    parent_to_child_mapping:
+      capsule3DSolid: capsule3DSolid
+      cubeSolid: cubeSolid

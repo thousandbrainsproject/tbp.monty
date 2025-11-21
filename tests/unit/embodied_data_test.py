@@ -19,7 +19,7 @@ from tbp.monty.frameworks.actions.action_samplers import (
     UniformlyDistributedSampler,
 )
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.config_utils.config_args import make_base_policy_config
+from tbp.monty.frameworks.config_utils.policy_setup_utils import make_base_policy_config
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterface,
     OmniglotEnvironmentInterface,

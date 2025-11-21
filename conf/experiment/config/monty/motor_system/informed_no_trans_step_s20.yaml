@@ -1,0 +1,12 @@
+defaults:
+  - policy/informed@motor_system_args.policy_args
+  - action_space/distant_agent_no_translation@motor_system_args.policy_args.action_sampler_args
+
+motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+motor_system_args:
+  policy_class: ${monty.class:tbp.monty.frameworks.models.motor_policies.InformedPolicy}
+  policy_args:
+    action_sampler_class: ${monty.class:tbp.monty.frameworks.actions.action_samplers.ConstantSampler}
+    action_sampler_args:
+      rotation_degrees: 20.0
+    use_goal_state_driven_actions: false

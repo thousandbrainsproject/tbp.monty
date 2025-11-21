@@ -7,7 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
-
+import hydra
 import pytest
 
 pytest.importorskip(
@@ -15,112 +15,38 @@ pytest.importorskip(
     reason="Habitat Sim optional dependency not installed.",
 )
 
-import copy
 import shutil
 import tempfile
 import unittest
-from pprint import pprint
-
-from tbp.monty.frameworks.config_utils.config_args import (
-    LoggingConfig,
-    MontyArgs,
-    PatchAndViewFeatureChangeConfig,
-    PatchAndViewMontyConfig,
-)
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-    EnvironmentInterfacePerObjectEvalArgs,
-    EnvironmentInterfacePerObjectTrainArgs,
-    ExperimentArgs,
-    PredefinedObjectInitializer,
-)
-from tbp.monty.frameworks.environments import embodied_data as ED
-from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
-from tbp.monty.frameworks.models.sensor_modules import (
-    HabitatSM,
-    Probe,
-)
-from tbp.monty.simulators.habitat.configs import (
-    EnvInitArgsPatchViewMount,
-    PatchViewFinderMountHabitatEnvInterfaceConfig,
-)
 
 
 class SensorModuleTest(unittest.TestCase):
     def setUp(self):
         """Code that gets executed before every test."""
         self.output_dir = tempfile.mkdtemp()
-        base = dict(
-            experiment_class=MontyObjectRecognitionExperiment,
-            experiment_args=ExperimentArgs(),
-            logging_config=LoggingConfig(output_dir=self.output_dir),
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20)
-            ),
-            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
-            ),
-            train_env_interface_class=ED.InformedEnvironmentInterface,
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=["capsule3DSolid", "cubeSolid"],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
-            eval_env_interface_class=ED.InformedEnvironmentInterface,
-            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
-                object_names=["capsule3DSolid"],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
-        )
 
-        self.tested_features = [
-            "on_object",
-            "object_coverage",
-            "rgba",
-            "hsv",
-            "pose_vectors",
-            "principal_curvatures",
-            "principal_curvatures_log",
-            "gaussian_curvature",
-            "mean_curvature",
-            "gaussian_curvature_sc",
-            "mean_curvature_sc",
-        ]
-
-        sensor_feature_test = copy.deepcopy(base)
-        sensor_feature_test.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=2),
-                sensor_module_configs=dict(
-                    sensor_module_0=dict(
-                        sensor_module_class=HabitatSM,
-                        sensor_module_args=dict(
-                            sensor_module_id="patch",
-                            features=self.tested_features,
-                            save_raw_obs=False,
-                        ),
-                    ),
-                    sensor_module_1=dict(
-                        sensor_module_class=Probe,
-                        sensor_module_args=dict(
-                            sensor_module_id="view_finder",
-                            save_raw_obs=False,
-                        ),
-                    ),
-                ),
-            ),
-        )
-
-        feature_change_sensor_config = copy.deepcopy(base)
-        feature_change_sensor_config.update(
-            experiment_args=ExperimentArgs(n_train_epochs=1, n_eval_epochs=1),
-            logging_config=LoggingConfig(output_dir=self.output_dir),
-            monty_config=PatchAndViewFeatureChangeConfig(
-                monty_args=MontyArgs(num_exploratory_steps=100)
-            ),
-        )
-
-        self.base = base
-        self.sensor_feature_test = sensor_feature_test
-        self.feature_change_sensor_config = feature_change_sensor_config
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            self.base_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=sensor_module/base",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
+            self.sensor_feature_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=sensor_module/sensor_feature",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
+            self.feature_change_sensor_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=sensor_module/feature_change_sensor",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
 
     def tearDown(self):
         """Code that gets executed after every test."""
@@ -129,11 +55,9 @@ class SensorModuleTest(unittest.TestCase):
     # @unittest.skip("debugging")
     def test_can_set_up(self):
         """Check that correct features are returned by sensor module."""
-        print("...parsing experiment...")
-        base_config = copy.deepcopy(self.sensor_feature_test)
-        with MontyObjectRecognitionExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
-            pprint("...training...")
             exp.pre_epoch()
             exp.pre_episode()
             for step, observation in enumerate(exp.env_interface):
@@ -144,18 +68,21 @@ class SensorModuleTest(unittest.TestCase):
     # @unittest.skip("debugging")
     def test_features_in_sensor(self):
         """Check that correct features are returned by sensor module."""
-        print("...parsing experiment...")
-        base_config = copy.deepcopy(self.sensor_feature_test)
-        with MontyObjectRecognitionExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.sensor_feature_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
-            pprint("...training...")
             exp.pre_epoch()
             exp.pre_episode()
             for _, observation in enumerate(exp.env_interface):
                 exp.model.aggregate_sensory_inputs(observation)
 
-                pprint(exp.model.sensor_module_outputs)
-                for feature in self.tested_features:
+                # Dig the features list out of the hydra config
+                config = self.sensor_feature_cfg.test.config
+                sensor_configs = config.monty_config.sensor_module_configs
+                tested_features = (
+                    sensor_configs.sensor_module_0.sensor_module_args.features
+                )
+                for feature in tested_features:
                     if feature in ["pose_vectors", "pose_fully_defined", "on_object"]:
                         self.assertIn(
                             feature,
@@ -175,13 +102,10 @@ class SensorModuleTest(unittest.TestCase):
                 break
 
     def test_feature_change_sm(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.feature_change_sensor_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.feature_change_sensor_cfg.test)
+        with exp:
             exp.train()
             # TODO: test that only new features are given to LM
-            pprint("...evaluating...")
             exp.evaluate()
 
 

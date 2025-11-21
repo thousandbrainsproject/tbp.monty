@@ -1,0 +1,31 @@
+defaults:
+  - /test/graph_learning/base@
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+
+config:
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 30
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.feature_location_matching.FeatureGraphLM}
+        learning_module_args:
+          # Low mmd to initially learn two separate objects
+          # (will be changed after first 2 episodes)
+          # For some reason 0.01 is enough on laptop but not in
+          # docker container...
+          max_match_distance: 0.001
+          tolerances:
+            patch:
+              principal_curvatures_log: [1, 1]
+              pose_vectors: [180, 180, 180]
+          # use no symmetry terminal condition to get time out
+          required_symmetry_evidence: 1000
+  train_env_interface_args:
+    object_names:
+      - capsule3DSolid
+      - cubeSolid
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      rotations:
+        - [0.0, 0.0, 0.0]

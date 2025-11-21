@@ -11,6 +11,7 @@
 import pytest
 
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.config_utils.policy_setup_utils import make_base_policy_config
 
 pytest.importorskip(
     "habitat_sim",
@@ -26,7 +27,6 @@ import numpy as np
 from tbp.monty.frameworks.actions.action_samplers import (
     UniformlyDistributedSampler,
 )
-from tbp.monty.frameworks.config_utils.config_args import make_base_policy_config
 from tbp.monty.frameworks.environments.embodied_data import EnvironmentInterface
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
@@ -103,7 +103,7 @@ class HabitatDataTest(unittest.TestCase):
         )
 
         # Create habitat env datasets with distant-agent action space
-        env_init_args = dict(agents=[self.camera_dist_config])
+        env_init_args = {"agents": self.camera_dist_config}
         env = HabitatEnvironment(**env_init_args)
         env_interface_dist = EnvironmentInterface(
             env, rng=rng, motor_system=motor_system_dist
@@ -159,7 +159,7 @@ class HabitatDataTest(unittest.TestCase):
         )
 
         # Create habitat env with absolute action space
-        env_init_args = dict(agents=[self.camera_abs_config])
+        env_init_args = {"agents": self.camera_abs_config}
         env = HabitatEnvironment(**env_init_args)
         env_interface_abs = EnvironmentInterface(
             env,
@@ -218,7 +218,7 @@ class HabitatDataTest(unittest.TestCase):
         )
 
         # Create habitat env interface with distant-agent action space
-        env_init_args = dict(agents=[self.camera_surf_config])
+        env_init_args = {"agents": self.camera_surf_config}
         env = HabitatEnvironment(**env_init_args)
         env_interface_surf = EnvironmentInterface(
             env, rng=rng, motor_system=motor_system_surf
@@ -274,7 +274,7 @@ class HabitatDataTest(unittest.TestCase):
             policy=BasePolicy(rng=rng, **base_policy_config_dist.__dict__)
         )
 
-        env_init_args = dict(agents=[self.camera_dist_config])
+        env_init_args = {"agents": self.camera_dist_config}
         env = HabitatEnvironment(**env_init_args)
         env_interface_dist = EnvironmentInterface(
             env, motor_system=motor_system_dist, rng=rng
@@ -313,7 +313,7 @@ class HabitatDataTest(unittest.TestCase):
         motor_system_abs = MotorSystem(
             policy=BasePolicy(rng=rng, **base_policy_config_abs.__dict__)
         )
-        env_init_args = dict(agents=[self.camera_abs_config])
+        env_init_args = {"agents": self.camera_abs_config}
         env = HabitatEnvironment(**env_init_args)
         env_interface_abs = EnvironmentInterface(
             env, motor_system=motor_system_abs, rng=rng
@@ -354,7 +354,7 @@ class HabitatDataTest(unittest.TestCase):
             policy=BasePolicy(rng=rng, **base_policy_config_surf.__dict__)
         )
 
-        env_init_args = dict(agents=[self.camera_surf_config])
+        env_init_args = {"agents": self.camera_surf_config}
         env = HabitatEnvironment(**env_init_args)
         env_interface_surf = EnvironmentInterface(
             env, motor_system=motor_system_surf, rng=rng
