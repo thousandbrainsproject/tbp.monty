@@ -1170,29 +1170,6 @@ wheels = [
 ]
 
 [[package]]
-name = "gym"
-version = "0.26.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cloudpickle" },
-    { name = "gym-notices" },
-    { name = "importlib-metadata", version = "8.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "importlib-metadata", version = "8.7.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.9.*'" },
-    { name = "numpy", version = "1.24.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ab/b1/eb05a423eb801ab7d0715d6a3b28d92589e30b437052553df19ca2087240/gym-0.26.2.tar.gz", hash = "sha256:e0d882f4b54f0c65f203104c24ab8a38b039f1289986803c7d02cdbe214fbcc4", size = 721689, upload-time = "2022-10-04T23:57:43.247Z" }
-
-[[package]]
-name = "gym-notices"
-version = "0.0.8"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b4/62/d312681b09cacf77d04237a2815653c58e5031998bb613ce114b85fc3f57/gym-notices-0.0.8.tar.gz", hash = "sha256:ad25e200487cafa369728625fe064e88ada1346618526102659b4640f2b4b911", size = 2685, upload-time = "2022-08-14T16:59:55.692Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/25/26/d786c6bec30fe6110fd3d22c9a273a2a0e56c0b73b93e25ea1af5a53243b/gym_notices-0.0.8-py3-none-any.whl", hash = "sha256:e5f82e00823a166747b4c2a07de63b6560b1acb880638547e0cabf825a01e463", size = 2965, upload-time = "2022-08-14T16:59:54.156Z" },
-]
-
-[[package]]
 name = "h11"
 version = "0.16.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3895,27 +3872,6 @@ wheels = [
 ]
 
 [[package]]
-name = "real-robots"
-version = "0.1.21"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "aicrowd-api" },
-    { name = "click" },
-    { name = "gym" },
-    { name = "numpy", version = "1.24.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-    { name = "pillow", version = "10.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9'" },
-    { name = "pillow", version = "11.2.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-    { name = "pybullet" },
-    { name = "pyinterval" },
-    { name = "tqdm" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/4e/d0/5d04f339d4d8b6602be5396bf5f074cc6fdb7b5688fd8603f1924bf13312/real_robots-0.1.21.tar.gz", hash = "sha256:7e94526bcb70a23e53ca85f3686744356029c0a6ff8c226d9a76d8d59e81bec9", size = 9089157, upload-time = "2020-11-12T17:50:11.47Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/23/c9/a63dbad03debd9289102f1acda1691ff98ae2290b86e2a3fbad7ce0fec2f/real_robots-0.1.21-py2.py3-none-any.whl", hash = "sha256:ead227d8025eced524629c19f6736ec251ec4a163174ac03cf8989efad0717ac", size = 18160100, upload-time = "2020-11-12T17:49:58.432Z" },
-]
-
-[[package]]
 name = "redis"
 version = "6.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -5065,11 +5021,6 @@ github-readme-sync-tool = [
 print-version-tool = [
     { name = "semver" },
 ]
-real-robots = [
-    { name = "gym" },
-    { name = "opencv-python" },
-    { name = "real-robots" },
-]
 simulator-habitat = [
     { name = "habitat-sim", marker = "python_full_version == '3.9.*'" },
 ]
@@ -5085,7 +5036,6 @@ requires-dist = [
     { name = "deptry", marker = "extra == 'dev'" },
     { name = "docutils", marker = "extra == 'generate-api-docs-tool'", specifier = ">=0.17" },
     { name = "eval-type-backport", marker = "extra == 'future-work-widget-tool'" },
-    { name = "gym", marker = "extra == 'real-robots'" },
     { name = "habitat-sim", marker = "python_full_version == '3.9.*' and extra == 'simulator-habitat'" },
     { name = "importlib-resources" },
     { name = "ipython", marker = "extra == 'analysis'" },
@@ -5098,7 +5048,6 @@ requires-dist = [
     { name = "nh3", marker = "extra == 'github-readme-sync-tool'" },
     { name = "numpy" },
     { name = "numpy-quaternion", specifier = "==2023.0.3" },
-    { name = "opencv-python", marker = "extra == 'real-robots'" },
     { name = "pandas" },
     { name = "parameterized", marker = "extra == 'dev'", specifier = "==0.9.0" },
     { name = "pillow" },
@@ -5110,7 +5059,6 @@ requires-dist = [
     { name = "python-dotenv", marker = "extra == 'github-readme-sync-tool'" },
     { name = "python-slugify", marker = "extra == 'github-readme-sync-tool'" },
     { name = "pyyaml", marker = "extra == 'github-readme-sync-tool'" },
-    { name = "real-robots", marker = "extra == 'real-robots'" },
     { name = "requests", marker = "extra == 'github-readme-sync-tool'" },
     { name = "ruff", marker = "extra == 'dev'", specifier = "==0.14.2" },
     { name = "scikit-image" },
@@ -5137,7 +5085,7 @@ requires-dist = [
     { name = "vedo", marker = "extra == 'analysis'" },
     { name = "wandb" },
 ]
-provides-extras = ["simulator-habitat", "simulator-mujoco", "analysis", "build", "dev", "generate-api-docs-tool", "github-readme-sync-tool", "future-work-widget-tool", "print-version-tool", "real-robots"]
+provides-extras = ["simulator-habitat", "simulator-mujoco", "analysis", "build", "dev", "generate-api-docs-tool", "github-readme-sync-tool", "future-work-widget-tool", "print-version-tool"]
 
 [[package]]
 name = "text-unidecode"
