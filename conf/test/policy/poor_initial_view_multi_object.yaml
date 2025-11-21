@@ -15,6 +15,9 @@ config:
             rotation_degrees: 5.0
           switch_frequency: 1.0
           good_view_percentage: 0.5
+  env_interface_config:
+    env_init_args:
+      data_path: null
   eval_env_interface_args:
     object_names:
       targets_list:
