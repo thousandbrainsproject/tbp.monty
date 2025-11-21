@@ -24,7 +24,7 @@ import habitat_sim.utils as hab_utils
 import hydra
 import numpy as np
 import quaternion as qt
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.actions.actions import (
@@ -38,12 +38,6 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
 )
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.config_utils.config_args import (
-    MotorSystemConfigCurvatureInformedSurface,
-)
-from tbp.monty.frameworks.config_utils.policy_setup_utils import (
-    make_curv_surface_policy_config,
-)
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
 )
@@ -51,7 +45,6 @@ from tbp.monty.frameworks.models.goal_state_generation import (
     EvidenceGoalStateGenerator,
 )
 from tbp.monty.frameworks.models.motor_policies import (
-    SurfacePolicyCurvatureInformed,
     get_perc_on_obj_semantic,
 )
 from tbp.monty.frameworks.models.states import State
@@ -91,6 +84,10 @@ class PolicyTest(unittest.TestCase):
             self.dist_fixed_action_cfg = hydra_config("dist_fixed_action")
             self.surf_fixed_action_cfg = hydra_config("surf_fixed_action")
             self.rotated_cube_view_cfg = hydra_config("rotated_cube_view")
+
+            self.motor_system_cfg_fragment = hydra.compose(
+                config_name="experiment/config/monty/motor_system/curvature_informed_surface"
+            ).experiment.config.monty.motor_system
 
         # ==== Setup fake observations for testing principal-curvature policies ====
         fake_sender_id = "patch"
@@ -728,22 +725,9 @@ class PolicyTest(unittest.TestCase):
         Note these movements are not actually performed, i.e. they represent
         hypothetical outputs from the motor-system.
         """
-        motor_system, motor_system_args = self.initialize_motor_system(
-            MotorSystemConfigCurvatureInformedSurface(
-                motor_system_args=dict(
-                    policy_class=SurfacePolicyCurvatureInformed,
-                    policy_args=make_curv_surface_policy_config(
-                        desired_object_distance=0.025,
-                        alpha=0.1,
-                        pc_alpha=0.5,
-                        max_pc_bias_steps=2,  # Overwrite default value
-                        min_general_steps=8,
-                        min_heading_steps=12,
-                        use_goal_state_driven_actions=False,
-                    ),
-                ),
-            )
-        )
+        motor_system_cfg = OmegaConf.to_object(self.motor_system_cfg_fragment)
+        motor_system_cfg["motor_system_args"]["policy_args"]["max_pc_bias_steps"] = 2
+        motor_system, motor_system_args = self.initialize_motor_system(motor_system_cfg)
 
         # Initialize motor-system state
         motor_system._state = {
@@ -809,10 +793,10 @@ class PolicyTest(unittest.TestCase):
             "Should have incremented continuous counter"
         )
 
-        # Step 5: Pass observation *without* a well defined PC direction
+        # Step 5: Pass observation *without* a well-defined PC direction
         motor_system._policy.processed_observations = self.fake_obs_pc[4]
         direction = motor_system._policy.tangential_direction(motor_system._state)
-        # Note the following movement is a random direction deterministcally set by the
+        # Note the following movement is a random direction deterministically set by the
         # random seed
         assert np.all(np.isclose(direction, [-0.13745981, 0.99050735, 0])), (
             "Not following correct non-PC direction"
@@ -857,23 +841,11 @@ class PolicyTest(unittest.TestCase):
         such as checks to avoid doubling back on ourself, and how to handle when the
         proposed PC points in the z direction (i.e. towards or away from the agent).
         """
-        motor_system, motor_system_args = self.initialize_motor_system(
-            MotorSystemConfigCurvatureInformedSurface(
-                motor_system_args=dict(
-                    policy_class=SurfacePolicyCurvatureInformed,
-                    policy_args=make_curv_surface_policy_config(
-                        desired_object_distance=0.025,
-                        alpha=0.1,
-                        pc_alpha=0.5,
-                        max_pc_bias_steps=32,
-                        min_general_steps=1,  # Overwrite default value so that we more
-                        # quickly transition into taking PC steps when testing this
-                        min_heading_steps=12,
-                        use_goal_state_driven_actions=False,
-                    ),
-                ),
-            )
-        )
+        motor_system_cfg = OmegaConf.to_object(self.motor_system_cfg_fragment)
+        # Overwrite min_general_steps default value so that we more quickly transition
+        # into taking PC steps when testing this
+        motor_system_cfg["motor_system_args"]["policy_args"]["min_general_steps"] = 1
+        motor_system, motor_system_args = self.initialize_motor_system(motor_system_cfg)
 
         # Initialize motor system state
         motor_system._state = {
@@ -889,7 +861,7 @@ class PolicyTest(unittest.TestCase):
         motor_system._policy.tangent_locs.append(self.fake_obs_pc[0].location)
         motor_system._policy.tangent_norms.append([0, 0, 1])
         direction = motor_system._policy.tangential_direction(motor_system._state)
-        # Note the following movement is a random direction deterministcally set by the
+        # Note the following movement is a random direction deterministically set by the
         # random seed
         assert np.all(np.isclose(direction, [0.98165657, 0.19065773, 0])), (
             "Not following correct non-PC direction"
@@ -920,7 +892,7 @@ class PolicyTest(unittest.TestCase):
         )
 
         # Step 3 : Following PC direction would cause us to double back on ourself;
-        # PC has been aribtrarily flipped vs. previous step, so can just flip it back
+        # PC has been arbitrarily flipped vs. previous step, so can just flip it back
         motor_system._policy.processed_observations = self.fake_obs_advanced_pc[1]
         motor_system._policy.tangent_locs.append(self.fake_obs_advanced_pc[1].location)
         motor_system._policy.tangent_norms.append([0, 0, 1])
@@ -940,7 +912,7 @@ class PolicyTest(unittest.TestCase):
         motor_system._policy.tangent_locs.append(self.fake_obs_pc[2].location)
         motor_system._policy.tangent_norms.append([0, 0, 1])
         direction = motor_system._policy.tangential_direction(motor_system._state)
-        # Note the following movement is a random direction deterministcally set by the
+        # Note the following movement is a random direction deterministically set by the
         # random seed
         assert np.all(
             np.isclose(direction, [0.9789808522232504, -0.20395217816987962, 0])
@@ -948,7 +920,7 @@ class PolicyTest(unittest.TestCase):
         assert (
             motor_system._policy.ignoring_pc_counter
             == motor_system_args["policy_args"]["min_general_steps"]
-        ), "Shoulnd't increment ignoring_pc_counter"
+        ), "Shouldn't increment ignoring_pc_counter"
         assert motor_system._policy.following_pc_counter == 2, (
             "Should have not changed following_pc_counter"
         )
@@ -967,7 +939,7 @@ class PolicyTest(unittest.TestCase):
         # designed to avoid)
         motor_system._policy.tangent_norms.append([0, 0, 1])
         direction = motor_system._policy.tangential_direction(motor_system._state)
-        # Note the following movement is a random direction deterministcally set by the
+        # Note the following movement is a random direction deterministically set by the
         # random seed
         assert np.all(np.isclose(direction, [0.60958557, 0.79272027, 0])), (
             "Not following correct non-PC direction"
@@ -1087,9 +1059,8 @@ class PolicyTest(unittest.TestCase):
         """
         lm, gsg_args = self.initialize_lm_with_gsg()
 
-        motor_system, _ = self.initialize_motor_system(
-            MotorSystemConfigCurvatureInformedSurface()
-        )
+        motor_system_cfg = OmegaConf.to_object(self.motor_system_cfg_fragment)
+        motor_system, _ = self.initialize_motor_system(motor_system_cfg)
 
         # The target displacement of the agent from the object; used to determine
         # the validity of the final agent location
