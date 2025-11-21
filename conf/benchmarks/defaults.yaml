@@ -23,7 +23,8 @@ min_eval_steps: 20
 # v8 : Using separate graph per input channel
 # v9 : Using models trained on 14 unique rotations
 # v10 : Using models trained without the semantic sensor
-pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v10}
+# v11 : v10 trained on standard TBP benchmark infrastructure as of Nov 2025
+pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11}
 
 # 14 unique rotations that give good views of the object. Same rotations used
 # for supervised pretraining.
