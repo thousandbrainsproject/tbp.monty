@@ -1,0 +1,32 @@
+defaults:
+  - base_config_10distinctobj_dist_agent
+  - config/monty/clear_monty_config@config
+  - config/monty/patch_and_view_sota@config.monty_config
+  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - config/monty/learning_modules/default_evidence_1lm@config.monty_config.learning_module_configs
+  - config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+  - /benchmarks/default_all_noisy_sensor_module@config.monty_config.sensor_module_configs.sensor_module_0
+  - config/monty/args/clear_monty_args@config.monty_config
+  - config/monty/args/defaults@config.monty_config.monty_args
+  - config/environment/clear_eval_env_interface_args@config
+  - config/environment_interface/per_object@config.eval_env_interface_args
+  - config/environment_interface/ycb/distinct_objects@config.eval_env_interface_args.object_names
+  - config/environment_interface/clear_object_init_sampler@config.eval_env_interface_args
+
+config:
+  model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+  n_eval_epochs: 10 # number of random rotations to test for each object
+  logging:
+    run_name: randrot_noise_10distinctobj_dist_agent
+  monty_config:
+    monty_args:
+      min_eval_steps: ${benchmarks.min_eval_steps}
+    sensor_module_configs:
+      sensor_module_1:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+        sensor_module_args:
+          sensor_module_id: view_finder
+          save_raw_obs: true
+  eval_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.RandomRotationObjectInitializer

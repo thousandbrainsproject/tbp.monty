@@ -1,0 +1,18 @@
+# TODO: Likely consolidate into some other list
+# "(...) a list of features we extract for experiments that involve voting.
+#  I’m not sure why we specify a different list than for other experiments.
+#  This might be a historical artifact from making a variable for easier
+#  multi LM configs and then changing the values directly in the other configs.
+#  The LMs will not actually use all [these] so theoretically we could simplify
+#  and just pass the same feature lists to all the configs" -- Viviane
+features:
+  - on_object
+  - rgba
+  - hsv
+  - pose_vectors
+  - principal_curvatures
+  - principal_curvatures_log
+  - gaussian_curvature
+  - mean_curvature
+  - gaussian_curvature_sc
+  - mean_curvature_sc

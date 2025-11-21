@@ -1,0 +1,24 @@
+defaults:
+  - supervised_pre_training_objects_with_logos_lvl1_monolithic_models
+  - config/supervised_pretraining@config
+  - config/monty/clear_monty_config@config
+  - config/monty/two_lm_stacked@config.monty_config
+  - config/monty/args/clear_monty_args@config.monty_config
+  - config/monty/args/defaults@config.monty_config.monty_args
+  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - config/monty/learning_modules/two_stacked_constrained_lms@config.monty_config.learning_module_configs
+  - config/monty/motor_system/clear_motor_system_config@config.monty_config
+  # use spiral policy for more even object coverage during learning
+  - config/monty/motor_system/naive_scan_spiral@config.monty_config.motor_system_config
+
+config:
+  n_train_epochs: ${benchmarks.rotations_all_count}
+  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v10/supervised_pre_training_logos_after_flat_objects/pretrained/}
+  supervised_lm_ids: ["learning_module_1"]
+  min_lms_match: 2
+  logging:
+    run_name: supervised_pre_training_objects_with_logos_lvl1_comp_models
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 1000
+      min_train_steps: 100

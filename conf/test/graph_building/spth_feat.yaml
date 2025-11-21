@@ -1,0 +1,15 @@
+defaults:
+  - /test/graph_building/supervised_pre_training@
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+
+config:
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 10
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.feature_location_matching.FeatureGraphLM}
+        learning_module_args:
+          max_match_distance: None
+          tolerances:
+            patch: {}

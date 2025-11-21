@@ -1,0 +1,4 @@
+patch:
+  hsv: ${np.array:[0.1, 1, 1]}
+  pose_vectors: ${np.array:[20, 20, 20]} # degrees
+  principal_curvatures_log: ${np.ones:2}
