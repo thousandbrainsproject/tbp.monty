@@ -151,7 +151,6 @@ autodoc_member_order = "groupwise"
 autodoc_inherit_docstrings = True
 autodoc_mock_imports = [
     "PIL",
-    "gym",
     "habitat_sim",
     "magnum",
     "matplotlib",

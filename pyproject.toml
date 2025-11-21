@@ -107,11 +107,6 @@ future_work_widget_tool = [
 print_version_tool = [
     'semver'
 ]
-real_robots = [
-    'gym',
-    'opencv-python',
-    'real_robots'
-]
 
 [project.urls]
 Homepage = 'https://thousandbrainsproject.org'
