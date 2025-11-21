@@ -213,10 +213,6 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
             *args: ?
             **kwargs: ?
 
-        See Also:
-            tbp.monty.frameworks.make_env_interface_configs
-            :class:`EnvironmentInterfacePerObjectTrainArgs`
-
         Raises:
             TypeError: If `object_names` is not a list or dictionary
         """

@@ -206,32 +206,6 @@ class RandomRotationObjectInitializer(DefaultObjectInitializer):
             scale=self.scale,
         )
 
-
-@dataclass
-class EnvironmentInterfacePerObjectArgs:
-    object_names: list
-    object_init_sampler: Callable
-    parent_to_child_mapping: dict[str, list[str]] | None = None
-
-
-@dataclass
-class EnvironmentInterfacePerObjectTrainArgs(EnvironmentInterfacePerObjectArgs):
-    object_names: list = field(default_factory=lambda: DefaultTrainObjectList().objects)
-    object_init_sampler: Callable = field(default_factory=DefaultObjectInitializer)
-
-
-@dataclass
-class EnvironmentInterfacePerObjectEvalArgs(EnvironmentInterfacePerObjectArgs):
-    object_names: list = field(default_factory=lambda: DefaultTrainObjectList().objects)
-    object_init_sampler: Callable = field(default_factory=DefaultObjectInitializer)
-
-
-@dataclass
-class EnvironmentInterfaceMultiObjectArgs:
-    object_names: dict  # Note Dict and not List
-    object_init_sampler: Callable
-
-
 @dataclass
 class PatchAndViewFinderMountConfig:
     # conf/experiment/config/environment/init_args/agents/patch_and_view_finder.yaml
