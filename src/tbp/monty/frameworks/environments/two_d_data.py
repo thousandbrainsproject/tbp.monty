@@ -24,7 +24,6 @@ from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import DepthTo3DLocations
 from tbp.monty.frameworks.environments.embodied_environment import (
-    ActionSpace,
     EmbodiedEnvironment,
     ObjectID,
 )
@@ -36,13 +35,6 @@ __all__ = [
     "SaccadeOnImageEnvironment",
     "SaccadeOnImageFromStreamEnvironment",
 ]
-
-
-class TwoDDataActionSpace(tuple, ActionSpace):
-    """Action space for 2D data environments."""
-
-    def sample(self):
-        return self.rng.choice(self)
 
 
 class OmniglotEnvironment(EmbodiedEnvironment):
