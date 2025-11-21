@@ -1,6 +1,11 @@
 ---
 title: Pretraining a Model
 ---
+
+> [!WARNING]
+>
+> Apologies, the code for this tutorial is out of date due to the major change in how we configure Monty. We'll update it soon™️.
+
 # Introduction
 
 This tutorial demonstrates how to configure and run Monty experiments for pretraining. In the [next tutorial](running-inference-with-a-pretrained-model.md), we show how to load our pretrained model and use it to perform inference. Though Monty is designed for continual learning and does not require separate training and evaluation modes, this set of experiments is useful for understanding many of our [benchmarks experiments](../running-benchmarks.md).

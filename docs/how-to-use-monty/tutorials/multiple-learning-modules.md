@@ -1,6 +1,11 @@
 ---
 title: Multiple Learning Modules
 ---
+
+> [!WARNING]
+>
+> Apologies, the code for this tutorial is out of date due to the major change in how we configure Monty. We'll update it soon™️.
+
 # Introduction
 Thus far, we have been working with models that use a single agent with a single sensor which connects to a single learning module. In the context of vision, this is analogous to a small patch of retina that picks up a small region of the visual field and relays its information to its downstream target--a single cortical column in the primary visual cortex (V1). In human terms, this is like looking through a straw. While sufficient to recognize objects, one would have to make many successive eye movements to build up a picture of the environment. In reality, the retina contains many patches that tile the retinal surface, and they all send their information to their respective downstream target columns in V1. If, for example, a few neighboring retinal patches fall on different parts of the same object, then the object may be rapidly recognized once columns have communicated with each other about what they are seeing and where they are seeing it.
 

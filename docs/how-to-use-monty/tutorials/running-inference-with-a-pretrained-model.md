@@ -1,6 +1,11 @@
 ---
 title: Running Inference with a Pretrained Model
 ---
+
+> [!WARNING]
+>
+> Apologies, the code for this tutorial is out of date due to the major change in how we configure Monty. We'll update it soon™️.
+
 # Introduction
 
 This tutorial is a follow-up of our tutorial on [pretraining a model](pretraining-a-model.md). Here we will load the pretraining data into the model and perform object recognition under noisy conditions and several arbitrary object rotations.
