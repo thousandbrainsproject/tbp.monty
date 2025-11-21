@@ -28,7 +28,7 @@ import pandas as pd
 import torch
 from omegaconf import DictConfig, OmegaConf
 
-from tbp.monty.frameworks.run_parallel_hydra import main
+from tbp.monty.frameworks.run_parallel import main
 
 
 class RunParallelTest(unittest.TestCase):

@@ -11,7 +11,7 @@ from tbp.monty.frameworks.run_env import setup_env
 
 setup_env()
 
-from tbp.monty.frameworks.run_parallel_hydra import main  # noqa: E402
+from tbp.monty.frameworks.run_parallel import main  # noqa: E402
 
 if __name__ == "__main__":
     main()
