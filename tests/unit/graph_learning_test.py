@@ -21,7 +21,7 @@ import os
 import shutil
 import tempfile
 import unittest
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -30,18 +30,9 @@ import numpy as np
 import pandas as pd
 from omegaconf import DictConfig
 
-from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
-from tbp.monty.frameworks.config_utils.config_args import (
-    InformedPolicy,
-)
-from tbp.monty.frameworks.config_utils.policy_setup_utils import (
-    make_informed_policy_config,
-)
 from tbp.monty.frameworks.loggers.wandb_handlers import DetailedWandbMarkedObsHandler
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
 from tbp.monty.frameworks.models.graph_matching import GraphLM
-from tbp.monty.frameworks.models.motor_system import MotorSystem
-from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 from tbp.monty.frameworks.utils.follow_up_configs import (
     create_eval_episode_hydra_cfg,
     create_eval_multiple_episodes_hydra_cfg,
@@ -51,24 +42,6 @@ from tbp.monty.frameworks.utils.logging_utils import (
     load_stats,
 )
 from tests.unit.resources.unit_test_utils import BaseGraphTest
-
-
-# TODO: Still referenced by run_parallel_test.py. Remove once that
-#   test has been updated.
-@dataclass
-class MotorSystemConfigFixed:
-    motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: dict | Dataclass = field(
-        default_factory=lambda: dict(
-            policy_class=InformedPolicy,
-            policy_args=make_informed_policy_config(
-                action_space_type="distant_agent_no_translation",
-                action_sampler_class=ConstantSampler,
-                rotation_degrees=5.0,
-                file_name=Path(__file__).parent / "resources/fixed_test_actions.jsonl",
-            ),
-        )
-    )
 
 
 @dataclass
