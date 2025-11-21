@@ -21,6 +21,7 @@ channels:
   - conda-forge
   - defaults
 
+# Note: Remember to update recipe/meta.yaml when updating this file.
 dependencies:
   - python=3.8
 
