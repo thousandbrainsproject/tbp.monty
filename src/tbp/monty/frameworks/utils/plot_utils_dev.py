@@ -1189,7 +1189,7 @@ class PolicyPlot:
         for current_step in range(total_steps):
             self.plot_movement_step(current_step)
 
-    def plot_animation(self, zoom=1.0, view=None):
+    def plot_animation(self, _zoom=1.0, view=None):
         """Plot an animation of the episode's full action policy."""
         self.plot_core_object()
         self.derive_policy_details()

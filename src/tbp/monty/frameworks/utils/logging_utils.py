@@ -17,8 +17,8 @@ import os
 import shutil
 from collections import deque
 from itertools import chain
+from pathlib import Path
 from sys import getsizeof
-from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -31,9 +31,6 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_unique_rotations,
     rotations_to_quats,
 )
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +87,8 @@ def load_models_from_dir(exp_path, pretrained_dict=None):
             pretrained_models = state_dict["lm_dict"][lm_id]["graph_memory"]
             lm_models["pretrained"][lm_id] = pretrained_models
 
-    for folder in os.listdir(exp_path):
+    for child in Path(exp_path).iterdir():
+        folder = child.name
         if folder.isnumeric():
             state_dict = torch.load(os.path.join(exp_path, folder, "model.pt"))
             for lm_id in list(state_dict["lm_dict"].keys()):

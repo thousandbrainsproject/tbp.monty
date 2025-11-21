@@ -13,6 +13,7 @@ import unittest
 from pathlib import Path
 
 import numpy as np
+from typing_extensions import override
 
 from tbp.monty.frameworks.actions.action_samplers import (
     UniformlyDistributedSampler,
@@ -61,9 +62,11 @@ class FakeEnvironmentRel(EmbodiedEnvironment):
     def __init__(self):
         self._current_state = 0
 
+    @override
     def add_object(self, *args, **kwargs) -> ObjectID:
         return ObjectID(-1)
 
+    @override
     def step(self, actions) -> Observations:
         self._current_state += 1
         return Observations(
@@ -106,9 +109,11 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
     def __init__(self):
         self._current_state = 0
 
+    @override
     def add_object(self, *args, **kwargs) -> ObjectID:
         return ObjectID(-1)
 
+    @override
     def step(self, actions) -> Observations:
         self._current_state += 1
         return Observations(

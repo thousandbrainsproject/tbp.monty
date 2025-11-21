@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Sequence
 
 from mujoco import MjData, MjModel, MjsBody, MjSpec, mjtGeom
+from typing_extensions import override
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
@@ -63,6 +64,7 @@ class MuJoCoSimulator(Simulator):
         self._object_count = 0
         # TODO - reinitialize agents since they will have been removed
 
+    @override
     def add_object(
         self,
         name: str,
@@ -140,6 +142,7 @@ class MuJoCoSimulator(Simulator):
     def states(self) -> None:
         pass
 
+    @override
     def apply_actions(self, actions: Sequence[Action]) -> Observations:
         return Observations({})
 
