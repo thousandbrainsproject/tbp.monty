@@ -14,9 +14,7 @@ from dataclasses import dataclass, field
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
     make_curv_surface_policy_config,
 )
-from tbp.monty.frameworks.models.motor_policies import (
-    SurfacePolicyCurvatureInformed,
-)
+from tbp.monty.frameworks.models.motor_policies import SurfacePolicyCurvatureInformed
 from tbp.monty.frameworks.models.motor_system import MotorSystem
 from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 

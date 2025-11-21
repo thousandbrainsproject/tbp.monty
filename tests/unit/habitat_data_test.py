@@ -11,6 +11,7 @@
 import pytest
 
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.config_utils.policy_setup_utils import make_base_policy_config
 
 pytest.importorskip(
     "habitat_sim",
@@ -26,7 +27,6 @@ import numpy as np
 from tbp.monty.frameworks.actions.action_samplers import (
     UniformlyDistributedSampler,
 )
-from tbp.monty.frameworks.config_utils.config_args import make_base_policy_config
 from tbp.monty.frameworks.environments.embodied_data import EnvironmentInterface
 from tbp.monty.frameworks.models.motor_policies import BasePolicy
 from tbp.monty.frameworks.models.motor_system import MotorSystem
