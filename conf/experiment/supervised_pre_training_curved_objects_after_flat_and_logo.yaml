@@ -1,0 +1,17 @@
+defaults:
+  - supervised_pre_training_flat_objects_wo_logos
+  - config/supervised_pretraining@config
+  - config/environment_interface/clear_train_env_interface_args@config
+  - config/environment_interface/per_object@config.train_env_interface_args
+  - config/environment_interface/logos_on_objs/curved_objects_without_logos@config.train_env_interface_args.object_names
+
+config:
+  n_train_epochs: ${benchmarks.rotations_all_count}
+  supervised_lm_ids: ["learning_module_0"]
+  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v10/supervised_pre_training_logos_after_flat_objects/pretrained/}
+  logging:
+    run_name: supervised_pre_training_curved_objects_after_flat_and_logo
+  train_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      rotations: ${benchmarks.rotations_all}

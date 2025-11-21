@@ -1,6 +1,11 @@
 ---
 title: Unsupervised Continual Learning
 ---
+
+> [!WARNING]
+>
+> Apologies, the code for this tutorial is out of date due to the major change in how we configure Monty. We'll update it soon™️.
+
 # Introduction
 
 This tutorial demonstrates how to configure and run Monty experiments for [unsupervised continual learning](../../how-monty-works/experiment.md#different-phases-of-learning). In this regime, Monty learns while it explores an object and attempts to identify its identity and pose. If an object has been recognized as a previously seen item, then any knowledge gained during its exploration is added to an existing model and committed to memory. If Monty does not recognize the object, then a new model is generated for the object and stored. In this way, Monty jointly performs unsupervised learning and object/pose recognition. This mode of operation is distinct from those used in our tutorials on [pretraining](pretraining-a-model.md) and [model evaluation](running-inference-with-a-pretrained-model.md) in which learning and inference were performed in separate stages which is useful for more controlled experiments on one of the two. It is closer to the ultimate vision of Monty, where learning and inference are closely intertwined, much as they are in humans.
@@ -122,7 +127,7 @@ surf_agent_2obj_unsupervised = dict(
         max_train_steps=2000,
         max_total_steps=5000,
     ),
-    logging_config=CSVLoggingConfig(
+    logging=CSVLoggingConfig(
         python_log_level="INFO",
         output_dir=project_dir,
         run_name=model_name,

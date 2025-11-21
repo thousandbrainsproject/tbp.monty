@@ -24,7 +24,6 @@ from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import DepthTo3DLocations
 from tbp.monty.frameworks.environments.embodied_environment import (
-    ActionSpace,
     EmbodiedEnvironment,
     ObjectID,
 )
@@ -36,33 +35,6 @@ __all__ = [
     "SaccadeOnImageEnvironment",
     "SaccadeOnImageFromStreamEnvironment",
 ]
-
-# Listing Numenta objects here since they were used in the iPad demo which uses the
-# SaccadeOnImageEnvironment (or SaccadeOnImageFromStreamEnvironment). However, these
-# objects can also be tested in simulation in habitat since we created 3D meshes of
-# them. Instructions for download + links can be found here:
-# https://thousandbrainsproject.readme.io/docs/benchmark-experiments#monty-meets-world
-NUMENTA_OBJECTS = [
-    "numenta_mug",
-    "terracotta_mug",
-    "montys_brain",
-    "montys_heart",
-    "ramen_pack",
-    "kashmiri_chilli",
-    "chip_pack",
-    "harissa_oil",
-    "cocktail_bitters",
-    "cocktail_bible",
-    "thousand_brains_jp",
-    "hot_sauce",
-]
-
-
-class TwoDDataActionSpace(tuple, ActionSpace):
-    """Action space for 2D data environments."""
-
-    def sample(self):
-        return self.rng.choice(self)
 
 
 class OmniglotEnvironment(EmbodiedEnvironment):
@@ -572,7 +544,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             hfov=54.201,
             get_all_points=True,
             use_semantic_sensor=False,
-            depth_clip_sensors=(0,),
+            depth_clip_sensors=[0],
             clip_value=1.1,
         )
         obs_3d = transform(obs, state=state)

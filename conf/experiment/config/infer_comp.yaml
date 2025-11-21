@@ -1,0 +1,36 @@
+defaults:
+  - eval
+  - logging/parallel_evidence_lm@logging
+  - monty/two_lm_stacked@monty_config
+  - monty/args/clear_monty_args@monty_config
+  - monty/args/defaults@monty_config.monty_args
+  - monty/learning_modules/clear_learning_module_configs@monty_config
+  - monty/learning_modules/two_stacked_constrained_lms_inference@monty_config.learning_module_configs
+  - monty/motor_system/clear_motor_system_config@monty_config
+  - monty/motor_system/informed_goal_state_driven@monty_config.motor_system_config
+  - environment/two_lm_stacked_distant_mount_habitat@env_interface_config
+  - environment/init_args/clear_env_init_args@env_interface_config
+  - environment/init_args/two_lm_distant_stacked_mount@env_interface_config.env_init_args
+  - environment_interface/per_object@eval_env_interface_args
+  - environment_interface/logos_on_objs/objects_with_logos_lvl1@eval_env_interface_args.object_names
+  - environment_interface/clear_parent_to_child_mapping@eval_env_interface_args
+  - environment_interface/logos_on_objs/parent_to_child_mapping@eval_env_interface_args.parent_to_child_mapping
+
+n_eval_epochs: ${benchmarks.rotations_all_count}
+min_lms_match: 1
+logging:
+  wandb_group: benchmark_experiments
+  # Comment in for quick debugging (turns off wandb and increases logging)
+  # wandb_handlers: []
+  # python_log_level: INFO
+monty_config:
+  monty_args:
+    min_eval_steps: ${benchmarks.min_eval_steps}
+env_interface_config:
+  env_init_args:
+    data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects}
+eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+eval_env_interface_args:
+  object_init_sampler:
+    _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+    rotations: ${benchmarks.rotations_all}

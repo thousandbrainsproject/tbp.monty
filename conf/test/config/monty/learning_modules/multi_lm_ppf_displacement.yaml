@@ -1,0 +1,6 @@
+learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+learning_module_args:
+  k: 5
+  match_attribute: PPF
+  tolerance: [0.001, 0.001, 0.001, 0.001]
+  use_relative_len: true

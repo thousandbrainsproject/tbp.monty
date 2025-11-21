@@ -1,0 +1,1 @@
+object_init_sampler: null # Overrides the learning_module_configs in the parent config

@@ -1,0 +1,11 @@
+- mug # Distinguished from e_cups by handle
+- e_cups
+- knife # Distinguished from fork and spoon by tip
+- fork
+- spoon
+- c_cups # Distinguished from d_cups by height and circumference
+# c_ and d_cups are also similar in shape to mug and e_cups (but not in color)
+- d_cups
+- cracker_box # Distinguished from sugar_box by colors
+- sugar_box
+- pudding_box

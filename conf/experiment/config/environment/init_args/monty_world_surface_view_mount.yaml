@@ -1,0 +1,6 @@
+defaults:
+  - monty_world_patch_view_mount
+  - agents/surface_and_view_finder@agents.agent_args
+
+agents:
+  agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}

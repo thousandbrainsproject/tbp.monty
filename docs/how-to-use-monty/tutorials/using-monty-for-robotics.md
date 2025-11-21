@@ -1,6 +1,11 @@
 ---
 title: Using Monty for Robotics
 ---
+
+> [!WARNING]
+>
+> Apologies, the code for this tutorial is out of date due to the major change in how we configure Monty. We'll update it soon™️.
+
 > ❗️ This is an Advanced Tutorial
 > If you've arrived at this page and you're relatively new to Monty, then we would recommend you start by reading some of our other documentation first. Once you're comfortable with the core concepts of Monty, then we think you'll enjoy learning about how to apply it to robotics in the following tutorial!
 

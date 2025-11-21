@@ -56,7 +56,7 @@ The following results are obtained from experiments using the 10-object subsets 
 
 ### Results
 
-!table[../../benchmarks/results/ycb_10objs.csv]
+!table[../../benchmarks/ycb_10objs.csv]
 
 ## Longer Experiments With all 77 YCB Objects
 
@@ -67,7 +67,7 @@ The following results are obtained from experiments on the entire YCB dataset (7
 
 ### Results
 
-!table[../../benchmarks/results/ycb_77objs.csv]
+!table[../../benchmarks/ycb_77objs.csv]
 
 ### Explanation of Some of the Results
 
@@ -97,7 +97,7 @@ An object is classified as detected correctly if the detected object ID is in th
 
 ### Results
 
-!table[../../benchmarks/results/ycb_unsupervised.csv]
+!table[../../benchmarks/ycb_unsupervised.csv]
 
 To obtain these results use `print_unsupervised_stats(train_stats, epoch_len=10)` (wandb logging is currently not written for unsupervised stats). Unsupervised, continual learning, by definition, cannot be parallelized across epochs. Therefore these experiments were run without multiprocessing (using `run.py`) on the laptop (running on cloud CPUs works as well but since these are slower without parallelization these were run on the laptop).
 
@@ -111,7 +111,7 @@ More specifically, these experiments are run purely in evaluation mode (i.e., pr
 
 ### Results
 
-!table[../../benchmarks/results/ycb_unsupervised_inference.csv]
+!table[../../benchmarks/ycb_unsupervised_inference.csv]
 
 > [!WARNING]
 > 
@@ -138,7 +138,7 @@ To measure performance, we introduced two new metrics:
 
 ### Results
 
-!table[../../benchmarks/results/logos_on_objects.csv]
+!table[../../benchmarks/logos_on_objects.csv]
 
 > [!WARNING]
 >
@@ -248,7 +248,7 @@ See the [monty_lab project folder](https://github.com/thousandbrainsproject/mont
 
 ### Results
 
-!table[../../benchmarks/results/montymeetsworld.csv]
+!table[../../benchmarks/montymeetsworld.csv]
 
 **Note that rotation errors are meaningless since no ground truth rotation is provided**
 

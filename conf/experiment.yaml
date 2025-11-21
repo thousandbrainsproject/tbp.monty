@@ -1,0 +1,15 @@
+defaults:
+  - benchmarks: defaults
+  # Experiment name
+  - experiment: MISSING
+  - _self_
+
+# Which episodes to run (zero-based). Examples: "all" | "3" | "0,3,5:8" | "4:" | ":8".
+episodes: all
+# How many episodes to run in parallel
+num_parallel: 16
+# Don't run an experiment; just print out the config for visual inspection
+# TODO: Replace with validate or similar
+print_cfg: false
+# Set logging levels in habitat to quiet
+quiet_habitat_logs: true

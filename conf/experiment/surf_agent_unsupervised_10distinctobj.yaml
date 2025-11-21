@@ -1,0 +1,32 @@
+defaults:
+  - base_config_10distinctobj_dist_agent
+  - config/logging/clear_logging@config
+  - config/logging/csv@config.logging
+  - config/monty/clear_monty_config@config
+  - config/monty/surface_and_view@config.monty_config
+  - config/monty/args/clear_monty_args@config.monty_config
+  - config/monty/args/defaults@config.monty_config.monty_args
+  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - config/monty/learning_modules/default_lfs_lm@config.monty_config.learning_module_configs
+  - config/environment/clear_env_interface_config@config
+  - config/environment/surface_view_finder_mount_habitat@config.env_interface_config
+  - config/environment_interface/clear_train_env_interface_args@config
+  - config/environment_interface/per_object@config.train_env_interface_args
+  - config/environment_interface/ycb/distinct_objects@config.train_env_interface_args.object_names
+
+config:
+  do_eval: false
+  n_train_epochs: 10
+  max_train_steps: 4000
+  max_total_steps: 4000
+  logging:
+    python_log_level: INFO
+    run_name: surf_agent_unsupervised_10distinctobj
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 1000
+      min_train_steps: 100
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  train_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.RandomRotationObjectInitializer

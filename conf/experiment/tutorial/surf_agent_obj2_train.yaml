@@ -1,0 +1,68 @@
+defaults:
+  - /experiment/config/supervised_pretraining@config
+  - /experiment/config/logging/pretrain@config.logging
+  - /experiment/config/monty/patch_and_view@config.monty_config
+  - /experiment/config/monty/args/clear_monty_args@config.monty_config
+  - /experiment/config/monty/args/defaults@config.monty_config.monty_args
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - /experiment/config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+  # Motor system config: class specific to surface agent.
+  - /experiment/config/monty/motor_system/curvature_informed_surface@config.monty_config.motor_system_config
+  # Set up the environment and agent
+  - /experiment/config/environment/surface_view_finder_mount_habitat@config.env_interface_config
+  - /experiment/config/environment_interface/per_object@config.train_env_interface_args
+
+_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+config:
+  n_train_epochs: ${benchmarks.rotations_all}
+  logging:
+    output_dir: ${path.expanduser:"~/tbp/result/monty/projects"}
+    run_name: surf_agent_1lm_2obj_train
+    wandb_handlers: []
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 500
+    # sensory module configs: one surface patch for training (sensor_module_0),
+    # and one view-finder for initializing each episode and logging
+    # (sensor_module_1).
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+        sensor_module_args:
+          is_surface_sm: true
+          sensor_module_id: patch
+          # a list of features that the SM will extract and send to the LM
+          features:
+            - pose_vectors
+            - pose_fully_defined
+            - on_object
+            - object_coverage
+            - rgba
+            - hsv
+            - min_depth
+            - mean_depth
+            - principal_curvatures
+            - principal_curvatures_log
+            - gaussian_curvature
+            - mean_curvature
+            - gaussian_curvature_sc
+            - mean_curvature_sc
+          save_raw_obs: false
+      sensor_module_1:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+        sensor_module_args:
+          sensor_module_id: view_finder
+          save_raw_obs: false
+    # # learning module config: 1 graph learning module.
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.GraphLM}
+        learning_module_args: {} # Use default LM args
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  train_env_interface_args:
+    object_names:
+      - mug
+      - banana
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      rotations: ${benchmarks.rotations_all}

@@ -1,0 +1,57 @@
+defaults:
+  - /test/hierarchy/base@
+  - /experiment/config/supervised_pretraining@config
+  - /experiment/config/logging/clear_logging@config
+  - /experiment/config/logging/pretrain@config.logging
+  - /experiment/config/monty/clear_monty_config@config
+  - /experiment/config/monty/two_lm_stacked@config.monty_config
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - /experiment/config/environment/two_lm_stacked_distant_mount_habitat@config.env_interface_config
+
+_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+config:
+  max_train_steps: 30
+  max_eval_steps: 30
+  max_total_steps: 60
+  logging:
+    python_log_level: INFO
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 50
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+        learning_module_args:
+          max_match_distance: 0.001
+          tolerances:
+            patch_0:
+              hsv: [0.1, 1, 1]
+              principal_curvatures_log: [1, 1]
+          feature_weights: {}
+          max_graph_size: 0.3
+          num_model_voxels_per_dim: 200
+          max_nodes_per_graph: 2000
+          object_evidence_threshold: 20
+      learning_module_1:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+        learning_module_args:
+          max_match_distance: 0.001
+          tolerances:
+            patch_1:
+              hsv: [0.1, 1, 1]
+              principal_curvatures_log: [1, 1]
+            # Object ID currently is an int representation of the strings
+            # in the object label so we keep this tolerance high. This is
+            # just until we have added a way to encode object ID with some
+            # real similarity measure.
+            learning_module_0:
+              object_id: 1
+          feature_weights:
+            learning_module_0:
+              object_id: 1
+          max_graph_size: 0.4
+          num_model_voxels_per_dim: 200
+          max_nodes_per_graph: 2000
+  env_interface_config:
+    env_init_args:
+      data_path: null

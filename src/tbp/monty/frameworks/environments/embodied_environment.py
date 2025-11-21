@@ -10,16 +10,12 @@
 from __future__ import annotations
 
 import abc
-import collections.abc
 from dataclasses import dataclass
 from typing import Any, NewType, Sequence, Tuple
-
-from typing_extensions import deprecated
 
 from tbp.monty.frameworks.actions.actions import Action
 
 __all__ = [
-    "ActionSpace",
     "EmbodiedEnvironment",
     "ObjectID",
     "ObjectInfo",
@@ -44,16 +40,6 @@ class ObjectInfo:
 
     object_id: ObjectID
     semantic_id: SemanticID | None
-
-
-@deprecated("Use `ActionSampler` instead.")
-class ActionSpace(collections.abc.Container):
-    """Represents the environment action space."""
-
-    @abc.abstractmethod
-    def sample(self):
-        """Sample the action space returning a random action."""
-        pass
 
 
 class EmbodiedEnvironment(abc.ABC):

@@ -7,6 +7,7 @@
 # Use of this source code is governed by the MIT
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
+from __future__ import annotations
 
 import pytest
 
@@ -15,133 +16,57 @@ pytest.importorskip(
     reason="Habitat Sim optional dependency not installed.",
 )
 
-import copy
 import json
 import os
 import shutil
 import tempfile
 import unittest
 from pathlib import Path
-from pprint import pprint
 
+import hydra
 import pandas as pd
 import torch
+from omegaconf import DictConfig, OmegaConf
 
-from tbp.monty.frameworks.config_utils.config_args import (
-    LoggingConfig,
-    MontyArgs,
-    PatchAndViewMontyConfig,
-    PretrainLoggingConfig,
-)
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-    EnvironmentInterfacePerObjectEvalArgs,
-    EnvironmentInterfacePerObjectTrainArgs,
-    ExperimentArgs,
-    PredefinedObjectInitializer,
-    SupervisedPretrainingExperimentArgs,
-)
-from tbp.monty.frameworks.environments import embodied_data as ED
-from tbp.monty.frameworks.experiments import (
-    MontyObjectRecognitionExperiment,
-    MontySupervisedObjectPretrainingExperiment,
-)
-from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphLM
-from tbp.monty.frameworks.run_parallel import main as run_parallel
-from tbp.monty.simulators.habitat.configs import (
-    EnvInitArgsPatchViewMount,
-    PatchViewFinderMountHabitatEnvInterfaceConfig,
-)
-from tests.unit.graph_learning_test import MotorSystemConfigFixed
+from tbp.monty.frameworks.run_parallel import main
 
 
 class RunParallelTest(unittest.TestCase):
     def setUp(self):
         self.output_dir = tempfile.mkdtemp()
-        self.train_rotations = [[0.0, 0.0, 0.0], [0.0, 45.0, 0.0], [0.0, 135.0, 0.0]]
-        self.eval_rotations = [[0.0, 30.0, 0.0], [0.0, 60.0, 0.0], [0.0, 90.0, 0.0]]
-        self.supervised_pre_training = dict(
-            experiment_class=MontySupervisedObjectPretrainingExperiment,
-            experiment_args=SupervisedPretrainingExperimentArgs(
-                n_train_epochs=len(self.train_rotations),
-            ),
-            logging_config=PretrainLoggingConfig(output_dir=self.output_dir),
-            monty_config=PatchAndViewMontyConfig(
-                motor_system_config=MotorSystemConfigFixed(),
-                monty_args=MontyArgs(num_exploratory_steps=10),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=DisplacementGraphLM,
-                        learning_module_args=dict(
-                            k=5,
-                            match_attribute="displacement",
-                        ),
-                    )
-                ),
-            ),
-            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
-            ),
-            train_env_interface_class=ED.InformedEnvironmentInterface,
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=["capsule3DSolid", "cubeSolid"],
-                object_init_sampler=PredefinedObjectInitializer(
-                    rotations=self.train_rotations
-                ),
-            ),
-            eval_env_interface_class=ED.InformedEnvironmentInterface,
-            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
-                object_names=[],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
-        )
 
-        self.eval_config = copy.deepcopy(self.supervised_pre_training)
-        self.eval_config.update(
-            experiment_class=MontyObjectRecognitionExperiment,
-            logging_config=LoggingConfig(
-                output_dir=os.path.join(self.output_dir, "eval")
-            ),
-            experiment_args=ExperimentArgs(
-                do_eval=True,
-                do_train=False,
-                # Tests the usual case: n_eval_epochs = len(eval_rotations)
-                n_eval_epochs=len(self.eval_rotations),
+        def hydra_config(
+            test_name: str, output_dir: str, model_name_or_path: str | None = None
+        ) -> DictConfig:
+            overrides = [
+                f"experiment=test/{test_name}",
+                "num_parallel=1",
+                f"++experiment.config.logging.output_dir={output_dir}",
+                "+experiment.config.monty_config.motor_system_config"
+                ".motor_system_args.policy_args.file_name="
+                f"{Path(__file__).parent / 'resources/fixed_test_actions.jsonl'}",
+            ]
+            if model_name_or_path:
+                overrides.append(
+                    f"experiment.config.model_name_or_path={model_name_or_path}"
+                )
+            return hydra.compose(config_name="experiment", overrides=overrides)
+
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            self.supervised_pre_training_cfg = hydra_config(
+                "supervised_pre_training", self.output_dir
+            )
+            self.eval_cfg = hydra_config(
+                "eval",
+                output_dir=os.path.join(self.output_dir, "eval"),
                 model_name_or_path=os.path.join(self.output_dir, "pretrained"),
-            ),
-            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
-                object_names=["capsule3DSolid", "cubeSolid"],
-                object_init_sampler=PredefinedObjectInitializer(
-                    rotations=self.eval_rotations
-                ),
-            ),
-            monty_config=PatchAndViewMontyConfig(
-                motor_system_config=MotorSystemConfigFixed(),
-                monty_args=MontyArgs(num_exploratory_steps=10),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=DisplacementGraphLM,
-                        learning_module_args=dict(
-                            k=5,
-                            match_attribute="displacement",
-                        ),
-                    )
-                ),
-            ),
-        )
-
-        # This tests that parallel code can handle n_eval_epochs < len(rotations)
-        self.eval_config_lt = copy.deepcopy(self.eval_config)
-        self.eval_config_lt["experiment_args"].n_eval_epochs = 2
-        self.output_dir_lt = os.path.join(self.output_dir, "lt")
-        self.eval_config_lt["logging_config"].output_dir = self.output_dir_lt
-        os.makedirs(self.eval_config_lt["logging_config"].output_dir)
-
-        # This tests that parallel code can handle n_eval_epochs > len(rotations)
-        self.eval_config_gt = copy.deepcopy(self.eval_config)
-        self.eval_config_gt["experiment_args"].n_eval_epochs = 4
-        self.output_dir_gt = os.path.join(self.output_dir, "gt")
-        self.eval_config_gt["logging_config"].output_dir = self.output_dir_gt
-        os.makedirs(self.eval_config_gt["logging_config"].output_dir)
+            )
+            self.eval_lt_cfg = hydra_config(
+                "eval_lt", os.path.join(self.output_dir, "lt")
+            )
+            self.eval_gt_cfg = hydra_config(
+                "eval_gt", os.path.join(self.output_dir, "gt")
+            )
 
     def check_reproducibility_logs(self, serial_repro_dir, parallel_repro_dir):
         s_param_files = sorted(p.name for p in Path(serial_repro_dir).glob("*target*"))
@@ -171,34 +96,16 @@ class RunParallelTest(unittest.TestCase):
             for key in pkeys:
                 self.assertEqual(ptarget[key], starget[key])
 
-    def test_parallel_runs_n_epochs_lt(self):
-        #####
-        # Train
-        #####
-
-        ###
-        # Run training like normal in serial
-        ###
-        pprint("...Setting up serial experiment...")
-        config = self.supervised_pre_training
-        with MontySupervisedObjectPretrainingExperiment(config) as exp:
+    def test_run_parallel_equals_serial_for_various_n_eval_epochs(self):
+        # serial run
+        exp = hydra.utils.instantiate(self.supervised_pre_training_cfg.experiment)
+        with exp:
             exp.model.set_experiment_mode("train")
-
-            pprint("...Training in serial...")
             exp.train()
 
-        ###
-        # Run training with run_parallel
-        ###
-        pprint("...Setting up parallel experiment...")
-        run_parallel(
-            exp=self.supervised_pre_training,
-            experiment="unittest_supervised_pre_training",
-            num_parallel=1,
-            quiet_habitat_logs=True,
-            print_cfg=False,
-            is_unittest=True,
-        )
+        # parallel run
+        OmegaConf.clear_resolvers()  # main will re-register resolvers
+        main(self.supervised_pre_training_cfg)
 
         ###
         # Compare results
@@ -206,7 +113,7 @@ class RunParallelTest(unittest.TestCase):
         parallel_model = torch.load(
             os.path.join(
                 self.output_dir,
-                "unittest_supervised_pre_training",
+                self.supervised_pre_training_cfg.experiment.config.logging.run_name,
                 "pretrained",
                 "model.pt",
             )
@@ -240,33 +147,23 @@ class RunParallelTest(unittest.TestCase):
             ].num_nodes,
         )
 
-        #####
-        # Testing
-        #####
+        ###
+        # n_eval_epochs == len(eval_rotations)
+        ###
+        # serial run
+        exp = hydra.utils.instantiate(self.eval_cfg.experiment)
+        with exp:
+            exp.evaluate()
+
+        # parallel run
+        OmegaConf.clear_resolvers()  # main will re-register resolvers
+        main(self.eval_cfg)
 
         ###
-        # n_eval_epochs = len(rotations)
+        # Compare results
         ###
-
-        # In serial like normal
-        pprint("...Setting up serial experiment...")
-        with MontyObjectRecognitionExperiment(self.eval_config) as eval_exp:
-            pprint("...Evaluating in serial...")
-            eval_exp.evaluate()
-
-        # Using run_parallel
-        pprint("...Setting up parallel experiment...")
-        run_parallel(
-            exp=self.eval_config,
-            experiment="unittest_eval_eq",
-            num_parallel=1,
-            quiet_habitat_logs=True,
-            print_cfg=False,
-            is_unittest=True,
-        )
-
         eval_dir = os.path.join(self.output_dir, "eval")
-        parallel_eval_dir = os.path.join(eval_dir, "unittest_eval_eq")
+        parallel_eval_dir = os.path.join(eval_dir, "test_eval")
         serial_repro_dir = os.path.join(eval_dir, "reproduce_episode_data")
         parallel_repro_dir = os.path.join(parallel_eval_dir, "reproduce_episode_data")
 
@@ -293,28 +190,19 @@ class RunParallelTest(unittest.TestCase):
         self.assertTrue(pcsv.equals(scsv))
 
         ###
-        # n_eval_epochs < len(rotations)
+        # n_eval_epochs < len(eval_rotations)
         ###
+        # serial run
+        exp = hydra.utils.instantiate(self.eval_lt_cfg.experiment)
+        with exp:
+            exp.evaluate()
 
-        # In serial like normal
-        pprint("...Setting up serial experiment...")
-        with MontyObjectRecognitionExperiment(self.eval_config_lt) as eval_exp_lt:
-            pprint("...Evaluating in serial...")
-            eval_exp_lt.evaluate()
+        # parallel run
+        OmegaConf.clear_resolvers()  # main will re-register resolvers
+        main(self.eval_lt_cfg)
 
-        # Using run_parallel
-        pprint("...Setting up parallel experiment...")
-        run_parallel(
-            exp=self.eval_config_lt,
-            experiment="unittest_eval_lt",
-            num_parallel=1,
-            quiet_habitat_logs=True,
-            print_cfg=False,
-            is_unittest=True,
-        )
-
-        eval_dir_lt = self.output_dir_lt
-        parallel_eval_dir_lt = os.path.join(eval_dir_lt, "unittest_eval_lt")
+        eval_dir_lt = os.path.join(self.output_dir, "lt")
+        parallel_eval_dir_lt = os.path.join(eval_dir_lt, "test_eval_lt")
         serial_repro_dir_lt = os.path.join(eval_dir_lt, "reproduce_episode_data")
         parallel_repro_dir_lt = os.path.join(
             parallel_eval_dir_lt, "reproduce_episode_data"
@@ -333,25 +221,20 @@ class RunParallelTest(unittest.TestCase):
 
         self.assertTrue(pcsv_lt.equals(scsv_lt))
 
-        # In serial like normal
-        pprint("...Setting up serial experiment...")
-        with MontyObjectRecognitionExperiment(self.eval_config_gt) as eval_exp_gt:
-            pprint("...Evaluating in serial...")
-            eval_exp_gt.evaluate()
+        ###
+        # n_eval_epochs > len(eval_rotations)
+        ###
+        # serial run
+        exp = hydra.utils.instantiate(self.eval_gt_cfg.experiment)
+        with exp:
+            exp.evaluate()
 
-        # Using run_parallel
-        pprint("...Setting up parallel experiment...")
-        run_parallel(
-            exp=self.eval_config_gt,
-            experiment="unittest_eval_gt",
-            num_parallel=1,
-            quiet_habitat_logs=True,
-            print_cfg=False,
-            is_unittest=True,
-        )
+        # parallel run
+        OmegaConf.clear_resolvers()  # main will re-register resolvers
+        main(self.eval_gt_cfg)
 
-        eval_dir_gt = self.output_dir_gt
-        parallel_eval_dir_gt = os.path.join(eval_dir_gt, "unittest_eval_gt")
+        eval_dir_gt = os.path.join(self.output_dir, "gt")
+        parallel_eval_dir_gt = os.path.join(eval_dir_gt, "test_eval_gt")
         serial_repro_dir_gt = os.path.join(eval_dir_gt, "reproduce_episode_data")
         parallel_repro_dir_gt = os.path.join(
             parallel_eval_dir_gt, "reproduce_episode_data"

@@ -1,0 +1,13 @@
+env_init_func: ${monty.class:tbp.monty.frameworks.environments.two_d_data.OmniglotEnvironment}
+env_init_args: {}
+transform:
+  - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+    agent_id: ${monty.agent_id:agent_id_0}
+    sensor_ids: ["patch"]
+    resolutions: ${np.array:[[10, 10]]}
+    world_coord: true
+    zooms: 1
+    get_all_points: true
+    use_semantic_sensor: false
+    depth_clip_sensors: [0]
+    clip_value: 1.1

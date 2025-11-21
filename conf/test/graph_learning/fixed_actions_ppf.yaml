@@ -1,0 +1,14 @@
+defaults:
+  - /test/graph_learning/base@
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+
+config:
+  monty_config:
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+        learning_module_args:
+          k: 5
+          match_attribute: PPF
+          tolerance: [0.0001, 0.0001, 0.0001, 0.0001]
+          use_relative_len: true

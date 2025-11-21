@@ -1,0 +1,12 @@
+defaults:
+  - features/default_surf_agent@sensor_module_args
+
+sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+sensor_module_args:
+  sensor_module_id: patch
+  save_raw_obs: false
+  delta_thresholds:
+    on_object: 0
+    distance: 0.01
+  is_surface_sm: true
+  noise_params: ${benchmarks.default_all_noise_params}

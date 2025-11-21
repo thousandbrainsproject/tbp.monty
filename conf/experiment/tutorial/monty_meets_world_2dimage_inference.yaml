@@ -1,0 +1,33 @@
+defaults:
+  - /experiment/config/eval@config
+  - /experiment/config/logging/parallel_evidence_lm@config.logging
+  - /experiment/config/monty/patch_and_view@config.monty_config
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - /experiment/config/monty/learning_modules/default_evidence_1lm@config.monty_config.learning_module_configs
+  - /experiment/config/monty/args/clear_monty_args@config.monty_config
+  - /experiment/config/monty/args/defaults@config.monty_config.monty_args
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
+  # move 20 pixels at a time
+  - /experiment/config/monty/motor_system/informed_no_trans_step_s20@config.monty_config.motor_system_config
+  - /experiment/config/environment/world_image@config.env_interface_config
+  - /experiment/config/environment/init_args/clear_env_init_args@config.env_interface_config
+  - /experiment/config/environment/init_args/monty_world_standard_scenes@config.env_interface_config.env_init_args
+  - /experiment/config/environment_interface/clear_eval_env_interface_args@config
+  - /experiment/config/environment_interface/world_image@config.eval_env_interface_args
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+config:
+  model_name_or_path: ${path.expanduser:${benchmarks.pretrained_dir}/surf_agent_1lm_numenta_lab_obj/pretrained/}
+  n_eval_epochs: 1
+  logging:
+    run_name: monty_meets_world_2dimage_inference
+    wandb_group: benchmark_experiments
+  monty_config:
+    monty_args:
+      min_eval_steps: ${benchmarks.min_eval_steps}
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.SaccadeOnImageEnvironmentInterface}
+  eval_env_interface_args:
+    # list(np.repeat(range(12), 4))
+    scenes: [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 11, 11]
+    # list(np.tile(range(4), 12))
+    versions: [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]

@@ -1,0 +1,6 @@
+defaults:
+  - defaults
+
+do_train: false
+n_eval_epochs: 1
+python_log_level: "DEBUG"

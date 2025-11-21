@@ -1,0 +1,28 @@
+defaults:
+  - /experiment/config/supervised_pretraining@config
+  - /experiment/config/logging/pretrain@config.logging
+  - /experiment/config/monty/five_lm@config.monty_config
+  - /experiment/config/monty/args/clear_monty_args@config.monty_config
+  - /experiment/config/monty/args/defaults@config.monty_config.monty_args
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - /experiment/config/monty/motor_system/naive_scan_spiral@config.monty_config.motor_system_config
+  - /experiment/config/environment/five_lm_mount_habitat@config.env_interface_config
+  - /experiment/config/environment_interface/per_object@config.train_env_interface_args
+
+_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+config:
+  n_train_epochs: ${benchmarks.rotations_all_count}
+  logging:
+    output_dir: ${path.expanduser:"~/tbp/result/monty/projects"}
+    run_name: dist_agent_5lm_2obj_train
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 500
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  train_env_interface_args:
+    object_names:
+      - mug
+      - banana
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      rotations: ${benchmarks.rotations_all}

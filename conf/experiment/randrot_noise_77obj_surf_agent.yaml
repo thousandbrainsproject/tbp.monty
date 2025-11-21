@@ -1,0 +1,15 @@
+defaults:
+  - randrot_noise_10distinctobj_surf_agent
+  - config/environment_interface/clear_eval_env_interface_args@config
+  - config/environment_interface/per_object@config.eval_env_interface_args
+  - config/environment_interface/ycb/shuffled_objects@config.eval_env_interface_args.object_names
+
+config:
+  model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_77obj/pretrained/
+  n_eval_epochs: ${benchmarks.rotations_3_count}
+  max_total_steps: 5000
+  logging:
+    run_name: randrot_noise_77obj_surf_agent
+  eval_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.RandomRotationObjectInitializer

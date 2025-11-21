@@ -1,0 +1,27 @@
+defaults:
+  - /benchmarks/default_all_noisy_sensor_module@sensor_module_0
+  - /benchmarks/default_all_noisy_sensor_module@sensor_module_1
+  - /benchmarks/default_all_noisy_sensor_module@sensor_module_2
+  - /benchmarks/default_all_noisy_sensor_module@sensor_module_3
+  - /benchmarks/default_all_noisy_sensor_module@sensor_module_4
+
+sensor_module_0:
+  sensor_module_args:
+    sensor_module_id: patch_0
+sensor_module_1:
+  sensor_module_args:
+    sensor_module_id: patch_1
+sensor_module_2:
+  sensor_module_args:
+    sensor_module_id: patch_2
+sensor_module_3:
+  sensor_module_args:
+    sensor_module_id: patch_3
+sensor_module_4:
+  sensor_module_args:
+    sensor_module_id: patch_4
+sensor_module_5:
+  sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+  sensor_module_args:
+    sensor_module_id: view_finder
+    save_raw_obs: true

@@ -33,7 +33,7 @@ reporting, all handlers are called upon to send data to a destination. Handlers 
 receive a standard set of arguments, including most importantly the self.data pool.
 
 The Basic logger is associated with the BASIC monty_log_level specified in
-config_args.logging_config. The Detailed logger is associated with the DETAILED logging
+config_args.logging. The Detailed logger is associated with the DETAILED logging
 level. The Detailed logger data pool contains a superset of the data in the basic logger
 self.data attribute.
 

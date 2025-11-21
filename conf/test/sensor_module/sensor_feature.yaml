@@ -1,0 +1,26 @@
+defaults:
+  - sensor_module/base@
+
+config:
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 20
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_args:
+          features:
+            - on_object
+            - object_coverage
+            - rgba
+            - hsv
+            - pose_vectors
+            - principal_curvatures
+            - principal_curvatures_log
+            - gaussian_curvature
+            - mean_curvature
+            - gaussian_curvature_sc
+            - mean_curvature_sc
+          save_raw_obs: false
+      sensor_module_1:
+        sensor_module_args:
+          save_raw_obs: false

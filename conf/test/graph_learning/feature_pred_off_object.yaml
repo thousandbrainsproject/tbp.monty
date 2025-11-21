@@ -1,0 +1,31 @@
+defaults:
+  - /test/graph_learning/fixed_actions_feat@
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+
+config:
+  n_train_epochs: 2
+  max_eval_steps: 50
+  max_train_steps: 50
+  max_total_steps: 200
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 20
+      min_train_steps: 12
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.feature_location_matching.FeatureGraphLM}
+        learning_module_args:
+          max_match_distance: 0.01
+          tolerances:
+            patch:
+              on_object: 0
+              rgba: [10, 10, 10, 10]
+              principal_curvatures: [5, 5]
+              pose_vectors: [40, 20, 20]
+  train_env_interface_args:
+    object_names:
+      - capsule3DSolid
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      rotations:
+        - [0, 0, 0]

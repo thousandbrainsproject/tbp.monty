@@ -1,0 +1,15 @@
+# Config using view finder to find the object before starting the experiment.
+#
+# A common default for experiments that use the view finder to navigate
+# so the object is in view before the real experiment happens.
+agent_id: ${monty.agent_id:agent_id_0}
+sensor_ids:
+  - patch
+  - view_finder
+height: 0.0
+position: [0.0, 1.5, 0.2]
+resolutions: [[64, 64], [64, 64]]
+positions: [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+rotations: [[1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]]
+semantics: [false, false]
+zooms: [10.0, 1.0]

@@ -1,0 +1,3 @@
+learning_module_class: ${monty.class:tbp.monty.frameworks.models.feature_location_matching.FeatureGraphLM}
+learning_module_args:
+  max_match_distance: 0.01

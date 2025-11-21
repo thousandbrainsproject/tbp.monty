@@ -39,6 +39,8 @@ from tbp.monty.frameworks.agents import AgentID
 class BasePolicyConfig:
     """Config for BasePolicy."""
 
+    # conf/experiment/config/monty/motor_system/policy/base.yaml
+
     action_sampler_args: dict
     action_sampler_class: type[ActionSampler]
     agent_id: AgentID
@@ -48,6 +50,7 @@ class BasePolicyConfig:
 
 @dataclass
 class InformedPolicyConfig:
+    # conf/experiment/config/monty/motor_system/policy/informed.yaml
     action_sampler_args: dict
     action_sampler_class: type[ActionSampler]
     agent_id: AgentID
@@ -60,19 +63,15 @@ class InformedPolicyConfig:
 
 
 @dataclass
-class NaiveScanPolicyConfig(InformedPolicyConfig):
-    use_goal_state_driven_actions: bool = False
-    fixed_amount: float = 3.0
-
-
-@dataclass
 class SurfacePolicyConfig(InformedPolicyConfig):
+    # conf/experiment/config/monty/motor_system/policy/surface.yaml
     desired_object_distance: float = 0.025
     alpha: float = 0.1
 
 
 @dataclass
 class SurfaceCurveInformedPolicyConfig(SurfacePolicyConfig):
+    # conf/experiment/config/monty/motor_system/policy/surface_curve_informed.yaml
     desired_object_distance: float = 0.025
     pc_alpha: float = 0.5
     max_pc_bias_steps: int = 32
@@ -139,6 +138,7 @@ def generate_action_list(action_space_type) -> list[Action]:
 
 
 def make_base_policy_config(
+    # conf/experiment/config/monty/motor_system/policy/base.yaml
     action_space_type: str,
     action_sampler_class: type[ActionSampler],
     agent_id: AgentID = AgentID("agent_id_0"),
@@ -163,137 +163,8 @@ def make_base_policy_config(
     )
 
 
-def make_informed_policy_config(
-    action_space_type: str,
-    action_sampler_class: type[ActionSampler],
-    good_view_percentage: float = 0.5,
-    use_goal_state_driven_actions: bool = False,
-    file_name: str | None = None,
-    agent_id: AgentID = AgentID("agent_id_0"),
-    switch_frequency: float = 1.0,
-    **kwargs,
-):
-    """Similar to BasePolicyConfigGenerator, but for InformedPolicy class.
-
-    Args:
-        action_space_type: name of action space, one of `"distant_agent"`,
-            `"distant_agent_no_translation"`, `"absolute_only"`, or `"surface_agent"`
-        action_sampler_class: ActionSampler class to use
-        good_view_percentage: Defaults to 0.5
-        use_goal_state_driven_actions: Defaults to False
-        file_name: Defaults to None
-        agent_id: Agent name. Defaults to "agent_id_0".
-        switch_frequency: Defaults to 1.0
-        **kwargs: Any additional keyword arguments. These may include parameters for
-            ActionSampler configuration:
-                absolute_degrees,
-                max_absolute_degrees,
-                min_absolute_degrees,
-                direction,
-                location,
-                rotation_degrees,
-                rotation_quat,
-                max_rotation_degrees,
-                min_rotation_degrees,
-                translation_distance,
-                max_translation,
-                min_translation,
-
-    Returns:
-        InformedPolicyConfig instance
-    """
-    actions = generate_action_list(action_space_type)
-
-    return InformedPolicyConfig(
-        action_sampler_args=dict(**kwargs, actions=actions),
-        action_sampler_class=action_sampler_class,
-        agent_id=agent_id,
-        good_view_percentage=good_view_percentage,
-        use_goal_state_driven_actions=use_goal_state_driven_actions,
-        file_name=file_name,
-        switch_frequency=switch_frequency,
-    )
-
-
-def make_naive_scan_policy_config(
-    step_size: float,
-    agent_id: AgentID = AgentID("agent_id_0"),
-):
-    """Simliar to InformedPolicyConfigGenerator, but for NaiveScanPolicyConfig.
-
-    Currently less flexible than the other two classes above, because this is currently
-    only used with one set of parameters
-
-    Args:
-        step_size: Fixed amount to move the agent
-        agent_id: Agent name. Defaults to "agent_id_0".
-
-    Returns:
-        NaiveScanPolicyConfig instance
-    """
-    actions = generate_action_list(action_space_type="distant_agent_no_translation")
-
-    return NaiveScanPolicyConfig(
-        action_sampler_args=dict(actions=actions),
-        action_sampler_class=ConstantSampler,
-        agent_id=agent_id,
-        switch_frequency=1,
-        fixed_amount=step_size,
-    )
-
-
-def make_surface_policy_config(
-    desired_object_distance: float,
-    alpha: float,
-    use_goal_state_driven_actions: bool = False,
-    action_sampler_class: type[ActionSampler] = ConstantSampler,
-    action_space_type: str = "surface_agent",
-    file_name: str | None = None,
-    agent_id: AgentID = AgentID("agent_id_0"),
-    **kwargs,
-):
-    """Similar to BasePolicyConfigGenerator, but for InformedPolicy class.
-
-    Args:
-        desired_object_distance: ?
-        alpha: ?
-        use_goal_state_driven_actions: Defaults to False
-        action_sampler_class: Defaults to ConstantSampler
-        action_space_type: Defaults to "surface_agent"
-        file_name: Defaults to None
-        agent_id: Agent name. Defaults to "agent_id_0".
-        **kwargs: Any additional keyword arguments. These may include parameters for
-            ActionSampler configuration:
-                absolute_degrees,
-                max_absolute_degrees,
-                min_absolute_degrees,
-                direction,
-                location,
-                rotation_degrees,
-                rotation_quat,
-                max_rotation_degrees,
-                min_rotation_degrees,
-                translation_distance,
-                max_translation,
-                min_translation,
-
-    Returns:
-        SurfacePolicyConfig instance
-    """
-    actions = generate_action_list(action_space_type)
-
-    return SurfacePolicyConfig(
-        action_sampler_args=dict(**kwargs, actions=actions),
-        action_sampler_class=action_sampler_class,
-        agent_id=agent_id,
-        desired_object_distance=desired_object_distance,
-        alpha=alpha,
-        use_goal_state_driven_actions=use_goal_state_driven_actions,
-        file_name=file_name,
-    )
-
-
 def make_curv_surface_policy_config(
+    # conf/experiment/config/monty/motor_system/policy/surface_curve_informed.yaml
     desired_object_distance,
     alpha,
     pc_alpha,

@@ -1,0 +1,25 @@
+defaults:
+  - /experiment/config/debug@config
+  - /experiment/config/logging/defaults@config.logging
+  - /test/config/monty/fake_single_camera@config.monty_config
+  - /experiment/config/environment/single_ptz_habitat@config.env_interface_config
+  - /experiment/config/environment_interface/per_object_train@config.train_env_interface_args
+  - /experiment/config/environment_interface/per_object_eval@config.eval_env_interface_args
+
+_target_: tests.unit.profile_experiment_mixin_test.ProfiledExperiment
+config:
+  env_interface_config:
+    env_init_args:
+      data_path: null
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterfacePerObject}
+  train_env_interface_args:
+    object_names:
+      - capsule3DSolid
+      - coneSolid
+      - cubeSolid
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterfacePerObject}
+  eval_env_interface_args:
+    object_names:
+      - coneSolid
+      - cubeSolid
+      - cylinderSolid

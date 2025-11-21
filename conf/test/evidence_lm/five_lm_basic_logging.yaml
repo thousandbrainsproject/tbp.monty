@@ -1,0 +1,8 @@
+defaults:
+  - /test/evidence_lm/five_lm@
+
+config:
+  logging:
+    python_log_level: "INFO"
+    monty_log_level: "BASIC"
+    monty_handlers: []

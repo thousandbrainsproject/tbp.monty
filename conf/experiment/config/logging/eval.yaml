@@ -1,0 +1,13 @@
+defaults:
+  - defaults
+
+output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/feature_eval_runs/logs}
+monty_handlers:
+  - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
+  # - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.DetailedJSONHandler}
+  - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.ReproduceEpisodeHandler}
+wandb_handlers:
+  - ${monty.class:tbp.monty.frameworks.loggers.wandb_handlers.BasicWandbTableStatsHandler}
+  - ${monty.class:tbp.monty.frameworks.loggers.wandb_handlers.BasicWandbChartStatsHandler}
+  # - ${monty.class:tbp.monty.frameworks.loggers.wandb_handlers.DetailedWandbMarkedObsHandler}
+wandb_group: "gm_eval_runs"

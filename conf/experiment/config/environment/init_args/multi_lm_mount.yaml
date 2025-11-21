@@ -1,0 +1,6 @@
+defaults:
+  - defaults
+  - agents/multi_lm_mount@agents.agent_args
+
+agents:
+  agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}

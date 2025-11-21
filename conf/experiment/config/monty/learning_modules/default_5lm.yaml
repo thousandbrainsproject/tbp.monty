@@ -1,0 +1,16 @@
+defaults:
+  - learning_module/default_evidence@learning_module_0
+  - learning_module/tolerances/clear_tolerances@learning_module_0
+  - learning_module/tolerances/values/defaults@learning_module_0.learning_module_args.tolerances.patch_0
+  - learning_module/default_evidence@learning_module_1
+  - learning_module/tolerances/clear_tolerances@learning_module_1
+  - learning_module/tolerances/values/defaults@learning_module_1.learning_module_args.tolerances.patch_1
+  - learning_module/default_evidence@learning_module_2
+  - learning_module/tolerances/clear_tolerances@learning_module_2
+  - learning_module/tolerances/values/defaults@learning_module_2.learning_module_args.tolerances.patch_2
+  - learning_module/default_evidence@learning_module_3
+  - learning_module/tolerances/clear_tolerances@learning_module_3
+  - learning_module/tolerances/values/defaults@learning_module_3.learning_module_args.tolerances.patch_3
+  - learning_module/default_evidence@learning_module_4
+  - learning_module/tolerances/clear_tolerances@learning_module_4
+  - learning_module/tolerances/values/defaults@learning_module_4.learning_module_args.tolerances.patch_4

@@ -1,0 +1,4 @@
+defaults:
+  - values/defaults@patch
+
+# features where weight is not specified default weight to 1

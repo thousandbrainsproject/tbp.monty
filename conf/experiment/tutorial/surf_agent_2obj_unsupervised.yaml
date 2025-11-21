@@ -1,0 +1,70 @@
+defaults:
+  - /experiment/config/eval@config
+  - /experiment/config/logging/csv@config.logging
+  - /experiment/config/monty/surface_and_view@config.monty_config
+  - /experiment/config/monty/args/clear_monty_args@config.monty_config
+  - /experiment/config/monty/args/defaults@config.monty_config.monty_args
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - /experiment/config/environment/surface_view_finder_mount_habitat@config.env_interface_config
+  - /experiment/config/environment_interface/per_object@config.train_env_interface_args
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+config:
+  # Not running eval here. The only difference between training and evaluation
+  # is that during evaluation, no models are updated.
+  do_eval: false
+  n_train_epochs: 3
+  max_train_steps: 2000
+  max_total_steps: 5000
+  logging:
+    python_log_level: INFO
+    output_dir: ${path.expanduser:"~/tbp/result/monty/projects"}
+    run_name: surf_agent_2obj_unsupervised
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 1000
+      min_train_steps: 100
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+        learning_module_args:
+          max_match_distance: 0.01
+          # Tolerances within which features must match stored values in order to add
+          # evidence to a hypothesis.
+          tolerances:
+            patch:
+              hsv: ${np.array:[0.05, 0.1, 0.1]}
+              principal_curvatures_log: [2, 2]
+          feature_weights:
+            patch:
+              # Weighting saturation and value less since these might change under different
+              # lighting conditions.
+              hsv: ${np.array:[1, 0.5, 0.5]}
+          x_percent_threshold: 20
+          # Thresholds to use for when two points are considered different enough to
+          # both be stored in memory.
+          graph_delta_thresholds:
+            patch:
+              distance: 0.01
+              pose_vectors: ${np.array:[np.pi / 8, np.pi * 2, np.pi * 2]}
+              principal_curvatures_log: [1.0, 1.0]
+              hsv: [0.1, 1, 1]
+          # object_evidence_th sets a minimum threshold on the amount of evidence we have
+          # for the current object in order to converge; while we can also set min_steps
+          # for the experiment, this puts a more stringent requirement that we've had
+          # many steps that have contributed evidence.
+          object_evidence_threshold: 100
+          # Symmetry evidence (indicating possibly symmetry in rotations) increments a lot
+          # after 100 steps and easily reaches the default required evidence. The below
+          # parameter value partially addresses this, altough we note these are temporary
+          # fixes and we intend to implement a more principled approach in the future.
+          required_symmetry_evidence: 20
+          hypotheses_updater_args:
+            max_nneighbors: 5
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  train_env_interface_args:
+    object_names:
+      - mug
+      - bowl
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.RandomRotationObjectInitializer

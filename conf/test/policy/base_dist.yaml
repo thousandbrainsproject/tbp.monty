@@ -1,0 +1,34 @@
+defaults:
+  - /experiment/config/defaults@config
+  - /experiment/config/logging/defaults@config.logging
+  - /experiment/config/monty/patch_and_view@config.monty_config
+  - /experiment/config/environment/patch_view_finder_mount_habitat@config.env_interface_config
+  - /experiment/config/environment_interface/per_object_train@config.train_env_interface_args
+  - /experiment/config/environment_interface/per_object_eval@config.eval_env_interface_args
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+config:
+  n_train_epochs: 1
+  n_eval_epochs: 1
+  max_train_steps: 30
+  max_eval_steps: 30
+  max_total_steps: 60
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 20
+  env_interface_config:
+    env_init_args:
+      data_path: null
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  train_env_interface_args:
+    object_names:
+      - cubeSolid
+      - capsule3DSolid
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  eval_env_interface_args:
+    object_names:
+      - cubeSolid
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer

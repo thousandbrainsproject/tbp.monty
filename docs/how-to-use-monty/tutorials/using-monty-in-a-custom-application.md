@@ -1,6 +1,11 @@
 ---
 title: Using Monty in a Custom Application
 ---
+
+> [!WARNING]
+>
+> Apologies, the code for this tutorial is out of date due to the major change in how we configure Monty. We'll update it soon™️.
+
 > ⚠️ This is an Advanced Tutorial
 > If you've arrived at this page and you're relatively new to Monty, then we would recommend you start by reading some of our other documentation first. Once you're comfortable with the core concepts of Monty, then we think you'll enjoy learning about how to apply it to custom applications in the following tutorial!
 
@@ -116,7 +121,7 @@ omniglot_training = dict(
 	experiment_args=SupervisedPretrainingExperimentArgs(
     	n_train_epochs=1,
 	),
-	logging_config=PretrainLoggingConfig(
+	logging=PretrainLoggingConfig(
     	output_dir=pretrain_dir,
 	),
 	monty_config=PatchAndViewMontyConfig(
@@ -145,7 +150,7 @@ omniglot_inference = dict(
         do_train=False,
         n_eval_epochs=1,
     ),
-    logging_config=LoggingConfig(),
+    logging=LoggingConfig(),
     monty_config=PatchAndViewMontyConfig(
         monty_class=MontyForEvidenceGraphMatching,
         learning_module_configs=dict(
@@ -295,7 +300,6 @@ For inference, we use the RGBD images taken with the iPad camera. Movement is de
 This can be implemented using two custom classes the [SaccadeOnImageEnvironment](https://github.com/thousandbrainsproject/tbp.monty/blob/4bc857580ae6ac015586af1a61b3e292a7827b6f/src/tbp/monty/frameworks/environments/two_d_data.py#L271) and [SaccadeOnImageEnvironmentInterface](https://github.com/thousandbrainsproject/tbp.monty/blob/4bc857580ae6ac015586af1a61b3e292a7827b6f/src/tbp/monty/frameworks/environments/embodied_data.py#L870):
 1. `SaccadeOnImageEnvironment`:
    - Defines initialization of all basic variables in the `__init__(patch_size, data_path)` function.
-   - Defines the `TwoDDataActionSpace` to move up, down, left, and right on the image by a given amount of pixels.
    - Defines the `step(actions)` function, which uses the sensor's current location, the given actions, and their amounts to determine the new location on the image and extract a patch. It updates `self.current_loc` and returns the sensor patch observations as a dictionary.
    - Defines `get_state()`, which returns the current state as a dictionary. The dictionary mostly contains `self.current_loc` and placeholders for the orientation, as the sensor and agent orientation never change.
    - Helper functions such as
@@ -320,7 +324,7 @@ monty_meets_world_2dimage_inference = dict(
     	model_name_or_path=model_path_numenta_lab_obj,
     	n_eval_epochs=1,
 	),
-	logging_config=ParallelEvidenceLMLoggingConfig(wandb_group="benchmark_experiments"),
+	logging=ParallelEvidenceLMLoggingConfig(wandb_group="benchmark_experiments"),
 	monty_config=PatchAndViewMontyConfig(
     	learning_module_configs=default_evidence_1lm_config,
     	monty_args=MontyArgs(min_eval_steps=min_eval_steps),
@@ -378,7 +382,7 @@ model_path_numenta_lab_obj = os.path.join(
 )
 ```
 
-To run the experiment, call `python benchmarks/run.py -e monty_meets_world_2dimage_inference`. If you don't want to log to wandb, add ` wandb_handlers=[]` to the `logging_config`. If you just want to run a quick test on a few of the images, simply adjust the `scenes` and `versions` parameters in the `eval_env_interface_args`.
+To run the experiment, call `python benchmarks/run.py -e monty_meets_world_2dimage_inference`. If you don't want to log to wandb, add ` wandb_handlers=[]` to `logging`. If you just want to run a quick test on a few of the images, simply adjust the `scenes` and `versions` parameters in the `eval_env_interface_args`.
 
 # Other Things You May Need to Customize
 If your application uses sensors different from our commonly used cameras and depth sensors, or you want to extract specific features from your sensory input, you will need to define a custom sensor module. The sensor module receives the raw observations from the environment interface and converts them into the CMP, which contains features at poses. For more details on converting raw observations into the CMP, see our [documentation on sensor modules](https://thousandbrainsproject.readme.io/docs/observations-transforms-sensor-modules).

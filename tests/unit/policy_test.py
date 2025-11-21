@@ -10,8 +10,6 @@
 
 import pytest
 
-from tbp.monty.frameworks.agents import AgentID
-
 pytest.importorskip(
     "habitat_sim",
     reason="Habitat Sim optional dependency not installed.",
@@ -21,14 +19,14 @@ import copy
 import shutil
 import tempfile
 import unittest
-from pprint import pprint
 
 import habitat_sim.utils as hab_utils
+import hydra
 import numpy as np
 import quaternion as qt
+from omegaconf import DictConfig
 from scipy.spatial.transform import Rotation
 
-from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
 from tbp.monty.frameworks.actions.actions import (
     LookDown,
     LookUp,
@@ -39,62 +37,26 @@ from tbp.monty.frameworks.actions.actions import (
     TurnLeft,
     TurnRight,
 )
+from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.config_utils.config_args import (
-    FiveLMMontySOTAConfig,
-    LoggingConfig,
-    MontyArgs,
-    MontyFeatureGraphArgs,
-    MotorSystemConfigCurInformedSurfaceGoalStateDriven,
     MotorSystemConfigCurvatureInformedSurface,
-    MotorSystemConfigInformedGoalStateDriven,
-    MotorSystemConfigInformedNoTransStepS20,
-    MotorSystemConfigNaiveScanSpiral,
-    MotorSystemConfigSurface,
-    PatchAndViewMontyConfig,
-    SurfaceAndViewMontyConfig,
-)
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-    EnvironmentInterfaceMultiObjectArgs,
-    EnvironmentInterfacePerObjectEvalArgs,
-    EnvironmentInterfacePerObjectTrainArgs,
-    ExperimentArgs,
-    PredefinedObjectInitializer,
 )
 from tbp.monty.frameworks.config_utils.policy_setup_utils import (
     make_curv_surface_policy_config,
-    make_informed_policy_config,
-    make_surface_policy_config,
 )
-from tbp.monty.frameworks.environments import embodied_data as ED
-from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
     EvidenceGraphLM,
-)
-from tbp.monty.frameworks.models.evidence_matching.model import (
-    MontyForEvidenceGraphMatching,
 )
 from tbp.monty.frameworks.models.goal_state_generation import (
     EvidenceGoalStateGenerator,
 )
 from tbp.monty.frameworks.models.motor_policies import (
-    InformedPolicy,
-    SurfacePolicy,
     SurfacePolicyCurvatureInformed,
     get_perc_on_obj_semantic,
 )
 from tbp.monty.frameworks.models.states import State
 from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
 from tbp.monty.frameworks.utils.transform_utils import numpy_to_scipy_quat
-from tbp.monty.simulators.habitat.configs import (
-    EnvInitArgsFiveLMMount,
-    EnvInitArgsPatchViewFinderMultiObjectMount,
-    EnvInitArgsPatchViewMount,
-    EnvInitArgsSurfaceViewMount,
-    FiveLMMountHabitatEnvInterfaceConfig,
-    PatchViewFinderMountHabitatEnvInterfaceConfig,
-    PatchViewFinderMultiObjectMountHabitatEnvInterfaceConfig,
-    SurfaceViewFinderMountHabitatEnvInterfaceConfig,
-)
 
 
 class PolicyTest(unittest.TestCase):
@@ -102,311 +64,33 @@ class PolicyTest(unittest.TestCase):
         """Code that gets executed before every test."""
         self.output_dir = tempfile.mkdtemp()
 
-        self.base_dist_agent_config = dict(
-            experiment_class=MontyObjectRecognitionExperiment,
-            experiment_args=ExperimentArgs(
-                n_train_epochs=1,
-                n_eval_epochs=1,
-                max_train_steps=30,
-                max_eval_steps=30,
-                max_total_steps=60,
-            ),
-            logging_config=LoggingConfig(
-                output_dir=self.output_dir,
-            ),
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-            ),
-            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
-            ),
-            train_env_interface_class=ED.InformedEnvironmentInterface,
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=["cubeSolid", "capsule3DSolid"],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
-            eval_env_interface_class=ED.InformedEnvironmentInterface,
-            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
-                object_names=["cubeSolid"],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
-        )
+        def hydra_config(test_name: str) -> DictConfig:
+            return hydra.compose(
+                config_name="test",
+                overrides=[
+                    f"test=policy/{test_name}",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
 
-        self.spiral_config = copy.deepcopy(self.base_dist_agent_config)
-        self.spiral_config.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-                motor_system_config=MotorSystemConfigNaiveScanSpiral(),
-            ),
-        )
-
-        self.dist_agent_hypo_driven_config = copy.deepcopy(self.base_dist_agent_config)
-        self.dist_agent_hypo_driven_config.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-                motor_system_config=MotorSystemConfigInformedGoalStateDriven(),
-            ),
-        )
-
-        self.base_surf_agent_config = copy.deepcopy(self.base_dist_agent_config)
-        self.base_surf_agent_config.update(
-            monty_config=SurfaceAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-                motor_system_config=MotorSystemConfigSurface(),
-            ),
-            env_interface_config=SurfaceViewFinderMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
-            ),
-        )
-
-        self.curv_informed_config = copy.deepcopy(self.base_surf_agent_config)
-        self.curv_informed_config.update(
-            monty_config=SurfaceAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-                motor_system_config=MotorSystemConfigCurvatureInformedSurface(),
-            ),
-        )
-
-        self.surf_agent_hypo_driven_config = copy.deepcopy(self.base_surf_agent_config)
-        self.surf_agent_hypo_driven_config.update(
-            monty_config=SurfaceAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-                motor_system_config=MotorSystemConfigCurInformedSurfaceGoalStateDriven(),
-            ),
-        )
-
-        # ==== Setup more complex config for multi-LM experiments ====
-        default_multi_lm_tolerances = {
-            "hsv": np.array([0.1, 1, 1]),
-            "principal_curvatures_log": np.ones(2) * 0.1,
-        }
-
-        multi_lm_config = dict(
-            learning_module_class=EvidenceGraphLM,
-            learning_module_args=dict(
-                max_match_distance=0.0001,
-                feature_weights={
-                    "patch": {
-                        "hsv": np.array([1, 0, 0]),
-                    }
-                },
-            ),
-        )
-
-        # TODO H: automated/more convenient way to generate these configs
-        lm0_config = copy.deepcopy(multi_lm_config)
-        lm0_config["learning_module_args"]["tolerances"] = {
-            "patch_0": default_multi_lm_tolerances
-        }
-        lm1_config = copy.deepcopy(multi_lm_config)
-        lm1_config["learning_module_args"]["tolerances"] = {
-            "patch_1": default_multi_lm_tolerances
-        }
-        lm2_config = copy.deepcopy(multi_lm_config)
-        lm2_config["learning_module_args"]["tolerances"] = {
-            "patch_2": default_multi_lm_tolerances
-        }
-        lm3_config = copy.deepcopy(multi_lm_config)
-        lm3_config["learning_module_args"]["tolerances"] = {
-            "patch_3": default_multi_lm_tolerances
-        }
-        lm4_config = copy.deepcopy(multi_lm_config)
-        lm4_config["learning_module_args"]["tolerances"] = {
-            "patch_4": default_multi_lm_tolerances
-        }
-
-        default_5lm_lmconfig = dict(
-            learning_module_0=lm0_config,
-            learning_module_1=lm1_config,
-            learning_module_2=lm2_config,
-            learning_module_3=lm3_config,
-            learning_module_4=lm4_config,
-        )
-
-        self.dist_agent_hypo_driven_multi_lm_config = copy.deepcopy(
-            self.dist_agent_hypo_driven_config
-        )
-        self.dist_agent_hypo_driven_multi_lm_config.update(
-            experiment_args=ExperimentArgs(
-                n_train_epochs=1,
-                n_eval_epochs=1,
-            ),
-            monty_config=FiveLMMontySOTAConfig(
-                monty_args=MontyFeatureGraphArgs(num_exploratory_steps=20),
-                monty_class=MontyForEvidenceGraphMatching,
-                learning_module_configs=default_5lm_lmconfig,
-            ),
-            env_interface_config=FiveLMMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsFiveLMMount(data_path=None).__dict__,
-            ),
-        )
-
-        # === Setup configs for adversarial settings like falling off the object ===
-
-        # Config for distant agent that always moves in the same direction, so as
-        # to fall off the object
-        self.fixed_action_distant_config = copy.deepcopy(self.base_dist_agent_config)
-        self.fixed_action_distant_config.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=5),
-                motor_system_config=MotorSystemConfigInformedNoTransStepS20(
-                    motor_system_args=dict(
-                        policy_class=InformedPolicy,
-                        policy_args=make_informed_policy_config(
-                            action_space_type="distant_agent_no_translation",
-                            action_sampler_class=ConstantSampler,
-                            # Take large steps for a quick experiment
-                            rotation_degrees=20.0,
-                            use_goal_state_driven_actions=False,
-                            switch_frequency=0,  # Overwrite default of 1.0
-                        ),
-                    ),
-                ),
-            ),
-        )
-
-        # As above, but of surface agent's tangential steps
-        self.fixed_action_surface_config = copy.deepcopy(self.base_dist_agent_config)
-        self.fixed_action_surface_config.update(
-            monty_config=SurfaceAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-                motor_system_config=MotorSystemConfigSurface(
-                    motor_system_args=dict(
-                        policy_class=SurfacePolicy,
-                        policy_args=make_surface_policy_config(
-                            desired_object_distance=0.025,
-                            alpha=0.0,  # Overwrite default of 0.1
-                            use_goal_state_driven_actions=False,
-                            translation_distance=0.05,
-                        ),
-                    ),
-                ),
-            ),
-            env_interface_config=SurfaceViewFinderMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
-            ),
-        )
-
-        self.poor_initial_view_dist_agent_config = copy.deepcopy(
-            self.base_dist_agent_config
-        )
-        self.poor_initial_view_dist_agent_config.update(
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=["cubeSolid"],
-                object_init_sampler=PredefinedObjectInitializer(
-                    positions=[[0.0, 1.5, -0.2]]  # Object is farther away than typical
-                ),
-            ),
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-                motor_system_config=MotorSystemConfigInformedNoTransStepS20(
-                    motor_system_args=dict(
-                        policy_class=InformedPolicy,
-                        policy_args=make_informed_policy_config(
-                            action_space_type="distant_agent_no_translation",
-                            action_sampler_class=ConstantSampler,
-                            rotation_degrees=5.0,
-                            use_goal_state_driven_actions=False,
-                            switch_frequency=1.0,
-                            good_view_percentage=0.5,
-                        ),
-                    ),
-                ),
-            ),
-        )
-
-        self.poor_initial_view_surf_agent_config = copy.deepcopy(
-            self.poor_initial_view_dist_agent_config
-        )
-        self.poor_initial_view_surf_agent_config.update(
-            monty_config=SurfaceAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-                motor_system_config=MotorSystemConfigSurface(
-                    motor_system_args=dict(
-                        policy_class=SurfacePolicy,
-                        policy_args=make_surface_policy_config(
-                            desired_object_distance=0.025,
-                            alpha=0.0,
-                            use_goal_state_driven_actions=False,
-                            translation_distance=0.05,
-                        ),
-                    ),
-                ),
-            ),
-            env_interface_config=SurfaceViewFinderMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
-            ),
-        )
-
-        self.poor_initial_view_multi_object_config = copy.deepcopy(
-            self.base_dist_agent_config
-        )
-        self.poor_initial_view_multi_object_config.update(
-            # For multi-objects, we test get good view at evaluation, because in
-            # Monty we don't currently train with multiple objects in the environment
-            env_interface_config=PatchViewFinderMultiObjectMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsPatchViewFinderMultiObjectMount(
-                    data_path=None
-                ).__dict__,
-            ),
-            eval_env_interface_args=EnvironmentInterfaceMultiObjectArgs(
-                object_names=dict(
-                    targets_list=["cubeSolid"],
-                    source_object_list=["cubeSolid", "capsule3DSolid"],
-                    num_distractors=10,
-                ),
-                object_init_sampler=PredefinedObjectInitializer(
-                    positions=[[0.2, 1.5, -0.2]]  # Object is farther away *and* to
-                    # the right
-                ),
-            ),
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-                motor_system_config=MotorSystemConfigInformedNoTransStepS20(
-                    motor_system_args=dict(
-                        policy_class=InformedPolicy,
-                        policy_args=make_informed_policy_config(
-                            action_space_type="distant_agent_no_translation",
-                            action_sampler_class=ConstantSampler,
-                            rotation_degrees=5.0,
-                            use_goal_state_driven_actions=False,
-                            switch_frequency=1.0,
-                            good_view_percentage=0.5,
-                        ),
-                    ),
-                ),
-            ),
-        )
-
-        self.rotated_cube_view_config = copy.deepcopy(
-            self.poor_initial_view_dist_agent_config
-        )
-        self.rotated_cube_view_config.update(
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=["cubeSolid"],
-                object_init_sampler=PredefinedObjectInitializer(
-                    positions=[[-0.1, 1.5, -0.2]],
-                    rotations=[[45, 45, 45]],
-                ),
-            ),
-            monty_config=SurfaceAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-                motor_system_config=MotorSystemConfigSurface(
-                    motor_system_args=dict(
-                        policy_class=SurfacePolicy,
-                        policy_args=make_surface_policy_config(
-                            desired_object_distance=0.025,
-                            alpha=0.0,
-                            use_goal_state_driven_actions=False,
-                            translation_distance=0.05,
-                        ),
-                    ),
-                ),
-            ),
-            env_interface_config=SurfaceViewFinderMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
-            ),
-        )
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            self.base_dist_cfg = hydra_config("base_dist")
+            self.base_surf_cfg = hydra_config("base_surf")
+            self.spiral_cfg = hydra_config("spiral")
+            self.curve_informed_cfg = hydra_config("curve_informed")
+            self.surf_hypo_driven_cfg = hydra_config("surf_hypo_driven")
+            self.dist_hypo_driven_cfg = hydra_config("dist_hypo_driven")
+            self.dist_hypo_driven_multi_lm_cfg = hydra_config(
+                "dist_hypo_driven_multi_lm"
+            )
+            self.dist_poor_initial_view_cfg = hydra_config("dist_poor_initial_view")
+            self.surf_poor_initial_view_cfg = hydra_config("surf_poor_initial_view")
+            self.poor_initial_view_multi_object_cfg = hydra_config(
+                "poor_initial_view_multi_object"
+            )
+            self.dist_fixed_action_cfg = hydra_config("dist_fixed_action")
+            self.surf_fixed_action_cfg = hydra_config("surf_fixed_action")
+            self.rotated_cube_view_cfg = hydra_config("rotated_cube_view")
 
         # ==== Setup fake observations for testing principal-curvature policies ====
         fake_sender_id = "patch"
@@ -433,7 +117,7 @@ class PolicyTest(unittest.TestCase):
         fo_3 = copy.deepcopy(default_obs_args)
         fo_3["location"] = np.array([0.02, 0.01, 0])
 
-        # No well defined PC directions
+        # No well-defined PC directions
         fo_4 = copy.deepcopy(default_obs_args)
         fo_4["location"] = np.array([0.02, 0.02, 0])
         fo_4["morphological_features"]["pose_fully_defined"] = False
@@ -450,7 +134,7 @@ class PolicyTest(unittest.TestCase):
             State(**fo_5),
         ]
 
-        # PC direciton "flipped", pointing back to a location we've already been at
+        # PC direction "flipped", pointing back to a location we've already been at
         fo_1_backtrack_pc = copy.deepcopy(fo_1)
         fo_1_backtrack_pc["morphological_features"]["pose_vectors"] = np.array(
             [[0, 0, -1], [-1, 0, 0], [0, 1, 0]]
@@ -480,73 +164,52 @@ class PolicyTest(unittest.TestCase):
 
     # @unittest.skip("debugging")
     def test_can_run_informed_policy(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.base_dist_agent_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.base_dist_cfg.test)
+        with exp:
             exp.train()
-            pprint("...evaluating...")
             exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_spiral_policy(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.spiral_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.spiral_cfg.test)
+        with exp:
             # TODO: test that no two locations are the same
             exp.train()
-            pprint("...evaluating...")
             exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_dist_agent_hypo_driven_policy(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.dist_agent_hypo_driven_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.dist_hypo_driven_cfg.test)
+        with exp:
             exp.train()
-            pprint("...evaluating...")
             exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_surface_policy(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.base_surf_agent_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.base_surf_cfg.test)
+        with exp:
             exp.train()
-            pprint("...evaluating...")
             exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_curv_informed_policy(self) -> None:
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.curv_informed_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.curve_informed_cfg.test)
+        with exp:
             exp.train()
-            pprint("...evaluating...")
             exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_surf_agent_hypo_driven_policy(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.surf_agent_hypo_driven_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.surf_hypo_driven_cfg.test)
+        with exp:
             exp.train()
-            pprint("...evaluating...")
             exp.evaluate()
 
     # @unittest.skip("debugging")
     def test_can_run_multi_lm_dist_agent_hypo_driven_policy(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.dist_agent_hypo_driven_multi_lm_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.dist_hypo_driven_multi_lm_cfg.test)
+        with exp:
             exp.train()
-            pprint("...evaluating...")
             exp.evaluate()
 
     # ==== MORE INVOLVED TESTS OF ACTION POLICIES ====
@@ -611,14 +274,11 @@ class PolicyTest(unittest.TestCase):
         In this basic version, the object is a bit too far away, and so the agent
         moves forward
         """
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.poor_initial_view_dist_agent_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.dist_poor_initial_view_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.pre_episode()
-
-            pprint("...stepping through observations...")
 
             # Check the initial view
             observation = next(exp.env_interface)
@@ -627,11 +287,11 @@ class PolicyTest(unittest.TestCase):
             semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
             perc_on_target_obj = get_perc_on_obj_semantic(semantic, semantic_id=1)
 
-            dict_config = config_to_dict(config)
+            config = self.dist_poor_initial_view_cfg.test.config
 
-            target_perc_on_target_obj = dict_config["monty_config"][
-                "motor_system_config"
-            ]["motor_system_args"]["policy_args"]["good_view_percentage"]
+            target_perc_on_target_obj = config["monty_config"]["motor_system_config"][
+                "motor_system_args"
+            ]["policy_args"]["good_view_percentage"]
 
             assert perc_on_target_obj >= target_perc_on_target_obj, (
                 f"Initial view is not good enough, {perc_on_target_obj} "
@@ -641,7 +301,7 @@ class PolicyTest(unittest.TestCase):
             points_on_target_obj = semantic == 1
             closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
 
-            target_closest_point = dict_config["monty_config"]["motor_system_config"][
+            target_closest_point = config["monty_config"]["motor_system_config"][
                 "motor_system_args"
             ]["policy_args"]["desired_object_distance"]
 
@@ -660,14 +320,11 @@ class PolicyTest(unittest.TestCase):
         In this basic version, the object is a bit too far away, and so the agent
         moves forward
         """
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.poor_initial_view_surf_agent_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.surf_poor_initial_view_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
             exp.pre_epoch()
             exp.pre_episode()
-
-            pprint("...stepping through observations...")
 
             # Get a first step to allow the surface agent to touch the object
             observation_pre_touch = next(exp.env_interface)
@@ -680,7 +337,8 @@ class PolicyTest(unittest.TestCase):
             view = observation_post_touch[exp.model.motor_system._policy.agent_id][
                 "view_finder"
             ]
-            dict_config = config_to_dict(config)
+
+            config = self.surf_poor_initial_view_cfg.test.config
 
             points_on_target_obj = (
                 view["semantic_3d"][:, 3].reshape(view["depth"].shape) == 1
@@ -692,7 +350,7 @@ class PolicyTest(unittest.TestCase):
                 f"closest point at {closest_point_on_target_obj}"
             )
 
-            target_closest_point = dict_config["monty_config"]["motor_system_config"][
+            target_closest_point = config["monty_config"]["motor_system_config"][
                 "motor_system_args"
             ]["policy_args"]["desired_object_distance"]
 
@@ -711,13 +369,11 @@ class PolicyTest(unittest.TestCase):
 
         In this case, there are multiple objects, such that at the start of the
         experiment, the target object is not visible in the central pixel of the view.
-        Thus the policy must both turn towards the target object (using the viewfinder),
-        and move towards it.
+        Thus, the policy must both turn towards the target object (using the
+        viewfinder), and move towards it.
         """
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.poor_initial_view_multi_object_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.poor_initial_view_multi_object_cfg.test)
+        with exp:
             exp.train()
 
             # Manually go through evaluation (i.e. methods in .evaluate()
@@ -726,7 +382,6 @@ class PolicyTest(unittest.TestCase):
             exp.pre_epoch()
             exp.pre_episode()
 
-            pprint("...stepping through observations...")
             # Check the initial view
             observation = next(exp.env_interface)
             # TODO M remove the following train-wreck during refactor
@@ -734,10 +389,11 @@ class PolicyTest(unittest.TestCase):
             semantic = view["semantic_3d"][:, 3].reshape(view["depth"].shape)
             perc_on_target_obj = get_perc_on_obj_semantic(semantic, semantic_id=1)
 
-            dict_config = config_to_dict(config)
-            target_perc_on_target_obj = dict_config["monty_config"][
-                "motor_system_config"
-            ]["motor_system_args"]["policy_args"]["good_view_percentage"]
+            config = self.poor_initial_view_multi_object_cfg.test.config
+
+            target_perc_on_target_obj = config["monty_config"]["motor_system_config"][
+                "motor_system_args"
+            ]["policy_args"]["good_view_percentage"]
 
             assert perc_on_target_obj >= target_perc_on_target_obj, (
                 f"Initial view is not good enough, {perc_on_target_obj} "
@@ -747,7 +403,7 @@ class PolicyTest(unittest.TestCase):
             points_on_target_obj = semantic == 1
             closest_point_on_target_obj = np.min(view["depth"][points_on_target_obj])
 
-            target_closest_point = dict_config["monty_config"]["motor_system_config"][
+            target_closest_point = config["monty_config"]["motor_system_config"][
                 "motor_system_args"
             ]["policy_args"]["desired_object_distance"]
 
@@ -757,7 +413,7 @@ class PolicyTest(unittest.TestCase):
                 f" vs target of {target_closest_point}"
             )
 
-            # Also calculate closest point on *any* object so that we don't get
+            # Also calculate the closest point on *any* object so that we don't get
             # too close and clip into objects; NB that any object will have a
             # semantic ID > 0
             points_on_any_obj = view["semantic"] > 0
@@ -776,17 +432,14 @@ class PolicyTest(unittest.TestCase):
         Uses an action policy with high-stickiness and large saccade sizes, so
         that we are guaranteed to move off of the cube.
         """
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_action_distant_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.dist_fixed_action_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
-            pprint("...training...")
             exp.pre_epoch()
 
             # Only do a single episode
             exp.pre_episode()
 
-            pprint("...stepping through observations...")
             # Manually step through part of run_episode function
             for loader_step, observation in enumerate(exp.env_interface):
                 exp.model.step(observation)
@@ -886,17 +539,14 @@ class PolicyTest(unittest.TestCase):
         Uses an action policy with high-stickiness, so that we are guaranteed to move
         off of the cube.
         """
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_action_surface_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.surf_fixed_action_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
-            pprint("...training...")
             exp.pre_epoch()
 
             # Only do a single episode
             exp.pre_episode()
 
-            pprint("...stepping through observations...")
             # Take several steps in a fixed direction until we fall off the object, then
             # ensure we get back on to it
             for loader_step, observation in enumerate(exp.env_interface):
@@ -1027,15 +677,12 @@ class PolicyTest(unittest.TestCase):
         Begins the episode by facing a cube whose surface is pointing away from
         the agent at an odd angle.
         """
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.rotated_cube_view_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.rotated_cube_view_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
-            pprint("...training...")
             exp.pre_epoch()
             exp.pre_episode()
 
-            pprint("...stepping through observations...")
             for loader_step, observation in enumerate(exp.env_interface):
                 exp.model.step(observation)
                 exp.post_step(loader_step, observation)

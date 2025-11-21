@@ -141,3 +141,6 @@ Session.vim
 
 # rsync
 .rsyncignore.local
+
+# hydra
+outputs/

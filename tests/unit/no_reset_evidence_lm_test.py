@@ -21,130 +21,33 @@ import tempfile
 import unittest
 from typing import Any
 
+import hydra
 import numpy as np
 
-from tbp.monty.frameworks.config_utils.config_args import (
-    LoggingConfig,
-    MontyFeatureGraphArgs,
-    PatchAndViewMontyConfig,
-    PretrainLoggingConfig,
-)
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-    EnvironmentInterfacePerObjectEvalArgs,
-    EnvironmentInterfacePerObjectTrainArgs,
-    ExperimentArgs,
-    PredefinedObjectInitializer,
-    SupervisedPretrainingExperimentArgs,
-)
-from tbp.monty.frameworks.environments import embodied_data as ED
-from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
-from tbp.monty.frameworks.experiments.pretraining_experiments import (
-    MontySupervisedObjectPretrainingExperiment,
-)
-from tbp.monty.frameworks.models.evidence_matching.learning_module import (
-    EvidenceGraphLM,
-)
-from tbp.monty.frameworks.models.evidence_matching.model import (
-    MontyForEvidenceGraphMatching,
-)
-from tbp.monty.frameworks.models.no_reset_evidence_matching import (
-    MontyForNoResetEvidenceGraphMatching,
-    NoResetEvidenceGraphLM,
-)
-from tbp.monty.simulators.habitat.configs import (
-    EnvInitArgsPatchViewMount,
-    PatchViewFinderMountHabitatEnvInterfaceConfig,
-)
-from tests.unit.resources.unit_test_utils import BaseGraphTestCases
+from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 
-class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
+class NoResetEvidenceLMTest(BaseGraphTest):
     def setUp(self):
         super().setUp()
 
-        default_tolerances = {
-            "hsv": np.array([0.1, 1, 1]),
-            "principal_curvatures_log": np.ones(2),
-        }
-
-        default_lm_args = dict(
-            max_match_distance=0.001,
-            tolerances={"patch": default_tolerances},
-            feature_weights={
-                "patch": {
-                    "hsv": np.array([1, 0, 0]),
-                }
-            },
-        )
-
-        default_evidence_lm_config = dict(
-            learning_module_0=dict(
-                learning_module_class=EvidenceGraphLM,
-                learning_module_args=default_lm_args,
-            )
-        )
-
-        default_unsupervised_evidence_lm_config = dict(
-            learning_module_0=dict(
-                learning_module_class=NoResetEvidenceGraphLM,
-                learning_module_args=default_lm_args,
-            )
-        )
-
         self.output_dir = tempfile.mkdtemp()
 
-        self.pretraining_configs = dict(
-            experiment_class=MontySupervisedObjectPretrainingExperiment,
-            experiment_args=SupervisedPretrainingExperimentArgs(
-                n_train_epochs=3,
-            ),
-            logging_config=PretrainLoggingConfig(
-                output_dir=self.output_dir,
-            ),
-            monty_config=PatchAndViewMontyConfig(
-                monty_class=MontyForEvidenceGraphMatching,
-                monty_args=MontyFeatureGraphArgs(num_exploratory_steps=20),
-                learning_module_configs=default_evidence_lm_config,
-            ),
-            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
-            ),
-            train_env_interface_class=ED.InformedEnvironmentInterface,
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=["capsule3DSolid", "cubeSolid"],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
-        )
-
-        self.unsupervised_evidence_config = dict(
-            experiment_class=MontyObjectRecognitionExperiment,
-            experiment_args=ExperimentArgs(
-                max_train_steps=30, max_eval_steps=30, max_total_steps=60
-            ),
-            # NOTE: could make unit tests faster by setting monty_log_level="BASIC" for
-            # some of them.
-            logging_config=LoggingConfig(
-                output_dir=self.output_dir, python_log_level="DEBUG", monty_handlers=[]
-            ),
-            monty_config=PatchAndViewMontyConfig(
-                monty_class=MontyForNoResetEvidenceGraphMatching,
-                monty_args=MontyFeatureGraphArgs(num_exploratory_steps=20),
-                learning_module_configs=default_unsupervised_evidence_lm_config,
-            ),
-            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
-            ),
-            train_env_interface_class=ED.InformedEnvironmentInterface,
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=["capsule3DSolid", "cubeSolid"],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
-            eval_env_interface_class=ED.InformedEnvironmentInterface,
-            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
-                object_names=["capsule3DSolid"],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
-        )
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            self.pretraining_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=no_reset_evidence_lm/pretraining",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
+            self.unsupervised_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=no_reset_evidence_lm/unsupervised",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
 
     def assert_dicts_equal(
         self, d1: dict[Any, np.ndarray], d2: dict[Any, np.ndarray], msg: str
@@ -176,12 +79,12 @@ class NoResetEvidenceLMTest(BaseGraphTestCases.BaseGraphTest):
         unsupervised Inference Experiment. Disabling the reset logic does not support
         training at the moment.
         """
-        train_config = copy.deepcopy(self.pretraining_configs)
-        with MontySupervisedObjectPretrainingExperiment(train_config) as train_exp:
+        train_exp = hydra.utils.instantiate(self.pretraining_cfg.test)
+        with train_exp:
             train_exp.train()
 
-        eval_config = copy.deepcopy(self.unsupervised_evidence_config)
-        with MontyObjectRecognitionExperiment(eval_config) as eval_exp:
+        eval_exp = hydra.utils.instantiate(self.unsupervised_cfg.test)
+        with eval_exp:
             # load the eval experiment with the pretrained models
             pretrained_models = train_exp.model.learning_modules[0].state_dict()
             eval_exp.model.learning_modules[0].load_state_dict(pretrained_models)

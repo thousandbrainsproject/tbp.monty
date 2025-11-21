@@ -18,33 +18,19 @@ pytest.importorskip(
 )
 
 import os
-import pathlib
 import pickle
 import shutil
-import sys
 import tempfile
 import unittest
 from unittest import mock
 
+import hydra
 import magnum as mn
 import numpy as np
+from omegaconf import OmegaConf
 
-from tbp.monty.frameworks.config_utils.config_args import LoggingConfig
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-    ExperimentArgs,
-)
-from tbp.monty.frameworks.environments.embodied_data import (
-    EnvironmentInterface,
-)
-from tbp.monty.frameworks.experiments import MontyExperiment
-from tbp.monty.frameworks.run import main, run
+from tbp.monty.frameworks.run import main
 from tbp.monty.simulators.habitat import SingleSensorAgent
-from tbp.monty.simulators.habitat.configs import (
-    SinglePTZHabitatEnvInterfaceConfig,
-)
-from tests.unit.frameworks.config_utils.fakes.config_args import (
-    FakeSingleCameraMontyConfig,
-)
 
 DATASET_LEN = 1000
 TRAIN_EPOCHS = 2
@@ -77,7 +63,6 @@ EXPECTED_LOG += ["post_eval"]
 
 class MontyRunTest(unittest.TestCase):
     def setUp(self):
-        """Code that gets executed before every test."""
         self.output_dir = tempfile.mkdtemp()
         agent_patch = mock.patch("habitat_sim.Agent", autospec=True)
         sim_patch = mock.patch("habitat_sim.Simulator", autospec=True)
@@ -107,115 +92,29 @@ class MontyRunTest(unittest.TestCase):
             {0: {"agent_id_0.depth": obs}} for obs in FAKE_OBS
         ]
 
-        self.CONFIGS = {
-            "test_1": {
-                "experiment_class": MontyExperiment,
-                "experiment_args": ExperimentArgs(
-                    max_train_steps=MAX_TRAIN_STEPS,
-                    max_eval_steps=MAX_EVAL_STEPS,
-                    n_train_epochs=TRAIN_EPOCHS,
-                    n_eval_epochs=EVAL_EPOCHS,
-                ),
-                "logging_config": LoggingConfig(
-                    output_dir=self.output_dir,
-                    monty_log_level="TEST",
-                    monty_handlers=[],
-                ),
-                "monty_config": FakeSingleCameraMontyConfig(),
-                "env_interface_config": SinglePTZHabitatEnvInterfaceConfig(),
-                "train_env_interface_class": EnvironmentInterface,
-                "train_env_interface_args": {},
-                "eval_env_interface_class": EnvironmentInterface,
-                "eval_env_interface_args": {},
-            },
-            "test_2": {
-                "experiment_class": MontyExperiment,
-                "experiment_args": ExperimentArgs(
-                    max_train_steps=MAX_TRAIN_STEPS,
-                    max_eval_steps=MAX_EVAL_STEPS,
-                    n_train_epochs=TRAIN_EPOCHS,
-                    n_eval_epochs=EVAL_EPOCHS,
-                ),
-                "logging_config": LoggingConfig(
-                    output_dir=self.output_dir,
-                    monty_log_level="TEST",
-                    monty_handlers=[],
-                ),
-                "monty_config": FakeSingleCameraMontyConfig(),
-                "env_interface_config": SinglePTZHabitatEnvInterfaceConfig(),
-                "train_env_interface_class": EnvironmentInterface,
-                "train_env_interface_args": {},
-                "eval_env_interface_class": EnvironmentInterface,
-                "eval_env_interface_args": {},
-            },
-        }
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            self.cfg = hydra.compose(
+                config_name="experiment",
+                overrides=[
+                    "experiment=test/run",
+                    f"experiment.config.logging.output_dir={self.output_dir}",
+                ],
+            )
 
     def tearDown(self):
-        """Code that gets executed after every test."""
         shutil.rmtree(self.output_dir)
 
-    def test_main_without_experiment(self):
-        sys.argv = ["monty", "-e", "test_1"]
-        main(all_configs=self.CONFIGS)
+    def test_main(self):
+        OmegaConf.clear_resolvers()  # main will re-register resolvers
+        main(self.cfg)
 
-        output_dir = os.path.join(
-            self.CONFIGS["test_1"]["logging_config"].output_dir, "test_1"
-        )
-        with open(os.path.join(output_dir, "fake_log.pkl"), "rb") as f:
+        with open(
+            os.path.join(self.cfg.experiment.config.logging.output_dir, "fake_log.pkl"),
+            "rb",
+        ) as f:
             exp_log = pickle.load(f)
 
         self.assertListEqual(exp_log, EXPECTED_LOG)
-
-    def test_main_with_single_experiment(self):
-        main(all_configs=self.CONFIGS, experiments=["test_1"])
-
-        output_dir = os.path.join(
-            self.CONFIGS["test_1"]["logging_config"].output_dir, "test_1"
-        )
-        with open(os.path.join(output_dir, "fake_log.pkl"), "rb") as f:
-            exp_log = pickle.load(f)
-
-        self.assertListEqual(exp_log, EXPECTED_LOG)
-
-    def test_main_with_multiple_experiment(self):
-        main(all_configs=self.CONFIGS, experiments=["test_1", "test_2"])
-
-        output_dir_1 = os.path.join(
-            self.CONFIGS["test_1"]["logging_config"].output_dir, "test_1"
-        )
-        with open(os.path.join(output_dir_1, "fake_log.pkl"), "rb") as f:
-            exp_log_1 = pickle.load(f)
-
-        self.assertListEqual(exp_log_1, EXPECTED_LOG)
-
-        output_dir_2 = os.path.join(
-            self.CONFIGS["test_2"]["logging_config"].output_dir, "test_2"
-        )
-        with open(os.path.join(output_dir_2, "fake_log.pkl"), "rb") as f:
-            exp_log_2 = pickle.load(f)
-
-        self.assertListEqual(exp_log_2, EXPECTED_LOG)
-
-    def test_run(self):
-        run(config=self.CONFIGS["test_1"])
-
-        output_dir = os.path.join(self.CONFIGS["test_1"]["logging_config"].output_dir)
-        with open(os.path.join(output_dir, "fake_log.pkl"), "rb") as f:
-            exp_log = pickle.load(f)
-
-        self.assertListEqual(exp_log, EXPECTED_LOG)
-
-    def test_importing_existing_configs(self):
-        """Test that any changes do not cause errors in existing configs."""
-        current_file_path = pathlib.Path(__file__).parent.resolve()
-        base_repo_idx = current_file_path.parts.index("tests")
-        while current_file_path.parts[base_repo_idx + 1 :].count("tests") > 0:
-            # We want the _last_ "tests" index
-            base_repo_idx += 1
-        base_dir = pathlib.Path(*current_file_path.parts[:base_repo_idx])
-        exp_dir = os.path.join(str(base_dir), "benchmarks")
-        sys.path.append(exp_dir)
-        import configs  # noqa: F401, PLC0415
 
 
 if __name__ == "__main__":

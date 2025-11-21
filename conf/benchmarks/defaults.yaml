@@ -1,0 +1,51 @@
+default_all_noise_params:
+  features:
+    pose_vectors: 2 # rotate by random degrees along xyz
+    hsv: 0.1 # add gaussian noise with 0.1 std
+    principal_curvatures_log: 0.1
+    pose_fully_defined: 0.01 # flip bool in 1% of cases
+  location: 0.002 # add gaussian noise with 0.002 std
+
+default_sensor_features:
+  - pose_vectors
+  - pose_fully_defined
+  - on_object
+  - hsv
+  - principal_curvatures_log
+
+# NOTE: maybe lower once we have better policies
+# Is not really nescessary for good performance but makes sure we don't just overfit
+# on the first few points.
+min_eval_steps: 20
+
+# v6 : Using TLS for surface normal estimation
+# v7 : Updated for State class support + using new feature names like pose_vectors
+# v8 : Using separate graph per input channel
+# v9 : Using models trained on 14 unique rotations
+# v10 : Using models trained without the semantic sensor
+pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v10}
+
+# 14 unique rotations that give good views of the object. Same rotations used
+# for supervised pretraining.
+rotations_all_count: 14
+rotations_all:
+  - [0, 0, 0]
+  - [0, 90, 0]
+  - [0, 180, 0]
+  - [0, 270, 0]
+  - [90, 0, 0]
+  - [90, 180, 0]
+  - [35, 45, 0]
+  - [325, 45, 0]
+  - [35, 315, 0]
+  - [325, 315, 0]
+  - [35, 135, 0]
+  - [325, 135, 0]
+  - [35, 225, 0]
+  - [325, 225, 0]
+
+rotations_3_count: 3 # Surprise!
+rotations_3:
+  - [0, 0, 0]
+  - [0, 90, 0]
+  - [0, 180, 0]

@@ -11,7 +11,7 @@
 import copy
 import logging
 from pprint import pformat
-from typing import Sequence
+from typing import Iterable, Mapping, Sequence
 
 import numpy as np
 import quaternion
@@ -137,7 +137,7 @@ class EnvironmentInterface:
         return observation, ProprioceptiveState(state) if state else None
 
     def apply_transform(self, transform, observation, state):
-        if isinstance(transform, list):
+        if isinstance(transform, Iterable):
             for t in transform:
                 observation = t(observation, state)
         else:
@@ -213,20 +213,16 @@ class EnvironmentInterfacePerObject(EnvironmentInterface):
             *args: ?
             **kwargs: ?
 
-        See Also:
-            tbp.monty.frameworks.make_env_interface_configs
-            :class:`EnvironmentInterfacePerObjectTrainArgs`
-
         Raises:
             TypeError: If `object_names` is not a list or dictionary
         """
         super().__init__(*args, **kwargs)
-        if isinstance(object_names, list):
+        if isinstance(object_names, Sequence):
             self.object_names = object_names
             # Return an (ordered) list of unique items:
-            self.source_object_list = list(dict.fromkeys(object_names))
+            self.source_object_list = list(set(object_names))
             self.num_distractors = 0
-        elif isinstance(object_names, dict):
+        elif isinstance(object_names, Mapping):
             # TODO when we want more advanced multi-object experiments, update these
             # arguments along with the Object Initializers so that we can easily
             # specify a set of primary targets and distractors, i.e. random sampling

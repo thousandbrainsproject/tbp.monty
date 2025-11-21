@@ -1,0 +1,22 @@
+defaults:
+  - /test/evidence_lm/base@
+  - /experiment/config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - /test/config/monty/learning_modules/default_evidence_lm@config.monty_config.learning_module_configs.learning_module_0
+
+config:
+  max_train_steps: 2
+  max_eval_steps: 2
+  max_total_steps: 35
+  logging:
+    python_log_level: INFO  # reset to default
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 30
+    learning_module_configs:
+      learning_module_0:
+        learning_module_args:
+          # set wider to reach time out
+          max_match_distance: 0.01
+          feature_weights:
+            patch:
+              hsv: ${np.array:[1, 0, 0]}

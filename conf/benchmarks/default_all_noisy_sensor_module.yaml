@@ -1,0 +1,9 @@
+sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+sensor_module_args:
+  sensor_module_id: patch
+  features: ${benchmarks.default_sensor_features}
+  save_raw_obs: false
+  delta_thresholds:
+    on_object: 0
+    distance: 0.01
+  noise_params: ${benchmarks.default_all_noise_params}

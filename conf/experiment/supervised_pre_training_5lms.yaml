@@ -1,0 +1,17 @@
+defaults:
+  - supervised_pre_training_base
+  - config/monty/clear_monty_config@config
+  - config/monty/five_lm@config.monty_config
+  - config/monty/args/clear_monty_args@config.monty_config
+  - config/monty/args/defaults@config.monty_config.monty_args
+  - config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - config/monty/motor_system/naive_scan_spiral@config.monty_config.motor_system_config
+  - config/environment/clear_env_interface_config@config.env_interface_config
+  - config/environment/five_lm_mount_habitat@config.env_interface_config
+
+config:
+  logging:
+    run_name: supervised_pre_training_5lms
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 500

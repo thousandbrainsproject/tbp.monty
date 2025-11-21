@@ -1,6 +1,11 @@
 ---
 title: Multiple Learning Modules
 ---
+
+> [!WARNING]
+>
+> Apologies, the code for this tutorial is out of date due to the major change in how we configure Monty. We'll update it soon™️.
+
 # Introduction
 Thus far, we have been working with models that use a single agent with a single sensor which connects to a single learning module. In the context of vision, this is analogous to a small patch of retina that picks up a small region of the visual field and relays its information to its downstream target--a single cortical column in the primary visual cortex (V1). In human terms, this is like looking through a straw. While sufficient to recognize objects, one would have to make many successive eye movements to build up a picture of the environment. In reality, the retina contains many patches that tile the retinal surface, and they all send their information to their respective downstream target columns in V1. If, for example, a few neighboring retinal patches fall on different parts of the same object, then the object may be rapidly recognized once columns have communicated with each other about what they are seeing and where they are seeing it.
 
@@ -25,11 +30,11 @@ from dataclasses import asdict
 
 from benchmarks.configs.names import MyExperiments
 from tbp.monty.frameworks.config_utils.config_args import (
+    CUBE_FACE_AND_CORNER_VIEW_ROTATIONS,
     FiveLMMontyConfig,
     MontyArgs,
     MotorSystemConfigNaiveScanSpiral,
     PretrainLoggingConfig,
-    get_cube_face_and_corner_views_rotations,
 )
 from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
     EnvironmentInterfacePerObjectArgs,
@@ -56,7 +61,7 @@ model_name = "dist_agent_5lm_2obj"
 
 # Specify the objects to train on and 14 unique object poses.
 object_names = ["mug", "banana"]
-train_rotations = get_cube_face_and_corner_views_rotations()
+train_rotations = CUBE_FACE_AND_CORNER_VIEW_ROTATIONS
 
 # The config dictionary for the pretraining experiment.
 dist_agent_5lm_2obj_train = dict(
@@ -68,7 +73,7 @@ dist_agent_5lm_2obj_train = dict(
         n_train_epochs=len(train_rotations),
     ),
     # Specify logging config.
-    logging_config=PretrainLoggingConfig(
+    logging=PretrainLoggingConfig(
         output_dir=project_dir,
         run_name=model_name,
     ),
@@ -269,7 +274,7 @@ dist_agent_5lm_2obj_eval = dict(
         min_lms_match=3,   # Terminate when 3 learning modules makes a decision.
     ),
     # Specify logging config.
-    logging_config=EvalLoggingConfig(
+    logging=EvalLoggingConfig(
         output_dir=os.path.join(project_dir, model_name),
         run_name="eval",
         monty_handlers=[BasicCSVStatsHandler],

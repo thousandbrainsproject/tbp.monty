@@ -1,0 +1,32 @@
+defaults:
+  - /test/policy/base_dist@
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - /experiment/config/monty/motor_system/informed_no_trans_step_s20@config.monty_config.motor_system_config
+  - /experiment/config/environment/clear_env_interface_config@config
+  - /experiment/config/environment/patch_view_finder_multi_object_mount_habitat@config.env_interface_config
+  - /experiment/config/environment_interface/clear_eval_env_interface_args@config
+
+config:
+  monty_config:
+    motor_system_config:
+      motor_system_args:
+        policy_args:
+          action_sampler_args:
+            rotation_degrees: 5.0
+          switch_frequency: 1.0
+          good_view_percentage: 0.5
+  env_interface_config:
+    env_init_args:
+      data_path: null
+  eval_env_interface_args:
+    object_names:
+      targets_list:
+        - cubeSolid
+      source_object_list:
+        - cubeSolid
+        - capsule3DSolid
+      num_distractors: 10
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      positions:
+        - ${np.array:[0.2, 1.5, -0.2]} # Object is farther away *and* to the right

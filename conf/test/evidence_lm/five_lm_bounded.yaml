@@ -1,0 +1,26 @@
+defaults:
+  - /test/evidence_lm/five_lm@
+
+config:
+  monty_config:
+    learning_module_configs:
+      learning_module_0:
+        learning_module_args:
+          past_weight: 0.9
+          present_weight: 0.1
+      learning_module_1:
+        learning_module_args:
+          past_weight: 0.9
+          present_weight: 0.1
+      learning_module_2:
+        learning_module_args:
+          past_weight: 0.9
+          present_weight: 0.1
+      learning_module_3:
+        learning_module_args:
+          past_weight: 0.9
+          present_weight: 0.1
+      learning_module_4:
+        learning_module_args:
+          past_weight: 0.9
+          present_weight: 0.1

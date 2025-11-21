@@ -245,6 +245,9 @@ class EvidenceGraphLM(GraphLM):
         # Every HypothesesUpdater gets at least the following arguments because they are
         # either constructed or edited in the constructor, or they are shared with the
         # learning module.
+
+        # Make hypotheses_updater_args a dict from a DictConfig, so we can edit it.
+        hypotheses_updater_args = dict(hypotheses_updater_args)
         hypotheses_updater_args.update(
             evidence_threshold_config=self.evidence_threshold_config,
             feature_evidence_increment=self.feature_evidence_increment,

@@ -23,7 +23,7 @@ from tbp.monty.frameworks.models.evidence_sdr_matching import (
 )
 from tbp.monty.frameworks.models.goal_state_generation import EvidenceGoalStateGenerator
 from tbp.monty.frameworks.models.states import State
-from tests.unit.resources.unit_test_utils import BaseGraphTestCases
+from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 
 def set_seed(seed):
@@ -333,7 +333,7 @@ class EvidenceSDRUnitTest(unittest.TestCase):
         self.assertEqual((sdrs[0] * sdrs[1]).sum(), 41.0)
 
 
-class EvidenceSDRIntegrationTest(BaseGraphTestCases.BaseGraphTest):
+class EvidenceSDRIntegrationTest(BaseGraphTest):
     def setUp(self):
         """Setup function at the beginning of each experiment."""
         self.output_dir = tempfile.mkdtemp()

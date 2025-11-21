@@ -1,0 +1,2 @@
+defaults:
+  - learning_module/lower_max_nneighbors_surf_lm@learning_module_0

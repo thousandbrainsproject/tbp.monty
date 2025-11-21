@@ -1,0 +1,6 @@
+objects:
+  - name: coneSolid
+    position: [0.0, 1.5, -0.1]
+scene_id: null
+seed: 42
+data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/ycb}

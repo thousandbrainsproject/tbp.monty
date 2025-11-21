@@ -1,0 +1,35 @@
+defaults:
+  - supervised_pre_training_flat_objects_wo_logos
+  - config/supervised_pretraining@config
+  - config/monty/clear_monty_config@config
+  - config/monty/two_lm_stacked@config.monty_config
+  - config/monty/args/clear_monty_args@config.monty_config
+  - config/monty/args/defaults@config.monty_config.monty_args
+  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - config/monty/learning_modules/two_stacked_constrained_lms@config.monty_config.learning_module_configs
+  - config/monty/motor_system/clear_motor_system_config@config.monty_config
+  # use spiral policy for more even object coverage during learning
+  - config/monty/motor_system/naive_scan_spiral@config.monty_config.motor_system_config
+  - config/environment_interface/clear_train_env_interface_args@config
+  - config/environment_interface/per_object@config.train_env_interface_args
+  - config/environment_interface/logos_on_objs/logos@config.train_env_interface_args.object_names
+  - config/environment_interface/logos_on_objs/logo_positions@config.train_env_interface_args.object_init_sampler.positions
+  - config/environment_interface/logos_on_objs/logo_rotations@config.train_env_interface_args.object_init_sampler.rotations
+
+config:
+  n_train_epochs: 3 # len(LOGO_POSITIONS) * len(LOGO_ROTATIONS)
+  supervised_lm_ids: ["learning_module_0"]
+  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v10/supervised_pre_training_flat_objects_wo_logos/pretrained/}
+  logging:
+    run_name: supervised_pre_training_logos_after_flat_objects
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 1000
+    motor_system_config:
+      motor_system_args:
+        policy_args:
+          fixed_amount: 1
+  train_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+

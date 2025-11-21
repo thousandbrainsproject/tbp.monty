@@ -1,0 +1,18 @@
+defaults:
+  - config/infer_comp
+  - config/environment_interface/clear_eval_env_interface_args@config
+  - config/environment_interface/per_object@config.eval_env_interface_args
+  - config/environment_interface/logos_on_objs/objects_with_logos_lvl4@config.eval_env_interface_args.object_names
+  - config/environment_interface/clear_parent_to_child_mapping@config.eval_env_interface_args
+  - config/environment_interface/logos_on_objs/parent_to_child_mapping@config.eval_env_interface_args.parent_to_child_mapping
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+config:
+  model_name_or_path: ${benchmarks.pretrained_dir}/supervised_pre_training_objects_with_logos_lvl4_comp_models/pretrained/
+  n_eval_epochs: ${benchmarks.rotations_all_count}
+  logging:
+    run_name: infer_comp_lvl4_with_comp_models
+  eval_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      rotations: ${benchmarks.rotations_all}

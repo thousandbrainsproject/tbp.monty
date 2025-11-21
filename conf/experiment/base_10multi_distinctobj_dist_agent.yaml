@@ -1,0 +1,26 @@
+defaults:
+  - base_config_10distinctobj_dist_agent
+  - config/monty/clear_monty_config@config
+  - config/monty/patch_and_view_farther_away_sota@config.monty_config
+  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - config/monty/learning_modules/lower_max_nneighbors_1lm@config.monty_config.learning_module_configs
+  - config/monty/args/clear_monty_args@config.monty_config
+  - config/monty/args/defaults@config.monty_config.monty_args
+  - config/environment/clear_env_interface_config@config
+  - config/environment/patch_view_finder_multi_object_mount_habitat@config.env_interface_config
+  - config/environment_interface/clear_eval_env_interface_args@config
+  - config/environment_interface/ycb/distinct_objects@config.eval_env_interface_args.object_names.targets_list
+  - config/environment_interface/ycb/distinct_objects@config.eval_env_interface_args.object_names.source_object_list
+
+config:
+  logging:
+    run_name: base_10multi_distinctobj_dist_agent
+  monty_config:
+    monty_args:
+      min_eval_steps: ${benchmarks.min_eval_steps}
+  eval_env_interface_args:
+    object_names:
+      num_distractors: 10
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      rotations: ${benchmarks.rotations_all}

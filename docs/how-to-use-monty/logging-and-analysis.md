@@ -3,7 +3,7 @@ title: Logging and Analysis
 ---
 # Monty Loggers
 
-To manage the logging for an experiment you can specify the handlers that should be used in the `logging_config`. The logging config has two fields for handlers. One for `monty_handlers` and one for `wandb_handlers`. The latter will start a wandb session if it does not contain an empty list. The former can contain all other non-wandb handlers.
+To manage the logging for an experiment you can specify the handlers that should be used in the `logging` config. The logging config has two fields for handlers. One for `monty_handlers` and one for `wandb_handlers`. The latter will start a wandb session if it does not contain an empty list. The former can contain all other non-wandb handlers.
 
 ## List of all Logging Handlers
 
@@ -132,7 +132,7 @@ Since Monty is a sensorimotor framework, everything happens as a timeseries of s
 >
 > Detailed JSON stats are not logged by default since they can get large quickly. To be able to run the following analysis, you need to update the experiment config with this line:
 >
-> `logging_config=DetailedEvidenceLMLoggingConfig(),`
+> `logging=DetailedEvidenceLMLoggingConfig(),`
 >
 > Remember that you will also need to import `DetailedEvidenceLMLoggingConfig` at the top of the file.
 >
@@ -145,7 +145,7 @@ Since Monty is a sensorimotor framework, everything happens as a timeseries of s
 >     n_eval_epochs=1, # <--- Setting n_eval_epochs to 1
 >     max_total_steps=5000,
 > ),
-> logging_config=DetailedEvidenceLMLoggingConfig(), # <--- Setting the detailed logger
+> logging=DetailedEvidenceLMLoggingConfig(), # <--- Setting the detailed logger
 > eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
 >     object_names=get_object_names_by_idx(
 >         0, 1, object_list=DISTINCT_OBJECTS # <--- Only testing one object

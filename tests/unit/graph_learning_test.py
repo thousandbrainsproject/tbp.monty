@@ -21,90 +21,27 @@ import os
 import shutil
 import tempfile
 import unittest
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from pprint import pprint
 from typing import Any
 
+import hydra
 import numpy as np
 import pandas as pd
+from omegaconf import DictConfig
 
-from tbp.monty.frameworks.actions.action_samplers import ConstantSampler
-from tbp.monty.frameworks.config_utils.config_args import (
-    FiveLMMontyConfig,
-    InformedPolicy,
-    LoggingConfig,
-    MontyArgs,
-    MontyFeatureGraphArgs,
-    PatchAndViewMontyConfig,
-    SurfaceAndViewMontyConfig,
-)
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-    EnvironmentInterfacePerObjectEvalArgs,
-    EnvironmentInterfacePerObjectTrainArgs,
-    ExperimentArgs,
-    PredefinedObjectInitializer,
-)
-from tbp.monty.frameworks.config_utils.policy_setup_utils import (
-    make_informed_policy_config,
-)
-from tbp.monty.frameworks.environments import embodied_data as ED
-from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
 from tbp.monty.frameworks.loggers.wandb_handlers import DetailedWandbMarkedObsHandler
-from tbp.monty.frameworks.models.displacement_matching import DisplacementGraphLM
 from tbp.monty.frameworks.models.feature_location_matching import FeatureGraphLM
 from tbp.monty.frameworks.models.graph_matching import GraphLM
-from tbp.monty.frameworks.models.motor_system import MotorSystem
-from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 from tbp.monty.frameworks.utils.follow_up_configs import (
-    create_eval_config_multiple_episodes,
-    create_eval_episode_config,
+    create_eval_episode_hydra_cfg,
+    create_eval_multiple_episodes_hydra_cfg,
 )
 from tbp.monty.frameworks.utils.logging_utils import (
     deserialize_json_chunks,
     load_stats,
 )
-from tbp.monty.simulators.habitat.configs import (
-    EnvInitArgsFiveLMMount,
-    EnvInitArgsPatchViewMount,
-    EnvInitArgsSurfaceViewMount,
-    FiveLMMountHabitatEnvInterfaceConfig,
-    PatchViewFinderMountHabitatEnvInterfaceConfig,
-    SurfaceViewFinderMountHabitatEnvInterfaceConfig,
-)
-from tests.unit.resources.unit_test_utils import BaseGraphTestCases
-
-
-@dataclass
-class MotorSystemConfigFixed:
-    motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: dict | Dataclass = field(
-        default_factory=lambda: dict(
-            policy_class=InformedPolicy,
-            policy_args=make_informed_policy_config(
-                action_space_type="distant_agent_no_translation",
-                action_sampler_class=ConstantSampler,
-                rotation_degrees=5.0,
-                file_name=Path(__file__).parent / "resources/fixed_test_actions.jsonl",
-            ),
-        )
-    )
-
-
-@dataclass
-class MotorSystemConfigOffObject:
-    motor_system_class: MotorSystem = MotorSystem
-    motor_system_args: dict | Dataclass = field(
-        default_factory=lambda: dict(
-            policy_class=InformedPolicy,
-            policy_args=make_informed_policy_config(
-                action_space_type="distant_agent_no_translation",
-                action_sampler_class=ConstantSampler,
-                file_name=Path(__file__).parent
-                / "resources/fixed_test_actions_off_object.jsonl",
-            ),
-        )
-    )
+from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 
 @dataclass
@@ -157,450 +94,86 @@ class TrainedGraphLM:
         self.learning_module.pre_episode(primary_target)
 
 
-class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
+class GraphLearningTest(BaseGraphTest):
     def setUp(self):
         """Code that gets executed before every test."""
         super().setUp()
 
         self.output_dir = tempfile.mkdtemp()
         self.compositional_save_path = tempfile.mkdtemp()
-
-        base = dict(
-            experiment_class=MontyObjectRecognitionExperiment,
-            experiment_args=ExperimentArgs(
-                max_train_steps=30, max_eval_steps=30, max_total_steps=60
-            ),
-            logging_config=LoggingConfig(output_dir=self.output_dir),
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20)
-            ),
-            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
-            ),
-            train_env_interface_class=ED.InformedEnvironmentInterface,
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=["capsule3DSolid", "cubeSolid"],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
-            eval_env_interface_class=ED.InformedEnvironmentInterface,
-            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
-                object_names=["capsule3DSolid"],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
+        self.fixed_actions_path = (
+            Path(__file__).parent / "resources" / "fixed_test_actions.jsonl"
+        )
+        self.fixed_actions_path_off_object = (
+            Path(__file__).parent / "resources" / "fixed_test_actions_off_object.jsonl"
         )
 
-        surface_agent_eval_config = copy.deepcopy(base)
-        surface_agent_eval_config.update(
-            monty_config=SurfaceAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-            ),
-            env_interface_config=SurfaceViewFinderMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsSurfaceViewMount(data_path=None).__dict__,
-            ),
+        # Generate the override string for setting the actions file name.
+        # We're doing this because the string is too long otherwise.
+        actions_file_name_selector = ".".join(  # noqa: FLY002
+            [
+                "test",
+                "config",
+                "monty_config",
+                "motor_system_config",
+                "motor_system_args",
+                "policy_args",
+                "file_name",
+            ]
         )
 
-        ppf_pred_tests = copy.deepcopy(base)
-        ppf_pred_tests.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=DisplacementGraphLM,
-                        learning_module_args=dict(
-                            k=5,
-                            match_attribute="PPF",
-                            tolerance=np.ones(4) * 0.001,
-                            use_relative_len=True,
-                        ),
-                    )
-                ),
-            ),
-        )
+        def hydra_config(
+            test_name: str,
+            action_file_name: Path | None = None,
+            extra_overrides: list[str] | None = None,
+        ) -> DictConfig:
+            """Return a Hydra configuration from the specified test name.
 
-        disp_pred_tests = copy.deepcopy(base)
-        disp_pred_tests.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=DisplacementGraphLM,
-                        learning_module_args=dict(
-                            k=5,
-                            match_attribute="displacement",
-                            tolerance=np.ones(3) * 0.0001,
-                        ),
-                    )
-                ),
-            ),
-        )
+            Args:
+                test_name: the name of the test config to load
+                action_file_name: Optional path to a file of actions to use
+                extra_overrides: Optional list of extra overrides to add
+            """
+            overrides = [
+                f"test=graph_learning/{test_name}",
+                f"test.config.logging.output_dir={self.output_dir}",
+            ]
+            if action_file_name:
+                overrides.append(f"{actions_file_name_selector}={action_file_name}")
+            if extra_overrides:
+                overrides += extra_overrides
+            return hydra.compose(config_name="test", overrides=overrides)
 
-        feature_pred_tests = copy.deepcopy(base)
-        feature_pred_tests.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyFeatureGraphArgs(num_exploratory_steps=20),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=FeatureGraphLM,
-                        learning_module_args=dict(
-                            max_match_distance=0.01,
-                            tolerances={
-                                "patch": {
-                                    "on_object": 0,
-                                    "rgba": np.ones(4) * 10,
-                                    "principal_curvatures": np.ones(2),
-                                    "pose_vectors": [
-                                        40,
-                                        360,
-                                        360,
-                                    ],  # angular difference
-                                }
-                            },
-                        ),
-                    )
-                ),
-            ),
-        )
-
-        fixed_actions_disp = copy.deepcopy(base)
-        fixed_actions_disp.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=10),
-                motor_system_config=MotorSystemConfigFixed(),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=DisplacementGraphLM,
-                        learning_module_args=dict(
-                            k=5,
-                            match_attribute="displacement",
-                            tolerance=np.ones(3) * 0.0001,
-                        ),
-                    )
-                ),
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            self.base_cfg = hydra_config("base")
+            self.surface_agent_eval_cfg = hydra_config("surface_agent_eval")
+            self.ppf_pred_cfg = hydra_config("ppf_pred")
+            self.disp_pred_cfg = hydra_config("disp_pred")
+            self.feature_pred_cfg = hydra_config("feature_pred")
+            self.fixed_actions_disp_cfg = hydra_config(
+                "fixed_actions_disp", self.fixed_actions_path
             )
-        )
-
-        fixed_actions_ppf = copy.deepcopy(base)
-        fixed_actions_ppf.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20),
-                motor_system_config=MotorSystemConfigFixed(),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=DisplacementGraphLM,
-                        learning_module_args=dict(
-                            k=5,
-                            match_attribute="PPF",
-                            tolerance=np.ones(4) * 0.0001,
-                            use_relative_len=True,
-                        ),
-                    )
-                ),
+            self.fixed_actions_ppf_cfg = hydra_config(
+                "fixed_actions_ppf", self.fixed_actions_path
             )
-        )
-
-        fixed_actions_feat = copy.deepcopy(base)
-        fixed_actions_feat.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyFeatureGraphArgs(num_exploratory_steps=30),
-                motor_system_config=MotorSystemConfigFixed(),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=FeatureGraphLM,
-                        learning_module_args=dict(
-                            max_match_distance=0.001,
-                            tolerances={
-                                "patch": {
-                                    "on_object": 0,
-                                    "object_coverage": 0.5,
-                                    "rgba": np.ones(4) * 10,
-                                    "hsv": [0.1, 1, 1],
-                                    "pose_vectors": np.ones(3) * 40,
-                                    "principal_curvatures": np.ones(2) * 8,
-                                    "principal_curvatures_log": np.ones(2) * 2,
-                                    "gaussian_curvature": 10,
-                                    "mean_curvature": 5,
-                                    "gaussian_curvature_sc": 8,
-                                    "mean_curvature_sc": 4,
-                                }
-                            },
-                        ),
-                    )
-                ),
+            self.fixed_actions_feat_cfg = hydra_config(
+                "fixed_actions_feat", self.fixed_actions_path
             )
-        )
-
-        feature_pred_tests_time_out = copy.deepcopy(base)
-        feature_pred_tests_time_out.update(
-            # Use more steps on first two epochs to build models of 2 objects
-            experiment_args=ExperimentArgs(max_train_steps=30, max_total_steps=60),
-            logging_config=LoggingConfig(
-                output_dir=self.output_dir,
-            ),
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyFeatureGraphArgs(num_exploratory_steps=30),
-                motor_system_config=MotorSystemConfigFixed(),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=FeatureGraphLM,
-                        learning_module_args=dict(
-                            # Low mmd to initially learn two separate objects
-                            # (will be changed after first 2 episodes)
-                            # For some reason 0.01 is enough on laptop but not in
-                            # docker container...
-                            max_match_distance=0.001,
-                            # high tolerances to get time outs
-                            tolerances={
-                                "patch": {
-                                    "principal_curvatures_log": np.ones(2),
-                                    "pose_vectors": [
-                                        180,
-                                        180,
-                                        180,
-                                    ],
-                                }
-                            },
-                            # use no symmetry terminal condition to get time out
-                            required_symmetry_evidence=1000,
-                        ),
-                    )
-                ),
-            ),
-            # always show objects in same orientation
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=["capsule3DSolid", "cubeSolid"],
-                object_init_sampler=PredefinedObjectInitializer(
-                    rotations=[[0.0, 0.0, 0.0]]
-                ),
-            ),
-        )
-
-        feature_pred_tests_offset = copy.deepcopy(fixed_actions_feat)
-        feature_pred_tests_offset.update(
-            train_env_interface_class=ED.InformedEnvironmentInterface,
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=["capsule3DSolid", "cubeSolid"],
-                object_init_sampler=PredefinedObjectInitializer(
-                    positions=[[0.0, 1.5, 0.0]]
-                ),
-            ),
-            eval_env_interface_class=ED.InformedEnvironmentInterface,
-            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
-                object_names=["capsule3DSolid"],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
-        )
-
-        feature_pred_tests_confused = copy.deepcopy(fixed_actions_feat)
-        feature_pred_tests_confused.update(
-            experiment_args=ExperimentArgs(n_train_epochs=1),
-            logging_config=LoggingConfig(
-                output_dir=self.output_dir,
-            ),
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyFeatureGraphArgs(num_exploratory_steps=20),
-                motor_system_config=MotorSystemConfigOffObject(),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=FeatureGraphLM,
-                        learning_module_args=dict(
-                            max_match_distance=0.01,
-                            tolerances={
-                                "patch": {
-                                    "on_object": 0,
-                                    "rgba": np.ones(4) * 10,
-                                    "principal_curvatures": np.ones(2) * 5,
-                                    "pose_vectors": [40, 20, 20],
-                                }
-                            },
-                            required_symmetry_evidence=1000,
-                            # with accounting for curvature directions being flopped
-                            # we have two possible poses (0 and 180 flip). Disregard
-                            # this here for testing sake.
-                            pose_similarity_threshold=np.pi,
-                        ),
-                    )
-                ),
-            ),
-        )
-
-        feature_pred_tests_off_object = copy.deepcopy(feature_pred_tests_confused)
-        feature_pred_tests_off_object.update(
-            experiment_args=ExperimentArgs(
-                n_train_epochs=2,
-                max_eval_steps=50,
-                max_train_steps=50,
-                max_total_steps=200,
-            ),
-            logging_config=LoggingConfig(output_dir=self.output_dir),
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyFeatureGraphArgs(
-                    num_exploratory_steps=20, min_train_steps=12
-                ),
-                motor_system_config=MotorSystemConfigOffObject(),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=FeatureGraphLM,
-                        learning_module_args=dict(
-                            max_match_distance=0.01,
-                            tolerances={
-                                "patch": {
-                                    "on_object": 0,
-                                    "rgba": np.ones(4) * 10,
-                                    "principal_curvatures": np.ones(2) * 5,
-                                    "pose_vectors": [40, 20, 20],
-                                }
-                            },
-                        ),
-                    )
-                ),
-            ),
-            train_env_interface_class=ED.InformedEnvironmentInterface,
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=["capsule3DSolid"],
-                object_init_sampler=PredefinedObjectInitializer(
-                    rotations=[[0, 0, 0]],
-                ),
-            ),
-        )
-
-        feat_test_uniform_initial_poses = copy.deepcopy(base)
-        feat_test_uniform_initial_poses.update(
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyFeatureGraphArgs(num_exploratory_steps=30),
-                motor_system_config=MotorSystemConfigFixed(),
-                learning_module_configs=dict(
-                    learning_module_0=dict(
-                        learning_module_class=FeatureGraphLM,
-                        learning_module_args=dict(
-                            max_match_distance=0.01,
-                            tolerances={
-                                "patch": {
-                                    "hsv": [0.1, 1, 1],
-                                    "principal_curvatures_log": np.ones(2) * 0.1,
-                                }
-                            },
-                            initial_possible_poses="uniform",
-                        ),
-                    )
-                ),
-            ),
-        )
-
-        multi_ppf_displacement_lm_config = dict(
-            learning_module_class=DisplacementGraphLM,
-            learning_module_args=dict(
-                k=5,
-                match_attribute="PPF",
-                tolerance=np.ones(4) * 0.001,
-                use_relative_len=True,
-            ),
-        )
-
-        ppf_displacement_5lm_config = copy.deepcopy(base)
-        ppf_displacement_5lm_config.update(
-            experiment_args=ExperimentArgs(
-                max_train_steps=30,
-                max_eval_steps=30,
-                max_total_steps=60,
-                n_eval_epochs=3,
-                min_lms_match=3,
-            ),
-            logging_config=LoggingConfig(
-                output_dir=self.output_dir, python_log_level="DEBUG"
-            ),
-            monty_config=FiveLMMontyConfig(
-                monty_args=MontyFeatureGraphArgs(num_exploratory_steps=10),
-                motor_system_config=MotorSystemConfigFixed(),
-                learning_module_configs=dict(
-                    learning_module_0=multi_ppf_displacement_lm_config,
-                    learning_module_1=multi_ppf_displacement_lm_config,
-                    learning_module_2=multi_ppf_displacement_lm_config,
-                    learning_module_3=multi_ppf_displacement_lm_config,
-                    learning_module_4=multi_ppf_displacement_lm_config,
-                ),
-            ),
-            env_interface_config=FiveLMMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsFiveLMMount(data_path=None).__dict__,
-            ),
-        )
-
-        multi_feature_lm_config = dict(
-            learning_module_class=FeatureGraphLM,
-            learning_module_args=dict(
-                max_match_distance=0.01,
-            ),
-        )
-        default_multi_feat_lm_tolerances = {
-            "hsv": np.array([0.1, 1, 1]),  # only look at hue
-            "principal_curvatures_log": np.ones(2),
-        }
-        lm0_config = copy.deepcopy(multi_feature_lm_config)
-        lm0_config["learning_module_args"]["tolerances"] = {
-            "patch_0": default_multi_feat_lm_tolerances
-        }
-        lm1_config = copy.deepcopy(multi_feature_lm_config)
-        lm1_config["learning_module_args"]["tolerances"] = {
-            "patch_1": default_multi_feat_lm_tolerances
-        }
-        lm2_config = copy.deepcopy(multi_feature_lm_config)
-        lm2_config["learning_module_args"]["tolerances"] = {
-            "patch_2": default_multi_feat_lm_tolerances
-        }
-        lm3_config = copy.deepcopy(multi_feature_lm_config)
-        lm3_config["learning_module_args"]["tolerances"] = {
-            "patch_3": default_multi_feat_lm_tolerances
-        }
-        lm4_config = copy.deepcopy(multi_feature_lm_config)
-        lm4_config["learning_module_args"]["tolerances"] = {
-            "patch_4": default_multi_feat_lm_tolerances
-        }
-
-        feature_5lm_config = copy.deepcopy(base)
-        feature_5lm_config.update(
-            experiment_args=ExperimentArgs(
-                max_train_steps=30,
-                max_eval_steps=30,
-                max_total_steps=60,
-                n_eval_epochs=3,
-                min_lms_match=3,
-            ),
-            logging_config=LoggingConfig(
-                output_dir=self.output_dir, python_log_level="DEBUG"
-            ),
-            monty_config=FiveLMMontyConfig(
-                monty_args=MontyFeatureGraphArgs(num_exploratory_steps=10),
-                motor_system_config=MotorSystemConfigFixed(),
-                learning_module_configs=dict(
-                    learning_module_0=lm0_config,
-                    learning_module_1=lm1_config,
-                    learning_module_2=lm2_config,
-                    learning_module_3=lm3_config,
-                    learning_module_4=lm4_config,
-                ),
-            ),
-            env_interface_config=FiveLMMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsFiveLMMount(data_path=None).__dict__,
-            ),
-        )
-
-        self.base_config = base
-        self.surface_agent_eval_config = surface_agent_eval_config
-        self.ppf_config = ppf_pred_tests
-        self.disp_config = disp_pred_tests
-        self.feature_config = feature_pred_tests
-        self.fixed_actions_disp = fixed_actions_disp
-        self.fixed_actions_ppf = fixed_actions_ppf
-        self.fixed_actions_feat = fixed_actions_feat
-        self.feature_pred_tests_time_out = feature_pred_tests_time_out
-        self.feature_pred_tests_confused = feature_pred_tests_confused
-        self.feature_pred_tests_off_object = feature_pred_tests_off_object
-        self.feat_test_uniform_initial_poses = feat_test_uniform_initial_poses
-        self.ppf_displacement_5lm_config = ppf_displacement_5lm_config
-        self.feature_5lm_config = feature_5lm_config
-
-        pprint("\n\nCONFIG:\n\n")
-        for key, val in self.base_config.items():
-            pprint(f"{key}: {val}")
+            self.feature_pred_time_out_cfg = hydra_config(
+                "feature_pred_time_out", self.fixed_actions_path
+            )
+            self.feature_pred_off_object_cfg = hydra_config(
+                "feature_pred_off_object", self.fixed_actions_path_off_object
+            )
+            self.feature_uniform_initial_poses_cfg = hydra_config(
+                "feature_uniform_initial_poses", self.fixed_actions_path
+            )
+            self.five_lm_ppf_displacement_cfg = hydra_config(
+                "five_lm_ppf_displacement", self.fixed_actions_path
+            )
+            self.five_lm_feature_cfg = hydra_config(
+                "five_lm_feature", self.fixed_actions_path
+            )
 
     def tearDown(self):
         """Code that gets executed after every test."""
@@ -612,26 +185,21 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         This could be part of the setUp method, but it's easier to debug if something
         breaks the setup_experiment method if there's a separate test for it.
         """
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with MontyObjectRecognitionExperiment(base_config):
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             pass
 
     def test_can_run_train_episode(self):
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with MontyObjectRecognitionExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
-            pprint("...training...")
             exp.pre_epoch()
             exp.run_episode()
 
     def test_right_data_in_buffer(self):
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with MontyObjectRecognitionExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
-            pprint("...training...")
             exp.pre_epoch()
             exp.pre_episode()
             for step, observation in enumerate(exp.env_interface):
@@ -678,48 +246,35 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                     break
 
     def test_can_run_eval_episode(self):
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with MontyObjectRecognitionExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("eval")
-            pprint("...training...")
             exp.pre_epoch()
             exp.run_episode()
 
     def test_can_run_eval_episode_with_surface_agent(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.surface_agent_eval_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.surface_agent_eval_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("eval")
-            pprint("...training...")
             exp.pre_epoch()
             exp.run_episode()
 
     def test_can_run_ppf_experiment(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.ppf_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.ppf_pred_cfg.test)
+        with exp:
             exp.train()
-            pprint("...evaluating...")
             exp.evaluate()
 
     def test_can_run_disp_experiment(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.disp_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.disp_pred_cfg.test)
+        with exp:
             exp.train()
-            pprint("...evaluating...")
             exp.evaluate()
 
     def test_can_run_feature_experiment(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.feature_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.feature_pred_cfg.test)
+        with exp:
             exp.train()
-            pprint("...evaluating...")
             exp.evaluate()
 
     def test_fixed_actions_disp(self):
@@ -739,90 +294,57 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         Followed by three eval episodes on capsule3DSolid (same rotation sequence so
         the first and third episode should recognize the capsule).
         """
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_actions_disp)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.fixed_actions_disp_cfg.test)
+        with exp:
             exp.train()
-            pprint("...loading and checking train statistics...")
             train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
             self.check_train_results(train_stats)
-
-            pprint("...evaluating...")
             exp.evaluate()
 
-        pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
-
         self.check_eval_results(eval_stats)
 
     def test_fixed_actions_ppf(self):
         """Like test_fixed_actions_disp but using point pair features for matching."""
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_actions_ppf)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.fixed_actions_disp_cfg.test)
+        with exp:
             exp.train()
-            pprint("...loading and checking train statistics...")
             train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
-
             self.check_train_results(train_stats)
-
-            pprint("...evaluating...")
             exp.evaluate()
 
-        pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
-
         self.check_eval_results(eval_stats)
 
     def test_fixed_actions_feat(self):
         """Like test_fixed_actions_disp but using point pair features for matching."""
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_actions_feat)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.fixed_actions_feat_cfg.test)
+        with exp:
             exp.train()
-            pprint("...loading and checking train statistics...")
-
             train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
-
             self.check_train_results(train_stats)
-
-            pprint("...evaluating...")
             exp.evaluate()
 
-        pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
-
         self.check_eval_results(eval_stats)
 
     def test_reproduce_single_episode(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_actions_feat)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.fixed_actions_feat_cfg.test)
+        with exp:
             exp.train()
 
         # Create a separate experiment for evaluation to mimic the us case of re-running
         # eval episodes from a pretrained model
-        eval_cfg_1 = copy.deepcopy(config)
-        eval_cfg_1["experiment_args"].model_name_or_path = os.path.join(
-            exp.output_dir,
-            "2",  # latest checkpoint
-        )
-        with MontyObjectRecognitionExperiment(eval_cfg_1) as eval_exp_1:
-            # TODO: update so it only runs one episode
-            pprint("...evaluating (first time) ...")
+        eval_cfg_1 = copy.deepcopy(self.fixed_actions_feat_cfg)
+        eval_cfg_1.test.config.model_name_or_path = str(Path(self.output_dir) / "2")
+        # update so it only runs one episode
+        eval_cfg_1.test.config.n_eval_epochs = 1
+        eval_exp_1 = hydra.utils.instantiate(eval_cfg_1.test)
+        with eval_exp_1:
             eval_exp_1.evaluate()
 
-        # Create detailed follow up experiment
-        eval_cfg_2 = create_eval_episode_config(
-            parent_config=eval_exp_1.config,  # already converted to dict in exp
-            parent_config_name="eval_cfg_1",
-            episode=0,
-            update_run_dir=False,  # we are running direct; no run.py
-        )
+        # Create detailed follow-up experiment
+        eval_cfg_2 = create_eval_episode_hydra_cfg(parent_config=eval_cfg_1, episode=0)
 
         ###
         # Check that the arguments for the new experiment are correct
@@ -831,20 +353,20 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         # Detailed wandb logging should be automatically built in, though we will remove
         # it to avoid logging tests to wandb
         self.assertEqual(
-            eval_cfg_2["logging_config"]["wandb_handlers"][-1],
+            eval_cfg_2.test.config.logging.wandb_handlers[-1],
             DetailedWandbMarkedObsHandler,
         )
-        eval_cfg_2["logging_config"]["wandb_handlers"].pop()
+        eval_cfg_2.test.config.logging.wandb_handlers = []
 
         # check that the object being used is the same one from original exp
         self.assertEqual(
-            eval_cfg_1["eval_env_interface_args"].object_names,
-            eval_cfg_2["eval_env_interface_args"]["object_names"],
+            eval_cfg_1.test.config.eval_env_interface_args.object_names,
+            eval_cfg_2.test.config.eval_env_interface_args.object_names,
         )
 
         # If we made it this far, we have the correct parameters. Now run the experiment
-        with MontyObjectRecognitionExperiment(eval_cfg_2) as eval_exp_2:
-            pprint("...evaluating (second time) ...")
+        eval_exp_2 = hydra.utils.instantiate(eval_cfg_2.test)
+        with eval_exp_2:
             eval_exp_2.evaluate()
 
         ###
@@ -895,33 +417,23 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         self.compare_sensor_module_logs(original_detailed_stats, new_detailed_stats)
 
     def test_reproduce_multiple_episodes(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_actions_feat)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.fixed_actions_feat_cfg.test)
+        with exp:
             exp.train()
 
         # Create a separate experiment for evaluation to mimic the us case of re-running
         # eval episodes from a pretrained model
-        eval_cfg_1 = copy.deepcopy(config)
-        eval_cfg_1["experiment_args"].model_name_or_path = os.path.join(
-            exp.output_dir,
-            "2",  # latest checkpoint
-        )
-        with MontyObjectRecognitionExperiment(eval_cfg_1) as eval_exp_1:
-            pprint("...evaluating (first time) ...")
+        eval_cfg_1 = copy.deepcopy(self.fixed_actions_feat_cfg)
+        eval_cfg_1.test.config.model_name_or_path = str(Path(exp.output_dir) / "2")
+
+        eval_exp_1 = hydra.utils.instantiate(eval_cfg_1.test)
+        with eval_exp_1:
             eval_exp_1.evaluate()
 
-        # Create detailed follow up experiment
-        eval_cfg_2 = create_eval_config_multiple_episodes(
-            parent_config=eval_exp_1.config,  # already converted to dict in exp
-            parent_config_name="eval_cfg_1",
-            episodes=[
-                0,
-                1,
-                2,
-            ],  # 3 episodes total, one episode for each of 3 epochs
-            update_run_dir=False,  # we are running direct; no run.py
+        # Create detailed follow-up experiment
+        eval_cfg_2 = create_eval_multiple_episodes_hydra_cfg(
+            parent_config=eval_cfg_1,
+            episodes=[0, 1, 2],
         )
 
         ###
@@ -936,20 +448,20 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         # capsule3DSolid is used as the lone eval object; make sure it is listed once
         # per episode
         self.assertEqual(
-            eval_cfg_2["eval_env_interface_args"]["object_names"],
+            eval_cfg_2.test.config.eval_env_interface_args.object_names,
             ["capsule3DSolid", "capsule3DSolid", "capsule3DSolid"],
         )
 
         # Original sampler had just first two rotations, should cycle back to the first
         # on the third episode
         self.assertEqual(
-            eval_cfg_2["eval_env_interface_args"]["object_init_sampler"].rotations,
+            eval_cfg_2.test.config.eval_env_interface_args.object_init_sampler.rotations,
             [[0.0, 0.0, 0.0], [45.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
         )
 
         # If we made it this far, we have the correct parameters. Now run the experiment
-        with MontyObjectRecognitionExperiment(eval_cfg_2) as eval_exp_2:
-            pprint("...evaluating (second time) ...")
+        eval_exp_2 = hydra.utils.instantiate(eval_cfg_2.test)
+        with eval_exp_2:
             eval_exp_2.evaluate()
 
         ###
@@ -1001,29 +513,24 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
     def test_reproduce_single_episode_with_multiple_episode_function(self):
         """Verify create_eval_config_multiple_episodes for a single episode."""
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_actions_feat)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.fixed_actions_feat_cfg.test)
+        with exp:
             exp.train()
 
         # Create a separate experiment for evaluation to mimic the us case of re-running
         # eval episodes from a pretrained model
-        eval_cfg_1 = copy.deepcopy(config)
-        eval_cfg_1["experiment_args"].model_name_or_path = os.path.join(
-            exp.output_dir,
-            "2",  # latest checkpoint
+        eval_cfg_1 = copy.deepcopy(self.fixed_actions_feat_cfg)
+        eval_cfg_1.test.config.model_name_or_path = str(
+            Path(exp.output_dir) / "2",  # latest checkpoint
         )
-        with MontyObjectRecognitionExperiment(eval_cfg_1) as eval_exp_1:
-            pprint("...evaluating (first time) ...")
+
+        eval_exp_1 = hydra.utils.instantiate(eval_cfg_1.test)
+        with eval_exp_1:
             eval_exp_1.evaluate()
 
-        # Create detailed follow up experiment
-        eval_cfg_2 = create_eval_config_multiple_episodes(
-            parent_config=eval_exp_1.config,  # already converted to dict in exp
-            parent_config_name="eval_cfg_1",
-            episodes=[0],
-            update_run_dir=False,  # we are running direct; no run.py
+        # Create detailed follow-up experiment
+        eval_cfg_2 = create_eval_multiple_episodes_hydra_cfg(
+            parent_config=eval_cfg_1, episodes=[0]
         )
 
         ###
@@ -1032,13 +539,13 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
         # check that the object being used is the same one from original exp
         self.assertEqual(
-            eval_cfg_1["eval_env_interface_args"].object_names,
-            eval_cfg_2["eval_env_interface_args"]["object_names"],
+            eval_cfg_1.test.config.eval_env_interface_args.object_names,
+            eval_cfg_2.test.config.eval_env_interface_args.object_names,
         )
 
         # If we made it this far, we have the correct parameters. Now run the experiment
-        with MontyObjectRecognitionExperiment(eval_cfg_2) as eval_exp_2:
-            pprint("...evaluating (second time) ...")
+        eval_exp_2 = hydra.utils.instantiate(eval_cfg_2.test)
+        with eval_exp_2:
             eval_exp_2.evaluate()
 
         ###
@@ -1090,20 +597,17 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
     def test_save_and_load(self):
         # Move this to graph_building_test.py?
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_actions_ppf)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.fixed_actions_ppf_cfg.test)
+        with exp:
             exp.train()
 
         # We are training for 3 epochs by default, load most recent indexing from 0
-        print("Loading a saved checkpoint")
-        cfg2 = copy.deepcopy(self.fixed_actions_feat)
-        cfg2["experiment_args"].model_name_or_path = os.path.join(
-            config["logging_config"].output_dir,
-            "2",  # latest checkpoint
+        cfg2 = copy.deepcopy(self.fixed_actions_ppf_cfg)
+        cfg2.test.config.model_name_or_path = str(
+            Path(exp.output_dir) / "2",  # latest checkpoint
         )
-        with MontyObjectRecognitionExperiment(cfg2) as exp2:
+        exp2 = hydra.utils.instantiate(cfg2.test)
+        with exp2:
             graph_memory_1 = exp.model.learning_modules[
                 0
             ].graph_memory.get_all_models_in_memory()
@@ -1128,11 +632,9 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
         (Episode 3: object is too similar with tolerances, will also detect time_out)
         Episodes 4 and 5: Increased curvature tolerance -> detect time_out
         """
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.feature_pred_tests_time_out)
-        with MontyObjectRecognitionExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.feature_pred_time_out_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
-            pprint("...training...")
             for e in range(6):
                 if e % 2 == 0:
                     exp.pre_epoch()
@@ -1149,7 +651,6 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 if e % 2 == 1:
                     exp.post_epoch()
 
-        pprint("...check time out logging...")
         train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
         self.assertEqual(
             train_stats["primary_performance"][2],
@@ -1189,12 +690,10 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
     def test_confused_logging(self):
         # When the algorithm evolves, this scenario may not lead to confusion
-        # anymore. Setting min_steps would also avoid this probably.
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.fixed_actions_feat)
-        with MontyObjectRecognitionExperiment(config) as exp:
+        # anymore. Setting min_steps would also avoid this, probably.
+        exp = hydra.utils.instantiate(self.fixed_actions_feat_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
-            pprint("...training...")
             exp.pre_epoch()
             # Overwrite target with a false name to test confused logging.
             for e in range(4):
@@ -1206,7 +705,6 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 exp.post_episode(last_step)
             exp.post_epoch()
 
-        pprint("...checking run stats...")
         train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
         for i in [0, 1]:
             self.assertEqual(
@@ -1244,10 +742,8 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
     def test_moving_off_object(self):
         # Tests additional elements of logging, in particular in relation
         # to logging of observations when off the object
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.feature_pred_tests_off_object)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.feature_pred_off_object_cfg.test)
+        with exp:
             # First episode will be used to learn object (no_match is triggered before
             # min_steps is reached and the sensor moves off the object). In the second
             # episode the sensor moves off the sphere on episode steps 6+
@@ -1300,15 +796,11 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
             )
 
     def test_detailed_logging(self):
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.feature_pred_tests_off_object)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.feature_pred_off_object_cfg.test)
+        with exp:
             exp.train()
-            pprint("...evaluating...")
             exp.evaluate()
 
-        pprint("...loading stats files...")
         train_stats, eval_stats, detailed_stats, lm_models = load_stats(
             exp.output_dir,
             load_train=True,
@@ -1356,20 +848,13 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
     def test_uniform_initial_poses(self):
         """Test same scenario as test_fixed_actions_feat with uniform poses."""
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.feat_test_uniform_initial_poses)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.feature_uniform_initial_poses_cfg.test)
+        with exp:
             exp.train()
-            pprint("...loading and checking train statistics...")
-
             train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
             self.check_train_results(train_stats)
-
-            pprint("...evaluating...")
             exp.evaluate()
 
-        pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
         self.check_eval_results(eval_stats)
 
@@ -1720,19 +1205,13 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
     def test_5lm_displacement_experiment(self):
         """Test 5 displacement LMs voting with two evaluation settings."""
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.ppf_displacement_5lm_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.five_lm_ppf_displacement_cfg.test)
+        with exp:
             exp.train()
-
             train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
             self.check_multilm_train_results(train_stats, num_lms=5, min_done=3)
-
-            pprint("...evaluating...")
             exp.evaluate()
 
-        pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
         self.check_multilm_eval_results(
             eval_stats, num_lms=5, min_done=3, num_episodes=1
@@ -1740,14 +1219,10 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
 
     def test_5lm_feature_experiment(self):
         """Test 5 feature LMs voting with two evaluation settings."""
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.feature_5lm_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.five_lm_feature_cfg.test)
+        with exp:
             objects = [self.fake_obs_learn, self.fake_obs_house_3d]
             trained_modules = self.get_5lm_gm_with_fake_objects(objects)
-
-            pprint("...evaluating...")
             monty = exp.model
             monty.set_experiment_mode("eval")
             monty.learning_modules = [tm.learning_module for tm in trained_modules]
@@ -1779,7 +1254,6 @@ class GraphLearningTest(BaseGraphTestCases.BaseGraphTest):
                 exp.post_episode(tm.num_observations(episode_num))
             exp.post_epoch()
 
-        pprint("...loading and checking eval statistics...")
         eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
         # Just testing 1 episode here. Somehow the second rotation doesn't get
         # recognized. Probably just some parameter setting due to flaws in old
