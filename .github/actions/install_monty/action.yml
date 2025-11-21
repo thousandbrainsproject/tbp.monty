@@ -33,14 +33,6 @@ runs:
       uses: ./tbp.monty/.github/actions/set_swap_space
       with:
         swap-size-gb: '2'
-    - name: Restore cache
-      id: restore_cache
-      uses: actions/cache/restore@v4
-      with:
-        path: |
-          ~/miniconda
-        key: ${{ steps.generate_cache_key.outputs.conda_env_cache_key_sha }}
-        lookup-only: true
     - name: Install miniconda
       if: ${{ steps.restore_cache.outputs.cache-hit != 'true' }}
       shell: bash
