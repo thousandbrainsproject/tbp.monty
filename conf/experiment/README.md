@@ -41,4 +41,4 @@ To generate models for the objects with logos experiments, run the following pre
 - `./run_parallel.py experiment=supervised_pre_training_objects_with_logos_lvl4_comp_models`
 
 
-Fro more details, see [Running Benchmarks](https://thousandbrainsproject.readme.io/docs/running-benchmarks) and [Benchmark Experiments](https://thousandbrainsproject.readme.io/docs/benchmark-experiments) in the documentation.
+For more details, see [Running Benchmarks](https://thousandbrainsproject.readme.io/docs/running-benchmarks) and [Benchmark Experiments](https://thousandbrainsproject.readme.io/docs/benchmark-experiments) in the documentation.

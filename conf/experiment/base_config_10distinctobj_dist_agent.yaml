@@ -16,7 +16,7 @@ config:
   n_eval_epochs: ${benchmarks.rotations_all_count}
   logging:
     wandb_group: benchmark_experiments
-    # Comment in for quick debugging (turns of wandb and increases logging)
+    # Comment in for quick debugging (turns off wandb and increases logging)
     # wandb_handlers: []
     # python_log_level: DEBUG
     # FIXME?: we want to actually concatentate with logging/defaults.yaml output_dir

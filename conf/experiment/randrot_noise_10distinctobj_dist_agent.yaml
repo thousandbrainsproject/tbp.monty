@@ -14,7 +14,7 @@ defaults:
   - config/environment_interface/clear_object_init_sampler@config.eval_env_interface_args
 
 config:
-  mode_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
+  model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10distinctobj/pretrained/
   n_eval_epochs: 10 # number of random rotations to test for each object
   logging:
     run_name: randrot_noise_10distinctobj_dist_agent

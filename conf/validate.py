@@ -19,7 +19,7 @@ from tbp.monty.hydra import register_resolvers
 
 @hydra.main(config_path=".", config_name="experiment", version_base=None)
 def validate(cfg: DictConfig):
-    # Force interpolation of the config to get errors
+    # Force resolving of the config to get errors
     OmegaConf.to_object(cfg)
     print(OmegaConf.to_yaml(cfg))
 

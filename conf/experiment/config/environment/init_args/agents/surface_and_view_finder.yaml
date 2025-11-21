@@ -1,7 +1,7 @@
 # Use surface agent and view finder to find the object before experiment start.
 #
-# Adaptation of Viviane's code that use the view finder to navigate so
-# the object is in view before the real experiment happens + surface-agent sensor
+# Adaptation of distant agent code for the surface agent to use the view finder to 
+# navigate so the object is in view before the real experiment happens.
 defaults:
   - patch_and_view_finder
 
