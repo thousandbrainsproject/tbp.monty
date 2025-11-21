@@ -29,10 +29,6 @@ runs:
       uses: actions/setup-python@v5
       with:
         python-version: "3.8"
-    - name: Add swap space for conda installation
-      uses: ./tbp.monty/.github/actions/set_swap_space
-      with:
-        swap-size-gb: '2'
     - name: Restore cache
       id: restore_cache
       uses: actions/cache/restore@v4
