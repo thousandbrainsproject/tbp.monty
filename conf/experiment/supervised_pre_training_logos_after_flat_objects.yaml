@@ -19,7 +19,7 @@ defaults:
 config:
   n_train_epochs: 3 # len(LOGO_POSITIONS) * len(LOGO_ROTATIONS)
   supervised_lm_ids: ["learning_module_0"]
-  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v10/supervised_pre_training_flat_objects_wo_logos/pretrained/}
+  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11/supervised_pre_training_flat_objects_wo_logos/pretrained/}
   logging:
     run_name: supervised_pre_training_logos_after_flat_objects
   monty_config:
