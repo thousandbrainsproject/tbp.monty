@@ -646,13 +646,11 @@ def generate_parallel_eval_configs(exp: Mapping, experiment_name: str) -> list[M
     n_epochs = exp["experiment_args"]["n_eval_epochs"]
 
     params = sample_params_to_init_args(sampler())
-    start_seed = exp["experiment_args"]["seed"]
 
     # Try to mimic the exact workflow instead of guessing
     while epoch_count <= n_epochs:
         for obj in object_names:
             new_config = copy.deepcopy(exp)
-            new_config["experiment_args"]["seed"] = start_seed + episode_count
 
             # No training
             new_config["experiment_args"].update(
