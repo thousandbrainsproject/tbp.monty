@@ -105,7 +105,7 @@ const ColumnFormatters = {
       result = `<a href="${escapeHtml(editUrl)}" style="margin-right:5px;" target="_blank" rel="noopener noreferrer" title="Edit on GitHub"><i class="fas ${EDIT_ICON}"></i></a>${result}`;
     }
 
-    return `<div style="margin-right: 10px;">${result}</div>`;
+    return `<div style="margin-right: 10px; word-wrap: break-word; overflow-wrap: break-word;">${result}</div>`;
   },
   formatStatusColumn(cell) {
     const rowData = cell.getRow().getData();
@@ -153,9 +153,9 @@ const TableConfig = {
 
   getAllColumns() {
     return [
-      { title: 'Title', field: 'title', formatter: ColumnFormatters.formatTitleWithLinksColumn },
-      { title: 'Estimated Scope', field: 'estimated-scope', formatter: ColumnFormatters.formatSizeColumn },
-      { title: 'Improved Metric', field: 'improved-metric', formatter: ColumnFormatters.formatTagsColumn },
+      { title: 'Title', field: 'title', formatter: ColumnFormatters.formatTitleWithLinksColumn, width: 200, cssClass: 'wrap-text', variableHeight: true },
+      { title: 'Scope', field: 'estimated-scope', formatter: ColumnFormatters.formatSizeColumn },
+      { title: 'Metric', field: 'improved-metric', formatter: ColumnFormatters.formatTagsColumn },
       { title: 'Output Type', field: 'output-type', formatter: ColumnFormatters.formatTagsColumn },
       { title: 'RFC', field: 'rfc', formatter: ColumnFormatters.formatRfcColumn },
       { title: 'Status', field: 'status', formatter: ColumnFormatters.formatStatusColumn },
