@@ -104,7 +104,6 @@ class RunParallelTest(unittest.TestCase):
         ###
         parallel_model = torch.load(
             self.output_dir
-            / "unittest_supervised_pre_training"
             / self.supervised_pre_training_cfg.experiment.config.logging.run_name
             / "pretrained"
             / "model.pt"
