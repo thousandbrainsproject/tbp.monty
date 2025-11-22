@@ -14,6 +14,7 @@ import datetime
 import logging
 import os
 import pprint
+from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
@@ -72,7 +73,10 @@ class MontyExperiment:
         self.max_total_steps = config["max_total_steps"]
         self.n_eval_epochs = config["n_eval_epochs"]
         self.n_train_epochs = config["n_train_epochs"]
-        self.model_path = config["model_name_or_path"]
+        if config["model_name_or_path"]:
+            self.model_path = Path(config["model_name_or_path"])
+        else:
+            self.model_path = None
         self.min_lms_match = config["min_lms_match"]
         self.rng = np.random.RandomState(config["seed"])
         self.show_sensor_output = config["show_sensor_output"]
@@ -194,8 +198,8 @@ class MontyExperiment:
 
         # Load from checkpoint
         if model_path:
-            if "model.pt" not in model_path:
-                model_path = os.path.join(model_path, "model.pt")
+            if "model.pt" not in model_path.parts:
+                model_path = model_path / "model.pt"
             state_dict = torch.load(model_path)
             model.load_state_dict(state_dict)
 
@@ -320,7 +324,7 @@ class MontyExperiment:
         self.python_log_level = logging_config["python_log_level"]
         self.log_to_file = logging_config["python_log_to_file"]
         self.log_to_stderr = logging_config["python_log_to_stderr"]
-        self.output_dir = logging_config["output_dir"]
+        self.output_dir = Path(logging_config["output_dir"])
         self.run_name = logging_config["run_name"]
 
         if not os.path.exists(self.output_dir):
@@ -334,7 +338,7 @@ class MontyExperiment:
         python_logging_handlers: list[logging.Handler] = []
         if self.log_to_file:
             python_logging_handlers.append(
-                logging.FileHandler(os.path.join(self.output_dir, "log.txt"), mode="w")
+                logging.FileHandler(self.output_dir / "log.txt", mode="w")
             )
         if self.log_to_stderr:
             handler = logging.StreamHandler()
@@ -545,9 +549,7 @@ class MontyExperiment:
     def post_epoch(self):
         """Call sub post_epoch functions and save state dict."""
         # NOTE: maybe an option not to save everything every epoch?
-        self.save_state_dict(
-            output_dir=os.path.join(self.output_dir, f"{self.train_epochs}")
-        )
+        self.save_state_dict(output_dir=self.output_dir / f"{self.train_epochs}")
         self.logger_handler.post_epoch(self.logger_args)
 
         if self.model.experiment_mode == "train":
@@ -607,15 +609,16 @@ class MontyExperiment:
             pass
         else:
             logger.info(f"saving model to {output_dir}")
-            torch.save(model_state_dict, os.path.join(output_dir, "model.pt"))
-            torch.save(exp_state_dict, os.path.join(output_dir, "exp_state_dict.pt"))
-            torch.save(self.config, os.path.join(output_dir, "config.pt"))
+            torch.save(model_state_dict, output_dir / "model.pt")
+            torch.save(exp_state_dict, output_dir / "exp_state_dict.pt")
+            torch.save(self.config, output_dir / "config.pt")
 
     def load_state_dict(self, load_dir):
         """Load state_dict of previous experiment."""
-        model_state_dict = torch.load(os.path.join(load_dir, "model.pt"))
-        exp_state_dict = torch.load(os.path.join(load_dir, "exp_state_dict.pt"))
-        config = torch.load(os.path.join(load_dir, "config.pt"))
+        load_dir = Path(load_dir)
+        model_state_dict = torch.load(load_dir / "model.pt")
+        exp_state_dict = torch.load(load_dir / "exp_state_dict.pt")
+        config = torch.load(load_dir / "config.pt")
         state_dict_keys = self.state_dict().keys()
 
         self.model.load_state_dict(model_state_dict)

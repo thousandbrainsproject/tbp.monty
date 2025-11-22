@@ -10,7 +10,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
@@ -27,6 +27,9 @@ from tbp.monty.simulators.habitat import (
     MultiSensorAgent,
     SingleSensorAgent,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 __all__ = [
     "AgentConfig",
@@ -93,7 +96,7 @@ class HabitatEnvironment(EmbodiedEnvironment):
         objects: list[dict | ObjectConfig] | None = None,
         scene_id: str | None = None,
         seed: int = 42,
-        data_path: str | None = None,
+        data_path: str | Path | None = None,
     ):
         super().__init__()
         # TODO: Change the configuration to configure multiple agents

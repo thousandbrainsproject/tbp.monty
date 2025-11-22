@@ -32,9 +32,9 @@ def recover_output_dir(config, config_name):
     Returns:
         output_dir: Path to output directory.
     """
-    output_dir = config["logging"]["output_dir"]
+    output_dir = Path(config["logging"]["output_dir"])
     if not config["logging"]["run_name"]:
-        output_dir = os.path.join(config["logging"]["output_dir"], config_name)
+        output_dir = output_dir / config_name
 
     return output_dir
 
@@ -48,7 +48,7 @@ def recover_run_name(config, config_name):
 
 def recover_wandb_id(output_dir):
     # 0 is just go specify any epoch subdirectory; ids should all be the same
-    config_file_name = os.path.join(output_dir, "0", "config.pt")
+    config_file_name = Path(output_dir) / "0" / "config.pt"
     cfg = torch.load(config_file_name)
     config = config_to_dict(cfg)
     return config["logging"]["wandb_id"]
@@ -165,7 +165,7 @@ def create_eval_episode_config(
     new_config = copy.deepcopy(config_to_dict(parent_config))
 
     # Determine parent output_dir, run_name, based on how run.py modifies on the fly
-    output_dir = new_config["logging"]["output_dir"]
+    output_dir = Path(new_config["logging"]["output_dir"])
     run_name = new_config["logging"]["run_name"]
     wandb_id = None
     if update_run_dir:
@@ -174,16 +174,16 @@ def create_eval_episode_config(
         wandb_id = recover_wandb_id(output_dir)
 
     # 1) Use a policy that uses exact actions from previous episode
-    motor_file = os.path.join(
-        output_dir, "reproduce_episode_data", f"eval_episode_{episode}_actions.jsonl"
+    motor_file = (
+        output_dir / "reproduce_episode_data" / f"eval_episode_{episode}_actions.jsonl"
     )
     new_config["monty_config"]["motor_system_config"]["motor_system_args"][
         "policy_args"
     ]["file_name"] = motor_file
 
     # 2) Load object params from this episode into environment interface config
-    object_params_file = os.path.join(
-        output_dir, "reproduce_episode_data", f"eval_episode_{episode}_target.txt"
+    object_params_file = (
+        output_dir / "reproduce_episode_data" / f"eval_episode_{episode}_target.txt"
     )
     with open(object_params_file) as f:
         target_data = json.load(f)
@@ -208,7 +208,7 @@ def create_eval_episode_config(
         new_config["logging"]["wandb_handlers"].append(DetailedWandbMarkedObsHandler)
 
     # Second, update the output directory, run_name, set resume to True
-    new_output_dir = os.path.join(output_dir, f"eval_episode_{episode}_rerun")
+    new_output_dir = output_dir / f"eval_episode_{episode}_rerun"
     os.makedirs(new_output_dir, exist_ok=True)
     new_config["logging"]["output_dir"] = new_output_dir
     new_config["logging"]["run_name"] = run_name
@@ -327,7 +327,7 @@ def create_eval_config_multiple_episodes(
     ###
 
     # Recover output dir based on how run.py modifies on the fly
-    output_dir = new_config["logging"]["output_dir"]
+    output_dir = Path(new_config["logging"]["output_dir"])
     run_name = new_config["logging"]["run_name"]
     wandb_id = None
     if update_run_dir:
@@ -343,7 +343,7 @@ def create_eval_config_multiple_episodes(
         new_config["notes"].update(notes)
 
     # Update the output directory to be a "rerun" subdir
-    new_output_dir = os.path.join(output_dir, "eval_rerun_episodes")
+    new_output_dir = output_dir / "eval_rerun_episodes"
     os.makedirs(new_output_dir, exist_ok=True)
     new_config["logging"]["output_dir"] = new_output_dir
     new_config["logging"]["run_name"] = run_name
@@ -369,15 +369,15 @@ def create_eval_config_multiple_episodes(
     target_rotations = []
     for episode_counter, episode in enumerate(episodes):
         # Get actions from this episode
-        motor_file = os.path.join(
-            output_dir,
-            "reproduce_episode_data",
-            f"eval_episode_{episode}_actions.jsonl",
+        motor_file = (
+            output_dir
+            / "reproduce_episode_data"
+            / f"eval_episode_{episode}_actions.jsonl"
         )
 
         # Get object params from this episode
-        object_params_file = os.path.join(
-            output_dir, "reproduce_episode_data", f"eval_episode_{episode}_target.txt"
+        object_params_file = (
+            output_dir / "reproduce_episode_data" / f"eval_episode_{episode}_target.txt"
         )
         with open(object_params_file) as f:
             target_data = json.load(f)

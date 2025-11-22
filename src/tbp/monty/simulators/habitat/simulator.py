@@ -107,7 +107,7 @@ class HabitatSim(HabitatActuator):
     def __init__(
         self,
         agents: list[HabitatAgent],
-        data_path: str | None = None,
+        data_path: str | Path | None = None,
         scene_id: str | None = None,
         seed: int = 42,
     ):

@@ -8,7 +8,6 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import os
 
 import torch
 from tqdm import tqdm
@@ -77,7 +76,7 @@ class DataCollectionExperiment(MontyObjectRecognitionExperiment):
     def post_episode(self):
         torch.save(
             self.model.sensor_modules[0].processed_obs[:-1],
-            os.path.join(self.output_dir, f"observations{self.train_episodes}.pt"),
+            self.output_dir / f"observations{self.train_episodes}.pt",
         )
         self.env_interface.post_episode()
         self.train_episodes += 1

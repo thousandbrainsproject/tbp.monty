@@ -19,6 +19,7 @@ To follow along, open the `benchmarks/configs/my_experiments.py` file and paste 
 ```python
 import os
 from dataclasses import asdict
+from pathlib import Path
 
 import numpy as np
 
@@ -57,16 +58,16 @@ Basic setup
 -----------
 """
 # Specify the directory where an output directory will be created.
-project_dir = os.path.expanduser("~/tbp/results/monty/projects")
+project_dir = Path("~/tbp/results/monty/projects").expanduser()
 
 # Specify the model name. This needs to be the same name as used for pretraining.
 model_name = "surf_agent_1lm_2obj"
 
 # Where to find the pretrained model.
-model_path = os.path.join(project_dir, model_name, "pretrained")
+model_path = project_dir / model_name / "pretrained"
 
 # Where to save eval logs.
-output_dir = os.path.join(project_dir, model_name)
+output_dir = project_dir / model_name
 run_name = "eval"
 ```
 Now we specify that we want to test the model on "mug" and "banana", and that we want the objects to be rotated a few different ways.

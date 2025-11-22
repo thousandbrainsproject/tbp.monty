@@ -22,7 +22,6 @@ pytest.importorskip(
 )
 
 import json
-import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -396,9 +395,8 @@ class HabitatSimTest(unittest.TestCase):
         # Check valid data path
         with tempfile.TemporaryDirectory() as data_path:
             # Create valid habitat object
-            with open(
-                os.path.join(data_path, "test_obj.object_config.json"), "w"
-            ) as json_file:
+            object_config_path = Path(data_path) / "test_obj.object_config.json"
+            with object_config_path.open("w") as json_file:
                 json.dump(
                     {"render_asset": "icosphereSolid_subdivs_1", "mass": 1}, json_file
                 )
