@@ -1,0 +1,49 @@
+learning_module_0:
+  learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+  learning_module_args:
+    max_match_distance: 0.01
+    tolerances:
+      patch_0:
+        hsv: ${np.array:[0.1, 1, 1]}
+        principal_curvatures_log: ${np.ones:2}
+    # Note graph-delta-thresholds are not used for grid-based models
+    feature_weights: {}
+    max_graph_size: 0.3
+    num_model_voxels_per_dim: 200
+    max_nodes_per_graph: 2000
+    gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+    gsg_args:
+      goal_tolerances:
+        location: 0.015
+      elapsed_steps_factor: 10
+      min_post_goal_success_steps: 5
+      x_percent_scale_factor: 0.75
+      desired_object_distance: 0.03
+learning_module_1:
+  learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+  learning_module_args:
+    max_match_distance: 0.01
+    tolerances:
+      patch_1:
+        hsv: ${np.array:[0.1, 1, 1]}
+        principal_curvatures_log: ${np.ones:2}
+      # object Id currently is an int representation of the strings
+      # in the object label so we keep this tolerance high. This is
+      # just until we have added a way to encode object ID with some
+      # real similarity measure.
+      learning_module_0:
+        object_id: 1
+    feature_weights:
+      learning_module_0:
+        object_id: 1
+    max_graph_size: 0.4
+    num_model_voxels_per_dim: 200
+    max_nodes_per_graph: 2000
+    gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+    gsg_args:
+      goal_tolerances:
+        location: 0.015
+      elapsed_steps_factor: 10
+      min_post_goal_success_steps: 5
+      x_percent_scale_factor: 0.75
+      desired_object_distance: 0.03

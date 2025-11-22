@@ -1,0 +1,6 @@
+defaults:
+  - defaults
+  - agents/two_lm_stacked_distant_mount@agents.agent_args
+
+agents:
+  agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}

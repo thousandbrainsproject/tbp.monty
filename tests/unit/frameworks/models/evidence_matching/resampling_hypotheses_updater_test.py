@@ -13,42 +13,14 @@ pytest.importorskip(
     reason="Habitat Sim optional dependency not installed.",
 )
 
-import copy
 import tempfile
 from unittest import TestCase
 
-import numpy as np
+import hydra
 
-from tbp.monty.frameworks.config_utils.config_args import (
-    MontyFeatureGraphArgs,
-    PatchAndViewMontyConfig,
-    PretrainLoggingConfig,
-)
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-    EnvironmentInterfacePerObjectTrainArgs,
-    PredefinedObjectInitializer,
-    SupervisedPretrainingExperimentArgs,
-)
-from tbp.monty.frameworks.environments import embodied_data as ED
-from tbp.monty.frameworks.experiments.pretraining_experiments import (
-    MontySupervisedObjectPretrainingExperiment,
-)
-from tbp.monty.frameworks.models.evidence_matching.learning_module import (
-    EvidenceGraphLM,
-)
-from tbp.monty.frameworks.models.evidence_matching.model import (
-    MontyForEvidenceGraphMatching,
-)
-from tbp.monty.frameworks.models.evidence_matching.resampling_hypotheses_updater import (  # noqa: E501
-    ResamplingHypothesesUpdater,
-)
 from tbp.monty.frameworks.utils.evidence_matching import (
     ChannelMapper,
     EvidenceSlopeTracker,
-)
-from tbp.monty.simulators.habitat.configs import (
-    EnvInitArgsPatchViewMount,
-    PatchViewFinderMountHabitatEnvInterfaceConfig,
 )
 
 
@@ -56,60 +28,23 @@ class ResamplingHypothesesUpdaterTest(TestCase):
     def setUp(self) -> None:
         super().setUp()
 
-        default_tolerances = {
-            "hsv": np.array([0.1, 1, 1]),
-            "principal_curvatures_log": np.ones(2),
-        }
-
-        resampling_lm_args = dict(
-            max_match_distance=0.001,
-            tolerances={"patch": default_tolerances},
-            feature_weights={
-                "patch": {
-                    "hsv": np.array([1, 0, 0]),
-                }
-            },
-            hypotheses_updater_class=ResamplingHypothesesUpdater,
-        )
-
-        default_evidence_lm_config = dict(
-            learning_module_0=dict(
-                learning_module_class=EvidenceGraphLM,
-                learning_module_args=resampling_lm_args,
-            )
-        )
-
         self.output_dir = tempfile.mkdtemp()
 
-        self.pretraining_configs = dict(
-            experiment_class=MontySupervisedObjectPretrainingExperiment,
-            experiment_args=SupervisedPretrainingExperimentArgs(
-                n_train_epochs=3,
-            ),
-            logging_config=PretrainLoggingConfig(
-                output_dir=self.output_dir,
-            ),
-            monty_config=PatchAndViewMontyConfig(
-                monty_class=MontyForEvidenceGraphMatching,
-                monty_args=MontyFeatureGraphArgs(num_exploratory_steps=20),
-                learning_module_configs=default_evidence_lm_config,
-            ),
-            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
-            ),
-            train_env_interface_class=ED.InformedEnvironmentInterface,
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=["capsule3DSolid"],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
-        )
+        with hydra.initialize(version_base=None, config_path="../../../../../conf"):
+            self.cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=frameworks/models/evidence_matching/resampling_hypothese_updater",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
 
     def get_pretrained_resampling_lm(self):
-        train_config = copy.deepcopy(self.pretraining_configs)
-        with MontySupervisedObjectPretrainingExperiment(train_config) as train_exp:
-            train_exp.train()
+        exp = hydra.utils.instantiate(self.cfg.test)
+        with exp:
+            exp.train()
 
-        rlm = train_exp.model.learning_modules[0]
+        rlm = exp.model.learning_modules[0]
         rlm.channel_hypothesis_mapping["capsule3DSolid"] = ChannelMapper()
         rlm.hypotheses_updater.evidence_slope_trackers["capsule3DSolid"] = (
             EvidenceSlopeTracker(min_age=0)

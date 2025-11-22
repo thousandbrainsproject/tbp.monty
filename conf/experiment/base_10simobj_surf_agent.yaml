@@ -1,0 +1,15 @@
+defaults:
+  - base_config_10distinctobj_surf_agent
+  - config/environment_interface/clear_eval_env_interface_args@config
+  - config/environment_interface/per_object@config.eval_env_interface_args
+  - config/environment_interface/ycb/similar_objects@config.eval_env_interface_args.object_names
+
+config:
+  model_name_or_path: ${benchmarks.pretrained_dir}/surf_agent_1lm_10similarobj/pretrained/
+  n_eval_epochs: ${benchmarks.rotations_all_count}
+  logging:
+    run_name: base_10simobj_surf_agent
+  eval_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      rotations: ${benchmarks.rotations_all}

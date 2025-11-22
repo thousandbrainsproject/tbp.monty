@@ -1,0 +1,67 @@
+defaults:
+  - config/supervised_pretraining
+  - config/logging/pretrain@config.logging
+  - config/monty/patch_and_view@config.monty_config
+  - config/monty/args/clear_monty_args@config.monty_config
+  - config/monty/args/defaults@config.monty_config.monty_args
+  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - config/monty/motor_system/clear_motor_system_config@config.monty_config
+  # use spiral policy for more even object coverage during learning
+  - config/monty/motor_system/naive_scan_spiral@config.monty_config.motor_system_config
+  - config/monty/motor_system/policy/naive_scan@config.monty_config.motor_system_config.motor_system_args.policy_args
+  - config/environment/patch_view_finder_mount_habitat@config.env_interface_config
+  - config/environment_interface/per_object@config.train_env_interface_args
+  - config/environment_interface/ycb/distinct_objects@config.train_env_interface_args.object_names
+
+_target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+config:
+  n_train_epochs: ${benchmarks.rotations_all_count}
+  logging:
+    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
+    python_log_level: INFO
+    run_name: supervised_pre_training_base
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 500
+    motor_system_config:
+      motor_system_args:
+        policy_args:
+          fixed_amount: 5
+    learning_module_configs:
+      learning_module_0:
+        learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+        learning_module_args:
+          k: 10
+          match_attribute: displacement
+          tolerance: ${np.array:[0.0001, 0.0001, 0.0001]}
+          graph_delta_thresholds:
+            patch:
+              distance: 0.001
+              # Only first pose vector (surface normal) is currently used
+              pose_vectors: ${np.list_eval:[np.pi / 8, np.pi * 2, np.pi * 2]}
+              principal_curvatures_log: [1, 1]
+              hsv: [0.1, 1, 1]
+          # NOTE: Learning works with any LM type. For instance you can use
+          # the following code to run learning with the EvidenceGraphLM:
+          # learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+          # learning_module_args:
+          #     max_match_distance: 0.01
+          #     tolerances:
+          #         patch: {}
+          #     feature_weights: {}
+          #     graph_delta_thresholds:
+          #         patch:
+          #             distance: 0.001
+          #             pose_vectors: ${np.eval_list:[np.pi / 8, np.pi * 2, np.pi * 2]}
+          #             principal_curvatures_log: [1, 1]
+          #             hsv: [0.1, 1, 1]
+          # NOTE: When learning with the EvidenceGraphLM or FeatureGraphLM, no
+          # edges will be added to the learned graphs (also not needed for
+          # matching) while learning with DisplacementGraphLM is a superset of
+          # these, i.e. captures all necessary information to do inference with
+          # any three of the LM types.
+  train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  train_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      rotations: ${benchmarks.rotations_all}

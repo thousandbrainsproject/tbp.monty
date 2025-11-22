@@ -1,0 +1,5 @@
+defaults:
+  - /test/evidence_lm/five_lm@
+
+config:
+  min_lms_match: 3

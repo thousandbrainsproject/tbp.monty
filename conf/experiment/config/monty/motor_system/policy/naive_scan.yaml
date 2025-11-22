@@ -1,0 +1,7 @@
+defaults:
+  - informed
+
+use_goal_state_driven_actions: false
+fixed_amount: 3.0
+switch_frequency: 1
+agent_id: ${monty.agent_id:agent_id_0}
