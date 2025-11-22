@@ -8,7 +8,7 @@ defaults:
 config:
   n_train_epochs: ${benchmarks.rotations_all_count}
   supervised_lm_ids: ["learning_module_0"]
-  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v10/supervised_pre_training_logos_after_flat_objects/pretrained/}
+  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11/supervised_pre_training_logos_after_flat_objects/pretrained/}
   logging:
     run_name: supervised_pre_training_curved_objects_after_flat_and_logo
   train_env_interface_args:

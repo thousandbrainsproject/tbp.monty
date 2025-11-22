@@ -11,14 +11,12 @@
 import unittest
 from pathlib import Path
 
+import hydra
 import numpy as np
+from omegaconf import OmegaConf
 from typing_extensions import override
 
-from tbp.monty.frameworks.actions.action_samplers import (
-    UniformlyDistributedSampler,
-)
 from tbp.monty.frameworks.agents import AgentID
-from tbp.monty.frameworks.config_utils.policy_setup_utils import make_base_policy_config
 from tbp.monty.frameworks.environments.embodied_data import (
     EnvironmentInterface,
     OmniglotEnvironmentInterface,
@@ -126,15 +124,21 @@ class FakeOmniglotEnvironment(FakeEnvironmentAbs):
 
 
 class EmbodiedDataTest(unittest.TestCase):
+    def setUp(self) -> None:
+        with hydra.initialize(config_path="../../conf", version_base=None):
+            self.policy_cfg_fragment = hydra.compose(
+                config_name="experiment/config/monty/motor_system/defaults"
+            ).experiment.config.monty.motor_system.motor_system_args.policy_args
+            self.policy_cfg_abs_fragment = hydra.compose(
+                config_name="test/config/monty/motor_system/absolute"
+            ).test.config.monty.motor_system.motor_system_args.policy_args
+
     def test_embodied_env_interface_dist(self):
         rng = np.random.RandomState(42)
-        base_policy_config_dist = make_base_policy_config(
-            action_space_type="distant_agent",
-            action_sampler_class=UniformlyDistributedSampler,
-            agent_id=AGENT_ID,
-        )
+        base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
+        base_policy_cfg_dist["agent_id"] = AGENT_ID
         motor_system_dist = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_config_dist.__dict__)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_dist)
         )
         env = FakeEnvironmentRel()
         env_interface_dist = EnvironmentInterface(
@@ -165,14 +169,11 @@ class EmbodiedDataTest(unittest.TestCase):
     # @unittest.skip("debugging")
     def test_embodied_env_interface_abs(self):
         rng = np.random.RandomState(42)
+        base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
+        base_policy_cfg_abs["agent_id"] = AGENT_ID
 
-        base_policy_config_abs = make_base_policy_config(
-            action_space_type="absolute_only",
-            action_sampler_class=UniformlyDistributedSampler,
-            agent_id=AGENT_ID,
-        )
         motor_system_abs = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_config_abs.__dict__)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_abs)
         )
         env = FakeEnvironmentAbs()
         env_interface_abs = EnvironmentInterface(
@@ -202,13 +203,11 @@ class EmbodiedDataTest(unittest.TestCase):
     # @unittest.skip("debugging")
     def test_embodied_env_interface_dist_states(self):
         rng = np.random.RandomState(42)
-        base_policy_config_dist = make_base_policy_config(
-            action_space_type="distant_agent",
-            action_sampler_class=UniformlyDistributedSampler,
-            agent_id=AGENT_ID,
-        )
+        base_policy_cfg_dist = OmegaConf.to_object(self.policy_cfg_fragment)
+        base_policy_cfg_dist["agent_id"] = AGENT_ID
+
         motor_system_dist = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_config_dist.__dict__)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_dist)
         )
         env = FakeEnvironmentRel()
         env_interface_dist = EnvironmentInterface(
@@ -226,13 +225,11 @@ class EmbodiedDataTest(unittest.TestCase):
     def test_embodied_env_interface_abs_states(self):
         rng = np.random.RandomState(42)
 
-        base_policy_config_abs = make_base_policy_config(
-            action_space_type="absolute_only",
-            action_sampler_class=UniformlyDistributedSampler,
-            agent_id=AGENT_ID,
-        )
+        base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
+        base_policy_cfg_abs["agent_id"] = AGENT_ID
+
         motor_system_abs = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_config_abs.__dict__)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_abs)
         )
         env = FakeEnvironmentAbs()
         env_interface_abs = EnvironmentInterface(
@@ -271,13 +268,11 @@ class EmbodiedDataTest(unittest.TestCase):
     def test_omniglot_data_loader(self):
         rng = np.random.RandomState(42)
 
-        base_policy_config_abs = make_base_policy_config(
-            action_space_type="absolute_only",
-            action_sampler_class=UniformlyDistributedSampler,
-            agent_id=AGENT_ID,
-        )
+        base_policy_cfg_abs = OmegaConf.to_object(self.policy_cfg_abs_fragment)
+        base_policy_cfg_abs["agent_id"] = AGENT_ID
+
         motor_system_abs = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_config_abs.__dict__)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_abs)
         )
 
         alphabets = [0, 0, 0, 1, 1, 1]
@@ -311,14 +306,11 @@ class EmbodiedDataTest(unittest.TestCase):
 
         data_path = Path(__file__).parent / "resources" / "dataloader_test_images"
 
-        base_policy_config_rel = make_base_policy_config(
-            action_space_type="distant_agent",
-            action_sampler_class=UniformlyDistributedSampler,
-            agent_id=AGENT_ID,
-        )
+        base_policy_cfg_rel = OmegaConf.to_object(self.policy_cfg_fragment)
+        base_policy_cfg_rel["agent_id"] = AGENT_ID
 
         motor_system_rel = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_config_rel.__dict__)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_rel)
         )
 
         env_init_args = {"patch_size": patch_size, "data_path": data_path}
@@ -367,14 +359,11 @@ class EmbodiedDataTest(unittest.TestCase):
             / "0_numenta_mug"
         )
 
-        base_policy_config_rel = make_base_policy_config(
-            action_space_type="distant_agent",
-            action_sampler_class=UniformlyDistributedSampler,
-            agent_id=AGENT_ID,
-        )
+        base_policy_cfg_rel = OmegaConf.to_object(self.policy_cfg_fragment)
+        base_policy_cfg_rel["agent_id"] = AGENT_ID
 
         motor_system_rel = MotorSystem(
-            policy=BasePolicy(rng=rng, **base_policy_config_rel.__dict__)
+            policy=BasePolicy(rng=rng, **base_policy_cfg_rel)
         )
 
         env_init_args = {"patch_size": patch_size, "data_path": data_path}
