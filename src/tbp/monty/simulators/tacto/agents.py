@@ -8,12 +8,12 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import uuid
 from typing import Tuple
 
 from habitat_sim.agent import ActionSpec, ActuationSpec
 
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.sensors import SensorID
 from tbp.monty.simulators.habitat import HabitatAgent
 
 from .config import DIGIT, TactoSensorSpec
@@ -49,7 +49,7 @@ class TactoFingerAgent(HabitatAgent):
     def __init__(
         self,
         agent_id: AgentID,
-        sensor_id: str,
+        sensor_id: SensorID,
         position: Vector3 = (0.0, 0.0, 0.0),
         rotation: Quaternion = (1.0, 0.0, 0.0, 0.0),
         height: float = 1.5,
@@ -60,8 +60,6 @@ class TactoFingerAgent(HabitatAgent):
     ):
         super().__init__(agent_id, position, rotation, height)
 
-        if sensor_id is None:
-            sensor_id = uuid.uuid4().hex
         self.sensor_id = sensor_id
         self.resolution = resolution
         self.rotation_step = rotation_step
