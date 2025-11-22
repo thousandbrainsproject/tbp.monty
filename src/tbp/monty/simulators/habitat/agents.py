@@ -373,7 +373,7 @@ class SingleSensorAgent(HabitatAgent):
     def __init__(
         self,
         agent_id: AgentID | None,
-        sensor_id: str,
+        sensor_id: SensorID,
         agent_position: Vector3 = (0.0, 1.5, 0.0),
         sensor_position: Vector3 = (0.0, 0.0, 0.0),
         rotation: Quaternion = (1.0, 0.0, 0.0, 0.0),
@@ -392,8 +392,6 @@ class SingleSensorAgent(HabitatAgent):
         """
         super().__init__(agent_id, agent_position, rotation, height)
 
-        if sensor_id is None:
-            sensor_id = uuid.uuid4().hex
         self.sensor_id = sensor_id
         self.sensor_position = sensor_position
         self.resolution = resolution

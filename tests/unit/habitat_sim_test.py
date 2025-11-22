@@ -94,8 +94,8 @@ class HabitatSimTest(unittest.TestCase):
         # Single agent with two 5x5 cameras
         agents = create_agents(num_agents=1, resolution=(5, 5))
         # Get first agent id
-        agent_id = AgentID(agents[0].agent_id)
-        sensor_id = SensorID(agents[0].sensor_id)
+        agent_id = agents[0].agent_id
+        sensor_id = agents[0].sensor_id
         agent_config = agents[0].get_spec()
         with HabitatSim(agents=agents) as sim:
             # Check agent configuration
@@ -170,8 +170,8 @@ class HabitatSimTest(unittest.TestCase):
                 sim.remove_all_objects()
                 env_obj = sim.add_object(obj_name, position=(0.0, 1.5, -0.2))
                 obs = sim.observations
-                agent_obs = obs[AgentID(agent_id)]
-                sensor_obs = agent_obs[SensorID(sensor_id)]
+                agent_obs = obs[agent_id]
+                sensor_obs = agent_obs[sensor_id]
                 semantic = sensor_obs[Modality("semantic")]
                 actual = np.unique(semantic[semantic.nonzero()])
                 self.assertEqual(actual, expected_obj_id)
@@ -184,8 +184,8 @@ class HabitatSimTest(unittest.TestCase):
         agents = create_agents(
             num_agents=1, semantic=True, rotation_step=rotation_degrees
         )
-        agent_id = AgentID(agents[0].agent_id)
-        sensor_id = SensorID(agents[0].sensor_id)
+        agent_id = agents[0].agent_id
+        sensor_id = agents[0].sensor_id
         with HabitatSim(agents=agents) as sim:
             # Add a couple of objects
             cylinder = sim.add_object(
@@ -264,8 +264,8 @@ class HabitatSimTest(unittest.TestCase):
         ]
 
         agents = create_agents(num_agents=1, resolution=(16, 16), semantic=True)
-        agent_id = AgentID(agents[0].agent_id)
-        sensor_id = SensorID(agents[0].sensor_id)
+        agent_id = agents[0].agent_id
+        sensor_id = agents[0].sensor_id
         with HabitatSim(agents=agents) as sim:
             agent = sim.get_agent(agent_id)
             camera = agent._sensors[f"{sensor_id}.semantic"]
@@ -803,8 +803,8 @@ class HabitatSimTest(unittest.TestCase):
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         ]
         agents = create_agents(num_agents=1, resolution=(16, 16), semantic=True)
-        agent_id = AgentID(agents[0].agent_id)
-        sensor_id = SensorID(agents[0].sensor_id)
+        agent_id = agents[0].agent_id
+        sensor_id = agents[0].sensor_id
         with HabitatSim(agents=agents) as sim:
             # Place cube 0.5 meters away from camera
             sim.add_object(
