@@ -1,0 +1,18 @@
+defaults:
+  - only_surf_agent_training_10obj
+  - config/logging/clear_logging@config
+  - config/logging/pretrain@config.logging
+  - config/environment/clear_env_interface_config@config
+  - config/environment/surface_view_finder_monty_world_mount_habitat@config.env_interface_config
+  - config/environment_interface/clear_train_env_interface_args@config
+  - config/environment_interface/per_object@config.train_env_interface_args
+  - config/environment_interface/numenta/objects@config.train_env_interface_args.object_names
+
+config:
+  logging:
+    output_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/my_trained_models}
+    run_name: surf_agent_1lm_numenta_lab_obj
+  train_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      rotations: ${benchmarks.rotations_all}

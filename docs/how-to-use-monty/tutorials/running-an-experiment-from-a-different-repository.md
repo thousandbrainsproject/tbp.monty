@@ -2,6 +2,10 @@
 title: Running An Experiment From A Different Repository
 ---
 
+> [!WARNING]
+>
+> Apologies, the code for this tutorial is out of date due to the major change in how we configure Monty. We'll update it soon™️.
+
 If you have your own repository and want to run your own experiment or a benchmark, you do not need to replicate the `tbp.monty` benchmarks setup.
 
 > [!NOTE]
@@ -58,7 +62,7 @@ from tbp.monty.simulators.habitat.configs import (  # noqa: E402
 
 first_experiment = dict(
     experiment_class=MontySupervisedObjectPretrainingExperiment,
-    logging_config=LoggingConfig(
+    logging=LoggingConfig(
         log_parallel_wandb=False,
         run_name="test",
         output_dir=os.path.expanduser(

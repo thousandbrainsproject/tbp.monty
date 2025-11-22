@@ -13,8 +13,8 @@ import dataclasses
 import unittest
 from typing import Any, NamedTuple
 
-from tbp.monty.frameworks.config_utils.config_args import Dataclass
 from tbp.monty.frameworks.utils import dataclass_utils
+from tbp.monty.frameworks.utils.dataclass_utils import Dataclass
 
 
 @dataclasses.dataclass

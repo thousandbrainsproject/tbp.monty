@@ -1,0 +1,12 @@
+defaults:
+  - surf_agent_unsupervised_10distinctobj
+  - config/environment_interface/clear_train_env_interface_args@config
+  - config/environment_interface/per_object@config.train_env_interface_args
+  - config/environment_interface/ycb/similar_objects@config.train_env_interface_args.object_names
+
+config:
+  logging:
+    run_name: surf_agent_unsupervised_10simobj
+  train_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.RandomRotationObjectInitializer

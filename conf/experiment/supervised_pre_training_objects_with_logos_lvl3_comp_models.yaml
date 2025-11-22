@@ -1,0 +1,13 @@
+defaults:
+  - supervised_pre_training_objects_with_logos_lvl2_comp_models
+  - config/environment_interface/clear_train_env_interface_args@config
+  - config/environment_interface/per_object@config.train_env_interface_args
+  - config/environment_interface/logos_on_objs/objects_with_logos_lvl3@config.train_env_interface_args.object_names
+
+config:
+  logging:
+    run_name: supervised_pre_training_objects_with_logos_lvl3_comp_models
+  train_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      rotations: ${benchmarks.rotations_all}

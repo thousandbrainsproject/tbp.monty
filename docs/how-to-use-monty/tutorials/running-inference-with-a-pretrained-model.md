@@ -1,6 +1,11 @@
 ---
 title: Running Inference with a Pretrained Model
 ---
+
+> [!WARNING]
+>
+> Apologies, the code for this tutorial is out of date due to the major change in how we configure Monty. We'll update it soon™️.
+
 # Introduction
 
 This tutorial is a follow-up of our tutorial on [pretraining a model](pretraining-a-model.md). Here we will load the pretraining data into the model and perform object recognition under noisy conditions and several arbitrary object rotations.
@@ -201,7 +206,7 @@ surf_agent_2obj_eval = dict(
         max_total_steps=5000,
         show_sensor_output=True,  # live visualization of Monty's observations and MLH
     ),
-    logging_config=EvalLoggingConfig(
+    logging=EvalLoggingConfig(
         output_dir=output_dir,
         run_name=run_name,
         wandb_handlers=[],  # remove this line if you, additionally, want to log to WandB.

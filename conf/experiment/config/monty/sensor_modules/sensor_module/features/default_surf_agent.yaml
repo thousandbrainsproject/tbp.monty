@@ -1,0 +1,10 @@
+features:
+  - pose_vectors
+  - pose_fully_defined
+  - on_object
+  - object_coverage
+  - min_depth
+  - mean_depth
+  - hsv
+  - principal_curvatures
+  - principal_curvatures_log
