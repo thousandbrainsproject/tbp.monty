@@ -37,6 +37,10 @@ runs:
           ~/miniconda
         key: ${{ steps.generate_cache_key.outputs.conda_env_cache_key_sha }}
         lookup-only: true
+    - name: Add swap space for conda installation
+      uses: ./tbp.monty/.github/actions/set_swap_space
+      with:
+        swap-size-gb: '2'
     - name: Install miniconda
       if: ${{ steps.restore_cache.outputs.cache-hit != 'true' }}
       shell: bash
