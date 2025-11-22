@@ -17,8 +17,6 @@ pytest.importorskip(
     reason="Habitat Sim optional dependency not installed.",
 )
 
-import os
-import pathlib
 import pickle
 import shutil
 import tempfile

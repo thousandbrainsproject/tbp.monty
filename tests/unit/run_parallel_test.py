@@ -17,7 +17,6 @@ pytest.importorskip(
 )
 
 import json
-import os
 import shutil
 import tempfile
 import unittest
@@ -61,12 +60,8 @@ class RunParallelTest(unittest.TestCase):
                 output_dir=self.output_dir / "eval",
                 model_name_or_path=self.output_dir / "pretrained",
             )
-            self.eval_lt_cfg = hydra_config(
-                "eval_lt", self.output_dir / "lt"
-            )
-            self.eval_gt_cfg = hydra_config(
-                "eval_gt", self.output_dir / "gt"
-            )
+            self.eval_lt_cfg = hydra_config("eval_lt", self.output_dir / "lt")
+            self.eval_gt_cfg = hydra_config("eval_gt", self.output_dir / "gt")
 
     def check_reproducibility_logs(self, serial_repro_dir, parallel_repro_dir):
         s_param_files = sorted(serial_repro_dir.glob("*target*"))

@@ -364,9 +364,7 @@ def generate_parallel_train_configs(experiment: DictConfig, name: str) -> list[M
         output_dir = Path(new_experiment["config"]["logging"]["output_dir"])
         run_name = f"{name}-parallel_train_episode_{obj}"
         new_experiment["config"]["logging"]["run_name"] = run_name
-        new_experiment["config"]["logging"]["output_dir"] = (
-            output_dir / name / run_name
-        )
+        new_experiment["config"]["logging"]["output_dir"] = output_dir / name / run_name
         new_experiment["config"]["logging"]["wandb_handlers"] = []
 
         # Object id, pose parameters for single episode
@@ -483,7 +481,9 @@ def post_parallel_eval(experiments: list[Mapping], base_dir: str) -> None:
         base_dir: Directory where parallel logs are stored.
     """
     print("Executing post parallel evaluation cleanup")
-    parallel_dirs = [Path(exp["config"]["logging"]["output_dir"]) for exp in experiments]
+    parallel_dirs = [
+        Path(exp["config"]["logging"]["output_dir"]) for exp in experiments
+    ]
 
     logging_config = experiments[0]["config"]["logging"]
     save_per_episode = logging_config.get("detailed_save_per_episode")
@@ -540,7 +540,9 @@ def post_parallel_train(experiments: list[Mapping], base_dir: str) -> None:
         base_dir: Directory where parallel logs are stored.
     """
     print("Executing post parallel training cleanup")
-    parallel_dirs = [Path(exp["config"]["logging"]["output_dir"]) for exp in experiments]
+    parallel_dirs = [
+        Path(exp["config"]["logging"]["output_dir"]) for exp in experiments
+    ]
     pretraining = False
     exp = hydra.utils.instantiate(experiments[0])
     if isinstance(exp, MontySupervisedObjectPretrainingExperiment):
