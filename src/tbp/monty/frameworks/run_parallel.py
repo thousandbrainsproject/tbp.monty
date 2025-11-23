@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 import os
-import pprint
 import re
 import shutil
 import time
@@ -163,7 +162,7 @@ def print_config(config):
     print("\n\n")
     print("Printing config below")
     print("-" * 100)
-    print(pprint.pformat(config))
+    print(OmegaConf.to_yaml(config))
     print("-" * 100)
 
 
