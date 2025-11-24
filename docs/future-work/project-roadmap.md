@@ -34,7 +34,7 @@ Tasks that are done have a completed next to them and are shaded in green. When 
 
 # What the TBP Team is Working On
 
-Some of the tasks are under active development by our team or scheduled to be tackled by us soon. Those have a GitHub avatar icon in the status column.
+Some of the tasks are under active development by our team or external contributors. Those have a GitHub avatar icon in the status column.
 
 We also have two stars that mark the current top two priorities of the TBP team.
 
