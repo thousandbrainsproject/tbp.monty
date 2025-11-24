@@ -9,7 +9,7 @@ We have a high-level overview table of tasks on our roadmap in our [project plan
 ![Screenshot of our overview sheet. For an up-to-date view, just go to the sheet https://docs.google.com/spreadsheets/d/1HlKqhMzYWxpW6_D0LtDd5qEuWRYHl6xMfxbIZ76lzng/edit?usp=sharing](../figures/future-work/monty_tasks.png)
 
 
-Here is an interactive view of that table, that can be filtered and sorted to find tasks that match your scope appetite, skills and interests.f
+Here is an interactive view of that table, that can be filtered and sorted to find tasks that match your scope appetite, skills and interests.
 
 [block:embed]
 {
