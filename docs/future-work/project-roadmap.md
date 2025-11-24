@@ -4,19 +4,15 @@ description: An overview of tasks we plan to work on or would welcome contributi
 ---
 # Tasks on Our Roadmap
 
-We have a high-level overview table of tasks on our roadmap in our [project planning spreadsheet](https://docs.google.com/spreadsheets/d/1HlKqhMzYWxpW6_D0LtDd5qEuWRYHl6xMfxbIZ76lzng/edit?usp=sharing).
 
-![Screenshot of our overview sheet. For an up-to-date view, just go to the sheet https://docs.google.com/spreadsheets/d/1HlKqhMzYWxpW6_D0LtDd5qEuWRYHl6xMfxbIZ76lzng/edit?usp=sharing](../figures/future-work/monty_tasks.png)
-
-
-Here is an interactive view of that table, that can be filtered and sorted to find tasks that match your scope appetite, skills and interests.
+Here is an interactive view of of our future work that can be filtered and sorted to find tasks that match your scope appetite, skills and interests.
 
 [block:embed]
 {
   "html": false,
-  "url": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,rfc,status,skills",
+  "url": "https://app-psi-orpin.vercel.app/index.html?columns=title,estimated-scope,rfc,status,skills",
   "provider": "futureworkwidget.thousandbrains.ai",
-  "href": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,rfc,status,skills",
+  "href": "https://app-psi-orpin.vercel.app/index.html?columns=title,estimated-scope,rfc,status,skills",
   "typeOfEmbed": "iframe",
   "height": "800px",
   "iframe": true
@@ -74,3 +70,9 @@ Obviously, this table doesn't cover everything we want the system to eventually 
 This **table only contains tasks where we already have a more concrete idea of how we want to implement them**. There are many topics where we are still actively brainstorming for solutions. We have a **[collection of open questions here](../how-monty-works/open-questions.md).** And if you are interested in our thoughts on them, the best place is to watch our meeting recordings on [our YouTube channel](https://www.youtube.com/@thousandbrainsproject).
 
 We also welcome contributions that are not related to any of these tasks. Please remember to [fill out an RFC first](../contributing/request-for-comments-rfc.md) before working on a larger change. For a list of ways you can contribute besides code, see [this guide](../contributing/contributing.md).
+
+# Legacy Table
+
+We have a high-level overview table of tasks on our roadmap in our [project planning spreadsheet](https://docs.google.com/spreadsheets/d/1HlKqhMzYWxpW6_D0LtDd5qEuWRYHl6xMfxbIZ76lzng/edit?usp=sharing) but we are phasing this out in favor of the interactive table above.
+
+![Screenshot of our overview sheet. For an up-to-date view, just go to the sheet https://docs.google.com/spreadsheets/d/1HlKqhMzYWxpW6_D0LtDd5qEuWRYHl6xMfxbIZ76lzng/edit?usp=sharing](../figures/future-work/monty_tasks.png)
