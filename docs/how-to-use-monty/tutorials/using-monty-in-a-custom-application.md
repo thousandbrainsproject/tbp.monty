@@ -193,90 +193,10 @@ omniglot_inference = dict(
 > 📘 Follow Along
 > To run the above experiment, you first need to download the [Omniglot dataset](https://github.com/brendenlake/omniglot). You can do this by running `cd ~/tbp/data` and `git clone https://github.com/brendenlake/omniglot.git`. You will need to unzip the `omniglot/python/images_background.zip` and `omniglot/python/strokes_background.zip` files.
 
-To test this, go ahead and copy the configs above into the `benchmarks/configs/my_experiments.py` file. To complete the configs, you will need to add the following imports, sensor module config and model_path at the top of the file.
-```python
-import os
-from dataclasses import asdict
+> ❗️ Work in progress
+> This section of the docs normally shows you the example of adding your own configuration. But it is under construction due to a large refactor, so we skip to the end, since the experiment is already in the code base:
 
-import numpy as np
-
-from benchmarks.configs.names import MyExperiments
-from tbp.monty.frameworks.config_utils.config_args import (
-	LoggingConfig,
-	MotorSystemConfigInformedNoTransStepS1,
-	PatchAndViewMontyConfig,
-	PretrainLoggingConfig,
-)
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-	ExperimentArgs,
-	OmniglotEnvironmentInterfaceArgs,
-	OmniglotEnvironmentInterfaceConfig,
-	SupervisedPretrainingExperimentArgs,
-)
-from tbp.monty.frameworks.environments import embodied_data as ED
-from tbp.monty.frameworks.experiments import (
-	MontyObjectRecognitionExperiment,
-	MontySupervisedObjectPretrainingExperiment,
-)
-from tbp.monty.frameworks.models.evidence_matching.learning_module import (
-	EvidenceGraphLM
-)
-from tbp.monty.frameworks.models.evidence_matching.model import (
-	MontyForEvidenceGraphMatching
-)
-from tbp.monty.frameworks.models.sensor_modules import (
-	HabitatSM,
-	Probe,
-)
-
-monty_models_dir = os.getenv("MONTY_MODELS")
-
-pretrain_dir = os.path.expanduser(os.path.join(monty_models_dir, "omniglot"))
-
-omniglot_sensor_module_config = dict(
-	sensor_module_0=dict(
-    	sensor_module_class=HabitatSM,
-    	sensor_module_args=dict(
-        	sensor_module_id="patch",
-        	features=[
-            	"pose_vectors",
-            	"pose_fully_defined",
-            	"on_object",
-            	"principal_curvatures_log",
-        	],
-        	save_raw_obs=False,
-        	# Need to set this lower since curvature is generally lower
-        	pc1_is_pc2_threshold=1,
-    	),
-	),
-	sensor_module_1=dict(
-    	sensor_module_class=Probe,
-    	sensor_module_args=dict(
-        	sensor_module_id="view_finder",
-        	save_raw_obs=False,
-    	),
-	),
-)
-```
-
-Finally, you will need to set the `experiments` variable at the bottom of the file to this:
-```python
-experiments = MyExperiments(
-    omniglot_training=omniglot_training,
-    omniglot_inference=omniglot_inference,
-)
-CONFIGS = asdict(experiments)
-```
-And add the two experiments into the `MyExperiments` class in `benchmarks/configs/names.py`:
-
-```python
-@dataclass
-class MyExperiments:
-    omniglot_training: dict
-    omniglot_inference: dict
-```
-
-Now you can run training by calling `python benchmarks/run.py -e omniglot_training` and then inference on these models by calling `python benchmarks/run.py -e omniglot_inference`. You can check the `eval_stats.csv` file in `~/tbp/results/monty/projects/monty_runs/omniglot_inference/` to see how Monty did. If you copied the code above, it should have recognized all six characters correctly.
+You can run training by calling `./run.py experiment=tutorial/omniglot_training` and then inference on these models by calling `./run.py experiment=tutorial/omniglot_training`. You can check the `eval_stats.csv` file in `~/tbp/results/monty/projects/monty_runs/omniglot_inference/` to see how Monty did. If you copied the code above, it should have recognized all six characters correctly.
 
 > ❗️ Generalization Performance on Omniglot is Bad Without Hierarchy
 > Note that we currently don't get good generalization performance on the Omniglot dataset. If you use the commented-out env_interface_config (`eval_env_interface_args=OmniglotEnvironmentInterfaceArgs(versions=[2, 2, 2, 2, 2, 2])`) in the inference config, which shows previously unseen versions of the characters, you will see that performance degrades a lot. This is because the Omniglot characters are fundamentally compositional objects (strokes relative to each other), and compositional objects can only be modeled by stacking two learning modules hierarchically. The above configs do not do this. Our research team is hard at work getting Monty to model compositional objects.
