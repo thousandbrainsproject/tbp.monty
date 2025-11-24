@@ -6,6 +6,7 @@ description: An overview of tasks we plan to work on or would welcome contributi
 
 
 Here is an interactive view of our future work that can be filtered and sorted to find tasks that match your scope appetite, skills and interests.
+Click on the name to view the detail page for that task.  Click on the any of the tags in the columns to filter the table by that tag.
 
 [block:embed]
 {
