@@ -5,7 +5,7 @@ description: An overview of tasks we plan to work on or would welcome contributi
 # Tasks on Our Roadmap
 
 
-Here is an interactive view of of our future work that can be filtered and sorted to find tasks that match your scope appetite, skills and interests.
+Here is an interactive view of our future work that can be filtered and sorted to find tasks that match your scope appetite, skills and interests.
 
 [block:embed]
 {
@@ -24,9 +24,10 @@ These are tasks where we have a rough idea of how we want to achieve them but we
 
 Tasks are categorized in two ways:
 
-- **Which part of Monty does it touch?** This is represented in the columns, and is organized into Sensor Module, Learning Module, Motor System, Voting, Hierarchy, Environment, Framework, and Open-Source/Communication.
+- **Which capabilitie(s) does it improve?** This is represented by the metric column. We keep track of the progress on the capabilities. Each task should improve at least one capability but can contribute to multiple.
+- **Which part of Monty does it touch?** This is represented section headers in the table, and is organized into Sensor Module, Learning Module, Motor System, Voting, Hierarchy, Environment, Framework, and Open-Source/Communication.
 
-Tasks that are done have a completed next to them and are shaded in green. When a task gets checked off, it will add progress to the corresponding capabilities on the right.
+Tasks that are done have a `completed` in the status column.
 
 # What the TBP Team is Working On
 
