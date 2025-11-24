@@ -150,7 +150,7 @@ class TheoreticalLimitLMLoggingMixin:
             rotations=channel_rotations_inv,
             locations=channel_locations,
             pose_errors=cast(
-                npt.NDArray[np.float64],
+                "npt.NDArray[np.float64]",
                 compute_pose_errors(
                     channel_rotations_inv,
                     Rotation.from_quat(self.primary_target_rotation_quat),

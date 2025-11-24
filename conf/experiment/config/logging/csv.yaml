@@ -1,0 +1,6 @@
+defaults:
+  - defaults
+
+monty_handlers:
+  - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
+wandb_handlers: []

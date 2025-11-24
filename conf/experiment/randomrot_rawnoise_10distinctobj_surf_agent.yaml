@@ -1,0 +1,8 @@
+defaults:
+  - randrot_noise_10distinctobj_surf_agent
+  - config/environment/clear_env_interface_config@config
+  - config/environment/noisy_surface_view_finder_mount_habitat@config.env_interface_config
+
+config:
+  logging:
+    run_name: randomrot_rawnoise_10distinctobj_surf_agent

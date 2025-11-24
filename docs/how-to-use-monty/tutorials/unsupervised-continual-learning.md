@@ -1,6 +1,11 @@
 ---
 title: Unsupervised Continual Learning
 ---
+
+> [!WARNING]
+>
+> Apologies, the code for this tutorial is out of date due to the major change in how we configure Monty. We'll update it soon™️.
+
 # Introduction
 
 This tutorial demonstrates how to configure and run Monty experiments for [unsupervised continual learning](../../how-monty-works/experiment.md#different-phases-of-learning). In this regime, Monty learns while it explores an object and attempts to identify its identity and pose. If an object has been recognized as a previously seen item, then any knowledge gained during its exploration is added to an existing model and committed to memory. If Monty does not recognize the object, then a new model is generated for the object and stored. In this way, Monty jointly performs unsupervised learning and object/pose recognition. This mode of operation is distinct from those used in our tutorials on [pretraining](pretraining-a-model.md) and [model evaluation](running-inference-with-a-pretrained-model.md) in which learning and inference were performed in separate stages which is useful for more controlled experiments on one of the two. It is closer to the ultimate vision of Monty, where learning and inference are closely intertwined, much as they are in humans.
@@ -27,8 +32,8 @@ from tbp.monty.frameworks.config_utils.config_args import (
     MontyArgs,
     SurfaceAndViewMontyConfig,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataloaderPerObjectArgs,
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
+    EnvironmentInterfacePerObjectArgs,
     ExperimentArgs,
     RandomRotationObjectInitializer,
 )
@@ -37,10 +42,10 @@ from tbp.monty.frameworks.experiments import (
     MontyObjectRecognitionExperiment,
 )
 from tbp.monty.frameworks.models.evidence_matching.learning_module import (
-    EvidenceGraphLM
+    EvidenceGraphLM,
 )
 from tbp.monty.simulators.habitat.configs import (
-    SurfaceViewFinderMountHabitatDatasetArgs,
+    SurfaceViewFinderMountHabitatEnvInterfaceConfig,
 )
 
 """
@@ -122,7 +127,7 @@ surf_agent_2obj_unsupervised = dict(
         max_train_steps=2000,
         max_total_steps=5000,
     ),
-    logging_config=CSVLoggingConfig(
+    logging=CSVLoggingConfig(
         python_log_level="INFO",
         output_dir=project_dir,
         run_name=model_name,
@@ -138,15 +143,15 @@ surf_agent_2obj_unsupervised = dict(
         learning_module_configs=learning_module_configs,
     ),
     # Set up the environment and agent.
-    dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(),
-    train_dataloader_class=ED.InformedEnvironmentDataLoader,
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    env_interface_config=SurfaceViewFinderMountHabitatEnvInterfaceConfig(),
+    train_env_interface_class=ED.InformedEnvironmentInterface,
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=object_names,
         object_init_sampler=RandomRotationObjectInitializer(),
     ),
     # Doesn't get used, but currently needs to be set anyways.
-    eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-    eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    eval_env_interface_class=ED.InformedEnvironmentInterface,
+    eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=object_names,
         object_init_sampler=RandomRotationObjectInitializer(),
     ),
@@ -185,7 +190,7 @@ Once complete, you can inspect the simulation results and visualize the learned 
 
 During epoch 0, Monty saw the mug and bowl objects for the first time. Since the observations collected during these episodes do not match any objects stored in memory, Monty reports that `no_match` has been found in the **primary_performance_column**. When no match has been found, Monty creates a new object ID for the unrecognized object and stores the learned model in memory. In the **result** column, we see that the new IDs for the mug and bowl are `new_object_0` and `new_object_1`, respectively. The objects don't have meaningful names, since no labels are provided.
 
-In all subsequent episodes, Monty correctly identified the objects as indicated by `correct` in the **primary_performance** column. When Monty finds a match for an object in its memory, it does not simply terminate the episode. Instead, it continues to explore the object for `num_exploratory_steps` steps and then updates the object model with the new information collected during the episode. 
+In all subsequent episodes, Monty correctly identified the objects as indicated by `correct` in the **primary_performance** column. When Monty finds a match for an object in its memory, it does not simply terminate the episode. Instead, it continues to explore the object for `num_exploratory_steps` steps and then updates the object model with the new information collected during the episode.
 
 Note that Monty receives minimal information about when a new epoch has started, with the only indication of this being that evidence scores are reset to 0 (an assumption which we intend to relax in the future). If a new object was introduced in the second or third epoch it should again detect no_match and learn a new model for this object. Also note that for logging purposes we save which object was sensed during each episode and what model was updated or associated with this object. Monty has no access to this information. It can happen that multiple objects are merged into one object or that multiple models are learned for one object. This is tracked in `mean_objects_per_graph` and `mean_graphs_per_object` in the .csv statistics as well as in `possible_match_sources` for each model to calculate whether the performance was `correct` or 'confused'.
 

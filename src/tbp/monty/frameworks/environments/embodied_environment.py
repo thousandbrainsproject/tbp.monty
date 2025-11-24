@@ -10,7 +10,6 @@
 from __future__ import annotations
 
 import abc
-import collections.abc
 from dataclasses import dataclass
 from typing import Any, NewType, Sequence, Tuple
 
@@ -18,12 +17,11 @@ from tbp.monty.frameworks.actions.actions import Action
 
 __all__ = [
     "EmbodiedEnvironment",
-    "ActionSpace",
-    "ObjectInfo",
     "ObjectID",
+    "ObjectInfo",
+    "QuaternionWXYZ",
     "SemanticID",
     "VectorXYZ",
-    "QuaternionWXYZ",
 ]
 
 ObjectID = NewType("ObjectID", int)
@@ -44,22 +42,7 @@ class ObjectInfo:
     semantic_id: SemanticID | None
 
 
-class ActionSpace(collections.abc.Container):
-    """Represents the environment action space."""
-
-    @abc.abstractmethod
-    def sample(self):
-        """Sample the action space returning a random action."""
-        pass
-
-
 class EmbodiedEnvironment(abc.ABC):
-    @property
-    @abc.abstractmethod
-    def action_space(self):
-        """Returns list of all possible actions available in the environment."""
-        pass
-
     @abc.abstractmethod
     def add_object(
         self,

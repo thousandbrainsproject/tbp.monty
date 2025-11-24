@@ -2,6 +2,10 @@
 title: Running An Experiment From A Different Repository
 ---
 
+> [!WARNING]
+>
+> Apologies, the code for this tutorial is out of date due to the major change in how we configure Monty. We'll update it soon™️.
+
 If you have your own repository and want to run your own experiment or a benchmark, you do not need to replicate the `tbp.monty` benchmarks setup.
 
 > [!NOTE]
@@ -41,37 +45,39 @@ setup_env()
 
 from tbp.monty.frameworks.config_utils.config_args import (  # noqa: E402
     LoggingConfig,
-    SingleCameraMontyConfig,
+    PatchAndViewMontyConfig,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (  # noqa: E402
-    ExperimentArgs,
-    get_env_dataloader_per_object_by_idx,
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (  # noqa: E402
+    SupervisedPretrainingExperimentArgs,
+    get_env_interface_per_object_by_idx,
 )
 from tbp.monty.frameworks.environments import embodied_data as ED  # noqa: E402
-from tbp.monty.frameworks.experiments import MontyExperiment  # noqa: E402
+from tbp.monty.frameworks.experiments.pretraining_experiments import (  # noqa: E402
+    MontySupervisedObjectPretrainingExperiment,
+)
 from tbp.monty.frameworks.run import run  # noqa: E402
 from tbp.monty.simulators.habitat.configs import (  # noqa: E402
-    SinglePTZHabitatDatasetArgs,
+    PatchViewFinderMountHabitatEnvInterfaceConfig,
 )
 
 first_experiment = dict(
-    experiment_class=MontyExperiment,
-    logging_config=LoggingConfig(
+    experiment_class=MontySupervisedObjectPretrainingExperiment,
+    logging=LoggingConfig(
         log_parallel_wandb=False,
         run_name="test",
         output_dir=os.path.expanduser(
             os.path.join(os.getenv("MONTY_LOGS"), "projects/monty_runs/test")
         ),
     ),
-    experiment_args=ExperimentArgs(
+    experiment_args=SupervisedPretrainingExperimentArgs(
         do_eval=False,
         max_train_steps=1,
         n_train_epochs=1,
     ),
-    monty_config=SingleCameraMontyConfig(),
-    dataset_args=SinglePTZHabitatDatasetArgs(),
-    train_dataloader_class=ED.EnvironmentDataLoaderPerObject,
-    train_dataloader_args=get_env_dataloader_per_object_by_idx(start=0, stop=1),
+    monty_config=PatchAndViewMontyConfig(),
+    env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(),
+    train_env_interface_class=ED.EnvironmentInterfacePerObject,
+    train_env_interface_args=get_env_interface_per_object_by_idx(start=0, stop=1),
 )
 
 run(first_experiment)

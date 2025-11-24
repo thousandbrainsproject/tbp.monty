@@ -1,6 +1,11 @@
 ---
 title: Running Inference with a Pretrained Model
 ---
+
+> [!WARNING]
+>
+> Apologies, the code for this tutorial is out of date due to the major change in how we configure Monty. We'll update it soon™️.
+
 # Introduction
 
 This tutorial is a follow-up of our tutorial on [pretraining a model](pretraining-a-model.md). Here we will load the pretraining data into the model and perform object recognition under noisy conditions and several arbitrary object rotations.
@@ -24,8 +29,8 @@ from tbp.monty.frameworks.config_utils.config_args import (
     MotorSystemConfigCurInformedSurfaceGoalStateDriven,
     PatchAndViewSOTAMontyConfig,
 )
-from tbp.monty.frameworks.config_utils.make_dataset_configs import (
-    EnvironmentDataloaderPerObjectArgs,
+from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
+    EnvironmentInterfacePerObjectArgs,
     EvalExperimentArgs,
     PredefinedObjectInitializer,
 )
@@ -44,7 +49,7 @@ from tbp.monty.frameworks.models.sensor_modules import (
     Probe,
 )
 from tbp.monty.simulators.habitat.configs import (
-    SurfaceViewFinderMountHabitatDatasetArgs,
+    SurfaceViewFinderMountHabitatEnvInterfaceConfig,
 )
 
 """
@@ -161,7 +166,7 @@ learning_module_0 = dict(
         max_match_distance=0.01,  # =1cm
         tolerances=tolerances,
         feature_weights=feature_weights,
-        # Most likely hypothesis needs to have 20% more evidence than the others to 
+        # Most likely hypothesis needs to have 20% more evidence than the others to
         # be considered certain enough to trigger a terminal condition (match).
         x_percent_threshold=20,
         # Update all hypotheses with evidence > 80% of the max hypothesis evidence
@@ -201,7 +206,7 @@ surf_agent_2obj_eval = dict(
         max_total_steps=5000,
         show_sensor_output=True,  # live visualization of Monty's observations and MLH
     ),
-    logging_config=EvalLoggingConfig(
+    logging=EvalLoggingConfig(
         output_dir=output_dir,
         run_name=run_name,
         wandb_handlers=[],  # remove this line if you, additionally, want to log to WandB.
@@ -214,15 +219,15 @@ surf_agent_2obj_eval = dict(
         motor_system_config=MotorSystemConfigCurInformedSurfaceGoalStateDriven(),
     ),
     # Set up environment/data
-    dataset_args=SurfaceViewFinderMountHabitatDatasetArgs(),
-    eval_dataloader_class=ED.InformedEnvironmentDataLoader,
-    eval_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    env_interface_config=SurfaceViewFinderMountHabitatEnvInterfaceConfig(),
+    eval_env_interface_class=ED.InformedEnvironmentInterface,
+    eval_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=object_names,
         object_init_sampler=PredefinedObjectInitializer(rotations=test_rotations),
     ),
     # Doesn't get used, but currently needs to be set anyways.
-    train_dataloader_class=ED.InformedEnvironmentDataLoader,
-    train_dataloader_args=EnvironmentDataloaderPerObjectArgs(
+    train_env_interface_class=ED.InformedEnvironmentInterface,
+    train_env_interface_args=EnvironmentInterfacePerObjectArgs(
         object_names=object_names,
         object_init_sampler=PredefinedObjectInitializer(rotations=test_rotations),
     ),

@@ -1,0 +1,17 @@
+defaults:
+  - policy/surface_curve_informed@motor_system_args.policy_args
+  - action_space/surface_agent@motor_system_args.policy_args.action_sampler_args
+
+motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+motor_system_args:
+  policy_class: ${monty.class:tbp.monty.frameworks.models.motor_policies.SurfacePolicyCurvatureInformed}
+  policy_args:
+    action_sampler_class: ${monty.class:tbp.monty.frameworks.actions.action_samplers.ConstantSampler}
+    desired_object_distance: 0.025
+    alpha: 0.1
+    pc_alpha: 0.5
+    max_pc_bias_steps: 32
+    min_general_steps: 8
+    min_heading_steps: 12
+    use_goal_state_driven_actions: true
+    agent_id: ${monty.agent_id:agent_id_0}

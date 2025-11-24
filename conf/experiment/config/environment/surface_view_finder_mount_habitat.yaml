@@ -1,0 +1,23 @@
+defaults:
+  - patch_view_finder_mount_habitat
+  - init_args/clear_env_init_args@
+  - init_args/surface_view_mount@env_init_args
+
+# TODO: Some values are hardcoded, should come from env_init_args[agents][0].agent_args
+transform:
+  - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+    agent_id: ${monty.agent_id:agent_id_0} # env_init_args[agents][0].agent_args.agent_id
+    max_depth: 1
+  - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+    agent_id: ${monty.agent_id:agent_id_0} # env_init_args[agents][0].agent_args.agent_id
+    sensor_ids: # env_init_args[agents][0].agent_args.sensor_ids
+      - patch
+      - view_finder
+    resolutions: [[64, 64], [64, 64]] # env_init_args[agents][0].agent_args.resolutions
+    world_coord: true
+    zooms: [10.0, 1.0] # env_init_args[agents][0].agent_args.zooms
+    get_all_points: true
+    use_semantic_sensor: false
+    depth_clip_sensors: [0]
+    clip_value: 0.05
+

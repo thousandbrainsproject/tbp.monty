@@ -16,11 +16,15 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Artificial Intelligence'
 ]
 dependencies = [
+    'eval_type_backport', # Needed to make pydantic work with future annotations, can be removed when we get to python 3.10
+    'hydra-core>=1.3.2',
     'importlib_resources', # imported via conda (conda-forge::importlib_resources)
     'matplotlib>=3.7.3', # imported via conda (conda-forge::matplotlib)
     'numpy', # imported via conda (conda-forge::numpy)
+    'omegaconf>=2.3.0',
     'pandas', # imported via conda (conda-forge::pandas)
     'pillow', # imported via conda (conda-forge::pillow)
+    'pydantic>=2.10.6',
     'numpy-quaternion==2023.0.3', # imported via conda (conda-forge::quaternion)
     'scikit-image', # imported via conda (conda-forge::scikit-image)
     'scikit-learn==1.3.2', # imported via conda (conda-forge::scikit-learn)
@@ -60,8 +64,6 @@ simulator_mujoco = [
 analysis = [
     'ipython',
     'seaborn',
-    'vedo',
-    'trimesh',
 ]
 build = [
     'build'
@@ -103,16 +105,9 @@ github_readme_sync_tool = [
 ]
 future_work_widget_tool = [
     'nh3',
-    'pydantic>=2.0.0',
-    'eval_type_backport', # Needed to make pydantic work with future annotations, can be removed when we get to python 3.10
 ]
 print_version_tool = [
     'semver'
-]
-real_robots = [
-    'gym',
-    'opencv-python',
-    'real_robots'
 ]
 
 [project.urls]
@@ -224,9 +219,6 @@ ignore = [
     "T203", # T203: pprint found
     # TODO: ruff=0.11.4 upgrade introduced the errors ignored below, resolve these
     "LOG015", # LOG015: root-logger-call,
-    "PTH208", # PTH208: os-listdir
-    "RUF022", # RUF022: unsorted-dunder-all
-    "TC006", # TC006: runtime-cast-value
     ###
     # TODO: ruff=0.7.1 migration introduced errors ignored below, resolve these
     "ANN001", # ANN001: Missing type annotation for function argument
@@ -237,8 +229,6 @@ ignore = [
     "ANN204", # ANN204: Missing return type annotation for special method
     "ANN206", # ANN206: Missing return type annotation for classmethod
     "ANN401", # ANN401: Dynamically typed expressions (typing.Any) are disallowed in {name}
-    # TODO: Address ARG002 right away
-    "ARG002", # ARG002: Unused method argument
     "COM812", # COM812: Trailing comma missing
     "DTZ005", # DTZ005: `datetime.datetime.now()` called without a `tz` argument
     "EM101", # EM101: Exception must not use a string literal, assign to variable first
@@ -247,7 +237,6 @@ ignore = [
     "FBT001", # FBT001: Boolean-typed positional argument in function definition
     "FBT002", # FBT002: Boolean default positional argument in function definition
     "FBT003", # FBT003: Boolean positional value in function call
-    "FLY002", # FLY002: Consider {expression} instead of string join
     "G003", # G003: Logging statement uses `+`
     "G004", # G004: Logging statement uses f-string
     "N804", # N804: First argument of a class method should be named `cls`
@@ -257,13 +246,11 @@ ignore = [
     "PERF401", # PERF401: Use a list comprehension to create a transformed list
     "PERF402", # PERF402: Use `list` or `list.copy` to create a copy of a list
     "PIE790", # PIE790: Unnecessary pass statement
-    "PLE0302", # PLE0302: The special method `__getitem__` expects 2 parameters, 1 was given
     "PLR0911", # PLR0911: Too many return statements
     "PLR0912", # PLR0912: Too many branches
     "PLR0913", # PLR0913: Too many arguments in function definition
     "PLR0915", # PLR0915: Too many statements
     "PLR1704", # PLR1704: Redefining argument with the local name
-    "PLR1714", # PLR1714: Consider merging multiple comparisons: {expression}. Use a set if the elements are hashable.
     "PLR1730", # PLR1730: Replace `if` statement with {replacement}
     "PLR2004", # PLR2004: Magic value used in comparison, consider replacing {value} with a constant variable
     "PT009", # PT009: Use a regular `assert` instead of unittest-style `assertEqual`
@@ -279,8 +266,6 @@ ignore = [
     "PTH123", # PTH123: `open()` should be replaced by `Path.open()`
     "RET503", # RET503: Missing explicit `return` at the end of function able to return non-`None` value
     "RUF005", # RUF005: Consider {expression} instead of concatenation
-    "RUF012", # RUF012: Mutable class attributes should be annotated with `typing.ClassVar`
-    "RUF013", # RUF013: PEP 484 prohibits implicit `Optional`
     "RUF015", # RUF015: Prefer next({iterable}) over single element slice
     "S101", # S101: Use of `assert` detected
     "S104", # S104: Possible binding to all interfaces
@@ -288,7 +273,6 @@ ignore = [
     "S311", # S311: Standard pseudo-random generators are not suitable for cryptographic purposes
     "S605", # S605: Starting a process with a shell, possible injection detected
     "SIM102", # SIM102: Use a single `if` statement instead of nested `if` statements
-    "SIM103", # SIM103: Return the condition {condition} directly
     "SIM108", # SIM108: Use ternary operator {contents} instead of if-else-block
     "SIM117", # SIM117: Use a single `with` statement with multiple contexts instead of nested `with` statements
     "SIM118", # SIM118: Use `key in dict` instead of `key in dict.keys()`
@@ -316,6 +300,13 @@ allow-dict-calls-with-keyword-arguments = true
 
 [tool.ruff.lint.flake8-copyright]
 author = "Thousand Brains Project"
+
+[tool.ruff.lint.isort]
+# wandb creates a folder called 'wandb' during local runs (not logged in)
+# this needs to be added to prevent isort from incorrectly sorting
+# It can be removed when a fix for this is released:
+# https://github.com/astral-sh/ruff/issues/10519
+known-third-party = ["wandb"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 18

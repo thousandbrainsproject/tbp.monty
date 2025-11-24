@@ -46,12 +46,11 @@ from tbp.monty.frameworks.actions.actions import (
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.simulators import resources
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
-
-from .agents import HabitatAgent
+from tbp.monty.simulators.habitat.agents import HabitatAgent
 
 __all__ = [
-    "HabitatSim",
     "PRIMITIVE_OBJECT_TYPES",
+    "HabitatSim",
 ]
 
 from tbp.monty.frameworks.environments.embodied_environment import (
@@ -285,16 +284,11 @@ class HabitatSim(HabitatActuator):
                 primary_obj_bb=primary_target_bb,
             )
 
-        # Update object-specific physics
-        # This physics setting will persist into the environment e.g. during inference
-        if primary_target_object is not None:
-            obj.motion_type = habitat_sim.physics.MotionType.DYNAMIC
-        else:
-            # Set the motion-type to kinematic
-            # (i.e. only a user-specified force/motion will affect the object), rather
-            # than dynamic (i.e. object subject to forces like gravity, friction, and
-            # collision detection according to physics simulations)
-            obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+        # Set the motion-type to kinematic
+        # (i.e. only a user-specified force/motion will affect the object), rather
+        # than dynamic (i.e. object subject to forces like gravity, friction, and
+        # collision detection according to physics simulations)
+        obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
 
         # Update semantic id
         if semantic_id is not None:
@@ -497,15 +491,11 @@ class HabitatSim(HabitatActuator):
         return rigid_mgr.get_num_objects()
 
     @property
-    def action_space(self):
-        """Returns a set with all available actions.
+    def action_space(self) -> set[str]:
+        """Return the action space."""
+        return self._action_space
 
-        All available actions are those registered by all agents in the
-        environment.
-        """
-        return set(self._action_space)
-
-    def get_agent(self, agent_id: AgentID):
+    def get_agent(self, agent_id: AgentID) -> habitat_sim.Agent:
         """Return habitat agent instance."""
         agent_index = self._agent_id_to_index[agent_id]
         return self._sim.get_agent(agent_index)

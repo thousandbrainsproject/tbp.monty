@@ -17,8 +17,8 @@ import os
 import shutil
 from collections import deque
 from itertools import chain
+from pathlib import Path
 from sys import getsizeof
-from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -31,9 +31,6 @@ from tbp.monty.frameworks.utils.spatial_arithmetics import (
     get_unique_rotations,
     rotations_to_quats,
 )
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +87,8 @@ def load_models_from_dir(exp_path, pretrained_dict=None):
             pretrained_models = state_dict["lm_dict"][lm_id]["graph_memory"]
             lm_models["pretrained"][lm_id] = pretrained_models
 
-    for folder in os.listdir(exp_path):
+    for child in Path(exp_path).iterdir():
+        folder = child.name
         if folder.isnumeric():
             state_dict = torch.load(os.path.join(exp_path, folder, "model.pt"))
             for lm_id in list(state_dict["lm_dict"].keys()):
@@ -428,7 +426,9 @@ def compute_pose_errors(
 
 
 def compute_pose_error(
-    predicted_rotation: Rotation, target_rotation: Rotation
+    predicted_rotation: Rotation,
+    target_rotation: Rotation,
+    return_degrees: bool = False,
 ) -> float:
     """Computes the minimum angular pose error between predicted and target rotations.
 
@@ -438,36 +438,16 @@ def compute_pose_error(
         predicted_rotation: Predicted rotation(s). Can be a single or list of
             rotation.
         target_rotation: Target rotation. Must represent a single rotation.
+        return_degrees: Whether to return the error in degrees. If False, returns the
+            error in radians. Defaults to False.
 
     Returns:
-        The minimum angular error in radians.
+        The minimum angular error in radians (or degrees if `return_degrees` is True).
     """
-    return np.min(compute_pose_errors(predicted_rotation, target_rotation))
-
-
-def get_overall_pose_error(stats, lm_id="LM_0"):
-    """Get mean pose error over all episodes.
-
-    Note:
-        This can now be obtained easier from the .csv stats.
-
-    Args:
-        stats: detailed stats
-        lm_id: id of learning module
-
-    Returns:
-        mean pose error
-    """
-    errors = []
-    for episode in stats.keys():
-        detected = stats[episode][lm_id]["detected_rotation_quat"]
-        if detected is not None:  # only checking accuracy on detected objects
-            target = stats[episode][lm_id]["target"]["quat_rotation"]
-            err = compute_pose_error(
-                Rotation.from_quat(detected), Rotation.from_quat(target)
-            )
-            errors.append(err)
-    return np.round(np.mean(errors), 4)
+    rotation_error = np.min(compute_pose_errors(predicted_rotation, target_rotation))
+    if return_degrees:
+        return rotation_error * 180 / np.pi
+    return rotation_error
 
 
 def print_overall_stats(stats):
@@ -623,6 +603,7 @@ def get_graph_lm_episode_stats(lm):
                     compute_pose_error(
                         Rotation.from_quat(detected_rotation),
                         Rotation.from_quat(lm.primary_target_rotation_quat),
+                        return_degrees=True,
                     ),
                     4,
                 )
@@ -664,6 +645,7 @@ def get_graph_lm_episode_stats(lm):
                         compute_pose_error(
                             Rotation.from_quat(detected_rotation_ts),
                             Rotation.from_quat(lm.primary_target_rotation_quat),
+                            return_degrees=True,
                         ),
                         4,
                     )
@@ -808,6 +790,7 @@ def add_evidence_lm_episode_stats(lm, stats, consistent_child_objects):
             compute_pose_error(
                 last_mlh["rotation"].inv(),
                 Rotation.from_quat(lm.primary_target_rotation_quat),
+                return_degrees=True,
             ),
             4,
         )

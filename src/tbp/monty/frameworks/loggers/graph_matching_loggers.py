@@ -33,7 +33,7 @@ reporting, all handlers are called upon to send data to a destination. Handlers 
 receive a standard set of arguments, including most importantly the self.data pool.
 
 The Basic logger is associated with the BASIC monty_log_level specified in
-config_args.logging_config. The Detailed logger is associated with the DETAILED logging
+config_args.logging. The Detailed logger is associated with the DETAILED logging
 level. The Detailed logger data pool contains a superset of the data in the basic logger
 self.data attribute.
 
@@ -197,10 +197,10 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
             self.log(logger_args, output_dir, model)
 
     def post_episode(self, logger_args, output_dir, model):
-        self.update_episode_data(logger_args, output_dir, model)
+        self.update_episode_data(logger_args, model)
         self.log_episode(logger_args, output_dir, model)
 
-    def update_episode_data(self, logger_args, output_dir, model):
+    def update_episode_data(self, logger_args, model):
         """Run get_stats_per_lm and add to overall stats.
 
         Store stats ~
@@ -460,7 +460,7 @@ class BasicGraphMatchingLogger(BaseMontyLogger):
                     (stats["num_confused_per_lm"] + stats["num_confused_mlh_per_lm"])
                     / (stats["num_episodes"] * len(self.lms))
                 ) * 100
-            elif p == "correct_mlh" or p == "confused_mlh":
+            elif p in {"correct_mlh", "confused_mlh"}:
                 # skip because they are already included in correct and confused stats
                 pass
             else:
@@ -533,10 +533,10 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
         self.flush()
 
     def post_episode(self, logger_args, output_dir, model):
-        self.update_episode_data(logger_args, output_dir, model)
+        self.update_episode_data(logger_args, model)
         self.log_episode(logger_args, output_dir, model)
 
-    def update_episode_data(self, logger_args, output_dir, model):
+    def update_episode_data(self, logger_args, model):
         """Add episode data to overall buffer_data dict.
 
         Store stats ~
@@ -545,7 +545,7 @@ class DetailedGraphMatchingLogger(BasicGraphMatchingLogger):
                     stats
         """
         # update train / eval stats
-        super().update_episode_data(logger_args, output_dir, model)
+        super().update_episode_data(logger_args, model)
 
         episodes = logger_args["train_episodes"] + logger_args["eval_episodes"]
         self.train_episodes_to_total[logger_args["train_episodes"]] = episodes
@@ -613,13 +613,13 @@ class SelectiveEvidenceLogger(BasicGraphMatchingLogger):
         self.flush()
 
     def post_episode(self, logger_args, output_dir, model):
-        self.update_episode_data(logger_args, output_dir, model)
+        self.update_episode_data(logger_args, model)
         self.log_episode(logger_args, output_dir, model)
 
-    def update_episode_data(self, logger_args, output_dir, model):
+    def update_episode_data(self, logger_args, model):
         """Add episode data to overall buffer_data dict."""
         # update train / eval stats
-        super().update_episode_data(logger_args, output_dir, model)
+        super().update_episode_data(logger_args, model)
 
         episodes = logger_args["train_episodes"] + logger_args["eval_episodes"]
         self.train_episodes_to_total[logger_args["train_episodes"]] = episodes

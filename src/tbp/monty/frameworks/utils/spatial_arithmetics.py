@@ -245,10 +245,7 @@ def non_singular_mat(a):
     a very large value, given by (1 / sys.float_info.epsilon)
     (where epsilon is the smallest possible floating-point difference)
     """
-    if np.linalg.cond(a) < 1 / sys.float_info.epsilon:
-        return True
-
-    return False
+    return np.linalg.cond(a) < 1 / sys.float_info.epsilon
 
 
 def get_more_directions_in_plane(vecs, n_poses) -> list[np.ndarray]:

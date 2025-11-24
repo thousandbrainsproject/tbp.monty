@@ -161,7 +161,6 @@ class EvidenceGraphMemory(GraphMemory):
         object_location_rel_body,
         location_rel_model,
         object_rotation,
-        object_scale,
     ):
         """Add new observations into an existing graph.
 
@@ -173,7 +172,6 @@ class EvidenceGraphMemory(GraphMemory):
             object_location_rel_body: location of the sensor in body reference frame
             location_rel_model: location of sensor in model reference frame
             object_rotation: rotation of the sensed object relative to the model
-            object_scale: scale of the object relative to the model of it
         """
         logger.info(f"Updating existing graph for {graph_id}")
 

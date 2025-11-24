@@ -14,7 +14,6 @@ from typing import Sequence
 
 from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.environments.embodied_environment import (
-    ActionSpace,
     EmbodiedEnvironment,
     ObjectID,
     QuaternionWXYZ,
@@ -31,7 +30,6 @@ from tbp.monty.simulators.habitat import (
 
 __all__ = [
     "AgentConfig",
-    "HabitatActionSpace",
     "HabitatEnvironment",
     "MultiSensorAgentArgs",
     "ObjectConfig",
@@ -78,17 +76,6 @@ class AgentConfig:
     agent_args: dict | type[HabitatAgentArgs]
 
 
-class HabitatActionSpace(tuple, ActionSpace):
-    """`ActionSpace` wrapper for Habitat's `AgentConfiguration`.
-
-    Wraps :class:`habitat_sim.agent.AgentConfiguration` action space as monty
-    :class:`.ActionSpace`.
-    """
-
-    def sample(self):
-        return self.rng.choice(self)
-
-
 class HabitatEnvironment(EmbodiedEnvironment):
     """habitat-sim environment compatible with Monty.
 
@@ -102,13 +89,15 @@ class HabitatEnvironment(EmbodiedEnvironment):
 
     def __init__(
         self,
-        agents: list[dict | AgentConfig],
+        agents: dict | AgentConfig,
         objects: list[dict | ObjectConfig] | None = None,
         scene_id: str | None = None,
         seed: int = 42,
         data_path: str | None = None,
     ):
         super().__init__()
+        # TODO: Change the configuration to configure multiple agents
+        agents = [agents]
         self._agents = []
         for config in agents:
             cfg_dict = asdict(config) if is_dataclass(config) else config
@@ -130,10 +119,6 @@ class HabitatEnvironment(EmbodiedEnvironment):
             for obj in objects:
                 obj_dict = asdict(obj) if is_dataclass(obj) else obj
                 self._env.add_object(**obj_dict)
-
-    @property
-    def action_space(self):
-        return HabitatActionSpace(self._env.action_space)
 
     def add_object(
         self,

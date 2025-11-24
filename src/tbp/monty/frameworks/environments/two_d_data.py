@@ -11,6 +11,7 @@
 import logging
 import os
 import time
+from pathlib import Path
 from typing import Sequence
 
 import matplotlib.pyplot as plt
@@ -23,7 +24,6 @@ from tbp.monty.frameworks.actions.actions import Action
 from tbp.monty.frameworks.agents import AgentID
 from tbp.monty.frameworks.environment_utils.transforms import DepthTo3DLocations
 from tbp.monty.frameworks.environments.embodied_environment import (
-    ActionSpace,
     EmbodiedEnvironment,
     ObjectID,
 )
@@ -35,33 +35,6 @@ __all__ = [
     "SaccadeOnImageEnvironment",
     "SaccadeOnImageFromStreamEnvironment",
 ]
-
-# Listing Numenta objects here since they were used in the iPad demo which uses the
-# SaccadeOnImageEnvironment (or SaccadeOnImageFromStreamEnvironment). However, these
-# objects can also be tested in simulation in habitat since we created 3D meshes of
-# them. Instructions for download + links can be found here:
-# https://thousandbrainsproject.readme.io/docs/benchmark-experiments#monty-meets-world
-NUMENTA_OBJECTS = [
-    "numenta_mug",
-    "terracotta_mug",
-    "montys_brain",
-    "montys_heart",
-    "ramen_pack",
-    "kashmiri_chilli",
-    "chip_pack",
-    "harissa_oil",
-    "cocktail_bitters",
-    "cocktail_bible",
-    "thousand_brains_jp",
-    "hot_sauce",
-]
-
-
-class TwoDDataActionSpace(tuple, ActionSpace):
-    """Action space for 2D data environments."""
-
-    def sample(self):
-        return self.rng.choice(self)
 
 
 class OmniglotEnvironment(EmbodiedEnvironment):
@@ -83,9 +56,9 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         self.data_path = data_path
         if self.data_path is None:
             self.data_path = os.path.join(os.environ["MONTY_DATA"], "omniglot/python/")
-        self.alphabet_names = [
-            a for a in os.listdir(self.data_path + "images_background") if a[0] != "."
-        ]
+        data_path = Path(self.data_path)
+        alphabet_path = data_path / "images_background"
+        self.alphabet_names = [a.name for a in sorted(alphabet_path.glob("[!.]*"))]
         self.current_alphabet = self.alphabet_names[0]
         self.character_id = 1
         self.character_version = 1
@@ -93,10 +66,6 @@ class OmniglotEnvironment(EmbodiedEnvironment):
         self.current_image, self.locations = self.load_new_character_data()
         # Just for compatibility. TODO: find cleaner way to do this.
         self._agents = [type("FakeAgent", (object,), {"action_space_type": "2d"})()]
-
-    @property
-    def action_space(self):
-        return None
 
     def add_object(self, *args, **kwargs) -> ObjectID:
         # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
@@ -228,7 +197,8 @@ class OmniglotEnvironment(EmbodiedEnvironment):
             self.current_alphabet,
             "character" + str(self.character_id).zfill(2),
         )
-        char_img_names = os.listdir(img_char_dir)[0].split("_")[0]
+        first_img_char_child = next(Path(img_char_dir).iterdir()).name
+        char_img_names = first_img_char_child.split("_")[0]
         char_dir = "/" + char_img_names + "_" + str(self.character_version).zfill(2)
         current_image = load_img(img_char_dir + char_dir + ".png")
         move_path = load_motor(stroke_char_dir + char_dir + ".txt")
@@ -290,7 +260,8 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             self.data_path = os.path.join(
                 os.environ["MONTY_DATA"], "worldimages/labeled_scenes/"
             )
-        self.scene_names = [a for a in os.listdir(self.data_path) if a[0] != "."]
+        data_path = Path(self.data_path)
+        self.scene_names = [a.name for a in sorted(data_path.glob("[!.]*"))]
         self.current_scene = self.scene_names[0]
         self.scene_version = 0
 
@@ -319,18 +290,6 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
         # Instantiate once and reuse when checking action name in step()
         # TODO Use 2D-specific actions instead of overloading? Habitat actions
         self._valid_actions = ["look_up", "look_down", "turn_left", "turn_right"]
-
-    @property
-    def action_space(self):
-        # TODO: move this to other action space definitions and clean up.
-        return TwoDDataActionSpace(
-            [
-                "look_up",
-                "look_down",
-                "turn_left",
-                "turn_right",
-            ]
-        )
 
     def add_object(self, *args, **kwargs) -> ObjectID:
         # TODO The NotImplementedError highlights an issue with the EmbodiedEnvironment
@@ -446,7 +405,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
     def reset(self):
         """Reset environment and extract image patch.
 
-        TODO: clean up. Do we need this? No reset required in this dataloader, maybe
+        TODO: clean up. Do we need this? No reset required in this env interface, maybe
         indicate this better here.
 
         Returns:
@@ -585,7 +544,7 @@ class SaccadeOnImageEnvironment(EmbodiedEnvironment):
             hfov=54.201,
             get_all_points=True,
             use_semantic_sensor=False,
-            depth_clip_sensors=(0,),
+            depth_clip_sensors=[0],
             clip_value=1.1,
         )
         obs_3d = transform(obs, state=state)
@@ -712,7 +671,8 @@ class SaccadeOnImageFromStreamEnvironment(SaccadeOnImageEnvironment):
             self.data_path = os.path.join(
                 os.environ["MONTY_DATA"], "worldimages/world_data_stream/"
             )
-        self.scene_names = [a for a in os.listdir(self.data_path) if a[0] != "."]
+        data_path = Path(self.data_path)
+        self.scene_names = [a.name for a in sorted(data_path.glob("[!.]*"))]
         self.current_scene = 0
 
         (

@@ -54,6 +54,10 @@ class HabitatSalienceSM(SensorModule):
         # TODO: Goes away once experiment code is extracted
         self.is_exploring = False
 
+    @property
+    def sensor_module_id(self) -> str:
+        return self._sensor_module_id
+
     def state_dict(self):
         return self._snapshot_telemetry.state_dict()
 

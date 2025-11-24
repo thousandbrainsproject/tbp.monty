@@ -1,0 +1,14 @@
+defaults:
+  - /test/hierarchy/two_lms_constrained@
+  - /experiment/config/supervised_pretraining@config
+
+config:
+  supervised_lm_ids:
+    - learning_module_1
+  min_lms_match: 2
+  monty_config:
+    monty_args:
+      # Set min_train_steps to 200 to send more observations to LM_1 after
+      # LM_0 has recognized the object.
+      min_train_steps: 200
+      num_exploratory_steps: 0
