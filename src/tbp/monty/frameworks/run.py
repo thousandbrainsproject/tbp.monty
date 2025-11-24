@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import os
+from pathlib import Path
 import pprint
 import time
 
@@ -38,6 +39,12 @@ def main(cfg: DictConfig):
 
     print_config(cfg)
     register_resolvers()
+
+    output_dir = (
+        Path(cfg.experiment.config.logging.output_dir)
+        / cfg.experiment.config.logging.run_name
+    )
+    cfg.experiment.config.logging.output_dir = str(output_dir)
 
     os.makedirs(cfg.experiment.config.logging.output_dir, exist_ok=True)
     experiment = hydra.utils.instantiate(cfg.experiment)
