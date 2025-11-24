@@ -59,6 +59,14 @@ class ChannelHypothesesUpdateTelemetry:
 
 
 class HypothesesUpdater(Protocol):
+    def pre_step(self) -> None:
+        """Runs once per step before updating the hypotheses."""
+        ...
+
+    def post_step(self) -> None:
+        """Runs once per step after updating the hypotheses."""
+        ...
+
     def update_hypotheses(
         self,
         hypotheses: Hypotheses,
@@ -198,6 +206,14 @@ class DefaultHypothesesUpdater(HypothesesUpdater):
             tolerances=self.tolerances,
             use_features_for_matching=self.use_features_for_matching,
         )
+
+    def pre_step(self) -> None:
+        """Runs once per step before updating the hypotheses."""
+        ...
+
+    def post_step(self) -> None:
+        """Runs once per step after updating the hypotheses."""
+        ...
 
     def update_hypotheses(
         self,

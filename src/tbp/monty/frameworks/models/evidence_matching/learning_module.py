@@ -737,6 +737,8 @@ class EvidenceGraphLM(GraphLM):
 
     def _update_possible_matches(self, query):
         """Update evidence for each hypothesis instead of removing them."""
+        self.hypotheses_updater.pre_step()
+
         thread_list = []
         for graph_id in self.get_all_known_object_ids():
             if self.use_multithreading:
@@ -764,6 +766,8 @@ class EvidenceGraphLM(GraphLM):
         self.possible_matches = self._threshold_possible_matches()
         self.previous_mlh = self.current_mlh
         self.current_mlh = self._calculate_most_likely_hypothesis()
+
+        self.hypotheses_updater.post_step()
 
     def _update_evidence(
         self,
