@@ -15,34 +15,14 @@ pytest.importorskip(
     reason="Habitat Sim optional dependency not installed.",
 )
 
-import copy
 import shutil
 import tempfile
 from pathlib import Path
-from pprint import pprint
 from unittest import TestCase
 
-import pytest
+import hydra
 
-from tbp.monty.frameworks.config_utils.config_args import LoggingConfig
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-    DebugExperimentArgs,
-    EnvironmentInterfacePerObjectEvalArgs,
-    EnvironmentInterfacePerObjectTrainArgs,
-    NotYCBEvalObjectList,
-    NotYCBTrainObjectList,
-)
-from tbp.monty.frameworks.environments.embodied_data import (
-    EnvironmentInterfacePerObject,
-)
 from tbp.monty.frameworks.experiments import MontyExperiment, ProfileExperimentMixin
-from tbp.monty.simulators.habitat.configs import (
-    EnvInitArgsSinglePTZ,
-    SinglePTZHabitatEnvInterfaceConfig,
-)
-from tests.unit.frameworks.config_utils.fakes.config_args import (
-    FakeSingleCameraMontyConfig,
-)
 
 
 class InheritanceProfileExperimentMixinTest(TestCase):
@@ -82,27 +62,14 @@ class ProfileExperimentMixinTest(TestCase):
     def setUp(self):
         self.output_dir = tempfile.mkdtemp()
 
-        base = dict(
-            experiment_class=ProfiledExperiment,
-            experiment_args=DebugExperimentArgs(),
-            logging_config=LoggingConfig(
-                output_dir=self.output_dir, python_log_level="DEBUG"
-            ),
-            monty_config=FakeSingleCameraMontyConfig(),
-            env_interface_config=SinglePTZHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsSinglePTZ(data_path=None).__dict__
-            ),
-            train_env_interface_class=EnvironmentInterfacePerObject,
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=NotYCBTrainObjectList().objects,
-            ),
-            eval_env_interface_class=EnvironmentInterfacePerObject,
-            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
-                object_names=NotYCBEvalObjectList().objects,
-            ),
-        )
-
-        self.base_config = base
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            self.base_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=profile/base",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
 
     def tearDown(self):
         shutil.rmtree(self.output_dir)
@@ -134,10 +101,8 @@ class ProfileExperimentMixinTest(TestCase):
                 )
 
     def test_run_episode_is_profiled(self) -> None:
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with ProfiledExperiment(base_config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
             exp.env_interface = exp.train_env_interface
             exp.run_episode()
@@ -152,9 +117,8 @@ class ProfileExperimentMixinTest(TestCase):
         self.spot_check_profile_files()
 
     def test_run_train_epoch_is_profiled(self) -> None:
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with ProfiledExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
             exp.run_epoch()
 
@@ -170,9 +134,8 @@ class ProfileExperimentMixinTest(TestCase):
         self.spot_check_profile_files()
 
     def test_run_eval_epoch_is_profiled(self) -> None:
-        pprint("...parsing experiment...")
-        base_config = copy.deepcopy(self.base_config)
-        with ProfiledExperiment(base_config) as exp:
+        exp = hydra.utils.instantiate(self.base_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("eval")
             exp.run_epoch()
 

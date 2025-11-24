@@ -1,0 +1,44 @@
+defaults:
+  - motor_system/informed_no_trans@motor_system_config
+  - args/defaults@monty_args
+
+monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
+learning_module_configs:
+  learning_module_0:
+    learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+    learning_module_args:
+      k: 5
+      match_attribute: displacement
+sensor_module_configs:
+  sensor_module_0:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      sensor_module_id: patch
+      features:
+        # morphological features (necessary)
+        - pose_vectors
+        - pose_fully_defined
+        - on_object
+        # non-morphological features (optional)
+        - object_coverage
+        - rgba
+        - hsv
+        - principal_curvatures
+        - principal_curvatures_log
+        - gaussian_curvature
+        - mean_curvature
+        - gaussian_curvature_sc
+        - mean_curvature_sc
+      save_raw_obs: true
+  sensor_module_1:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+    sensor_module_args:
+      sensor_module_id: view_finder
+      save_raw_obs: true
+sm_to_agent_dict:
+  patch: ${monty.agent_id:agent_id_0}
+  view_finder: ${monty.agent_id:agent_id_0}
+sm_to_lm_matrix:
+  - [0]
+lm_to_lm_matrix: null
+lm_to_lm_vote_matrix: null

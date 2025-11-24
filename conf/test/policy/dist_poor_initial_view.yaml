@@ -1,0 +1,14 @@
+defaults:
+  - /test/policy/base_dist@
+  - /experiment/config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - /experiment/config/monty/motor_system/informed_no_trans_step_s20@config.monty_config.motor_system_config
+
+config:
+  monty_config:
+    motor_system_config:
+      motor_system_args:
+        policy_args:
+          action_sampler_args:
+            rotation_degrees: 5.0
+          switch_frequency: 1.0
+          good_view_percentage: 0.5

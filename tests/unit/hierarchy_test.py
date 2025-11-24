@@ -7,15 +7,6 @@
 # license that can be found in the LICENSE file or at
 # https://opensource.org/licenses/MIT.
 
-import copy
-import os
-import shutil
-import tempfile
-import unittest
-from pprint import pprint
-
-import numpy as np
-import pandas as pd
 import pytest
 
 pytest.importorskip(
@@ -23,236 +14,61 @@ pytest.importorskip(
     reason="Habitat Sim optional dependency not installed.",
 )
 
-from tbp.monty.frameworks.config_utils.config_args import (
-    LoggingConfig,
-    MontyArgs,
-    PatchAndViewMontyConfig,
-    PretrainLoggingConfig,
-    TwoLMStackedMontyConfig,
-)
-from tbp.monty.frameworks.config_utils.make_env_interface_configs import (
-    EnvironmentInterfacePerObjectEvalArgs,
-    EnvironmentInterfacePerObjectTrainArgs,
-    ExperimentArgs,
-    PredefinedObjectInitializer,
-    SupervisedPretrainingExperimentArgs,
-)
-from tbp.monty.frameworks.environments import embodied_data as ED
-from tbp.monty.frameworks.experiments import MontyObjectRecognitionExperiment
-from tbp.monty.frameworks.experiments.pretraining_experiments import (
-    MontySupervisedObjectPretrainingExperiment,
-)
-from tbp.monty.frameworks.models.evidence_matching.learning_module import (
-    EvidenceGraphLM,
-)
+import os
+import shutil
+import tempfile
+import unittest
+from pathlib import Path
+
+import hydra
+import pandas as pd
+
 from tbp.monty.frameworks.models.object_model import GridObjectModel
 from tbp.monty.frameworks.utils.logging_utils import (
     load_models_from_dir,
 )
-from tbp.monty.simulators.habitat.configs import (
-    EnvInitArgsPatchViewMount,
-    EnvInitArgsTwoLMDistantStackedMount,
-    PatchViewFinderMountHabitatEnvInterfaceConfig,
-    TwoLMStackedDistantMountHabitatEnvInterfaceConfig,
-)
-from tests.unit.resources.unit_test_utils import BaseGraphTestCases
+from tests.unit.resources.unit_test_utils import BaseGraphTest
 
 
-class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
+class HierarchyTest(BaseGraphTest):
     def setUp(self):
         """Code that gets executed before every test."""
         super().setUp()
 
         self.output_dir = tempfile.mkdtemp()
+        self.model_path = Path(self.output_dir) / "pretrained"
 
-        base = dict(
-            experiment_class=MontyObjectRecognitionExperiment,
-            experiment_args=ExperimentArgs(
-                max_train_steps=30, max_eval_steps=30, max_total_steps=60
-            ),
-            logging_config=LoggingConfig(output_dir=self.output_dir),
-            monty_config=PatchAndViewMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=20)
-            ),
-            env_interface_config=PatchViewFinderMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsPatchViewMount(data_path=None).__dict__,
-            ),
-            train_env_interface_class=ED.InformedEnvironmentInterface,
-            train_env_interface_args=EnvironmentInterfacePerObjectTrainArgs(
-                object_names=["capsule3DSolid", "cubeSolid"],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
-            eval_env_interface_class=ED.InformedEnvironmentInterface,
-            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
-                object_names=["capsule3DSolid"],
-                object_init_sampler=PredefinedObjectInitializer(),
-            ),
-        )
-
-        two_stacked_lms_config = dict(
-            learning_module_0=dict(
-                learning_module_class=EvidenceGraphLM,
-                learning_module_args=dict(
-                    max_match_distance=0.001,
-                    tolerances={
-                        "patch_0": {
-                            "hsv": np.array([0.1, 1, 1]),
-                            "principal_curvatures_log": np.ones(2),
-                        }
-                    },
-                    feature_weights={},
-                    max_graph_size=0.2,
-                    num_model_voxels_per_dim=50,
-                    max_nodes_per_graph=50,
-                ),
-            ),
-            learning_module_1=dict(
-                learning_module_class=EvidenceGraphLM,
-                learning_module_args=dict(
-                    max_match_distance=0.001,
-                    tolerances={
-                        "patch_1": {
-                            "hsv": np.array([0.1, 1, 1]),
-                            "principal_curvatures_log": np.ones(2),
-                        },
-                        # object Id currently is an int representation of the strings
-                        # in the object label so we keep this tolerance high. This is
-                        # just until we have added a way to encode object ID with some
-                        # real similarity measure.
-                        "learning_module_0": {"object_id": 1},
-                    },
-                    feature_weights={"learning_module_0": {"object_id": 1}},
-                    max_graph_size=0.3,
-                    num_model_voxels_per_dim=50,
-                    max_nodes_per_graph=50,
-                ),
-            ),
-        )
-
-        two_lms_heterarchy_config = copy.deepcopy(base)
-        two_lms_heterarchy_config.update(
-            experiment_args=ExperimentArgs(
-                max_train_steps=30,
-                max_eval_steps=30,
-                max_total_steps=60,
-                min_lms_match=2,
-            ),
-            monty_config=TwoLMStackedMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=100, min_train_steps=3),
-                learning_module_configs=two_stacked_lms_config,
-            ),
-            env_interface_config=TwoLMStackedDistantMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsTwoLMDistantStackedMount(
-                    data_path=None
-                ).__dict__,
-            ),
-        )
-
-        two_stacked_constrained_lms_config = dict(
-            learning_module_0=dict(
-                learning_module_class=EvidenceGraphLM,
-                learning_module_args=dict(
-                    max_match_distance=0.001,
-                    tolerances={
-                        "patch_0": {
-                            "hsv": np.array([0.1, 1, 1]),
-                            "principal_curvatures_log": np.ones(2),
-                        }
-                    },
-                    feature_weights={},
-                    max_graph_size=0.3,
-                    num_model_voxels_per_dim=200,
-                    max_nodes_per_graph=2000,
-                    object_evidence_threshold=20,
-                ),
-            ),
-            learning_module_1=dict(
-                learning_module_class=EvidenceGraphLM,
-                learning_module_args=dict(
-                    max_match_distance=0.001,
-                    tolerances={
-                        "patch_1": {
-                            "hsv": np.array([0.1, 1, 1]),
-                            "principal_curvatures_log": np.ones(2),
-                        },
-                        "learning_module_0": {"object_id": 1},
-                    },
-                    feature_weights={"learning_module_0": {"object_id": 1}},
-                    max_graph_size=0.4,
-                    num_model_voxels_per_dim=200,
-                    max_nodes_per_graph=2000,
-                ),
-            ),
-        )
-
-        two_stacked_constrained_config = copy.deepcopy(base)
-        two_stacked_constrained_config.update(
-            experiment_args=SupervisedPretrainingExperimentArgs(
-                max_train_steps=30,
-                max_eval_steps=30,
-                max_total_steps=60,
-            ),
-            logging_config=PretrainLoggingConfig(
-                output_dir=self.output_dir,
-                python_log_level="INFO",
-            ),
-            experiment_class=MontySupervisedObjectPretrainingExperiment,
-            monty_config=TwoLMStackedMontyConfig(
-                monty_args=MontyArgs(num_exploratory_steps=50),
-                learning_module_configs=two_stacked_constrained_lms_config,
-            ),
-            env_interface_config=TwoLMStackedDistantMountHabitatEnvInterfaceConfig(
-                env_init_args=EnvInitArgsTwoLMDistantStackedMount(
-                    data_path=None,
-                ).__dict__,
-            ),
-        )
-
-        two_stacked_semisupervised_lms_config = copy.deepcopy(
-            two_stacked_constrained_config
-        )
-        two_stacked_semisupervised_lms_config.update(
-            experiment_args=SupervisedPretrainingExperimentArgs(
-                supervised_lm_ids=["learning_module_1"],
-                min_lms_match=2,
-                model_name_or_path=os.path.join(self.output_dir, "pretrained"),
-            ),
-            monty_config=TwoLMStackedMontyConfig(
-                # set min_train_steps to 200 to send more observations to LM_1 after
-                # LM_0 has recognized the object.
-                monty_args=MontyArgs(min_train_steps=200, num_exploratory_steps=0),
-                learning_module_configs=two_stacked_constrained_lms_config,
-            ),
-        )
-
-        two_stacked_lms_eval_config = copy.deepcopy(two_stacked_constrained_config)
-        two_stacked_lms_eval_config.update(
-            experiment_args=ExperimentArgs(
-                do_train=False,
-                min_lms_match=1,
-                n_eval_epochs=2,
-                model_name_or_path=os.path.join(self.output_dir, "pretrained"),
-            ),
-            logging_config=LoggingConfig(
-                output_dir=self.output_dir,
-                python_log_level="INFO",
-            ),
-            eval_env_interface_args=EnvironmentInterfacePerObjectEvalArgs(
-                object_names=["capsule3DSolid"],
-                object_init_sampler=PredefinedObjectInitializer(),
-                parent_to_child_mapping={
-                    "capsule3DSolid": "capsule3DSolid",
-                    "cubeSolid": "cubeSolid",
-                },
-            ),
-        )
-
-        self.two_lms_heterarchy_config = two_lms_heterarchy_config
-        self.two_stacked_constrained_config = two_stacked_constrained_config
-        self.two_stacked_semisupervised_lms_config = (
-            two_stacked_semisupervised_lms_config
-        )
-        self.two_stacked_lms_eval_config = two_stacked_lms_eval_config
+        with hydra.initialize(version_base=None, config_path="../../conf"):
+            self.two_lms_heterarchy_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=hierarchy/two_lms_heterarchy",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
+            self.two_lms_constrained_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=hierarchy/two_lms_constrained",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                ],
+            )
+            self.two_lms_semisupervised_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=hierarchy/two_lms_semisupervised",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                    f"test.config.model_name_or_path={self.model_path}",
+                ],
+            )
+            self.two_lms_eval_cfg = hydra.compose(
+                config_name="test",
+                overrides=[
+                    "test=hierarchy/two_lms_eval",
+                    f"test.config.logging.output_dir={self.output_dir}",
+                    f"test.config.model_name_or_path={self.model_path}",
+                ],
+            )
 
     def tearDown(self):
         """Code that gets executed after every test."""
@@ -295,10 +111,8 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
         of this longer run if we already have it? Maybe in the future we want to change
         this but this is my current reasoning.
         """
-        pprint("...parsing experiment...")
-        config = copy.deepcopy(self.two_lms_heterarchy_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
-            pprint("...training...")
+        exp = hydra.utils.instantiate(self.two_lms_heterarchy_cfg.test)
+        with exp:
             exp.train()
             train_stats = pd.read_csv(os.path.join(exp.output_dir, "train_stats.csv"))
             self.check_hierarchical_lm_train_results(train_stats)
@@ -306,7 +120,6 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
             models = load_models_from_dir(exp.output_dir)
             self.check_hierarchical_models(models)
 
-            pprint("...evaluating...")
             exp.evaluate()
             eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
             self.check_hierarchical_lm_eval_results(eval_stats)
@@ -328,9 +141,8 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
         - Extending a graph with a new input channel
         - logging prediction errors
         """
-        pprint("...supervised training...")
-        config = copy.deepcopy(self.two_stacked_constrained_config)
-        with MontySupervisedObjectPretrainingExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.two_lms_constrained_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
             exp.train()
             # check that both LMs have learned both objects.
@@ -349,9 +161,8 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
                     f"objects: {learned_objects}",
                 )
 
-        pprint("...semisupervised training...")
-        config = copy.deepcopy(self.two_stacked_semisupervised_lms_config)
-        with MontySupervisedObjectPretrainingExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.two_lms_semisupervised_cfg.test)
+        with exp:
             exp.model.set_experiment_mode("train")
             # check that models for both objects are loaded into memory correctly.
             for lm_idx, lm in enumerate(exp.model.learning_modules):
@@ -390,11 +201,9 @@ class HierarchyTest(BaseGraphTestCases.BaseGraphTest):
                     f"graph: {updated_graph} with keys: {updated_graph.keys()}",
                 )
 
-        pprint("...evaluating LM with compositional models...")
-        config = copy.deepcopy(self.two_stacked_lms_eval_config)
-        with MontyObjectRecognitionExperiment(config) as exp:
+        exp = hydra.utils.instantiate(self.two_lms_eval_cfg.test)
+        with exp:
             exp.evaluate()
-            pprint("... loading and checking eval statistics...")
             eval_stats = pd.read_csv(os.path.join(exp.output_dir, "eval_stats.csv"))
             episode = 0
             num_lms = len(exp.model.learning_modules)

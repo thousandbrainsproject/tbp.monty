@@ -1,0 +1,1 @@
+data_path: ${path.expanduser:${oc.env:MONTY_DATA}/worldimages/multi_object_scenes/}

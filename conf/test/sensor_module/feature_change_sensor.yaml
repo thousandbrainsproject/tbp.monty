@@ -1,0 +1,9 @@
+defaults:
+  - sensor_module/base@
+
+config:
+  n_train_epochs: 1
+  n_eval_epochs: 1
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 100

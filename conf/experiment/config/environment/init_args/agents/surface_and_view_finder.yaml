@@ -1,0 +1,17 @@
+# Use surface agent and view finder to find the object before experiment start.
+#
+# Adaptation of distant agent code for the surface agent to use the view finder to 
+# navigate so the object is in view before the real experiment happens.
+defaults:
+  - patch_and_view_finder
+
+# The height should be zero, so that body actions do not cause the agent
+# to move backward or forward
+height: 0.0
+position: [0.0, 1.5, 0.1]
+resolutions: [[64, 64], [64, 64]]
+# The surface sensor is at the same position as the agent, the viewfinder is 3cm
+# behind the agent. So when the agent turns, the viewfinder moves accordingly.
+positions: [[0.0, 0.0, 0.0], [0.0, 0.0, 0.03]]
+zooms: [10.0, 1.0]
+action_space_type: surface_agent

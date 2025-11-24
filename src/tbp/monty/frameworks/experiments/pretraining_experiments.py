@@ -12,12 +12,12 @@ import logging
 import os
 
 import numpy as np
+from omegaconf import DictConfig, OmegaConf
 from scipy.spatial.transform import Rotation
 
 from tbp.monty.frameworks.environments.embodied_data import (
     SaccadeOnImageEnvironmentInterface,
 )
-from tbp.monty.frameworks.utils.dataclass_utils import config_to_dict
 
 from .monty_experiment import MontyExperiment
 
@@ -36,13 +36,13 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
     models that can then be loaded at the beginning of an experiment.
     """
 
-    def __init__(self, config):
+    def __init__(self, config: DictConfig):
         # If we just add "pretrained" to dir at save time, then logs are stored in one
         # place and models in another. Changing the config ensures every reference to
         # output_dir has "pretrained" added to it
-        config = config_to_dict(config)
-        output_dir = config["logging_config"]["output_dir"]
-        config["logging_config"]["output_dir"] = os.path.join(output_dir, "pretrained")
+        config = OmegaConf.to_object(config)
+        output_dir = config["logging"]["output_dir"]
+        config["logging"]["output_dir"] = os.path.join(output_dir, "pretrained")
         self.first_epoch_object_location = {}
         super().__init__(config)
 
@@ -50,9 +50,9 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         super().setup_experiment(config)
         if "agents" in config["env_interface_config"]["env_init_args"].keys():
             self.sensor_pos = np.array(
-                config["env_interface_config"]["env_init_args"]["agents"][0][
-                    "agent_args"
-                ]["positions"]
+                config["env_interface_config"]["env_init_args"]["agents"]["agent_args"][
+                    "positions"
+                ]
             )
         else:
             self.sensor_pos = np.array([0, 0, 0])

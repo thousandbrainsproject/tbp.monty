@@ -1,0 +1,117 @@
+name: Future Work Widget Validate
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+    paths:
+      - 'docs/future-work/**'
+      - 'docs/snippets/**'
+      - 'tools/future_work_widget/**'
+      - '.github/workflows/future_work_widget_validate.yml'
+
+jobs:
+  install_monty:
+    name: install-monty
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    outputs:
+      conda_env_cache_key_sha: ${{ steps.install_monty.outputs.conda_env_cache_key_sha }}
+    steps:
+      - name: Checkout tbp.monty
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
+      - name: Install Monty
+        id: install_monty
+        uses: ./tbp.monty/.github/actions/install_monty
+        with:
+          working_directory: tbp.monty
+  future_work_widget_validate:
+    name: future-work-widget-validate
+    runs-on: ubuntu-latest
+    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    needs:
+      - install_monty
+    steps:
+      - name: Restore cache
+        id: restore_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/miniconda
+          key: ${{ needs.install_monty.outputs.conda_env_cache_key_sha }}
+      - name: Checkout tbp.monty
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+          path: tbp.monty
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          lfs: true
+          path: pr_code
+      - name: Install Monty
+        if: steps.restore_cache.outputs.cache-hit != 'true'
+        uses: ./tbp.monty/.github/actions/install_monty
+        with:
+          working_directory: tbp.monty
+      - name: Install additional dependencies
+        working-directory: tbp.monty
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          pip install -e .[github_readme_sync_tool,future_work_widget_tool]
+      - name: Build future work widget
+        working-directory: tbp.monty
+        id: build
+        run: |
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source activate tbp.monty
+          python -m tools.github_readme_sync.cli generate-index ../pr_code/docs "${{ runner.temp }}/index.json"
+          mkdir -p "${{ runner.temp }}/future-work-widget"
+          cp -r tools/future_work_widget/app/* "${{ runner.temp }}/future-work-widget/"
+          python -m tools.future_work_widget.cli "${{ runner.temp }}/index.json" "${{ runner.temp }}/future-work-widget" > "${{ runner.temp }}/build_result.json" 2>&1 || true
+      - name: Annotate errors
+        if: always()
+        working-directory: tbp.monty
+        run: |
+          if [ -f "${{ runner.temp }}/build_result.json" ]; then
+            if jq -e '.errors' "${{ runner.temp }}/build_result.json" > /dev/null 2>&1; then
+              jq -c '.errors[]' "${{ runner.temp }}/build_result.json" | while read -r error; do
+                file=$(echo "$error" | jq -r '.file')
+                line=$(echo "$error" | jq -r '.line')
+                title=$(echo "$error" | jq -r '.title')
+                message=$(echo "$error" | jq -r '.message')
+                echo "::error file=$file,line=$line,title=$title::$message"
+              done
+            fi
+          fi
+      - name: Check build result
+        if: always()
+        working-directory: tbp.monty
+        run: |
+          if [ ! -f "${{ runner.temp }}/build_result.json" ]; then
+            echo "Build failed: build_result.json was not created"
+            exit 1
+          fi
+          if ! jq -e . "${{ runner.temp }}/build_result.json" > /dev/null 2>&1; then
+            echo "Build failed: build_result.json contains invalid JSON"
+            exit 1
+          fi
+          success=$(jq -r '.success // false' "${{ runner.temp }}/build_result.json")
+          if [ "$success" != "true" ]; then
+            echo "Build failed"
+            exit 1
+          fi
+

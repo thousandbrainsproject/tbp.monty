@@ -1,0 +1,6 @@
+defaults:
+  - defaults
+
+monty_log_level: SILENT
+python_log_level: WARNING
+monty_handlers: []

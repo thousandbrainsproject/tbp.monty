@@ -1,0 +1,36 @@
+defaults:
+  - supervised_pre_training_base
+  - config/supervised_pretraining@config
+  - config/monty/clear_monty_config@config
+  - config/monty/two_lm_stacked@config.monty_config
+  - config/monty/args/clear_monty_args@config.monty_config
+  - config/monty/args/defaults@config.monty_config.monty_args
+  - config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - config/monty/learning_modules/two_stacked_constrained_lms@config.monty_config.learning_module_configs
+  - config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - config/monty/motor_system/naive_scan_spiral@config.monty_config.motor_system_config
+  - config/environment/clear_env_interface_config@config
+  - config/environment/two_lm_stacked_distant_mount_habitat@config.env_interface_config
+  - config/environment/init_args/clear_env_init_args@config.env_interface_config
+  - config/environment/init_args/two_lm_distant_stacked_mount@config.env_interface_config.env_init_args
+  - config/environment_interface/clear_train_env_interface_args@config
+  - config/environment_interface/per_object@config.train_env_interface_args
+  - config/environment_interface/logos_on_objs/flat_objects_without_logos@config.train_env_interface_args.object_names
+
+config:
+  n_train_epochs: ${benchmarks.rotations_all_count}
+  # only learn child objects in lm_0 at first so they can be used as input when
+  # LM_1 is learning.
+  supervised_lm_ids: ["learning_module_0"]
+  logging:
+    run_name: supervised_pre_training_flat_objects_wo_logos
+  monty_config:
+    monty_args:
+      num_exploratory_steps: 1000
+  env_interface_config:
+    env_init_args:
+      data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects}
+  train_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      rotations: ${benchmarks.rotations_all}
