@@ -10,9 +10,9 @@ Here is an interactive view of our future work that can be filtered and sorted t
 [block:embed]
 {
   "html": false,
-  "url": "https://app-psi-orpin.vercel.app/index.html?columns=title,estimated-scope,rfc,status,skills",
+  "url": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,rfc,status,improved-metric,skills",
   "provider": "futureworkwidget.thousandbrains.ai",
-  "href": "https://app-psi-orpin.vercel.app/index.html?columns=title,estimated-scope,rfc,status,skills",
+  "href": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,rfc,status,improved-metric,skills,",
   "typeOfEmbed": "iframe",
   "height": "800px",
   "iframe": true
