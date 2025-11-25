@@ -72,7 +72,7 @@ If you know of speaking opportunities, academic institutions, research groups, o
 Whether it's a university department, conference, meetup group, or research lab, please feel free to:
 
 - Forward speaking opportunities to us
-- Make introductions on our behalf
+- Make introductions
 - Connect us with relevant contacts in your network
 
 Please reach out to [info@thousandbrains.org](mailto:info@thousandbrains.org) with any opportunities or introductions.
