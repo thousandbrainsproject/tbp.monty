@@ -108,7 +108,7 @@ Note that by the time you read that, there may be more or less unit tests in the
 
 # 4. Run an Experiment
 
-In your usual interaction with this code base, you will most likely run experiments, not just unit tests. You can find experiment configs in the `benchmarks/configs/` folder.
+In your usual interaction with this code base, you will most likely run experiments, not just unit tests. You can find experiment configs in the `conf/experiment` folder.
 
 ## 4.1 Download the YCB Dataset
 
@@ -206,15 +206,15 @@ export WANDB_DIR=${MONTY_LOGS}/wandb
 Now you can finally run an experiment! To do this, simply use this command:
 
 ```shell
-python benchmarks/run.py -e my_experiment
+python run.py experiment=my_experiment
 ```
 
-Replace `my_experiment` with the name of one of the experiment configs in `benchmarks/configs/`. For example, a good one to start with could be `randrot_noise_10distinctobj_surf_agent`.
+Replace `my_experiment` with the name of one of the experiment configs in `conf/experiment`. For example, a good one to start with could be `randrot_noise_10distinctobj_surf_agent`.
 
 If you want to run an experiment with parallel processing to make use of multiple CPUs, simply use the `run_parallel.py` script instead of the `run.py` script like this:
 
 ```shell
-python benchmarks/run_parallel.py -e my_experiment
+python run_parallel.py experiment=my_experiment
 ```
 
 # 5. What Next?
