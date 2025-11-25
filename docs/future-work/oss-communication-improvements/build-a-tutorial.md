@@ -13,15 +13,16 @@ Create a tutorial with your experience with Monty to accomplish some goal.
 ## Format Options
 
 The tutorial can be created in either format:
-- YouTube video
-- Blog post
+- A markdown tutorial file placed in our docs at `docs/how-to-use-monty/tutorials/` and added to the `docs/hierarchy.md` file.
+- YouTube video.
+- Blog post.
 
 Both formats may potentially become core documentation if they add value to the existing getting started guides.
 
 
 ## Potential Tutorial Topics
 
-- Running through the steps to set up Monty on a new configuration of hardware / OS. (See [AgentRev's excellent WSL tutorial](../../how-to-use-monty/getting-started/getting-started-on-windows-via-wsl.md) as an example)
+- Running through the steps to set up Monty on a new configuration of hardware / OS. (See [AgentRev's excellent WSL tutorial](../../how-to-use-monty/getting-started/getting-started-on-windows-via-wsl.md) as an example).
 - How to add FLOPs measurements to a Monty experiment.
 - How to create a new dataset.
 - How to add a new type of sensor.
