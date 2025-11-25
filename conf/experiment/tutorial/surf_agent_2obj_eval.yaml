@@ -21,7 +21,7 @@ config:
   show_sensor_output: true # live visualization of Monty's observations and MLH
   logging:
     # where to save eval logs
-    output_dir: ${path.expanduser:"~/tbp/results/monty/projects/surf_agent_1lm_obj"}
+    output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
     run_name: surf_agent_2obj_eval
     wandb_handlers: [] # remove this line if you, additionally, want to log to WandB
   monty_config:

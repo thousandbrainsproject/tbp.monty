@@ -1,20 +1,41 @@
+# To test your env and help you familiarize yourself with the code, we'll run the simplest possible
+# experiment. We'll use a model with a single learning module as specified in
+# monty_config. We'll also skip evaluation, train for a single epoch for a single step,
+# and only train on a single object, as specified in config and train_env_interface_args.
+
+# The order of the defaults matters. The defaults are applied in order, from top to bottom.
 defaults:
+  # We use the pre-defined /experiment/config/supervised_pretraining values for the config (@config)
   - /experiment/config/supervised_pretraining@config
-  - /experiment/config/logging/defaults@config.logging
+  # We use the pre-defined /experiment/config/logging/pretrain values for the logging (@config.logging)
+  - /experiment/config/logging/pretrain@config.logging
+  # We use the pre-defined /experiment/config/monty/patch_and_view values for the monty_config (@config.monty_config)
   - /experiment/config/monty/patch_and_view@config.monty_config
   # Set up the environment and agent.
+  # We use the pre-defined /experiment/config/environment/patch_view_finder_mount_habitat values for
+  # the env_interface_config (@config.env_interface_config)
   - /experiment/config/environment/patch_view_finder_mount_habitat@config.env_interface_config
+  # We use the pre-defined /experiment/config/environment_interface/per_object values for
+  # the train_env_interface_args (@config.train_env_interface_args)
   - /experiment/config/environment_interface/per_object@config.train_env_interface_args
-  - /experiment/config/environment_interface/ycb/shuffled_objects@config.train_env_interface_args.object_names
 
+# The top-level _target_ is the experiment we want to run.
 _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
+# We override some of the config values we got from the pre-defined /experiment/config/supervised_pretraining.
 config:
   do_eval: false
   max_train_steps: 1
   n_train_epochs: 1
+  # We override the run_name in config.logging to be specific to our experiment.
   logging:
     run_name: first_experiment
   train_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.EnvironmentInterfacePerObject}
+  # We override the train_env_interface_args to be specific to our experiment.
   train_env_interface_args:
+    object_names:
+      - mug
+    # We use the pre-defined PredefinedObjectInitializer to initialize the object.
     object_init_sampler:
+      # Since this is a _target_, Hydra will instantiate this class using the _target_ and any
+      # additional arguments you provide.
       _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
