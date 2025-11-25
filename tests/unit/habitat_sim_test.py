@@ -754,8 +754,8 @@ class HabitatSimTest(unittest.TestCase):
     def test_agent_height(self):
         agent = SingleSensorAgent(
             agent_id=AgentID("camera"),
-            sensor_id="0",
-            agent_position=[0.0, 0.0, 0.0],
+            sensor_id=SensorID("0"),
+            agent_position=(0.0, 0.0, 0.0),
             height=0.0,
         )
         with HabitatSim(agents=[agent]) as sim:
