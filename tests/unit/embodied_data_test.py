@@ -135,13 +135,19 @@ class FakeEnvironmentAbs(EmbodiedEnvironment):
     def remove_all_objects(self):
         pass
 
-    def reset(self):
+    def reset(self) -> Observations:
         self._current_state = 0
-        return {
-            f"{AGENT_ID}": {
-                f"{SENSOR_ID}": {"raw": EXPECTED_STATES[self._current_state]}
+        return Observations(
+            {
+                AGENT_ID: AgentObservations(
+                    {
+                        SENSOR_ID: SensorObservations(
+                            {Modality("raw"): EXPECTED_STATES[self._current_state]}
+                        )
+                    }
+                )
             }
-        }
+        )
 
     def close(self):
         self._current_state = None
@@ -180,7 +186,9 @@ class EmbodiedDataTest(unittest.TestCase):
             obs_dist, _ = env_interface_dist.step(motor_system_dist())
             print(obs_dist)
             self.assertTrue(
-                np.all(obs_dist[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
+                np.all(
+                    obs_dist[AGENT_ID][SENSOR_ID][Modality("raw")] == EXPECTED_STATES[i]
+                )
             )
 
         initial_obs, _ = env_interface_dist.reset()
@@ -216,7 +224,9 @@ class EmbodiedDataTest(unittest.TestCase):
         for i in range(1, NUM_STEPS):
             obs_abs, _ = env_interface_abs.step(motor_system_abs())
             self.assertTrue(
-                np.all(obs_abs[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
+                np.all(
+                    obs_abs[AGENT_ID][SENSOR_ID][Modality("raw")] == EXPECTED_STATES[i]
+                )
             )
 
         initial_state, _ = env_interface_abs.reset()
@@ -250,7 +260,7 @@ class EmbodiedDataTest(unittest.TestCase):
 
         for i, item in enumerate(env_interface_dist):
             self.assertTrue(
-                np.all(item[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
+                np.all(item[AGENT_ID][SENSOR_ID][Modality("raw")] == EXPECTED_STATES[i])
             )
             if i >= NUM_STEPS - 1:
                 break
@@ -272,7 +282,7 @@ class EmbodiedDataTest(unittest.TestCase):
 
         for i, item in enumerate(env_interface_abs):
             self.assertTrue(
-                np.all(item[AGENT_ID][SENSOR_ID]["raw"] == EXPECTED_STATES[i])
+                np.all(item[AGENT_ID][SENSOR_ID][Modality("raw")] == EXPECTED_STATES[i])
             )
             if i >= NUM_STEPS - 1:
                 break
@@ -334,7 +344,7 @@ class EmbodiedDataTest(unittest.TestCase):
 
     def test_saccade_on_image_env_interface(self):
         rng = np.random.RandomState(42)
-        sensor_id = "patch"
+        sensor_id = SensorID("patch")
         patch_size = 48
         expected_keys = ["depth", "rgba", "pixel_loc"]
 
@@ -384,7 +394,7 @@ class EmbodiedDataTest(unittest.TestCase):
 
     def test_saccade_on_image_stream_env_interface(self):
         rng = np.random.RandomState(42)
-        sensor_id = "patch"
+        sensor_id = SensorID("patch")
         patch_size = 48
         expected_keys = ["depth", "rgba", "pixel_loc"]
 
