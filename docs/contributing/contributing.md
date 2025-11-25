@@ -63,6 +63,10 @@ We love seeing how you use Monty. If you created something interesting with it, 
 
 Thank you for being a member of our community. By using Monty, you are already promoting Monty and the Thousand Brains Project. If you like our project, we are happy to see you mention us in your social media posts or privately to friends and colleagues.
 
+## Share Interesting Content
+
+Help the community discover relevant research by sharing interesting content related to neuroscience, reinforcement learning, SLAM, sparsity in neural networks, world models, sensorimotor AI, and computational neuroscience (grid cells, neocortex theories, hippocampus-thalamus-entorhinal cortex connections). Tag us on [Twitter/X](https://x.com/1000brainsproj) or [Bluesky](https://bsky.app/profile/thousandbrains.org), or post on our [forum](https://thousandbrains.discourse.group/) to bring relevant findings to the community's attention.
+
 If you want to discuss further opportunities, such as mentioning us in a blog post or newspaper article or recording an interview with us, don't hesitate to contact [info@thousandbrains.org](mailto:info@thousandbrains.org).
 
 # Connect Us with Opportunities

@@ -164,7 +164,6 @@
   - [organize-local-meetup](future-work/oss-communication-improvements/organize-local-meetup.md)
   - [organize-start-podcast-series](future-work/oss-communication-improvements/organize-start-podcast-series.md)
   - [robust-docs-preview-cleanup](future-work/oss-communication-improvements/robust-docs-preview-cleanup.md)
-  - [share-interesting-content](future-work/oss-communication-improvements/share-interesting-content.md)
 # theory: Neuroscience Theory
 - [theory-overview](theory/theory-overview.md)
 - [recent-progress](theory/recent-progress.md)

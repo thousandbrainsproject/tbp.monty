@@ -15,6 +15,5 @@ These are the things we would like to do and you can help us with:
 - [Organize Local Meetup](oss-communication-improvements/organize-local-meetup.md)
 - [Organize & Start Podcast Series](oss-communication-improvements/organize-start-podcast-series.md)
 - [Robust Docs Preview Cleanup](oss-communication-improvements/robust-docs-preview-cleanup.md)
-- [Share Interesting Content](oss-communication-improvements/share-interesting-content.md)
 
 !snippet[../snippets/contributing-tasks.md]
