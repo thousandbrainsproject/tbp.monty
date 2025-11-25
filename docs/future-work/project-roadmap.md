@@ -65,16 +65,16 @@ Once you have a concrete idea of how you would like to tackle a task (whether it
 >
 > Besides these more involved and research/code heavy tasks on our roadmap, there are many other ways you can get involved and support this project. Check out our page on [ways to contribute](../contributing/ways-to-contribute-to-code.md) to find out what best matches your skillset and interests.
 
-# Tasks That Are Not on This Sheet
+# Tasks That Are Not in the Future Work Documentation
 
-This table doesn't cover everything we want the system to eventually be able to do or all the ideas you might be coming up with.
+The future work documentation doesn't cover everything we want the system to eventually be able to do or all the ideas you might be coming up with.
 
-This **table only contains tasks where we already have a more concrete idea of how we want to implement them**. There are many topics where we are still actively brainstorming for solutions. We have a **[collection of open questions here](../how-monty-works/open-questions.md).** And if you are interested in our thoughts on them, the best place is to watch our meeting recordings on [our YouTube channel](https://www.youtube.com/@thousandbrainsproject).
+This **section only contains tasks where we already have a more concrete idea of how we want to implement them**. There are many topics where we are still actively brainstorming for solutions. We have a **[collection of open questions here](../how-monty-works/open-questions.md).** And if you are interested in our thoughts on them, the best place is to watch our meeting recordings on [our YouTube channel](https://www.youtube.com/@thousandbrainsproject).
 
-We also welcome contributions that are not related to any of these tasks. Please remember to [fill out an RFC first](../contributing/request-for-comments-rfc.md) before working on a larger change. For a list of ways you can contribute besides code, see [this guide](../contributing/contributing.md).  See this forum post about when you should create an RFC: https://thousandbrains.discourse.group/t/when-should-i-create-an-rfc/110
+We also welcome contributions that are not related to any of these tasks. Please remember to [fill out an RFC first](../contributing/request-for-comments-rfc.md) before working on a larger change. For a list of ways you can contribute besides code, see [this guide](../contributing/contributing.md).  
 
 # Legacy Table
 
-We have a high-level overview table of tasks on our roadmap in our [project planning spreadsheet](https://docs.google.com/spreadsheets/d/1HlKqhMzYWxpW6_D0LtDd5qEuWRYHl6xMfxbIZ76lzng/edit?usp=sharing) but we are phasing this out in favor of the interactive table above.
+We have a high-level overview spreadsheet of tasks on our roadmap in our [project planning spreadsheet](https://docs.google.com/spreadsheets/d/1HlKqhMzYWxpW6_D0LtDd5qEuWRYHl6xMfxbIZ76lzng/edit?usp=sharing) but we are phasing this out in favor of the interactive table above.
 
 ![Screenshot of our overview sheet. For an up-to-date view, just go to the sheet https://docs.google.com/spreadsheets/d/1HlKqhMzYWxpW6_D0LtDd5qEuWRYHl6xMfxbIZ76lzng/edit?usp=sharing](../figures/future-work/monty_tasks.png)
