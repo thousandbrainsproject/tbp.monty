@@ -22,6 +22,8 @@ Both formats may potentially become core documentation if they add value to the 
 
 ## Potential Tutorial Topics
 
+The good way to find a topic is to write about something you found difficult to learn, something you wish had a tutorial available.
+
 - Running through the steps to set up Monty on a new configuration of hardware / OS. (See [AgentRev's excellent WSL tutorial](../../how-to-use-monty/getting-started/getting-started-on-windows-via-wsl.md) as an example).
 - How to add FLOPs measurements to a Monty experiment.
 - How to create a new dataset.
