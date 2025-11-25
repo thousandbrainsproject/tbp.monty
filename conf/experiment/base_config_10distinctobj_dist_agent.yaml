@@ -19,8 +19,8 @@ config:
     # Comment in for quick debugging (turns off wandb and increases logging)
     # wandb_handlers: []
     # python_log_level: DEBUG
-    # FIXME?: we want to actually concatentate with logging/defaults.yaml output_dir
-    output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs/base_config_10distinctobj_dist_agent}
+    # FIXME: Probably shouldn't import config/logging/parallel_evidence_lm in the first place
+    output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/monty_runs}
     run_name: base_config_10distinctobj_dist_agent
   monty_config:
     monty_args:

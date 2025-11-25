@@ -17,7 +17,7 @@ There is a 3-step process for creating a custom learning module. All other class
 
 - **Define a new subclass of LearningModule (LM)** either in a local projects folder, or in `/src/tbp/monty/frameworks/models`. See the abstract class definitions in `/src/tbp/monty/frameworks/models/abstract_monty_classes.py` for the functions that every LM should implement.
 - **Define a config for your learning module**. You are encouraged but not required to define a dataclass with all the arguments to your LM like in `/src/tbp/monty/frameworks/config_utils/config_args.py`, with subclasses of that dataclass defining default arguments for different common instantiations of your LM. You are encouraged to define a dataclass config that extends the `MontyConfig` dataclass also in config_args.py, where the `learning_module_configs` is a dictionary defining a `learning_module_class` and its `learning_module_args` for each learning module.
-- **Define an experiment config** in `benchmarks/configs/` (or in your own repository or in your `monty_lab` projects folder) and set `monty_config` to a config that fully specifies your model architecture, for example to the dataclass extending `MontyConfig` defined above.
+- **Define an experiment config** in `conf/experiment/` (or in your own repository or in your `monty_lab` projects folder) and set `monty_config` to a config that fully specifies your model architecture, for example to the dataclass extending `MontyConfig` defined above.
 
 You custom config could look like this:
 ```
