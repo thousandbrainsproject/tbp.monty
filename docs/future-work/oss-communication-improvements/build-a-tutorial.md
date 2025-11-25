@@ -24,7 +24,6 @@ Both formats may potentially become core documentation if they add value to the 
 - Running through the steps to set up Monty on a new configuration of hardware / OS. (See [AgentRev's excellent WSL tutorial](../../how-to-use-monty/getting-started/getting-started-on-windows-via-wsl.md) as an example)
 - How to add FLOPs measurements to a Monty experiment.
 - How to create a new dataset.
-- How to use the 2D surface agent.
 - How to add a new type of sensor.
 - How to integrate a new simulator.
 - How to build a new action policy.
