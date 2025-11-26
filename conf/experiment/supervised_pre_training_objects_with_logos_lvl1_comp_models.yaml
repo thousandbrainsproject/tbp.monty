@@ -13,7 +13,7 @@ defaults:
 
 config:
   n_train_epochs: ${benchmarks.rotations_all_count}
-  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v10/supervised_pre_training_logos_after_flat_objects/pretrained/}
+  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11/supervised_pre_training_logos_after_flat_objects/pretrained/}
   supervised_lm_ids: ["learning_module_1"]
   min_lms_match: 2
   logging:

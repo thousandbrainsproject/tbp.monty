@@ -15,13 +15,13 @@ For more details on the current benchmark experiments, see [this page.](../overv
 To run a benchmark experiment, simply call
 
 ```shell
-python /benchmarks/run.py -e run_name
+python run.py experiment=run_name
 ```
 
-and replace `run_name` with the name of the benchmark experiment. All benchmark experiment configs are in the `benchmarks/configs/` folder. So for example, for running the quickest benchmark experiment you would call
+and replace `run_name` with the name of the benchmark experiment. All benchmark experiment configs are in the `conf/experiment/` folder. So for example, for running the quickest benchmark experiment you would call
 
 ```shell
-python benchmarks/run.py -e randrot_10distinctobj_surf_agent
+python run.py experiment=randrot_10distinctobj_surf_agent
 ```
 
 > 👍 Go Ahead and Run the Command Above!
@@ -50,8 +50,8 @@ If you are not using wandb, you can also calculate the statistics from the saved
 
 ```python
 from tbp.monty.frameworks.utils.logging_utils import (load_stats,
-                                                        print_overall_stats,
-                                                        print_unsupervised_stats)
+                                                      print_overall_stats,
+                                                      print_unsupervised_stats)
 _, eval_stats, _, _ = load_stats(log_path + 'run_name', 
                                  load_train=False, 
                                  load_eval=True,
