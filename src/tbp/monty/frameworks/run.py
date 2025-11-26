@@ -10,12 +10,11 @@ from __future__ import annotations
 
 import logging
 import os
-import pprint
 import time
 from pathlib import Path
 
 import hydra
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from tbp.monty.hydra import register_resolvers
 
@@ -27,7 +26,7 @@ def print_config(config):
     print("\n\n")
     print("Printing config below")
     print("-" * 100)
-    print(pprint.pformat(config))
+    print(OmegaConf.to_yaml(config))
     print("-" * 100)
 
 
