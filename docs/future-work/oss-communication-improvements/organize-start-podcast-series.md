@@ -3,7 +3,7 @@ title: Organize & Start Podcast Series
 rfc: required
 estimated-scope: large
 improved-metric: community-engagement
-skills: podcasting, interviewing, writing, audio-editing, video-editing
+skills: interviewing, writing, audio-editing, video-production
 output-type: audio, podcast
 ---
 
