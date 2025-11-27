@@ -154,11 +154,11 @@ python -m tools.github_readme_sync.cli check docs
 > [!NOTE]
 > See the [readme sync tool documentation](https://github.com/thousandbrainsproject/tbp.monty/blob/main/tools/github_readme_sync/README.md) for more details on how to use it and how to install the additional dependencies for it.
 
-# Future Work Widget
+# Future Work Widget Tool
 
-The future work widget is a tool that processes future work documentation and displays it in a filterable HTML table. This tool also allows for previewing how future work items will appear in the widget interface locally.
+The future work widget tool processes future work documentation and displays it in a filterable HTML table. This tool also allows for previewing how future work items will appear in the widget interface locally.
 
-To run the widget locally, first ensure you have [activated the conda environment](../how-to-use-monty/getting-started.md#2-set-up-your-environment). Then, from the root Monty directory, install this tool's dependencies:
+To view the widget locally, first ensure you have [activated the conda environment](../how-to-use-monty/getting-started.md#2-set-up-your-environment). Then, from the root Monty directory, install this tool's dependencies:
 
 ```bash
 pip install -e '.[github_readme_sync_tool,future_work_widget_tool]'
