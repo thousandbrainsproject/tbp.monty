@@ -147,12 +147,30 @@ In our documentation sync tool there is a flag to check internal links, image re
 
 To check the links, [activate the conda environment](../how-to-use-monty/getting-started.md#miniconda), and then run the following command:
 
-``` 
+```
 python -m tools.github_readme_sync.cli check docs
 ```
 
-> [!NOTE] 
+> [!NOTE]
 > See the [readme sync tool documentation](https://github.com/thousandbrainsproject/tbp.monty/blob/main/tools/github_readme_sync/README.md) for more details on how to use it and how to install the additional dependencies for it.
+
+# Future Work Widget
+
+The future work widget is a tool that processes future work documentation and displays it in a filterable HTML table. This tool also allows for previewing how future work items will appear in the widget interface.
+
+To run the widget locally, first ensure you have [activated the conda environment](../how-to-use-monty/getting-started.md#2-set-up-your-environment). Then, from the root Monty directory, install this tool's dependencies:
+
+```bash
+pip install -e '.[github_readme_sync_tool,future_work_widget_tool]'
+```
+
+Then, from the `tbp.monty` directory, run:
+
+```bash
+python tools/future_work_widget/run_local.py
+```
+
+Then point your browser to http://localhost:8080 to view the widget.
 
 # Images
 
