@@ -72,7 +72,7 @@ jobs:
           echo "Contents of pr_code/docs:"
           ls -la pr_code/docs/ || echo "pr_code/docs directory not found"
           echo "Markdown files in pr_code/docs:"
-          find pr_code/docs -name "*.md" 2>/dev/null | head -20 || echo "No markdown files found"
+          find pr_code/docs -name "*.md"
       - name: Install Monty
         if: steps.restore_cache.outputs.cache-hit != 'true'
         uses: ./tbp.monty/.github/actions/install_monty
