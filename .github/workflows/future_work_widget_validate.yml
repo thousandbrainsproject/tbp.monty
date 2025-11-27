@@ -58,6 +58,7 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           lfs: true
@@ -79,7 +80,7 @@ jobs:
         run: |
           export PATH="$HOME/miniconda/bin:$PATH"
           source activate tbp.monty
-          python -m tools.github_readme_sync.cli generate-index ../pr_code/docs "${{ runner.temp }}/index.json"
+          python -m tools.github_readme_sync.cli generate-index "../pr_code/docs" "${{ runner.temp }}/index.json"
           mkdir -p "${{ runner.temp }}/future-work-widget"
           cp -r tools/future_work_widget/app/* "${{ runner.temp }}/future-work-widget/"
           python -m tools.future_work_widget.cli "${{ runner.temp }}/index.json" "${{ runner.temp }}/future-work-widget" > "${{ runner.temp }}/build_result.json" 2>&1 || true
