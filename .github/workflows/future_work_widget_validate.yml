@@ -7,9 +7,9 @@ concurrency:
 on:
   # pull_request_target:
   pull_request:
-    # types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened]
     branches:
-      - validated_future_work_doesnt
+      - validated-future-work-doesnt
     paths:
       - 'docs/future-work/**'
       - 'docs/snippets/**'
