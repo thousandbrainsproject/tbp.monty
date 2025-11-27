@@ -5,10 +5,11 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, reopened]
+  # pull_request_target:
+  pull_request:
+    # types: [opened, synchronize, reopened]
     branches:
-      - main
+      - validated_future_work_doesnt
     paths:
       - 'docs/future-work/**'
       - 'docs/snippets/**'
@@ -19,7 +20,7 @@ jobs:
   install_monty:
     name: install-monty
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    # if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     outputs:
       conda_env_cache_key_sha: ${{ steps.install_monty.outputs.conda_env_cache_key_sha }}
     steps:
@@ -37,7 +38,7 @@ jobs:
   future_work_widget_validate:
     name: future-work-widget-validate
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'thousandbrainsproject' }}
+    # if: ${{ github.repository_owner == 'thousandbrainsproject' }}
     needs:
       - install_monty
     steps:
