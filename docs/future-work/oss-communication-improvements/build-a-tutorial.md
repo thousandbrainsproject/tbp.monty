@@ -26,7 +26,8 @@ The good way to find a topic is to write about something you found difficult to 
 
 - Running through the steps to set up Monty on a new configuration of hardware / OS. (See [AgentRev's excellent WSL tutorial](../../how-to-use-monty/getting-started/getting-started-on-windows-via-wsl.md) as an example).
 - How to add FLOPs measurements to a Monty experiment.
-- How to create a new dataset.
+- How to create new 3D objects and render then in the simulator.
+- How to turn an existing dataset into a learning environment for Monty.
 - How to add a new type of sensor.
 - How to integrate a new simulator.
 - How to build a new action policy.

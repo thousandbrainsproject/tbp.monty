@@ -3,7 +3,7 @@ title: Organize Local Meetup
 rfc: not-required
 estimated-scope: small
 improved-metric: community-engagement
-skills: event-planning, community-organizing, networking
+skills: event-planning, networking
 output-type: community-event
 ---
 
