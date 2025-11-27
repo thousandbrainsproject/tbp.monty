@@ -4,7 +4,7 @@ rfc: required
 estimated-scope: large
 improved-metric: community-engagement
 skills: interviewing, writing, audio-editing, video-production
-output-type: audio, podcast
+output-type: audio, video
 ---
 
 We  would like to organize and start a podcast series that covers the Thousand Brains Project / Theory or adjacent topics.
