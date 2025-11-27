@@ -26,19 +26,9 @@ Applications where we anticipate Monty to particularly shine are:
 - Applications **where humans do well** but current AI does not
 
 ## Some Example Applications
-To get an idea of how Monty could be used in the future, you can have a look at this video where we go over how key milestones on our research roadmap will unlock more and more applications. Of course, there is no way to anticipate the future and there will likely be many applications we are not thinking of today. But this video might give you a general idea of the types of applications a Thousand Brains System will excel in. 
-[block:embed]
-{
-  "html": "<iframe class=\"embedly-embed\" src=\"//cdn.embedly.com/widgets/media.html?src=https%3A%2F%2Fwww.youtube.com%2Fembed%2FIap_sq1_BzE%3Ffeature%3Doembed&display_name=YouTube&url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DIap_sq1_BzE&image=https%3A%2F%2Fi.ytimg.com%2Fvi%2FIap_sq1_BzE%2Fhqdefault.jpg&type=text%2Fhtml&schema=youtube\" width=\"854\" height=\"480\" scrolling=\"no\" title=\"YouTube embed\" frameborder=\"0\" allow=\"autoplay; fullscreen; encrypted-media; picture-in-picture;\" allowfullscreen=\"true\"></iframe>",
-  "url": "https://www.youtube.com/watch?v=Iap_sq1_BzE",
-  "title": "2025/04 - TBP Future Applications & Positive Impacts",
-  "favicon": "https://www.youtube.com/favicon.ico",
-  "image": "https://i.ytimg.com/vi/Iap_sq1_BzE/hqdefault.jpg",
-  "provider": "https://www.youtube.com/",
-  "href": "https://www.youtube.com/watch?v=Iap_sq1_BzE",
-  "typeOfEmbed": "youtube"
-}
-[/block]
+To get an idea of how Monty could be used in the future, you can have a look at this video where we go over how key milestones on our research roadmap will unlock more and more applications. Of course, there is no way to anticipate the future and there will likely be many applications we are not thinking of today. But this video might give you a general idea of the types of applications a Thousand Brains System will excel in.
+
+[2025/04 - TBP Future Applications & Positive Impacts](https://www.youtube.com/watch?v=Iap_sq1_BzE)
 
 # Capabilities
 

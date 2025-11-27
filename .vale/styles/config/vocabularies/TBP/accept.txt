@@ -52,6 +52,7 @@
 \bCalli\b
 \bCLA\b
 \bcli\b
+\bCloudinary\b
 \bCNNs?\b
 \bcolliculus\b
 \bcompositionality\b
