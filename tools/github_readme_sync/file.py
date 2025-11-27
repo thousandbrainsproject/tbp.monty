@@ -48,8 +48,9 @@ def find_markdown_files(
     ignore_dirs = DEFAULT_IGNORE_DIRS if ignore_dirs is None else ignore_dirs
     ignore_files = DEFAULT_IGNORE_FILES if ignore_files is None else ignore_files
 
+    resolved_folder = Path(folder).resolve()
     md_files = []
-    for root, _, files in os.walk(folder):
+    for root, _, files in os.walk(resolved_folder):
         path_parts = Path(root).parts
         if any(part.startswith(".") for part in path_parts):
             continue
