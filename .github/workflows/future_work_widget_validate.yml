@@ -8,6 +8,7 @@ on:
   # pull_request_target:
   pull_request:
     # types: [opened, synchronize, reopened]
+    # force the build
     branches:
       - validated_future_work_doesnt
     paths:
