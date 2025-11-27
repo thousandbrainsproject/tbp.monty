@@ -58,10 +58,21 @@ jobs:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
           lfs: true
           path: pr_code
+      - name: Debug PR checkout
+        run: |
+          echo "PR repo: ${{ github.event.pull_request.head.repo.full_name }}"
+          echo "PR SHA: ${{ github.event.pull_request.head.sha }}"
+          echo "Contents of pr_code:"
+          ls -la pr_code/ || echo "pr_code directory not found"
+          echo "Contents of pr_code/docs:"
+          ls -la pr_code/docs/ || echo "pr_code/docs directory not found"
+          echo "Markdown files in pr_code/docs:"
+          find pr_code/docs -name "*.md" 2>/dev/null | head -20 || echo "No markdown files found"
       - name: Install Monty
         if: steps.restore_cache.outputs.cache-hit != 'true'
         uses: ./tbp.monty/.github/actions/install_monty
