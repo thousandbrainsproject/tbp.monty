@@ -161,6 +161,7 @@ To follow along, open the `benchmarks/configs/my_experiments.py` file and paste 
 import copy
 import os
 from dataclasses import asdict
+from pathlib import Path
 
 import numpy as np
 
@@ -199,7 +200,7 @@ Basic Info
 """
 
 # Specify directory where an output directory will be created.
-project_dir = os.path.expanduser("~/tbp/results/monty/projects")
+project_dir = Path("~/tbp/results/monty/projects").expanduser()
 
 # Specify a name for the model.
 model_name = "dist_agent_5lm_2obj"
@@ -207,11 +208,7 @@ model_name = "dist_agent_5lm_2obj"
 object_names = ["mug", "banana"]
 test_rotations = [np.array([0, 15, 30])] # A previously unseen rotation of the objects
 
-model_path = os.path.join(
-    project_dir,
-    model_name,
-    "pretrained",
-)
+model_path = project_dir / model_name / "pretrained"
 ```
 As usual, we set up our imports, save/load paths, and specify which objects to use and what rotations they'll be in. For simplicity, we'll only perform inference on each of the two objects once but you could easily test more by adding more rotations to the `test_rotations` array.
 
@@ -275,7 +272,7 @@ dist_agent_5lm_2obj_eval = dict(
     ),
     # Specify logging config.
     logging=EvalLoggingConfig(
-        output_dir=os.path.join(project_dir, model_name),
+        output_dir=project_dir / model_name,
         run_name="eval",
         monty_handlers=[BasicCSVStatsHandler],
         wandb_handlers=[],
@@ -336,14 +333,16 @@ Now you've seen how to set up and run a multi-LM models for both pretraining and
 During pretraining, each learning module learns its own object models independently of the other LMs. To visualize the models learned by each LM, create and a script with the code below. The location and name of the script is unimportant so long as it can find and import Monty.
 ```python
 import os
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import torch
 from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 # Get path to pretrained model
-project_dir = os.path.expanduser("~/tbp/results/monty/projects")
+project_dir = Path("~/tbp/results/monty/projects").expanduser()
 model_name = "dist_agent_5lm_2obj"
-model_path = os.path.join(project_dir, model_name, "pretrained/model.pt")
+model_path = project_dir / model_name / "pretrained" / "model.pt"
 state_dict = torch.load(model_path)
 
 fig = plt.figure(figsize=(8, 3))

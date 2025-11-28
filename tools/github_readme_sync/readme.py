@@ -17,6 +17,7 @@ import os
 import re
 from collections import OrderedDict
 from copy import deepcopy
+from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs
 
@@ -206,7 +207,7 @@ class ReadMe:
                 return match.group(0)
 
             # Get absolute path of CSV relative to current document
-            csv_path = os.path.join(file_path, csv_path)
+            csv_path = Path(file_path) / csv_path
             csv_path = os.path.normpath(csv_path)
 
             try:
@@ -496,7 +497,7 @@ class ReadMe:
         """
 
         def replace_match(match):
-            snippet_path = os.path.join(file_path, match.group(1))
+            snippet_path = Path(file_path) / match.group(1)
             snippet_path = os.path.normpath(snippet_path)
 
             try:
