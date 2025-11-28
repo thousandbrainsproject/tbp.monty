@@ -129,7 +129,7 @@ def process_markdown_files(docs_dir: str) -> list[dict]:
     if _is_empty(docs_dir):
         raise ValueError("docs_dir cannot be empty")
 
-    docs_path = Path(docs_dir)
+    docs_path = Path(docs_dir).resolve()
     if not docs_path.exists():
         raise ValueError(f"Directory {docs_dir} does not exist")
 
