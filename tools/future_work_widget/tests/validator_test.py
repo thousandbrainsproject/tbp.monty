@@ -19,6 +19,8 @@ from pydantic import ValidationError
 from tools.future_work_widget.validator import (
     MAX_COMMA_SEPARATED_ITEMS,
     FutureWorkRecord,
+    find_orphan_values,
+    get_snippet_file_path,
     load_allowed_values,
 )
 
@@ -280,6 +282,112 @@ class TestFutureWorkRecord(unittest.TestCase):
 
         errors = cm.exception.errors()
         self.assertTrue(any("Invalid contributor username" in e["msg"] for e in errors))
+
+
+class TestFindOrphanValues(unittest.TestCase):
+    def _create_record(self, **kwargs) -> FutureWorkRecord:
+        base = {
+            "path": "future-work/test.md",
+            "path1": "future-work",
+            "path2": "test",
+        }
+        base.update(kwargs)
+        return FutureWorkRecord.model_validate(base)
+
+    def test_find_orphan_skills_when_all_used(self):
+        records = [
+            self._create_record(skills=["python", "javascript"]),
+            self._create_record(skills=["github-actions"]),
+        ]
+        allowed_values = {
+            "skills": ["python", "javascript", "github-actions"],
+        }
+
+        orphans = find_orphan_values(records, allowed_values)
+
+        self.assertEqual(orphans, {})
+
+    def test_find_orphan_skills_when_some_unused(self):
+        records = [
+            self._create_record(skills=["python"]),
+        ]
+        allowed_values = {
+            "skills": ["python", "javascript", "rust"],
+        }
+
+        orphans = find_orphan_values(records, allowed_values)
+
+        self.assertIn("skills", orphans)
+        self.assertEqual(orphans["skills"], {"javascript", "rust"})
+
+    def test_find_orphan_values_multiple_fields(self):
+        records = [
+            self._create_record(skills=["python"], tags=["accuracy"]),
+        ]
+        allowed_values = {
+            "skills": ["python", "javascript"],
+            "tags": ["accuracy", "pose", "learning"],
+        }
+
+        orphans = find_orphan_values(records, allowed_values)
+
+        self.assertEqual(orphans["skills"], {"javascript"})
+        self.assertEqual(orphans["tags"], {"pose", "learning"})
+
+    def test_find_orphan_values_with_empty_records(self):
+        records: list[FutureWorkRecord] = []
+        allowed_values = {
+            "skills": ["python", "javascript"],
+        }
+
+        orphans = find_orphan_values(records, allowed_values)
+
+        self.assertEqual(orphans["skills"], {"python", "javascript"})
+
+    def test_find_orphan_values_with_no_allowed_values(self):
+        records = [
+            self._create_record(skills=["python"]),
+        ]
+        allowed_values: dict[str, list[str]] = {}
+
+        orphans = find_orphan_values(records, allowed_values)
+
+        self.assertEqual(orphans, {})
+
+    def test_find_orphan_values_records_without_field(self):
+        records = [
+            self._create_record(),
+        ]
+        allowed_values = {
+            "skills": ["python"],
+        }
+
+        orphans = find_orphan_values(records, allowed_values)
+
+        self.assertEqual(orphans["skills"], {"python"})
+
+
+class TestGetSnippetFilePath(unittest.TestCase):
+    def setUp(self):
+        self.temp_path = Path(tempfile.mkdtemp())
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_path)
+
+    def test_get_snippet_file_path_skills(self):
+        result = get_snippet_file_path(self.temp_path, "skills")
+        expected = str(self.temp_path / "future-work-skills.md")
+        self.assertEqual(result, expected)
+
+    def test_get_snippet_file_path_output_type(self):
+        result = get_snippet_file_path(self.temp_path, "output_type")
+        expected = str(self.temp_path / "future-work-output-type.md")
+        self.assertEqual(result, expected)
+
+    def test_get_snippet_file_path_improved_metric(self):
+        result = get_snippet_file_path(self.temp_path, "improved_metric")
+        expected = str(self.temp_path / "future-work-improved-metric.md")
+        self.assertEqual(result, expected)
 
 
 if __name__ == "__main__":

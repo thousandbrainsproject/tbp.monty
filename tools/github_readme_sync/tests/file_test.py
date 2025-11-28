@@ -81,8 +81,7 @@ class TestFindMarkdownFiles(unittest.TestCase):
 
         result_basenames = [Path(path).name for path in result]
 
-        self.assertIn("readme.md", result_basenames)
-        self.assertIn("guide.md", result_basenames)
+        self.assertEqual(sorted(result_basenames), sorted(["readme.md", "guide.md"]))
         self.assertNotIn("config.md", result_basenames)
         self.assertNotIn("settings.md", result_basenames)
         self.assertNotIn("secret.md", result_basenames)

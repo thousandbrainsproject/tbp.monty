@@ -18,6 +18,8 @@ from pydantic import ValidationError as PydanticValidationError
 from tools.future_work_widget.validator import (
     ErrorDetail,
     FutureWorkIndex,
+    find_orphan_values,
+    get_snippet_file_path,
     load_allowed_values,
 )
 
@@ -68,16 +70,28 @@ def build(
             )
         except PydanticValidationError as e:
             return _return_error_result(e, future_work_items, total_items)
-        else:
-            data_file = output_dir / "data.json"
-            with open(data_file, "w", encoding="utf-8") as f:
-                f.write(index.model_dump_json(indent=2, by_alias=True))
 
+        orphan_errors = _check_orphan_values(
+            index.root, allowed_values, docs_snippets_dir
+        )
+        if orphan_errors:
             return BuildResult(
-                success=True,
+                success=False,
                 future_work_items=len(index.root),
                 total_items=total_items,
+                errors=orphan_errors,
+                error_message=f"Found {len(orphan_errors)} orphan value error(s)",
             )
+
+        data_file = output_dir / "data.json"
+        with open(data_file, "w", encoding="utf-8") as f:
+            f.write(index.model_dump_json(indent=2, by_alias=True))
+
+        return BuildResult(
+            success=True,
+            future_work_items=len(index.root),
+            total_items=total_items,
+        )
 
     except Exception as e:  # noqa: BLE001
         return BuildResult(
@@ -108,6 +122,49 @@ def _validate_params(
         return f"Failed to create output directory {output_dir}: {e}"
 
     return None
+
+
+def _check_orphan_values(
+    records: list,
+    allowed_values: dict[str, list[str]],
+    docs_snippets_dir: Path,
+) -> list[ErrorDetail]:
+    """Check for orphan values and return error details.
+
+    Args:
+        records: List of validated FutureWorkRecord objects
+        allowed_values: Dict mapping field names to their allowed values
+        docs_snippets_dir: Path to the docs/snippets directory
+
+    Returns:
+        List of ErrorDetail objects for any orphan values found
+    """
+    orphans = find_orphan_values(records, allowed_values)
+    errors = []
+
+    for field_name, orphan_set in orphans.items():
+        snippet_path = get_snippet_file_path(docs_snippets_dir, field_name)
+        display_name = field_name.replace("_", "-")
+
+        for orphan_value in sorted(orphan_set):
+            errors.append(
+                ErrorDetail(
+                    message=(
+                        f"Orphan {display_name} value '{orphan_value}' is defined "
+                        f"but not used in any future work item. "
+                        f"Remove it from {Path(snippet_path).name} or use it in a "
+                        f"future work file."
+                    ),
+                    file=snippet_path,
+                    line=1,
+                    field=display_name,
+                    level="error",
+                    title=f"Orphan {display_name} value in {Path(snippet_path).name}",
+                    annotation_level="failure",
+                )
+            )
+
+    return errors
 
 
 def _return_error_result(
