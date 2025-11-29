@@ -52,7 +52,7 @@ runs:
       run: |
         export PATH="$HOME/miniconda/bin:$PATH"
         (conda env list | grep tbp.monty) && conda remove --name tbp.monty --all --yes || true
-        parallel --lb --halt now,done=1 ::: 'conda env create' 'for i in $(seq 1 120); do free -h; sleep 15; done'
+        parallel --lb --halt now,done=1 ::: 'conda env create || sudo dmesg -T | tail -n 10' 'for i in $(seq 1 120); do free -h; sleep 15; done'
         source activate tbp.monty
         pip install -e .[dev]
         pip list
