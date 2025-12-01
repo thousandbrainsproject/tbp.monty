@@ -36,6 +36,8 @@ class TestBuild(unittest.TestCase):
             Path to snippets directory
         """
         snippets_dir = self.temp_path / "snippets"
+        if snippets_dir.exists():
+            shutil.rmtree(snippets_dir)
         snippets_dir.mkdir(exist_ok=True)
 
         for filename, content in snippet_configs.items():
@@ -129,9 +131,8 @@ class TestBuild(unittest.TestCase):
         result_data = self._run_build(input_data)
 
         self.assertEqual(len(result_data), 1)
-        future_work_titles = [item["title"] for item in result_data]
-        self.assertIn("Improve voting mechanism", future_work_titles)
-        self.assertNotIn("Learning modules overview", future_work_titles)
+        self.assertEqual(result_data[0]["title"], "Improve voting mechanism")
+        self.assertNotIn("Learning modules overview", [item["title"] for item in result_data])
 
         for item in result_data:
             self.assertEqual(item["path1"], "future-work")
@@ -142,7 +143,7 @@ class TestBuild(unittest.TestCase):
             {
                 "name": "tags_transformation",
                 "snippet_file": "future-work-tags.md",
-                "snippet_content": "`accuracy` `pose` `learning` `multiobj`",
+                "snippet_content": "`accuracy` `learning`",
                 "field_name": "tags",
                 "input_value": "accuracy,learning",
                 "expected_result": ["accuracy", "learning"],
@@ -150,7 +151,7 @@ class TestBuild(unittest.TestCase):
             {
                 "name": "output_type_transformation",
                 "snippet_file": "future-work-output-type.md",
-                "snippet_content": "`documentation` `website` `tutorial`",
+                "snippet_content": "`documentation` `website`",
                 "field_name": "output-type",
                 "input_value": "documentation,website",
                 "expected_result": ["documentation", "website"],
@@ -249,13 +250,16 @@ class TestBuild(unittest.TestCase):
         self.assertEqual(len(result.errors), 1)
 
         error = result.errors[0]
-        self.assertIn("Invalid tags value 'invalid-tag'", error.message)
+        self.assertEqual(
+            error.message,
+            "Value error, Invalid tags value 'invalid-tag'. Valid values are: accuracy, learning, pose. To add a new value, edit docs/snippets/future-work-tags.md",
+        )
         self.assertEqual(error.file, "docs/future-work/test-item.md")
         self.assertEqual(error.line, 1)
         self.assertEqual(error.field, "tags")
         self.assertEqual(error.level, "error")
         self.assertEqual(error.annotation_level, "failure")
-        self.assertIn("test-item.md", error.title)
+        self.assertEqual(error.title, "Validation Error in test-item.md")
 
     def test_json_output_too_many_items_error(self):
         """Test JSON output mode with too many comma-separated items."""
@@ -285,14 +289,13 @@ class TestBuild(unittest.TestCase):
         self.assertEqual(len(result.errors), 1)
 
         error = result.errors[0]
-        self.assertIn("Cannot have more than", error.message)
-        self.assertIn(str(max_items), error.message)
+        self.assertEqual(error.message, f"Value error, Cannot have more than {max_items} items. Got {max_items + 1} items")
         self.assertEqual(error.file, "docs/future-work/test-limits.md")
         self.assertEqual(error.line, 1)
         self.assertEqual(error.field, "tags")
         self.assertEqual(error.level, "error")
         self.assertEqual(error.annotation_level, "failure")
-        self.assertIn("test-limits.md", error.title)
+        self.assertEqual(error.title, "Validation Error in test-limits.md")
 
     def test_field_validation_scenarios(self):
         """Test validation for various fields with valid and invalid values."""
@@ -300,51 +303,47 @@ class TestBuild(unittest.TestCase):
             {
                 "name": "estimated_scope_validation",
                 "snippet_file": "future-work-estimated-scope.md",
-                "snippet_content": "`small` `medium` `large` `unknown`",
+                "snippet_content": "`medium`",
                 "field_name": "estimated-scope",
                 "valid_value": "medium",
                 "invalid_value": "huge",
                 "expected_error_fragments": [
                     "Invalid estimated-scope value",
                     "huge",
-                    "large, medium, small, unknown",
                 ],
             },
             {
                 "name": "status_validation",
                 "snippet_file": "future-work-status.md",
-                "snippet_content": "`completed` `in-progress`",
+                "snippet_content": "`completed`",
                 "field_name": "status",
                 "valid_value": "completed",
                 "invalid_value": "pending",
                 "expected_error_fragments": [
                     "Invalid status value",
                     "pending",
-                    "completed, in-progress",
                 ],
             },
             {
                 "name": "tags_validation",
                 "snippet_file": "future-work-tags.md",
-                "snippet_content": "`accuracy` `pose` `learning` `multiobj`",
+                "snippet_content": "`accuracy` `learning`",
                 "field_name": "tags",
                 "valid_value": "accuracy,learning",
                 "invalid_value": "accuracy,invalid-tag,learning",
                 "expected_error_fragments": [
                     "Invalid tags value 'invalid-tag'",
-                    "accuracy, learning, multiobj, pose",
                 ],
             },
             {
                 "name": "output_type_validation",
                 "snippet_file": "future-work-output-type.md",
-                "snippet_content": "`documentation` `website` `tutorial`",
+                "snippet_content": "`documentation` `website`",
                 "field_name": "output-type",
                 "valid_value": "documentation,website",
                 "invalid_value": "documentation,invalid-type",
                 "expected_error_fragments": [
                     "Invalid output-type value 'invalid-type'",
-                    "documentation, tutorial, website",
                 ],
             },
             {
@@ -356,7 +355,6 @@ class TestBuild(unittest.TestCase):
                 "invalid_value": "community-engagement,invalid-metric",
                 "expected_error_fragments": [
                     "Invalid improved-metric value 'invalid-metric'",
-                    "community-engagement, infrastructure",
                 ],
             },
         ]
@@ -391,6 +389,132 @@ class TestBuild(unittest.TestCase):
                 error_message = result.errors[0].message
                 for fragment in case["expected_error_fragments"]:
                     self.assertIn(fragment, error_message)
+
+    def test_orphan_skills_detection(self):
+        snippets_dir = self._create_snippets(
+            {
+                "future-work-skills.md": "`python` `javascript` `rust` `go`",
+            }
+        )
+
+        input_data = [
+            self._create_future_work_item(
+                path="docs/future-work/test-item.md",
+                path2="test-item",
+                title="Test item",
+                skills="python,javascript",
+            )
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        result = build(index_file, self.temp_path, snippets_dir)
+
+        self.assertFalse(result.success)
+        self.assertEqual(len(result.errors), 2)
+
+        error_messages = [e.message for e in result.errors]
+        self.assertTrue(any("rust" in msg for msg in error_messages))
+        self.assertTrue(any("go" in msg for msg in error_messages))
+
+        for error in result.errors:
+            self.assertTrue(error.file.endswith("future-work-skills.md"))
+            self.assertEqual(error.field, "skills")
+            self.assertEqual(error.annotation_level, "failure")
+            self.assertTrue(error.title.startswith("Orphan skills value in"))
+
+    def test_orphan_tags_detection(self):
+        snippets_dir = self._create_snippets(
+            {
+                "future-work-tags.md": "`accuracy` `pose` `learning` `unused-tag`",
+            }
+        )
+
+        input_data = [
+            self._create_future_work_item(
+                path="docs/future-work/test-item.md",
+                path2="test-item",
+                title="Test item",
+                tags="accuracy,pose,learning",
+            )
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        result = build(index_file, self.temp_path, snippets_dir)
+
+        self.assertFalse(result.success)
+        self.assertEqual(len(result.errors), 1)
+
+        error = result.errors[0]
+        self.assertEqual(error.message, "Orphan tags value 'unused-tag' is defined but not used in any future work item. Remove it from future-work-tags.md or use it in a future work file.")
+        self.assertTrue(error.file.endswith("future-work-tags.md"))
+        self.assertEqual(error.field, "tags")
+
+    def test_no_orphan_values_when_all_used(self):
+        snippets_dir = self._create_snippets(
+            {
+                "future-work-skills.md": "`python` `javascript`",
+            }
+        )
+
+        input_data = [
+            self._create_future_work_item(
+                path="docs/future-work/test-item.md",
+                path2="test-item",
+                title="Test item 1",
+                skills="python",
+            ),
+            self._create_future_work_item(
+                path="docs/future-work/test-item-2.md",
+                path2="test-item-2",
+                title="Test item 2",
+                skills="javascript",
+            ),
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        result = build(index_file, self.temp_path, snippets_dir)
+
+        self.assertTrue(result.success)
+        self.assertIsNone(result.errors)
+
+    def test_orphan_multiple_fields_detection(self):
+        snippets_dir = self._create_snippets(
+            {
+                "future-work-skills.md": "`python` `unused-skill`",
+                "future-work-tags.md": "`accuracy` `unused-tag`",
+            }
+        )
+
+        input_data = [
+            self._create_future_work_item(
+                path="docs/future-work/test-item.md",
+                path2="test-item",
+                title="Test item",
+                skills="python",
+                tags="accuracy",
+            )
+        ]
+
+        index_file = self.temp_path / "index.json"
+        with open(index_file, "w", encoding="utf-8") as f:
+            json.dump(input_data, f)
+
+        result = build(index_file, self.temp_path, snippets_dir)
+
+        self.assertFalse(result.success)
+        self.assertEqual(len(result.errors), 2)
+
+        error_fields = {e.field for e in result.errors}
+        self.assertEqual(error_fields, {"skills", "tags"})
 
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union, get_args, get_origin
 
 import nh3
 from pydantic import (
@@ -369,3 +369,74 @@ def load_allowed_values(docs_snippets_dir: Path) -> dict[str, list[str]]:
             )
 
     return allowed_values
+
+
+def _get_list_fields() -> set[str]:
+    """Get field names from FutureWorkRecord that are list types.
+
+    Returns:
+        Set of field names that have list[str] type annotation
+    """
+    list_fields = set()
+    for field_name, field_info in FutureWorkRecord.model_fields.items():
+        annotation = field_info.annotation
+        origin = get_origin(annotation)
+        if origin is list:
+            list_fields.add(field_name)
+        elif origin is Union:
+            for arg in get_args(annotation):
+                if get_origin(arg) is list:
+                    list_fields.add(field_name)
+                    break
+    return list_fields
+
+
+def find_orphan_values(
+    records: list[FutureWorkRecord],
+    allowed_values: dict[str, list[str]],
+) -> dict[str, set[str]]:
+    """Find values defined in allowed_values that are not used in any record.
+
+    Args:
+        records: List of validated FutureWorkRecord objects
+        allowed_values: Dict mapping field names to their allowed values
+
+    Returns:
+        Dict mapping field names to sets of orphan values (defined but unused)
+    """
+    list_fields = _get_list_fields()
+    checkable_fields = set(allowed_values.keys()) & list_fields
+
+    used_values: dict[str, set[str]] = {field: set() for field in checkable_fields}
+
+    for record in records:
+        for field_name in checkable_fields:
+            field_value = getattr(record, field_name, None)
+            if field_value:
+                used_values[field_name].update(field_value)
+
+    orphans: dict[str, set[str]] = {}
+    for field_name in checkable_fields:
+        defined_values = set(allowed_values.get(field_name, []))
+        unused = defined_values - used_values[field_name]
+        if unused:
+            orphans[field_name] = unused
+
+    return orphans
+
+
+def get_snippet_file_path(
+    docs_snippets_dir: Path,
+    field_name: str,
+) -> str:
+    """Get the path to the snippet file for a given field.
+
+    Args:
+        docs_snippets_dir: Path to the docs/snippets directory
+        field_name: Field name (e.g., "skills", "output_type")
+
+    Returns:
+        String path to the snippet file
+    """
+    display_name = field_name.replace("_", "-")
+    return str(docs_snippets_dir / f"future-work-{display_name}.md")

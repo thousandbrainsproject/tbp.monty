@@ -135,8 +135,13 @@ class TestReadme(unittest.TestCase):
             "hidden": False,
         }
         doc = self.readme.get_doc_by_slug("test-doc")
-        self.assertIn("title: Test Document", doc)
-        self.assertIn("This is a test document.", doc)
+        self.assertEqual(
+            doc,
+            """---
+title: Test Document
+---
+This is a test document.""",
+        )
         mock_get.assert_called_once_with(
             "https://dash.readme.com/api/v1/docs/test-doc",
             {"x-readme-version": self.version},

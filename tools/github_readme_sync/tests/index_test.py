@@ -107,7 +107,7 @@ class TestGenerateIndex(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             generate_index(nonexistent_dir, output_file_path)
 
-        self.assertIn("does not exist", str(context.exception))
+        self.assertEqual(str(context.exception), f"Directory {nonexistent_dir} does not exist")
 
     def test_malicious_frontmatter_sanitization(self):
         """Test that malicious frontmatter fields are properly sanitized."""
