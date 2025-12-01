@@ -1,11 +1,20 @@
 ---
 title: Model-Based Exploration Policy
+description: Use LM models during exploration to move to most uncertain areas in model and learn more about those.
+rfc: optional
+estimated-scope: unknown
+improved-metric: learning
+output-type: prototype, monty-feature, PR
+skills: python, monty, spatial-transformations, research
+contributor: 
+status: open
 ---
+
 During exploration/learning-focused movement, we do not make use of any model-based, top-down policies driven by LMs. Two approaches we would like to implement are:
 - A model-based policy that moves the sensors to areas that potentially represent the explored limits of an object. For example, if we've explored the surface of an object but not the entirety of it, then there will be points on the edge of the learned model with few neighboring points. Exploring in these regions is likely to efficiently uncover novel observations. Note that a "false-positive" for this heuristic is that thin objects like a wire or piece of paper will have such regions naturally at their edges, so it should only represent a bias in exploration, not a hard rule.
 - A model-based policy that spends more time exploring regions associated with high-frequency feature changes, or discriminative object-parts. For example, the spoon and fork in YCB are easy to confuse if the models of their heads are not sufficiently detailed. Two heuristics to support greater exploration in this area could include:
     - High-frequency changes in low-level features means we need a more detailed model of that part of the object. For example, the surface normals change frequently at the head of the fork, and so we likely need to explore it in more detail to develop a sufficiently descriptive model. The feature-change sensor-module is helpful for ensuring these observations are processed by the learning-module, but a modified policy would actually encourage more exploration in these regions.
-    - Locations that are useful for distinguishing objects, such as the fork vs. spoon heads, are worth knowing in detail, because they define the differences between similar objects. These points correspond to those that are frequently tested by the hypothesis-testing policy (see [Reuse Hypothesis-Testing Policy Target Points](../motor-system-improvements/reuse-hypothesis-testing-policy-target-points.md)), and such stored locations can be leveraged to guide exploration.
+    - Locations that are useful for distinguishing objects, such as the fork vs. spoon heads, are worth knowing in detail, because they define the differences between similar objects. These points correspond to those that are frequently tested by the hypothesis-testing policy, and such stored locations can be leveraged to guide exploration.
     - As we introduce hierarchy, it may be possible to unify these concepts under a single policy, i.e. where frequently changing features can either be at the sensory (low-level) input, or at the more abstract level of incoming sub-objects.
 
 Model-based exploration policies will be particularly important in an unsupervised setting. In particular, Monty will need to efficiently explore objects in order to recognize the commonality between different perspectives from which they are observed. For example, after learning a coffee mug from one view, and then seeing it from a different angle, Monty can move around to see that these are two views of the same object, and combine these into a single model. However, this recognition requires some overlap between the parts of the mug that have been see during the first exposure and what is observed on the second exposure. Learning the full structure of an object through active exploration should be easier than relying on separate, idealized views of the object (e.g. 14 rotations corresponding to the 6 faces and 8 corners of a cube), where the overlap between view points may be minimal.
