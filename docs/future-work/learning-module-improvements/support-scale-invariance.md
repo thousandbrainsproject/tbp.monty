@@ -1,5 +1,13 @@
 ---
 title: Support Scale Invariance
+description: Add a mechanism to detect and compensate for scale of an object.
+rfc: required
+estimated-scope: large
+improved-metric: scale
+output-type: theory, prototype, experiments, analysis
+skills: python, research, monty, literature-review
+contributor: 
+status: open
 ---
 
 It remains unclear how scale invariance would be implemented at a neural level, although we have discussed the possibility that the frequency of oscillatory activity in neurons is scaled. This could in turn modulate how movements are accounted for during path integration.

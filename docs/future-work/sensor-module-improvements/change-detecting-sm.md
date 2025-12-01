@@ -1,6 +1,13 @@
 ---
 title: Change Detecting SM
 description: Add a new type of sensor module that detects local changes and output's those as CMP messages.
+rfc: required
+estimated-scope: large
+improved-metric: dynamic
+output-type: prototype, monty-feature, PR
+skills: python, research, computer-vision
+contributor: 
+status: open
 ---
 
 This item relates to the broader goal of [modeling object behaviors in Monty](../../theory/recent-progress/object-behaviors.md#implementation-in-monty). It also builds on [detecting local and global flow](detect-local-and-global-flow.md) in the SM.
