@@ -1,5 +1,13 @@
 ---
-title: Reuse Hypothesis-Testing Policy Target Points
+title: Learn Hot Spots on Objects
+description: Store locations on objects that helped most in recognizing it or that contain particularly salient features to use as heuristics when attending.
+rfc: optional
+estimated-scope: medium
+improved-metric: numsteps, speed
+output-type: prototype, PR, monty-feature, analysis
+skills: python, monty, research
+contributor: 
+status: open
 ---
 
 The hypothesis-testing policy is able to generate candidate points on an object that, when observed, should rapidly disambiguate between similar objects, or between similar poses of the same object.

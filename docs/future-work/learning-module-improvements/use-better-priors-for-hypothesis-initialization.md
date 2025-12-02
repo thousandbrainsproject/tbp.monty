@@ -1,5 +1,13 @@
 ---
 title: Use Better Priors for Hypothesis Initialization
+description: Inform initial hypotheses by common orientations an object is observed in and context.
+rfc: required
+estimated-scope: large
+improved-metric: numsteps, pose, speed
+output-type: prototype, monty-feature, analysis, PR
+skills: python, research, monty
+contributor: 
+status: open
 ---
 
 Currently all object poses are equally likely, because stimuli exist in a void and are typically rotated randomly at test time. However, as we move towards compositional and scene-like datasets where certain object poses are more common, we would like to account for this information in our hypothesis testing.

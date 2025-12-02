@@ -1,9 +1,17 @@
 ---
 title: Interpret Goal States in Motor System & Switch Policies
+description: Enable the motor system to switch between different ways to achieve goals.
+rfc: optional
+estimated-scope: unknown
+improved-metric: numsteps, goal-policy
+output-type: PR, monty-feature
+skills: python, monty, refactoring
+contributor: tristanls-tbp
+status: scoping
 ---
 
-We would like to implement a state-switching mechanism where an LM (or multiple LMs) can pass a goal-state to the motor system to switch the model-free policies that it is executing.
+We would like to implement a state-switching mechanism where the motor system can switch the policy that it is executing, depending on the goal state it receives.
 
-For example, we might like to perform a thorough, random walk in a small region if the observations are noisy and we would like to sample them densely. Alternatively, we might like to move quickly across the surface of an object, spending little time in a given region.
+For example, we might want to do a semi-random walk when the motor system is not receiving goal states. We may want to switch to a saccade policy (rotating the sensor without moving it's position) when the sensor module sends a goal based on detected salient features. We may want to switch to a "JumpToGoalState" policy when the motor system receives a goal from the learning module that includes both a desired location and orientation (i.e. move the agent and rotate it)
 
 This task also relates to [Enable Switching Between Learning and Inference-Focused Policies](./implement-switching-between-learning-and-inference-focused-policies.md).

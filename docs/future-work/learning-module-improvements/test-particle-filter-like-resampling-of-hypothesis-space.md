@@ -1,5 +1,13 @@
 ---
 title: Test Particle-Filter-Like Resampling of Hypothesis Space
+description: Resample new hypotheses dynamically throughout an experiment.
+rfc: https://github.com/thousandbrainsproject/tbp.monty/blob/main/rfcs/0009_hypotheses_resampling.md
+estimated-scope: large
+improved-metric: accuracy, speed, multi-object
+output-type: prototype, experiments, analysis, PR
+skills: python, monty, research
+contributor: ramyamounir
+status: completed
 ---
 
 In order to make better use of the available computational resources, we might begin by sampling a "coarse" subset of possible hypotheses across objects at the start of an episode. As the episode progresses, we could re-sample regions that have high probability, in order to explore hypotheses there in finer detail. This would serve the purpose of enabling us to have broad hypotheses initially, without unacceptably large computational costs. At the same time, we could still develop a refined hypothesis of the location and pose of the object, given the additional sampling of high-probability regions.

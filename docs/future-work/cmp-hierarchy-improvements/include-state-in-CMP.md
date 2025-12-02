@@ -1,6 +1,13 @@
 ---
 title: Include State in CMP
 description: Include the inferred state of an object as part of the CMP message.
+rfc: optional
+estimated-scope: small
+improved-metric: dynamic
+output-type: PR, monty-feature
+skills: python
+contributor: 
+status: open
 ---
 
 This item relates to the broader goal of [modeling object behaviors in Monty](../../theory/recent-progress/object-behaviors.md#implementation-in-monty).

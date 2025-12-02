@@ -1,5 +1,13 @@
 ---
 title: Figure out Performance Measures and Supervision in Heterarchy
+description: Set up way to supervise LMs when learning compositional objects, as well as metrics to measure their performance.
+rfc: optional
+estimated-scope: medium
+improved-metric: compositional
+output-type: PR, experiments, monty-feature
+skills: python, monty
+contributor: nielsleadholm, vkakerbeck, jeremyshoemaker
+status: completed
 ---
 As we introduce hierarchy and compositional objects, such as a mug with a logo on it, we need to figure out both how to measure the performance of the system, and how to supervise the learning. For the latter, we might choose to train the system on component objects in isolation (various logos, mugs, bowls, etc.) before then showing Monty the full compositional object (a mug with a logo on it). When evaluating performance, we might then see how well the system retrieves representations at different levels of the hierarchy. However, in the more core setting of unsupervised learning, representations of the sub-objects would likely also emerge at the high level (a coarse logo representation, etc.), while we may also find some representations of the mug in low-level LMs. Deciding then how we measure performance will be more difficult.
 
