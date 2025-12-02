@@ -1,0 +1,10 @@
+# @package config.monty_config
+# Connectivity for patch + view_finder with single LM
+sm_to_agent_dict:
+  patch: ${monty.agent_id:agent_id_0}
+  view_finder: ${monty.agent_id:agent_id_0}
+sm_to_lm_matrix:
+  - [0]
+lm_to_lm_matrix: null
+lm_to_lm_vote_matrix: null
+

@@ -1,0 +1,10 @@
+# @package config.monty_config.motor_system_config
+# Informed motor policy with goal state driven actions, farther from object
+defaults:
+  - informed_goal_state_driven
+
+motor_system_args:
+  policy_args:
+    action_sampler_args:
+      rotation_degrees: 10.0 # Relatively large step-size
+    good_view_percentage: 0.5 # Relatively far from the object

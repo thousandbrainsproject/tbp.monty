@@ -1,0 +1,62 @@
+# @package config.monty_config
+# Surface agent configuration
+#
+# Uses a surface sensor module (is_surface_sm: true) with surface policy.
+
+defaults:
+  - monty_class: graph_matching
+  - monty_args: defaults
+
+motor_system_config:
+  motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+  motor_system_args:
+    policy_class: ${monty.class:tbp.monty.frameworks.models.motor_policies.SurfacePolicy}
+    policy_args:
+      use_goal_state_driven_actions: false
+      agent_id: ${monty.agent_id:agent_id_0}
+      action_sampler_class: ${monty.class:tbp.monty.frameworks.actions.action_samplers.ConstantSampler}
+
+learning_module_configs:
+  learning_module_0:
+    learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+    learning_module_args:
+      k: 5
+      match_attribute: displacement
+
+sensor_module_configs:
+  sensor_module_0:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+    sensor_module_args:
+      is_surface_sm: true
+      sensor_module_id: patch
+      features:
+        - pose_vectors
+        - pose_fully_defined
+        - on_object
+        - object_coverage
+        - min_depth
+        - mean_depth
+        - hsv
+        - principal_curvatures
+        - principal_curvatures_log
+        - gaussian_curvature
+        - mean_curvature
+        - gaussian_curvature_sc
+        - mean_curvature_sc
+      save_raw_obs: true
+  sensor_module_1:
+    sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+    sensor_module_args:
+      sensor_module_id: view_finder
+      save_raw_obs: true
+
+sm_to_agent_dict:
+  patch: ${monty.agent_id:agent_id_0}
+  view_finder: ${monty.agent_id:agent_id_0}
+
+sm_to_lm_matrix:
+  - [0]
+
+lm_to_lm_matrix: null
+lm_to_lm_vote_matrix: null
+

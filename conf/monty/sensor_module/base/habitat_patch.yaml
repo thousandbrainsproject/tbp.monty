@@ -1,0 +1,7 @@
+# Base template for HabitatSM patch sensor module
+# No @package - used as source for composition
+sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.HabitatSM}
+sensor_module_args:
+  sensor_module_id: patch
+  save_raw_obs: true
+

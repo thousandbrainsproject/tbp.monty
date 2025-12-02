@@ -1,0 +1,30 @@
+# @package config.monty_config.sensor_module_configs
+# Five noisy patch sensors + view finder
+# Composite preset using base templates
+defaults:
+  - /monty/sensor_module/base/default_all_noisy@sensor_module_0
+  - /monty/sensor_module/base/default_all_noisy@sensor_module_1
+  - /monty/sensor_module/base/default_all_noisy@sensor_module_2
+  - /monty/sensor_module/base/default_all_noisy@sensor_module_3
+  - /monty/sensor_module/base/default_all_noisy@sensor_module_4
+  - /monty/sensor_module/base/view_finder@sensor_module_5
+
+sensor_module_0:
+  sensor_module_args:
+    sensor_module_id: patch_0
+sensor_module_1:
+  sensor_module_args:
+    sensor_module_id: patch_1
+sensor_module_2:
+  sensor_module_args:
+    sensor_module_id: patch_2
+sensor_module_3:
+  sensor_module_args:
+    sensor_module_id: patch_3
+sensor_module_4:
+  sensor_module_args:
+    sensor_module_id: patch_4
+sensor_module_5:
+  sensor_module_args:
+    sensor_module_id: view_finder
+

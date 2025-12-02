@@ -1,0 +1,8 @@
+# @package motor_system_args.policy_args.action_sampler_args
+actions:
+  - ${monty.class:tbp.monty.frameworks.actions.actions.SetAgentPitch}
+  - ${monty.class:tbp.monty.frameworks.actions.actions.SetSensorPitch}
+  - ${monty.class:tbp.monty.frameworks.actions.actions.SetYaw}
+  - ${monty.class:tbp.monty.frameworks.actions.actions.SetAgentPose}
+  - ${monty.class:tbp.monty.frameworks.actions.actions.SetSensorRotation}
+  - ${monty.class:tbp.monty.frameworks.actions.actions.SetSensorPose}

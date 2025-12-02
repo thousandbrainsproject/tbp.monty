@@ -1,0 +1,7 @@
+# @package motor_system_args.policy_args
+defaults:
+  - informed
+
+desired_object_distance: 0.025
+alpha: 0.1
+agent_id: ${monty.agent_id:agent_id_0}

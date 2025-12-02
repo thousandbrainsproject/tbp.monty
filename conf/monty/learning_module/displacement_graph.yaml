@@ -1,0 +1,8 @@
+# @package config.monty_config.learning_module_configs
+# Displacement graph learning module
+learning_module_0:
+  learning_module_class: ${monty.class:tbp.monty.frameworks.models.displacement_matching.DisplacementGraphLM}
+  learning_module_args:
+    k: 5
+    match_attribute: displacement
+

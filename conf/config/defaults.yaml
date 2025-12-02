@@ -1,0 +1,90 @@
+# @package config
+# Base experiment configuration defaults
+
+# ============================================================================
+# Experiment settings
+# ============================================================================
+do_train: true
+do_eval: true
+show_sensor_output: false
+max_train_steps: 1000
+max_eval_steps: 500
+max_total_steps: 6000
+n_train_epochs: 3
+n_eval_epochs: 3
+model_name_or_path: ""
+min_lms_match: 1
+seed: 42
+supervised_lm_ids: []
+
+# ============================================================================
+# Shared presets 
+# ============================================================================
+
+# Default noise parameters for noisy sensor experiments
+default_all_noise_params:
+  features:
+    pose_vectors: 2       # rotate by random degrees along xyz
+    hsv: 0.1              # add gaussian noise with 0.1 std
+    principal_curvatures_log: 0.1
+    pose_fully_defined: 0.01  # flip bool in 1% of cases
+  location: 0.002         # add gaussian noise with 0.002 std
+
+# Default sensor features
+default_sensor_features:
+  - pose_vectors
+  - pose_fully_defined
+  - on_object
+  - hsv
+  - principal_curvatures_log
+
+# Multi-LM features (for experiments with voting)
+multi_lm_features:
+  - on_object
+  - rgba
+  - hsv
+  - pose_vectors
+  - principal_curvatures
+  - principal_curvatures_log
+  - gaussian_curvature
+  - mean_curvature
+  - gaussian_curvature_sc
+  - mean_curvature_sc
+
+# Minimum evaluation steps (prevents overfitting on first few points)
+min_eval_steps: 20
+
+# Pretrained models directory
+# v11: trained on standard TBP benchmark infrastructure as of Nov 2025
+pretrained_dir: ${path.expanduser:${oc.env:MONTY_MODELS}/pretrained_ycb_v11}
+
+# ============================================================================
+# Rotation presets
+# ============================================================================
+
+# 14 unique rotations that give good views of the object
+# Same rotations used for supervised pretraining
+rotations_all_count: 14
+rotations_all:
+  - [0, 0, 0]
+  - [0, 90, 0]
+  - [0, 180, 0]
+  - [0, 270, 0]
+  - [90, 0, 0]
+  - [90, 180, 0]
+  - [35, 45, 0]
+  - [325, 45, 0]
+  - [35, 315, 0]
+  - [325, 315, 0]
+  - [35, 135, 0]
+  - [325, 135, 0]
+  - [35, 225, 0]
+  - [325, 225, 0]
+
+# 3 basic rotations
+rotations_3_count: 3
+rotations_3:
+  - [0, 0, 0]
+  - [0, 90, 0]
+  - [0, 180, 0]
+

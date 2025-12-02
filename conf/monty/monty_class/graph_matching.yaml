@@ -1,0 +1,4 @@
+# @package config.monty_config
+# Graph matching Monty class
+monty_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.MontyForGraphMatching}
+

@@ -1,0 +1,23 @@
+# @package config.monty_config.sensor_module_configs
+# Habitat patch and view finder sensor modules
+defaults:
+  - /monty/sensor_module/base/habitat_patch@sensor_module_0
+  - /monty/sensor_module/base/view_finder@sensor_module_1
+
+sensor_module_0:
+  sensor_module_args:
+    features:
+      - pose_vectors
+      - pose_fully_defined
+      - on_object
+      - object_coverage
+      - rgba
+      - hsv
+      - principal_curvatures
+      - principal_curvatures_log
+      - gaussian_curvature
+      - mean_curvature
+      - gaussian_curvature_sc
+      - mean_curvature_sc
+    save_raw_obs: true
+

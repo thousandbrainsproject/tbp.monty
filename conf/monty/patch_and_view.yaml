@@ -1,0 +1,14 @@
+# @package config.monty_config
+# Patch and view finder agent - composed from subcomponents
+#
+# This is the standard configuration for a single patch sensor + view finder
+# with informed policy and displacement graph learning module.
+
+defaults:
+  - monty_class: graph_matching
+  - monty_args: defaults
+  - motor_system: informed
+  - learning_module: displacement_graph
+  - sensor_module: view_finder
+  - connectivity: patch_view_single_lm
+

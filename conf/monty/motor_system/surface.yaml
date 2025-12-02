@@ -1,0 +1,11 @@
+# @package config.monty_config.motor_system_config
+# Surface motor policy
+defaults:
+  - policy: surface
+  - action_space: surface_agent
+
+motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+motor_system_args:
+  policy_class: ${monty.class:tbp.monty.frameworks.models.motor_policies.SurfacePolicy}
+  policy_args:
+    action_sampler_class: ${monty.class:tbp.monty.frameworks.actions.action_samplers.ConstantSampler}

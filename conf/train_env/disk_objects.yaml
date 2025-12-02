@@ -1,0 +1,9 @@
+# @package config.train_env_interface_args
+# Disk objects for 2D sensor experiments
+defaults:
+  - per_object
+
+object_names:
+  - 007_disk_tbp_horz
+  - 009_disk_numenta_horz
+

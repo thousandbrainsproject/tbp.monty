@@ -1,0 +1,11 @@
+# @package config.monty_config.motor_system_config
+# Naive scan policy with spiral pattern
+defaults:
+  - policy: naive_scan
+  - action_space: distant_agent_no_translation
+
+motor_system_class: ${monty.class:tbp.monty.frameworks.models.motor_system.MotorSystem}
+motor_system_args:
+  policy_class: ${monty.class:tbp.monty.frameworks.models.motor_policies.NaiveScanPolicy}
+  policy_args:
+    action_sampler_class: ${monty.class:tbp.monty.frameworks.actions.action_samplers.ConstantSampler}

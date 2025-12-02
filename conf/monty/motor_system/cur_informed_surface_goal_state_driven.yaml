@@ -1,0 +1,8 @@
+# @package config.monty_config.motor_system_config
+# Surface policy with curvature-informed exploration and goal state driven actions
+defaults:
+  - curvature_informed_surface
+
+motor_system_args:
+  policy_args:
+    use_goal_state_driven_actions: true

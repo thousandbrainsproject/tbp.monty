@@ -1,0 +1,40 @@
+# @package config.env_interface_config
+# Patch and view finder habitat environment
+env_init_func: ${monty.class:tbp.monty.simulators.habitat.environment.HabitatEnvironment}
+env_init_args:
+  objects:
+    - name: coneSolid
+      position: [0.0, 1.5, -0.1]
+  scene_id: null
+  seed: 42
+  data_path: ${path.expanduser:${oc.env:MONTY_DATA}/habitat/objects/ycb}
+  agents:
+    agent_type: ${monty.class:tbp.monty.simulators.habitat.MultiSensorAgent}
+    agent_args:
+      agent_id: ${monty.agent_id:agent_id_0}
+      sensor_ids:
+        - patch
+        - view_finder
+      height: 0.0
+      position: [0.0, 1.5, 0.2]
+      resolutions: [[64, 64], [64, 64]]
+      positions: [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
+      rotations: [[1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]]
+      semantics: [false, false]
+      zooms: [10.0, 1.0]
+transform:
+  - _target_: tbp.monty.frameworks.environment_utils.transforms.MissingToMaxDepth
+    agent_id: ${monty.agent_id:agent_id_0}
+    max_depth: 1
+  - _target_: tbp.monty.frameworks.environment_utils.transforms.DepthTo3DLocations
+    agent_id: ${monty.agent_id:agent_id_0}
+    sensor_ids:
+      - patch
+      - view_finder
+    resolutions: [[64, 64], [64, 64]]
+    world_coord: true
+    zooms: [10.0, 1.0]
+    get_all_points: true
+    use_semantic_sensor: false
+rng: null
+
