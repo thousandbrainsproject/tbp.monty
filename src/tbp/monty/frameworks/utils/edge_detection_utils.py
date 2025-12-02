@@ -228,8 +228,8 @@ def compute_edge_features_center_weighted(
     local_energy = total_weight / (area_window + EPSILON)
 
     # Reject if energy too low or coherence too low
-    if local_energy < e_min or coherence < c_min:
-        return 0.0, 0.0, 0.0
+    # if local_energy < e_min or coherence < c_min:
+    #     return 0.0, 0.0, 0.0
 
     return float(edge_strength), float(coherence), float(tangent_theta)
 
@@ -237,16 +237,16 @@ def compute_edge_features_center_weighted(
 def compute_edge_features_at_center_histogram(
     patch: np.ndarray,
     r_max: float = 16.0,
-    tau_mag_ratio: float = 0.1,
+    tau_mag_ratio: float = 0.005,
     n_bins: int = 36,
-    d_min: float = 0.5,
+    d_min: float = 0.2,
     delta_theta: float = np.pi / 12,
-    n_min_candidates: int = 10,
-    n_min_consistent: int = 15,
-    d_inlier: float = 1.5,
+    n_min_candidates: int = 5,
+    n_min_consistent: int = 5,
+    d_inlier: float = 2.5,
     n_min_inlier: int = 10,
-    f_min: float = 0.5,
-    d_center_max: float = 2.0,
+    f_min: float = 0.3,
+    d_center_max: float = 4.0,
     win_sigma: float = DEFAULT_WINDOW_SIGMA,
     ksize: int = 3,
 ) -> Tuple[float, float, float]:
@@ -329,8 +329,8 @@ def compute_edge_features_at_center_histogram(
     n_candidates = len(candidate_rows)
 
     # Reject if too few candidates
-    if n_candidates < n_min_candidates:
-        return 0.0, 0.0, 0.0
+    # if n_candidates < n_min_candidates:
+    #     return 0.0, 0.0, 0.0
 
     # Step 3: Orientation histogram
     # Create histogram weighted by gradient magnitude
@@ -352,14 +352,14 @@ def compute_edge_features_at_center_histogram(
     w_total = np.sum(h_smooth)  # noqa: N806
 
     # Check dominance ratio
-    if w_total < EPSILON:
-        return 0.0, 0.0, 0.0
+    # if w_total < EPSILON:
+    #     return 0.0, 0.0, 0.0
 
     dominance = w_max / w_total  # noqa: N806
 
     # Reject if dominance too low
-    if dominance < d_min:
-        return 0.0, 0.0, 0.0
+    # if dominance < d_min:
+    #     return 0.0, 0.0, 0.0
 
     # Compute dominant gradient orientation
     theta_g_star = (k_max + 0.5) * np.pi / n_bins
@@ -383,8 +383,8 @@ def compute_edge_features_at_center_histogram(
     n_consistent = len(consistent_rows)
 
     # Reject if too few orientation-consistent pixels
-    if n_consistent < n_min_consistent:
-        return 0.0, 0.0, 0.0
+    # if n_consistent < n_min_consistent:
+    #     return 0.0, 0.0, 0.0
 
     # Step 5: Fit line with fixed orientation
     # Normal unit vector (perpendicular to tangent)
@@ -407,20 +407,20 @@ def compute_edge_features_at_center_histogram(
     n_inliers = np.sum(mask_inliers)
 
     # Reject if too few inliers or inlier fraction too low
-    if n_inliers < n_min_inlier:
-        return 0.0, 0.0, 0.0
+    # if n_inliers < n_min_inlier:
+    #     return 0.0, 0.0, 0.0
 
     inlier_fraction = n_inliers / n_consistent
-    if inlier_fraction < f_min:
-        return 0.0, 0.0, 0.0
+    # if inlier_fraction < f_min:
+    #     return 0.0, 0.0, 0.0
 
     # Check center distance to line
     center_coord = np.array([c0, r0])
     d_center = np.abs(np.dot(center_coord, n) - b)
 
     # Reject if line doesn't pass near center
-    if d_center > d_center_max:
-        return 0.0, 0.0, 0.0
+    # if d_center > d_center_max:
+    #     return 0.0, 0.0, 0.0
 
     # Step 7: Compute outputs
     # Edge strength: average gradient magnitude of inliers
