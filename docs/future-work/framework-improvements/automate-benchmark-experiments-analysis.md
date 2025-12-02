@@ -1,8 +1,8 @@
 ---
 title: Automate Benchmark Experiments & Analysis
 description: 
-rfc: required
-estimated-scope: medium
+rfc: 
+estimated-scope: large
 improved-metric: infrastructure
 output-type: PR, automation
 skills: python
