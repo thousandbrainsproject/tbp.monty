@@ -1,0 +1,41 @@
+# Disk learning 2D sensor experiment
+# From surface_sm_inference.py: disk_learning_2d
+
+defaults:
+  - base_disk_learning
+  - /config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+
+config:
+  n_train_epochs: 3  # 3 positions * 1 rotation
+  logging:
+    run_name: disk_learning_standard_2d_sensor
+  monty_config:
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.two_d_sensor_module.TwoDPoseSM}
+        sensor_module_args:
+          sensor_module_id: patch
+          features:
+            - pose_vectors
+            - pose_fully_defined
+            - on_object
+            - object_coverage
+            - rgba
+            - hsv
+            - edge_strength
+            - coherence
+            - pose_from_edge
+          save_raw_obs: true
+          debug_visualize: true
+          debug_save_dir: ${path.expanduser:~/tbp/feat.2d_sensor/results/tbp_numenta_disks_2d_sensor}
+          save_raw_rgb: true
+          raw_rgb_base_dir: ${path.expanduser:~/tbp/data/tbp_numenta_disks_RGB}
+      sensor_module_1:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+        sensor_module_args:
+          sensor_module_id: view_finder
+          save_raw_obs: true
+  train_env_interface_args:
+    object_init_sampler:
+      rotations: [[0.0, 0.0, 0.0]]
+

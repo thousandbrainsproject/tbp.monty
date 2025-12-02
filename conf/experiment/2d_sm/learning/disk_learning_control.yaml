@@ -1,0 +1,14 @@
+# Disk learning control experiment (3D sensor)
+# From surface_sm_inference.py: disk_learning_control
+
+defaults:
+  - base_disk_learning
+
+config:
+  n_train_epochs: 3  # 3 positions * 1 rotation
+  logging:
+    run_name: disk_learning_standard_control
+  train_env_interface_args:
+    object_init_sampler:
+      rotations: [[0.0, 0.0, 0.0]]
+

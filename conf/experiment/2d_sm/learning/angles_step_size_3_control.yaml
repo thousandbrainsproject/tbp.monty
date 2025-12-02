@@ -1,0 +1,19 @@
+# ANGLES step size 3 control experiment (3D sensor)
+# From my_experiments.py: angles_standard_control with step_size=3
+
+defaults:
+  - base_angles
+
+config:
+  n_train_epochs: 9  # 9 positions * 1 rotation
+  logging:
+    run_name: angles_step_size_3_control
+  monty_config:
+    motor_system_config:
+      motor_system_args:
+        policy_args:
+          fixed_amount: 3  # step_size=3
+  train_env_interface_args:
+    object_init_sampler:
+      rotations: [[0.0, 0.0, 0.0]]
+

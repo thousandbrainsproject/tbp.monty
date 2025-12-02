@@ -1,0 +1,16 @@
+# ANGLES oblique control experiment (3D sensor, with oblique rotation)
+# From my_experiments.py: angles_oblique_control
+
+defaults:
+  - base_angles
+
+config:
+  n_train_epochs: 18  # 9 positions * 2 rotations
+  logging:
+    run_name: angles_oblique_control
+  train_env_interface_args:
+    object_init_sampler:
+      rotations:
+        - [0, 0, 0]
+        - [10, -15, 0]
+

@@ -1,0 +1,40 @@
+# Disk inference: 2D sensor on 2D-sensor-trained model
+# From surface_sm_inference.py: disk_inference_2d_on_2d
+
+defaults:
+  - base_disk_inference
+  - /config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+
+config:
+  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/2d_sensor/disk_learning_standard_2d_sensor/pretrained/}
+  logging:
+    run_name: disk_inference_2d_on_2d
+  monty_config:
+    motor_system_config:
+      motor_system_args:
+        policy_args:
+          fixed_amount: 1  # step_size=1 for 2D sensor
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.two_d_sensor_module.TwoDPoseSM}
+        sensor_module_args:
+          sensor_module_id: patch
+          features:
+            - pose_vectors
+            - pose_fully_defined
+            - on_object
+            - object_coverage
+            - rgba
+            - hsv
+            - edge_strength
+            - coherence
+            - pose_from_edge
+          save_raw_obs: true
+          debug_visualize: true
+          debug_save_dir: ${path.expanduser:~/tbp/feat.2d_sensor/results/debug_2d_inference_disk_on_2d}
+      sensor_module_1:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+        sensor_module_args:
+          sensor_module_id: view_finder
+          save_raw_obs: true
+

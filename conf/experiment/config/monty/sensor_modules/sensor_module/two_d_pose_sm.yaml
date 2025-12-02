@@ -1,0 +1,17 @@
+sensor_module_class: ${monty.class:tbp.monty.frameworks.models.two_d_sensor_module.TwoDPoseSM}
+sensor_module_args:
+  sensor_module_id: patch
+  features:
+    - pose_vectors
+    - pose_fully_defined
+    - on_object
+    - object_coverage
+    - rgba
+    - hsv
+    - edge_strength
+    - coherence
+    - pose_from_edge
+  save_raw_obs: true
+  debug_visualize: true
+  debug_save_dir: ""  # Override in experiment
+

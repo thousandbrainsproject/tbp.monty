@@ -1,0 +1,41 @@
+# LVL1 oblique 2D sensor experiment (with oblique rotation)
+# From my_experiments.py: lvl1_oblique_2d
+
+defaults:
+  - base_lvl1
+  - /config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+
+config:
+  n_train_epochs: 6  # 3 positions * 2 rotations
+  logging:
+    run_name: lvl1_oblique_2d_sensor
+  monty_config:
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.two_d_sensor_module.TwoDPoseSM}
+        sensor_module_args:
+          sensor_module_id: patch
+          features:
+            - pose_vectors
+            - pose_fully_defined
+            - on_object
+            - object_coverage
+            - rgba
+            - hsv
+            - edge_strength
+            - coherence
+            - pose_from_edge
+          save_raw_obs: true
+          debug_visualize: true
+          debug_save_dir: ${path.expanduser:~/tbp/feat.2d_sensor/results/debug_2d_edges_lvl1_oblique}
+      sensor_module_1:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+        sensor_module_args:
+          sensor_module_id: view_finder
+          save_raw_obs: true
+  train_env_interface_args:
+    object_init_sampler:
+      rotations:
+        - [0, 0, 0]
+        - [10, -15, 0]
+

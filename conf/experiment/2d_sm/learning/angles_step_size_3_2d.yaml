@@ -1,0 +1,43 @@
+# ANGLES step size 3 2D sensor experiment
+# From my_experiments.py: angles_standard_2d with step_size=3
+
+defaults:
+  - base_angles
+  - /config/monty/sensor_modules/clear_sensor_module_configs@config.monty_config
+
+config:
+  n_train_epochs: 9  # 9 positions * 1 rotation
+  logging:
+    run_name: angles_step_size_3_2d_sensor
+  monty_config:
+    motor_system_config:
+      motor_system_args:
+        policy_args:
+          fixed_amount: 3  # step_size=3
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.two_d_sensor_module.TwoDPoseSM}
+        sensor_module_args:
+          sensor_module_id: patch
+          features:
+            - pose_vectors
+            - pose_fully_defined
+            - on_object
+            - object_coverage
+            - rgba
+            - hsv
+            - edge_strength
+            - coherence
+            - pose_from_edge
+          save_raw_obs: true
+          debug_visualize: true
+          debug_save_dir: ${path.expanduser:~/tbp/feat.2d_sensor/results/30_angles_yb_ss3}
+      sensor_module_1:
+        sensor_module_class: ${monty.class:tbp.monty.frameworks.models.sensor_modules.Probe}
+        sensor_module_args:
+          sensor_module_id: view_finder
+          save_raw_obs: true
+  train_env_interface_args:
+    object_init_sampler:
+      rotations: [[0.0, 0.0, 0.0]]
+

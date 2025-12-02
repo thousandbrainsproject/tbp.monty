@@ -1,0 +1,74 @@
+# Base config for disk inference experiments
+# Derived from surface_sm_inference.py make_disk_inference_experiment()
+
+defaults:
+  - /config/eval
+  - /config/logging/parallel_evidence_lm@config.logging
+  - /config/monty/patch_and_view_sota@config.monty_config
+  - /config/monty/learning_modules/clear_learning_module_configs@config.monty_config
+  - /config/monty/learning_modules/lower_max_nneighbors_1lm@config.monty_config.learning_module_configs
+  - /config/monty/args/clear_monty_args@config.monty_config
+  - /config/monty/args/defaults@config.monty_config.monty_args
+  - /config/monty/motor_system/clear_motor_system_config@config.monty_config
+  - /config/monty/motor_system/naive_scan_spiral@config.monty_config.motor_system_config
+  - /config/monty/motor_system/policy/naive_scan@config.monty_config.motor_system_config.motor_system_args.policy_args
+  - /config/environment/patch_view_finder_mount_habitat@config.env_interface_config
+  - /config/environment_interface/per_object@config.eval_env_interface_args
+  - /config/environment_interface/2d_sm/objects_with_logos_lvl1_disk@config.eval_env_interface_args.object_names
+
+_target_: tbp.monty.frameworks.experiments.object_recognition_experiments.MontyObjectRecognitionExperiment
+config:
+  # n_eval_epochs = len(INFERENCE_POSITIONS) = 21
+  n_eval_epochs: 21
+  max_eval_steps: 500
+  model_name_or_path: ""  # Override in subconfigs
+  logging:
+    wandb_group: disk_inference_experiments
+    output_dir: ${path.expanduser:${oc.env:MONTY_LOGS}/projects/evidence_eval_runs/logs}
+    run_name: base_disk_inference  # Override in subconfigs
+  monty_config:
+    monty_args:
+      min_eval_steps: 50
+    motor_system_config:
+      motor_system_args:
+        policy_args:
+          fixed_amount: 5  # step_size=5 for inference
+    # Custom tolerances without principal_curvatures_log
+    learning_module_configs:
+      learning_module_0:
+        learning_module_args:
+          tolerances:
+            patch:
+              hsv: ${np.array:[0.1, 0.2, 0.2]}
+  env_interface_config:
+    env_init_args:
+      data_path: ${path.expanduser:${oc.env:MONTY_DATA}/compositional_objects}
+  eval_env_interface_class: ${monty.class:tbp.monty.frameworks.environments.embodied_data.InformedEnvironmentInterface}
+  eval_env_interface_args:
+    object_init_sampler:
+      _target_: tbp.monty.frameworks.config_utils.make_env_interface_configs.PredefinedObjectInitializer
+      positions:
+        # 21 Gaussian-jittered positions (from surface_sm_inference.py)
+        - [0.014895140249428116, 1.4953826716330455, -0.018761980893513734]
+        - [-0.020590320627389628, 1.5191540191698454, 0.022379483067793463]
+        - [0.019421305686091633, 1.5153486051634226, -0.02346839398049743]
+        - [0.04557390284832857, 1.4858313291449765, -0.006961633654697206]
+        - [-0.007007127813078078, 1.4930279011520597, 0.014699376737498177]
+        - [-0.006960583817251268, 1.4855973787987428, -0.014390289770700936]
+        - [0.04348987596162461, 1.5223499368973296, 0.021268356611992426]
+        - [-0.04410514024942812, 1.4853826716330455, -0.048761980893513734]
+        - [-0.05059032062738963, 1.4891540191698454, -0.007620516932206537]
+        - [-0.010578694313908368, 1.4853486051634225, -0.05346839398049743]
+        - [0.015573902848328571, 1.4558313291449766, -0.03696163365469721]
+        - [-0.03700712781307808, 1.4630279011520597, -0.01530062326250182]
+        - [-0.03696058381725127, 1.4555973787987427, -0.044390289770700934]
+        - [0.013489875961624608, 1.4923499368973296, -0.00873164338800757]
+        - [0.04489514024942812, 1.5153826716330455, 0.011238019106486266]
+        - [0.009409679372610373, 1.5491540191698455, 0.052379483067793466]
+        - [0.04942130568609163, 1.5453486051634225, 0.006531606019502571]
+        - [0.0755739028483286, 1.5158313291449766, 0.023038366345302797]
+        - [0.02299287218692192, 1.5230279011520597, 0.044699376737498175]
+        - [0.023039416182748733, 1.5155973787987427, 0.015609710229299068]
+        - [0.07348987596162461, 1.5523499368973296, 0.05126835661199243]
+      rotations: [[0.0, 0.0, 0.0]]
+

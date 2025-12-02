@@ -1,0 +1,16 @@
+# LVL1 oblique control experiment (3D sensor, with oblique rotation)
+# From my_experiments.py: lvl1_oblique_control
+
+defaults:
+  - base_lvl1
+
+config:
+  n_train_epochs: 6  # 3 positions * 2 rotations
+  logging:
+    run_name: lvl1_oblique_control
+  train_env_interface_args:
+    object_init_sampler:
+      rotations:
+        - [0, 0, 0]
+        - [10, -15, 0]
+

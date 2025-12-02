@@ -1,0 +1,11 @@
+# Disk inference: control sensor on 2D-sensor-trained model
+# From surface_sm_inference.py: disk_inference_control_on_2d
+
+defaults:
+  - base_disk_inference
+
+config:
+  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/2d_sensor/disk_learning_standard_2d_sensor/pretrained/}
+  logging:
+    run_name: disk_inference_control_on_2d
+

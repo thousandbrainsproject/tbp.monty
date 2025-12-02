@@ -1,0 +1,24 @@
+# Debug version: control sensor on control-trained model with verbose logging
+# From surface_sm_inference.py: debug_control_on_control
+
+defaults:
+  - base_disk_inference
+
+config:
+  max_eval_steps: 100  # Reduced for debugging
+  model_name_or_path: ${path.expanduser:${oc.env:MONTY_MODELS}/2d_sensor/disk_learning_standard_control/pretrained/}
+  logging:
+    run_name: debug_control_on_control
+    monty_handlers:
+      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.BasicCSVStatsHandler}
+      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.DetailedJSONHandler}
+      - ${monty.class:tbp.monty.frameworks.loggers.monty_handlers.ReproduceEpisodeHandler}
+  monty_config:
+    sensor_module_configs:
+      sensor_module_0:
+        sensor_module_args:
+          save_raw_obs: true
+      sensor_module_1:
+        sensor_module_args:
+          save_raw_obs: true
+

@@ -1,0 +1,4 @@
+# Custom tolerances without principal_curvatures_log for 2D sensor experiments
+patch:
+  hsv: ${np.array:[0.1, 0.2, 0.2]}
+

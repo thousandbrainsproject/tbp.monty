@@ -1,0 +1,14 @@
+# LVL1 upside down control experiment (3D sensor, 180 degree rotation)
+# From my_experiments.py: lvl1_upsidedown_control
+
+defaults:
+  - base_lvl1
+
+config:
+  n_train_epochs: 3  # 3 positions * 1 rotation
+  logging:
+    run_name: lvl1_upsidedown_control
+  train_env_interface_args:
+    object_init_sampler:
+      rotations: [[0, 0, 180]]
+
