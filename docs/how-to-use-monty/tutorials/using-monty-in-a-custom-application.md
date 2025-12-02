@@ -228,8 +228,7 @@ config:
 > 📘 Follow Along
 > To run the above experiment, you first need to download the [Omniglot dataset](https://github.com/brendenlake/omniglot). You can do this by running `cd ~/tbp/data` and `git clone https://github.com/brendenlake/omniglot.git`. You will need to unzip the `omniglot/python/images_background.zip` and `omniglot/python/strokes_background.zip` files.
 
-> ❗️ Work in progress
-> This section of the docs normally shows you the example of adding your own configuration. But it is under construction due to a large refactor, so we skip to the end, since the experiment is already in the code base:
+The above configurations are already included in Monty at `conf/experiment/tutorial/omniglot_training.yaml` and `conf/experiment/tutorial/omniglot_inference.yaml`.
 
 You can run training by calling `python run.py experiment=tutorial/omniglot_training` and then inference on these models by calling `python run.py experiment=tutorial/omniglot_inference`. You can check the `eval_stats.csv` file in `~/tbp/results/monty/projects/monty_runs/omniglot_inference/` to see how Monty did. If you copied the code above, it should have recognized all six characters correctly.
 
