@@ -85,8 +85,6 @@ class MontyExperiment:
         if self.show_sensor_output:
             self.live_plotter = LivePlotter()
 
-        logger.info(self.config)
-
     def setup_experiment(self, config: dict[str, Any]) -> None:
         """Set up the basic elements of a Monty experiment and initialize counters.
 
@@ -94,6 +92,7 @@ class MontyExperiment:
             config: config specifying variables of the experiment.
         """
         self.init_loggers(self.config["logging"])
+        logger.info(self.config)
         self.model = self.init_model(
             monty_config=config["monty_config"],
             model_path=self.model_path,
@@ -325,6 +324,9 @@ class MontyExperiment:
 
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
+
+        # Treat as root logger
+        logger.propagate = False
 
         # Clear any existing tpb.monty logger handlers
         for handler in logger.handlers:
