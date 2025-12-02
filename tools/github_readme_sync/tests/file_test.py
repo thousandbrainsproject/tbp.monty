@@ -90,7 +90,6 @@ class TestFindMarkdownFiles(unittest.TestCase):
         self.assertEqual(len(result), 2)
 
     def test_find_markdown_files_with_relative_path_containing_dotdot(self):
-        """Test that find_markdown_files works with relative paths containing .."""
         docs_dir = Path(self.temp_dir) / "docs"
         docs_dir.mkdir()
         (docs_dir / "readme.md").write_text("# Readme")
