@@ -10,15 +10,14 @@
 
 import argparse
 import importlib.util
-import os
+from pathlib import Path
 
 import semver
 
 
 def get_version():
-    version_module_path = os.path.join(
-        os.path.dirname(__file__), "../../src/tbp/monty/__init__.py"
-    )
+    project_root = Path(__file__).resolve().parent.parent.parent
+    version_module_path = project_root / "src" / "tbp" / "monty" / "__init__.py"
 
     spec = importlib.util.spec_from_file_location("tbp.monty", version_module_path)
     module = importlib.util.module_from_spec(spec)

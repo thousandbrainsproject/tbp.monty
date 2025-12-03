@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 from pathlib import Path
 
 import nh3
@@ -102,7 +101,7 @@ def generate_index(docs_dir: str, output_file_path: str) -> str:
 
     entries = process_markdown_files(docs_dir)
 
-    os.makedirs(Path(output_file_path).parent, exist_ok=True)
+    Path(output_file_path).parent.mkdir(exist_ok=True, parents=True)
     with open(output_file_path, "w", encoding="utf-8") as f:
         json.dump(entries, f, indent=2, ensure_ascii=False)
 
@@ -129,7 +128,7 @@ def process_markdown_files(docs_dir: str) -> list[dict]:
     if _is_empty(docs_dir):
         raise ValueError("docs_dir cannot be empty")
 
-    docs_path = Path(docs_dir)
+    docs_path = Path(docs_dir).resolve()
     if not docs_path.exists():
         raise ValueError(f"Directory {docs_dir} does not exist")
 
