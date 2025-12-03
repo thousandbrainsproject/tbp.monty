@@ -70,11 +70,12 @@ def mv_files(filenames: Iterable[Path], outdir: Path):
 
 
 def cat_files(filenames, outfile):
+    outfile = Path(outfile)
     if os.path.exists(outfile):
         print(f"Removing existing file before writing new one: {outfile}")
-        os.remove(outfile)
+        outfile.unlink()
 
-    Path(outfile).touch()  # create file that captures output
+    outfile.touch()  # create file that captures output
     for file in filenames:
         os.system(f"cat {file} >> {outfile}")
 
@@ -104,8 +105,7 @@ def post_parallel_log_cleanup(filenames, outfile, cat_fn):
 
     # Remove json files
     for f in existing_files:
-        if os.path.exists(f):
-            os.remove(f)
+        Path(f).unlink(missing_ok=True)
 
 
 def post_parallel_profile_cleanup(parallel_dirs, base_dir, mode):
