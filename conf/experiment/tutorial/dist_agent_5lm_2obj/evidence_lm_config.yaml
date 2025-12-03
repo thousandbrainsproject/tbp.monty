@@ -1,0 +1,14 @@
+learning_module_class: ${monty.class:tbp.monty.frameworks.models.evidence_matching.learning_module.EvidenceGraphLM}
+learning_module_args:
+  max_match_distance: 0.01 # =1cm
+  # Use this to update all hypotheses > 80% of the max hypothesis evidence
+  evidence_threshold_config: 80%
+  x_percent_threshold: 20
+  gsg_class: ${monty.class:tbp.monty.frameworks.models.goal_state_generation.EvidenceGoalStateGenerator}
+  gsg_args:
+    # Tolerance(s) when determining goal-state success
+    goal_tolerances:
+      location: 0.015 # distance in meters
+    min_post_goal_success_steps: 5 # Number of necessary steps for a hypothesis
+  hypotheses_updater_args:
+    max_nneighbors: 10

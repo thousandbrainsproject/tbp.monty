@@ -13,7 +13,7 @@ _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervis
 config:
   n_train_epochs: ${benchmarks.rotations_all_count}
   logging:
-    output_dir: ${path.expanduser:"~/tbp/result/monty/projects"}
+    output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
     run_name: dist_agent_5lm_2obj_train
   monty_config:
     monty_args:
