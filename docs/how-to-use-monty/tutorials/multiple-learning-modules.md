@@ -191,7 +191,7 @@ hsv: ${np.array:[0.1, 0.2, 0.2]}
 principal_curvatures_log: ${np.ones:2}
 ```
 
-These are then imported into specific configuration paths corresponding to each learning module, and feature weights and tolernaces dictionaries within them.
+These are then imported into specific configuration paths corresponding to each learning module, and feature weights and tolerances dictionaries within them.
 
 ```yaml
 defaults:
