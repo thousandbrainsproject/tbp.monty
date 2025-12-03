@@ -235,7 +235,7 @@ from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 # Get path to pretrained model
 project_dir = os.path.expanduser("~/tbp/results/monty/projects")
-model_name = "dist_agent_5lm_2obj_eval"
+model_name = "dist_agent_5lm_2obj_train"
 model_path = os.path.join(project_dir, model_name, "pretrained/model.pt")
 state_dict = torch.load(model_path)
 
