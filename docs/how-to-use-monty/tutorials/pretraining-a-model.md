@@ -245,13 +245,16 @@ This will take a few minutes to complete and then you can inspect and visualize 
 
 ```python
 import os
+from pathlib import Path
+
 import matplotlib.pyplot as plt
+
 from tbp.monty.frameworks.utils.logging_utils import load_stats
 from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 # Specify where pretraining data is stored.
-exp_path = os.path.expanduser("~/tbp/results/monty/projects/surf_agent_1lm_2obj")
-pretrained_dict = os.path.join(exp_path, "pretrained")
+exp_path = Path("~/tbp/results/monty/projects/surf_agent_1lm_2obj").expanduser()
+pretrained_dict = exp_path / "pretrained"
 
 train_stats, eval_stats, detailed_stats, lm_models = load_stats(
     exp_path,
