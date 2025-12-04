@@ -1,6 +1,13 @@
 ---
 title: Include State in Hypotheses
 description: Infer state of object, in addition to its pose.
+rfc: optional
+estimated-scope: large
+improved-metric: dynamic
+output-type: monty-feature, PR
+skills: python, research, monty
+contributor: 
+status: open
 ---
 
 This item relates to the broader goal of [modeling object behaviors in Monty](../../theory/recent-progress/object-behaviors.md#implementation-in-monty).

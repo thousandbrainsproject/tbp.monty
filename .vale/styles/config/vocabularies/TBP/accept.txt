@@ -69,9 +69,10 @@
 \bDomnisoru\b
 \bDrost\b
 \bEitan\b
+\b[Ee]xplainers?\b
 \bexcitatory\b
 \bElsevier\b
-\bentorhinal\b
+\b[Ee]ntorhinal\b
 \beval\b
 \bfavicon\b
 \bFelleman\b
@@ -179,6 +180,7 @@
 \bTGZ|tgz\b
 \bThrun\b
 \btimeseries\b
+\b[Tt]ooltips?\b
 \bTolman's\b
 \btransthalamic\b
 \bunmerged\b
@@ -205,3 +207,5 @@
 \b[Mm]agnocellular\b
 \b[Pp]arvocellular\b
 \bKraus\b
+\b[Mm]onty\b
+\bKD-Tree\b

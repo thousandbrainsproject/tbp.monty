@@ -9,7 +9,7 @@
 # https://opensource.org/licenses/MIT.
 
 import logging
-import os
+from pathlib import Path
 
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
@@ -41,8 +41,8 @@ class MontySupervisedObjectPretrainingExperiment(MontyExperiment):
         # place and models in another. Changing the config ensures every reference to
         # output_dir has "pretrained" added to it
         config = OmegaConf.to_object(config)
-        output_dir = config["logging"]["output_dir"]
-        config["logging"]["output_dir"] = os.path.join(output_dir, "pretrained")
+        output_dir = Path(config["logging"]["output_dir"])
+        config["logging"]["output_dir"] = output_dir / "pretrained"
         self.first_epoch_object_location = {}
         super().__init__(config)
 

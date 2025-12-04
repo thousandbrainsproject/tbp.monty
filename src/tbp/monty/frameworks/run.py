@@ -11,6 +11,7 @@ from __future__ import annotations
 import logging
 import os
 import time
+from pathlib import Path
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
@@ -38,7 +39,13 @@ def main(cfg: DictConfig):
     print_config(cfg)
     register_resolvers()
 
-    os.makedirs(cfg.experiment.config.logging.output_dir, exist_ok=True)
+    output_dir = (
+        Path(cfg.experiment.config.logging.output_dir)
+        / cfg.experiment.config.logging.run_name
+    )
+    cfg.experiment.config.logging.output_dir = str(output_dir)
+
+    output_dir.mkdir(exist_ok=True, parents=True)
     experiment = hydra.utils.instantiate(cfg.experiment)
     start_time = time.time()
     with experiment as exp:
