@@ -161,6 +161,7 @@
 \bShen\b
 \bSilberberg\b
 \bskillset\b
+\bSlominski\b
 \bSMs?\b
 \bSpelke\b
 \bSpolsky\b
