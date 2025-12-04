@@ -214,10 +214,10 @@ class ReadMe:
 
             # Get absolute path of CSV relative to current document
             csv_path = Path(file_path) / csv_path
-            csv_path = os.path.normpath(csv_path)
+            csv_path = csv_path.resolve()
 
             try:
-                with open(csv_path) as f:
+                with csv_path.open() as f:
                     reader = csv.reader(f)
                     headers = next(reader)
                     rows = list(reader)
@@ -547,10 +547,10 @@ class ReadMe:
 
         def replace_match(match):
             snippet_path = Path(file_path) / match.group(1)
-            snippet_path = os.path.normpath(snippet_path)
+            snippet_path = snippet_path.resolve()
 
             try:
-                with open(snippet_path) as f:
+                with snippet_path.open() as f:
                     unsafe_content = f.read()
                     return self.sanitize_html(unsafe_content)
 

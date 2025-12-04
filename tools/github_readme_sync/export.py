@@ -70,7 +70,7 @@ def process_doc(*, server_doc, hierarchy_doc, folder_path, indent_level, rdme):
     logging.info(f"{indent}{CYAN}{hierarchy_doc['slug']}{RESET}")
 
     doc_path = folder_path / f"{hierarchy_doc['slug']}.md"
-    with open(doc_path, "w") as f:
+    with doc_path.open("w") as f:
         f.write(rdme.get_doc_by_slug(server_doc["slug"]))
 
     children = server_doc.get("children", [])

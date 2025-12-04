@@ -800,7 +800,7 @@ This is a test document.""",
 
             # Create a CSV file in the data directory
             csv_path = data_dir / "test.csv"
-            with open(csv_path, "w") as f:
+            with csv_path.open("w") as f:
                 writer = csv.writer(f)
                 writer.writerow(["Header 1", "Header 2"])
                 writer.writerow(["Value 1", "Value 2"])
@@ -832,7 +832,7 @@ This is a test document.""",
             other_dir.mkdir(parents=True)
 
             source_md = other_dir / "source.md"
-            with open(source_md, "w") as f:
+            with source_md.open("w") as f:
                 f.write(
                     "# Test Header\nThis is test content\n* List item 1\n* List item 2"
                 )

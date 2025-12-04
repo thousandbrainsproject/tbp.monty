@@ -79,7 +79,7 @@ def create_eval_episode_hydra_cfg(
         / "reproduce_episode_data"
         / f"eval_episode_{episode}_target.txt"
     )
-    with open(object_params_file) as f:
+    with object_params_file.open() as f:
         target_data = json.load(f)
 
     exp_cfg.eval_env_interface_args.object_names = [
@@ -184,7 +184,7 @@ def create_eval_episode_config(
     object_params_file = (
         output_dir / "reproduce_episode_data" / f"eval_episode_{episode}_target.txt"
     )
-    with open(object_params_file) as f:
+    with object_params_file.open() as f:
         target_data = json.load(f)
 
     new_config["eval_env_interface_args"]["object_names"] = [
@@ -287,7 +287,7 @@ def create_eval_multiple_episodes_hydra_cfg(
             / "reproduce_episode_data"
             / f"eval_episode_{episode}_target.txt"
         )
-        with open(object_params_file) as f:
+        with object_params_file.open() as f:
             target_data = json.load(f)
 
         # Update accumulators
@@ -378,7 +378,7 @@ def create_eval_config_multiple_episodes(
         object_params_file = (
             output_dir / "reproduce_episode_data" / f"eval_episode_{episode}_target.txt"
         )
-        with open(object_params_file) as f:
+        with object_params_file.open() as f:
             target_data = json.load(f)
 
         # Update accumulators
