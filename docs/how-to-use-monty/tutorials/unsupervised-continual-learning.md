@@ -153,7 +153,7 @@ fig = plt.figure(figsize=(8, 3))
 for epoch in range(n_epochs):
     ax = fig.add_subplot(1, n_epochs, epoch + 1, projection="3d")
     plot_graph(graphs[epoch], ax=ax)
-    ax.view_init(137, 40, 0)
+    ax.view_init(95, 90, 0)
     ax.set_title(f"epoch {epoch}")
 fig.suptitle("Bowl Object Models")
 fig.tight_layout()
