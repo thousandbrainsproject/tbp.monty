@@ -1,5 +1,5 @@
 defaults:
-  - /experiment/config/eval@config
+  - /experiment/config/defaults@config
   - /experiment/config/logging/csv@config.logging
   - /experiment/config/monty/surface_and_view@config.monty_config
   - /experiment/config/monty/args/clear_monty_args@config.monty_config
@@ -18,7 +18,7 @@ config:
   max_total_steps: 5000
   logging:
     python_log_level: INFO
-    output_dir: ${path.expanduser:"~/tbp/result/monty/projects"}
+    output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
     run_name: surf_agent_2obj_unsupervised
   monty_config:
     monty_args:
@@ -34,7 +34,7 @@ config:
           tolerances:
             patch:
               hsv: ${np.array:[0.05, 0.1, 0.1]}
-              principal_curvatures_log: [2, 2]
+              principal_curvatures_log: [1, 1]
           feature_weights:
             patch:
               # Weighting saturation and value less since these might change under different
@@ -49,7 +49,7 @@ config:
               pose_vectors: ${np.array:[np.pi / 8, np.pi * 2, np.pi * 2]}
               principal_curvatures_log: [1.0, 1.0]
               hsv: [0.1, 1, 1]
-          # object_evidence_th sets a minimum threshold on the amount of evidence we have
+          # object_evidence_threshold sets a minimum threshold on the amount of evidence we have
           # for the current object in order to converge; while we can also set min_steps
           # for the experiment, this puts a more stringent requirement that we've had
           # many steps that have contributed evidence.
