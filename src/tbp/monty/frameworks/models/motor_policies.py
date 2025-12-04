@@ -15,8 +15,8 @@ import copy
 import json
 import logging
 import math
-import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Literal, Mapping, cast
 
 import numpy as np
@@ -1588,7 +1588,7 @@ def read_action_file(file: str) -> list[Action]:
     Returns:
         List of actions
     """
-    file = os.path.expanduser(file)
+    file = Path(file).expanduser()
     with open(file) as f:
         file_read = f.read()
 

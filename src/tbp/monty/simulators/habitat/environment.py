@@ -20,7 +20,10 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     SemanticID,
     VectorXYZ,
 )
-from tbp.monty.frameworks.utils.dataclass_utils import create_dataclass_args
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
+from tbp.monty.frameworks.utils.dataclass_utils import (
+    create_dataclass_args,
+)
 from tbp.monty.simulators.habitat import (
     HabitatAgent,
     HabitatSim,
@@ -141,13 +144,13 @@ class HabitatEnvironment(EmbodiedEnvironment):
             primary_target_object,
         ).object_id
 
-    def step(self, actions: Sequence[Action]) -> dict[str, dict]:
+    def step(self, actions: Sequence[Action]) -> Observations:
         return self._env.apply_actions(actions)
 
     def remove_all_objects(self) -> None:
         return self._env.remove_all_objects()
 
-    def reset(self):
+    def reset(self) -> Observations:
         return self._env.reset()
 
     def close(self) -> None:

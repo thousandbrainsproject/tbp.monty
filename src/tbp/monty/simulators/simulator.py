@@ -19,6 +19,7 @@ from tbp.monty.frameworks.environments.embodied_environment import (
     SemanticID,
     VectorXYZ,
 )
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 
 
 class Simulator(Protocol):
@@ -74,30 +75,25 @@ class Simulator(Protocol):
         ...
 
     @property
-    def observations(self):
-        """Get sensor observations."""
-        ...
-
-    @property
     def states(self):
         """Get agent and sensor states."""
         ...
 
-    def apply_actions(self, actions: Sequence[Action]) -> dict[str, dict]:
+    def apply_actions(self, actions: Sequence[Action]) -> Observations:
         """Execute the given actions in the environment.
 
         Args:
             actions: The actions to execute.
 
         Returns:
-            A dictionary with the observations grouped by agent_id.
+            The observations from the simulator.
 
         Note:
             If the actions are an empty sequence, the current observations are returned.
         """
         ...
 
-    def reset(self):
+    def reset(self) -> Observations:
         """Reset the simulator."""
         ...
 
