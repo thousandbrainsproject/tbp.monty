@@ -1,6 +1,18 @@
 ---
 title: Extract Better Features
+description: Add more sophisticated feature extraction to sensor modules.
+rfc: optional
+estimated-scope: medium
+improved-metric: noise, accuracy, numsteps
+output-type: monty-feature, PR
+skills: python, research, computer-vision
+contributor: 
+status: evergreen
 ---
+
+> [!NOTE]
+> Even though someone is working on this task, does not mean that no one else should start working on this. Extracting better features in the sensor module is quite dependent on the type of sensor it is connected to (e.g. a sensor connected to an RGBD camera would extract different features to one connected to an ultrasound probe) and even for one type of sensor, there are a multitude of features that could be extracted.
+> Anyone is invited to play more with extracting different features in the SM and how this affects Monty's performance.
 
 Currently non-morphological features are very simple, such as extracting the RGB or hue value at the center of the sensor patch.
 

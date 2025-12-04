@@ -197,6 +197,7 @@ Note that Monty receives minimal information about when a new epoch has started,
 We can visualize how models are acquired and refined by plotting an object's model after different epochs. To do so, create a script and paste in the following code. The name and location of the script is arbitrary, but we called it `unsupervised_learning_analysis.py` and placed it at `~/monty_scripts`.
 ```python
 import os
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import torch
@@ -206,7 +207,7 @@ from tbp.monty.frameworks.utils.plot_utils_dev import plot_graph
 
 def load_graph(exp_dir: str, epoch: int, object_name: str) -> GraphObjectModel:
     load_lm_models = {}
-    model_path = os.path.join(exp_dir, str(epoch), "model.pt")
+    model_path = Path(exp_dir) / str(epoch) / "model.pt"
     state_dict = torch.load(model_path)
     return state_dict["lm_dict"][0]["graph_memory"][object_name]["patch"]
 

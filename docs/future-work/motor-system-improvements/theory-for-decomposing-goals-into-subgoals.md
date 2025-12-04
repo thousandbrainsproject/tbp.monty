@@ -1,8 +1,17 @@
 ---
-title: Decompose Goals into Subgoals & Communicate
+title: Theory for Decomposing Goals into Subgoals
+description: Figure out how we can decompose higher-level goals into sub-goals and communicate them
+rfc: required
+estimated-scope: unknown
+improved-metric: goal-policy
+output-type: theory, publication
+skills: research, literature-review, neuroscience
+contributor: thousandbrainsproject
+status: scoping
 ---
 
-This will be most relevant when we begin implementing policies that change the state of the world, rather than just those that support efficient sensing and inference.
+> [!NOTE]
+> This will be most relevant when we begin implementing policies that change the state of the world, rather than just those that support efficient sensing and inference. We are still in the theory stage of this one and appreciate input.
 
 One example task we imagine is setting a dinner table. At the higher level of the system, a learning module that models dinner-tables would receive the goal-state to have the table in the "set for eating" state. This might be a vision-based LM that can use it's direct motor-output to saccade around the scene, and infer whether the table is set, but cannot actually move objects.
 

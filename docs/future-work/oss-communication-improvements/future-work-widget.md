@@ -6,7 +6,7 @@ improved-metric: community-engagement
 output-type: documentation
 skills: github-actions, python, github-readme-sync-tool, s3, javascript, html, css
 contributor: codeallthethingz
-status: in-progress
+status: completed
 ---
 
 Build a filterable widget based on the documentation future-work section data that can be inserted into the docs using an iFrame.

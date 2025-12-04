@@ -251,7 +251,7 @@ jobs:
     name: install-monty
     runs-on:
       group: tbp.monty
-      labels: tbp-linux-x64-ubuntu2204-2core
+      labels: tbp-linux-x64-ubuntu2204-4core
     needs:
       - check_license_monty # Don't run if license check fails
       - should_run_monty

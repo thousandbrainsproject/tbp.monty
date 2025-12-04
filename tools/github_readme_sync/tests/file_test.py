@@ -20,11 +20,12 @@ from tools.github_readme_sync.file import find_markdown_files, get_folders
 class TestGetFolders(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.mkdtemp()
+        temp_dir_path = Path(self.temp_dir)
 
-        os.makedirs(Path(self.temp_dir).joinpath("folder1"))
-        os.makedirs(Path(self.temp_dir).joinpath("folder2"))
-        open(Path(self.temp_dir).joinpath("file1.txt"), "w").close()
-        open(Path(self.temp_dir).joinpath("file2.txt"), "w").close()
+        (temp_dir_path / "folder1").mkdir(parents=True)
+        (temp_dir_path / "folder2").mkdir(parents=True)
+        open(temp_dir_path / "file1.txt", "w").close()
+        open(temp_dir_path / "file2.txt", "w").close()
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
@@ -88,6 +89,30 @@ class TestFindMarkdownFiles(unittest.TestCase):
         self.assertNotIn("secret.md", result_basenames)
 
         self.assertEqual(len(result), 2)
+
+    def test_find_markdown_files_with_relative_path_containing_dotdot(self):
+        docs_dir = Path(self.temp_dir) / "docs"
+        docs_dir.mkdir()
+        (docs_dir / "readme.md").write_text("# Readme")
+        (docs_dir / "guide.md").write_text("# Guide")
+        (docs_dir / "subdir").mkdir()
+        (docs_dir / "subdir" / "nested.md").write_text("# Nested")
+
+        subdir = Path(self.temp_dir) / "subdir"
+        subdir.mkdir()
+
+        original_cwd = Path.cwd()
+        try:
+            os.chdir(subdir)
+            relative_path = "../docs"
+
+            result = find_markdown_files(relative_path)
+
+            result_basenames = sorted([Path(path).name for path in result])
+            expected_basenames = sorted(["readme.md", "guide.md", "nested.md"])
+            self.assertEqual(result_basenames, expected_basenames)
+        finally:
+            os.chdir(original_cwd)
 
 
 if __name__ == "__main__":
