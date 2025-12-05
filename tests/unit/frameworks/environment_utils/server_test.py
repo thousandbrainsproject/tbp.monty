@@ -1,5 +1,4 @@
 # Copyright 2025 Thousand Brains Project
-# Copyright 2023-2024 Numenta Inc.
 #
 # Copyright may exist in Contributors' modifications
 # and/or contributions to the work.
@@ -44,14 +43,15 @@ class MontyRequestHandlerTest(unittest.TestCase):
             server_thread.start()
 
             # Send two PUT requests to the server
-            request_body = b"\x00" * 10  # 10 bytes of ascii 0's
+            file_size = 10  # bytes
+            request_body = b"\x00" * file_size  # byte matches the file index
             result = requests.put(
                 "http://localhost:8888/depth.data", data=request_body, timeout=1
             )
             self.assertEqual(result.status_code, 201)
             self.assertEqual(result.text, 'Saved "depth_0.data"\n')
 
-            request_body = b"\x01" * 10  # 10 bytes of ascii 1's
+            request_body = b"\x01" * file_size  # byte matches the file index
             result = requests.put(
                 "http://localhost:8888/depth.data", data=request_body, timeout=1
             )
@@ -67,7 +67,7 @@ class MontyRequestHandlerTest(unittest.TestCase):
                 self.assertEqual(file.name, f"depth_{idx}.data")
                 with file.open("rb") as f:
                     content = f.read()
-                    self.assertEqual(len(content), 10)
+                    self.assertEqual(len(content), file_size)
                     # The files are full of bytes that equal the file index
                     self.assertTrue(byte == idx for byte in content)
 
