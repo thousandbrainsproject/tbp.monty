@@ -68,6 +68,3 @@ def test_monty_request_handler_put_depth():
                 assert len(content) == file_size
                 # The files are full of bytes that equal the file index
                 assert all(byte == idx for byte in content)
-
-            # Remove created file
-            file.unlink()
