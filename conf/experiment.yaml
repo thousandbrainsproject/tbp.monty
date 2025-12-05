@@ -1,15 +1,20 @@
-defaults:
-  - benchmarks: defaults
-  # Experiment name
-  - experiment: MISSING
-  - _self_
+# @package _global_
+#
+# Usage: python run.py experiment=tutorial/first_experiment
 
-# Which episodes to run (zero-based). Examples: "all" | "3" | "0,3,5:8" | "4:" | ":8".
-episodes: all
-# How many episodes to run in parallel
-num_parallel: 16
-# Don't run an experiment; just print out the config for visual inspection
-# TODO: Replace with validate or similar
-print_cfg: false
-# Set logging levels in habitat to quiet
-quiet_habitat_logs: true
+defaults:
+  - _self_
+  - config: defaults # read or import from config/defaults.yaml
+  - logging: defaults # read or import from logging/defaults.yaml
+  - monty: patch_and_view # 
+  - environment: patch_view_habitat
+  - train_env: per_object
+  # Experiment config (required) - use override to change defaults above
+  - experiment: MISSING
+
+# Global settings
+config:
+  episodes: all
+  num_parallel: 16
+  print_cfg: false
+  quiet_habitat_logs: true

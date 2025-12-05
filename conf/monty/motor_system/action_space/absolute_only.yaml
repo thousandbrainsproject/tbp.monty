@@ -1,4 +1,4 @@
-# @package motor_system_args.policy_args.action_sampler_args
+# @package config.monty_config.motor_system_config
 actions:
   - ${monty.class:tbp.monty.frameworks.actions.actions.SetAgentPitch}
   - ${monty.class:tbp.monty.frameworks.actions.actions.SetSensorPitch}

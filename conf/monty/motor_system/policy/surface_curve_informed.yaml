@@ -1,4 +1,4 @@
-# @package motor_system_args.policy_args
+# @package config.monty_config.motor_system_config
 defaults:
   - surface
 

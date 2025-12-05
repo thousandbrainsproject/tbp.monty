@@ -15,7 +15,7 @@ import time
 from pathlib import Path
 
 import hydra
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from tbp.monty.hydra import register_resolvers
 
@@ -33,21 +33,21 @@ def print_config(config):
 
 @hydra.main(config_path="../../../conf", config_name="experiment", version_base=None)
 def main(cfg: DictConfig):
-    if cfg.quiet_habitat_logs:
+    if cfg.config.quiet_habitat_logs:
         os.environ["MAGNUM_LOG"] = "quiet"
         os.environ["HABITAT_SIM_LOG"] = "quiet"
 
-    print_config(cfg)
     register_resolvers()
+    print(OmegaConf.to_yaml(cfg))
 
     output_dir = (
-        Path(cfg.experiment.config.logging.output_dir)
-        / cfg.experiment.config.logging.run_name
+        Path(cfg.config.logging.output_dir)
+        / cfg.config.logging.run_name
     )
-    cfg.experiment.config.logging.output_dir = str(output_dir)
+    cfg.config.logging.output_dir = str(output_dir)
 
-    os.makedirs(cfg.experiment.config.logging.output_dir, exist_ok=True)
-    experiment = hydra.utils.instantiate(cfg.experiment)
+    os.makedirs(cfg.config.logging.output_dir, exist_ok=True)
+    experiment = hydra.utils.instantiate(cfg)
     start_time = time.time()
     with experiment as exp:
         # TODO: Later will want to evaluate every x episodes or epochs
