@@ -79,12 +79,6 @@ const ColumnFormatters = {
   },
   formatTagsColumn: (cell) => ColumnFormatters.formatArrayOrStringColumn(cell.getValue(), BADGE_CLASS),
   formatSkillsColumn: (cell) => ColumnFormatters.formatArrayOrStringColumn(cell.getValue(), BADGE_SKILLS_CLASS),
-  formatMetricsSkillsColumn(cell) {
-    const rowData = cell.getRow().getData();
-    const metrics = ColumnFormatters.formatArrayOrStringColumn(rowData['improved-metric'], BADGE_CLASS);
-    const skills = ColumnFormatters.formatArrayOrStringColumn(rowData.skills, BADGE_SKILLS_CLASS);
-    return [metrics, skills].filter(Boolean).join('<br>');
-  },
   formatSizeColumn(cell) {
     const value = (cell.getValue() || '').trim().toLowerCase();
     return value
@@ -161,11 +155,12 @@ const TableConfig = {
     return [
       { title: 'Title', field: 'title', formatter: ColumnFormatters.formatTitleWithLinksColumn, width: 200, cssClass: 'wrap-text', variableHeight: true },
       { title: 'Scope', field: 'estimated-scope', formatter: ColumnFormatters.formatSizeColumn },
-      { title: 'Metrics / Skills', field: 'improved-metric', formatter: ColumnFormatters.formatMetricsSkillsColumn, widthGrow: 2, cssClass: 'wrap-text' },
+      { title: 'Metric', field: 'improved-metric', formatter: ColumnFormatters.formatTagsColumn },
       { title: 'Output Type', field: 'output-type', formatter: ColumnFormatters.formatTagsColumn },
       { title: 'RFC', field: 'rfc', formatter: ColumnFormatters.formatRfcColumn },
       { title: 'Status', field: 'status', formatter: ColumnFormatters.formatStatusColumn },
-      { title: 'Tags', field: 'tags', formatter: ColumnFormatters.formatTagsColumn, widthGrow: 2, cssClass: 'wrap-text' }
+      { title: 'Tags', field: 'tags', formatter: ColumnFormatters.formatTagsColumn, widthGrow: 2, cssClass: 'wrap-text' },
+      { title: 'Skills', field: 'skills', formatter: ColumnFormatters.formatSkillsColumn, widthGrow: 2, cssClass: 'wrap-text' }
     ];
   },
 

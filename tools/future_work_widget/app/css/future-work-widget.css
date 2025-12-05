@@ -25,12 +25,12 @@ body {
 }
 
 .badge-skills {
-  background-color: #d4f0e8;
-  color: #1a5a4a;
+  background-color: #e8e8f0;
+  color: #2f2b5c;
 }
 
 .badge-skills:hover {
-  background-color: #b8e4d8;
+  background-color: #d0d0e0;
 }
 
 .badge-size-small {
