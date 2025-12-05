@@ -223,7 +223,7 @@ body {
 
 .tabulator .tabulator-header .tabulator-col.tabulator-sortable[aria-sort=none] .tabulator-col-content .tabulator-col-sorter .tabulator-arrow {
   border-bottom-color: #dfe6f5;
-}}
+}
 
 .tabulator .tabulator-header .tabulator-col {
   background-color: #dfe6f5;
