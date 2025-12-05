@@ -21,6 +21,7 @@ TUTORIALS_DIR = EXPERIMENT_DIR / "tutorial"
 TUTORIALS = [x.stem for x in TUTORIALS_DIR.glob("*.yaml")]
 TUTORIAL_SNAPSHOTS_DIR = Path(__file__).parent / "snapshots" / "tutorial"
 
+
 class ExperimentTest(ParametrizedTestCase):
     @parametrize(
         "experiment",
@@ -30,10 +31,7 @@ class ExperimentTest(ParametrizedTestCase):
         snapshot_path = EXPERIMENT_SNAPSHOTS_DIR / f"{experiment}.yaml"
         with hydra.initialize(version_base=None, config_path="../../conf"):
             config = hydra.compose(
-                config_name="experiment",
-                overrides=[
-                    f"experiment={experiment}"
-                ]
+                config_name="experiment", overrides=[f"experiment={experiment}"]
             )
             # force resolving the config for any parsing errors
             OmegaConf.to_object(config)
@@ -48,6 +46,7 @@ class ExperimentTest(ParametrizedTestCase):
                 with open(snapshot_path, "w") as f:
                     f.write(current_config_yaml)
 
+
 class TutorialTest(ParametrizedTestCase):
     @parametrize(
         "tutorial",
@@ -57,10 +56,7 @@ class TutorialTest(ParametrizedTestCase):
         snapshot_path = TUTORIAL_SNAPSHOTS_DIR / f"{tutorial}.yaml"
         with hydra.initialize(version_base=None, config_path="../../conf"):
             config = hydra.compose(
-                config_name="experiment",
-                overrides=[
-                    f"experiment=tutorial/{tutorial}"
-                ]
+                config_name="experiment", overrides=[f"experiment=tutorial/{tutorial}"]
             )
             # force resolving the config for any parsing errors
             OmegaConf.to_object(config)
