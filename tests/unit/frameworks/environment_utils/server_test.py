@@ -69,7 +69,7 @@ class MontyRequestHandlerTest(unittest.TestCase):
                     content = f.read()
                     self.assertEqual(len(content), file_size)
                     # The files are full of bytes that equal the file index
-                    self.assertTrue(byte == idx for byte in content)
+                    self.assertTrue(all(byte == idx for byte in content))
 
                 # Remove created file
                 file.unlink()
