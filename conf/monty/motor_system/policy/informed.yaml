@@ -1,4 +1,4 @@
-# @package config.monty_config.motor_system_config
+# @package config.monty_config.motor_system.motor_system_args.policy_args
 file_name: null
 good_view_percentage: 0.5
 desired_object_distance: 0.03

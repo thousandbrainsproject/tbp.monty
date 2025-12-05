@@ -1,4 +1,4 @@
-# @package config.monty_config.motor_system_config
+# @package config.monty_config.motor_system
 defaults:
   - policy: surface_curve_informed
   - action_space: surface_agent

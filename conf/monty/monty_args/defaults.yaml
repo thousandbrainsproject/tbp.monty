@@ -1,5 +1,5 @@
 # @package config.monty_config.monty_args
-# Default monty args
+
 num_exploratory_steps: 1000
 min_eval_steps: 3
 min_train_steps: 3

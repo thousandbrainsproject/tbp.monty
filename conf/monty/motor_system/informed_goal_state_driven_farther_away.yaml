@@ -1,4 +1,4 @@
-# @package config.monty_config.motor_system_config
+# @package config.monty_config.motor_system
 # Informed motor policy with goal state driven actions, farther from object
 defaults:
   - informed_goal_state_driven

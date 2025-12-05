@@ -9,6 +9,7 @@ defaults:
   - override /config: supervised_pretraining
   - override /logging: pretrain
   - override /train_env: disk_objects
+  - override /monty/motor_system_config: naive_scan_spiral
 
 # Experiment class for instantiation
 _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
@@ -30,6 +31,20 @@ config:
           use_goal_state_driven_actions: false
           fixed_amount: 1
           switch_frequency: 1
+          min_perc_on_obj: 0.25
+          good_view_percentage: 0.5
+          desired_object_distance: 0.03
+          agent_id: ${monty.agent_id:agent_id_0}
+          action_sampler_class: ${monty.class:tbp.monty.frameworks.actions.action_samplers.ConstantSampler}
+          action_sampler_args:
+            rotation_degrees: 5.0
+            actions:
+              - ${monty.class:tbp.monty.frameworks.actions.actions.LookUp}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.LookDown}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.TurnLeft}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.TurnRight}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.SetAgentPose}
+              - ${monty.class:tbp.monty.frameworks.actions.actions.SetSensorRotation}
     learning_module_configs:
       learning_module_0:
         learning_module_args:

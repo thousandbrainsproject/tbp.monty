@@ -1,4 +1,4 @@
-# @package config.monty_config.motor_system_config
+# @package config.monty_config.motor_system
 defaults:
   - policy: base
   - action_space: distant_agent

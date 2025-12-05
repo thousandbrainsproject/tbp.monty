@@ -1,4 +1,4 @@
-# @package config.monty_config.motor_system_config
+# @package config.monty_config.motor_system
 # Informed motor policy with goal state driven actions
 defaults:
   - informed_no_trans
