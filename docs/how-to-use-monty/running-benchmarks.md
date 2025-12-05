@@ -34,7 +34,7 @@ python run.py experiment=randrot_10distinctobj_surf_agent
 
 Within the Thousand Brains Project, we run benchmarks on standardized infrastructure and the data from these runs are posted in our documentation. You won't have access to this infrastructure, however, you can still use benchmarks as end-to-end tests before and after your changes.
 
-To verify end-to-end functionality, you can run a sample of the benchmarks on your local machine using the code as it was prior to your changes. Then, after you make code changes, you can run the sample sample of the benchmarks on your local machine using the code with your changes included. The benchmarks are deterministic, so the before and after benchmark runs will match if your changes had no effect (with some variation in timing). Similarly, the before and after benchmark runs will not match if your changes impact Monty performance. In both cases, it is helpful to provide your before and after benchmark data as part of the description in your Pull Request.
+To verify end-to-end functionality, you can run a sample of the benchmarks on your local machine using the code as it was prior to your changes. Then, after you make code changes, you can run the same sample of the benchmarks on your local machine using the code with your changes included. The benchmarks are deterministic, so the before and after benchmark runs will match if your changes had no effect (with some variation in timing). Similarly, the before and after benchmark runs will not match if your changes impact Monty performance. In both cases, it is helpful to provide your before and after benchmark data as part of the description in your Pull Request.
 
 ## Where to Find the Results
 
