@@ -4,9 +4,9 @@
 
 defaults:
   - _self_
-  - config: defaults # read or import from config/defaults.yaml
-  - logging: defaults # read or import from logging/defaults.yaml
-  - monty: patch_and_view # 
+  - presets: defaults 
+  - logging: defaults 
+  - monty: patch_and_view 
   - environment: patch_view_habitat
   - train_env: per_object
   # Experiment config (required) - use override to change defaults above
