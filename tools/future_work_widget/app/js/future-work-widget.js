@@ -123,10 +123,7 @@ const ColumnFormatters = {
       : contributor.split(',').map(u => u.trim()).filter(Boolean);
 
     const avatars = usernames
-      .map(username => `<a href="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(username)}"><img src="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}.png"
-                             width="16" height="16"
-                             style="vertical-align:middle;border-radius:2px;margin-left:5px;"
-                             alt="${escapeHtml(username)}"/></a>`)
+      .map(username => `<a href="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(username)}"><img src="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}.png" class="github-avatar" alt="${escapeHtml(username)}"/></a>`)
       .join(' ');
 
     return statusBadge + '<br>' + avatars;
@@ -159,7 +156,7 @@ const TableConfig = {
     return [
       { title: 'Title', field: 'title', formatter: ColumnFormatters.formatTitleWithLinksColumn, width: 200, cssClass: 'wrap-text', variableHeight: true },
       { title: 'Scope', field: 'estimated-scope', formatter: ColumnFormatters.formatSizeColumn },
-      { title: 'Metric', field: 'improved-metric', formatter: ColumnFormatters.formatTagsColumn },
+      { title: 'Metric', field: 'improved-metric', formatter: ColumnFormatters.formatTagsColumn, maxWidth: 200, cssClass: 'wrap-text' },
       { title: 'Output Type', field: 'output-type', formatter: ColumnFormatters.formatTagsColumn },
       { title: 'RFC', field: 'rfc', formatter: ColumnFormatters.formatRfcColumn },
       { title: 'Status', field: 'status', formatter: ColumnFormatters.formatStatusColumn },

@@ -14,9 +14,9 @@ Click on the name to view the detail page for that task.  Click on the any of th
 [block:embed]
 {
   "html": false,
-  "url": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,rfc,status,improved-metric,skills",
+  "url": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,status,improved-metric,skills",
   "provider": "futureworkwidget.thousandbrains.ai",
-  "href": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,rfc,status,improved-metric,skills,",
+  "href": "https://futureworkwidget.thousandbrains.ai/index.html?columns=title,estimated-scope,status,improved-metric,skills,",
   "typeOfEmbed": "iframe",
   "height": "800px",
   "iframe": true
