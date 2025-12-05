@@ -24,6 +24,7 @@ from tbp.monty.frameworks.run_env import setup_env
 
 setup_env()
 
+
 class MontyRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_PUT(self):
         # Check type of incoming data: depth or rgb
