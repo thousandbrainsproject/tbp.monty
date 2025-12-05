@@ -45,7 +45,7 @@ class MontyRequestHandler(http.server.SimpleHTTPRequestHandler):
 
         # Write data to file
         file_length = int(self.headers["Content-Length"])
-        with open(data_path + "/" + new_filename, "wb") as output_file:
+        with open(data_path / new_filename, "wb") as output_file:
             output_file.write(self.rfile.read(file_length))
             output_file.close()
 
