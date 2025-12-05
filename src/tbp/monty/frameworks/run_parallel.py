@@ -562,8 +562,7 @@ def post_parallel_train(experiments: list[Mapping], base_dir: str) -> None:
 
     with exp:
         exp.model.load_state_dict_from_parallel(parallel_dirs, True)
-        output_dir = os.path.dirname(experiments[0]["config"]["logging"]["output_dir"])
-        output_dir = Path(output_dir)
+        output_dir = Path(experiments[0]["config"]["logging"]["output_dir"]).parent
         if isinstance(exp, MontySupervisedObjectPretrainingExperiment):
             output_dir = output_dir / "pretrained"
         output_dir.mkdir(exist_ok=True, parents=True)
@@ -571,7 +570,7 @@ def post_parallel_train(experiments: list[Mapping], base_dir: str) -> None:
         torch.save(exp.model.state_dict(), saved_model_file)
 
     if pretraining:
-        pdirs = [os.path.dirname(i) for i in parallel_dirs]
+        pdirs = [i.parent for i in parallel_dirs]
     else:
         pdirs = parallel_dirs
 
@@ -642,8 +641,7 @@ def run_episodes_parallel(
     end_time = time.time()
     total_time = end_time - start_time
 
-    output_dir = experiments[0]["config"]["logging"]["output_dir"]
-    base_dir = Path(os.path.dirname(output_dir))
+    base_dir = Path(experiments[0]["config"]["logging"]["output_dir"]).parent
 
     if train:
         post_parallel_train(experiments, base_dir)
