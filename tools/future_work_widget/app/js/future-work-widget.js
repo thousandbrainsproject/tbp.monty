@@ -112,20 +112,24 @@ const ColumnFormatters = {
     const status = cell.getValue() || '';
     const contributor = rowData.contributor || '';
 
-    if (!contributor) return escapeHtml(status);
+    const statusBadge = status
+      ? `<span class="${BADGE_SKILLS_CLASS}" data-search-value="${escapeHtml(status)}" style="cursor: pointer;">${escapeHtml(status)}</span>`
+      : '';
+
+    if (!contributor) return statusBadge;
 
     const usernames = Array.isArray(contributor)
       ? contributor
       : contributor.split(',').map(u => u.trim()).filter(Boolean);
 
     const avatars = usernames
-      .map(username => `<img src="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}.png"
+      .map(username => `<a href="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(username)}"><img src="${GITHUB_AVATAR_URL}/${encodeURIComponent(username)}.png"
                              width="16" height="16"
                              style="vertical-align:middle;border-radius:2px;margin-left:5px;"
-                             alt="${escapeHtml(username)}"/>`)
+                             alt="${escapeHtml(username)}"/></a>`)
       .join(' ');
 
-    return escapeHtml(status) + avatars;
+    return statusBadge + '<br>' + avatars;
   },
   formatRfcColumn(cell) {
     const value = cell.getValue();
