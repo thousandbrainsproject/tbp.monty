@@ -14,9 +14,9 @@ defaults:
 
 _target_: tbp.monty.frameworks.experiments.pretraining_experiments.MontySupervisedObjectPretrainingExperiment
 config:
-  n_train_epochs: ${benchmarks.rotations_all}
+  n_train_epochs: ${benchmarks.rotations_all_count}
   logging:
-    output_dir: ${path.expanduser:"~/tbp/result/monty/projects"}
+    output_dir: ${path.expanduser:"~/tbp/results/monty/projects"}
     run_name: surf_agent_1lm_2obj_train
     wandb_handlers: []
   monty_config:
@@ -53,7 +53,7 @@ config:
         sensor_module_args:
           sensor_module_id: view_finder
           save_raw_obs: false
-    # # learning module config: 1 graph learning module.
+    # learning module config: 1 graph learning module.
     learning_module_configs:
       learning_module_0:
         learning_module_class: ${monty.class:tbp.monty.frameworks.models.graph_matching.GraphLM}

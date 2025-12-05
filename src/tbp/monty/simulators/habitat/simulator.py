@@ -23,6 +23,7 @@ from typing import Any, Sequence
 import habitat_sim
 import magnum as mn
 import numpy as np
+from habitat_sim.simulator import ObservationDict
 from habitat_sim.utils import common as sim_utils
 from importlib_resources import files
 
@@ -44,6 +45,7 @@ from tbp.monty.frameworks.actions.actions import (
     TurnRight,
 )
 from tbp.monty.frameworks.agents import AgentID
+from tbp.monty.frameworks.models.abstract_monty_classes import Observations
 from tbp.monty.simulators import resources
 from tbp.monty.simulators.habitat.actuator import HabitatActuator
 from tbp.monty.simulators.habitat.agents import HabitatAgent
@@ -500,14 +502,14 @@ class HabitatSim(HabitatActuator):
         agent_index = self._agent_id_to_index[agent_id]
         return self._sim.get_agent(agent_index)
 
-    def apply_actions(self, actions: Sequence[Action]) -> dict[str, dict]:
+    def apply_actions(self, actions: Sequence[Action]) -> Observations:
         """Execute given actions in the environment.
 
         Args:
             actions: The actions to execute
 
         Returns:
-            A dictionary with the observations grouped by agent_id
+            The observations from the simulator.
 
         Raises:
             TypeError: If the action type is invalid
@@ -547,55 +549,41 @@ class HabitatSim(HabitatActuator):
 
             action.act(self)
 
-            observations = self.observations
-
-        return observations
+        return self.observations
 
     @property
-    def observations(self) -> dict:
-        """Get sensor observations.
+    def observations(self) -> Observations:
+        """Retrieve and process observations from the simulator.
 
         Returns:
-            A dictionary with all sensor observations grouped by sensor module.
-                For example:
-                    {
-                        "agent1": {
-                            "sensor1": {
-                                "rgba": [....],
-                                "depth": [....],
-                            :
-                        },
-                        "agent2": {
-                            "sensor2":
-                                "rgba": [....],
-                                "depth": [....],
-                            :
-                        }
-                    }
+            All observations.
         """
         agent_indices = range(len(self._agents))
         obs = self._sim.get_sensor_observations(agent_ids=agent_indices)
         return self.process_observations(obs)
 
-    def process_observations(self, obs) -> dict:
+    def process_observations(
+        self,
+        habitat_obs: dict[int, ObservationDict],
+    ) -> Observations:
         """Habitat returns observations grouped by agent_index.
 
         Initially, we group observations by agent_id instead and call all agents
         to further process the observations.
 
         Args:
-            obs: The observations to process
+            habitat_obs: The observations from HabitatSim to process.
 
         Returns:
-            The processed observations grouped by agent_id.
+            Observations grouped by agent_id.
         """
-        processed_obs = defaultdict(dict)
-        for agent_index, agent_obs in obs.items():
+        obs: Observations = defaultdict(dict)
+        for agent_index, agent_obs in habitat_obs.items():
             agent = self._agents[agent_index]
-            agent_id = self._agents[agent_index].agent_id
-            processed_obs[agent_id] = agent.process_observations(agent_obs)
+            agent_id = AgentID(self._agents[agent_index].agent_id)
+            obs[agent_id] = agent.process_observations(agent_obs)
 
-        return processed_obs
+        return obs
 
     @property
     def states(self) -> dict:
@@ -651,7 +639,7 @@ class HabitatSim(HabitatActuator):
 
         return result
 
-    def reset(self):
+    def reset(self) -> Observations:
         # All agents managed by this simulator
         agent_indices = range(len(self._agents))
         obs = self._sim.reset(agent_ids=agent_indices)
