@@ -1,4 +1,4 @@
-# @package config.monty_config.motor_system
+# @package config.monty_config.motor_system_config
 # Naive scan policy with spiral pattern
 defaults:
   - policy: naive_scan

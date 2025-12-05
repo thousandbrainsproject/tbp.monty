@@ -1,4 +1,4 @@
-# @package config.monty_config.motor_system
+# @package config.monty_config.motor_system_config
 # Informed motor policy with 20 degree rotation steps
 defaults:
   - informed_no_trans

@@ -1,3 +1,3 @@
-# @package config.monty_config.motor_system.motor_system_args.policy_args
+# @package config.monty_config.motor_system_config.motor_system_args.policy_args
 file_name: null
 switch_frequency: 0.05
