@@ -144,6 +144,31 @@ body {
   opacity: 1;
 }
 
+#filterContainer {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.hide-completed-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #666;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.hide-completed-label input[type="checkbox"] {
+  margin-right: 5px;
+  cursor: pointer;
+}
+
+.hide-completed-label:hover {
+  color: #333;
+}
+
 .svg-inline--fa {
   height: 0.7rem;
   color: black;

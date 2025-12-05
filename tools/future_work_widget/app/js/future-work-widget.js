@@ -228,45 +228,58 @@ const FutureWorkWidget = {
     const searchInput = document.getElementById('searchInput');
     const clearLink = document.getElementById('clearSearch');
     const copyUrlLink = document.getElementById('copyUrl');
+    const hideCompletedCheckbox = document.getElementById('hideCompleted');
 
-    const performSearch = (searchTerm) => {
-      const trimmedTerm = searchTerm.toLowerCase().trim();
-      if (!trimmedTerm) {
+    const applyFilters = () => {
+      const searchTerm = searchInput.value.toLowerCase().trim();
+      const hideCompleted = hideCompletedCheckbox.checked;
+
+      if (!searchTerm && !hideCompleted) {
         table.clearFilter();
         return;
       }
 
       table.setFilter((data) => {
+        if (hideCompleted && (data.status || '').toLowerCase() === 'completed') {
+          return false;
+        }
+
+        if (!searchTerm) {
+          return true;
+        }
+
         const searchableText = [
           data.title, data.tags, data.skills, data.status,
-          data.contributor, data['estimated-scope'], data['improved-metric'], 
+          data.contributor, data['estimated-scope'], data['improved-metric'],
           data['output-type'], data.rfc, data.link, data.path2
         ]
           .filter(Boolean)
           .join(' ')
           .toLowerCase();
 
-        return trimmedTerm.split(/\s+/).every(word => searchableText.includes(word));
+        return searchTerm.split(/\s+/).every(word => searchableText.includes(word));
       });
     };
 
     const initialSearchTerm = getInitialSearchTerm();
     if (initialSearchTerm) {
       searchInput.value = initialSearchTerm;
-      performSearch(initialSearchTerm);
     }
+    applyFilters();
 
     searchInput.addEventListener('input', (e) => {
       updateUrlSearchParam(e.target.value);
-      performSearch(e.target.value);
+      applyFilters();
     });
+
+    hideCompletedCheckbox.addEventListener('change', applyFilters);
 
     if (clearLink) {
       clearLink.addEventListener('click', (e) => {
         e.preventDefault();
         searchInput.value = '';
         updateUrlSearchParam('');
-        table.clearFilter();
+        applyFilters();
       });
     }
 
